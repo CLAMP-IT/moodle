@@ -124,6 +124,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
             // Show authentication form for multi-authentication
             // test pgtIou parameter for proxy mode (https connection
             // in background from CAS server to the php server)
+	   /* Wes, ME - disable this all users get directed to CAS */
             if ($authCAS != 'CAS' && !isset($_GET['pgtIou'])) {
                 $PAGE->set_url('/auth/cas/auth.php');
                 $PAGE->navbar->add($CASform);
@@ -133,7 +134,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
                 include($CFG->dirroot.'/auth/cas/cas_form.html');
                 echo $OUTPUT->footer();
                 exit();
-            }
+            }*/
         }
 
         // Force CAS authentication (if needed).
