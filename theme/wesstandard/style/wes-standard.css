@@ -1,0 +1,84 @@
+/** Wes Standard **/
+
+a {
+	color: #990000;
+}
+
+img.iconsmall {
+	height: 12px;
+	width: 12px;
+}
+
+#page-header {
+	background-image: url([[pix:theme|logo-long]]);
+	background-repeat: no-repeat;
+}
+
+h1.headermain {
+	display: none;
+}
+
+.headermenu {
+	height: 50px;
+}
+
+.path-course-view .course-content .weeks .hidden .content {
+/*	opacity: 0.3;
+	filter: alpha(opacity=30);*/
+}
+
+.path-course-view .course-content .hidden .mod-indent,
+.path-course-view .course-content a.dimmed, 
+.path-course-view .course-content a.dimmed:link, 
+.path-course-view .course-content a.dimmed:visited, 
+.path-course-view .course-content a.dimmed_text, 
+/* .path-course-view .course-content .dimmed_text, 
+   .path-course-view .course-content .dimmed_text a, 
+*/
+.path-course-view .course-content .dimmed_category, 
+.path-course-view .course-content .dimmed_category a {
+	opacity: 0.5;
+	filter: alpha(opacity=50);
+}
+
+.path-course-view .section {
+	font-size: 1em;
+}
+
+.path-course-view .section .activity a {
+	line-height: 1.7em;
+}
+
+.path-course-view .section .modtype_label p {margin-bottom: 0.4em;}
+.path-course-view .section .modtype_label p:first-child {margin-top: 2px;}
+.path-course-view .section .modtype_label p:last-child {margin-bottom: 0;}
+
+
+
+
+/** -----BEGIN----- MER additions 12/11 ---------- **/
+
+.course-content ul.weeks li.section .content h3 {
+    font-variant: small-caps;
+    font-weight: bold;
+    color: #888888;
+    }
+
+.path-course-view .weeks .current, .path-course-view .topics .current, .path-course-view .current td.side {
+    background: none repeat scroll 0 0 #990000;
+}
+ 
+.course-content ul.weeks li.section {
+    border: 1px solid #DDDDDD;
+    padding: 3px;
+}
+
+.course-content ul.weeks li.section .content {
+    margin: 0;
+}
+
+.path-course-view .course-content .weeks .hidden .content {
+    color: #333333;
+}
+
+/** -----END----- MER additions 12/11 ---------- **/
