@@ -94,6 +94,12 @@ class auth_plugin_cas extends auth_plugin_ldap {
             }
             return;
         }
+	/* wes - addition to enable loginguest=true override */
+        if (strstr($SESSION->wantsurl, 'loginguest=true')) {
+                $frm->username="guest";
+                $frm->password="guest";
+                 return;
+        }
 
         // Return if CAS enabled and settings not specified yet
         if (empty($this->config->hostname)) {
