@@ -14,7 +14,8 @@ function get_moodlecreate_db() {
   return $moodlecreate;
 }
 
-/* takes a hash of course data and updates a given Moodle Course object with this data; use with caution! */
+/* takes a hash of course data and returns hash with added peoplesoft data; certain key Moodle hash values will get filled in if empty */
+
 function get_peoplesoft_course_data($psdbh,$course) {
   $statement = "select * from sysadm.ps_wes_section where crse_id=:crseid and strm=:strm
                 and
@@ -23,12 +24,45 @@ function get_peoplesoft_course_data($psdbh,$course) {
   oci_bind_by_name($sth,':strm',$course['term']);
   oci_bind_by_name($sth,':crseid',$course['crse_id']);
   oci_execute($sth);
-  $array_to_add = array('ACAD_CAREER','DESCRLONG');
+  $array_to_add = array('ACAD_CAREER','DESCRLONG','COURSE_TITLE_LONG','WES_HOST_CAT_NBR','WES_HOST_SUBJECT','WES_INSTRUCTORS');
   while ($row = oci_fetch_array($sth,OCI_ASSOC)) {
     foreach ($array_to_add as $field) {
       $course[strtolower($field)] = $row[$field];
     }
   }
+  #built in default values if no values are present in passed hash
+  if (!$course['visible']) {    
+    $course['visible'] = 0;
+  }
+  if (!$course['short_name']) {
+    $course['short_name'] = $course['wes_host_subject'] . trim($course['wes_host
+_cat_nbr']) . "-";
+    if (!$course['section']) {
+      #if no section specified assume only one
+      $course['section'] = array('01');
+    }
+    foreach ( $course['section'] as $section ) {
+      $course['short_name'] .= $section;
+    }
+    $season = get_season_from_semester($course['term']);
+    $course['short_name'] .= "-" . substr($season,0,2);
+    $course['short_name'] .= substr($course['term'],0,3) + 1900;  
+  }
+  if (!$course['full_name']) {
+    $course['full_name'] = $course['wes_host_subject'] . trim($course['wes_host_cat_nbr']) . "-";
+    if (!$course['section']) {
+      #if no section specified assume only one
+      $course['section'] = array('01');
+    }
+    foreach ( $course['section'] as $section ) {
+      $course['full_name'] .= $section;
+    }
+    $course['full_name'] .= " " . $course['course_title_long'];
+  }
+  if (!$course['summary']) {
+    $course['summary'] = $course['wes_instructors'];
+  }
+
   return $course;
 }
 
