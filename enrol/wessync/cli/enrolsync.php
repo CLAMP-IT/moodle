@@ -30,6 +30,7 @@ if ($argv[1] == 'peoplesoft_enrol' ) {
   print "Unknown enrol request!";
 }
 release_lock_file($lock,$argv[1]);
+var_dump($results);
 
 function idnumber_enrol($enrol,$lock,$cs_courses) {
   $ps89prod = get_ps89prod_db();
@@ -119,10 +120,10 @@ function peoplesoft_enrol ($enrol,$lock) {
     }
     /* role id 5 == student */
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
-    $master_results[] = $result;
+    $master_results[$result['course_info']]['student_sync'] = $result;
     /* role id 3 == teacher */
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3");
-    $master_results[] = $result;
+    $master_results[$result['course_info']]['teacher_sync'] = $result;
   } 
   if ($email_results) {
      $body = implode("\n",$email_results);
@@ -155,7 +156,8 @@ function ldap_enrol ($enrol,$lock) {
       $group_members = get_from_ad($ldap_group,$ldapconnection);
       $authoritative_members = array_merge($authoritative_members,$group_members);
     }
-    $master_results[] = $enrol->sync_course_membership_by_role($moodle_course,$authoritative_members,"5");
+    $results = $enrol->sync_course_membership_by_role($moodle_course,$authoritative_members,"5");
+    $master_results[$results['course_info']]['student_sync'] = $results;
   }
   return $master_results;
 }
@@ -175,7 +177,7 @@ function fy_enrol ($enrol,$lock) {
   
   foreach ($fy_courses as $moodle_course) {
      $result = $enrol->sync_course_membership_by_role($moodle_course,$fy_students,"5");
-     $master_results[] = $result;
+     $master_results[$result['course_info']]['student_sync'] = $result;
   }
   return $master_results;
 }
