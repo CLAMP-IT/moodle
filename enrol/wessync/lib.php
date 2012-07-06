@@ -97,6 +97,7 @@ class enrol_wessync_plugin extends enrol_plugin {
 	$course_hash['crse_id'] = substr($idnumber,4,6);
 	$remaining_sections = substr($idnumber,10);
 	$course_hash['section'] = str_split($remaining_sections,2);
+	$course_hash['idnumber'] = $idnumber;
 	return $course_hash;
     }
 
