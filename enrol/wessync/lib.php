@@ -284,15 +284,15 @@ class enrol_wessync_plugin extends enrol_plugin {
       $course_template->id = "";
       #create a new record
       $new_course_id = $DB->insert_record("course",$course_template);
-      #now do the backup; haven't quite figured out how Moodle2 works perfectly, but this works for now
-      #ideally, we'd want to make our own backup controller
-      $bc = new backup_controller(backup::TYPE_1COURSE, $course_template_id, backup::FORMAT_MOODLE, backup::INTERACTIVE_NO, backup::MODE_SAMESITE, "3");
+      #now do the backup; haven't quite figured out how Moodle2 works perfectly, but this works for now - "2" is the admin user who has rights to do the backup
+      #ideally, we'd want to make our own backup controller 
+      $bc = new backup_controller(backup::TYPE_1COURSE, $course_template_id, backup::FORMAT_MOODLE, backup::INTERACTIVE_NO, backup::MODE_SAMESITE, "2");
       $bc->execute_plan();
       $backupfile = $bc->get_results();
       $packer = new zip_packer();
       #unzip our backup to a temporary restore file
       $backupfile['backup_destination']->extract_to_pathname($packer,"$CFG->dataroot/temp/backup/$course_template_id");
-      $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"3",backup::TARGET_NEW_COURSE);
+      $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"2",backup::TARGET_NEW_COURSE);
       $restore->execute_precheck();
       $outcome = $restore->execute_plan();
       #course restored, now lets fetch the object
