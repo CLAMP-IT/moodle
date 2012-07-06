@@ -44,6 +44,10 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
     if (!$moodle_course) {
       $course_hash = $enrol->course_hash_from_idnumber($idnumber);
       $course = get_peoplesoft_course_data($ps89prod,$course_hash);
+      $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
+      foreach ($auth_teachers as $teacher) {
+        $course['summary'] .= "<p>Instructor: $teacher</p>";
+      }
       $moodle_course = $enrol->create_moodle_course_from_template($course);
     }
     if (!$moodle_course) {
