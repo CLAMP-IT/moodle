@@ -332,6 +332,18 @@ class enrol_wessync_plugin extends enrol_plugin {
         array_push($this->ERRORS,"Could not update course");
         return 0;
       }
+      /*now resort the category that ws synced */
+      $cat = $course_category;
+      $sort_courses = $DB->get_records('course', array('category'=>$cat->id),'shortname ASC, id DESC','id, sortorder');
+      $i = 1;
+      foreach ($sort_courses as $sort_course) {
+        if ($sort_course->sortorder != $cat->sortorder + $i) { 
+          $sort_course->sortorder = $cat->sortorder + $i;
+          $DB->update_record_raw('course', $sort_course, true);
+        }
+        $i++;
+      }
+
       fix_course_sortorder();
       return 1;
   }
