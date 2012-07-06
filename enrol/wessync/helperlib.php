@@ -25,10 +25,15 @@ function get_peoplesoft_course_data($psdbh,$course) {
   oci_bind_by_name($sth,':crseid',$course['crse_id']);
   oci_execute($sth);
   $array_to_add = array('ACAD_CAREER','DESCRLONG','COURSE_TITLE_LONG','WES_HOST_CAT_NBR','WES_HOST_SUBJECT','WES_INSTRUCTORS');
+  $course_found = 0;
   while ($row = oci_fetch_array($sth,OCI_ASSOC)) {
+    $course_found = 1 ;
     foreach ($array_to_add as $field) {
       $course[strtolower($field)] = $row[$field];
     }
+  }
+  if (!$course_found) {
+    return false;
   }
   #built in default values if no values are present in passed hash
   if (!$course['visible']) {    
