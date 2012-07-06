@@ -60,7 +60,7 @@ _cat_nbr']) . "-";
     $course['full_name'] .= " " . $course['course_title_long'];
   }
   if (!$course['summary']) {
-    $course['summary'] = $course['wes_instructors'];
+    $course['summary'] = "Instructor: " . $course['wes_instructors'];
   }
 
   return $course;
