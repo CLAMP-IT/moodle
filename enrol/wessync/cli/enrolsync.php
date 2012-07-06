@@ -45,6 +45,10 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
     if (!$moodle_course) {
       $course_hash = $enrol->course_hash_from_idnumber($idnumber);
       $course = get_peoplesoft_course_data($ps89prod,$course_hash);
+      if (!$course) {
+        $master_results[$idnumber] = "Could not find information on $idnumber";
+        continue;
+      }
       $auth_teachers = $enrol->get_instructors_from_ps89prod($course,$ps89prod);
       foreach ($auth_teachers as $teacher) {
         $course['summary'] .= "<p>Instructor: $teacher</p>";
@@ -52,8 +56,8 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
       $moodle_course = $enrol->create_moodle_course_from_template($course);
     }
     if (!$moodle_course) {
-      print "No moodle course available, bailing.";
-      die;
+      $master_results[$idnumber] = "No moodle course available for $idnumber, skipping.";
+      continue
     }
     $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
     $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
