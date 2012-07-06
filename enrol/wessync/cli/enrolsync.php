@@ -135,7 +135,7 @@ function peoplesoft_enrol ($enrol,$lock) {
 /*alright, now for one offs defined by LDAP groups */
 function ldap_enrol ($enrol,$lock) {
   global $DB;
-  $ldapauth = get_auth_plugin('ldap');
+  $ldapauth = get_auth_plugin('cas');
   $ldapconnection = $ldapauth->ldap_connect();
   #format is Moodle ShortName => array of AD groups
   $one_off_syncs = array( 'CBC-Disc' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
