@@ -4,7 +4,7 @@
 body.editing .section .commands {
 	float: left; 
 	display: block; 
-	width: 190px;
+	width: 170px;
 	height: 22px;
 	margin-right: 10px;
 	border-right: 1px solid #999;
@@ -12,35 +12,50 @@ body.editing .section .commands {
 }
 
 body.editing .section .commands a {position: absolute; top: 4px;}
-body.editing .section .commands [title='Move'] {left: 0;}
-body.editing .section .commands [title='Move left'] {left: 20px;}
-body.editing .section .commands [title='Move right'] {left: 40px;}
-body.editing .section .commands [title='Update'] {left: 60px;}
+body.editing .section .commands span {position: absolute; top: 4px;}
+body.editing .section .commands [title='Edit title'] {left: 0;}
+body.editing .section .commands [title='Move left'] {left: 16px;}
+body.editing .section .commands [title='Move right'] {left: 32px;}
+body.editing .section .commands [title='Move'] {left: 48px; top: 4px;}
+body.editing .section .commands .editing_move {left: 48px; top: 4px;}
+body.editing .section .commands [title='Update'] {left: 64px;}
 body.editing .section .commands [title='Duplicate'] {left: 80px;}
-body.editing .section .commands [title='Delete'] {left: 100px;}
-body.editing .section .commands [title='Hide'] {left: 120px;}
-body.editing .section .commands [title='Show'] {left: 120px;}
-body.editing .section .commands [title='No groups (Click to change)'] {left: 140px;}
-body.editing .section .commands [title='Separate groups (Click to change)'] {left: 140px;}
-body.editing .section .commands [title='Visible groups (Click to change)'] {left: 140px;}
-body.editing .section .commands [title='Assign roles'] {left: 160px;}
+body.editing .section .commands [title='Delete'] {left: 96px;}
+body.editing .section .commands [title='Hide'] {left: 112px;}
+body.editing .section .commands [title='Show'] {left: 112px;}
+body.editing .section .commands [title='No groups (Click to change)'] {left: 128px;}
+body.editing .section .commands img[title='No groups (forced mode)'] {position: absolute; top: 4px; left: 128px;}
+body.editing .section .commands [title='Separate groups (Click to change)'] {left: 128px;}
+body.editing .section .commands [title='Visible groups (Click to change)'] {left: 128px;}
+body.editing .section .commands [title='Assign roles'] {left: 144px;}
 
 body.editing .section .mod-indent {min-height: 22px; padding: 0;}
-body.editing .section .mod-indent>a {position: absolute; left: 200px; top: 0;} 
+body.editing .section .mod-indent>a {position: absolute; left: 180px; top: 0;} 
 
 body.editing .section .commands a {padding: 0 2px; line-height: 1em; top: 5px;}
+body.editing .section .commands span {padding: 0 2px; line-height: 1em; top: 5px;}
 body.editing .section li.activity {clear: both;}
 body.editing .section .mod-indent {margin-left: 0;}
-body.editing .section .mod-indent-1>a {margin-left: 20px;}
-body.editing .section .mod-indent-2>a {margin-left: 40px;}
-body.editing .section .mod-indent-3>a {margin-left: 60px;}
-body.editing .section .mod-indent-4>a {margin-left: 80px;}
-body.editing .section .mod-indent-5>a {margin-left: 100px;}
-body.editing .section .mod-indent-6>a {margin-left: 120px;}
-body.editing .section .mod-indent-7>a {margin-left: 140px;}
-body.editing .section .mod-indent-8>a {margin-left: 160px;}
-body.editing .section .mod-indent-9>a {margin-left: 180px;}
-body.editing .section .mod-indent-10>a {margin-left: 200px;}
+body.editing .section .mod-indent-1>a,
+body.editing .section .mod-indent-1 .no-overflow>p {margin-left: 20px;}
+body.editing .section .mod-indent-2>a,
+body.editing .section .mod-indent-2 .no-overflow>p {margin-left: 40px;}
+body.editing .section .mod-indent-3>a,
+body.editing .section .mod-indent-3 .no-overflow>p {margin-left: 60px;}
+body.editing .section .mod-indent-4>a,
+body.editing .section .mod-indent-4 .no-overflow>p {margin-left: 80px;}
+body.editing .section .mod-indent-5>a,
+body.editing .section .mod-indent-5 .no-overflow>p {margin-left: 100px;}
+body.editing .section .mod-indent-6>a,
+body.editing .section .mod-indent-6 .no-overflow>p {margin-left: 120px;}
+body.editing .section .mod-indent-7>a,
+body.editing .section .mod-indent-7 .no-overflow>p {margin-left: 140px;}
+body.editing .section .mod-indent-8>a,
+body.editing .section .mod-indent-8 .no-overflow>p {margin-left: 160px;}
+body.editing .section .mod-indent-9>a,
+body.editing .section .mod-indent-9 .no-overflow>p {margin-left: 180px;}
+body.editing .section .mod-indent-10>a,
+body.editing .section .mod-indent-10 .no-overflow>p {margin-left: 200px;}
 body.editing .section .modtype_label {
 	padding: 4px 0 0;
 	position: relative;
@@ -52,7 +67,7 @@ body.editing .section .modtype_label .commands {
 	height: 100%;
 }
 body.editing .section .modtype_label .mod-indent {
-	padding-left: 200px;
+	padding-left: 180px;
 	/*margin-bottom: -1em;*/
 }
 body.editing .section .modtype_label .mod-indent-1 {padding-left: 220px;}
@@ -73,4 +88,14 @@ body.editing .section .mod-indent:hover {
 	-webkit-border-radius: 2px;
 	-moz-border-radius: 2px;
 	border-radius: 2px;
+}
+
+body.editing .section .contentafterlink {
+	margin-left: 170px;
+	border-left: 1px solid #999;
+}
+
+body.editing .section .contentafterlink p {
+	margin-bottom: 0;
+	padding: 0.5em 0 0;
 }
