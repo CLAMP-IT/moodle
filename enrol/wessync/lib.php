@@ -135,7 +135,11 @@ class enrol_wessync_plugin extends enrol_plugin {
                   where strm = :strm and crse_id = :crseid and class_section = :section and CRSE_OFFER_NBR = 1";
       $sth = oci_parse($conn,$statement);
       $teachers = array();
-      $course_hash = $this->course_hash_from_idnumber($course->idnumber);
+      if ($course->idnumber) {
+        $course_hash = $this->course_hash_from_idnumber($course->idnumber);
+      } else if ($course['idnumber']) {
+        $course_hash = $this->course_hash_from_idnumber($course['idnumber']);
+      }
       foreach ($course_hash['section'] as $section) {
         oci_bind_by_name($sth,':strm',$course_hash['term']);
         oci_bind_by_name($sth,':section',$section);
