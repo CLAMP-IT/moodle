@@ -25,10 +25,40 @@ if ($argv[1] == 'peoplesoft_enrol' ) {
   $results = ldap_enrol($enrol,$lock);
 } else if ($argv[1] == 'fy_enrol') {
   $results = fy_enrol($enrol,$lock);
-} else {
+} else if ($argv[1] == 'idnumber_enrol') {
+  $results = idnumber_enrol($enrol,$lock,$argv[2]);
   print "Unknown enrol request!";
 }
 release_lock_file($lock,$argv[1]);
+
+function idnumber_enrol($enrol,$lock,$cs_courses) {
+  $ps89prod = get_ps89prod_db();
+  if (!$cs_courses) {
+    print "This syncing method requires an argument of comma-separated idnumbers";
+    die;
+  }
+  $idnumber_courses = split(',',$cs_courses);
+  foreach ($idnumber_courses as $idnumber) {
+    $moodle_course = get_moodle_course($idnumber);
+    if (!$moodle_course) {
+      $course_hash = $enrol->course_hash_from_idnumber($idnumber);
+      $course = get_peoplesoft_course_data($ps89prod,$course_hash);
+      $moodle_course = $enrol->create_moodle_course_from_template($course);
+    }
+    if (!$moodle_course) {
+      print "No moodle course available, bailing.";
+      die;
+    }
+    $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
+    $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
+    $master_results[$result['courseinfo']]['student_sync'] = $result;
+    /* role id 3 == teacher */
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3");
+    $master_results[$result['courseinfo']]['teacher_sync'] = $result;
+  }
+  return $master_results;
+}
 
 function peoplesoft_enrol ($enrol,$lock) {
   $master_results = array();
