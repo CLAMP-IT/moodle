@@ -365,7 +365,7 @@ class enrol_wessync_plugin extends enrol_plugin {
         }
       }
     if (!$category_to_return) {
-      $category_to_return = $DB->get_record('course_categories','name','Miscellaneous');
+      $category_to_return = $DB->get_record('course_categories',array('name' => 'Miscellaneous'));
     }
     return $category_to_return;
   }
