@@ -57,8 +57,9 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
     }
     if (!$moodle_course) {
       $master_results[$idnumber] = "No moodle course available for $idnumber, skipping.";
-      continue
+      continue;
     }
+ 
     $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
     $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
