@@ -27,6 +27,7 @@ if ($argv[1] == 'peoplesoft_enrol' ) {
   $results = fy_enrol($enrol,$lock);
 } else if ($argv[1] == 'idnumber_enrol') {
   $results = idnumber_enrol($enrol,$lock,$argv[2]);
+} else {
   print "Unknown enrol request!";
 }
 release_lock_file($lock,$argv[1]);
@@ -44,7 +45,7 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
     if (!$moodle_course) {
       $course_hash = $enrol->course_hash_from_idnumber($idnumber);
       $course = get_peoplesoft_course_data($ps89prod,$course_hash);
-      $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
+      $auth_teachers = $enrol->get_instructors_from_ps89prod($course,$ps89prod);
       foreach ($auth_teachers as $teacher) {
         $course['summary'] .= "<p>Instructor: $teacher</p>";
       }
