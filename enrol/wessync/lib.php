@@ -209,7 +209,7 @@ class enrol_wessync_plugin extends enrol_plugin {
     /* returns users in a given role in a given course */
     public function get_users_by_role_in_course($roleid,$courseid) {
 	global $DB;
- 	$sql = "select u.id,u.username from user u join role_assignments ra on (ra.userid = u.id) JOIN user_enrolments ue on (ue.userid= u.id and ue.enrolid = ra.itemid) join enrol e on (e.id = ue.enrolid) join course c on (c.id = e.courseid) where u.deleted = 0 and ra.component='enrol_wessync' and ra.roleid=:roleid and c.id=:courseid";
+ 	$sql = "select u.id,u.username from {user} u join {role_assignments} ra on (ra.userid = u.id) JOIN {user_enrolments} ue on (ue.userid= u.id and ue.enrolid = ra.itemid) join {enrol} e on (e.id = ue.enrolid) join {course} c on (c.id = e.courseid) where u.deleted = 0 and ra.component='enrol_wessync' and ra.roleid=:roleid and c.id=:courseid";
   	$params = array ( 'roleid' => $roleid, 'courseid' => $courseid );
   	$users = $DB->get_records_sql($sql,$params);
   	if ($users == false ) {
