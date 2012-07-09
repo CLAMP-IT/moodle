@@ -172,6 +172,14 @@ table#lae-user-grades.laegradestable tr.avg td.cell,
 	background-color:#cfcfcf;
 }
 
+table#lae-user-grades tr td.overridden {
+	background-color:#F3E4C0;
+}
+
+table#lae-user-grades tr.odd td.overridden {
+	background-color:#EFD9A4;
+}
+
 /***
 *** added the following for the alignment issues
 ***/
