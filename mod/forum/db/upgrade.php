@@ -67,13 +67,15 @@ function xmldb_forum_upgrade($oldversion) {
         $field = new xmldb_field('anonymous');
         $field->set_attributes(XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'completionposts');
         if (!$dbman->field_exists($table, $field)) $dbman->add_field($table, $field);
-
         $table = new xmldb_table('forum_posts');
         $field = new xmldb_field('hiddenuserid');
         $field->set_attributes(XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null, null, 'mailnow');
         if (!$dbman->field_exists($table, $field)) $dbman->add_field($table, $field);        
         upgrade_mod_savepoint(true, 2012061701, 'forum');
     }
+    
+    // Moodle v2.3.0 release upgrade line
+    // Put any upgrade step following this
 
     return true;
 }
