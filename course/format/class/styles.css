@@ -1,0 +1,6 @@
+.course-content ul.class {margin:0;}
+.course-content ul.class li.section {list-style: none;margin:5px 0 0 0;padding:0;}
+.course-content ul.class li.section .content {margin:0 40px;}
+.course-content ul.class li.section .left {width:40px;float:left;text-align:center;}
+.course-content ul.class li.section .right {width:40px;float:right;text-align:center;}
+.jumpmenu {text-align:center;}

@@ -122,6 +122,7 @@
     }
 
     $PAGE->set_pagelayout('course');
+	$PAGE->blocks->add_region('course-view-top');
     $PAGE->set_pagetype('course-view-' . $course->format);
     $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 
@@ -250,6 +251,9 @@
             break;
         }
     }
+
+
+	echo $OUTPUT->blocks_for_region('course-view-top');
 
     if (!$sections = $modinfo->get_section_info_all()) {   // No sections found
         $section = new stdClass;
