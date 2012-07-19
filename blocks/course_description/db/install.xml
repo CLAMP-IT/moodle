@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/course_description/db" VERSION="20120301" COMMENT="XMLDB file for block blocks/course_description"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+      <TABLE NAME="block_course_description" COMMENT="Stores the descriptions for the course description block">
+        <FIELDS>
+          <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" ENUM="false" NEXT="courseid"/>
+          <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" ENUM="false" PREVIOUS="id" NEXT="blockid"/>
+          <FIELD NAME="blockid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" ENUM="false" PREVIOUS="courseid" NEXT="course_description"/>
+          <FIELD NAME="course_description" TYPE="text" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="blockid" NEXT="mtg_days"/>
+          <FIELD NAME="mtg_days" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="course_description" NEXT="mtg_start_times"/>
+          <FIELD NAME="mtg_start_times" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="mtg_days" NEXT="mtg_end_times"/>
+          <FIELD NAME="mtg_end_times" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="mtg_start_times" NEXT="mtg_bldg"/>
+          <FIELD NAME="mtg_bldg" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="mtg_end_times" NEXT="mtg_room"/>
+          <FIELD NAME="mtg_room" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="mtg_bldg" NEXT="course_obj"/>
+          <FIELD NAME="course_obj" TYPE="text" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="mtg_room" NEXT="eval_criteria"/>
+          <FIELD NAME="eval_criteria" TYPE="text" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="course_obj" NEXT="add_info"/>
+          <FIELD NAME="add_info" TYPE="text" NOTNULL="false" SEQUENCE="false" ENUM="false" PREVIOUS="eval_criteria" NEXT="course_descriptionformat"/>
+	  <FIELD NAME="course_descriptionformat" TYPE="int" LENGTH="3" NOTNULL="true" UNSIGNED="true" DEFAULT="1" SEQUENCE="false" ENUM="false" PREVIOUS="add_info" NEXT="course_objformat"/>
+	  <FIELD NAME="course_objformat" TYPE="int" LENGTH="3" NOTNULL="true" UNSIGNED="true" DEFAULT="1" SEQUENCE="false" ENUM="false" PREVIOUS="course_descriptionformat" NEXT="eval_criteriaformat"/>
+	  <FIELD NAME="eval_criteriaformat" TYPE="int" LENGTH="3" NOTNULL="true" UNSIGNED="true" DEFAULT="1" SEQUENCE="false" ENUM="false" PREVIOUS="course_objformat" NEXT="add_infoformat"/>
+	  <FIELD NAME="add_infoformat" TYPE="int" LENGTH="3" NOTNULL="true" UNSIGNED="true" DEFAULT="1" SEQUENCE="false" ENUM="false" PREVIOUS="eval_criteriaformat"/>
+        </FIELDS>
+        <KEYS>
+          <KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="Primary key for block_course_description" NEXT="courseid"/>
+          <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id" PREVIOUS="primary" NEXT="blockid"/>
+          <KEY NAME="blockid" TYPE="foreign" FIELDS="blockid" REFTABLE="block" REFFIELDS="id" PREVIOUS="courseid"/>
+        </KEYS>
+      </TABLE>
+  </TABLES>
+</XMLDB>
+

@@ -121,6 +121,7 @@
     $course->format = course_get_format($course)->get_format();
 
     $PAGE->set_pagelayout('course');
+	$PAGE->blocks->add_region('course-view-top');
     $PAGE->set_pagetype('course-view-' . $course->format);
     $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 
@@ -266,6 +267,34 @@
     $modnamesused = $modinfo->get_used_module_names();
     $mods = $modinfo->get_cms();
     $sections = $modinfo->get_section_info_all();
+    $modinfo = get_fast_modinfo($COURSE);
+    get_all_mods($course->id, $mods, $modnames, $modnamesplural, $modnamesused);
+    foreach($mods as $modid=>$unused) {
+        if (!isset($modinfo->cms[$modid])) {
+            rebuild_course_cache($course->id);
+            $modinfo = get_fast_modinfo($COURSE);
+            debugging('Rebuilding course cache', DEBUG_DEVELOPER);
+            break;
+        }
+    }
+
+
+	echo $OUTPUT->blocks_for_region('course-view-top');
+
+    if (!$sections = $modinfo->get_section_info_all()) {   // No sections found
+        $section = new stdClass;
+        $section->course = $course->id;   // Create a default section.
+        $section->section = 0;
+        $section->visible = 1;
+        $section->summaryformat = FORMAT_HTML;
+        $section->id = $DB->insert_record('course_sections', $section);
+        rebuild_course_cache($course->id);
+        $modinfo = get_fast_modinfo($COURSE);
+        if (!$sections = $modinfo->get_section_info_all()) {      // Try again
+            print_error('cannotcreateorfindstructs', 'error');
+        }
+    }
+    // hampshire custom
 
     // CAUTION, hacky fundamental variable defintion to follow!
     // Note that because of the way course fromats are constructed though

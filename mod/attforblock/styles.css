@@ -1,0 +1,121 @@
+.path-mod-attforblock .attbtn {
+    border:1px solid #AAAAAA;
+    margin-left: 2px;
+    margin-right: 2px;
+    padding: 5px;
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -opera-border-radius: 5px;
+    -khtml-border-radius: 5px;
+}
+
+.path-mod-attforblock .attcurbtn {
+    margin-left: 2px;
+    margin-right: 2px;
+    padding: 5px;
+}
+
+.path-mod-attforblock .attfiltercontrols {
+    margin-bottom: 10px;
+    margin-right:auto;
+    margin-left:auto;
+}
+
+.path-mod-attforblock .attfiltercontrols #currentdate{
+    display: inline;
+}
+
+.path-mod-attforblock .attwidth {
+    width:90%;
+    margin: auto;
+}
+
+.path-mod-attforblock .userwithoutenrol,
+.path-mod-attforblock .userwithoutenrol a{
+    color: gray;
+}
+
+.path-mod-attforblock .userwithoutdata,
+.path-mod-attforblock .userwithoutdata a{
+    color: red;
+}
+
+.path-mod-attforblock .takelist td {
+    vertical-align: middle;
+}
+
+.path-mod-attforblock .takelist .userpicture {
+    margin:0 3px;
+    vertical-align:middle;
+}
+
+.path-mod-attforblock .takegrid input {
+    margin: 0px 3px 0px 6px;
+}
+
+.path-mod-attforblock .takegrid .fullname {
+    font-size: 0.8em;
+}
+
+.path-mod-attforblock table.controls {
+    width: 100%;
+    text-align: center;
+}
+
+.path-mod-attforblock table.controls tr {
+    vertical-align: top;
+}
+
+.path-mod-attforblock table.controls td.right,
+.path-mod-attforblock table.controls td.left {
+    padding-bottom: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 4px;
+}
+
+.path-mod-attforblock table.controls .right {
+    text-align: right;
+}
+/* for IE7*/
+.path-mod-attforblock .filtercontrols td {
+    padding:6px;
+}
+
+.path-mod-attforblock .takecontrols {
+    width: 800px;
+    margin: 0px auto 20px auto;
+}
+.path-mod-attforblock .takecontrols table{
+    margin: 0px auto;
+}
+.path-mod-attforblock .takecontrols .c0 {
+    width: 500px;
+    text-align: left;
+}
+.path-mod-attforblock .takecontrols .c1 {
+    text-align: right;
+}
+
+.path-mod-attforblock .inline,
+.path-mod-attforblock .inline form,
+.path-mod-attforblock .inline div {
+    display: inline;
+}
+
+.path-mod-attforblock table.userinfobox {
+    border: 1px solid #EEEEEE;
+    padding: 0px;
+}
+.path-mod-attforblock table.userinfobox td.left {
+    background-color: #EEEEEE;
+    padding: 30px 10px;
+}
+.path-mod-attforblock table.attlist td.c0 {
+    text-align: right;
+}
+
+#page-mod-attforblock-preferences .generalbox {
+    text-align: center;
+}
