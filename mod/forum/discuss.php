@@ -104,6 +104,14 @@
         redirect($return.'&moved=-1&sesskey='.sesskey());
     }
 
+    // #marginalia begin
+    $moodlemia = moodle_marginalia::get_instance( );
+    $miaprofile = $moodlemia->get_profile( $PAGE->url->out(false) );
+    if ($miaprofile) {
+        $miaprofile->emit_requires( $moodlemia );
+    }
+    // #marginalia end
+
     add_to_log($course->id, 'forum', 'view discussion', "discuss.php?d=$discussion->id", $discussion->id, $cm->id);
 
     unset($SESSION->fromdiscussion);
@@ -240,6 +248,16 @@
         }
         echo "</div>";
     }
+    
+    // #marginalia begin
+    // *not* putting JS last, even though that might speed up page load:
+    // more important to minimize patch footprint
+    if ($miaprofile) {
+        $miaprofile->emit_body( $moodlemia );
+        $miaprofile->emit_margin_controls( $moodlemia );
+    }
+    // #marginalia end
+    
     echo '<div class="clearfloat">&nbsp;</div>';
     echo "</div>";
 

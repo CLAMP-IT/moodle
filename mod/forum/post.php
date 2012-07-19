@@ -854,6 +854,14 @@ if ($edit) {
 $PAGE->set_title("$course->shortname: $strdiscussionname ".format_string($toppost->subject));
 $PAGE->set_heading($course->fullname);
 
+// #marginalia begin
+$moodlemia = moodle_marginalia::get_instance( );
+$miaprofile = $moodlemia->get_profile( $PAGE->url->out( false ) );
+if ($miaprofile) {
+    $miaprofile->emit_requires( $moodlemia );
+}
+// #marginalia end
+
 echo $OUTPUT->header();
 
 // checkup
@@ -880,6 +888,15 @@ if (!empty($parent)) {
     if (! $discussion = $DB->get_record('forum_discussions', array('id' => $parent->discussion))) {
         print_error('notpartofdiscussion', 'forum');
     }
+
+    // #marginalia begin
+    $moodlemia = moodle_marginalia::get_instance( );
+    $miaprofile = $moodlemia->get_profile( $PAGE->url->out( false ) );
+    if ($miaprofile) {
+        $miaprofile->emit_body( );
+        $miaprofile->emit_margin_controls( );
+    }
+    // #marginalia end
 
     forum_print_post($parent, $discussion, $forum, $cm, $course, false, false, false);
     if (empty($post->edit)) {

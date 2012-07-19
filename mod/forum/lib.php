@@ -29,6 +29,13 @@ require_once($CFG->libdir.'/eventslib.php');
 require_once($CFG->dirroot.'/user/selector/lib.php');
 require_once($CFG->dirroot.'/mod/forum/post_form.php');
 
+// #marginalia begin
+// including this here ensures it is also included for discuss.php
+// and post.php without having to patch them also
+require_once( $CFG->dirroot.'/blocks/marginalia/config.php' );
+require_once( ANNOTATION_DIR.'/lib.php' );
+// #marginalia end
+
 /// CONSTANTS ///////////////////////////////////////////////////////////
 
 define('FORUM_MODE_FLATOLDEST', 1);
@@ -3478,6 +3485,17 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
         }
         $postcontent .= html_writer::tag('div', $attachedimages, array('class'=>'attachedimages'));
     }
+
+    // #marginalia begin
+    // Write out the margin.  It goes before the content, then floats right.
+    global $PAGE;
+    $miamoodle = moodle_marginalia::get_instance( );
+    $miaprofile = $miamoodle->get_profile( $PAGE->url->out( false ) );
+    if ($miaprofile) {
+        $output .= $miaprofile->output_margin( );
+    }
+    // #marginalia end
+
     // Output the post content
     $output .= html_writer::tag('div', $postcontent, array('class'=>'posting '.$postclass));
     $output .= html_writer::end_tag('div'); // Content
@@ -3502,6 +3520,13 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
             $commandhtml[] = $command;
         }
     }
+    // #marginalia begin
+    // Ack.  Moodle assumes that commands should be links.  This doesn't work
+    // for the quote button, because it has to call some JS to get the quote.
+    if ($miaprofile) {
+        $commandhtml[] = $miaprofile->output_quote_button( );
+    }
+    // #marginalia end
     $output .= html_writer::tag('div', implode(' | ', $commandhtml), array('class'=>'commands'));
 
     // Output link to post if required
