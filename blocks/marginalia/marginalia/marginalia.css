@@ -1,0 +1,304 @@
+/*
+ * Highlights
+ *
+ * Use darker shades of yellow for overlapping highlights
+ */
+ 
+em.mia_annotation {
+	background: #fdf377;
+	font-style: inherit;
+}
+
+em.mia_annotation em.mia_annotation {
+	background: #f4e373;
+}
+
+em.mia_annotation em.mia_annotation em.mia_annotation {
+	background: #ecd470;
+}
+
+em.mia_annotation em.mia_annotation em.mia_annotation em.mia_annotation {
+	background: #e0ce6c;
+}
+
+em.mia_annotation em.mia_annotation em.mia_annotation em.mia_annotation em.mia_annotation {
+	background: #d8c666;
+}
+
+
+/*
+ * Edit actions
+ *
+ * Strikethrough etc.
+ */
+
+em.mia_annotation.action-edit {
+	background: none;
+}
+
+em.mia_annotation del {
+	color: darkred;
+	text-decoration: line-through;
+}
+
+em.mia_annotation ins {
+	color: darkblue;
+	text-decoration: none;
+}
+
+em.mia_annotation a,
+a em.mia_annotation {
+	text-decoration: underline;
+}
+
+
+/*
+ * Inserted links
+ */
+
+em.mia_annotation sup a {
+	text-decoration: none;
+	background-color: inherit;
+	cursor: pointer;
+}
+
+
+/*
+ * Annotation margin notes
+ */
+
+.mia_margin ol {
+	list-style-type: none;
+	margin: 0;
+	padding: 0 .5ex ;
+	height: 100%;
+}
+
+.mia_margin li {
+	position: relative;
+	font-family: sans-serif;
+	font-size: 80%;	
+	margin: 0 ;
+	margin-bottom: .5ex;
+	padding: 0;
+	min-height: 1.2em;
+	line-height: 1.2em;
+	cursor: pointer;
+}
+
+.mia_margin li p.empty {
+	font-size: 150%;
+	font-family: serif;
+}
+
+.mia_margin li.mia_dummyfirst {
+	height: 1px;
+	min-height: 1px;
+	margin: 0 0 -1px 0;
+	padding: 0;
+}
+
+/* notes by another user are in a lighter grey */
+.mia_margin li.mia_other-user {
+	color: #444;
+	cursor: inherit;
+}
+
+.mia_margin .mia_username {
+	/*font-variant: small-caps;*/
+	/*font-size: 90%;*/
+}
+
+.mia_recent .mia_username {
+	xfont-weight: bold;
+	xcolor: #444;
+}
+
+.mia_recent .mia_username:before {
+	content: '*';
+	font-size: 120%;
+	color: #d00;
+}
+
+.mia_margin li.mia_quote-error p:before {
+	content: '!';
+	padding: 0 .75ex;
+	margin-right: .2ex;
+	background: #d00;
+	color: white;
+	font-weight: bold;
+}
+
+.mia_margin li.mia_collapsed {
+	overflow: hidden;
+}
+
+.mia_margin li.mia_collapsed p {
+	white-space: nowrap;
+}
+
+.mia_margin li.mia_dummyfirst {
+	height: 1px;	/* force minimal display so later note margins will be correctly calculated */
+	cursor: default;
+	border: none;
+	background: none;
+	margin: 0;
+	padding: 0;
+}
+
+.mia_margin li .controls {
+	float: right;
+	vertical-align: top;
+	/*display: none;*/
+}
+
+.mia_margin li .select-action {
+	margin: .5ex;
+	padding: 0 0 0 .5ex;
+	list-style-type: none;
+	font-size: inherit;
+	border-left: #bbb .5ex solid;
+}
+
+.mia_margin li .select-action li {
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+
+.mia_margin li .select-action button {
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	width: 100%;
+	text-align: left;
+	font-size: inherit;
+}
+
+
+.mia_margin li .select-action button:hover {
+	background-color: #bbb;
+}
+	
+.mia_margin li .controls button,
+.mia_margin li button.expand-edit {
+	line-height: 1em;
+	border: none;
+	font-size: inherit;
+	padding: 0;
+	margin: 0;
+	width: 1.5em;
+	height: 1.2em;
+	vertical-align: top;
+	cursor: pointer;
+	z-index: 1000;
+}
+
+/*
+.mia_margin li .controls button:hover,
+.mia_margin li button.mia_expand-edit {
+	font-weight: bold;
+}
+*/
+
+.mia_margin li textarea {
+	font-size: inherit;
+	font-family: sans-serif;
+	border: none;
+	background: white;
+	margin: 0;
+	width: 95%;
+}
+
+.mia_margin li button.mia_annotation-access {
+	heigh: 1.2em;
+	width: 1em;
+}
+
+/*
+.mia_margin li.mia_hover,
+.hentry .entry-content em.mia_annotation.mia_hover,
+.hentry .entry-content em.mia_annotation.mia_hover ins,
+.hentry .entry-content em.mia_annotation.mia_hover del {
+	color: red;
+}
+*/
+
+.mia_margin li {
+	padding-left: 2px;
+}
+
+.mia_margin li.mia_hover {
+	color: #d00;
+}
+em.mia_annotation.mia_hover {
+	color: #d00;
+	outline: #d00 1px solid;
+}
+.mia_margin li.mia_hover:before {
+	background-color: #d00;
+	height: 100%;
+	position: absolute;
+	right: 100%;
+	width: .2px;
+	padding-right: 2px;
+	top: 0;
+	content: ' ';
+	display: block;
+}
+
+
+.mia_margin li button.mia_expand-edit {
+	position: absolute;
+	top: 0;
+	right: 100%;
+}
+
+.mia_margin .mia_editing-link label {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 1em;
+}
+
+.mia_margin .mia_editing-link input {
+	margin-left: 1.5em;
+	margin-right: 1.5em;
+	max-width: 80%;
+}
+
+.mia_margin .mia_editing-link button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 1em;
+}
+
+p.mia_charsremaining {
+	margin: 0;
+	text-align: right;
+	color: #999;
+}
+
+/** Default service error display */
+.mia_errorbox {
+	position: fixed;
+	width: 50%;
+	top: 30%;
+	left: 25%;
+	background: white;
+	border:  3px #ddd outset;
+	font-size: large;
+}
+
+.mia_errorbox h3 {
+	margin: 0;
+	padding: .5ex;
+	background: yellow;
+	font-size: x-large;
+	text-align: center;
+}
+
+.mia_errorbox p {
+	margin: 1ex 1em 1em 1em;
+}
