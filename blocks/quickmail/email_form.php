@@ -151,8 +151,10 @@ class email_form extends moodleform {
 
         $center_buttons = new html_table_cell();
         $center_buttons->text = (
-            $embed($OUTPUT->larrow() . ' ' . quickmail::_s('add_button'), 'add_button') .
-            $embed(quickmail::_s('remove_button') . ' ' . $OUTPUT->rarrow(), 'remove_button') .
+            //$embed($OUTPUT->larrow() . ' ' . quickmail::_s('add_button'), 'add_button') .
+            $embed('◀' . ' ' . quickmail::_s('add_button'), 'add_button') .
+            //$embed(quickmail::_s('remove_button') . ' ' . $OUTPUT->rarrow(), 'remove_button') .
+            $embed(quickmail::_s('remove_button') . ' ' . '▶', 'remove_button') .
             $embed_quick('add_all') .
             $embed_quick('remove_all')
         );
