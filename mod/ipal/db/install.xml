@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/ipal/db" VERSION="20120412" COMMENT="XMLDB file for Moodle mod/ipal"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="ipal" COMMENT="Ipal main table" NEXT="ipal_active_questions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="course"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="name"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="course" NEXT="intro"/>
+        <FIELD NAME="intro" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" PREVIOUS="name" NEXT="introformat"/>
+        <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="intro" NEXT="timeopen"/>
+        <FIELD NAME="timeopen" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="introformat" NEXT="timeclose"/>
+        <FIELD NAME="timeclose" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="timeopen" NEXT="preferredbehaviour"/>
+        <FIELD NAME="preferredbehaviour" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false" PREVIOUS="timeclose" NEXT="attempts"/>
+        <FIELD NAME="attempts" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="preferredbehaviour" NEXT="attemptonlast"/>
+        <FIELD NAME="attemptonlast" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="attempts" NEXT="grademethod"/>
+        <FIELD NAME="grademethod" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="1" SEQUENCE="false" PREVIOUS="attemptonlast" NEXT="decimalpoints"/>
+        <FIELD NAME="decimalpoints" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="2" SEQUENCE="false" PREVIOUS="grademethod" NEXT="questiondecimalpoints"/>
+        <FIELD NAME="questiondecimalpoints" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="-2" SEQUENCE="false" PREVIOUS="decimalpoints" NEXT="reviewattempt"/>
+        <FIELD NAME="reviewattempt" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="ipal1" PREVIOUS="questiondecimalpoints" NEXT="reviewcorrectness"/>
+        <FIELD NAME="reviewcorrectness" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="ipal2" PREVIOUS="reviewattempt" NEXT="reviewmarks"/>
+        <FIELD NAME="reviewmarks" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="ipal3" PREVIOUS="reviewcorrectness" NEXT="reviewspecificfeedback"/>
+        <FIELD NAME="reviewspecificfeedback" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="ipal4" PREVIOUS="reviewmarks" NEXT="reviewgeneralfeedback"/>
+        <FIELD NAME="reviewgeneralfeedback" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="ipal5" PREVIOUS="reviewspecificfeedback" NEXT="reviewrightanswer"/>
+        <FIELD NAME="reviewrightanswer" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="ipal6" PREVIOUS="reviewgeneralfeedback" NEXT="reviewoverallfeedback"/>
+        <FIELD NAME="reviewoverallfeedback" TYPE="int" LENGTH="6" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="ipal7" PREVIOUS="reviewrightanswer" NEXT="questionsperpage"/>
+        <FIELD NAME="questionsperpage" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="reviewoverallfeedback" NEXT="shufflequestions"/>
+        <FIELD NAME="shufflequestions" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="questionsperpage" NEXT="shuffleanswers"/>
+        <FIELD NAME="shuffleanswers" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="shufflequestions" NEXT="questions"/>
+        <FIELD NAME="questions" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" PREVIOUS="shuffleanswers" NEXT="sumgrades"/>
+        <FIELD NAME="sumgrades" TYPE="number" LENGTH="10" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" DECIMALS="5" PREVIOUS="questions" NEXT="grade"/>
+        <FIELD NAME="grade" TYPE="number" LENGTH="10" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" DECIMALS="5" PREVIOUS="sumgrades" NEXT="timecreated"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="grade" NEXT="timemodified"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="timecreated" NEXT="timelimit"/>
+        <FIELD NAME="timelimit" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="timemodified" NEXT="password"/>
+        <FIELD NAME="password" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="timelimit" NEXT="subnet"/>
+        <FIELD NAME="subnet" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="password" NEXT="popup"/>
+        <FIELD NAME="popup" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="subnet" NEXT="delay1"/>
+        <FIELD NAME="delay1" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="popup" NEXT="delay2"/>
+        <FIELD NAME="delay2" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="delay1" NEXT="showuserpicture"/>
+        <FIELD NAME="showuserpicture" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" COMMENT="Option to show the user's picture during the attempt and on the review page." PREVIOUS="delay2" NEXT="showblocks"/>
+        <FIELD NAME="showblocks" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" COMMENT="Whether blocks should be shown on the attempt.php and review.php pages." PREVIOUS="showuserpicture"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="ipal_active_questions" COMMENT="Active Question Index" PREVIOUS="ipal" NEXT="ipal_answered">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="course"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="ipal_id"/>
+        <FIELD NAME="ipal_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="course" NEXT="quiz_id"/>
+        <FIELD NAME="quiz_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="ipal_id" NEXT="question_id"/>
+        <FIELD NAME="question_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="quiz_id" NEXT="timemodified"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="question_id"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="ipal_answered" COMMENT="Current live responses" PREVIOUS="ipal_active_questions" NEXT="ipal_answered_archive">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="user_id"/>
+        <FIELD NAME="user_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="question_id"/>
+        <FIELD NAME="question_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="user_id" NEXT="quiz_id"/>
+        <FIELD NAME="quiz_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="question_id" NEXT="answer_id"/>
+        <FIELD NAME="answer_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="quiz_id" NEXT="class_id"/>
+        <FIELD NAME="class_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="answer_id" NEXT="ipal_id"/>
+        <FIELD NAME="ipal_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="class_id" NEXT="ipal_code"/>
+        <FIELD NAME="ipal_code" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="ipal_id" NEXT="a_text"/>
+        <FIELD NAME="a_text" TYPE="text" LENGTH="big" NOTNULL="false" SEQUENCE="false" PREVIOUS="ipal_code" NEXT="time_created"/>
+        <FIELD NAME="time_created" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="a_text"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="ipal_answered_archive" COMMENT="archive of all responses" PREVIOUS="ipal_answered">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="user_id"/>
+        <FIELD NAME="user_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="question_id"/>
+        <FIELD NAME="question_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="user_id" NEXT="quiz_id"/>
+        <FIELD NAME="quiz_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="question_id" NEXT="answer_id"/>
+        <FIELD NAME="answer_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="quiz_id" NEXT="class_id"/>
+        <FIELD NAME="class_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="answer_id" NEXT="ipal_id"/>
+        <FIELD NAME="ipal_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="class_id" NEXT="ipal_code"/>
+        <FIELD NAME="ipal_code" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="ipal_id" NEXT="a_text"/>
+        <FIELD NAME="a_text" TYPE="text" LENGTH="big" NOTNULL="false" SEQUENCE="false" PREVIOUS="ipal_code" NEXT="shortname"/>
+        <FIELD NAME="shortname" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" PREVIOUS="a_text" NEXT="instructor"/>
+        <FIELD NAME="instructor" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" PREVIOUS="shortname" NEXT="time_created"/>
+        <FIELD NAME="time_created" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="instructor" NEXT="sent"/>
+        <FIELD NAME="sent" TYPE="int" LENGTH="1" NOTNULL="false" UNSIGNED="false" DEFAULT="1" SEQUENCE="false" PREVIOUS="time_created"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>
