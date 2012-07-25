@@ -53,8 +53,21 @@ h1.headermain {
 .path-course-view .section .modtype_label p:first-child {margin-top: 2px;}
 .path-course-view .section .modtype_label p:last-child {margin-bottom: 0;}
 
+#page-mod-forum-view .forumheaderlist .discussion .starter {
+	text-align: left;
+}
 
+.path-course-view .course-content ul.weeks li.section .left {
+	width: 30px;
+}
 
+.pagelayout-course .section .contentafterlink .no-overflow p {
+	margin-bottom: 0;
+}
+
+.pagelayout-course .section .contentafterlink .no-overflow div {
+	padding: 0 0 0 2em;
+}
 
 /** -----BEGIN----- MER additions 12/11 ---------- **/
 
