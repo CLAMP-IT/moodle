@@ -160,7 +160,7 @@ function ipal_print_recent_activity($course, $viewfullnames, $timestart) {
 
 function ipal_cron() {
 mtrace( "Running ipal Cron..." );
-ipal_transfer_archive();
+//ipal_transfer_archive();
 mtrace( "Ipal Done...." );
     return true;
 }
