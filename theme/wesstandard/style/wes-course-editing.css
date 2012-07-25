@@ -95,7 +95,10 @@ body.editing .section .contentafterlink {
 	border-left: 1px solid #999;
 }
 
-body.editing .section .contentafterlink p {
+body.editing .section .contentafterlink .no-overflow p {
 	margin-bottom: 0;
-	padding: 0.5em 0 0;
+}
+
+body.editing .section .contentafterlink .no-overflow div {
+	padding: 0.5em 0 0 2em;
 }
