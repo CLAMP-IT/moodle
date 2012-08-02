@@ -163,9 +163,9 @@ if(!empty($what) && !empty($time)) {
                 $timeend = $timestart + (calendar_days_in_month($nextmonth, $nextyear) * DAYSECS);
             break;
             case 'recentupcoming':
-                //Events in the last 5 or next 60 days
+                //Events in the last 5 or next 120 days
                 $timestart = time() - 432000;
-                $timeend = time() + 5184000;
+                $timeend = time() + 10368000;
             break;
             case 'custom':
                 // Events based on custom date range.
