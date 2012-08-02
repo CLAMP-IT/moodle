@@ -199,6 +199,7 @@ $string['pref_startwday'] = 'First day of week';
 $string['pref_startwday_help'] = 'Calendar weeks will be shown as starting on the day that you select here.';
 $string['pref_timeformat'] = 'Time display format';
 $string['pref_timeformat_help'] = 'You can choose to see times in either 12 or 24 hour format. If you choose "default", then the format will be automatically chosen according to the language you use in the site.';
+<<<<<<< HEAD
 $string['privacy:metadata:calendar:event'] = 'The Calendar component can store user calendar event details within the core subsystem.';
 $string['privacy:metadata:calendar:event:name'] = 'The name of the calendar event.';
 $string['privacy:metadata:calendar:event:description'] = 'The description of the calendar event.';
@@ -211,6 +212,10 @@ $string['privacy:metadata:calendar:event_subscriptions:url'] = 'The url of the c
 $string['privacy:metadata:calendar:event_subscriptions:eventtype'] = 'The event type of the calendar subscription.';
 $string['privacy:metadata:calendar:preferences:calendar_savedflt'] = 'The configured calendar event type display user preference.';
 $string['recentupcoming'] = 'Recent and next 60 days';
+=======
+$string['quickdownloadcalendar'] = 'Quick download / subscribe to calendar';
+$string['recentupcoming'] = 'Recent and next 120 days';
+>>>>>>> increasing calendar export to 120 days
 $string['repeatedevents'] = 'Repeated events';
 $string['repeateditall'] = 'Also apply changes to the other {$a} events in this repeat series';
 $string['repeateditthis'] = 'Apply changes to this event only';
