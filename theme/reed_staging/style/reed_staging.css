@@ -1,0 +1,200 @@
+.path-grade-report-grader table {
+    background-color: [[setting:themecolor]];
+}
+
+.userprofile {
+    margin-left: 35px;
+}
+
+.editing .course-content .main {
+    background : inherit;
+}
+
+.block {
+    margin : 20px;
+    margin-top: 15px;
+    margin-bottom: 0px;
+    padding : 0px;
+    border: 0px none;
+    background : #fff;
+}
+
+.block .header {
+    margin : 0 0 0 !important ;
+    padding-top : 0 !important ;
+    border-bottom : 0px none;
+    background: [[setting:themecolor]];
+}
+
+.block .header .title h2 {
+    padding : 0px 0px 5px 10px;
+    font-size : 1.2em;
+    text-transform : uppercase;
+    margin : 0 !important ;
+    font-weight : 300;
+    color : #fff;
+    padding-top : 8px;
+}
+
+.block_login div.content label {
+    color: #fff;
+    text-transform: uppercase;
+    font-size : 1em;
+    display : inline-block;
+    min-width : 50px;
+    margin-right : 3px;
+    padding-bottom: 10px;
+}
+
+#toplinks .block label,
+#toplinks .block .block_action {
+    display: none;
+ }
+
+#searchbox {
+    width: 0px;
+}
+
+#searchbox .block_myprofile .header,
+#searchbox .block_myprofile .footer {
+    display: none;
+}
+
+#searchbox .block_myprofile .block {
+    background: transparent;
+}
+
+#searchbox .block_myprofile .title h2,
+#searchbox .block_myprofile label,
+#searchbox .block_myprofile .block_action {
+    display: none;
+}
+
+#region-main-pad {
+    margin:15px 0px 0 520px;
+    overflow:hidden;
+}
+
+#custommenu ul li {
+    border: none;
+}
+
+ul.dropdown li a,
+ul.dropdown span.customitem a {
+    padding:5px 20px;
+}
+
+ul.dropdown span.customitem a:hover {
+    border: 0;
+    position:relative;
+    z-index:599;
+    cursor:default;
+    text-decoration:underline;
+
+}
+
+a:link,
+a:visited {
+    color: [[setting:contentlinkcolor]];
+    text-decoration: underline;
+}
+
+#page-header {
+    height: 130px;
+}
+
+#headerstrip {
+    background: #333333;
+    height: 53px;
+}
+
+#ebutton {
+    width : 250px;
+    float : right;
+    text-align : right;
+    margin: 10px;
+    color: #fff;
+}
+
+#dndupload-status,
+#editingmode {
+    text-align: center;
+    background: #006699;
+    color: #fff;
+    padding: 5px;
+    font-size: .9em;
+    border-bottom: 3px solid #006699;
+}
+
+/* Aligns the text "Edit Mode" to the center of the edit button */
+#editmode {
+    padding:7px 70px 0 0;
+}
+
+.breadcrumb {
+    text-transform : uppercase;
+    font-weight : bold;
+    font-size : 1em;
+    margin-left : 0px;
+    margin-top: -8px;
+    color: #fff;
+}
+
+.breadcrumb a {
+    color : #fff !important ;
+}
+
+.breadcrumb ul {
+    color : #fff;
+    line-height : 35px;
+}
+
+.breadcrumb li a, .breadcrumb li, .breadcrumb li a:visited {
+    font-weight : 200;
+    text-decoration : none;
+    color : #fff;
+}
+
+.breadcrumb li a:hover {
+    text-decoration:underline;
+    border: inherit;
+}
+
+.breadcrumb li img {
+    vertical-align : middle;
+}
+
+.arrow, .arrow_button input {
+    color : #aaa;
+}
+
+div#jcontrols_button span.arrow.sep {
+    font-size : 1px;
+    color : #dadada;
+    display : inline-block;
+    width : 16px;
+}
+
+div.jcontrolsleft {
+    margin-left : 15px;
+    font-weight : 600;
+    float : left;
+    width : auto;
+    overflow : hidden;
+    height : 100%;
+}
+
+div.jcontrolsright {
+    float : right;
+    min-width : 50%;
+    height : 35px;
+    margin-right : 15px;
+}
+
+.course-content .main {
+    padding : 0px !important;
+    margin : 0px !important;
+    padding-top: 1px !important;
+    border: 0px none !important;
+    background: #eee;
+}
