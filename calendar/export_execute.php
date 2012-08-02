@@ -123,9 +123,9 @@ if(!empty($what) && !empty($time)) {
                 $timeend   = make_timestamp($nextyear, $nextmonth, calendar_days_in_month($nextmonth, $nextyear), 23, 59, 59);
             break;
             case 'recentupcoming':
-                //Events in the last 5 or next 60 days
+                //Events in the last 5 or next 120 days
                 $timestart = time() - 432000;
-                $timeend = time() + 5184000;
+                $timeend = time() + 10368000;
             break;
         }
     }
