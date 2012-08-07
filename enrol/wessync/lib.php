@@ -300,6 +300,9 @@ class enrol_wessync_plugin extends enrol_plugin {
       $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"2",backup::TARGET_NEW_COURSE);
       $restore->execute_precheck();
       $outcome = $restore->execute_plan();
+      if (!$outcome) {
+        return false;
+      }
       #course restored, now lets fetch the object
       $new_course = $DB->get_record("course",array("id" => $new_course_id));
       return $new_course;
