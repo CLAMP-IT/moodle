@@ -31,7 +31,7 @@ if (isset($_SERVER['HTTP_X_FORWARDED_USER'])) {
 if(COSIGN_DEBUG) $debug_1 = print_r($_REQUEST, 1) . "\n\n\n\n\n" . print_r($_SERVER, 1) . "\n\n\n\n\n" . print_r($_ENV, 1);
 
 // check for obviously invalid crap; numbers and whitespace in a username
-if(!preg_match('/[0-9\s]+/', $ruser)) {
+if(preg_match('/\w+/', $ruser)) {
         // ok, user is CoSign'd
         if($user = $DB-> get_record('user', array('username' => $ruser, 'mnethostid' => $CFG->mnet_localhost_id))) {
                 if(COSIGN_DEBUG) {
