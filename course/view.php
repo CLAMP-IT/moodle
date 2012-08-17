@@ -121,7 +121,7 @@
     $course->format = course_get_format($course)->get_format();
 
     $PAGE->set_pagelayout('course');
-	$PAGE->blocks->add_region('course-view-top');
+    $PAGE->blocks->add_region('course-view-top');
     $PAGE->set_pagetype('course-view-' . $course->format);
     $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 
@@ -279,7 +279,7 @@
     }
 
 
-	echo $OUTPUT->blocks_for_region('course-view-top');
+    echo $OUTPUT->blocks_for_region('course-view-top');
 
     if (!$sections = $modinfo->get_section_info_all()) {   // No sections found
         $section = new stdClass;
