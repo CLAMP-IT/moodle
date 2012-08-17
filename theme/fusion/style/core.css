@@ -84,7 +84,7 @@ h2{
 
 h3{
   font-family: "Lucida Grande", "Lucida Sans Unicode", Arial, Helvetica, Sans, FreeSans, Jamrul, Garuda, Kalimati;
-  font-size: 150%;
+  font-size: 110%;
   font-weight: bold;
   margin: .2em 0 .2em;
   letter-spacing:-0.06em;
@@ -114,11 +114,11 @@ h6{
 }
 
 #page-site-index #page-wrap1 {
-    background: transparent url([[pix:theme|header-bg]]) repeat-x left top;
+    background: transparent url([[pix:theme|header-bg-sm]]) repeat-x left top;
 }
 
 #page-site-index #page-wrap2 {
-    background: transparent url([[pix:theme|header-center]]) no-repeat center top;
+    background: transparent url([[pix:theme|header-center-sm]]) no-repeat center top;
 }
 
 
@@ -151,14 +151,14 @@ h6{
     float: none;
   font-family: "Trajan Pro", "Lucida Sans Unicode", Arial, Helvetica, Sans, FreeSans, Jamrul, Garuda, Kalimati;
     float: none;
-    font-size: 3em;
+    font-size: 1.8em;
     line-height: 1;
     text-shadow: -0.05em -0.05em 0 #000;
     color: #fff
 }
 
 #region-header.inside .headermain {
-    font-size: 2.5em;
+    font-size: 1.8em;
 }
 
 .tagline {
@@ -224,7 +224,7 @@ margin-bottom: 1em;
 }
 
 .block .header {
-    border-bottom: 1px solid #eee;
+    border-bottom: 2px solid #eee;
     padding: 0;
 }
 
@@ -269,7 +269,7 @@ h2.headingblock {
 }
 
 .course-content .section.main {
-    border-bottom: 1px solid #eee;
+    border-bottom: 2px solid #eee;
 }
 
 .course-content .section.main .content {
