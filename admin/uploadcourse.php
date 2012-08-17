@@ -820,6 +820,7 @@
 
 
 
+	// added bulk course upload
         fix_course_sortorder(); // Re-sort courses
 
         notify('Re-Sorted courses','notifysuccess');
