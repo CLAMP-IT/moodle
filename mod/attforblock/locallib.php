@@ -1,4 +1,18 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -217,7 +231,7 @@ class att_page_with_filter_controls {
     }
 
     private function calc_sessgroupslist_sesstype() {
-        global $USER, $SESSION;
+        global $SESSION;
         
         if (!array_key_exists('attsessiontype', $SESSION)) {
             $SESSION->attsessiontype = array($this->cm->course => self::SESSTYPE_ALL);
@@ -263,7 +277,7 @@ class att_page_with_filter_controls {
     }
     
     private function calc_sessgroupslist() {
-        global $PAGE;
+        global $USER, $PAGE;
         
         $this->sessgroupslist = array();
         $groupmode = groups_get_activity_groupmode($this->cm);
@@ -519,7 +533,7 @@ class attforblock {
         $this->cm           = $cm;
         $this->course       = $course;
         if (is_null($context)) {
-            $this->context = get_context_instance(CONTEXT_MODULE, $this->cm->id);
+            $this->context = context_module::instance_by_id($this->cm->id);
         } else {
             $this->context = $context;
         }
@@ -789,7 +803,7 @@ class attforblock {
             }
         }
 
-        $rec = new object();
+        $rec = new stdClass();
         $rec->id = $this->pageparams->sessionid;
         $rec->lasttaken = $now;
         $rec->lasttakenby = $USER->id;
@@ -872,8 +886,6 @@ class attforblock {
     }
 
     public function get_statuses($onlyvisible = true) {
-        global $DB;
-
         if (!isset($this->statuses)) {
             $this->statuses = att_get_statuses($this->id, $onlyvisible);
         }
@@ -923,8 +935,6 @@ class attforblock {
     }
 
     public function get_user_stat($userid) {
-        global $DB;
-
         $ret = array();
         $ret['completed'] = $this->get_user_taken_sessions_count($userid);
         $ret['statuses'] = $this->get_user_statuses_stat($userid);
@@ -933,8 +943,6 @@ class attforblock {
     }
 
     public function get_user_taken_sessions_count($userid) {
-        global $DB;
-
         if (!array_key_exists($userid, $this->usertakensesscount))
             $this->usertakensesscount[$userid] = att_get_user_taken_sessions_count($this->id, $this->course->startdate, $userid);
 
@@ -1291,5 +1299,3 @@ function att_log_convert_url(moodle_url $fullurl) {
 
     return substr($fullurl->out(), strlen($baseurl));
 }
-
-?>

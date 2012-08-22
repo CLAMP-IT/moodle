@@ -1,4 +1,18 @@
-<?php  // $Id: duration_form.php,v 1.3.2.2 2009/02/23 19:22:42 dlnsk Exp $
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 require_once($CFG->libdir.'/formslib.php');
 
@@ -23,8 +37,8 @@ class mod_attforblock_duration_form extends moodleform {
         for ($i=0; $i<60; $i+=5) {
             $minutes[$i] = sprintf("%02d",$i);
         }
-        $durselect[] =& MoodleQuickForm::createElement('select', 'hours', '', $hours);
-		$durselect[] =& MoodleQuickForm::createElement('select', 'minutes', '', $minutes, false, true);
+        $durselect[] =& $mform->createElement('select', 'hours', '', $hours);
+		$durselect[] =& $mform->createElement('select', 'minutes', '', $minutes, false, true);
 		$mform->addGroup($durselect, 'durtime', get_string('newduration','attforblock'), array(' '), true);
 		
         $mform->addElement('hidden', 'ids', $ids);
@@ -45,4 +59,3 @@ class mod_attforblock_duration_form extends moodleform {
     }
 
 }
-?>
