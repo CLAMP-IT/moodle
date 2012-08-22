@@ -1,4 +1,18 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Adding attendance sessions
@@ -193,7 +207,8 @@ function construct_sessions_data_for_add($formdata) {
         while ($sdate < $enddate) {
             if($sdate < $startweek + WEEKSECS) {
                 $dinfo = usergetdate($sdate);
-                if(key_exists($wdaydesc[$dinfo['wday']], $formdata->sdays)) {
+                if(array_key_exists($wdaydesc[$dinfo['wday']], $formdata->sdays)) {
+                    $sess = new stdClass();
                     $sess->sessdate =  usergetmidnight($sdate) + $starttime;
                     $sess->duration = $duration;
                     $sess->descriptionitemid = $formdata->sdescription['itemid'];
@@ -210,6 +225,7 @@ function construct_sessions_data_for_add($formdata) {
             }
         }
     } else {
+        $sess = new stdClass();
         $sess->sessdate = $formdata->sessiondate;
         $sess->duration = $duration;
         $sess->descriptionitemid = $formdata->sdescription['itemid'];
@@ -237,5 +253,3 @@ function fill_groupid($formdata, &$sessions, $sess) {
         }
     }
 }
-
-?>

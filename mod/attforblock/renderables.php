@@ -1,4 +1,18 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Attendance module renderable components are defined here
@@ -196,8 +210,6 @@ class attforblock_manage_data implements renderable {
      * @param attforblock $att instance
      */
     public function __construct(attforblock $att) {
-        global $DB;
-
         $this->perm = $att->perm;
 
         $this->sessions = $att->get_filtered_sessions();
@@ -528,5 +540,3 @@ class url_helpers {
         return $att->url_view($params);
     }
 }
-
-?>
