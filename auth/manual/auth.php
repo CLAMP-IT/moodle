@@ -88,6 +88,13 @@ class auth_plugin_manual extends auth_plugin_base {
         return true;
     }
 
+    function logoutpage_hook() {
+        global $CFG;
+        global $redirect;
+
+        $redirect = "https://weblogin.reed.edu/cgi-bin/logout";
+    }
+
     /**
      * Updates the user's password.
      *
