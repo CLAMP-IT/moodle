@@ -87,8 +87,8 @@ echo '<div class="noticebox">';
 echo resourcelib_embed_general($sitepolicy, $strpolicyagreement, $clicktoopen, $mimetype);
 echo '</div>';
 
-$formcontinue = new single_button(new moodle_url('policy.php', array('agree'=>1)), get_string('yes'));
-$formcancel = new single_button(new moodle_url($CFG->wwwroot.'/login/logout.php', array('agree'=>0)), get_string('no'));
+$formcontinue = new single_button(new moodle_url('policy.php', array('agree'=>1)), get_string('continue'));
+$formcancel = new single_button(new moodle_url($CFG->wwwroot.'/login/logout.php', array('agree'=>0)), get_string('cancel'));
 echo $OUTPUT->confirm($strpolicyagree, $formcontinue, $formcancel);
 
 echo $OUTPUT->footer();
