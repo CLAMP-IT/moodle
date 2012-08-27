@@ -94,6 +94,14 @@ function do_login(&$user) {
         global $CFG, $USER, $SESSION;
 
         $USER = complete_user_login($user);
+
+	// Check that the site policy has been agreed to if appropriate.
+	if (!$USER->policyagreed) {
+	  if (!empty($CFG->sitepolicy) and !isguestuser()) {
+            redirect($CFG->wwwroot .'/user/policy.php');
+	  }
+	}
+
         redirect(empty($SESSION->wantsurl) ? $CFG->wwwroot : $SESSION->wantsurl);
 }
 
