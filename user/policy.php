@@ -25,6 +25,7 @@
 require_once('../config.php');
 require_once($CFG->libdir.'/filelib.php');
 require_once($CFG->libdir.'/resourcelib.php');
+require_once('../reed/lib.php');
 
 $agree = optional_param('agree', 0, PARAM_BOOL);
 
@@ -83,7 +84,7 @@ if ($mimetype == 'document/unknown') {
 $clicktoopen = '<a href="'.$sitepolicy.'" onclick="this.target=\'_blank\'">'.$strpolicyagreementclick.'</a>';
 
 echo '<div class="noticebox">';
-echo resourcelib_embed_general($sitepolicy, $strpolicyagreement, $clicktoopen, $mimetype);
+echo reed_resourcelib_embed_general($sitepolicy, $strpolicyagreement, $clicktoopen, $mimetype);
 echo '</div>';
 
 $formcontinue = new single_button(new moodle_url('policy.php', array('agree' => 1)), get_string('yes'));
