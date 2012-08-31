@@ -9,8 +9,8 @@ require_once(dirname(dirname(dirname(dirname(dirname(dirname(dirname(dirname(__F
 @error_reporting(E_ALL ^ E_NOTICE); // hide notices even if Moodle is configured to show them
 
 	// General settings
-	$config['general.engine'] = get_config('editor_tinymce', 'spellengine') ? get_config('editor_tinymce', 'spellengine') : 'GoogleSpell';
-	//$config['general.engine'] = 'PSpell';
+	//$config['general.engine'] = get_config('editor_tinymce', 'spellengine') ? get_config('editor_tinymce', 'spellengine') : 'GoogleSpell';
+	$config['general.engine'] = 'PSpell';
 	//$config['general.engine'] = 'PSpellShell';
 	//$config['general.remote_rpc_url'] = 'http://some.other.site/some/url/rpc.php';
 
