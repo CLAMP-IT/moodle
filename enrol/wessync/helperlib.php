@@ -40,8 +40,7 @@ function get_peoplesoft_course_data($psdbh,$course) {
     $course['visible'] = 0;
   }
   if (!$course['short_name']) {
-    $course['short_name'] = $course['wes_host_subject'] . trim($course['wes_host
-_cat_nbr']) . "-";
+    $course['short_name'] = $course['wes_host_subject'] . trim($course['wes_host_cat_nbr']) . "-";
     if (!$course['section']) {
       #if no section specified assume only one
       $course['section'] = array('01');
