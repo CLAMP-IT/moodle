@@ -73,6 +73,10 @@ class auth_plugin_wes extends auth_plugin_base {
     $user->auth = 'cas';
     $user->mnethostid = $CFG->mnet_localhost_id;
     $user->username = trim(moodle_strtolower($username));
+    #AD lies sometimes, so hard code it to be username for now
+    $user->email = $user->username . "@wesleyan.edu";
+    $user->trackforums = 1;
+    $user->autosubscribe = 0;
     if (empty($user->lang)) {
       $user->lang = $CFG->lang;
     }
