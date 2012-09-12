@@ -45,6 +45,15 @@ h1.headermain {
 	font-size: 1em;
 }
 
+.path-course-view .section h3.sectionname {
+	font-size: 120%;
+	padding-bottom: 0.7em;
+}
+
+.path-course-view .section .summary {
+	margin-left: 2em;
+}
+
 .path-course-view .section .activity a {
 	line-height: 1.7em;
 }
