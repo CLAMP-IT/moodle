@@ -555,6 +555,16 @@ class quiz_attempt {
         }
     }
 
+    /**
+     * If the given page number is out of range (before the first page, or after
+     * the last page, chnage it to be within range).
+     * @param int $page the requested page number.
+     * @return int a safe page number to use.
+     */
+    public function force_page_number_into_range($page) {
+        return min(max($page, 0), count($this->pagelayout) - 1);
+    }
+
     // Simple getters ==========================================================
     public function get_quiz() {
         return $this->quizobj->get_quiz();
@@ -1101,7 +1111,7 @@ class quiz_attempt {
     }
 
     /**
-     * Initialise the JS etc. required all the questions on a page..
+     * Initialise the JS etc. required all the questions on a page.
      * @param mixed $page a page number, or 'all'.
      */
     public function get_html_head_contributions($page = 'all', $showall = false) {
@@ -1325,6 +1335,8 @@ class quiz_attempt {
      * flagged state was changed in the request.
      */
     public function save_question_flags() {
+        global $DB;
+
         $transaction = $DB->start_delegated_transaction();
         $this->quba->update_question_flags();
         question_engine::save_questions_usage_by_activity($this->quba);

@@ -206,6 +206,10 @@ select, input, button {
     background-color: #34637f;
     color: #fff;
 }
+.ie7 select { /* fixes compatibility view */
+    background-color: #eee;
+    color: #036;
+}
 #loginbtn, input, button, select {
     cursor: pointer;
     margin-left: 5px;
@@ -453,4 +457,16 @@ tab styles for ie6 & ie7
 }
 body#page-course-view-topics.path-course div.moodle-dialogue-base div.yui3-widget{
     z-index: 600!important;
+}
+/* Filemanager
+-------------------------*/
+.filemanager select,
+.filemanager input,
+.filemanager button,
+.filemanager textarea,
+.file-picker select,
+.file-picker input,
+.file-picker button,
+.file-picker textarea {
+    background-color: #EEE;
 }

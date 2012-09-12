@@ -165,7 +165,6 @@ function groups_create_group($data, $editform = false, $editoroptions = false) {
         $autodata->courseid = $course->id;
         $autodata->name = $data->name;
         $autodata->timecreated = time();
-        $autodata->descriptionformat = $data->descriptionformat;
         $groupingid = groups_create_grouping($autodata);
         $groupid = $data->id;
         groups_assign_grouping($groupingid, $groupid);
