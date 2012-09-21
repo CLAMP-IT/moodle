@@ -95,9 +95,10 @@ class lightboxgallery_image {
         $thumbnail = ob_get_clean();
 
         if ($this->thumbnail) {
-            $this->delete_thumbnail();
+	    $this->delete_thumbnail();
         }
-        $fs = get_file_storage();
+        
+	$fs = get_file_storage();
         $fs->create_file_from_string($fileinfo, $thumbnail);
         return;
     }
@@ -131,8 +132,8 @@ class lightboxgallery_image {
     }
 
     private function delete_file() {
-        $this->delete_thumbnail();
-        $this->stored_file->delete();
+	$this->delete_thumbnail();
+	$this->stored_file->delete();
     }
 
     public function delete_tag($tag) {
@@ -142,7 +143,10 @@ class lightboxgallery_image {
     }
 
     private function delete_thumbnail() {
-      $this->thumbnail->delete();
+        /* damon */
+	if ($this->thumbnail) {
+		$this->thumbnail->delete();
+	}
     }
 
     public function flip_image($direction) {
@@ -222,7 +226,7 @@ class lightboxgallery_image {
         $html .= '<a class="lightbox-gallery-image-thumbnail" href="'.$this->image_url.'" rel="lightbox_gallery" title="'.$caption.'" style="background-image: url(\''.$this->thumb_url.'\'); width: '.THUMBNAIL_WIDTH.'px; height: '.THUMBNAIL_HEIGHT.'px;"></a>';
         if ($this->gallery->captionpos == LIGHTBOXGALLERY_POS_BOT) {
             $html .= $captiondiv;
-        }
+        }        
         $html .= ($this->gallery->extinfo ? '<div class="lightbox-gallery-image-extinfo">'.$timemodified.'<br/>'.$filesize.'KB '.$this->width.'x'.$this->height.'px</div>' : '');
         $html .= ($editing ? $this->get_editing_options() : '');
         $html .= '</div>'.
@@ -260,6 +264,7 @@ class lightboxgallery_image {
         $image = imagecreatefromstring($this->stored_file->get_content());
         $resized = imagecreatetruecolor($width, $height);
 
+        /* removed by Damon 9/14/12, we want some squashing and stretching because it's what should happen
         $cx = $this->width / 2;
         $cy = $this->height / 2;
 
@@ -277,8 +282,11 @@ class lightboxgallery_image {
             $srcx = $offsetx;
             $srcy = floor($cy - ($srch / 2)) + $offsety;
         }
-
-        imagecopybicubic($resized, $image, 0, 0, $srcx, $srcy, $width, $height, $srcw, $srch);
+        */
+        //imagecopybicubic($resized, $image, 0, 0, $srcx, $srcy, $width, $height, $srcw, $srch);
+        //imagecopybicubic($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
+	// resampled causes problems with thumbnail deleting for some strange-ass reason
+	imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
 
         return $resized;
 
@@ -352,7 +360,10 @@ class lightboxgallery_image {
         $fs = get_file_storage();
         $fs->create_file_from_string($fileinfo, $resized);
 
-        $this->create_thumbnail();
+	/* damon */
+	if ($this->thumbnail) {
+        	$this->create_thumbnail();
+	}
 
         return $fileinfo['filename'];
     }
