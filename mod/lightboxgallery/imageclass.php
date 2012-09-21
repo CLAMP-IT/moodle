@@ -95,9 +95,10 @@ class lightboxgallery_image {
         $thumbnail = ob_get_clean();
 
         if ($this->thumbnail) {
-            $this->delete_thumbnail();
+	    $this->delete_thumbnail();
         }
-        $fs = get_file_storage();
+        
+	$fs = get_file_storage();
         $fs->create_file_from_string($fileinfo, $thumbnail);
         return;
     }
@@ -131,8 +132,8 @@ class lightboxgallery_image {
     }
 
     private function delete_file() {
-        $this->delete_thumbnail();
-        $this->stored_file->delete();
+	$this->delete_thumbnail();
+	$this->stored_file->delete();
     }
 
     public function delete_tag($tag) {
@@ -142,7 +143,10 @@ class lightboxgallery_image {
     }
 
     private function delete_thumbnail() {
-      $this->thumbnail->delete();
+        /* damon */
+	if ($this->thumbnail) {
+		$this->thumbnail->delete();
+	}
     }
 
     public function flip_image($direction) {
@@ -281,6 +285,10 @@ class lightboxgallery_image {
         */
         //imagecopybicubic($resized, $image, 0, 0, $srcx, $srcy, $width, $height, $srcw, $srch);
         imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
+        //imagecopybicubic($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
+	// resampled causes problems with thumbnail deleting for some strange-ass reason
+	imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
+	// fixed resize bug with lightbox gallery
 
         return $resized;
 
@@ -354,7 +362,10 @@ class lightboxgallery_image {
         $fs = get_file_storage();
         $fs->create_file_from_string($fileinfo, $resized);
 
-        $this->create_thumbnail();
+	/* damon */
+	if ($this->thumbnail) {
+        	$this->create_thumbnail();
+	}
 
         return $fileinfo['filename'];
     }

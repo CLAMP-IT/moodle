@@ -71,6 +71,10 @@ if ($mform->is_cancelled()) {
     } else {
     	$size = optional_param('resize', '', PARAM_INT);
     	$resizeoptions = lightboxgallery_resize_options();
+	// need to get the gallery's set default resize value
+    	$size = $gallery->resize;
+	$resizeoptions = lightboxgallery_resize_options();
+	// fixed resize bug with lightbox gallery
     	list($width, $height) = explode('x', $resizeoptions[$size]);
 
 	    lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $width, $height);

@@ -92,6 +92,13 @@ function lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $widt
 	                } else {
 		                $image = $image->resize_image($width, $height);
 		            }
+				
+		                $image->resize_image($width, $height);
+		            
+	                } else {
+		                $image->resize_image($width, $height);
+		        }
+	// fixed resize bug with lightbox gallery
                 }
                 // ---- end of Damon's shenanigans -----
                 
