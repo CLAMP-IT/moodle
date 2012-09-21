@@ -59,21 +59,4 @@ class format_class_renderer extends format_section_renderer_base {
         return get_string('classoutline');
     }
 
-    /**
-     * Is the section passed in the current section?
-     *
-     * @param stdClass $section The course_section entry from the DB
-     * @param stdClass $course The course entry from DB
-     * @return bool true if the section is current
-     */
-    protected function is_section_current($section, $course) {
-        if ($section->section < 1) {
-            return false;
-        }
-
-        $timenow = time();
-        $dates = format_class_get_section_dates($section, $course);
-
-        return (($timenow >= $dates->start) && ($timenow < $dates->end));
-    }
 }

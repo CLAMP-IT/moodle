@@ -100,26 +100,6 @@ function callback_class_ajax_support() {
     return $ajaxsupport;
 }
 
-/**
- * Return the start and end date of the passed section
- *
- * @param stdClass $section The course_section entry from the DB
- * @param stdClass $course The course entry from DB
- * @return stdClass property start for startdate, property end for enddate
- */
-function format_class_get_section_dates($section, $course) {
-    $oneweekseconds = 604800;
-    // Hack alert. We add 2 hours to avoid possible DST problems. (e.g. we go into daylight
-    // savings and the date changes.
-    $startdate = $course->startdate + 7200;
-
-    $dates = new stdClass();
-    $dates->start = $startdate + ($oneweekseconds * ($section->section - 1));
-    $dates->end = $dates->start + $oneweekseconds;
-
-    return $dates;
-}
-
 function format_class_get_meeting_times($course) {
 	global $DB;
 
