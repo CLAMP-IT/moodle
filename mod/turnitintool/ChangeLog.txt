@@ -1,0 +1,113 @@
+2012-04-27 : Fixed assignment start, due and post dates to correctly use server default timezone rather than user default timezone
+2012-04-27 : Fixed issue where invalid HTML was generated after an inbox refresh
+2012-04-27 : Added feature to allow anonymized student name data during API calls
+2012-04-26 : Added upgrade check to configurations screen
+2012-04-26 : Reversed out premature expired class fix, now handled correctly in the API
+2012-03-05 : Fixed an issue where the option "List only students that have made submissions" on Option tab did not work
+2012-03-05 : Added some workarounds for issue where grades were being revealed prematurely (http://tracker.moodle.org/browse/MDL-31487)
+2012-03-05 : Fixed XML parser error where 0% similarity was being displayed as pending
+2012-03-05 : Merged contributed code for default assignment settings (thanks to Howard Miller)
+2012-03-05 : Fixed issue where guests could see student submission form but not submit (now correctly shows permission denied error)
+2012-02-02 : Turned off Grade Reports and Bulk Download in Anonymous Marking assignments until post date
+2012-02-02 : Removed BOMs from language packs
+2012-02-02 : Fixed a pass by reference bug in the "check for submissions" function
+2012-02-02 : Added student view indicator icon to instructor's inbox screen
+2012-02-02 : Added backup up and restore from 1.9 to 2.1+ support (no user data)
+2012-02-02 : Moved temp upload file directory from system temp to moodledata temp to fix IIS permissions issues
+2012-02-02 : Fixed bug where Turnitin classes were prematurely expiring
+2012-02-02 : Re-factored unlink users feature to now remember unlinked users and allow relinking 
+2012-02-02 : Added communication and activity diagnostic logs to the admin config area
+2011-12-20 : Added fix to clean $_POST array inputs before passing the array into functions to improve security
+2011-12-02 : Fixed $post variable missing notice on the student submission inbox
+2011-12-02 : Fixed user dates to use userdate() in modform for part dates updating and in comms object for creating Turnitin assignment
+2011-10-26 : Fixed bug where gradescale grades were out by one in the GradeBook
+2011-10-26 : Changed gradescale calculation to use ceil instead of round
+2011-10-26 : Removed seriallised objects in URLs for better server interoperability (ie IIS url interpretation)
+2011-10-10 : Corrected language string key and language packs (Pre-release v2011101001)
+2011-10-10 : Added additional PGSQL fixes (Pre-release v2011101001)
+2011-08-18 : Refactored Back up and restore to allow duplication of TII classes and assignments
+2011-08-18 : Added erater / ETS support
+2011-08-18 : Added additional email notification options in the admin config screen
+2011-08-18 : Removed / updated deprecated code
+2011-08-18 : Addresses postgresql errors and compatibility issues
+2011-08-18 : Fixed bug with IE browser window resizing
+2011-08-17 : Fixed issue with GradeBook when using grade scales
+2011-07-29 : Fixed issue with GradeBook synching with assignment titles
+2011-07-29 : Added CURLOPT_CONNECTTIMEOUT to release connections if the API url is unavailable
+2011-07-29 : Fixed issue where grade scaling was effecting gradebook entry calculations
+2011-04-13 : Re-factored refresh submissions call to use less database queries
+2011-04-13 : Altered user initiated refresh submissions to be maximum of once every 2 minutes
+2011-04-13 : Added submission grade report XLS format file download
+2011-04-13 : Added support for bulk download original/pdf submissions zip file
+2011-04-13 : Moved change class owner over to multiple tutor management screen
+2011-03-01 : Changed class owner behaviour to use multiple instructor calls rather than single tutor
+2011-03-01 : Fixed issue with special characters in Submission titles
+2011-03-01 : Updated 'Edit Parts' form to use Moodle Quickform which uses Moodle's internationalised date field formats
+2011-03-01 : Fixed issue where ' was displayed as &#39; in Turnitin
+2011-03-01 : Added support for Moodle custom grade scales
+2011-03-01 : Updated Turnitin Assignment summary to use quickforms to add better date support
+2011-03-01 : Added filelink.php to fix handling of Moodle 2.0 file resource links
+2011-03-01 : Updated french translation for My Submissions (now Envoie des documents)
+2011-02-15 : Fixed issue where turnitintool_tempfile() was causing an infinite loop
+2011-02-15 : Moodle 1.8 will no longer be actively supported / tested past this point
+2011-01-17 : Fixed issue where Moodle Course names were longer than 100 characters
+2011-01-17 : Fixed issue where strtotime was used to set start, due, post dates (Moodle function make_timestamp() used now)
+2011-01-17 : Updated Turnitin logo icon
+2011-01-17 : Fixed issue with start dates in My Moodle page
+2011-01-17 : Updated turnitintool_usersetup to not exit on API error
+2011-01-17 : Reworked 'Enroll All Students' functionality to not exit on error
+2011-01-17 : Fixed bug caused by Oracle concat usage
+2011-01-17 : Fixed link from error screens to take you to activity instead of home page
+2011-01-17 : The 'Continue' button in error messages triggered by an activity now take you to the activity summary
+2011-01-17 : Fixed issue where users were able to make an extra submission after being unlinked
+2011-01-17 : Fixed extras.php to support 1.8 admin_externalpage_setup
+2011-01-07 : Added 1.8 group support abstraction
+2010-12-13 : Added support for Groupings
+2010-12-07 : Fixed issue where comments were becoming untied to their corresponding submissions
+2010-11-30 : Updated Resubmission / Late submission behaviour to correctly apply to multi part assignments
+2010-11-29 : Fixed Auto Resubmit Option now activity does not auto refresh grades if turned off in Options
+2010-11-29 : Fixed Resubmission / Late submission behaviour. only one submission possible after due date if late submission is on
+2010-11-19 : Created a mapping of language codes from Moodle lang codes to supported Turnitin codes
+2010-11-19 : Added support from groups
+2010-11-19 : Added sort order on unlink users list, sorts by user's last name
+2010-10-26 : Added pagination to the inbox
+2010-10-26 : Updated database fields and tables for Oracle support
+2010-10-26 : Added exclude small matches global assignment setting
+2010-10-26 : Added support for multi language api calls
+2010-10-26 : Added French (fr) language string file
+2010-10-26 : Fixed issue where non enrolled students were not displayed in the tutor inbox view
+2010-10-26 : Fixed issue where user's resubmissions where incorrectly tagged as anonymous
+2010-10-26 : Fixed issue with incorrect / incomplete ordering of anonymous inbox
+2010-10-12 : Updated maxfilesize help string to be more accurate
+2010-10-11 : Fixed bug where student new account email was sent regardless of the config setting
+2010-10-04 : Fixed a bug in the extras.php page prematurely calling a method and throwing a notice
+2010-09-29 : Fixed a bug that allowed students to change the Turnitin Class owner to another tutor in that Moodle course
+2010-09-27 : Added turnitintool_config_check calls to fix a broken loop when the plugin was not configured
+2010-09-17 : Fixed optional_param to use the now required 2nd and 3rd params
+2010-09-17 : Added the Turnitin Paper ID to the tutor's submission inbox view
+2010-09-17 : Fixed My Moodle page none closing div tag issue
+2010-09-07 : Updated the mod_form.php file to use Moodle 2.0 help icons where available
+2010-09-07 : Added the option to enable / disable the Institutional Repository option during Assignment set up
+2010-09-01 : Fixed Internet Explorer non GradeMark grade update bug
+2010-09-01 : Added Back up and Restore
+2010-09-01 : Added Moodle 2.0 compatibility
+2010-08-31 : Added a fix for a stuck loop in the output buffer
+2010-07-27 : Added CURLOPT_HTTPAUTH to support wider authentication types with Proxy
+2010-07-27 : Fixed issue where start session was not respecting the Student Email setting
+2010-06-19 : Added additional activity logging and Authenticated Proxy Support
+2010-06-12 : Refactored inbox database calls to correct collation issues
+2010-06-03 : Fixed bug with missing course module data on moodle gradebook update
+2010-06-02 : Added support for UTF-8 intepretation of API return data
+2010-05-20 : Fixed Gradebook call using incorrect idnumber (http://tracker.moodle.org/browse/CONTRIB-2073)
+2010-05-12 : Removed redundant get_object_vars() call (http://tracker.moodle.org/browse/CONTRIB-2056)
+2010-05-07 : Fixed issue with date format not being parsed in some langauges, added fall back in ISO format
+2010-05-04 : Fixed CSS issue where tabs were not displaying correctly in Internet Explorer
+2010-04-23 : Reworked student and tutor submission form to allow resubmission when 'Resubmit until due date' option is enabled
+2010-04-23 : Implemented a warning if a tutor grades a submission before due date when 'Resubmit until due date' option is enabled
+2010-04-21 : Removed cron functionality, no longer required due to native locking of assignment details
+2010-04-12 : Fixed issue with date format in Class End Date (ced) parameter
+2010-04-09 : Fixed issue where the toggle icon was not showing for submissions not yet sent to Turnitin
+2010-04-07 : Fixed issue where the src value was not being passed in FCMD1 calls
+2010-04-06 : Fixed bug where the turnitin_agreement is required as a config entry, where it actually falls back on a default string
+2010-03-26 : Fixed discrepancy in a column title of the Student 'My Submissions' view was 'Paper ID' should have been 'Submitted'
+2010-03-26 : Fixed issue where the API error status was not being recorded when a students submission had failed during submission
