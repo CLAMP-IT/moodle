@@ -1,0 +1,249 @@
+<?php
+$module=new object();
+require_once($CFG->dirroot.'/mod/turnitintool/version.php');
+?>
+<div><a href="<?php echo $CFG->wwwroot; ?>/mod/turnitintool/extras.php"><?php print_string("connecttest", "turnitintool") ?></a> | <a href="<?php echo $CFG->wwwroot; ?>/mod/turnitintool/extras.php?do=viewreport"><?php print_string("showusage", "turnitintool") ?></a> | <a href="<?php echo $CFG->wwwroot; ?>/mod/turnitintool/extras.php?do=savereport"><?php print_string("saveusage", "turnitintool") ?></a> | <a href="<?php echo $CFG->wwwroot; ?>/mod/turnitintool/extras.php?do=unlinkusers"><?php print_string("unlinkusers", "turnitintool"); ?></a> - (<?php print_string('moduleversion','turnitintool') ?>: <?php echo $module->version; ?>)</div>
+<br />
+<form method="post" action="module.php" id="form">
+<div>
+<input type="hidden" name="sesskey" value="<?php echo $USER->sesskey ?>" />
+
+<table cellpadding="9" cellspacing="0" >
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinaccountid", "turnitintool") ?>:</td>
+  <td>
+    <input name="turnitin_account_id" type="text" size="20" value="<?php p($CFG->turnitin_account_id) ?>" />
+    </td>
+    <td>
+    <?php print_string("turnitinaccountid_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinsecretkey", "turnitintool") ?>:</td>
+  <td>
+    <input name="turnitin_secretkey" type="text" size="20" value="<?php p($CFG->turnitin_secretkey) ?>" />
+    </td>
+    <td>
+    <?php print_string("turnitinsecretkey_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinapiurl", "turnitintool") ?>:</td>
+  <td>
+    <input name="turnitin_apiurl" type="text" size="20" value="<?php p($CFG->turnitin_apiurl) ?>" />
+    </td>
+    <td>
+    <?php print_string("turnitinapiurl_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinusegrademark", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+	   					1 => get_string('yes', 'turnitintool'),
+						);
+       choose_from_menu($options, "turnitin_usegrademark", $CFG->turnitin_usegrademark, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitinusegrademark_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinuseerater", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+                        1 => get_string('yes', 'turnitintool'),
+                        );
+       choose_from_menu($options, "turnitin_useerater", $CFG->turnitin_useerater, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitinuseerater_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinuserepository", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+	   					1 => get_string('yes', 'turnitintool'),
+						);
+       choose_from_menu($options, "turnitin_userepository", $CFG->turnitin_userepository, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitinuserepository_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinuseanon", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+	   					1 => get_string('yes', 'turnitintool'),
+						);
+       choose_from_menu($options, "turnitin_useanon", $CFG->turnitin_useanon, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitinuseanon_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitintoolagreement", "turnitintool") ?>:</td>
+  <td>
+<?php
+if (!isset($CFG->turnitin_agreement)) {
+    $agreement=get_string('turnitintoolagreement_default','turnitintool');
+} else {
+	$agreement=$CFG->turnitin_agreement;
+}
+?>
+    <textarea name="turnitin_agreement" value="<?php echo $agreement; ?>"><?php echo $agreement; ?></textarea>
+    </td>
+    <td>
+    <?php print_string("turnitintoolagreement_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinstudentemail", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+	   					1 => get_string('yes', 'turnitintool'),
+						);
+       if (isset($CFG->turnitin_studentemail)) {
+			$entry=$CFG->turnitin_studentemail;
+       } else {
+			$entry=1;
+       }
+       choose_from_menu($options, "turnitin_studentemail", $entry, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitinstudentemail_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitintutoremail", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+                        1 => get_string('yes', 'turnitintool'),
+                        );
+       if (isset($CFG->turnitin_tutoremail)) {
+            $entry=$CFG->turnitin_tutoremail;
+       } else {
+            $entry=1;
+       }
+       choose_from_menu($options, "turnitin_tutoremail", $entry, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitintutoremail_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitinreceiptemail", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+                        1 => get_string('yes', 'turnitintool'),
+                        );
+       if (isset($CFG->turnitin_receiptemail)) {
+            $entry=$CFG->turnitin_receiptemail;
+       } else {
+            $entry=1;
+       }
+       choose_from_menu($options, "turnitin_receiptemail", $entry, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitinreceiptemail_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("turnitindiagnostic", "turnitintool") ?>:</td>
+  <td>
+    <?php
+       unset($options);
+       $options = array(0 => get_string('no', 'turnitintool'),
+	   					1 => get_string('yes', 'turnitintool'),
+						);
+       choose_from_menu($options, "turnitin_enablediagnostic", @$CFG->turnitin_enablediagnostic, "", "", "");
+    ?>
+    </td>
+    <td>
+    <?php print_string("turnitindiagnostic_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("proxyurl", "turnitintool") ?>:</td>
+  <td>
+    <input name="turnitin_proxyurl" type="text" size="20" value="<?php p($CFG->turnitin_proxyurl) ?>" />
+    </td>
+    <td>
+    <?php print_string("proxyurl_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("proxyport", "turnitintool") ?>:</td>
+  <td>
+    <input name="turnitin_proxyport" type="text" size="20" value="<?php p($CFG->turnitin_proxyport) ?>" />
+    </td>
+    <td>
+    <?php print_string("proxyport_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("proxyuser", "turnitintool") ?>:</td>
+  <td>
+    <input name="turnitin_proxyuser" type="text" size="20" value="<?php p($CFG->turnitin_proxyuser) ?>" />
+    </td>
+    <td>
+    <?php print_string("proxyuser_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr valign="top">
+  <td align="right" style="white-space: nowrap;font-weight: bold;"><?php print_string("proxypassword", "turnitintool") ?>:</td>
+  <td>
+    <input name="turnitin_proxypassword" type="text" size="20" value="<?php p($CFG->turnitin_proxypassword) ?>" />
+    </td>
+    <td>
+    <?php print_string("proxypassword_desc", "turnitintool") ?>
+    </td>
+</tr>
+
+<tr>
+  <td colspan="3" align="center">
+     <input type="submit" value="<?php print_string("savechanges") ?>" /></td>
+</tr>
+</table>
+</div>
+</form>
