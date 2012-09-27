@@ -42,5 +42,5 @@ $redirect = $CFG->wwwroot.'/';
 </script>
 <?
 echo('Please quit the browser to finish the log out process.');
-print_footer();
+$OUTPUT->footer();
 ?>
