@@ -40,12 +40,7 @@ define('AUTO_RESIZE_SCREEN', 1);
 define('AUTO_RESIZE_UPLOAD', 2);
 define('AUTO_RESIZE_BOTH', 3);
 
-// --- Damon, 9/13/12, yes I know I'm insane for changing this function's declaration ---
-// --- from grep, this function is only called from one place, imageadd.php lines around 70 ---
-// original declaration:
-//function lightboxgallery_add_images($stored_file, $context, $cm, $gallery) {
-function lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $width, $height) {
-
+function lightboxgallery_add_images($stored_file, $context, $cm, $gallery) {
     require_once(dirname(__FILE__).'/imageclass.php');
 
     $fs = get_file_storage();
@@ -77,25 +72,6 @@ function lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $widt
                 $stored_file = $fs->create_file_from_storedfile($fileinfo, $stored_file);
                 $image = new lightboxgallery_image($stored_file, $gallery, $cm);
                 $image->set_caption($filename);
-                
-                // ---- the following is Damon, 9-13-12 ----
-                // autoresize of 1 is just screen, 2 and 3 are upload ones
-                if (($width != 0 and $height != 0) or ($gallery->autoresize == 2 or $gallery->autoresize == 3)) {
-	                if ($gallery->autoresize) {
-		            	// get the default autoresize amount
-		            	$resizeamount = $gallery->resize;
-		            	$resizeoptions = lightboxgallery_resize_options();
-		            	list($width, $height) = explode('x', $resizeoptions[$resizeamount]);
-
-		                $image = $image->resize_image($width, $height);
-		            
-	                } else {
-		                $image = $image->resize_image($width, $height);
-		            }
-                }
-                // ---- end of Damon's shenanigans -----
-                
-                
             }
         }
     }
