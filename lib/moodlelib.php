@@ -385,6 +385,8 @@ define('FEATURE_GRADE_HAS_GRADE', 'grade_has_grade');
 define('FEATURE_GRADE_OUTCOMES', 'outcomes');
 /** True if module supports advanced grading methods */
 define('FEATURE_ADVANCED_GRADING', 'grade_advanced_grading');
+/** True if module controls the grade visibility over the gradebook */
+define('FEATURE_CONTROLS_GRADE_VISIBILITY', 'controlsgradevisbility');
 
 /** True if module has code to track whether somebody viewed it */
 define('FEATURE_COMPLETION_TRACKS_VIEWS', 'completion_tracks_views');
@@ -477,6 +479,12 @@ define('MOODLE_OFFICIAL_MOBILE_SERVICE', 'moodle_mobile_app');
  * Indicates the user has the capabilities required to ignore activity and course file size restrictions
  */
 define('USER_CAN_IGNORE_FILE_SIZE_LIMITS', -1);
+
+/**
+ * Course display settings
+ */
+define('COURSE_DISPLAY_SINGLEPAGE', 0); // display all sections on one page
+define('COURSE_DISPLAY_MULTIPAGE', 1); // split pages into a page per section
 
 /// PARAMETER HANDLING ////////////////////////////////////////////////////
 
@@ -659,7 +667,8 @@ function optional_param_array($parname, $default, $type) {
  * @param string $type PARAM_ constant
  * @param bool $allownull are nulls valid value?
  * @param string $debuginfo optional debug information
- * @return mixed the $param value converted to PHP type or invalid_parameter_exception
+ * @return mixed the $param value converted to PHP type
+ * @throws invalid_parameter_exception if $param is not of given type
  */
 function validate_param($param, $type, $allownull=NULL_NOT_ALLOWED, $debuginfo='') {
     if (is_null($param)) {
@@ -674,7 +683,15 @@ function validate_param($param, $type, $allownull=NULL_NOT_ALLOWED, $debuginfo='
     }
 
     $cleaned = clean_param($param, $type);
-    if ((string)$param !== (string)$cleaned) {
+
+    if ($type == PARAM_FLOAT) {
+        // Do not detect precision loss here.
+        if (is_float($param) or is_int($param)) {
+            // These always fit.
+        } else if (!is_numeric($param) or !preg_match('/^[\+-]?[0-9]*\.?[0-9]*(e[-+]?[0-9]+)?$/i', (string)$param)) {
+            throw new invalid_parameter_exception($debuginfo);
+        }
+    } else if ((string)$param !== (string)$cleaned) {
         // conversion to string is usually lossless
         throw new invalid_parameter_exception($debuginfo);
     }
@@ -2313,10 +2330,10 @@ function get_user_timezone($tz = 99) {
 
     $tz = 99;
 
-    while(($tz == '' || $tz == 99 || $tz == NULL) && $next = each($timezones)) {
+    // Loop while $tz is, empty but not zero, or 99, and there is another timezone is the array
+    while(((empty($tz) && !is_numeric($tz)) || $tz == 99) && $next = each($timezones)) {
         $tz = $next['value'];
     }
-
     return is_numeric($tz) ? (float) $tz : $tz;
 }
 
@@ -3272,11 +3289,24 @@ function get_user_key($script, $userid, $instance=null, $iprestriction=null, $va
 function update_user_login_times() {
     global $USER, $DB;
 
-    $user = new stdClass();
-    $USER->lastlogin = $user->lastlogin = $USER->currentlogin;
-    $USER->currentlogin = $user->lastaccess = $user->currentlogin = time();
+    $now = time();
 
+    $user = new stdClass();
     $user->id = $USER->id;
+
+    // Make sure all users that logged in have some firstaccess.
+    if ($USER->firstaccess == 0) {
+        $USER->firstaccess = $user->firstaccess = $now;
+    }
+
+    // Store the previous current as lastlogin.
+    $USER->lastlogin = $user->lastlogin = $USER->currentlogin;
+
+    $USER->currentlogin = $user->currentlogin = $now;
+
+    // Function user_accesstime_log() may not update immediately, better do it here.
+    $USER->lastaccess = $user->lastaccess = $now;
+    $USER->lastip = $user->lastip = getremoteaddr();
 
     $DB->update_record('user', $user);
     return true;
@@ -3885,14 +3915,44 @@ function truncate_userinfo($info) {
  * Any plugin that needs to purge user data should register the 'user_deleted' event.
  *
  * @param stdClass $user full user object before delete
- * @return boolean always true
+ * @return boolean success
+ * @throws coding_exception if invalid $user parameter detected
  */
-function delete_user($user) {
+function delete_user(stdClass $user) {
     global $CFG, $DB;
     require_once($CFG->libdir.'/grouplib.php');
     require_once($CFG->libdir.'/gradelib.php');
     require_once($CFG->dirroot.'/message/lib.php');
     require_once($CFG->dirroot.'/tag/lib.php');
+
+    // Make sure nobody sends bogus record type as parameter.
+    if (!property_exists($user, 'id') or !property_exists($user, 'username')) {
+        throw new coding_exception('Invalid $user parameter in delete_user() detected');
+    }
+
+    // Better not trust the parameter and fetch the latest info,
+    // this will be very expensive anyway.
+    if (!$user = $DB->get_record('user', array('id'=>$user->id))) {
+        debugging('Attempt to delete unknown user account.');
+        return false;
+    }
+
+    // There must be always exactly one guest record,
+    // originally the guest account was identified by username only,
+    // now we use $CFG->siteguest for performance reasons.
+    if ($user->username === 'guest' or isguestuser($user)) {
+        debugging('Guest user account can not be deleted.');
+        return false;
+    }
+
+    // Admin can be theoretically from different auth plugin,
+    // but we want to prevent deletion of internal accoutns only,
+    // if anything goes wrong ppl may force somebody to be admin via
+    // config.php setting $CFG->siteadmins.
+    if ($user->auth === 'manual' and is_siteadmin($user)) {
+        debugging('Local administrator accounts can not be deleted.');
+        return false;
+    }
 
     // delete all grades - backup is kept in grade_grades_history table
     grade_user_delete($user->id);
@@ -4062,10 +4122,6 @@ function authenticate_user_login($username, $password) {
             if (empty($user->auth)) {             // For some reason auth isn't set yet
                 $DB->set_field('user', 'auth', $auth, array('username'=>$username));
                 $user->auth = $auth;
-            }
-            if (empty($user->firstaccess)) { //prevent firstaccess from remaining 0 for manual account that never required confirmation
-                $DB->set_field('user','firstaccess', $user->timemodified, array('id' => $user->id));
-                $user->firstaccess = $user->timemodified;
             }
 
             update_internal_user_password($user, $password); // just in case salt or encoding were changed (magic quotes too one day)
@@ -4741,7 +4797,7 @@ function shift_course_mod_dates($modname, $fields, $timeshift, $courseid) {
     foreach ($fields as $field) {
         $updatesql = "UPDATE {".$modname."}
                           SET $field = $field + ?
-                        WHERE course=? AND $field<>0 AND $field<>0";
+                        WHERE course=? AND $field<>0";
         $return = $DB->execute($updatesql, array($timeshift, $courseid)) && $return;
     }
 
@@ -4818,12 +4874,13 @@ function reset_course_userdata($data) {
         $status[] = array('component'=>$componentstr, 'item'=>get_string('deleteblogassociations', 'blog'), 'error'=>false);
     }
 
-    if (!empty($data->reset_course_completion)) {
-        // Delete course completion information
+    if (!empty($data->reset_completion)) {
+        // Delete course and activity completion information.
         $course = $DB->get_record('course', array('id'=>$data->courseid));
         $cc = new completion_info($course);
-        $cc->delete_course_completion_data();
-        $status[] = array('component'=>$componentstr, 'item'=>get_string('deletecoursecompletiondata', 'completion'), 'error'=>false);
+        $cc->delete_all_completion_data();
+        $status[] = array('component' => $componentstr,
+                'item' => get_string('deletecompletiondata', 'completion'), 'error' => false);
     }
 
     $componentstr = get_string('roles');
@@ -4934,12 +4991,12 @@ function reset_course_userdata($data) {
     if ($allmods = $DB->get_records('modules') ) {
         foreach ($allmods as $mod) {
             $modname = $mod->name;
-            if (!$DB->count_records($modname, array('course'=>$data->courseid))) {
-                continue; // skip mods with no instances
-            }
             $modfile = $CFG->dirroot.'/mod/'. $modname.'/lib.php';
             $moddeleteuserdata = $modname.'_reset_userdata';   // Function to delete user data
             if (file_exists($modfile)) {
+                if (!$DB->count_records($modname, array('course'=>$data->courseid))) {
+                    continue; // Skip mods with no instances
+                }
                 include_once($modfile);
                 if (function_exists($moddeleteuserdata)) {
                     $modstatus = $moddeleteuserdata($data);
@@ -5831,15 +5888,15 @@ function get_max_upload_file_size($sitebytes=0, $coursebytes=0, $modulebytes=0) 
         }
     }
 
-    if ($sitebytes and $sitebytes < $minimumsize) {
+    if (($sitebytes > 0) and ($sitebytes < $minimumsize)) {
         $minimumsize = $sitebytes;
     }
 
-    if ($coursebytes and $coursebytes < $minimumsize) {
+    if (($coursebytes > 0) and ($coursebytes < $minimumsize)) {
         $minimumsize = $coursebytes;
     }
 
-    if ($modulebytes and $modulebytes < $minimumsize) {
+    if (($modulebytes > 0) and ($modulebytes < $minimumsize)) {
         $minimumsize = $modulebytes;
     }
 
@@ -8358,7 +8415,14 @@ function check_php_version($version='5.2.4') {
           if (empty($version)) {
               return true; // no version specified
           }
-          if (preg_match("/Opera\/([0-9\.]+)/i", $agent, $match)) {
+          // Recent Opera useragents have Version/ with the actual version, e.g.:
+          // Opera/9.80 (Windows NT 6.1; WOW64; U; en) Presto/2.10.289 Version/12.01
+          // That's Opera 12.01, not 9.8.
+          if (preg_match("/Version\/([0-9\.]+)/i", $agent, $match)) {
+              if (version_compare($match[1], $version) >= 0) {
+                  return true;
+              }
+          } else if (preg_match("/Opera\/([0-9\.]+)/i", $agent, $match)) {
               if (version_compare($match[1], $version) >= 0) {
                   return true;
               }
@@ -8373,7 +8437,7 @@ function check_php_version($version='5.2.4') {
           if (empty($version)) {
               return true; // no version specified
           }
-          if (preg_match("/AppleWebKit\/([0-9]+)/i", $agent, $match)) {
+          if (preg_match("/AppleWebKit\/([0-9.]+)/i", $agent, $match)) {
               if (version_compare($match[1], $version) >= 0) {
                   return true;
               }
@@ -8409,7 +8473,7 @@ function check_php_version($version='5.2.4') {
           if (empty($version)) {
               return true; // no version specified
           }
-          if (preg_match("/AppleWebKit\/([0-9]+)/i", $agent, $match)) {
+          if (preg_match("/AppleWebKit\/([0-9.]+)/i", $agent, $match)) {
               if (version_compare($match[1], $version) >= 0) {
                   return true;
               }
@@ -8658,7 +8722,10 @@ function get_browser_version_classes() {
  */
 function can_use_rotated_text() {
     global $USER;
-    return ajaxenabled(array('Firefox' => 2.0)) && !$USER->screenreader;;
+    return (check_browser_version('MSIE', 9) || check_browser_version('Firefox', 2) ||
+            check_browser_version('Chrome', 21) || check_browser_version('Safari', 536.25) ||
+            check_browser_version('Opera', 12) || check_browser_version('Safari iOS', 533)) &&
+            !$USER->screenreader;
 }
 
 /**
@@ -10767,6 +10834,22 @@ function get_home_page() {
         }
     }
     return HOMEPAGE_SITE;
+}
+
+/**
+ * Gets the name of a course to be displayed when showing a list of courses.
+ * By default this is just $course->fullname but user can configure it. The
+ * result of this function should be passed through print_string.
+ * @param object $course Moodle course object
+ * @return string Display name of course (either fullname or short + fullname)
+ */
+function get_course_display_name_for_list($course) {
+    global $CFG;
+    if (!empty($CFG->courselistshortnames)) {
+        return get_string('courseextendednamedisplay', '', $course);
+    } else {
+        return $course->fullname;
+    }
 }
 
 /**

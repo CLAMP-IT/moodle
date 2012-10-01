@@ -195,8 +195,8 @@ class grade_report_laegrader extends grade_report {
             $itemid = clean_param($gradeinfo[2], PARAM_INT);
 
             // Was change requested?
-            $oldvalue = $this->grades[$userid][$itemid];
-            
+            $oldvalue = $data->{'old'.$varname};
+                        
             /// BP: moved this up to speed up the process of eliminating unchanged values
             if ($oldvalue == $postedvalue) { // string comparison
                 continue;
