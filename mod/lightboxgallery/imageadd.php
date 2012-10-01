@@ -71,10 +71,24 @@ if ($mform->is_cancelled()) {
     } else {
     	$size = optional_param('resize', '', PARAM_INT);
     	$resizeoptions = lightboxgallery_resize_options();
+	// weird git issue
+    	//$size = optional_param('resize', '', PARAM_INT);
+    	//$resizeoptions = lightboxgallery_resize_options();
+	// end weird git issue
+
+	// fix lightbox bug
 	// need to get the gallery's set default resize value
     	$size = $gallery->resize;
+	if ($size == 0) {
+		// this means resizing is not set in the lightbox's settings as a default
+		$size = optional_param('resize', '', PARAM_INT);
+	}
 	$resizeoptions = lightboxgallery_resize_options();
 	// fixed resize bug with lightbox gallery
+
+	//mail("damonbla@gmail.com", "lightbox", "size = $size and resizeoptions = ".print_r($resizeoptions));
+
+	// fix lightbox bug
     	list($width, $height) = explode('x', $resizeoptions[$size]);
 
 	    lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $width, $height);
