@@ -152,7 +152,11 @@ abstract class quiz_attempts_report_table extends table_sql {
      * @return string HTML content to go inside the td.
      */
     public function col_state($attempt) {
-        return quiz_attempt::state_name($attempt->state);
+        if (!is_null($attempt->attempt)) {
+            return quiz_attempt::state_name($attempt->state);
+        } else {
+            return  '-';
+        }
     }
 
     /**
@@ -189,8 +193,6 @@ abstract class quiz_attempts_report_table extends table_sql {
     public function col_duration($attempt) {
         if ($attempt->timefinish) {
             return format_time($attempt->timefinish - $attempt->timestart);
-        } else if ($attempt->timestart) {
-            return get_string('unfinished', 'quiz');
         } else {
             return '-';
         }

@@ -14,7 +14,12 @@ function xmldb_block_quickmail_upgrade($oldversion) {
         $table = new xmldb_table('block_quickmail_log');
         $field = new xmldb_field('attachment', XMLDB_TYPE_TEXT, 'small', XMLDB_NOTNULL, null, null);
         $dbman->change_field_type($table, $field);
-        
+
+        $field = new xmldb_field('timesent', XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED, XMLDB_NOTNULL, null, 0);
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->rename_field($table, $field, 'time');
+        }
+
         /// add block_quickmail_signatures
         $table = new xmldb_table('block_quickmail_signatures');
         $table->add_field('id', XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);

@@ -88,7 +88,7 @@ class assign_grading_table extends table_sql implements renderable {
         $params['assignmentid1'] = (int)$this->assignment->get_instance()->id;
         $params['assignmentid2'] = (int)$this->assignment->get_instance()->id;
 
-        $fields = user_picture::fields('u') . ', u.id as userid, u.firstname as firstname, u.lastname as lastname, ';
+        $fields = user_picture::fields('u') . ', u.id as userid, ';
         $fields .= 's.status as status, s.id as submissionid, s.timecreated as firstsubmission, s.timemodified as timesubmitted, ';
         $fields .= 'g.id as gradeid, g.grade as grade, g.timemodified as timemarked, g.timecreated as firstmarked, g.mailed as mailed, g.locked as locked';
         $from = '{user} u LEFT JOIN {assign_submission} s ON u.id = s.userid AND s.assignment = :assignmentid1' .
@@ -105,7 +105,7 @@ class assign_grading_table extends table_sql implements renderable {
             $where .= ' AND s.timecreated > 0 ';
         }
         if ($filter == ASSIGN_FILTER_REQUIRE_GRADING) {
-            $where .= ' AND (s.timemodified > g.timemodified OR g.timemodified IS NULL)';
+            $where .= ' AND (s.timemodified > g.timemodified OR (s.timemodified IS NOT NULL AND g.timemodified IS NULL))';
         }
         if (strpos($filter, ASSIGN_FILTER_SINGLE_USER) === 0) {
             $userfilter = (int) array_pop(explode('=', $filter));
@@ -287,13 +287,15 @@ class assign_grading_table extends table_sql implements renderable {
     }
 
     /**
-     * Format a user record for display (don't link to profile)
+     * Format a user record for display (link to profile)
      *
      * @param stdClass $row
      * @return string
      */
     function col_fullname($row) {
-        return fullname($row);
+        $courseid = $this->assignment->get_course()->id;
+        $link= new moodle_url('/user/view.php', array('id' =>$row->id, 'course'=>$courseid));
+        return $this->output->action_link($link, fullname($row));
     }
 
     /**

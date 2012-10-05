@@ -373,6 +373,13 @@ function cron_run() {
     }
 
 
+    // Run question bank clean-up.
+    mtrace("Starting the question bank cron...", '');
+    require_once($CFG->libdir . '/questionlib.php');
+    question_bank::cron();
+    mtrace('done.');
+
+
     //Run registration updated cron
     mtrace(get_string('siteupdatesstart', 'hub'));
     require_once($CFG->dirroot . '/' . $CFG->admin . '/registration/lib.php');
@@ -458,10 +465,6 @@ function cron_run() {
     // cleanup file trash - not very important
     $fs = get_file_storage();
     $fs->cron();
-
-    mtrace("Clean up cached external files");
-    // 1 week
-    cache_file::cleanup(array(), 60 * 60 * 24 * 7);
 
     mtrace("Cron script completed correctly");
 
