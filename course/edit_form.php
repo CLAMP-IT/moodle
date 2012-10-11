@@ -124,7 +124,7 @@ class course_edit_form extends moodleform {
             array(COURSE_DISPLAY_SINGLEPAGE => get_string('coursedisplay_single'),
                 COURSE_DISPLAY_MULTIPAGE => get_string('coursedisplay_multi')));
         $mform->addHelpButton('coursedisplay', 'coursedisplay');
-        $mform->setDefault('coursedisplay', COURSE_DISPLAY_SINGLEPAGE);
+        $mform->setDefault('coursedisplay', $courseconfig->coursedisplay);
 
         for ($i = 0; $i <= $courseconfig->maxsections; $i++) {
             $sectionmenu[$i] = "$i";
@@ -229,7 +229,7 @@ class course_edit_form extends moodleform {
             if (!empty($course->id)) {
                 $mform->setConstant('visible', $course->visible);
             } else {
-                $mform->setConstant('visible', $category->visible);
+                $mform->setConstant('visible', $courseconfig->visible);
             }
         }
 

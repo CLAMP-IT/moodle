@@ -742,7 +742,8 @@ class grade_item extends grade_object {
 
             // Standardise score to the new grade range
             // NOTE: this is not compatible with current assignment grading
-            if ($this->itemmodule != 'assignment' and ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
+            $isassignmentmodule = ($this->itemmodule == 'assignment') || ($this->itemmodule == 'assign');
+            if (!$isassignmentmodule && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
                 $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
             }
 
@@ -2066,5 +2067,17 @@ class grade_item extends grade_object {
         } else {
             return false;
         }
+    }
+
+    /**
+     * Returns whether the grade item can control the visibility of the grades
+     *
+     * @return bool
+     */
+    public function can_control_visibility() {
+        if (get_plugin_directory($this->itemtype, $this->itemmodule)) {
+            return !plugin_supports($this->itemtype, $this->itemmodule, FEATURE_CONTROLS_GRADE_VISIBILITY, false);
+        }
+        return true;
     }
 }

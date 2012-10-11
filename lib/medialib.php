@@ -493,7 +493,7 @@ class core_media_player_vimeo extends core_media_player_external {
 
         $output = <<<OET
 <span class="mediaplugin mediaplugin_vimeo">
-<iframe title="$info" src="http://player.vimeo.com/video/$videoid"
+<iframe title="$info" src="https://player.vimeo.com/video/$videoid"
   width="$width" height="$height" frameborder="0"></iframe>
 </span>
 OET;
@@ -503,7 +503,7 @@ OET;
 
     protected function get_regex() {
         // Initial part of link.
-        $start = '~^http://vimeo\.com/';
+        $start = '~^https?://vimeo\.com/';
         // Middle bit: either watch?v= or v/.
         $middle = '([0-9]+)';
         return $start . $middle . core_media_player_external::END_LINK_REGEX_PART;
@@ -528,8 +528,8 @@ class core_media_player_youtube extends core_media_player_external {
     protected function embed_external(moodle_url $url, $name, $width, $height, $options) {
         global $CFG;
 
-        $site = $this->matches[1];
-        $videoid = $this->matches[3];
+        $site = 'www.youtube.com';
+        $videoid = end($this->matches);
 
         $info = trim($name);
         if (empty($info) or strpos($info, 'http') === 0) {
@@ -541,8 +541,9 @@ class core_media_player_youtube extends core_media_player_external {
 
         if (empty($CFG->xmlstrictheaders)) {
             return <<<OET
-<iframe title="$info" width="$width" height="$height"
-  src="$site/embed/$videoid?rel=0&wmode=transparent" frameborder="0" allowfullscreen></iframe>
+<span class="mediaplugin mediaplugin_youtube">
+<iframe title="$info" width="$width" height="$height" src="https://$site/embed/$videoid?rel=0&wmode=transparent" frameborder="0" allowfullscreen="1"></iframe>
+</span>
 OET;
         }
 
@@ -551,7 +552,7 @@ OET;
         $output = <<<OET
 <span class="mediaplugin mediaplugin_youtube">
 <object title="$info" type="application/x-shockwave-flash"
-  data="$site/v/$videoid&amp;fs=1&amp;rel=0" width="$width" height="$height">
+  data="https://$site/v/$videoid&amp;fs=1&amp;rel=0" width="$width" height="$height">
  <param name="movie" value="$site/v/$videoid&amp;fs=1&amp;rel=0" />
  <param name="FlashVars" value="playerMode=embedded" />
  <param name="allowFullScreen" value="true" />
@@ -563,10 +564,15 @@ OET;
     }
 
     protected function get_regex() {
+        // Regex for standard youtube link
+         $link = '(youtube(-nocookie)?\.com/(?:watch\?v=|v/))';
+        // Regex for shortened youtube link
+        $shortlink = '((youtu|y2u)\.be/)';
+
         // Initial part of link.
-        $start = '~^(https?://www\.youtube(-nocookie)?\.com)/';
-        // Middle bit: either watch?v= or v/.
-        $middle = '(?:watch\?v=|v/)([a-z0-9\-_]+)';
+         $start = '~^https?://(www\.)?(' . $link . '|' . $shortlink . ')';
+        // Middle bit: Video key value
+        $middle = '([a-z0-9\-_]+)';
         return $start . $middle . core_media_player_external::END_LINK_REGEX_PART;
     }
 
@@ -577,7 +583,7 @@ OET;
     }
 
     public function get_embeddable_markers() {
-        return array('youtube');
+        return array('youtube.com', 'youtube-nocookie.com', 'youtu.be', 'y2u.be');
     }
 }
 
@@ -607,26 +613,16 @@ class core_media_player_youtube_playlist extends core_media_player_external {
 
         self::pick_video_size($width, $height);
 
-        // TODO: iframe HTML 5 video not implemented and object does not work
-        // on iOS devices.
-        $fallback = core_media_player::PLACEHOLDER;
-        $output = <<<OET
+        return <<<OET
 <span class="mediaplugin mediaplugin_youtube">
-<object title="$info" type="application/x-shockwave-flash"
-  data="$site/p/$playlist&amp;fs=1&amp;rel=0" width="$width" height="$height">
- <param name="movie" value="$site/v/$playlist&amp;fs=1&amp;rel=0" />
- <param name="FlashVars" value="playerMode=embedded" />
- <param name="allowFullScreen" value="true" />
-$fallback</object>
+<iframe width="$width" height="$height" src="https://$site/embed/videoseries?list=$playlist" frameborder="0" allowfullscreen="1"></iframe>
 </span>
 OET;
-
-        return $output;
     }
 
     protected function get_regex() {
         // Initial part of link.
-        $start = '~^(https?://www\.youtube(-nocookie)?\.com)/';
+        $start = '~^https?://(www\.youtube(-nocookie)?\.com)/';
         // Middle bit: either view_play_list?p= or p/ (doesn't work on youtube) or playlist?list=.
         $middle = '(?:view_play_list\?p=|p/|playlist\?list=)([a-z0-9\-_]+)';
         return $start . $middle . core_media_player_external::END_LINK_REGEX_PART;
