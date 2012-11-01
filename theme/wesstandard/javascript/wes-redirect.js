@@ -52,7 +52,7 @@ function findCourseOnM1() {
 	  breadcrumbAs=breadcrumb.getElementsByTagName('A');
 	  shortnameA=breadcrumbAs[breadcrumbAs.length-1];
 	  shortname=shortnameA.innerHTML;
-	  shortname=shortname.replace(/_link$/,'');
+	  shortname=shortname.replace(/_redirect$/,'');
 
 	  // fall back to a search for E&ES courses
 	  if (shortname.match(/E&amp;/)) {
