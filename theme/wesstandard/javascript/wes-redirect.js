@@ -56,8 +56,7 @@ function findCourseOnM1() {
 
 	  // fall back to a search for E&ES courses
 	  if (shortname.match(/&amp;/)) {
-		  shortname=shortname.replace("E&amp;","");
-		  shortname=shortname.replace("NS&amp;","");
+		  shortname=shortname.replace(/^.*&amp;/,"");
 		  findCourseOnM1BySearch(shortname);
 		  return;
 	  }
