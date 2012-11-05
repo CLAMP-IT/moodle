@@ -27,17 +27,22 @@ defined('MOODLE_INTERNAL') || die();
 
 class enrol_wessync_plugin extends enrol_plugin {
 
-    private $cache_enabled = true;
+    private $cache_enabled = false;
+
     function __construct() {
+    	 global $CFG;
+         include $CFG->dirroot . '/enrol/wessync/inc/memcache.conf.php';
+	 $this->_cache_enabled = $memcache_enabled;
 	 if ($this->cache_enabled) {
            $this->_memcache = new Memcache;
-           $this->_memcache->addServer('129.133.6.61');
-           $this->_memcache->addServer('129.133.6.230');
+	   foreach ($memcache_servers as $server) {
+             $this->_memcache->addServer($server);
+	   }
      	   if (!is_object($this->_memcache)) {
 	      $this->_selfcache = array();
 	      $this->_memcache_enabled = false;
            } else {
-	      $this->_memcache_prefix = "wessync_";
+	      $this->_memcache_prefix = 
 	      $this->_memcache_enabled = true;
    	   }
         }
@@ -177,7 +182,6 @@ class enrol_wessync_plugin extends enrol_plugin {
 	  if (!isset($user) and !is_object($user) or !$user) {
       	    $user = $DB->get_record('user',array('username' => $member),'id,username');
             $this->wessync_cache_set('user',$member,$user);
-	    
           }
           if (!$user) {
             $result['failure'] = 1;
@@ -255,8 +259,8 @@ class enrol_wessync_plugin extends enrol_plugin {
      return $year + 100 . $semester;
    }
    /* takes a hash containing term, short_name, full_name, visibility, etc and creates a moodle course out of it */
-   public function create_moodle_course_from_template ($course) {
-       $course_template = $this->get_moodle_semester_template($course['term']);
+   public function create_moodle_course_from_template ($course,$redirect) {
+       $course_template = $this->get_moodle_semester_template($course['term'],$redirect);
        $this->ERRORS = array();
        if (!$course_template) {
 	 array_push($this->ERRORS,"Could not find matching template.");
@@ -267,14 +271,22 @@ class enrol_wessync_plugin extends enrol_plugin {
          array_push($this->ERRORS,"Could not create matching stub course.");
          return 0;
        }
+       if ($redirect) {
+	 $course['short_name'] .= '_redirect';
+   	 $course['full_name'] .= ' (Redirect)';
+       }
        $this->sync_moodle_course_data($course,$new_course);
        return $new_course;
    }
    /* takes the term code, fetches the  moodle course that serves as that semester's template */
-  public function get_moodle_semester_template ( $term = '' ) {
+  public function get_moodle_semester_template ( $term = '',$redirect=0 ) {
      #template courses "idnumber" is the semester/term code
       global $DB;
-      $template_course = $DB->get_record("course",array("idnumber" => $term));
+      if (!$redirect) {
+        $template_course = $DB->get_record("course",array("idnumber" => $term));
+      } else {
+        $template_course = $DB->get_record("course",array("idnumber" => "redirect"));
+      }
       return $template_course;
   }
   /* takes a template and creates a new empty course from it, returns the new course */
@@ -288,23 +300,29 @@ class enrol_wessync_plugin extends enrol_plugin {
       #zero it out so it looks "new"
       $course_template->id = "";
       #create a new record
+      $transaction = $DB->start_delegated_transaction();
       $new_course_id = $DB->insert_record("course",$course_template);
-      #now do the backup; haven't quite figured out how Moodle2 works perfectly, but this works for now - "2" is the admin user who has rights to do the backup
+      #now do the backup; haven't quite figured out how Moodle2 works perfectly, but this works for now 
       #ideally, we'd want to make our own backup controller 
-      $bc = new backup_controller(backup::TYPE_1COURSE, $course_template_id, backup::FORMAT_MOODLE, backup::INTERACTIVE_NO, backup::MODE_SAMESITE, "2");
+      $admin = $DB->get_record('user',array('username' => 'admin'),'id,username');
+      $admin_id = $admin->id;
+      $bc = new backup_controller(backup::TYPE_1COURSE, $course_template_id, backup::FORMAT_MOODLE, backup::INTERACTIVE_NO, backup::MODE_SAMESITE, "$admin_id");
       $bc->execute_plan();
       $backupfile = $bc->get_results();
       $packer = new zip_packer();
+      
       #unzip our backup to a temporary restore file
       $backupfile['backup_destination']->extract_to_pathname($packer,"$CFG->dataroot/temp/backup/$course_template_id");
-      $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"2",backup::TARGET_NEW_COURSE);
-      $restore->execute_precheck();
-      $outcome = $restore->execute_plan();
-      if (!$outcome) {
-        return false;
+       $bc->destroy();
+      $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"$admin_id",backup::TARGET_NEW_COURSE);
+      if (!$restore->execute_precheck('true')) {
+	return false;
       }
+      $restore->destroy();
+      $transaction->allow_commit();
       #course restored, now lets fetch the object
       $new_course = $DB->get_record("course",array("id" => $new_course_id));
+      
       return $new_course;
   }
   /*given a course hash with descriptions, moodle course and optional sync_only flag sync the data */
