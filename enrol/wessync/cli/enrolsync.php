@@ -18,9 +18,19 @@ if (!enrol_is_enabled('wessync')) {
 // Update enrolments -- these handlers should autocreate courses if required
 $enrol = enrol_get_plugin('wessync');
 require(dirname(dirname(__FILE__)).'/helperlib.php');
+$valid_methods = array ('peoplesoft_enrol','ldap_enrol,fy_enrol','idnumber_enrol');
+if (!isset($argv[1]) or !in_array($argv[1],$valid_methods)) {
+  print "Must pass enrol request that matches one of the following " . join(',',$valid_methods) . "\n";
+  die;
+}
 $lock = check_lock_file($argv[1]);
 if ($argv[1] == 'peoplesoft_enrol' ) {
-  $results = peoplesoft_enrol($enrol,$lock);
+  if (!isset($argv[2])) {
+    $redirect = 0;
+  } else {
+    $redirect = 1;
+  }
+  $results = peoplesoft_enrol($enrol,$lock,$redirect);
 } else if ($argv[1] == 'ldap_enrol' ) {
   $results = ldap_enrol($enrol,$lock);
 } else if ($argv[1] == 'fy_enrol') {
@@ -71,7 +81,7 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
   return $master_results;
 }
 
-function peoplesoft_enrol ($enrol,$lock) {
+function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
   $master_results = array();
 
   $moodlecreate = get_moodlecreate_db();
@@ -88,7 +98,7 @@ function peoplesoft_enrol ($enrol,$lock) {
   }
   $semester = $enrol->get_current_wes_semester();
   /* handle the moodlecreate creations */
-  $moodlecreate_courses = get_moodlecreate_courses($moodlecreate,$semester);
+  $moodlecreate_courses = get_moodlecreate_courses($moodlecreate,$semester,$redirect);
   $email_results = array();
   foreach ($moodlecreate_courses as $course) {
     $moodle_course = get_moodle_course($course['idnumber']);
@@ -99,10 +109,10 @@ function peoplesoft_enrol ($enrol,$lock) {
         continue;
       } else {
         $course = get_peoplesoft_course_data($ps89prod,$course);
-        $moodle_course = $enrol->create_moodle_course_from_template($course);
+        $moodle_course = $enrol->create_moodle_course_from_template($course,$redirect);
         if ($moodle_course) {
   	  /*call back to MoodleCreate database to flag as created */
-  	 # flag_as_created($moodlecreate,$course['id']);
+  	  flag_as_created($moodlecreate,$course['id'],$redirect);
 	  $email_results[] = $course['short_name'] . " newly created.";
 	  $email_results[] = "\tRequested by:" . $course['requested_by'];
         } else {
