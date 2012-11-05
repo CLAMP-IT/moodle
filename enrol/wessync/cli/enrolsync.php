@@ -97,6 +97,12 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     die;
   }
   $semester = $enrol->get_current_wes_semester();
+  if ($redirect) {
+    if ($semester <= 1129 or $semester >= 1139) {
+      /* do NOT create redirect courses for anything other than Spring/Summer 2013 */
+       return;
+    }
+  }
   /* handle the moodlecreate creations */
   $moodlecreate_courses = get_moodlecreate_courses($moodlecreate,$semester,$redirect);
   $email_results = array();
