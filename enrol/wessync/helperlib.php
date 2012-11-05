@@ -24,7 +24,7 @@ function get_peoplesoft_course_data($psdbh,$course) {
   oci_bind_by_name($sth,':strm',$course['term']);
   oci_bind_by_name($sth,':crseid',$course['crse_id']);
   oci_execute($sth);
-  $array_to_add = array('ACAD_CAREER','DESCRLONG','COURSE_TITLE_LONG','WES_HOST_CAT_NBR','WES_HOST_SUBJECT','WES_INSTRUCTORS');
+  $array_to_add = array('ACAD_CAREER','DESCR','COURSE_TITLE_LONG','WES_HOST_CAT_NBR','WES_HOST_SUBJECT','WES_INSTRUCTORS');
   $course_found = 0;
   while ($row = oci_fetch_array($sth,OCI_ASSOC)) {
     $course_found = 1 ;
@@ -105,12 +105,12 @@ function get_moodle_course ( $idnumber = '' ) {
 
 /* Takes moodlecreate db handle and term and returns that have been requested */
 /* To Do: Clean up method that sections and instructors are fetched */
-function get_moodlecreate_courses( $db_handle = '', $term = '') {
+function get_moodlecreate_courses( $db_handle = '', $term = '', $redirect=0) {
   if (!$db_handle) {
     return false;
   }
   $moodlecreate_courses = array();
-  if ($term == '' ) {
+  if ($term == '' && !$redirect) {
 #    $stmt = $db_handle->prepare("SELECT a.TERM,a.CRSE_ID,a.SHORT_NAME,a.LONG_NAME from course a join o
 #n a.id == instructor.course_id and a.id == section.course_id  where a.created = 'Y' and a.term !='0'");
 #    $stmt = $db_handle->prepare("select c.TERM, c.CRSE_ID,s.section,c.SHORT_NAME,c.LONG_NAME, i.USERNAME
@@ -118,12 +118,19 @@ function get_moodlecreate_courses( $db_handle = '', $term = '') {
 #                                               join instructor i on c.ID = i.COURSE_ID
 #                                               join section s on c.ID = s.course_ID
 #                                               order by c.CREATED_ON DESC, c.SHORT_NAME, i.USERNAME");
-     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS from course");
-  } else {
-     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS from course where TERM >= '$term'");
+     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y'");
+  } else if (!$redirect && $term) {
+     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y' and TERM >= '$term'");
    #TO BE IMPLEMENTED
+  } else if ($term == '' && $redirect) {
+     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='N' and TERM >= '$term'");
+  } else if ($redirect) {
+     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='N'");
   }
-  $stmt->bind_result($id,$term,$crse_id,$short_name,$long_name,$visible,$requested_by,$status);
+  if (mysqli_error($db_handle)) {
+     return false;
+  }
+  $stmt->bind_result($id,$term,$crse_id,$short_name,$long_name,$visible,$requested_by,$status,$alt_status);
   $stmt->execute();
   while ($stmt->fetch()) {
     $course['id'] = $id;
@@ -135,6 +142,7 @@ function get_moodlecreate_courses( $db_handle = '', $term = '') {
     $course['instructor'] = array();
     $course['section'] = array();
     $course['status'] = $status;
+    $course['alt_status'] = $alt_status;
     if ($visible == 'Y' ) {
       $course['visible'] = 1;
     } else {
@@ -155,10 +163,11 @@ function get_moodlecreate_courses( $db_handle = '', $term = '') {
         $sync_course['idnumber'] .= $section;
         array_push($sync_course['section'],$section);
     }
-    $stmt = $db_handle->prepare("SELECT USERNAME FROM instructor where COURSE_ID=?");
+    $stmt = $db_handle->prepare("SELECT distinct USERNAME FROM instructor where COURSE_ID=?");
     $stmt->bind_param("i",$sync_course['id']);
     $stmt->bind_result($instructor);
     $stmt->execute();
+    
     while ($stmt->fetch()) {
         array_push($sync_course['instructor'],$instructor);
         $sync_course['summary'] .= "<p>Instructor: $instructor</p>";
@@ -246,8 +255,12 @@ function wes_get_first_year_students($ps89prod,$semester) {
   return array_unique($members);
 }
 /*updates moodlecreate database with updated status */
-function flag_as_created( $db_handle, $idnumber ) {
-   $stmt = $db_handle->prepare("update course set STATUS='Y' where ID=? and STATUS='N'");
+function flag_as_created( $db_handle, $idnumber,$redirect=0 ) {
+   if (!$redirect) {
+     $stmt = $db_handle->prepare("update course set STATUS='Y' where ID=? and STATUS='N'");
+   } else {
+     $stmt = $db_handle->prepare("update course set ALT_STATUS='Y' where ID=? and ALT_STATUS='N'");
+  }
    $stmt->bind_param('d',$idnumber);
    return $stmt->execute();
 }
