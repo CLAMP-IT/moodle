@@ -168,9 +168,9 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
   /* no need to notify on redirect course creation */ 
   if ($email_results && !$redirect) {
      $body = implode("\n",$email_results);
-     $recipients = array ('jwest@wesleyan.edu','kwiliarty@wesleyan.edu','dschnaidt@wesleyan.edu','jgoetz@wesleyan.edu','eparis@wesleyan.edu');
+     $recipients = array ('jwest@wesleyan.edu','kwiliarty@wesleyan.edu','dschnaidt@wesleyan.edu','jgoetz@wesleyan.edu','eparis@wesleyan.edu','melson@wesleyan.edu');
      $subject = "Moodle2 Course Creation Report";
-     mail(join(',',$recipients),$subject,"From: moodle_admins\@wesleyan.edu\r\nPrecedence: Bulk\r\n");
+     mail(join(',',$recipients),$subject,$body,"From: moodle_admins\@wesleyan.edu\r\nPrecedence: Bulk\r\n");
   }
   return $master_results;
 }
