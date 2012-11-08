@@ -4,6 +4,7 @@
    refactor - might make sense for different objects for each data source;
    i.e. moodlecreate+peoplesoft vs. AD + hash, etc, etc.. */
 
+/* moodle errors just print to standard out, so any errors are just prints */
 define('CLI_SCRIPT', true);
 
 require(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
@@ -41,7 +42,9 @@ if ($argv[1] == 'peoplesoft_enrol' ) {
   print "Unknown enrol request!";
 }
 release_lock_file($lock,$argv[1]);
-var_dump($results);
+$fh = fopen("/tmp/" . $argv[1] . $argv[2] . "_results","a+");
+fwrite($fh,print_r($results,true));
+fclose($fh);
 
 function idnumber_enrol($enrol,$lock,$cs_courses) {
   $ps89prod = get_ps89prod_db();
@@ -52,6 +55,7 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
   $idnumber_courses = split(',',$cs_courses);
   foreach ($idnumber_courses as $idnumber) {
     $moodle_course = get_moodle_course($idnumber);
+
     if (!$moodle_course) {
       $course_hash = $enrol->course_hash_from_idnumber($idnumber);
       $course = get_peoplesoft_course_data($ps89prod,$course_hash);
@@ -69,14 +73,15 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
       $master_results[$idnumber] = "No moodle course available for $idnumber, skipping.";
       continue;
     }
- 
+    /* just a unique identifier for tagging results hash */
+    $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
     $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
     $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
-    $master_results[$result['courseinfo']]['student_sync'] = $result;
+    $master_results[$courseinfo]['student_sync'] = $result;
     /* role id 3 == teacher */
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3");
-    $master_results[$result['courseinfo']]['teacher_sync'] = $result;
+    $master_results[$courseinfo]['teacher_sync'] = $result;
   }
   return $master_results;
 }
@@ -97,24 +102,30 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     die;
   }
   $semester = $enrol->get_current_wes_semester();
-  if ($redirect) {
-    if ($semester <= 1129 or $semester >= 1139) {
-      /* do NOT create redirect courses for anything other than Spring/Summer 2013 */
-       return;
-    }
-  }
   /* handle the moodlecreate creations */
   $moodlecreate_courses = get_moodlecreate_courses($moodlecreate,$semester,$redirect);
   $email_results = array();
   foreach ($moodlecreate_courses as $course) {
+    if ($redirect && ($course['term'] <= 1129 or $semseter >= 1139)) {
+      continue;
+    }
     $moodle_course = get_moodle_course($course['idnumber']);
     if (!$moodle_course) {
-      print "Course " . $course['short_name'] . " does not exist, creating...\n";
-      if ($course['status'] == 'Y' ) {
+      if ($redirect and $course['alt_status'] == 'Y') {
+        print "Redirect Course " . $course['short_name'] . " is already created, refusing to continue...";
+        continue;
+      }
+      else if (!$redirect and $course['status'] == 'Y' ) {
 	print "Course " . $course['short_name'] . " says it is already created, refusing to continue.\n";
         continue;
       } else {
+	/* found a need to hold on to orig course incase peoplesoft data returns null */
+	$orig_course = $course;
         $course = get_peoplesoft_course_data($ps89prod,$course);
+	if (!$course) {
+	   $master_results[$orig_course['idnumber']]['warn'] = "Could not find course in Peoplesoft, skipping\n";
+	   continue;
+	}
         $moodle_course = $enrol->create_moodle_course_from_template($course,$redirect);
         if ($moodle_course) {
   	  /*call back to MoodleCreate database to flag as created */
@@ -129,6 +140,9 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     if (!$moodle_course) {
       continue;
     }
+    /* just a unique identifier for tagging results hash */
+    $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
+
     $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
     if ($auth_students === false ) {
       print "Database errors";
@@ -146,14 +160,17 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     }
     /* role id 5 == student */
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
-    $master_results[$result['course_info']]['student_sync'] = $result;
+    $master_results[$courseinfo]['student_sync'] = $result;
     /* role id 3 == teacher */
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3");
-    $master_results[$result['course_info']]['teacher_sync'] = $result;
-  } 
-  if ($email_results) {
+    $master_results[$courseinfo]['teacher_sync'] = $result;
+  }
+  /* no need to notify on redirect course creation */ 
+  if ($email_results && !$redirect) {
      $body = implode("\n",$email_results);
-     mail("melson@wesleyan.edu","Moodle Course Creation Report",$body,"From: moodle_admins@wesleyan.edu");
+     $recipients = array ('jwest@wesleyan.edu','kwiliarty@wesleyan.edu','dschnaidt@wesleyan.edu','jgoetz@wesleyan.edu','eparis@wesleyan.edu');
+     $subject = "Moodle2 Course Creation Report";
+     mail(join(',',$recipients),$subject,"From: moodle_admins\@wesleyan.edu\r\nPrecedence: Bulk\r\n");
   }
   return $master_results;
 }
@@ -183,7 +200,7 @@ function ldap_enrol ($enrol,$lock) {
       $authoritative_members = array_merge($authoritative_members,$group_members);
     }
     $results = $enrol->sync_course_membership_by_role($moodle_course,$authoritative_members,"5");
-    $master_results[$results['course_info']]['student_sync'] = $results;
+    $master_results[$results['courseinfo']]['student_sync'] = $results;
   }
   return $master_results;
 }
@@ -203,7 +220,7 @@ function fy_enrol ($enrol,$lock) {
   
   foreach ($fy_courses as $moodle_course) {
      $result = $enrol->sync_course_membership_by_role($moodle_course,$fy_students,"5");
-     $master_results[$result['course_info']]['student_sync'] = $result;
+     $master_results[$result['courseinfo']]['student_sync'] = $result;
   }
   return $master_results;
 }
