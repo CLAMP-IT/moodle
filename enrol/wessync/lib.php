@@ -167,6 +167,7 @@ class enrol_wessync_plugin extends enrol_plugin {
     public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = 'true') {
     	global $DB;
         $result = array( 'errors' => array(), 'actions' => array(), 'failure' => 0, 'users_to_create' => array());
+	#identifier 
         $result['courseinfo'] = $moodle_course->idnumber . "-" . $moodle_course->shortname;
 	/*add error checking */
 	if ($this->wessync_cache_get("coursesync_$roleid",$moodle_course->id) == $members ) {
@@ -274,6 +275,7 @@ class enrol_wessync_plugin extends enrol_plugin {
        if ($redirect) {
 	 $course['short_name'] .= '_redirect';
    	 $course['full_name'] .= ' (Redirect)';
+	 $course['visible'] = '1';
        }
        $this->sync_moodle_course_data($course,$new_course);
        return $new_course;
@@ -313,16 +315,17 @@ class enrol_wessync_plugin extends enrol_plugin {
       
       #unzip our backup to a temporary restore file
       $backupfile['backup_destination']->extract_to_pathname($packer,"$CFG->dataroot/temp/backup/$course_template_id");
-       $bc->destroy();
+      $bc->destroy();
       $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"$admin_id",backup::TARGET_NEW_COURSE);
       if (!$restore->execute_precheck('true')) {
 	return false;
       }
+      $restore->execute_plan();
       $restore->destroy();
+      
       $transaction->allow_commit();
       #course restored, now lets fetch the object
       $new_course = $DB->get_record("course",array("id" => $new_course_id));
-      
       return $new_course;
   }
   /*given a course hash with descriptions, moodle course and optional sync_only flag sync the data */
@@ -368,8 +371,20 @@ class enrol_wessync_plugin extends enrol_plugin {
       fix_course_sortorder();
       return 1;
   }
+  public function get_moodle_category ($course) {
+      global $DB;
+      $term = $course['term'];
+      $glsp_types = array('GLSP','DCST','GLS');
+      $category_to_return = $DB->get_record('course_categories',array('name' => 'Miscellaneous'));
+      if (isset($course['acad_career']) and in_array($course['acad_career'],$glsp_types)) {
+          $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term . '-gls'));
+    } else {
+          $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term));
+    }
+    return $category_to_return;
+  }
     /* when given a course, return with the correct category */
-  public function get_moodle_category ($course ) {
+  public function get_moodle_category_old ($course ) {
       global $DB;
       $term = $course['term'];
       $year = substr($term, 0, 3) + 1900;
@@ -387,10 +402,12 @@ class enrol_wessync_plugin extends enrol_plugin {
       /* alright grab potential categories */
       $categories = $DB->get_records('course_categories',array('name' => $category_name));
       $category_to_return = 0;
+      $expected_parent = 0;
       $glsp_types = array('GLSP','DCST','GLS');
       if (isset($course['acad_career']) and in_array($course['acad_career'],$glsp_types)) {
-        /* 10 is the master GLSP category */
-        $expected_parent = 10;
+	
+        /* 6 is the master GLSP category */
+        $expected_parent = 6;
       } else {
         $expected_parent = 0;
       }

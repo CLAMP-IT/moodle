@@ -134,8 +134,11 @@ function get_moodlecreate_courses( $db_handle = '', $term = '', $redirect=0) {
   $stmt->execute();
   while ($stmt->fetch()) {
     $course['id'] = $id;
-    $course['short_name'] = addslashes($short_name);
-    $course['full_name'] = addslashes($long_name);
+    $course['short_name'] = $short_name;
+    $course['full_name'] = $long_name;
+    /* add slashes don't seem required in Moodle2 */
+#    #addslashes($short_name);
+#    $course['full_name'] = addslashes($long_name);
     $course['term'] = $term;
     $course['idnumber'] = $term . $crse_id;
     $course['crse_id'] = $crse_id;
