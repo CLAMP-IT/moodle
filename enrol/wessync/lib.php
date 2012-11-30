@@ -132,6 +132,7 @@ class enrol_wessync_plugin extends enrol_plugin {
         if (empty($members)) {
 	  $members = array();
         }
+	#array_push($members,"melson");
         return $members;
     }
     /* given a moodle course and ps89prod data handle, returns instructors of the course */
@@ -165,10 +166,27 @@ class enrol_wessync_plugin extends enrol_plugin {
 
     /* given an array of usernames, enrols and optionally unenrols the users from given role */
     public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = 'true') {
-    	global $DB;
+    	global $DB,$CFG;
+        require_once($CFG->dirroot . '/lib/gradelib.php');
         $result = array( 'errors' => array(), 'actions' => array(), 'failure' => 0, 'users_to_create' => array());
-	#identifier 
         $result['courseinfo'] = $moodle_course->idnumber . "-" . $moodle_course->shortname;
+	if (!is_array($members)) {
+      	  $result['errors'] = "Members was not passed as an array, failing";
+	  $result['failure'] = 1;
+          return $result;
+	}
+        if (!is_object($moodle_course)) {
+      	  $result['errors'] = "Require Moodle Course object";
+	  $result['failure'] = 1;
+          return $result;
+ 	}
+	
+        if (!isset($roleid) or $roleid < 1 ) {
+      	  $result['errors'] = "Requires a role id";
+	  $result['failure'] = 1;
+          return $result;
+  	} 
+	#identifier 
 	/*add error checking */
 	if ($this->wessync_cache_get("coursesync_$roleid",$moodle_course->id) == $members ) {
 	  $result['actions'] = "Members unchanged from last run, skipping";
@@ -191,6 +209,10 @@ class enrol_wessync_plugin extends enrol_plugin {
          } else if (!array_key_exists($user->id,$current_users)) {
             array_push($result['actions'],"Assigned $user->username role $roleid in course $moodle_course->shortname");
             $this->enrol_user($instance,$user->id,$roleid);
+	    /*activate it if user was unactivated before */
+	    $this->update_user_enrol($instance,$user->id,ENROL_USER_ACTIVE);
+	    /* recover grades if grades were missing before */
+            #grade_recover_history_grades($user->id, $instance->courseid );
             #log every id of an authoritative user for quicker lookups
             $authoritative_ids[$user->id] = 1;
          } else {
@@ -198,13 +220,18 @@ class enrol_wessync_plugin extends enrol_plugin {
             array_push($result['actions'],"User $user->username had role $roleid already in course $moodle_course->shortname");
          }
        }
-       if ($unenrol) {
+       /* only unenrol if there's at least ONE authoritative user; is array is to be paranoid */
+       if ($unenrol && is_array($authoritative_ids) && (count($authoritative_ids) > 0)) {
          foreach ($current_users as $current_user) {
            $current_id = $current_user->id;
-           if (!array_key_exists($current_id,$authoritative_ids)) {
+           if ($authoritative_ids && !array_key_exists($current_id,$authoritative_ids)) {
              array_push($result['actions'],"Unassigned role $roleid $current_user->username from course $moodle_course->shortname");
-             $this->unenrol_user($instance,$current_id,$roleid);
-           }
+            # $this->unenrol_user($instance,$current_id,$roleid);
+	     #suspend as follows
+	     $this->update_user_enrol($instance,$current_id,ENROL_USER_SUSPENDED);
+             $context = get_context_instance(CONTEXT_COURSE, $instance->courseid, MUST_EXIST);
+	     role_unassign($roleid,$current_id,$context->id,'enrol_wessync',$instance->id);
+           } 
          }
        } 
      /* if we've finished, stuff the array of auth users into cache so that
@@ -218,8 +245,8 @@ class enrol_wessync_plugin extends enrol_plugin {
     /* returns users in a given role in a given course */
     public function get_users_by_role_in_course($roleid,$courseid) {
 	global $DB;
- 	$sql = "select u.id,u.username from {user} u join {role_assignments} ra on (ra.userid = u.id) JOIN {user_enrolments} ue on (ue.userid= u.id and ue.enrolid = ra.itemid) join {enrol} e on (e.id = ue.enrolid) join {course} c on (c.id = e.courseid) where u.deleted = 0 and ra.component='enrol_wessync' and ra.roleid=:roleid and c.id=:courseid";
-  	$params = array ( 'roleid' => $roleid, 'courseid' => $courseid );
+ 	$sql = "select u.id,u.username from {user} u join {role_assignments} ra on (ra.userid = u.id) JOIN {user_enrolments} ue on (ue.userid= u.id and ue.enrolid = ra.itemid) join {enrol} e on (e.id = ue.enrolid) join {course} c on (c.id = e.courseid) where u.deleted = 0 and ra.component='enrol_wessync' and ra.roleid=:roleid and c.id=:courseid and ue.status=:enrol_status";
+  	$params = array ( 'roleid' => $roleid, 'courseid' => $courseid, 'enrol_status' => ENROL_USER_ACTIVE );
   	$users = $DB->get_records_sql($sql,$params);
   	if ($users == false ) {
    	  return array();
