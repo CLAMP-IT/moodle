@@ -248,7 +248,7 @@ function xmldb_main_upgrade($oldversion) {
         if ($CFG->restrictmodulesfor === 'all') {
             $courses = $DB->get_records_menu('course', array(), 'id', 'id, 1');
         } else if ($CFG->restrictmodulesfor === 'requested') {
-            $courses = $DB->get_records_menu('course', array('retrictmodules' => 1), 'id', 'id, 1');
+            $courses = $DB->get_records_menu('course', array('restrictmodules' => 1), 'id', 'id, 1');
         } else {
             $courses = array();
         }
@@ -314,7 +314,7 @@ function xmldb_main_upgrade($oldversion) {
 
     if ($oldversion < 2012031500.02) {
 
-        // Define field retrictmodules to be dropped from course
+        // Define field restrictmodules to be dropped from course
         $table = new xmldb_table('course');
         $field = new xmldb_field('restrictmodules');
 
@@ -957,6 +957,32 @@ function xmldb_main_upgrade($oldversion) {
                             AND ' . $DB->sql_isnotempty('post', 'uniquehash', false, false);
         $DB->execute($sql);
         upgrade_main_savepoint(true, 2012062501.14);
+    }
+
+    if ($oldversion < 2012062502.03) {
+        // Some folders still have a sortorder set, which is used for main files but is not
+        // supported by the folder resource. We reset the value here.
+        $sql = 'UPDATE {files} SET sortorder = ? WHERE component = ? AND filearea = ? AND sortorder <> ?';
+        $DB->execute($sql, array(0, 'mod_folder', 'content', 0));
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2012062502.03);
+    }
+
+    if ($oldversion < 2012062502.07) {
+        // Find all orphaned blog associations that might exist.
+        $sql = "SELECT ba.id
+                  FROM {blog_association} ba
+             LEFT JOIN {post} p
+                    ON p.id = ba.blogid
+                 WHERE p.id IS NULL";
+        $orphanedrecordids = $DB->get_records_sql($sql);
+        // Now delete these associations.
+        foreach ($orphanedrecordids as $orphanedrecord) {
+            $DB->delete_records('blog_association', array('id' => $orphanedrecord->id));
+        }
+
+        upgrade_main_savepoint(true, 2012062502.07);
     }
 
     return true;

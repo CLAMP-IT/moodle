@@ -544,6 +544,9 @@ class phpunit_util {
     public static function reset_all_data($logchanges = false) {
         global $DB, $CFG, $USER, $SITE, $COURSE, $PAGE, $OUTPUT, $SESSION, $GROUPLIB_CACHE;
 
+        // Release memory and indirectly call destroy() methods to release resource handles, etc.
+        gc_collect_cycles();
+
         // reset global $DB in case somebody mocked it
         $DB = self::get_global_backup('DB');
 
@@ -617,6 +620,10 @@ class phpunit_util {
         }
         $GROUPLIB_CACHE = null;
         //TODO MDL-25290: add more resets here and probably refactor them to new core function
+
+        // Reset course and module caches.
+        $reset = 'reset';
+        get_fast_modinfo($reset);
 
         // purge dataroot directory
         self::reset_dataroot();

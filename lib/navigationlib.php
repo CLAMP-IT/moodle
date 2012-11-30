@@ -1197,7 +1197,7 @@ class global_navigation extends navigation_node {
                 break;
             case CONTEXT_COURSECAT :
                 // This has already been loaded we just need to map the variable
-                if ($showcategories) {
+                if ($this->show_categories()) {
                     $this->load_all_categories($this->page->context->instanceid, true);
                 }
                 break;
@@ -2026,9 +2026,7 @@ class global_navigation extends navigation_node {
                     // pre 2.3 style format url
                     $url = $urlfunction($course->id, $section->section);
                 }else{
-                    if ($course->coursedisplay == COURSE_DISPLAY_MULTIPAGE) {
-                        $url = course_get_url($course, $section->section);
-                    }
+                    $url = course_get_url($course, $section->section, array('navigation' => true));
                 }
                 $sectionnode = $coursenode->add($sectionname, $url, navigation_node::TYPE_SECTION, null, $section->id);
                 $sectionnode->nodetype = navigation_node::NODETYPE_BRANCH;
@@ -3563,7 +3561,7 @@ class settings_navigation extends navigation_node {
                 $baseurl->param('sesskey', sesskey());
             } else {
                 // Edit on the main course page.
-                $baseurl = new moodle_url('/course/view.php', array('id'=>$course->id, 'sesskey'=>sesskey()));
+                $baseurl = new moodle_url('/course/view.php', array('id'=>$course->id, 'return'=>$this->page->url->out_as_local_url(false), 'sesskey'=>sesskey()));
             }
 
             $editurl = clone($baseurl);

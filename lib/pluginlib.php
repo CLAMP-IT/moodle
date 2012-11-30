@@ -843,6 +843,11 @@ class available_update_checker {
     /**
      * Loads the most recent raw response record we have fetched
      *
+     * After this method is called, $this->recentresponse is set to an array. If the
+     * array is empty, then either no data have been fetched yet or the fetched data
+     * do not have expected format (and thence they are ignored and a debugging
+     * message is displayed).
+     *
      * This implementation uses the config_plugins table as the permanent storage.
      *
      * @param bool $forcereload reload even if it was already loaded
@@ -862,7 +867,8 @@ class available_update_checker {
                 $this->recentfetch = $config->recentfetch;
                 $this->recentresponse = $this->decode_response($config->recentresponse);
             } catch (available_update_checker_exception $e) {
-                // do not set recentresponse if the validation fails
+                debugging('Invalid info about available updates detected and will be ignored: '.$e->getMessage(), DEBUG_ALL);
+                $this->recentresponse = array();
             }
 
         } else {
@@ -1296,7 +1302,7 @@ class available_update_checker {
             $message->name              = 'availableupdate';
             $message->userfrom          = $mainadmin;
             $message->userto            = $admin;
-            $message->subject           = get_string('updatenotifications', 'core_admin');
+            $message->subject           = get_string('updatenotificationsubject', 'core_admin', array('siteurl' => $CFG->wwwroot));
             $message->fullmessage       = $text;
             $message->fullmessageformat = FORMAT_PLAIN;
             $message->fullmessagehtml   = $html;
@@ -2496,5 +2502,16 @@ class plugininfo_report extends plugininfo_base {
 
     public function get_uninstall_url() {
         return new moodle_url('/admin/reports.php', array('delete' => $this->name, 'sesskey' => sesskey()));
+    }
+}
+
+
+/**
+ * Class for local plugins
+ */
+class plugininfo_local extends plugininfo_base {
+
+    public function get_uninstall_url() {
+        return new moodle_url('/admin/localplugins.php', array('delete' => $this->name, 'sesskey' => sesskey()));
     }
 }

@@ -319,18 +319,18 @@ class assign {
             $this->process_batch_grading_operation();
             $action = 'grading';
          } else if ($action == 'submitgrade') {
-            if (optional_param('saveandshownext', null, PARAM_ALPHA)) {
+            if (optional_param('saveandshownext', null, PARAM_RAW)) {
                 //save and show next
                 $action = 'grade';
                 if ($this->process_save_grade($mform)) {
                     $action = 'nextgrade';
                 }
-            } else if (optional_param('nosaveandprevious', null, PARAM_ALPHA)) {
+            } else if (optional_param('nosaveandprevious', null, PARAM_RAW)) {
                 $action = 'previousgrade';
-            } else if (optional_param('nosaveandnext', null, PARAM_ALPHA)) {
+            } else if (optional_param('nosaveandnext', null, PARAM_RAW)) {
                 //show next button
                 $action = 'nextgrade';
-            } else if (optional_param('savegrade', null, PARAM_ALPHA)) {
+            } else if (optional_param('savegrade', null, PARAM_RAW)) {
                 //save changes button
                 $action = 'grade';
                 if ($this->process_save_grade($mform)) {
@@ -503,6 +503,82 @@ class assign {
         $DB->delete_records('assign', array('id'=>$this->get_instance()->id));
 
         return $result;
+    }
+
+    /**
+    * Actual implementation of the reset course functionality, delete all the
+    * assignment submissions for course $data->courseid.
+    *
+    * @param $data the data submitted from the reset course.
+    * @return array status array
+    */
+    public function reset_userdata($data) {
+        global $CFG,$DB;
+
+        $componentstr = get_string('modulenameplural', 'assign');
+        $status = array();
+
+        $fs = get_file_storage();
+        if (!empty($data->reset_assign_submissions)) {
+            // Delete files associated with this assignment.
+            foreach ($this->submissionplugins as $plugin) {
+                $fileareas = array();
+                $plugincomponent = $plugin->get_subtype() . '_' . $plugin->get_type();
+                $fileareas = $plugin->get_file_areas();
+                foreach ($fileareas as $filearea) {
+                    $fs->delete_area_files($this->context->id, $plugincomponent, $filearea);
+                }
+
+                if (!$plugin->delete_instance()) {
+                    $status[] = array('component'=>$componentstr,
+                                      'item'=>get_string('deleteallsubmissions','assign'),
+                                      'error'=>$plugin->get_error());
+                }
+            }
+
+            foreach ($this->feedbackplugins as $plugin) {
+                $fileareas = array();
+                $plugincomponent = $plugin->get_subtype() . '_' . $plugin->get_type();
+                $fileareas = $plugin->get_file_areas();
+                foreach ($fileareas as $filearea) {
+                    $fs->delete_area_files($this->context->id, $plugincomponent, $filearea);
+                }
+
+                if (!$plugin->delete_instance()) {
+                    $status[] = array('component'=>$componentstr,
+                                      'item'=>get_string('deleteallsubmissions','assign'),
+                                      'error'=>$plugin->get_error());
+                }
+            }
+
+            $assignssql = "SELECT a.id
+                             FROM {assign} a
+                           WHERE a.course=:course";
+            $params = array ("course" => $data->courseid);
+
+            $DB->delete_records_select('assign_submission', "assignment IN ($assignssql)", $params);
+            $status[] = array('component'=>$componentstr,
+                              'item'=>get_string('deleteallsubmissions','assign'),
+                              'error'=>false);
+
+            if (empty($data->reset_gradebook_grades)) {
+                // Remove all grades from gradebook.
+                require_once($CFG->dirroot.'/mod/assign/lib.php');
+                assign_reset_gradebook($data->courseid);
+            }
+        }
+        // Updating dates - shift may be negative too.
+        if ($data->timeshift) {
+            shift_course_mod_dates('assign',
+                                    array('duedate', 'allowsubmissionsfromdate'),
+                                    $data->timeshift,
+                                    $data->courseid);
+            $status[] = array('component'=>$componentstr,
+                              'item'=>get_string('datechanged'),
+                              'error'=>false);
+        }
+
+        return $status;
     }
 
     /**
@@ -1629,11 +1705,7 @@ class assign {
         if ($rownum == count($useridlist) - 1) {
             $last = true;
         }
-        // the placement of this is important so can pass the list of userids above
-        if ($offset) {
-            $_POST = array();
-        }
-        if(!$userid){
+        if (!$userid) {
             throw new coding_exception('Row is out of bounds for the current grading table: ' . $rownum);
         }
         $user = $DB->get_record('user', array('id' => $userid));
@@ -1762,18 +1834,17 @@ class assign {
         $gradingoptionsdata->filter = $filter;
         $gradingoptionsform->set_data($gradingoptionsdata);
 
+        $actionformtext = $this->output->render($gradingactions);
+        $o .= $this->output->render(new assign_header($this->get_instance(),
+                                                      $this->get_context(), false, $this->get_course_module()->id, get_string('grading', 'assign'), $actionformtext));
+        $o .= groups_print_activity_menu($this->get_course_module(), $CFG->wwwroot . '/mod/assign/view.php?id=' . $this->get_course_module()->id.'&action=grading', true);
+
         // plagiarism update status apearring in the grading book
         if (!empty($CFG->enableplagiarism)) {
             /** Include plagiarismlib.php */
             require_once($CFG->libdir . '/plagiarismlib.php');
             $o .= plagiarism_update_status($this->get_course(), $this->get_course_module());
         }
-
-        $actionformtext = $this->output->render($gradingactions);
-        $o .= $this->output->render(new assign_header($this->get_instance(),
-                                                      $this->get_context(), false, $this->get_course_module()->id, get_string('grading', 'assign'), $actionformtext));
-        $o .= groups_print_activity_menu($this->get_course_module(), $CFG->wwwroot . '/mod/assign/view.php?id=' . $this->get_course_module()->id.'&action=grading', true);
-
 
         // load and print the table of submissions
         if ($showquickgrading && $quickgrading) {
@@ -2624,20 +2695,28 @@ class assign {
         }
         $currentgrades->close();
 
+        $adminconfig = $this->get_admin_config();
+        $gradebookplugin = $adminconfig->feedback_plugin_for_gradebook;
+
         // ok - ready to process the updates
         foreach ($modifiedusers as $userid => $modified) {
             $grade = $this->get_user_grade($userid, true);
             $grade->grade= grade_floatval(unformat_float($modified->grade));
             $grade->grader= $USER->id;
 
-            $this->update_grade($grade);
-
             // save plugins data
             foreach ($this->feedbackplugins as $plugin) {
                 if ($plugin->is_visible() && $plugin->is_enabled() && $plugin->supports_quickgrading()) {
                     $plugin->save_quickgrading_changes($userid, $grade);
+                    if (('assignfeedback_' . $plugin->get_type()) == $gradebookplugin) {
+                        // This is the feedback plugin chose to push comments to the gradebook.
+                        $grade->feedbacktext = $plugin->text_for_gradebook($grade);
+                        $grade->feedbackformat = $plugin->format_for_gradebook($grade);
+                    }
                 }
             }
+
+            $this->update_grade($grade);
 
             // save outcomes
             if ($CFG->enableoutcomes) {
@@ -2681,7 +2760,9 @@ class assign {
                                                                  'showquickgrading'=>false));
         if ($formdata = $mform->get_data()) {
             set_user_preference('assign_perpage', $formdata->perpage);
-            set_user_preference('assign_filter', $formdata->filter);
+            if (isset($formdata->filter)) {
+                set_user_preference('assign_filter', $formdata->filter);
+            }
         }
     }
 
@@ -2942,6 +3023,7 @@ class assign {
         $mform->setType('id', PARAM_INT);
         $mform->addElement('hidden', 'rownum', $rownum);
         $mform->setType('rownum', PARAM_INT);
+        $mform->setConstant('rownum', $rownum);
         $mform->addElement('hidden', 'useridlist', implode(',', $useridlist));
         $mform->setType('useridlist', PARAM_TEXT);
         $mform->addElement('hidden', 'ajax', optional_param('ajax', 0, PARAM_INT));
@@ -3376,7 +3458,7 @@ class assign {
         $graderesults = $DB->get_recordset_sql('SELECT u.id as userid, s.timemodified as datesubmitted, g.grade as rawgrade, g.timemodified as dategraded, g.grader as usermodified
                             FROM {user} u
                             LEFT JOIN {assign_submission} s ON u.id = s.userid and s.assignment = ?
-                            LEFT JOIN {assign_grades} g ON u.id = g.userid and g.assignment = ?
+                            JOIN {assign_grades} g ON u.id = g.userid and g.assignment = ?
                             ' . $where, array($assignmentid, $assignmentid, $userid));
 
 

@@ -987,7 +987,7 @@ function quiz_get_flag_option($attempt, $context) {
  *      IMMEDIATELY_AFTER, LATER_WHILE_OPEN or AFTER_CLOSE constants.
  */
 function quiz_attempt_state($quiz, $attempt) {
-    if ($attempt->state != quiz_attempt::FINISHED) {
+    if ($attempt->state == quiz_attempt::IN_PROGRESS) {
         return mod_quiz_display_options::DURING;
     } else if (time() < $attempt->timefinish + 120) {
         return mod_quiz_display_options::IMMEDIATELY_AFTER;
@@ -1456,13 +1456,14 @@ function quiz_get_js_module() {
         'name' => 'mod_quiz',
         'fullpath' => '/mod/quiz/module.js',
         'requires' => array('base', 'dom', 'event-delegate', 'event-key',
-                'core_question_engine'),
+                'core_question_engine', 'moodle-core-formchangechecker'),
         'strings' => array(
             array('cancel', 'moodle'),
             array('flagged', 'question'),
             array('functiondisabledbysecuremode', 'quiz'),
             array('startattempt', 'quiz'),
             array('timesup', 'quiz'),
+            array('changesmadereallygoaway', 'moodle'),
         ),
     );
 }
