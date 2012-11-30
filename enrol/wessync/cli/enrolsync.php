@@ -12,6 +12,8 @@ require(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
 // Ensure errors are well explained
 $CFG->debug = DEBUG_NORMAL;
 
+require_once($CFG->dirroot . '/lib/gradelib.php');
+
 if (!enrol_is_enabled('wessync')) {
     die;
 }
@@ -88,12 +90,17 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
     if (!$auth_teachers) {
        continue;
     }
-    foreach ($auth_students as $student) {
+/*    foreach ($auth_students as $student) {
       global $DB;
       $user = $DB->get_record('user',array('username' => $student),'id,username');
-      #$return = grade_recover_history_grades($user->id, $moodle_course->id);
-
-    }
+#	print "Trying to recover $student...\n";
+      $return = grade_recover_history_grades($user->id, $moodle_course->id);
+	if ($return) {
+	  print "Grades recovered for $student\n";
+	} else {
+	  print "Could not recover for $student\n";
+	}
+    }*/
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
     $master_results[$courseinfo]['student_sync'] = $result;
     /* role id 3 == teacher */
@@ -123,6 +130,7 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
   $moodlecreate_courses = get_moodlecreate_courses($moodlecreate,$semester,$redirect);
   $email_results = array();
   foreach ($moodlecreate_courses as $course) {
+     /* redirects shuold only be valid for 1131/1136  - Spring/Summer 2013 */
     if ($redirect && ($course['term'] <= 1129 or $semseter >= 1139)) {
       continue;
     }
@@ -187,7 +195,7 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
      $body = implode("\n",$email_results);
      $recipients = array ('jwest@wesleyan.edu','kwiliarty@wesleyan.edu','dschnaidt@wesleyan.edu','jgoetz@wesleyan.edu','eparis@wesleyan.edu','melson@wesleyan.edu');
      $subject = "Moodle2 Course Creation Report";
-     mail(join(',',$recipients),$subject,$body,"From: moodle_admins\@wesleyan.edu\r\nPrecedence: Bulk\r\n");
+     mail(join(',',$recipients),$subject,$body,"From: <moodle_admins@wesleyan.edu\r\nPrecedence: Bulk\r\n");
   }
   return $master_results;
 }
