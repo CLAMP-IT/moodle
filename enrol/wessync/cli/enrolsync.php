@@ -48,6 +48,11 @@ fclose($fh);
 
 function idnumber_enrol($enrol,$lock,$cs_courses) {
   $ps89prod = get_ps89prod_db();
+  if (!$ps89prod) {
+    print oci_error($ps89prod);
+    release_lock_file($lock,'idnumber_enrol');
+    die;
+  }
   if (!$cs_courses) {
     print "This syncing method requires an argument of comma-separated idnumbers";
     die;
@@ -76,7 +81,19 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
     /* just a unique identifier for tagging results hash */
     $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
     $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
+    if (!$auth_students) {
+      continue;
+    }
     $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
+    if (!$auth_teachers) {
+       continue;
+    }
+    foreach ($auth_students as $student) {
+      global $DB;
+      $user = $DB->get_record('user',array('username' => $student),'id,username');
+      #$return = grade_recover_history_grades($user->id, $moodle_course->id);
+
+    }
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
     $master_results[$courseinfo]['student_sync'] = $result;
     /* role id 3 == teacher */
