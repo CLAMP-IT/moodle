@@ -19,8 +19,8 @@
  * Manual enrolment plugin settings and presets.
  *
  * @package    enrol
- * @subpackage manual
- * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @subpackage wessymc
+ * @copyright  2012 Matt Elson
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
