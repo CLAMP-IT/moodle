@@ -1,9 +1,9 @@
 <?php
 /*contains helper functions that didn't belong in the enroll object*/
-/*fetches ps89prod database object as thor*/
-function get_ps89prod_db() {
+/*fetches peoplesoft database object as thor*/
+function get_peoplesoft_db() {
   include "inc/db.conf.php";
-  $dbh = oci_connect($ps89prod_user,$ps89prod_pass,$ps89prod_dsn);
+  $dbh = oci_connect($ps_user,$ps_pass,$ps_dsn);
   return $dbh;
 }
 
@@ -218,7 +218,7 @@ function wes_get_first_year_courses($semester) {
 }
 /*gets all "first year" students */
    
-function wes_get_first_year_students($ps89prod,$semester) {   
+function wes_get_first_year_students($psdb,$semester) {   
   $members = array();
   /*from pturenne*/
   $statement = "SELECT A.EMPLID
@@ -232,7 +232,7 @@ function wes_get_first_year_students($ps89prod,$semester) {
      AND B.EFFDT = A.EFFDT
      AND B.ACAD_PLAN in ('PRE-MATRIC','TCEX','VINT','FYST','TRAN') UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW'      AND C.SRVC_IND_REASON IN ('ADVIS','INTER') AND C.AMOUNT = :year";
   $year = substr($semester,0,3)+ 1900;
-  $sth = oci_parse($ps89prod,$statement);
+  $sth = oci_parse($psdb,$statement);
   oci_bind_by_name($sth,':strm',$semester);
   oci_bind_by_name($sth,':year',$year);
   if (!oci_execute($sth)) {
@@ -240,7 +240,7 @@ function wes_get_first_year_students($ps89prod,$semester) {
   }
   /*wesid->username */
   $wesid_statement = "select sysadm.wes_get_email(:wesid) from dual";
-  $wesid_sth = oci_parse($ps89prod,$wesid_statement);
+  $wesid_sth = oci_parse($psdb,$wesid_statement);
   while ($row = oci_fetch_array($sth,OCI_ASSOC)) {
     $emplid = $row['EMPLID'];
     oci_bind_by_name($wesid_sth,':wesid',$emplid);

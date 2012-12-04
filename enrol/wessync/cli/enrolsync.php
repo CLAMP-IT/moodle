@@ -43,15 +43,16 @@ if ($argv[1] == 'peoplesoft_enrol' ) {
 } else {
   print "Unknown enrol request!";
 }
+print "Results were: " . var_dump($results);
 release_lock_file($lock,$argv[1]);
 $fh = fopen("/tmp/" . $argv[1] . $argv[2] . "_results","a+");
 fwrite($fh,print_r($results,true));
 fclose($fh);
 
 function idnumber_enrol($enrol,$lock,$cs_courses) {
-  $ps89prod = get_ps89prod_db();
-  if (!$ps89prod) {
-    print oci_error($ps89prod);
+  $psdb = get_peoplesoft_db();
+  if (!$psdb) {
+    print oci_error($psdb);
     release_lock_file($lock,'idnumber_enrol');
     die;
   }
@@ -65,12 +66,12 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
 
     if (!$moodle_course) {
       $course_hash = $enrol->course_hash_from_idnumber($idnumber);
-      $course = get_peoplesoft_course_data($ps89prod,$course_hash);
+      $course = get_peoplesoft_course_data($psdb,$course_hash);
       if (!$course) {
         $master_results[$idnumber] = "Could not find information on $idnumber";
         continue;
       }
-      $auth_teachers = $enrol->get_instructors_from_ps89prod($course,$ps89prod);
+      $auth_teachers = $enrol->get_instructors_from_peoplesoft($course,$psdb);
       foreach ($auth_teachers as $teacher) {
         $course['summary'] .= "<p>Instructor: $teacher</p>";
       }
@@ -82,11 +83,11 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
     }
     /* just a unique identifier for tagging results hash */
     $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
-    $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
+    $auth_students = $enrol->get_members_from_peoplesoft($moodle_course,$psdb);
     if (!$auth_students) {
       continue;
     }
-    $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
+    $auth_teachers = $enrol->get_instructors_from_peoplesoft($moodle_course,$psdb);
     if (!$auth_teachers) {
        continue;
     }
@@ -119,9 +120,9 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     release_lock_file($lock,'peoplesoft_enrol');
     die;
   }
-  $ps89prod = get_ps89prod_db();
-  if (!$ps89prod) {
-    print oci_error($ps89prod);
+  $psdb = get_peoplesoft_db();
+  if (!$psdd) {
+    print oci_error($psdb);
     release_lock_file($lock,'peoplesoft_enrol');
     die;
   }
@@ -146,7 +147,7 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
       } else {
 	/* found a need to hold on to orig course incase peoplesoft data returns null */
 	$orig_course = $course;
-        $course = get_peoplesoft_course_data($ps89prod,$course);
+        $course = get_peoplesoft_course_data($psdb,$course);
 	if (!$course) {
 	   $master_results[$orig_course['idnumber']]['warn'] = "Could not find course in Peoplesoft, skipping\n";
 	   continue;
@@ -168,12 +169,13 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     /* just a unique identifier for tagging results hash */
     $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
 
-    $auth_students = $enrol->get_members_from_ps89prod($moodle_course,$ps89prod);
+    $auth_students = $enrol->get_members_from_peoplesoft($moodle_course,$psdb);
+    var_dump($auth_students);
     if ($auth_students === false ) {
       print "Database errors";
       continue;
     }
-    $auth_teachers = $enrol->get_instructors_from_ps89prod($moodle_course,$ps89prod);
+    $auth_teachers = $enrol->get_instructors_from_peoplesoft($moodle_course,$psdb);
     if ($email_results) {
       foreach ($auth_teachers as $teacher) {
         $email_results[] = "\tInstructor: $teacher";
@@ -234,14 +236,14 @@ function ldap_enrol ($enrol,$lock) {
 function fy_enrol ($enrol,$lock) {
   $master_results = array();
   $semester = $enrol->get_current_wes_semester();
-  $ps89prod = get_ps89prod_db();
-  if (!$ps89prod) {
-    print oci_error($ps89prod);
+  $psdb = get_peopleosft_db();
+  if (!$psdb) {
+    print oci_error($psdb);
     release_lock_file($lock,'fy_enrol');
     die;
   }
   $fy_courses = wes_get_first_year_courses($semester);
-  $fy_students = wes_get_first_year_students($ps89prod,$semester);
+  $fy_students = wes_get_first_year_students($psdb,$semester);
   
   foreach ($fy_courses as $moodle_course) {
      $result = $enrol->sync_course_membership_by_role($moodle_course,$fy_students,"5");
