@@ -103,6 +103,7 @@ body.editing .section .contentafterlink .no-overflow div {
 	padding: 0.5em 0 0 2em;
 }
 
-body.editing .section .unread {
+body.editing .section .unread,
+body.editing .section .resourcelinkdetails {
 	display: none;
 }
