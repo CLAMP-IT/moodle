@@ -30,7 +30,7 @@ body.editing .section .commands [title='Visible groups (Click to change)'] {left
 body.editing .section .commands [title='Assign roles'] {left: 144px;}
 
 body.editing .section .mod-indent {min-height: 22px; padding: 0;}
-body.editing .section .mod-indent>a {position: absolute; left: 180px; top: 0;} 
+body.editing .section .mod-indent>a {position: static; left: 180px; top: 0;} 
 
 body.editing .section .commands a {padding: 0 2px; line-height: 1em; top: 5px;}
 body.editing .section .commands span {padding: 0 2px; line-height: 1em; top: 5px;}
@@ -103,7 +103,9 @@ body.editing .section .contentafterlink .no-overflow div {
 	padding: 0.5em 0 0 2em;
 }
 
+/* no longer necessary if a position is static
 body.editing .section .unread,
 body.editing .section .resourcelinkdetails {
 	display: none;
 }
+*/
