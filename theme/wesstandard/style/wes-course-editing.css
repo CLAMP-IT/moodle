@@ -80,6 +80,7 @@ body.editing .section .modtype_label .mod-indent-7 {padding-left: 340px;}
 body.editing .section .modtype_label .mod-indent-8 {padding-left: 360px;}
 body.editing .section .modtype_label .mod-indent-9 {padding-left: 380px;}
 body.editing .section .modtype_label .mod-indent-10 {padding-left: 400px;}
+body.editing .section .modtype_label .mod-indent>div {margin: -0.2em 0 -1em 0;}
 
 body.editing .section .mod-indent:hover {
 	-webkit-box-shadow: 2px 2px 8px #ccc, -2px -2px 8px #ccc;
@@ -100,7 +101,7 @@ body.editing .section .contentafterlink .no-overflow p {
 }
 
 body.editing .section .contentafterlink .no-overflow div {
-	padding: 0.5em 0 0 2em;
+	padding: 0 0 0 2em;
 }
 
 /* no longer necessary if a position is static
