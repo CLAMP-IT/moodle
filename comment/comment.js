@@ -309,16 +309,16 @@ bodyContent: '<div class="comment-delete-confirm"><a href="#" id="confirmdelete-
                             CommentHelper.confirmoverlay.set('xy', [e.pageX-width-5, e.pageY]);
                             CommentHelper.confirmoverlay.set('visible', true);
                             Y.one('#canceldelete-'+scope.client_id).on('click', function(e) {
-								e.preventDefault();
+                                e.preventDefault();
                                 scope.cancel_delete();
                                 });
                             Y.Event.purgeElement('#confirmdelete-'+scope.client_id, false, 'click');
                             Y.one('#confirmdelete-'+scope.client_id).on('click', function(e) {
-									e.preventDefault();
-                                    if (commentid[1]) {
-                                        scope.dodelete(commentid[1]);
-                                    }
-                                });
+                                e.preventDefault();
+                                if (commentid[1]) {
+                                    scope.dodelete(commentid[1]);
+                                }
+                            });
                         }, scope, node);
                     }
                 );
@@ -361,7 +361,13 @@ bodyContent: '<div class="comment-delete-confirm"><a href="#" id="confirmdelete-
                 } else {
                     // hide
                     container.setStyle('display', 'none');
-                    img.set('src', M.util.image_url('t/collapsed', 'core'));
+                    var collapsedimage = 't/collapsed'; // ltr mode
+                    if ( Y.one(document.body).hasClass('dir-rtl') ) {
+                        collapsedimage = 't/collapsed_rtl';
+                    } else {
+                        collapsedimage = 't/collapsed';
+                    }
+                    img.set('src', M.util.image_url(collapsedimage, 'core'));
                     if (ta) {
                         ta.set('value','');
                     }
