@@ -1,6 +1,6 @@
 [submodule "theme/cosmic"]
 	path = theme/cosmic
-	url = https://github.com/LafColITS/moodle-theme_cosmic
+	url = /home/git/cosmic
 [submodule "theme/rocket"]
 	path = theme/rocket
 	url = https://github.com/moodleman/moodle-theme_rocket
