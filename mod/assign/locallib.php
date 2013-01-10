@@ -4272,6 +4272,10 @@ class assign {
         if (!empty($buttonarray)) {
             $mform->addGroup($buttonarray, 'navar', '', array(' '), false);
         }
+	if (!empty($buttonarray)) {
+            $mform->addGroup($buttonarray, 'navar', '', array(' '), false);
+	}
+	   fixed bug MDL-36509
     }
 
 
