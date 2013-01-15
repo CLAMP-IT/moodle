@@ -754,13 +754,14 @@ class assign {
      * @param mixed $grade stdClass|null
      * @param MoodleQuickForm $mform
      * @param stdClass $data
+     * @param int $userid - The userid we are grading
      * @return void
      */
-    private function add_plugin_grade_elements($grade, MoodleQuickForm $mform, stdClass $data) {
+    private function add_plugin_grade_elements($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
         foreach ($this->feedbackplugins as $plugin) {
             if ($plugin->is_enabled() && $plugin->is_visible()) {
                 $mform->addElement('header', 'header_' . $plugin->get_type(), $plugin->get_name());
-                if (!$plugin->get_form_elements($grade, $mform, $data)) {
+                if (!$plugin->get_form_elements_for_user($grade, $mform, $data, $userid)) {
                     $mform->removeElement('header_' . $plugin->get_type());
                 }
             }
@@ -2760,9 +2761,7 @@ class assign {
                                                                  'showquickgrading'=>false));
         if ($formdata = $mform->get_data()) {
             set_user_preference('assign_perpage', $formdata->perpage);
-            if (isset($formdata->filter)) {
-                set_user_preference('assign_filter', $formdata->filter);
-            }
+            set_user_preference('assign_filter', $formdata->filter);
         }
     }
 
@@ -3015,8 +3014,8 @@ class assign {
 
         $mform->addElement('static', 'progress', '', get_string('gradingstudentprogress', 'assign', array('index'=>$rownum+1, 'count'=>count($useridlist))));
 
-        // plugins
-        $this->add_plugin_grade_elements($grade, $mform, $data);
+        // Let feedback plugins add elements to the grading form.
+        $this->add_plugin_grade_elements($grade, $mform, $data, $userid);
 
         // hidden params
         $mform->addElement('hidden', 'id', $this->get_course_module()->id);
@@ -3050,9 +3049,7 @@ class assign {
         if (!$last){
             $buttonarray[] = $mform->createElement('submit', 'nosaveandnext', get_string('nosavebutnext', 'assign'));
         }
-	if (!empty($buttonarray)) {
-            $mform->addGroup($buttonarray, 'navar', '', array(' '), false);
-	}
+        $mform->addGroup($buttonarray, 'navar', '', array(' '), false);
     }
 
 
@@ -3062,13 +3059,14 @@ class assign {
      * @param mixed $submission stdClass|null
      * @param MoodleQuickForm $mform
      * @param stdClass $data
+     * @param int $userid The current userid (same as $USER->id)
      * @return void
      */
-    private function add_plugin_submission_elements($submission, MoodleQuickForm $mform, stdClass $data) {
+    private function add_plugin_submission_elements($submission, MoodleQuickForm $mform, stdClass $data, $userid) {
         foreach ($this->submissionplugins as $plugin) {
             if ($plugin->is_enabled() && $plugin->is_visible() && $plugin->allow_submissions()) {
                 $mform->addElement('header', 'header_' . $plugin->get_type(), $plugin->get_name());
-                if (!$plugin->get_form_elements($submission, $mform, $data)) {
+                if (!$plugin->get_form_elements_for_user($submission, $mform, $data, $userid)) {
                     $mform->removeElement('header_' . $plugin->get_type());
                 }
             }
@@ -3128,7 +3126,7 @@ class assign {
 
         $submission = $this->get_user_submission($USER->id, false);
 
-        $this->add_plugin_submission_elements($submission, $mform, $data);
+        $this->add_plugin_submission_elements($submission, $mform, $data, $USER->id);
 
         // hidden params
         $mform->addElement('hidden', 'id', $this->get_course_module()->id);
@@ -3482,4 +3480,3 @@ class assign {
     }
 
 }
-
