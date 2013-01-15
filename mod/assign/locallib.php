@@ -3910,9 +3910,7 @@ class assign {
                                                                  'showquickgrading'=>false));
         if ($formdata = $mform->get_data()) {
             set_user_preference('assign_perpage', $formdata->perpage);
-            if (isset($formdata->filter)) {
-                set_user_preference('assign_filter', $formdata->filter);
-            }
+            set_user_preference('assign_filter', $formdata->filter);
         }
     }
 
@@ -4276,6 +4274,8 @@ class assign {
             $mform->addGroup($buttonarray, 'navar', '', array(' '), false);
 	}
 	   fixed bug MDL-36509
+        $mform->addGroup($buttonarray, 'navar', '', array(' '), false);
+	// Fixed (applied patch) bug with assignment feedback files, MDL-36289
     }
 
 
@@ -4374,6 +4374,7 @@ class assign {
             $mform->addRule('submissionstatement', get_string('required'), 'required', null, 'client');
         }
 
+	// Fixed (applied patch) bug with assignment feedback files, MDL-36289
         $this->add_plugin_submission_elements($submission, $mform, $data, $USER->id);
 
         // hidden params
@@ -5110,3 +5111,4 @@ class assign_portfolio_caller extends portfolio_module_caller_base {
 
     }
 }
+// Fixed (applied patch) bug with assignment feedback files, MDL-36289
