@@ -657,7 +657,7 @@ class page_wiki_comments extends page_wiki {
                     $parsedcontent = wiki_parse_content('nwiki', $comment->content, $options);
                 }
 
-                $cell4->text = format_text(html_entity_decode($parsedcontent['parsed_text']), FORMAT_HTML);
+                $cell4->text = format_text(html_entity_decode($parsedcontent['parsed_text'], ENT_QUOTES, 'UTF-8'), FORMAT_HTML);
             } else {
                 $cell4->text = format_text($comment->content, FORMAT_HTML);
             }
@@ -936,12 +936,14 @@ class page_wiki_create extends page_wiki {
         $data = $this->mform->get_data();
         if (isset($data->groupinfo)) {
             $groupid = $data->groupinfo;
+        } else if (!empty($this->gid)) {
+            $groupid = $this->gid;
         } else {
             $groupid = '0';
         }
         if (empty($this->subwiki)) {
             // If subwiki is not set then try find one and set else create one.
-            if (!$this->subwiki = wiki_get_subwiki_by_group($this->wid, $groupid)) {
+            if (!$this->subwiki = wiki_get_subwiki_by_group($this->wid, $groupid, $this->uid)) {
                 $swid = wiki_add_subwiki($PAGE->activityrecord->id, $groupid, $this->uid);
                 $this->subwiki = wiki_get_subwiki($swid);
             }

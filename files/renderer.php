@@ -188,7 +188,7 @@ class core_files_renderer extends plugin_renderer_base {
         $strdroptoupload = get_string('droptoupload', 'moodle');
         $icon_progress = $OUTPUT->pix_icon('i/loading_small', $strloading).'';
         $restrictions = $this->fm_print_restrictions($fm);
-        $strdndenabled = get_string('dndenabled_insentence', 'moodle').$OUTPUT->help_icon('dndenabled');
+        $strdndnotsupported = get_string('dndnotsupported_insentence', 'moodle').$OUTPUT->help_icon('dndnotsupported');
         $strdndenabledinbox = get_string('dndenabled_inbox', 'moodle');
         $loading = get_string('loading', 'repository');
 
@@ -196,7 +196,7 @@ class core_files_renderer extends plugin_renderer_base {
 <div id="filemanager-'.$client_id.'" class="filemanager fm-loading">
     <div class="fp-restrictions">
         '.$restrictions.'
-        <span class="dndupload-message"> - '.$strdndenabled.' </span>
+        <span class="dnduploadnotsupported-message"> - '.$strdndnotsupported.' </span>
     </div>
     <div class="fp-navbar">
         <div class="filemanager-toolbar">
@@ -220,9 +220,9 @@ class core_files_renderer extends plugin_renderer_base {
         <div class="fm-content-wrapper">
             <div class="fp-content"></div>
             <div class="fm-empty-container">
-                <span class="dndupload-message">'.$strdndenabledinbox.'<br/><span class="dndupload-arrow"></span></span>
+                <div class="dndupload-message">'.$strdndenabledinbox.'<br/><div class="dndupload-arrow"></div></div>
             </div>
-            <div class="dndupload-target">'.$strdroptoupload.'<br/><span class="dndupload-arrow"></span></div>
+            <div class="dndupload-target">'.$strdroptoupload.'<br/><div class="dndupload-arrow"></div></div>
             <div class="dndupload-uploadinprogress">'.$icon_progress.'</div>
         </div>
         <div class="filemanager-updating">'.$icon_progress.'</div>

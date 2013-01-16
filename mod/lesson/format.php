@@ -262,6 +262,7 @@ function lesson_save_question_options($question, $lesson) {
             // The first answer should always be the correct answer
             $correctanswer = clone($defaultanswer);
             $correctanswer->answer = get_string('thatsthecorrectanswer', 'lesson');
+            $correctanswer->jumpto = LESSON_NEXTPAGE;
             $DB->insert_record("lesson_answers", $correctanswer);
 
             // The second answer should always be the wrong answer
@@ -385,14 +386,6 @@ class qformat_default {
                     }
                     $newpage->contents = $question->questiontext;
                     $newpage->contentsformat = isset($question->questionformat) ? $question->questionformat : FORMAT_HTML;
-
-                    // Sometimes, questiontext is not a simple text, but one array
-                    // containing both text and format, so we need to support here
-                    // that case with the following dirty patch. MDL-35147
-                    if (is_array($question->questiontext)) {
-                        $newpage->contents = isset($question->questiontext['text']) ? $question->questiontext['text'] : '';
-                        $newpage->contentsformat = isset($question->questiontext['format']) ? $question->questiontext['format'] : FORMAT_HTML;
-                    }
 
                     // set up page links
                     if ($pageid) {

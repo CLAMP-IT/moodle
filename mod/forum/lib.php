@@ -100,12 +100,12 @@ function forum_add_instance($forum, $mform = null) {
         $discussion->id = forum_add_discussion($discussion, null, $message);
 
         if ($mform and $draftid = file_get_submitted_draft_itemid('introeditor')) {
-            // ugly hack - we need to copy the files somehow
+            // Ugly hack - we need to copy the files somehow.
             $discussion = $DB->get_record('forum_discussions', array('id'=>$discussion->id), '*', MUST_EXIST);
             $post = $DB->get_record('forum_posts', array('id'=>$discussion->firstpost), '*', MUST_EXIST);
 
-            $post->message = file_save_draft_area_files($draftid, $modcontext->id, 'mod_forum', 'post', $post->id,
-                    mod_forum_post_form::attachment_options($forum), $post->message);
+            $options = array('subdirs'=>true); // Use the same options as intro field!
+            $post->message = file_save_draft_area_files($draftid, $modcontext->id, 'mod_forum', 'post', $post->id, $options, $post->message);
             $DB->set_field('forum_posts', 'message', $post->message, array('id'=>$post->id));
         }
     }
@@ -197,21 +197,19 @@ function forum_update_instance($forum, $mform) {
         $cm         = get_coursemodule_from_instance('forum', $forum->id);
         $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id, MUST_EXIST);
 
-        if ($mform and $draftid = file_get_submitted_draft_itemid('introeditor')) {
-            // ugly hack - we need to copy the files somehow
-            $discussion = $DB->get_record('forum_discussions', array('id'=>$discussion->id), '*', MUST_EXIST);
-            $post = $DB->get_record('forum_posts', array('id'=>$discussion->firstpost), '*', MUST_EXIST);
-
-            $post->message = file_save_draft_area_files($draftid, $modcontext->id, 'mod_forum', 'post', $post->id,
-                    mod_forum_post_form::editor_options(), $post->message);
-        }
-
+        $post = $DB->get_record('forum_posts', array('id'=>$discussion->firstpost), '*', MUST_EXIST);
         $post->subject       = $forum->name;
         $post->message       = $forum->intro;
         $post->messageformat = $forum->introformat;
         $post->messagetrust  = trusttext_trusted($modcontext);
         $post->modified      = $forum->timemodified;
-        $post->userid        = $USER->id;    // MDL-18599, so that current teacher can take ownership of activities
+        $post->userid        = $USER->id;    // MDL-18599, so that current teacher can take ownership of activities.
+
+        if ($mform and $draftid = file_get_submitted_draft_itemid('introeditor')) {
+            // Ugly hack - we need to copy the files somehow.
+            $options = array('subdirs'=>true); // Use the same options as intro field!
+            $post->message = file_save_draft_area_files($draftid, $modcontext->id, 'mod_forum', 'post', $post->id, $options, $post->message);
+        }
 
         $DB->update_record('forum_posts', $post);
         $discussion->name = $forum->name;
@@ -3340,7 +3338,13 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
     if (!$post->parent && $forum->type == 'news' && $discussion->timestart > time()) {
         $age = 0;
     }
-    if (($ownpost && $age < $CFG->maxeditingtime) || $cm->cache->caps['mod/forum:editanypost']) {
+
+    if ($forum->type == 'single' and $discussion->firstpost == $post->id) {
+        if (has_capability('moodle/course:manageactivities', $modcontext)) {
+            // The first post in single simple is the forum description.
+            $commands[] = array('url'=>new moodle_url('/course/modedit.php', array('update'=>$cm->id, 'sesskey'=>sesskey(), 'return'=>1)), 'text'=>$str->edit);
+        }
+    } else if (($ownpost && $age < $CFG->maxeditingtime) || $cm->cache->caps['mod/forum:editanypost']) {
         $commands[] = array('url'=>new moodle_url('/mod/forum/post.php', array('edit'=>$post->id)), 'text'=>$str->edit);
     }
 
@@ -3348,7 +3352,9 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
         $commands[] = array('url'=>new moodle_url('/mod/forum/post.php', array('prune'=>$post->id)), 'text'=>$str->prune, 'title'=>$str->pruneheading);
     }
 
-    if (($ownpost && $age < $CFG->maxeditingtime && $cm->cache->caps['mod/forum:deleteownpost']) || $cm->cache->caps['mod/forum:deleteanypost']) {
+    if ($forum->type == 'single' and $discussion->firstpost == $post->id) {
+        // Do not allow deleting of first post in single simple type.
+    } else if (($ownpost && $age < $CFG->maxeditingtime && $cm->cache->caps['mod/forum:deleteownpost']) || $cm->cache->caps['mod/forum:deleteanypost']) {
         $commands[] = array('url'=>new moodle_url('/mod/forum/post.php', array('delete'=>$post->id)), 'text'=>$str->delete);
     }
 
@@ -5186,7 +5192,6 @@ function forum_user_can_post($forum, $discussion, $user=NULL, $cm=NULL, $course=
     }
 }
 
-
 /**
  * checks to see if a user can view a particular post
  *
@@ -5224,6 +5229,51 @@ function forum_user_can_view_post($post, $course, $cm, $forum, $discussion, $use
     return true;
 }
 
+/**
+ * Check to ensure a user can view a timed discussion.
+ *
+ * @param object $discussion
+ * @param object $user
+ * @param object $context
+ * @return boolean returns true if they can view post, false otherwise
+ */
+function forum_user_can_see_timed_discussion($discussion, $user, $context) {
+    global $CFG;
+
+    // Check that the user can view a discussion that is normally hidden due to access times.
+    if (!empty($CFG->forum_enabletimedposts)) {
+        $time = time();
+        if (($discussion->timestart != 0 && $discussion->timestart > $time)
+            || ($discussion->timeend != 0 && $discussion->timeend < $time)) {
+            if (!has_capability('mod/forum:viewhiddentimedposts', $context, $user->id)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Check to ensure a user can view a group discussion.
+ *
+ * @param object $discussion
+ * @param object $cm
+ * @param object $context
+ * @return boolean returns true if they can view post, false otherwise
+ */
+function forum_user_can_see_group_discussion($discussion, $cm, $context) {
+
+    // If it's a grouped discussion, make sure the user is a member.
+    if ($discussion->groupid > 0) {
+        $groupmode = groups_get_activity_groupmode($cm);
+        if ($groupmode == SEPARATEGROUPS) {
+            return groups_is_member($discussion->groupid) || has_capability('moodle/site:accessallgroups', $context);
+        }
+    }
+
+    return true;
+}
 
 /**
  * @global object
@@ -5255,8 +5305,19 @@ function forum_user_can_see_discussion($forum, $discussion, $context, $user=NULL
             return false;
         }
     }
+    if (!$cm = get_coursemodule_from_instance('forum', $forum->id, $forum->course)) {
+        print_error('invalidcoursemodule');
+    }
 
     if (!has_capability('mod/forum:viewdiscussion', $context)) {
+        return false;
+    }
+
+    if (!forum_user_can_see_timed_discussion($discussion, $user, $context)) {
+        return false;
+    }
+
+    if (!forum_user_can_see_group_discussion($discussion, $cm, $context)) {
         return false;
     }
 
@@ -5282,6 +5343,9 @@ function forum_user_can_see_discussion($forum, $discussion, $context, $user=NULL
 function forum_user_can_see_post($forum, $discussion, $post, $user=NULL, $cm=NULL) {
     global $CFG, $USER, $DB;
 
+    // Context used throughout function.
+    $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+
     // retrieve objects (yuk)
     if (is_numeric($forum)) {
         debugging('missing full forum', DEBUG_DEVELOPER);
@@ -5302,6 +5366,7 @@ function forum_user_can_see_post($forum, $discussion, $post, $user=NULL, $cm=NUL
             return false;
         }
     }
+
     if (!isset($post->id) && isset($post->parent)) {
         $post->id = $post->parent;
     }
@@ -5317,7 +5382,7 @@ function forum_user_can_see_post($forum, $discussion, $post, $user=NULL, $cm=NUL
         $user = $USER;
     }
 
-    $canviewdiscussion = !empty($cm->cache->caps['mod/forum:viewdiscussion']) || has_capability('mod/forum:viewdiscussion', get_context_instance(CONTEXT_MODULE, $cm->id), $user->id);
+    $canviewdiscussion = !empty($cm->cache->caps['mod/forum:viewdiscussion']) || has_capability('mod/forum:viewdiscussion', $modcontext, $user->id);
     if (!$canviewdiscussion && !has_all_capabilities(array('moodle/user:viewdetails', 'moodle/user:readuserposts'), get_context_instance(CONTEXT_USER, $post->userid))) {
         return false;
     }
@@ -5332,9 +5397,16 @@ function forum_user_can_see_post($forum, $discussion, $post, $user=NULL, $cm=NUL
         }
     }
 
+    if (!forum_user_can_see_timed_discussion($discussion, $user, $modcontext)) {
+        return false;
+    }
+
+    if (!forum_user_can_see_group_discussion($discussion, $cm, $modcontext)) {
+        return false;
+    }
+
     if ($forum->type == 'qanda') {
         $firstpost = forum_get_firstpost_from_discussion($discussion->id);
-        $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
         $userfirstpost = forum_get_user_posted_time($discussion->id, $user->id);
 
         return (($userfirstpost !== false && (time() - $userfirstpost >= $CFG->maxeditingtime)) ||
@@ -5600,7 +5672,7 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $di
                     $link = true;
                 } else {
                     $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
-                    $link = forum_user_can_post($forum, $discussion, $USER, $cm, $course, $modcontext);
+                    $link = forum_user_can_see_discussion($forum, $discussion, $modcontext, $USER);
                 }
 
                 $discussion->forum = $forum->id;
