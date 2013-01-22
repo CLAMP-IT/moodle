@@ -1,0 +1,180 @@
+#page-mod-turningtech-index {
+	text-align: center;
+}
+.device_table {
+  width: %80;
+  cellspacing: 1;
+  cellpadding: 5;
+}
+
+.clear-both {
+  clear: both;
+}
+
+ul#turningtech-actions {
+  display: block;
+}
+
+ul#turningtech-actions li {
+  display: inline;
+  margin-left: 1em;
+}
+
+ul#turningtech-actions li.active {
+  font-weight: bold;
+}
+
+/** block styles **/
+div.block_turningpoint h2 {
+  background: transparent url(../images/ttech_icon.png) no-repeat scroll center left;
+  padding-left: 20px;
+  min-height: 18px;
+}
+
+/** student device management page **/
+.rw-image-container {
+	display: block;
+	width: 500px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.responsecard-container {
+  width: 200px;
+  float: left;
+}
+
+.responseware-container {
+  width: 200px;
+  float: left;
+  margin-left: 50px;
+}
+
+.device-divider {
+  width: 80%;
+  color: #00f;
+  background-color: #00f;
+  margin-top: 2em;
+  margin-bottom: 2emp;
+}
+
+p.no-devices {
+	color: #f00;
+}
+
+div.form-container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
+  text-align: left;
+}
+
+/** collapsible block behavior **/
+#turningtech-device-page h3.collapsed {
+  font-weight: bold;
+}
+
+#turningtech-device-page div.collapsed {
+	display: none;
+}
+
+#turningtech-device-page h3.uncollapsed {
+  font-style: italic;
+}
+
+#turningtech-device-page div.uncollapsed {
+  display: block;
+}
+
+/** modification to form for device management page **/
+
+div.responsecard-group, div.responseware-group {
+  margin: auto;
+  display: block;
+  width: 750px;
+}
+
+#turningtech-device-page form#mform2,
+#turningtech-device-page form#mform1 {
+  width: 500px;
+  margin-left: 1em;
+  float: left;
+}
+
+#turningtech-device-page #turningtechdevicemapheader legend,
+#turningtech-device-page #responsewareheader legend {
+  display: none;
+}
+
+/*
+#page-mod-turningtech-index,
+*/
+
+
+#turningtechdevicemapheaderstudent,
+#notice,
+#page-mod-turningtech-index .form-container,
+#turningtech-device-page hr,
+.my-devices-container,
+.device_table,
+#turningtechpurgecourseheader,
+#turningtechimportheader
+{
+  width: 900px !important;
+  margin: 0px auto;
+}
+
+.responsecard-group #turningtechdevicemapheaderstudent
+{
+  width: 500px !important;
+}
+
+
+#turningtechdevicemapheaderstudent .fdescription,
+#turningtechpurgecourseheader .fdescription,
+#turningtechimportheader .fdescription,
+#turningtechdevicemapheader .fdescription{
+	text-align: left;
+	margin-top: .5em;
+	margin-left: 16%;
+}
+
+#turningtechpurgecourseheader .felement,
+#turningtechimportheader .felement{
+	text-align: left !important;
+}
+
+
+
+img.enterid, p.responseware-join-link {
+  float: right;
+  margin-right: 1em;
+  margin-top: 0.5em;
+}
+
+p.responseware-join-link {
+  width: 185px;
+}
+
+p.tt_delete_device, 
+p.tt_confirm_device_delete {
+  text-align: center;
+}
+
+div.tt_import_session_form {
+  width: 800px;
+  margin-left:25%;
+}
+
+
+div.tt_rw_form_item .fitem,
+div.tt_rw_form_item .fitem .fitemtitle {
+  margin: 5px;
+}
+div.tt_rw_form_item .fitem {
+  width: 100%;
+}
+
+div.tt_rw_form_item .fitem .fitemtitle {
+  width: 120px;
+}
