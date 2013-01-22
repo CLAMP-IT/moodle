@@ -123,6 +123,9 @@ define('INSECURE_DATAROOT_ERROR', 2);
 function uninstall_plugin($type, $name) {
     global $CFG, $DB, $OUTPUT;
 
+    // This may take a long time.
+    @set_time_limit(0);
+
     // recursively uninstall all module subplugins first
     if ($type === 'mod') {
         if (file_exists("$CFG->dirroot/mod/$name/db/subplugins.php")) {
@@ -3626,7 +3629,7 @@ class admin_settings_num_course_sections extends admin_setting_configselect {
     /** Lazy-load the available choices for the select box */
     public function load_choices() {
         $max = get_config('moodlecourse', 'maxsections');
-        if (empty($max)) {
+        if (!isset($max) || !is_numeric($max)) {
             $max = 52;
         }
         for ($i = 0; $i <= $max; $i++) {
@@ -6217,9 +6220,8 @@ function format_admin_setting($setting, $title='', $form='', $description='', $l
     $str = '
 <div class="form-item clearfix" id="admin-'.$setting->name.'">
   <div class="form-label">
-    <label '.$labelfor.'>'.highlightfast($query, $title).'<span class="form-shortname">'.highlightfast($query, $name).'</span>
-      '.$override.$warning.'
-    </label>
+    <label '.$labelfor.'>'.highlightfast($query, $title).$override.$warning.'</label>
+    <span class="form-shortname">'.highlightfast($query, $name).'</span>
   </div>
   <div class="form-setting">'.$form.$defaultinfo.'</div>
   <div class="form-description">'.highlight($query, markdown_to_html($description)).'</div>
@@ -7562,7 +7564,7 @@ class admin_setting_managewebservicetokens extends admin_setting {
                         array(array('id' => $token->userid)), $token->serviceid);
 
                 if (!is_siteadmin($token->userid) and
-                        key_exists($token->userid, $usermissingcaps)) {
+                        array_key_exists($token->userid, $usermissingcaps)) {
                     $missingcapabilities = implode(', ',
                             $usermissingcaps[$token->userid]);
                     if (!empty($missingcapabilities)) {

@@ -106,8 +106,8 @@ class enrol_wessync_plugin extends enrol_plugin {
 	return $course_hash;
     }
 
-    /*given a moodle course object and ps89prod object, returns list of usernames according to PeopleSoft */
-    public function get_members_from_ps89prod ( $moodle_course, $conn) {
+    /*given a moodle course object and peopelsoft object, returns list of usernames according to PeopleSoft */
+    public function get_members_from_peoplesoft ( $moodle_course, $conn) {
     	$statement = "select sysadm.wes_get_email(a.emplid) FROM sysadm.ps_class_tbl d,sysadm.ps_stdnt_enrl a where a.strm = d.strm and a.class_nbr=d.class_nbr and a.stdnt_enrl_status='E' and a.strm = d.strm and to_number(a.strm)=to_number(:strm) and d.crse_id=:crse_id and d.class_section=:section";
 	$sth = oci_parse($conn,$statement);
   	$members = array();
@@ -132,10 +132,11 @@ class enrol_wessync_plugin extends enrol_plugin {
         if (empty($members)) {
 	  $members = array();
         }
+	#array_push($members,"melson");
         return $members;
     }
-    /* given a moodle course and ps89prod data handle, returns instructors of the course */
-   public function get_instructors_from_ps89prod($course,$conn) {
+    /* given a moodle course and peoplesoft data handle, returns instructors of the course */
+   public function get_instructors_from_peoplesoft($course,$conn) {
       $statement = "select * from sysadm.ps_wes_instr_class 
                   where strm = :strm and crse_id = :crseid and class_section = :section and CRSE_OFFER_NBR = 1";
       $sth = oci_parse($conn,$statement);
@@ -164,7 +165,7 @@ class enrol_wessync_plugin extends enrol_plugin {
    }
 
     /* given an array of usernames, enrols and optionally unenrols the users from given role */
-    public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = 'true') {
+    public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = false) {
     	global $DB,$CFG;
         $result = array( 'errors' => array(), 'actions' => array(), 'failure' => 0, 'users_to_create' => array());
 	/* result hash gets merged into a larger hash sometimes; the below is a way to provide a unique key */
@@ -190,7 +191,7 @@ class enrol_wessync_plugin extends enrol_plugin {
 	  return $result;
 	} 
 
-	$current_users = $this->get_users_by_role_in_course($roleid,$moodle_course->id);
+	$current_users = $this->get_users_by_role_in_course($roleid,$moodle_course->id,$unenrol);
 	$instance = $this->get_enrol_course_instance($moodle_course);
         $authoritative_ids = array();
 	foreach ($members as $member) {
@@ -206,10 +207,14 @@ class enrol_wessync_plugin extends enrol_plugin {
          } else if (!array_key_exists($user->id,$current_users)) {
             array_push($result['actions'],"Assigned $user->username role $roleid in course $moodle_course->shortname");
             $this->enrol_user($instance,$user->id,$roleid);
+ 	    /*activate it if user was unactivated before - since we can toggle between modes we just try both; should be
+	      harmless - should look into way to check to see if user is NOT in course at all, or simply suspended */
+            $this->update_user_enrol($instance,$user->id,ENROL_USER_ACTIVE);
+	    $this->log_action("enrol/activate",$moodle_course->id,$user->id,$roleid);
 	    /* this is required to get the grade_recover function */
             require_once($CFG->dirroot . '/lib/gradelib.php');
 	    /* always try and recover any grades the users might have had for this course */
-            grade_recover_history_grades($user->id, $instance->courseid );
+#            grade_recover_history_grades($user->id, $instance->courseid );
             #log every id of an authoritative user for quicker lookups
             $authoritative_ids[$user->id] = 1;
          } else {
@@ -217,16 +222,26 @@ class enrol_wessync_plugin extends enrol_plugin {
             array_push($result['actions'],"User $user->username had role $roleid already in course $moodle_course->shortname");
          }
        }
-       /* only unenrol if there's at least ONE authoritative user; is array is to be paranoid */
-
-       if ($unenrol && is_array($authoritative_ids) && (count($authoritative_ids) > 0)) {
+       /* only start unenrol/suspend if there's at least ONE authoritative user; is array is to be paranoid */
+       if (is_array($authoritative_ids) && (count($authoritative_ids) > 0)) {
          foreach ($current_users as $current_user) {
            $current_id = $current_user->id;
            if ($authoritative_ids && !array_key_exists($current_id,$authoritative_ids)) {
+	     
              array_push($result['actions'],"Unassigned role $roleid $current_user->username from course $moodle_course->shortname");
-             $this->unenrol_user($instance,$current_id,$roleid);
-	     #suspend as follows
-	     #$this->update_user_enrol($instance,$current_idea,0);
+
+	     if ($unenrol) {
+               $this->unenrol_user($instance,$current_id,$roleid);
+	       $this->log_action("unenrol",$moodle_course->id,$current_id,$roleid);
+             } else {
+  	       #suspends as opposed to unenroll
+	       $this->update_user_enrol($instance,$current_id,ENROL_USER_SUSPENDED);
+               $context = get_context_instance(CONTEXT_COURSE, $instance->courseid, MUST_EXIST);
+               role_unassign($roleid,$current_id,$context->id,'enrol_wessync',$instance->id);
+	       $this->log_action("suspend",$moodle_course->id,$current_id,$roleid);
+
+	       #optionally remove role as well
+	     }
            }
          }
        } 
@@ -237,12 +252,28 @@ class enrol_wessync_plugin extends enrol_plugin {
      }
      return $result;
     }
-
-    /* returns users in a given role in a given course */
-    public function get_users_by_role_in_course($roleid,$courseid) {
+    public function log_action ($action,$course_id,$user_id,$role_id) {
+      global $DB;
+      $data = new stdClass();
+      $data->timestamp = time();
+      $data->courseid = $course_id;
+      $data->action = $action;
+      $data->userid = $user_id;
+      $data->roleid = $role_id;
+      $DB->insert_record('enrol_wessync_logs',$data);
+    }
+    /* returns users in a given role in a given course - if unenrol is "false" (i.e., we're suspending) the 
+       query has to be slightly different since we don't want to pick up suspended users; might be safe to not
+       have toggle, will investigate more */
+    public function get_users_by_role_in_course($roleid,$courseid,$unenrol=false) {
 	global $DB;
- 	$sql = "select u.id,u.username from {user} u join {role_assignments} ra on (ra.userid = u.id) JOIN {user_enrolments} ue on (ue.userid= u.id and ue.enrolid = ra.itemid) join {enrol} e on (e.id = ue.enrolid) join {course} c on (c.id = e.courseid) where u.deleted = 0 and ra.component='enrol_wessync' and ra.roleid=:roleid and c.id=:courseid";
-  	$params = array ( 'roleid' => $roleid, 'courseid' => $courseid );
+        if ($unenrol) {
+ 	  $sql = "select u.id,u.username from {user} u join {role_assignments} ra on (ra.userid = u.id) JOIN {user_enrolments} ue on (ue.userid= u.id and ue.enrolid = ra.itemid) join {enrol} e on (e.id = ue.enrolid) join {course} c on (c.id = e.courseid) where u.deleted = 0 and ra.component='enrol_wessync' and ra.roleid=:roleid and c.id=:courseid";
+  	  $params = array ( 'roleid' => $roleid, 'courseid' => $courseid );
+	} else {
+	  $sql = "select u.id,u.username from {user} u join {role_assignments} ra on (ra.userid = u.id) JOIN {user_enrolments} ue on (ue.userid= u.id and ue.enrolid = ra.itemid) join {enrol} e on (e.id = ue.enrolid) join {course} c on (c.id = e.courseid) where u.deleted = 0 and ra.component='enrol_wessync' and ra.roleid=:roleid and c.id=:courseid and ue.status=:enrol_status";
+        $params = array ( 'roleid' => $roleid, 'courseid' => $courseid, 'enrol_status' => ENROL_USER_ACTIVE );
+	}
   	$users = $DB->get_records_sql($sql,$params);
   	if ($users == false ) {
    	  return array();
@@ -300,8 +331,11 @@ class enrol_wessync_plugin extends enrol_plugin {
    	 $course['full_name'] .= ' (Redirect)';
 	 $course['visible'] = '1';
        }
-       $this->sync_moodle_course_data($course,$new_course);
-       return $new_course;
+       if ($this->sync_moodle_course_data($course,$new_course)) {
+         return $new_course;
+       } else {
+         return 0;
+       }
    }
    /* takes the term code, fetches the  moodle course that serves as that semester's template */
   public function get_moodle_semester_template ( $term = '',$redirect=0 ) {
@@ -357,7 +391,7 @@ class enrol_wessync_plugin extends enrol_plugin {
       # course category trickery is necessary to resort the course after any change
       $course_category = $this->get_moodle_category($course);
       if (!$course_category) {
-        array_push($this->ERRORS,"Could not find category update");
+        array_push($this->ERRORS,"Could not find category to update");
 	return 0;
       }
       /* have to make sure to modify the context, too */
@@ -398,12 +432,14 @@ class enrol_wessync_plugin extends enrol_plugin {
       global $DB;
       $term = $course['term'];
       $glsp_types = array('GLSP','DCST','GLS');
-      $category_to_return = $DB->get_record('course_categories',array('name' => 'Miscellaneous'));
       if (isset($course['acad_career']) and in_array($course['acad_career'],$glsp_types)) {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term . '-gls'));
     } else {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term));
     }
+    if (!$category_to_return) {
+      $category_to_return = $DB->get_record('course_categories',array('name' => 'Miscellaneous'));
+    } 
     return $category_to_return;
   }
     /* when given a course, return with the correct category */

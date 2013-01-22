@@ -148,9 +148,12 @@ if ($currentuser) {
     }
 }
 
+$PAGE->set_title("$course->fullname: $strpersonalprofile: $fullname");
+$PAGE->set_heading($course->fullname);
+$PAGE->set_pagelayout('standard');
 
-/// We've established they can see the user's name at least, so what about the rest?
-
+// Locate the users settings in the settings navigation and force it open.
+// This MUST be done after we've set up the page as it is going to cause theme and output to initialise.
 if (!$currentuser) {
     $PAGE->navigation->extend_for_user($user);
     if ($node = $PAGE->settingsnav->get('userviewingsettings'.$user->id)) {
@@ -163,9 +166,6 @@ if ($node = $PAGE->settingsnav->get('courseadmin')) {
     $node->forceopen = false;
 }
 
-$PAGE->set_title("$course->fullname: $strpersonalprofile: $fullname");
-$PAGE->set_heading($course->fullname);
-$PAGE->set_pagelayout('standard');
 echo $OUTPUT->header();
 
 echo '<div class="userprofile">';
@@ -288,8 +288,9 @@ if (!isset($hiddenfields['mycourses'])) {
         $courselisting = '';
         foreach ($mycourses as $mycourse) {
             if ($mycourse->category) {
-                $ccontext = get_context_instance(CONTEXT_COURSE, $mycourse->id);;
-                $cfullname = format_string($mycourse->fullname, true, array('context' => $ccontext));
+                context_helper::preload_from_record($mycourse);
+                $ccontext = context_course::instance($mycourse->id);
+                $cfullname = $ccontext->get_context_name(false);
                 if ($mycourse->id != $course->id){
                     $class = '';
                     if ($mycourse->visible == 0) {

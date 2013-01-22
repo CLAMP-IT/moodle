@@ -1694,7 +1694,7 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
     $timenow = time();
     $info = $info;
     if (!empty($url)) { // could break doing html_entity_decode on an empty var.
-        $url = html_entity_decode($url);
+        $url = html_entity_decode($url, ENT_QUOTES, 'UTF-8');
     } else {
         $url = '';
     }
@@ -1761,6 +1761,11 @@ function user_accesstime_log($courseid=0) {
 
     if (!isloggedin() or session_is_loggedinas()) {
         // no access tracking
+        return;
+    }
+
+    if (isguestuser()) {
+        // Do not update guest access times/ips for performance.
         return;
     }
 

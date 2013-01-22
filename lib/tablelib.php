@@ -60,6 +60,7 @@ class flexible_table {
     var $column_class    = array();
     var $column_suppress = array();
     var $column_nosort   = array('userpic');
+    private $column_textsort = array();
     var $setup           = false;
     var $sess            = NULL;
     var $baseurl         = NULL;
@@ -212,6 +213,14 @@ class flexible_table {
         $this->is_sortable = $bool;
         $this->sort_default_column = $defaultcolumn;
         $this->sort_default_order  = $defaultorder;
+    }
+
+    /**
+     * Use text sorting functions for this column (required for text columns with Oracle).
+     * @param string column name
+     */
+    function text_sorting($column) {
+        $this->column_textsort[] = $column;
     }
 
     /**
@@ -410,6 +419,7 @@ class flexible_table {
             $SESSION->flextable[$this->uniqueid]->sortby   = array();
             $SESSION->flextable[$this->uniqueid]->i_first  = '';
             $SESSION->flextable[$this->uniqueid]->i_last   = '';
+            $SESSION->flextable[$this->uniqueid]->textsort = $this->column_textsort;
         }
 
         $this->sess = &$SESSION->flextable[$this->uniqueid];
@@ -451,9 +461,13 @@ class flexible_table {
             $this->sess->sortby = array_slice($this->sess->sortby, 0, $this->maxsortkeys);
         }
 
-        // If we didn't sort just now, then use the default sort order if one is defined and the column exists
-        if (empty($this->sess->sortby) && !empty($this->sort_default_column))  {
-            $this->sess->sortby = array ($this->sort_default_column => ($this->sort_default_order == SORT_DESC ? SORT_DESC : SORT_ASC));
+        // MDL-35375 - If a default order is defined and it is not in the current list of order by columns, add it at the end.
+        // This prevents results from being returned in a random order if the only order by column contains equal values.
+        if (!empty($this->sort_default_column))  {
+            if (!array_key_exists($this->sort_default_column, $this->sess->sortby)) {
+                $defaultsort = array($this->sort_default_column => $this->sort_default_order);
+                $this->sess->sortby = array_merge($this->sess->sortby, $defaultsort);
+            }
         }
 
         $ilast = optional_param($this->request[TABLE_VAR_ILAST], null, PARAM_RAW);
@@ -500,8 +514,11 @@ class flexible_table {
         if (empty($sess->sortby)) {
             return '';
         }
+        if (empty($sess->textsort)) {
+            $sess->textsort = array();
+        }
 
-        return self::construct_order_by($sess->sortby);
+        return self::construct_order_by($sess->sortby, $sess->textsort);
     }
 
     /**
@@ -509,10 +526,14 @@ class flexible_table {
      * @param array $cols column name => SORT_ASC or SORT_DESC
      * @return SQL fragment that can be used in an ORDER BY clause.
      */
-    public static function construct_order_by($cols) {
+    public static function construct_order_by($cols, $textsortcols=array()) {
+        global $DB;
         $bits = array();
 
         foreach ($cols as $column => $order) {
+            if (in_array($column, $textsortcols)) {
+                $column = $DB->sql_order_by_text($column);
+            }
             if ($order == SORT_ASC) {
                 $bits[] = $column . ' ASC';
             } else {
@@ -527,7 +548,7 @@ class flexible_table {
      * @return SQL fragment that can be used in an ORDER BY clause.
      */
     public function get_sql_sort() {
-        return self::construct_order_by($this->get_sort_columns());
+        return self::construct_order_by($this->get_sort_columns(), $this->column_textsort);
     }
 
     /**
@@ -723,16 +744,19 @@ class flexible_table {
     function col_fullname($row) {
         global $COURSE, $CFG;
 
-        if (!$this->download) {
-            $profileurl = new moodle_url('/user/profile.php', array('id' => $row->{$this->useridfield}));
-            if ($COURSE->id != SITEID) {
-                $profileurl->param('course', $COURSE->id);
-            }
-            return html_writer::link($profileurl, fullname($row));
-
-        } else {
-            return fullname($row);
+        $name = fullname($row);
+        if ($this->download) {
+            return $name;
         }
+
+        $userid = $row->{$this->useridfield};
+        if ($COURSE->id == SITEID) {
+            $profileurl = new moodle_url('/user/profile.php', array('id' => $userid));
+        } else {
+            $profileurl = new moodle_url('/user/view.php',
+                    array('id' => $userid, 'course' => $COURSE->id));
+        }
+        return html_writer::link($profileurl, $name);
     }
 
     /**
@@ -1480,7 +1504,7 @@ class table_spreadsheet_export_format_parent extends table_default_export_format
     }
 
     function start_table($sheettitle) {
-        $this->worksheet =& $this->workbook->add_worksheet($sheettitle);
+        $this->worksheet = $this->workbook->add_worksheet($sheettitle);
         $this->rownum=0;
     }
 

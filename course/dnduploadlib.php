@@ -555,6 +555,15 @@ class dndupload_ajax_processor {
         $this->cm->groupmode = $this->course->groupmode;
         $this->cm->groupingid = $this->course->defaultgroupingid;
 
+        // Set the correct default for completion tracking.
+        $this->cm->completion = COMPLETION_TRACKING_NONE;
+        $completion = new completion_info($this->course);
+        if ($completion->is_enabled()) {
+            if (plugin_supports('mod', $this->cm->modulename, FEATURE_MODEDIT_DEFAULT_COMPLETION, true)) {
+                $this->cm->completion = COMPLETION_TRACKING_MANUAL;
+            }
+        }
+
         if (!$this->cm->id = add_course_module($this->cm)) {
             throw new coding_exception("Unable to create the course module");
         }
@@ -666,6 +675,12 @@ class dndupload_ajax_processor {
         $resp->elementid = 'module-'.$mod->id;
         $resp->commands = make_editing_buttons($mod, true, true, 0, $mod->sectionnum);
         $resp->onclick = $mod->get_on_click();
+
+        // if using groupings, then display grouping name
+        if (!empty($mod->groupingid) && has_capability('moodle/course:managegroups', $this->context)) {
+            $groupings = groups_get_all_groupings($this->course->id);
+            $resp->groupingname = format_string($groupings[$mod->groupingid]->name);
+        }
 
         echo $OUTPUT->header();
         echo json_encode($resp);

@@ -262,6 +262,7 @@ function lesson_save_question_options($question, $lesson) {
             // The first answer should always be the correct answer
             $correctanswer = clone($defaultanswer);
             $correctanswer->answer = get_string('thatsthecorrectanswer', 'lesson');
+            $correctanswer->jumpto = LESSON_NEXTPAGE;
             $DB->insert_record("lesson_answers", $correctanswer);
 
             // The second answer should always be the wrong answer
@@ -385,14 +386,6 @@ class qformat_default {
                     }
                     $newpage->contents = $question->questiontext;
                     $newpage->contentsformat = isset($question->questionformat) ? $question->questionformat : FORMAT_HTML;
-
-                    // Sometimes, questiontext is not a simple text, but one array
-                    // containing both text and format, so we need to support here
-                    // that case with the following dirty patch. MDL-35147
-                    if (is_array($question->questiontext)) {
-                        $newpage->contents = isset($question->questiontext['text']) ? $question->questiontext['text'] : '';
-                        $newpage->contentsformat = isset($question->questiontext['format']) ? $question->questiontext['format'] : FORMAT_HTML;
-                    }
 
                     // set up page links
                     if ($pageid) {
@@ -539,6 +532,37 @@ class qformat_default {
         echo "<p>This flash question format has not yet been completed!</p>";
 
         return NULL;
+    }
+
+    /**
+     * Construct a reasonable default question name, based on the start of the question text.
+     * @param string $questiontext the question text.
+     * @param string $default default question name to use if the constructed one comes out blank.
+     * @return string a reasonable question name.
+     */
+    public function create_default_question_name($questiontext, $default) {
+        $name = $this->clean_question_name(shorten_text($questiontext, 80));
+        if ($name) {
+            return $name;
+        } else {
+            return $default;
+        }
+    }
+
+    /**
+     * Ensure that a question name does not contain anything nasty, and will fit in the DB field.
+     * @param string $name the raw question name.
+     * @return string a safe question name.
+     */
+    public function clean_question_name($name) {
+        $name = clean_param($name, PARAM_TEXT); // Matches what the question editing form does.
+        $name = trim($name);
+        $trimlength = 251;
+        while (textlib::strlen($name) > 255 && $trimlength > 0) {
+            $name = shorten_text($name, $trimlength);
+            $trimlength -= 10;
+        }
+        return $name;
     }
 
     function defaultquestion() {

@@ -166,9 +166,9 @@ class qformat_xml extends qformat_default {
         $qo = $this->defaultquestion();
 
         // Question name
-        $qo->name = $this->getpath($question,
+        $qo->name = $this->clean_question_name($this->getpath($question,
                 array('#', 'name', 0, '#', 'text', 0, '#'), '', true,
-                get_string('xmlimportnoname', 'qformat_xml'));
+                get_string('xmlimportnoname', 'qformat_xml')));
         $qo->questiontext = $this->getpath($question,
                 array('#', 'questiontext', 0, '#', 'text', 0, '#'), '', true);
         $qo->questiontextformat = $this->trans_format($this->getpath(
@@ -437,10 +437,24 @@ class qformat_xml extends qformat_default {
         $qo->course = $this->course;
         $qo->generalfeedback = '';
 
-        $qo->name = $this->import_text($question['#']['name'][0]['#']['text']);
+        $qo->name = $this->clean_question_name($this->import_text($question['#']['name'][0]['#']['text']));
         $qo->questiontextformat = $questiontext['format'];
         $qo->questiontext = $qo->questiontext['text'];
-        $qo->questiontextfiles = array();
+        $qo->questiontextfiles = $this->import_files($this->getpath($question,
+                array('#', 'questiontext', 0, '#', 'file'), array(), false));
+
+        // Backwards compatibility, deal with the old image tag.
+        $filedata = $this->getpath($question, array('#', 'image_base64', '0', '#'), null, false);
+        $filename = $this->getpath($question, array('#', 'image', '0', '#'), null, false);
+        if ($filedata && $filename) {
+            $data = new stdClass();
+            $data->content = $filedata;
+            $data->encoding = 'base64';
+            // Question file areas don't support subdirs, so convert path to filename if necessary.
+            $data->name = clean_param(str_replace('/', '_', $filename), PARAM_FILE);
+            $qo->questiontextfiles[] = $data;
+            $qo->questiontext .= ' <img src="@@PLUGINFILE@@/' . $data->name . '" />';
+        }
 
         // restore files in generalfeedback
         $qo->generalfeedback = $this->getpath($question,
@@ -891,17 +905,18 @@ class qformat_xml extends qformat_default {
      */
     protected function readquestions($lines) {
         // We just need it as one big string
-        $text = implode($lines, ' ');
-        unset($lines);
+        $lines = implode('', $lines);
 
         // This converts xml to big nasty data structure
         // the 0 means keep white space as it is (important for markdown format)
         try {
-            $xml = xmlize($text, 0, 'UTF-8', true);
+            $xml = xmlize($lines, 0, 'UTF-8', true);
         } catch (xml_format_exception $e) {
             $this->error($e->getMessage(), '');
             return false;
         }
+        unset($lines); // No need to keep this in memory.
+
         // Set up array to hold all our questions
         $questions = array();
 

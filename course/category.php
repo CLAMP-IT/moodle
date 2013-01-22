@@ -27,10 +27,10 @@
 
 require_once("../config.php");
 require_once($CFG->dirroot.'/course/lib.php');
+require_once($CFG->libdir.'/textlib.class.php');
 
 $id = required_param('id', PARAM_INT); // Category id
 $page = optional_param('page', 0, PARAM_INT); // which page to show
-$perpage = optional_param('perpage', $CFG->coursesperpage, PARAM_INT); // how many per page
 $categoryedit = optional_param('categoryedit', -1, PARAM_BOOL);
 $hide = optional_param('hide', 0, PARAM_INT);
 $show = optional_param('show', 0, PARAM_INT);
@@ -39,6 +39,16 @@ $movedown = optional_param('movedown', 0, PARAM_INT);
 $moveto = optional_param('moveto', 0, PARAM_INT);
 $resort = optional_param('resort', 0, PARAM_BOOL);
 $sesskey = optional_param('sesskey', '', PARAM_RAW);
+
+// MDL-27824 - This is a temporary fix until we have the proper
+// way to check/initialize $CFG value.
+// @todo MDL-35138 remove this temporary solution
+if (!empty($CFG->coursesperpage)) {
+    $defaultperpage =  $CFG->coursesperpage;
+} else {
+    $defaultperpage = 20;
+}
+$perpage = optional_param('perpage', $defaultperpage, PARAM_INT); // how many per page
 
 if (empty($id)) {
     print_error("unknowcategory");
@@ -75,7 +85,8 @@ $sesskeyprovided = !empty($sesskey) && confirm_sesskey($sesskey);
 // Process any category actions.
 if ($canmanage && $resort && $sesskeyprovided) {
     // Resort the category if requested
-    if ($courses = get_courses($category->id, "fullname ASC", 'c.id,c.fullname,c.sortorder')) {
+    if ($courses = get_courses($category->id, '', 'c.id,c.fullname,c.sortorder')) {
+        collatorlib::asort_objects_by_property($courses, 'fullname', collatorlib::SORT_NATURAL);
         $i = 1;
         foreach ($courses as $course) {
             $DB->set_field('course', 'sortorder', $category->sortorder+$i, array('id'=>$course->id));
@@ -180,6 +191,7 @@ if ($editingon && can_edit_in_category()) {
     // Integrate into the admin tree only if the user can edit categories at the top level,
     // otherwise the admin block does not appear to this user, and you get an error.
     require_once($CFG->libdir . '/adminlib.php');
+    navigation_node::override_active_url(new moodle_url('/course/category.php', array('id' => $id)));
     admin_externalpage_setup('coursemgmt', '', $urlparams, $CFG->wwwroot . '/course/category.php');
     $PAGE->set_context($context);   // Ensure that we are actually showing blocks etc for the cat context
 
@@ -423,8 +435,11 @@ if (!$courses) {
         $movetocategories[$category->id] = get_string('moveselectedcoursesto');
         echo '<tr><td colspan="3" align="right">';
         echo html_writer::label(get_string('moveselectedcoursesto'), 'movetoid', false, array('class' => 'accesshide'));
-        echo html_writer::select($movetocategories, 'moveto', $category->id, null, array('id'=>'movetoid'));
-        $PAGE->requires->js_init_call('M.util.init_select_autosubmit', array('movecourses', 'movetoid', false));
+        echo html_writer::select($movetocategories, 'moveto', $category->id, null, array('id'=>'movetoid', 'class' => 'autosubmit'));
+        $PAGE->requires->yui_module('moodle-core-formautosubmit',
+            'M.core.init_formautosubmit',
+            array(array('selectid' => 'movetoid', 'nothing' => $category->id))
+        );
         echo '<input type="hidden" name="id" value="'.$category->id.'" />';
         echo '</td></tr>';
     }
