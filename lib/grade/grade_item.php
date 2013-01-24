@@ -1423,30 +1423,33 @@ class grade_item extends grade_object {
      * Refetch grades from modules, plugins.
      *
      * @param int $userid optional, limit the refetch to a single user
+     * @return bool Returns true on success or if there is nothing to do
      */
     public function refresh_grades($userid=0) {
         global $DB;
         if ($this->itemtype == 'mod') {
             if ($this->is_outcome_item()) {
                 //nothing to do
-                return;
+                return true;
             }
 
             if (!$activity = $DB->get_record($this->itemmodule, array('id' => $this->iteminstance))) {
                 debugging("Can not find $this->itemmodule activity with id $this->iteminstance");
-                return;
+                return false;
             }
 
             if (!$cm = get_coursemodule_from_instance($this->itemmodule, $activity->id, $this->courseid)) {
                 debugging('Can not find course module');
-                return;
+                return false;
             }
 
             $activity->modname    = $this->itemmodule;
             $activity->cmidnumber = $cm->idnumber;
 
-            grade_update_mod_grades($activity);
+            return grade_update_mod_grades($activity, $userid);
         }
+
+        return true;
     }
 
     /**
@@ -1727,16 +1730,27 @@ class grade_item extends grade_object {
             return true; // no need to recalculate locked items
         }
 
-        // precreate grades - we need them to exist
-        $params = array($this->courseid, $this->id, $this->id);
-        $sql = "SELECT DISTINCT go.userid
-                  FROM {grade_grades} go
-                       JOIN {grade_items} gi
-                       ON (gi.id = go.itemid AND gi.courseid = ?)
-                       LEFT OUTER JOIN {grade_grades} g
-                       ON (g.userid = go.userid AND g.itemid = ?)
-                 WHERE gi.id <> ? AND g.id IS NULL";
-        if ($missing = $DB->get_records_sql($sql, $params)) {
+        // Precreate grades - we need them to exist
+        if ($userid) {
+            $missing = array();
+            if (!$DB->record_exists('grade_grades', array('itemid'=>$this->id, 'userid'=>$userid))) {
+                $m = new stdClass();
+                $m->userid = $userid;
+                $missing[] = $m;
+            }
+        } else {
+            // Find any users who have grades for some but not all grade items in this course
+            $params = array('gicourseid' => $this->courseid, 'ggitemid' => $this->id);
+            $sql = "SELECT gg.userid
+                      FROM {grade_grades} gg
+                           JOIN {grade_items} gi
+                           ON (gi.id = gg.itemid AND gi.courseid = :gicourseid)
+                     GROUP BY gg.userid
+                     HAVING SUM(CASE WHEN gg.itemid = :ggitemid THEN 1 ELSE 0 END) = 0";
+            $missing = $DB->get_records_sql($sql, $params);
+        }
+
+        if ($missing) {
             foreach ($missing as $m) {
                 $grade = new grade_grade(array('itemid'=>$this->id, 'userid'=>$m->userid), false);
                 $grade->grade_item =& $this;

@@ -751,11 +751,13 @@ class qtype_calculated extends question_type {
                     ? 'decimals'
                     : 'significantfigures'), 'qtype_calculated', $i);
             }
-            $menu1 = html_writer::select($lengthoptions, 'calclength[]', $regs[4], null);
+            $menu1 = html_writer::label(get_string('lengthoption', 'qtype_calculated'), 'menucalclength', false, array('class' => 'accesshide'));
+            $menu1 .= html_writer::select($lengthoptions, 'calclength[]', $regs[4], null);
 
             $options = array('uniform' => get_string('uniformbit', 'qtype_calculated'),
                     'loguniform' => get_string('loguniformbit', 'qtype_calculated'));
-            $menu2 = html_writer::select($options, 'calcdistribution[]', $regs[1], null);
+            $menu2 = html_writer::label(get_string('distributionoption', 'qtype_calculated'), 'menucalcdistribution', false, array('class' => 'accesshide'));
+            $menu2 .= html_writer::select($options, 'calcdistribution[]', $regs[1], null);
             return '<input type="submit" onclick="'
                 . "getElementById('addform').regenerateddefid.value='$defid'; return true;"
                 .'" value="'. get_string('generatevalue', 'qtype_calculated') . '"/><br/>'
@@ -1225,7 +1227,7 @@ class qtype_calculated extends question_type {
                 echo $OUTPUT->notification(get_string('notvalidnumber', 'qtype_calculated', $a));
                 $val = 1.0;
             }
-            if ($val < 0) {
+            if ($val <= 0) { // MDL-36025 Use parentheses for "-0"
                 $str = str_replace('{'.$name.'}', '('.$val.')', $str);
             } else {
                 $str = str_replace('{'.$name.'}', $val, $str);
@@ -1253,6 +1255,7 @@ class qtype_calculated extends question_type {
         } else if ($formula === '*') {
             $str = '*';
         } else {
+            $str = null;
             eval('$str = '.$formula.';');
         }
         return $str;
@@ -1868,6 +1871,11 @@ function qtype_calculated_calculate_answer($formula, $individualdata,
     // Exchange formula variables with the correct values...
     $answer = question_bank::get_qtype('calculated')->substitute_variables_and_eval(
             $formula, $individualdata);
+    if (!is_numeric($answer)) {
+        // Something went wrong, so just return NaN.
+        $calculated->answer = NAN;
+        return $calculated;
+    }
     if ('1' == $answerformat) { /* Answer is to have $answerlength decimals */
         /*** Adjust to the correct number of decimals ***/
         if (stripos($answer, 'e')>0) {

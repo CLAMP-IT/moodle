@@ -51,8 +51,8 @@ function xmldb_forum_upgrade($oldversion) {
     // Put any upgrade step following this
 
     /// Add anonymous forums support
-    if ($oldversion < 2012061701) {
-        require($CFG->dirroot . '/mod/forum/lib.php');
+    if ($oldversion < 2012061702) {
+        require_once($CFG->dirroot . '/mod/forum/lib.php');
         
         // Migrate the old config setting, if present
         if(!empty($CFG->forum_anonymous)) {
@@ -71,7 +71,7 @@ function xmldb_forum_upgrade($oldversion) {
         $field = new xmldb_field('hiddenuserid');
         $field->set_attributes(XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null, null, 'mailnow');
         if (!$dbman->field_exists($table, $field)) $dbman->add_field($table, $field);        
-        upgrade_mod_savepoint(true, 2012061701, 'forum');
+        upgrade_mod_savepoint(true, 2012061702, 'forum');
     }
     
     // Moodle v2.3.0 release upgrade line

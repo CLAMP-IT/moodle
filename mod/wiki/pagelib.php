@@ -172,12 +172,7 @@ abstract class page_wiki {
             if (!$manage and !($edit and groups_is_member($currentgroup))) {
                 unset($this->tabs['edit']);
             }
-        } else {
-            if (!has_capability('mod/wiki:editpage', $PAGE->context)) {
-                unset($this->tabs['edit']);
-            }
         }
-
 
         if (empty($options)) {
             $this->tabs_options = array('activetab' => substr(get_class($this), 10));
@@ -326,8 +321,7 @@ class page_wiki_view extends page_wiki {
                 }
             }
         } else {
-            // @TODO: Tranlate it
-            echo "You can not view this page";
+            echo get_string('cannotviewpage', 'wiki');
         }
     }
 
@@ -420,8 +414,7 @@ class page_wiki_edit extends page_wiki {
         if (wiki_user_can_edit($this->subwiki)) {
             $this->print_edit();
         } else {
-            // @TODO: Translate it
-            echo "You can not edit this page";
+            echo get_string('cannoteditpage', 'wiki');
         }
     }
 
@@ -664,7 +657,7 @@ class page_wiki_comments extends page_wiki {
                     $parsedcontent = wiki_parse_content('nwiki', $comment->content, $options);
                 }
 
-                $cell4->text = format_text(html_entity_decode($parsedcontent['parsed_text']), FORMAT_HTML);
+                $cell4->text = format_text(html_entity_decode($parsedcontent['parsed_text'], ENT_QUOTES, 'UTF-8'), FORMAT_HTML);
             } else {
                 $cell4->text = format_text($comment->content, FORMAT_HTML);
             }
@@ -943,12 +936,14 @@ class page_wiki_create extends page_wiki {
         $data = $this->mform->get_data();
         if (isset($data->groupinfo)) {
             $groupid = $data->groupinfo;
+        } else if (!empty($this->gid)) {
+            $groupid = $this->gid;
         } else {
             $groupid = '0';
         }
         if (empty($this->subwiki)) {
             // If subwiki is not set then try find one and set else create one.
-            if (!$this->subwiki = wiki_get_subwiki_by_group($this->wid, $groupid)) {
+            if (!$this->subwiki = wiki_get_subwiki_by_group($this->wid, $groupid, $this->uid)) {
                 $swid = wiki_add_subwiki($PAGE->activityrecord->id, $groupid, $this->uid);
                 $this->subwiki = wiki_get_subwiki($swid);
             }

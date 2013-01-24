@@ -49,8 +49,17 @@ class moodlelib_testcase extends advanced_testcase {
             '1.5'     => array('Windows XP' => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; nl; rv:1.8) Gecko/20051107 Firefox/1.5'),
             '1.5.0.1' => array('Windows XP' => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.1'),
             '2.0'     => array('Windows XP' => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.1) Gecko/20061204 Firefox/2.0.0.1',
-                'Ubuntu Linux AMD64' => 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1) Gecko/20060601 Firefox/2.0 (Ubuntu-edgy)'),
-            '3.0.6' => array('SUSE' => 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.0.6) Gecko/2009012700 SUSE/3.0.6-1.4 Firefox/3.0.6'),
+                               'Ubuntu Linux AMD64' => 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1) Gecko/20060601 Firefox/2.0 (Ubuntu-edgy)'),
+            '3.0.6'   => array('SUSE' => 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.0.6) Gecko/2009012700 SUSE/3.0.6-1.4 Firefox/3.0.6'),
+            '3.6'     => array('Linux' => 'Mozilla/5.0 (X11; Linux i686; rv:2.0) Gecko/20100101 Firefox/3.6'),
+            '11.0'    => array('Windows' => 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:11.0) Gecko Firefox/11.0'),
+            '15.0a2'  => array('Windows' => 'Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120716 Firefox/15.0a2'),
+            '18.0'    => array('Mac OS X' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/18.0 Firefox/18.0'),
+        ),
+        'SeaMonkey' => array(
+            '2.0' => array('Windows' => 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1b3pre) Gecko/20081208 SeaMonkey/2.0'),
+            '2.1' => array('Linux' => 'Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20110609 Firefox/4.0.1 SeaMonkey/2.1'),
+            '2.3' => array('FreeBSD' => 'Mozilla/5.0 (X11; FreeBSD amd64; rv:6.0) Gecko/20110818 Firefox/6.0 SeaMonkey/2.3'),
         ),
         'Safari' => array(
             '312' => array('Mac OS X' => 'Mozilla/5.0 (Macintosh; U; PPC Mac OS X; en-us) AppleWebKit/312.1 (KHTML, like Gecko) Safari/312'),
@@ -248,6 +257,113 @@ class moodlelib_testcase extends advanced_testcase {
         $this->assertTrue(check_browser_version('Firefox'));
         $this->assertTrue(check_browser_version('Firefox', '1.5'));
         $this->assertFalse(check_browser_version('Firefox', '3.0'));
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['Firefox']['1.0.6']['Windows XP'];
+        $this->assertTrue(check_browser_version('Firefox'));
+        $this->assertTrue(check_browser_version('Gecko', '1'));
+        $this->assertFalse(check_browser_version('Gecko', 20030516));
+        $this->assertFalse(check_browser_version('Gecko', 20051106));
+        $this->assertFalse(check_browser_version('Gecko', 2006010100));
+        $this->assertFalse(check_browser_version('Firefox', '1.5'));
+        $this->assertFalse(check_browser_version('Firefox', '3.0'));
+        $this->assertFalse(check_browser_version('Gecko', '2'));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['Firefox']['2.0']['Windows XP'];
+        $this->assertTrue(check_browser_version('Firefox'));
+        $this->assertTrue(check_browser_version('Firefox', '1.5'));
+        $this->assertTrue(check_browser_version('Gecko', '1'));
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+        $this->assertFalse(check_browser_version('Firefox', '3.0'));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['Firefox']['3.6']['Linux'];
+        $this->assertTrue(check_browser_version('Firefox'));
+        $this->assertTrue(check_browser_version('Firefox', '1.5'));
+        $this->assertTrue(check_browser_version('Firefox', '3.0'));
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', '3.6'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+        $this->assertFalse(check_browser_version('Firefox', '4'));
+        $this->assertFalse(check_browser_version('Firefox', '10'));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['Firefox']['3.6']['Linux'];
+        $this->assertTrue(check_browser_version('Firefox'));
+        $this->assertTrue(check_browser_version('Firefox', '1.5'));
+        $this->assertTrue(check_browser_version('Firefox', '3.0'));
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', '3.6'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+        $this->assertFalse(check_browser_version('Firefox', '4'));
+        $this->assertFalse(check_browser_version('Firefox', '10'));
+        $this->assertFalse(check_browser_version('Firefox', '18'));
+        $this->assertFalse(check_browser_version('Gecko', '4'));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['Firefox']['15.0a2']['Windows'];
+        $this->assertTrue(check_browser_version('Firefox'));
+        $this->assertTrue(check_browser_version('Firefox', '1.5'));
+        $this->assertTrue(check_browser_version('Firefox', '3.0'));
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', '3.6'));
+        $this->assertTrue(check_browser_version('Gecko', '15.0'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+        $this->assertTrue(check_browser_version('Firefox', '4'));
+        $this->assertTrue(check_browser_version('Firefox', '10'));
+        $this->assertTrue(check_browser_version('Firefox', '15'));
+        $this->assertFalse(check_browser_version('Firefox', '18'));
+        $this->assertFalse(check_browser_version('Gecko', '18'));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['Firefox']['18.0']['Mac OS X'];
+        $this->assertTrue(check_browser_version('Firefox'));
+        $this->assertTrue(check_browser_version('Firefox', '1.5'));
+        $this->assertTrue(check_browser_version('Firefox', '3.0'));
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', '3.6'));
+        $this->assertTrue(check_browser_version('Gecko', '15.0'));
+        $this->assertTrue(check_browser_version('Gecko', '18.0'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+        $this->assertTrue(check_browser_version('Firefox', '4'));
+        $this->assertTrue(check_browser_version('Firefox', '10'));
+        $this->assertTrue(check_browser_version('Firefox', '15'));
+        $this->assertTrue(check_browser_version('Firefox', '18'));
+        $this->assertFalse(check_browser_version('Firefox', '19'));
+        $this->assertFalse(check_browser_version('Gecko', '19'));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['SeaMonkey']['2.0']['Windows'];
+
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+        $this->assertFalse(check_browser_version('Gecko', '3.6'));
+        $this->assertFalse(check_browser_version('Gecko', '4.0'));
+        $this->assertFalse(check_browser_version('Firefox'));
+
+        $_SERVER['HTTP_USER_AGENT'] = $this->user_agents['SeaMonkey']['2.1']['Linux'];
+        $this->assertTrue(check_browser_version('Gecko', '2'));
+        $this->assertTrue(check_browser_version('Gecko', '3.6'));
+        $this->assertTrue(check_browser_version('Gecko', '4.0'));
+        $this->assertTrue(check_browser_version('Gecko', 20030516));
+        $this->assertTrue(check_browser_version('Gecko', 20051106));
+        $this->assertTrue(check_browser_version('Gecko', 2006010100));
+        $this->assertTrue(check_browser_version('Firefox'));
+        $this->assertTrue(check_browser_version('Firefox', 4.0));
+        $this->assertFalse(check_browser_version('Firefox', 5));
+        $this->assertFalse(check_browser_version('Gecko', '18.0'));
+
     }
 
     function test_get_browser_version_classes() {
@@ -863,9 +979,23 @@ class moodlelib_testcase extends advanced_testcase {
             '0'                              => '0',
             '0.0'                            => '0.0',
             '0.5'                            => '0.5',
+            '9.0'                            => '9.0',
+            '-9.0'                           => '-9.0',
+            '+9.0'                           => '+9.0',
+            '9.5'                            => '9.5',
+            '-9.5'                           => '-9.5',
+            '+9.5'                           => '+9.5',
+            '12.0'                           => '12.0',
+            '-12.0'                          => '-12.0',
+            '+12.0'                          => '+12.0',
+            '12.5'                           => '12.5',
             '-12.5'                          => '-12.5',
             '+12.5'                          => '+12.5',
+            '13.0'                           => '13.0',
+            '-13.0'                          => '-13.0',
+            '+13.0'                          => '+13.0',
             '13.5'                           => '',
+            '+13.5'                          => '',
             '-13.5'                          => '',
             '0.2'                            => '');
 
@@ -1969,5 +2099,85 @@ class moodlelib_testcase extends advanced_testcase {
 
         $result = delete_user($admin);
         $this->assertFalse($result);
+    }
+
+    /**
+     * Test function convert_to_array()
+     */
+    public function test_convert_to_array() {
+        // check that normal classes are converted to arrays the same way as (array) would do
+        $obj = new stdClass();
+        $obj->prop1 = 'hello';
+        $obj->prop2 = array('first', 'second', 13);
+        $obj->prop3 = 15;
+        $this->assertEquals(convert_to_array($obj), (array)$obj);
+
+        // check that context object (with iterator) is converted to array properly
+        $obj = get_system_context();
+        $ar = array(
+            'id'           => $obj->id,
+            'contextlevel' => $obj->contextlevel,
+            'instanceid'   => $obj->instanceid,
+            'path'         => $obj->path,
+            'depth'        => $obj->depth
+        );
+        $this->assertEquals(convert_to_array($obj), $ar);
+    }
+
+    /**
+     * Test the function date_format_string().
+     */
+    function test_date_format_string() {
+        // Forcing locale and timezone.
+        $oldlocale = setlocale(LC_TIME, '0');
+        setlocale(LC_TIME, 'en_AU.UTF-8');
+        $systemdefaulttimezone = date_default_timezone_get();
+        date_default_timezone_set('Australia/Perth');
+
+        $tests = array(
+            array(
+                'tz' => 99,
+                'str' => '%A, %d %B %Y, %I:%M %p',
+                'expected' => 'Saturday, 01 January 2011, 06:00 PM'
+            ),
+            array(
+                'tz' => 0,
+                'str' => '%A, %d %B %Y, %I:%M %p',
+                'expected' => 'Saturday, 01 January 2011, 10:00 AM'
+            ),
+            array(
+                'tz' => -12,
+                'str' => '%A, %d %B %Y, %I:%M %p',
+                'expected' => 'Saturday, 01 January 2011, 10:00 AM'
+            ),
+            array(
+                'tz' => 99,
+                'str' => 'Žluťoučký koníček %A',
+                'expected' => 'Žluťoučký koníček Saturday'
+            ),
+            array(
+                'tz' => 99,
+                'str' => '言語設定言語 %A',
+                'expected' => '言語設定言語 Saturday'
+            ),
+            array(
+                'tz' => 99,
+                'str' => '简体中文简体 %A',
+                'expected' => '简体中文简体 Saturday'
+            ),
+        );
+
+        // Note: date_format_string() uses the timezone only to differenciate
+        // the server time from the UTC time. It does not modify the timestamp.
+        // Hence similar results for timezones <= 13.
+        // On different systems case of AM PM changes so compare case insensitive.
+        foreach ($tests as $test) {
+            $str = date_format_string(1293876000, $test['str'], $test['tz']);
+            $this->assertEquals(textlib::strtolower($test['expected']), textlib::strtolower($str));
+        }
+
+        // Restore system default values.
+        date_default_timezone_set($systemdefaulttimezone);
+        setlocale(LC_TIME, $oldlocale);
     }
 }

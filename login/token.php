@@ -22,6 +22,7 @@
  */
 
 define('AJAX_SCRIPT', true);
+define('REQUIRE_CORRECT_ACCESS', true);
 define('NO_MOODLE_COOKIES', true);
 
 require_once(dirname(dirname(__FILE__)) . '/config.php');
@@ -160,7 +161,7 @@ if (!empty($user)) {
             $token->timecreated = time();
             $token->externalserviceid = $service_record->id;
             $tokenid = $DB->insert_record('external_tokens', $token);
-            add_to_log(SITEID, 'webservice', get_string('createtokenforuserauto', 'webservice'), '' , 'User ID: ' . $user->id);
+            add_to_log(SITEID, 'webservice', 'automatically create user token', '' , 'User ID: ' . $user->id);
             $token->id = $tokenid;
         } else {
             throw new moodle_exception('cannotcreatetoken', 'webservice', '', $serviceshortname);

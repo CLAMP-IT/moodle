@@ -413,20 +413,11 @@ class qformat_default {
                     'maxfiles' => -1,
                     'maxbytes' => 0,
                 );
-            if (is_array($question->questiontext)) {
-                // Importing images from draftfile.
-                $questiontext = $question->questiontext;
-                $question->questiontext = $questiontext['text'];
-            }
-            if (is_array($question->generalfeedback)) {
-                $generalfeedback = $question->generalfeedback;
-                $question->generalfeedback = $generalfeedback['text'];
-            }
 
             $question->id = $DB->insert_record('question', $question);
 
-            if (!empty($questiontext['itemid'])) {
-                $question->questiontext = file_save_draft_area_files($questiontext['itemid'],
+            if (isset($question->questiontextitemid)) {
+                $question->questiontext = file_save_draft_area_files($question->questiontextitemid,
                         $this->importcontext->id, 'question', 'questiontext', $question->id,
                         $fileoptions, $question->questiontext);
             } else if (isset($question->questiontextfiles)) {
@@ -435,8 +426,8 @@ class qformat_default {
                             $this->importcontext, 'question', 'questiontext', $question->id, $file);
                 }
             }
-            if (!empty($generalfeedback['itemid'])) {
-                $question->generalfeedback = file_save_draft_area_files($generalfeedback['itemid'],
+            if (isset($question->generalfeedbackitemid)) {
+                $question->generalfeedback = file_save_draft_area_files($question->generalfeedbackitemid,
                         $this->importcontext->id, 'question', 'generalfeedback', $question->id,
                         $fileoptions, $question->generalfeedback);
             } else if (isset($question->generalfeedbackfiles)) {
@@ -658,6 +649,37 @@ class qformat_default {
         $question->import_process = true;
 
         return $question;
+    }
+
+    /**
+     * Construct a reasonable default question name, based on the start of the question text.
+     * @param string $questiontext the question text.
+     * @param string $default default question name to use if the constructed one comes out blank.
+     * @return string a reasonable question name.
+     */
+    public function create_default_question_name($questiontext, $default) {
+        $name = $this->clean_question_name(shorten_text($questiontext, 80));
+        if ($name) {
+            return $name;
+        } else {
+            return $default;
+        }
+    }
+
+    /**
+     * Ensure that a question name does not contain anything nasty, and will fit in the DB field.
+     * @param string $name the raw question name.
+     * @return string a safe question name.
+     */
+    public function clean_question_name($name) {
+        $name = clean_param($name, PARAM_TEXT); // Matches what the question editing form does.
+        $name = trim($name);
+        $trimlength = 251;
+        while (textlib::strlen($name) > 255 && $trimlength > 0) {
+            $name = shorten_text($name, $trimlength);
+            $trimlength -= 10;
+        }
+        return $name;
     }
 
     /**

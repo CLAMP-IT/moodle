@@ -158,9 +158,21 @@ function blog_rss_get_params($filters) {
 function blog_rss_get_feed($context, $args) {
     global $CFG, $SITE, $DB;
 
+    if (empty($CFG->bloglevel)) {
+        debugging('Blogging disabled on this site, RSS feeds are not available');
+        return null;
+    }
+
     if (empty($CFG->enablerssfeeds)) {
         debugging('Sorry, RSS feeds are disabled on this site');
         return '';
+    }
+
+    if ($CFG->bloglevel == BLOG_SITE_LEVEL) {
+        if (isguestuser()) {
+            debugging(get_string('nopermissiontoshow','error'));
+            return '';
+        }
     }
 
     $sitecontext = get_context_instance(CONTEXT_SYSTEM);

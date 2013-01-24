@@ -44,7 +44,7 @@ class preview_options_form extends moodleform {
             question_display_options::VISIBLE => get_string('shown', 'question'),
         );
 
-        $mform->addElement('header', 'optionsheader', get_string('changeoptions', 'question'));
+        $mform->addElement('header', 'optionsheader', get_string('attemptoptions', 'question'));
 
         $behaviours = question_engine::get_behaviour_options(
                 $this->_customdata['quba']->get_preferred_behaviour());
@@ -55,6 +55,11 @@ class preview_options_form extends moodleform {
         $mform->addElement('text', 'maxmark', get_string('markedoutof', 'question'),
                 array('size' => '5'));
         $mform->setType('maxmark', PARAM_FLOAT);
+
+        $mform->addElement('submit', 'saverestart',
+                get_string('restartwiththeseoptions', 'question'));
+
+        $mform->addElement('header', 'optionsheader', get_string('displayoptions', 'question'));
 
         if ($this->_customdata['maxvariant'] > 1) {
             $variants = range(1, $this->_customdata['maxvariant']);
@@ -88,8 +93,8 @@ class preview_options_form extends moodleform {
         $mform->addElement('select', 'history',
                 get_string('responsehistory', 'question'), $hiddenofvisible);
 
-        $mform->addElement('submit', 'submit',
-                get_string('restartwiththeseoptions', 'question'));
+        $mform->addElement('submit', 'saveupdate',
+                get_string('updatedisplayoptions', 'question'));
     }
 }
 
@@ -231,6 +236,9 @@ function question_preview_question_pluginfile($course, $context, $component,
         $filearea, $qubaid, $slot, $args, $forcedownload, $fileoptions) {
     global $USER, $DB, $CFG;
 
+    list($context, $course, $cm) = get_context_info_array($context->id);
+    require_login($course, false, $cm);
+
     $quba = question_engine::load_questions_usage_by_activity($qubaid);
 
     if (!question_has_capability_on($quba->get_question($slot), 'use')) {
@@ -283,10 +291,10 @@ function question_preview_action_url($questionid, $qubaid,
 /**
  * The the URL to use for actions relating to this preview.
  * @param int $questionid the question being previewed.
- * @param int $qubaid the id of the question usage for this preview.
- * @param question_preview_options $options the options in use.
+ * @param context $context the current moodle context.
+ * @param int $previewid optional previewid to sign post saved previewed answers.
  */
-function question_preview_form_url($questionid, $context) {
+function question_preview_form_url($questionid, $context, $previewid = null) {
     $params = array(
         'id' => $questionid,
     );
@@ -294,6 +302,9 @@ function question_preview_form_url($questionid, $context) {
         $params['cmid'] = $context->instanceid;
     } else if ($context->contextlevel == CONTEXT_COURSE) {
         $params['courseid'] = $context->instanceid;
+    }
+    if ($previewid) {
+        $params['previewid'] = $previewid;
     }
     return new moodle_url('/question/preview.php', $params);
 }

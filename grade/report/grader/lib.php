@@ -225,7 +225,7 @@ class grade_report_grader extends grade_report {
                 $changedgrades = true;
 
             } else if ($datatype === 'feedback') {
-                if ($oldvalue->feedback === $postedvalue) {
+                if (($oldvalue->feedback === $postedvalue) or ($oldvalue->feedback === NULL and empty($postedvalue))) {
                     continue;
                 }
             }
@@ -1580,13 +1580,17 @@ class grade_report_grader extends grade_report {
         return $icon;
     }
 
+    public function process_action($target, $action) {
+        return self::do_process_action($target, $action);
+    }
+
     /**
      * Processes a single action against a category, grade_item or grade.
      * @param string $target eid ({type}{id}, e.g. c4 for category4)
      * @param string $action Which action to take (edit, delete etc...)
      * @return
      */
-    public function process_action($target, $action) {
+    public static function do_process_action($target, $action) {
         // TODO: this code should be in some grade_tree static method
         $targettype = substr($target, 0, 1);
         $targetid = substr($target, 1);
