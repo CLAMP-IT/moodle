@@ -992,6 +992,7 @@ function xmldb_main_upgrade($oldversion) {
 
         // Main savepoint reached
         upgrade_main_savepoint(true, 2012062502.08);
+    }
 
     if ($oldversion < 2012062503.07) {
         // Remove "_utf8" suffix from all langs in course table.
