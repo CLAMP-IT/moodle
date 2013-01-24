@@ -507,7 +507,7 @@ function resource_dndupload_handle($uploadinfo) {
 
     // Set the display options to the site defaults.
     $config = get_config('resource');
-    $data->display = $config->display;
+    $data->display = $uploadinfo->course->filedisplaydefault;
     $data->popupheight = $config->popupheight;
     $data->popupwidth = $config->popupwidth;
     $data->printheading = $config->printheading;

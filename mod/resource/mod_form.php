@@ -32,7 +32,7 @@ require_once($CFG->libdir.'/filelib.php');
 
 class mod_resource_mod_form extends moodleform_mod {
     function definition() {
-        global $CFG, $DB;
+        global $CFG, $DB, $COURSE;
         $mform =& $this->_form;
 
         $config = get_config('resource');
@@ -84,7 +84,7 @@ class mod_resource_mod_form extends moodleform_mod {
             $mform->setDefault('display', key($options));
         } else {
             $mform->addElement('select', 'display', get_string('displayselect', 'resource'), $options);
-            $mform->setDefault('display', $config->display);
+            $mform->setDefault('display', $COURSE->filedisplaydefault);
             $mform->setAdvanced('display', $config->display_adv);
             $mform->addHelpButton('display', 'displayselect', 'resource');
         }

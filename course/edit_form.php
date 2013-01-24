@@ -4,6 +4,7 @@ defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->libdir.'/completionlib.php');
+require_once($CFG->libdir.'/resourcelib.php');
 
 class course_edit_form extends moodleform {
     protected $course;
@@ -168,6 +169,13 @@ class course_edit_form extends moodleform {
         $mform->addElement('select', 'maxbytes', get_string('maximumupload'), $choices);
         $mform->addHelpButton('maxbytes', 'maximumupload');
         $mform->setDefault('maxbytes', $courseconfig->maxbytes);
+
+        // Prepare the file display default selector.
+        $resource_config = get_config('resource');
+        $choices = resourcelib_get_displayoptions(explode(',', $resource_config->displayoptions));
+	$mform->addElement('select', 'filedisplaydefault', get_string('coursefiledisplay_default'), $choices);
+        $mform->addHelpButton('filedisplaydefault', 'coursefiledisplay_default');
+        $mform->setDefault('filedisplaydefault', !isset($course->filedisplaydefault) ? $resource_config->display : $course->filedisplaydefault);
 
         if (!empty($course->legacyfiles) or !empty($CFG->legacyfilesinnewcourses)) {
             if (empty($course->legacyfiles)) {

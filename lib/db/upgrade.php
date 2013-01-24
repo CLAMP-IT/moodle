@@ -978,6 +978,21 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2012062502.07);
     }
 
+    if ($oldversion < 2012062502.08) {        
+        // Define field referencefileid to be added to files.
+        $table = new xmldb_table('course');
+
+        // Define field referencefileid to be added to files.
+        $field = new xmldb_field('filedisplaydefault', XMLDB_TYPE_INTEGER, '2', null, null, null, null, null);
+
+        // Conditionally launch add field referencefileid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2012062502.08);
+
     if ($oldversion < 2012062503.07) {
         // Remove "_utf8" suffix from all langs in course table.
         $langs = $DB->get_records_sql("SELECT DISTINCT lang FROM {course} WHERE lang LIKE ?", array('%_utf8'));
