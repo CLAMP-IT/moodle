@@ -133,10 +133,18 @@ class mod_assign_renderer extends plugin_renderer_base {
         $o .= $this->output->box_start('boxaligncenter usersummarysection');
         $o .= $this->output->user_picture($summary->user);
         $o .= $this->output->spacer(array('width'=>30));
+        $fullname = fullname($summary->user, $summary->viewfullnames);
+        $extrainfo = array();
+        foreach ($summary->extrauserfields as $extrafield) {
+            $extrainfo[] = $summary->user->$extrafield;
+        }
+        if (count($extrainfo)) {
+            $fullname .= ' (' . implode(', ', $extrainfo) . ')';
+        }
         $o .= $this->output->action_link(new moodle_url('/user/view.php',
                                                         array('id' => $summary->user->id,
                                                               'course'=>$summary->courseid)),
-                                                              fullname($summary->user, $summary->viewfullnames));
+                                                              $fullname);
         $o .= $this->output->box_end();
         $o .= $this->output->container_end();
 
@@ -303,17 +311,19 @@ class mod_assign_renderer extends plugin_renderer_base {
         $o .= $this->output->box_start('boxaligncenter feedbacktable');
         $t = new html_table();
 
-        $row = new html_table_row();
-        $cell1 = new html_table_cell(get_string('grade'));
-        $cell2 = new html_table_cell($status->gradefordisplay);
-        $row->cells = array($cell1, $cell2);
-        $t->data[] = $row;
+        if (isset($status->gradefordisplay)) {
+            $row = new html_table_row();
+            $cell1 = new html_table_cell(get_string('grade'));
+            $cell2 = new html_table_cell($status->gradefordisplay);
+            $row->cells = array($cell1, $cell2);
+            $t->data[] = $row;
 
-        $row = new html_table_row();
-        $cell1 = new html_table_cell(get_string('gradedon', 'assign'));
-        $cell2 = new html_table_cell(userdate($status->gradeddate));
-        $row->cells = array($cell1, $cell2);
-        $t->data[] = $row;
+            $row = new html_table_row();
+            $cell1 = new html_table_cell(get_string('gradedon', 'assign'));
+            $cell2 = new html_table_cell(userdate($status->gradeddate));
+            $row->cells = array($cell1, $cell2);
+            $t->data[] = $row;
+        }
 
         if ($status->grader) {
             $row = new html_table_row();
