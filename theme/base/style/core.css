@@ -69,7 +69,7 @@ a.dimmed_text:visited,
 .notifysuccess {color:#006600;}
 .reportlink {text-align:right;}
 a.autolink.glossary:hover {cursor: help;}
-/* Block which is hidden if javascript enabled, prevents fickering visible when JS from footer used! */
+/* Block which is hidden if javascript enabled, prevents flickering visible, when JS from footer used! */
 .collapsibleregioncaption {white-space: nowrap;}
 .collapsibleregioncaption img {vertical-align: middle;}
 .jsenabled .hiddenifjs {display: none;}
@@ -738,8 +738,6 @@ sup {vertical-align: super;}
 .dir-rtl .ygtvcancel {background-position: 0 -8822px;}
 .dir-rtl .ygtvcancel:hover {background-position: 0 -8866px;}
 
-.dir-rtl .file-picker .yui-layout-unit-left  {left:500px !important;}
-.dir-rtl .file-picker .yui-layout-unit-center {left:0px !important;}
 .dir-rtl.yui-skin-sam .yui-panel .hd {text-align:left;}
 .dir-rtl .yui-skin-sam .yui-layout .yui-layout-unit div.yui-layout-bd {text-align:right;}
 
@@ -899,7 +897,6 @@ sup {vertical-align: super;}
 
 /* Only set these options if we're showing the js container */
 .jsenabled .choosercontainer #chooseform .alloptions {
-    max-height: 550px;
     overflow-x: hidden;
     overflow-y: auto;
     max-width: 20.3em;
@@ -973,7 +970,6 @@ sup {vertical-align: super;}
     background-color: #FFFFFF;
     overflow-x: hidden;
     overflow-y: auto;
-    max-height: 550px;
     line-height: 2em;
 }
 
