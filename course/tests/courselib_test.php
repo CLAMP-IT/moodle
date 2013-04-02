@@ -290,4 +290,265 @@ class courselib_testcase extends advanced_testcase {
         // Check that the section number has been changed in the cm
         $this->assertEquals($newsection->id, $cm->section);
     }
+
+    public function test_module_visibility() {
+        $this->setAdminUser();
+        $this->resetAfterTest(true);
+
+        // Create course and modules.
+        $course = $this->getDataGenerator()->create_course(array('numsections' => 5));
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id));
+        $page = $this->getDataGenerator()->create_module('page', array('duedate' => time(), 'course' => $course->id));
+        $modules = compact('forum', 'page');
+
+        // Hiding the modules.
+        foreach ($modules as $mod) {
+            set_coursemodule_visible($mod->cmid, 0);
+            $this->check_module_visibility($mod, 0, 0);
+        }
+
+        // Showing the modules.
+        foreach ($modules as $mod) {
+            set_coursemodule_visible($mod->cmid, 1);
+            $this->check_module_visibility($mod, 1, 1);
+        }
+    }
+
+    public function test_section_visibility() {
+        $this->setAdminUser();
+        $this->resetAfterTest(true);
+
+        // Create course.
+        $course = $this->getDataGenerator()->create_course(array('numsections' => 3), array('createsections' => true));
+
+        // Testing an empty section.
+        $sectionnumber = 1;
+        set_section_visible($course->id, $sectionnumber, 0);
+        $section_info = get_fast_modinfo($course)->get_section_info($sectionnumber);
+        $this->assertEquals($section_info->visible, 0);
+        set_section_visible($course->id, $sectionnumber, 1);
+        $section_info = get_fast_modinfo($course)->get_section_info($sectionnumber);
+        $this->assertEquals($section_info->visible, 1);
+
+        // Testing a section with visible modules.
+        $sectionnumber = 2;
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id),
+                array('section' => $sectionnumber));
+        $page= $this->getDataGenerator()->create_module('page', array('duedate' => time(),
+                'course' => $course->id), array('section' => $sectionnumber));
+        $modules = compact('forum', 'page');
+        set_section_visible($course->id, $sectionnumber, 0);
+        $section_info = get_fast_modinfo($course)->get_section_info($sectionnumber);
+        $this->assertEquals($section_info->visible, 0);
+        foreach ($modules as $mod) {
+            $this->check_module_visibility($mod, 0, 1);
+        }
+        set_section_visible($course->id, $sectionnumber, 1);
+        $section_info = get_fast_modinfo($course)->get_section_info($sectionnumber);
+        $this->assertEquals($section_info->visible, 1);
+        foreach ($modules as $mod) {
+            $this->check_module_visibility($mod, 1, 1);
+        }
+
+        // Testing a section with hidden modules, which should stay hidden.
+        $sectionnumber = 3;
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id),
+                array('section' => $sectionnumber));
+        $page = $this->getDataGenerator()->create_module('page', array('duedate' => time(),
+                'course' => $course->id), array('section' => $sectionnumber));
+        $modules = compact('forum', 'page');
+        foreach ($modules as $mod) {
+            set_coursemodule_visible($mod->cmid, 0);
+            $this->check_module_visibility($mod, 0, 0);
+        }
+        set_section_visible($course->id, $sectionnumber, 0);
+        $section_info = get_fast_modinfo($course)->get_section_info($sectionnumber);
+        $this->assertEquals($section_info->visible, 0);
+        foreach ($modules as $mod) {
+            $this->check_module_visibility($mod, 0, 0);
+        }
+        set_section_visible($course->id, $sectionnumber, 1);
+        $section_info = get_fast_modinfo($course)->get_section_info($sectionnumber);
+        $this->assertEquals($section_info->visible, 1);
+        foreach ($modules as $mod) {
+            $this->check_module_visibility($mod, 0, 0);
+        }
+    }
+
+    /**
+     * Helper function to assert that a module has correctly been made visible, or hidden.
+     *
+     * @param stdClass $mod module information
+     * @param int $visibility the current state of the module
+     * @param int $visibleold the current state of the visibleold property
+     * @return void
+     */
+    public function check_module_visibility($mod, $visibility, $visibleold) {
+        global $DB;
+
+        rebuild_course_cache($mod->course);
+        $course = $DB->get_record('course', array('id' => $mod->course));
+        $cm = get_fast_modinfo($course)->get_cm($mod->cmid);
+
+        $this->assertEquals($visibility, $cm->visible);
+        $this->assertEquals($visibleold, $cm->visibleold);
+
+        // Check the module grade items.
+        $grade_items = grade_item::fetch_all(array('itemtype' => 'mod', 'itemmodule' => $cm->modname,
+                'iteminstance' => $cm->instance, 'courseid' => $cm->course));
+        if ($grade_items) {
+            foreach ($grade_items as $grade_item) {
+                if ($visibility) {
+                    $this->assertFalse($grade_item->is_hidden(), "$cm->modname grade_item not visible");
+                } else {
+                    $this->assertTrue($grade_item->is_hidden(), "$cm->modname grade_item not hidden");
+                }
+            }
+        }
+
+        // Check the events visibility.
+        if ($events = $DB->get_records('event', array('instance' => $cm->instance, 'modulename' => $cm->modname))) {
+            foreach ($events as $event) {
+                $calevent = new calendar_event($event);
+                $this->assertEquals($visibility, $calevent->visible, "$cm->modname calendar_event visibility");
+            }
+        }
+    }
+
+    /**
+     * Tests moving a module between hidden/visible sections and
+     * verifies that the course/module visiblity seettings are
+     * retained.
+     */
+    public function test_moveto_module_between_hidden_sections() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course(array('numsections' => 4), array('createsections' => true));
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id));
+        $page = $this->getDataGenerator()->create_module('page', array('course' => $course->id));
+        $quiz= $this->getDataGenerator()->create_module('quiz', array('course' => $course->id));
+
+        // Set the page as hidden
+        set_coursemodule_visible($page->cmid, 0);
+
+        // Set sections 3 as hidden.
+        set_section_visible($course->id, 3, 0);
+
+        $modinfo = get_fast_modinfo($course);
+
+        $hiddensection = $modinfo->get_section_info(3);
+        // New section is definitely not visible:
+        $this->assertEquals($hiddensection->visible, 0);
+
+        $forumcm = $modinfo->cms[$forum->cmid];
+        $pagecm = $modinfo->cms[$page->cmid];
+
+        // Move the forum and the page to a hidden section.
+        moveto_module($forumcm, $hiddensection);
+        moveto_module($pagecm, $hiddensection);
+
+        // Reset modinfo cache.
+        $reset = 'reset';
+        get_fast_modinfo($reset);
+
+        $modinfo = get_fast_modinfo($course);
+
+        // Verify that forum and page have been moved to the hidden section and quiz has not.
+        $this->assertContains($forum->cmid, $modinfo->sections[3]);
+        $this->assertContains($page->cmid, $modinfo->sections[3]);
+        $this->assertNotContains($quiz->cmid, $modinfo->sections[3]);
+
+        // Verify that forum has been made invisible.
+        $forumcm = $modinfo->cms[$forum->cmid];
+        $this->assertEquals($forumcm->visible, 0);
+        // Verify that old state has been retained.
+        $this->assertEquals($forumcm->visibleold, 1);
+
+        // Verify that page has stayed invisible.
+        $pagecm = $modinfo->cms[$page->cmid];
+        $this->assertEquals($pagecm->visible, 0);
+        // Verify that old state has been retained.
+        $this->assertEquals($pagecm->visibleold, 0);
+
+        // Verify that quiz has been unaffected.
+        $quizcm = $modinfo->cms[$quiz->cmid];
+        $this->assertEquals($quizcm->visible, 1);
+
+        // Move forum and page back to visible section.
+        $visiblesection = $modinfo->get_section_info(2);
+        moveto_module($forumcm, $visiblesection);
+        moveto_module($pagecm, $visiblesection);
+
+        // Reset modinfo cache.
+        $reset = 'reset';
+        get_fast_modinfo($reset);
+        $modinfo = get_fast_modinfo($course);
+
+        // Verify that forum has been made visible.
+        $forumcm = $modinfo->cms[$forum->cmid];
+        $this->assertEquals($forumcm->visible, 1);
+
+        // Verify that page has stayed invisible.
+        $pagecm = $modinfo->cms[$page->cmid];
+        $this->assertEquals($pagecm->visible, 0);
+
+        // Move the page in the same section (this is what mod duplicate does_
+        moveto_module($pagecm, $visiblesection, $forumcm);
+
+        // Reset modinfo cache.
+        $reset = 'reset';
+        get_fast_modinfo($reset);
+
+        // Verify that the the page is still hidden
+        $modinfo = get_fast_modinfo($course);
+        $pagecm = $modinfo->cms[$page->cmid];
+        $this->assertEquals($pagecm->visible, 0);
+    }
+
+    /**
+     * Tests moving a module around in the same section. moveto_module()
+     * is called this way in modduplicate.
+     */
+    public function test_moveto_module_in_same_section() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course(array('numsections' => 3), array('createsections' => true));
+        $page = $this->getDataGenerator()->create_module('page', array('course' => $course->id));
+        $forum = $this->getDataGenerator()->create_module('forum', array('course' => $course->id));
+
+        // Simulate inconsistent visible/visibleold values (MDL-38713).
+        $cm = $DB->get_record('course_modules', array('id' => $page->cmid), '*', MUST_EXIST);
+        $cm->visible = 0;
+        $cm->visibleold = 1;
+        $DB->update_record('course_modules', $cm);
+
+        $modinfo = get_fast_modinfo($course);
+        $forumcm = $modinfo->cms[$forum->cmid];
+        $pagecm = $modinfo->cms[$page->cmid];
+
+        // Verify that page is hidden.
+        $this->assertEquals($pagecm->visible, 0);
+
+        // Verify section 0 is where all mods added.
+        $section = $modinfo->get_section_info(0);
+        $this->assertEquals($section->id, $forumcm->section);
+        $this->assertEquals($section->id, $pagecm->section);
+
+
+        // Move the forum and the page to a hidden section.
+        moveto_module($pagecm, $section, $forumcm);
+
+        // Reset modinfo cache.
+        $reset = 'reset';
+        get_fast_modinfo($reset);
+
+        // Verify that the the page is still hidden
+        $modinfo = get_fast_modinfo($course);
+        $pagecm = $modinfo->cms[$page->cmid];
+        $this->assertEquals($pagecm->visible, 0);
+    }
 }

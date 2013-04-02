@@ -2916,16 +2916,23 @@ function set_coursemodule_visible($id, $visible, $prevstateoverrides=false) {
         }
     }
 
+    $cminfo = new stdClass();
+    $cminfo->id = $id;
+    $cminfo->visible = $visible;
+
     if ($prevstateoverrides) {
-        if ($visible == '0') {
-            // Remember the current visible state so we can toggle this back.
-            $DB->set_field('course_modules', 'visibleold', $cm->visible, array('id'=>$id));
+        // If we making whole section visiblility change..
+        if ($visible == 0) {
+            // Retain previous visibility state.
+            $cminfo->visibleold = $cm->visible;
         } else {
-            // Get the previous saved visible states.
-            return $DB->set_field('course_modules', 'visible', $cm->visibleold, array('id'=>$id));
+            // Restore previous visibility state.
+            $cminfo->visible = $cm->visibleold;
         }
+    } else {
+        $cminfo->visibleold = $visible;
     }
-    return $DB->set_field("course_modules", "visible", $visible, array("id"=>$id));
+    return $DB->update_record('course_modules', $cminfo);
 }
 
 /**
@@ -3166,15 +3173,17 @@ function moveto_module($mod, $section, $beforemod=NULL) {
 /// Update module itself if necessary
 
     // If moving to a hidden section then hide module.
-    if (!$section->visible && $mod->visible) {
-        // Set this in the object because it is sent as a response to ajax calls.
-        set_coursemodule_visible($mod->id, 0, true);
-        $mod->visible = 0;
-    }
-    if ($section->visible && !$mod->visible) {
-        set_coursemodule_visible($mod->id, 1, true);
-        // Set this in the object because it is sent as a response to ajax calls.
-        $mod->visible = $mod->visibleold;
+    if ($mod->section != $section->id) {
+        if (!$section->visible && $mod->visible) {
+            // Set this in the object because it is sent as a response to ajax calls.
+            set_coursemodule_visible($mod->id, 0, true);
+            $mod->visible = 0;
+        }
+        if ($section->visible && !$mod->visible) {
+            set_coursemodule_visible($mod->id, 1, true);
+            // Set this in the object because it is sent as a response to ajax calls.
+            $mod->visible = $mod->visibleold;
+        }
     }
 
 /// Add the module into the new section
