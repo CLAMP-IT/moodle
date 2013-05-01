@@ -1,0 +1,63 @@
+/* Major portions of code written by Mark Ward (original author). 
+   Modifications and additions / forks by Mark Johnson and Danny Wahl. 
+   This CSS was compiled (I interleaved the code) by Frankie Kam 
+   - April 2012*/
+
+.editing h3.sectionname {
+    margin: 0; /* Swap the margin for padding for the hover rules below */
+    padding: 1em 0;
+}
+
+.editing .block_site_main_menu .urlselect select {
+    max-width: 86%; /* Keep the "Add Resources and Add Activity" Dropdowns in the block */
+}
+
+.section_add_menus, /* Add Resource/Activity dropdowns (2.2) */
+.addresourcemodchooser, /* Add Resource/Activity Link (2.3) */
+.editing .block .title .commands .icon, /* Block Title Controls */
+.editing .block .content li .commands a, /* Command in block content (add resources/activities in Main menu) */
+.editing .block .editbutton a, /* Edit button in custom HTML blocks */
+.editing .section .side > *:not(br), /* Section controls (can't use 'a' b/c ajax uses 'span') */
+.editing .section .summary a:first-child, /* Edit Section Summary */
+.editing .section .activity .commands > *, /* Individual activity and resource controls (can't use 'a' b/c ajax uses 'span') */
+.editing .sitetopic > a {
+    filter: alpha(opacity=0);
+    opacity: 0;
+    -webkit-transition: opacity 0.5s linear 0s;
+    -moz-transition: opacity 0.5s linear 0s;
+    -ms-transition: opacity 0.5s linear 0s;
+    -o-transition: opacity 0.5s linear 0s;
+    transition: opacity 0.5s linear 0s; /* half-second fade in */
+}
+
+.editing .section:hover .section_add_menus,
+.editing .block:hover .section_add_menus,
+.editing .sitetopic:hover .section_add_menus,
+.editing .block:hover .addresourcemodchooser,
+.editing .section:hover .addresourcemodchooser,
+.editing .sitetopic:hover .addresourcemodchooser,
+.editing .block:hover .title .commands .icon,
+.editing .block .title .commands .icon:active,
+.editing .block .title .commands .icon:focus,
+.editing .block .content li:hover .commands a,
+.editing .block .content li .commands a:active,
+.editing .block .content li .commands a:focus,
+.editing .block:hover .editbutton a,
+.editing .block .editbutton a:active,
+.editing .block .editbutton a:focus,
+.editing .section:hover .side > *:not(br),
+.editing .section .side > *:active,
+.editing .section .side > *:focus,
+.editing .section .summary:hover a:first-child,
+.editing .section .summary a:first-child:active,
+.editing .section .summary a:first-child:focus,
+.editing .section .sectionname:hover + .summary a,
+.editing .section .activity:hover .commands > *,
+.editing .section .activity .commands > *:active,
+.editing .section .activity .commands > *:focus,
+.editing .sitetopic:hover > a,
+.editing .sitetopic > a:active,
+.editing .sitetopic > a:focus {
+    filter: none;
+    opacity: 1;
+}
