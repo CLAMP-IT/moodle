@@ -1,0 +1,46 @@
+<?php require_once("lib/panopto_data.php"); ?>
+
+<div id="configPage">
+	<?php
+	global $COURSE;
+
+	// Construct the Panopto data proxy object
+	$panopto_data = new panopto_data($COURSE->id);
+        
+	if(!empty($panopto_data->servername) && !empty($panopto_data->instancename) && !empty($panopto_data->applicationkey))
+	{
+	?>
+		<div>
+			<div id="instanceConfigHeader">Select the Panopto Focus course to display in this block.</div>
+			<b>Course:</b>
+			<?php
+				$params->course_ids = $COURSE->id;
+				$params->return_url = urlencode($_SERVER['REQUEST_URI']);
+				$query_string = http_build_query($params);
+				$provision_url = "$CFG->wwwroot/blocks/panopto/provision_course.php?" . $query_string;
+				
+				echo $panopto_data->get_course_options_html($provision_url);
+			?>
+		</div>
+		<script>
+			function editCourse()
+			{
+				document.getElementById('sessionGroupSelect').disabled = false;
+	
+				var syncSection = document.getElementById('syncSection');
+				if(syncSection) syncSection.style.display = 'none';
+	
+				document.getElementById('editButton').style.display = 'none';
+			}
+		</script>
+	<?php 
+	}
+	else
+	{
+		echo "<div class='error'>Cannot configure block instance: Global configuration incomplete.<br />Please contact your system administrator.</div>";
+	}
+	?>
+	<p>
+		<input type="submit" value="<?php print_string('savechanges'); ?>" onclick="document.getElementById('sessionGroupSelect').disabled = false;" />
+	</p>
+</div>
