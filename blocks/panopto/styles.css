@@ -1,0 +1,103 @@
+/* Copyright Panopto 2009 - 2011 / With contributions from Spenser Jones (sjones@ambrose.edu)
+ * 
+ * This file is part of the Panopto plugin for Moodle.
+ * 
+ * The Panopto plugin for Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The Panopto plugin for Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with the Panopto plugin for Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+/* Provisioning pages */
+
+.block_panopto .courseProvisionResult
+{
+    border: solid 1px #C0C0C0;
+    padding: 5px;
+    margin-bottom: 20px;
+}
+
+.block_panopto .courseProvisionResult .attribute
+{
+    font-weight: bold;
+}
+
+.block_panopto .courseProvisionResult .value
+{
+    margin-left: 15px;
+    margin-bottom: 5px;
+}
+
+.block_panopto .courseProvisionResult .successMessage
+{
+    color: green;
+}
+
+.block_panopto .courseProvisionResult .errorMessage
+{
+    color: red;
+}
+
+
+/* Block sidebar */
+
+.block_panopto .sectionHeader
+{
+    margin-top: 10px;
+}
+
+.block_panopto #hiddenLecturesDiv
+{
+    display: none;
+}
+
+.block_panopto #showAllDiv
+{
+    margin-top: 5px;
+}
+
+.block_panopto #showAllToggle
+{
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.block_panopto .listItem
+{
+    margin-top: 3px;
+    font-size: 0.8em;
+}
+
+.block_panopto .listItemAlt
+{
+    background: #F0F0F0;
+}
+
+.block_panopto .rssLink
+{
+    font-size: 0.8em;
+}
+
+.block_panopto .rssParen
+{
+    font-size: 0.7em;
+}
+
+.block_panopto .nowrap
+{
+    white-space: nowrap;
+}
+
+.block_panopto .error
+{
+    color: red;
+}
