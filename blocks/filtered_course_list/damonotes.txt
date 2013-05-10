@@ -1,0 +1,132 @@
+
+**** FOR "BY TERM" ******
+
+Added this to settings.php:
+
+	$settings->add(new admin_setting_configtext('block_filtered_course_list_permanent', get_string('permanent', 'block_filtered_course_list'),
+	get_string('configpermanent', 'block_filtered_course_list'), ''));
+
+
+Added to lang/en/block_filtered_course_list.php
+
+	$string['permanent']		= 'Permanent Courses';
+	$string['configpermanent']	= 'Enter the string that designates permanent courses.<br>This must be part of the course shortname.';
+
+Added to block_filtered_course_list.php
+
+    $term_perm = ' ';
+    if (isset($CFG->block_filtered_course_list_permanent)) {
+	    $term_perm = $CFG->block_filtered_course_list_permanent;
+    }
+
+    commented out stuff and added around line 72:
+                        $filtered_courses = $this->_filter_by_term($all_courses,
+                                                                   $term_current,
+                                                                   $term_future,
+                                                                   $term_perm);                        
+
+    this function redone
+    function _filter_by_term($courses, $term_current, $term_future, $term_perm) {
+        $results = array('Current Courses' => array(),
+                         'Future Courses'  => array(),
+                         'Permanent Courses' => array(),
+                         'Other Courses'     => array());
+
+        foreach ($courses as $course) {
+            if ($course->id == SITEID) {
+                continue;
+            }
+
+            if (stristr($course->shortname, $term_current)) {
+                $results['Current Courses'] []= $course;
+            } else if (stristr($course->shortname, $term_future)) {
+                $results['Future Courses']  []= $course;
+            } else if (stristr($course->shortname, $term_perm)) {
+                $results['Permanent Courses']  []= $course;
+            } else {
+                $results['Other Courses']     []= $course;
+            }
+        }
+
+        return $results;
+    }
+
+
+
+**** FOR "BY CATEGORY" *******
+
+Added to settings.php
+
+    $settings->add(new admin_setting_configselect('block_filtered_course_list_future_categories', get_string('futurecategories', 'block_filtered_course_list'), 
+	get_string('configfuturecategories', 'block_filtered_course_list'), '', $cat_list));
+
+    $settings->add(new admin_setting_configselect('block_filtered_course_list_perm_categories', get_string('permcategories', 'block_filtered_course_list'), 
+	get_string('configpermcategories', 'block_filtered_course_list'), '', $cat_list));
+
+Added to lang/en/block_filtered_course_list.php
+
+	$string['futurecategories']	= 'Future Category';
+	$string['permcategories']	= 'Permanent Category';
+	$string['configfuturecategories'] = 'Select the category you want to display as future.';
+	$string['configpermcategories']	  = 'Select the category you want to display as permanent.';
+
+Added to block_filtered_course_list.php
+
+        $category_future = ' ';
+        if (isset($CFG->block_filtered_course_list_future_categories)) {
+            $category_future = $CFG->block_filtered_course_list_future_categories;
+        }
+        
+        $category_perm = ' ';
+        if (isset($CFG->block_filtered_course_list_perm_categories)) {
+            $category_perm = $CFG->block_filtered_course_list_perm_categories;        
+        }
+
+    this call added around line 100, changing the old function call
+                        	$filtered_courses = $this->_filter_by_category($all_courses,
+                                                                       $category_ids,
+                                                                       $category_future,
+                                                                       $category_perm);
+
+    this function changed to work with the new category things
+
+    function _filter_by_category($courses, $cat_ids, $cat_future, $cat_perm) {
+        $filter_categories = explode(',', $cat_ids);
+        $results           = array('Current Course List' => array());
+
+        $filter_future = explode(',', $cat_future);
+        $results_future           = array('Future Course List' => array());
+        $filter_perm = explode(',', $cat_perm);
+        $results_perm           = array('Permanent Course List' => array());
+
+        foreach ($courses as $course) {
+            if ($course->id == SITEID) {
+                continue;
+            }
+
+            foreach ($filter_categories as $filter_category) {
+                if ($course->category == $filter_category) {
+                    $results['Current Course List'] []= $course;
+                    break;
+                }
+            }
+
+            foreach ($filter_future as $filter_category) {
+                if ($course->category == $filter_category) {
+                    $results_future['Future Course List'] []= $course;
+                    break;
+                }
+            }
+
+            foreach ($filter_perm as $filter_category) {
+                if ($course->category == $filter_category) {
+                    $results_perm['Permanent Course List'] []= $course;
+                    break;
+                }
+            }
+        }
+
+        $results = array_merge($results, $results_future, $results_perm);
+
+        return $results;
+    }
