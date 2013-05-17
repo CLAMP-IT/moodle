@@ -1565,6 +1565,8 @@ class assign {
         // more efficient to load this here
         require_once($CFG->libdir.'/filelib.php');
 
+        require_capability('mod/assign:grade', $this->context);
+
         // load all submissions
         $submissions = $this->get_all_submissions('','');
 
@@ -2061,6 +2063,9 @@ class assign {
     public function can_view_submission($userid) {
         global $USER;
 
+        if (is_siteadmin()) {
+            return true;
+        }
         if (!is_enrolled($this->get_course_context(), $userid)) {
             return false;
         }
@@ -3120,7 +3125,7 @@ class assign {
         } else {
             $usergrade = '-';
             if (isset($gradinginfo->items[0]->grades[$userid]) &&
-                    !$grading_info->items[0]->grades[$userid]->hidden) {
+                    !$gradinginfo->items[0]->grades[$userid]->hidden) {
                 $usergrade = $gradinginfo->items[0]->grades[$userid]->str_grade;
             }
             $gradestring = $usergrade;

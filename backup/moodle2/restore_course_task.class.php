@@ -71,13 +71,13 @@ class restore_course_task extends restore_task {
             $this->add_step(new restore_course_structure_step('course_info', 'course.xml'));
         }
 
-        // Executed conditionally if restoring to new course or if legacy_files setting is enabled.
-        if ($this->get_target() == backup::TARGET_NEW_COURSE || $this->get_setting_value('legacy_files') == true) {
-            $this->add_step(new restore_course_legacy_files_step('legacy_files', 'course.xml'));
-        }
-
         // Restore course role assignments and overrides (internally will observe the role_assignments setting)
         $this->add_step(new restore_ras_and_caps_structure_step('course_ras_and_caps', 'roles.xml'));
+
+        // Execute if coming from older than Moodle 2.0, or if the setting is set.
+        if ($this->get_setting_value('legacy_files') == true) {
+            $this->add_step(new restore_course_legacy_files_step('legacy_files'));
+        }
 
         // Restore course enrolments (plugins and membership). Conditionally prevented for any IMPORT/HUB operation
         if ($this->plan->get_mode() != backup::MODE_IMPORT && $this->plan->get_mode() != backup::MODE_HUB) {
@@ -178,15 +178,14 @@ class restore_course_task extends restore_task {
             $overwrite->set_visibility(backup_setting::HIDDEN);
         }
         $this->add_setting($overwrite);
-        
-        // Define legacy_files to decide if legacy files will be restored.
-        $legacyfiles = new restore_course_legacy_files_setting('legacy_files', base_setting::IS_BOOLEAN, false);
+
+        // Define legacy_files to decide if legacy files will be restored
+        $legacyfiles = new restore_course_legacy_files_setting('legacy_files', base_setting::IS_BOOLEAN, true);
         $legacyfiles->set_ui(new backup_setting_ui_select($legacyfiles, $legacyfiles->get_name(), array(1=>get_string('yes'), 0=>get_string('no'))));
         $legacyfiles->get_ui()->set_label(get_string('setting_legacyfiles', 'backup'));
         if ($this->get_target() == backup::TARGET_NEW_COURSE) {
             $legacyfiles->set_value(true);
         }
         $this->add_setting($legacyfiles);
-
     }
 }

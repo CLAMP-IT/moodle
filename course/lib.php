@@ -857,7 +857,9 @@ function print_overview($courses, array $remote_courses=array()) {
     foreach ($courses as $course) {
         $fullname = format_string($course->fullname, true, array('context' => get_context_instance(CONTEXT_COURSE, $course->id)));
         echo $OUTPUT->box_start('coursebox');
-        $attributes = array('title' => s($fullname));
+        // decode &amp;'s. format_string above will have encoded them and html_writer will encode again when it processed the title
+        // attribute leading to double encoding.
+        $attributes = array('title' => str_replace('&amp;', '&', $fullname));
         if (empty($course->visible)) {
             $attributes['class'] = 'dimmed';
         }
@@ -1727,13 +1729,15 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                                 'type' => 'hidden', 'name' => 'completionstate',
                                 'value' => $newstate));
                         echo html_writer::empty_tag('input', array(
-                                'type' => 'image', 'src' => $imgsrc, 'alt' => $imgalt, 'title' => $imgtitle));
+                                'type' => 'image', 'src' => $imgsrc, 'alt' => $imgalt, 'title' => $imgtitle,
+                                'aria-live' => 'polite'));
                         echo html_writer::end_tag('div');
                         echo html_writer::end_tag('form');
                     } else {
-                        // In auto mode, or when editing, the icon is just an image
-                        echo "<span class='autocompletion'>";
-                        echo "<img src='$imgsrc' alt='$imgalt' title='$imgalt' /></span>";
+                        // In auto mode, or when editing, the icon is just an image.
+                        echo html_writer::tag('span', html_writer::empty_tag('img', array(
+                                'src' => $imgsrc, 'alt' => $imgalt, 'title' => $imgalt)),
+                                array('class' => 'autocompletion'));
                     }
                 }
             }
@@ -2916,16 +2920,23 @@ function set_coursemodule_visible($id, $visible, $prevstateoverrides=false) {
         }
     }
 
+    $cminfo = new stdClass();
+    $cminfo->id = $id;
+    $cminfo->visible = $visible;
+
     if ($prevstateoverrides) {
-        if ($visible == '0') {
-            // Remember the current visible state so we can toggle this back.
-            $DB->set_field('course_modules', 'visibleold', $cm->visible, array('id'=>$id));
+        // If we making whole section visiblility change..
+        if ($visible == 0) {
+            // Retain previous visibility state.
+            $cminfo->visibleold = $cm->visible;
         } else {
-            // Get the previous saved visible states.
-            return $DB->set_field('course_modules', 'visible', $cm->visibleold, array('id'=>$id));
+            // Restore previous visibility state.
+            $cminfo->visible = $cm->visibleold;
         }
+    } else {
+        $cminfo->visibleold = $visible;
     }
-    return $DB->set_field("course_modules", "visible", $visible, array("id"=>$id));
+    return $DB->update_record('course_modules', $cminfo);
 }
 
 /**
@@ -3166,15 +3177,17 @@ function moveto_module($mod, $section, $beforemod=NULL) {
 /// Update module itself if necessary
 
     // If moving to a hidden section then hide module.
-    if (!$section->visible && $mod->visible) {
-        // Set this in the object because it is sent as a response to ajax calls.
-        set_coursemodule_visible($mod->id, 0, true);
-        $mod->visible = 0;
-    }
-    if ($section->visible && !$mod->visible) {
-        set_coursemodule_visible($mod->id, 1, true);
-        // Set this in the object because it is sent as a response to ajax calls.
-        $mod->visible = $mod->visibleold;
+    if ($mod->section != $section->id) {
+        if (!$section->visible && $mod->visible) {
+            // Set this in the object because it is sent as a response to ajax calls.
+            set_coursemodule_visible($mod->id, 0, true);
+            $mod->visible = 0;
+        }
+        if ($section->visible && !$mod->visible) {
+            set_coursemodule_visible($mod->id, 1, true);
+            // Set this in the object because it is sent as a response to ajax calls.
+            $mod->visible = $mod->visibleold;
+        }
     }
 
 /// Add the module into the new section
