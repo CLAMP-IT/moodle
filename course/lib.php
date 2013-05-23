@@ -857,7 +857,9 @@ function print_overview($courses, array $remote_courses=array()) {
     foreach ($courses as $course) {
         $fullname = format_string($course->fullname, true, array('context' => get_context_instance(CONTEXT_COURSE, $course->id)));
         echo $OUTPUT->box_start('coursebox');
-        $attributes = array('title' => s($fullname));
+        // decode &amp;'s. format_string above will have encoded them and html_writer will encode again when it processed the title
+        // attribute leading to double encoding.
+        $attributes = array('title' => str_replace('&amp;', '&', $fullname));
         if (empty($course->visible)) {
             $attributes['class'] = 'dimmed';
         }
@@ -1727,13 +1729,15 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                                 'type' => 'hidden', 'name' => 'completionstate',
                                 'value' => $newstate));
                         echo html_writer::empty_tag('input', array(
-                                'type' => 'image', 'src' => $imgsrc, 'alt' => $imgalt, 'title' => $imgtitle));
+                                'type' => 'image', 'src' => $imgsrc, 'alt' => $imgalt, 'title' => $imgtitle,
+                                'aria-live' => 'polite'));
                         echo html_writer::end_tag('div');
                         echo html_writer::end_tag('form');
                     } else {
-                        // In auto mode, or when editing, the icon is just an image
-                        echo "<span class='autocompletion'>";
-                        echo "<img src='$imgsrc' alt='$imgalt' title='$imgalt' /></span>";
+                        // In auto mode, or when editing, the icon is just an image.
+                        echo html_writer::tag('span', html_writer::empty_tag('img', array(
+                                'src' => $imgsrc, 'alt' => $imgalt, 'title' => $imgalt)),
+                                array('class' => 'autocompletion'));
                     }
                 }
             }

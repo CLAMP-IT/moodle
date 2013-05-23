@@ -1126,5 +1126,45 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2012062504.13);
     }
 
+    if ($oldversion < 2012062506.02) {
+        // Fixing possible wrong MIME type for MIME HTML (MHTML) files.
+        $extensions = array('%.mht', '%.mhtml');
+        $select = $DB->sql_like('filename', '?', false);
+        foreach ($extensions as $extension) {
+            $DB->set_field_select(
+                'files',
+                'mimetype',
+                'message/rfc822',
+                $select,
+                array($extension)
+            );
+        }
+        upgrade_main_savepoint(true, 2012062506.02);
+    }
+
+    if ($oldversion < 2012062506.06) {
+        // MDL-29877 Some bad restores created grade items with no category information.
+        $sql = "UPDATE {grade_items}
+                   SET categoryid = courseid
+                 WHERE itemtype <> 'course' and itemtype <> 'category'
+                       AND categoryid IS NULL";
+        $DB->execute($sql);
+        upgrade_main_savepoint(true, 2012062506.06);
+    }
+
+    if ($oldversion < 2012062506.08) {
+        // Adding index to unreadmessageid field of message_working table (MDL-34933)
+        $table = new xmldb_table('message_working');
+        $index = new xmldb_index('unreadmessageid_idx', XMLDB_INDEX_NOTUNIQUE, array('unreadmessageid'));
+
+        // Conditionally launch add index unreadmessageid
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2012062506.08);
+    }
+
     return true;
 }

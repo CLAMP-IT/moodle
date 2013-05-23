@@ -105,7 +105,7 @@ class restore_course_generic_setting extends course_backup_setting {}
 class restore_course_overwrite_conf_setting extends restore_course_generic_setting {}
 
 /**
- * Setting to define is we are going to bring in legacy files.
+ * Setting to define is we are going to bring in legacy files
  */
 class restore_course_legacy_files_setting extends restore_course_generic_setting {}
 
