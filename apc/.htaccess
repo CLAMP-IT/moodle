@@ -1,0 +1,3 @@
+Order deny,allow
+deny from all
+allow from 131.229
