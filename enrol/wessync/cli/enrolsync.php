@@ -21,7 +21,7 @@ if (!enrol_is_enabled('wessync')) {
 // Update enrolments -- these handlers should autocreate courses if required
 $enrol = enrol_get_plugin('wessync');
 require(dirname(dirname(__FILE__)).'/helperlib.php');
-$valid_methods = array ('peoplesoft_enrol','ldap_enrol,fy_enrol','idnumber_enrol');
+$valid_methods = array ('peoplesoft_enrol','ldap_enrol','fy_enrol','idnumber_enrol');
 if (!isset($argv[1]) or !in_array($argv[1],$valid_methods)) {
   print "Must pass enrol request that matches one of the following " . join(',',$valid_methods) . "\n";
   die;
@@ -43,7 +43,7 @@ if ($argv[1] == 'peoplesoft_enrol' ) {
 } else {
   print "Unknown enrol request!";
 }
-print "Results were: " . var_dump($results);
+#print "Results were: " . var_dump($results);
 release_lock_file($lock,$argv[1]);
 $fh = fopen("/tmp/" . $argv[1] . $argv[2] . "_results","a+");
 fwrite($fh,print_r($results,true));
@@ -113,7 +113,6 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
 
 function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
   $master_results = array();
-
   $moodlecreate = get_moodlecreate_db();
   if (mysqli_connect_errno()) {
     print mysqli_connect_error();
@@ -121,7 +120,7 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     die;
   }
   $psdb = get_peoplesoft_db();
-  if (!$psdd) {
+  if (!$psdb) {
     print oci_error($psdb);
     release_lock_file($lock,'peoplesoft_enrol');
     die;
@@ -136,6 +135,7 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
       continue;
     }
     $moodle_course = get_moodle_course($course['idnumber']);
+    $course_created = 0;
     if (!$moodle_course) {
       if ($redirect and $course['alt_status'] == 'Y') {
         print "Redirect Course " . $course['short_name'] . " is already created, refusing to continue...";
@@ -156,6 +156,7 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
         if ($moodle_course) {
   	  /*call back to MoodleCreate database to flag as created */
   	  flag_as_created($moodlecreate,$course['id'],$redirect);
+	  $course_created = 1;
 	  $email_results[] = $course['short_name'] . " newly created.";
 	  $email_results[] = "\tRequested by:" . $course['requested_by'];
         } else {
@@ -170,13 +171,13 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
 
     $auth_students = $enrol->get_members_from_peoplesoft($moodle_course,$psdb);
-    var_dump($auth_students);
+    #var_dump($auth_students);
     if ($auth_students === false ) {
       print "Database errors";
       continue;
     }
     $auth_teachers = $enrol->get_instructors_from_peoplesoft($moodle_course,$psdb);
-    if ($email_results) {
+    if ($email_results && $course_created) {
       foreach ($auth_teachers as $teacher) {
         $email_results[] = "\tInstructor: $teacher";
       }
@@ -212,6 +213,8 @@ function ldap_enrol ($enrol,$lock) {
                           'Staff-Disc' => array('list_ben_astf'),
                           'AdHocCommRpts' => array ('list_all_faculty','list_admin_fac_priv'), 
                           'faculty-chair' => array('voting_faculty'),
+	                  'Hughes2013' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
+
                           'Host-Training' => array('2012'));
 
 
@@ -236,7 +239,7 @@ function ldap_enrol ($enrol,$lock) {
 function fy_enrol ($enrol,$lock) {
   $master_results = array();
   $semester = $enrol->get_current_wes_semester();
-  $psdb = get_peopleosft_db();
+  $psdb = get_peoplesoft_db();
   if (!$psdb) {
     print oci_error($psdb);
     release_lock_file($lock,'fy_enrol');
@@ -244,7 +247,6 @@ function fy_enrol ($enrol,$lock) {
   }
   $fy_courses = wes_get_first_year_courses($semester);
   $fy_students = wes_get_first_year_students($psdb,$semester);
-  
   foreach ($fy_courses as $moodle_course) {
      $result = $enrol->sync_course_membership_by_role($moodle_course,$fy_students,"5");
      $master_results[$result['courseinfo']]['student_sync'] = $result;
