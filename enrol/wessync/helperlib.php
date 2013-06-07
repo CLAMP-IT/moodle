@@ -208,6 +208,11 @@ function wes_get_first_year_courses($semester) {
   $fy_category =  $DB->get_record('course_categories',array('name' => 'First Year'));
   $top_path = $fy_category->path;
   $year = substr($semester,0,3)+ 1900; 
+  $season = get_season_from_semester($semester);
+  
+  if ($season == "Spring") {
+    $year--;
+  }
   $sql = "path like '$top_path/%' and name like ?";
   $category = $DB->get_record_select('course_categories',$sql,array($year),'id');
   if (!isset($category->id)) {
@@ -221,6 +226,8 @@ function wes_get_first_year_courses($semester) {
 function wes_get_first_year_students($psdb,$semester) {   
   $members = array();
   /*from pturenne*/
+  $year = substr($semester,0,3)+ 1900;
+
   $statement = "SELECT A.EMPLID
   FROM SYSADM.PS_ACAD_PROG A, SYSADM.PS_ACAD_PLAN B
   WHERE A.ACAD_CAREER = 'UGRD'
@@ -231,13 +238,20 @@ function wes_get_first_year_students($psdb,$semester) {
      AND A.EFFSEQ = B.EFFSEQ
      AND B.EFFDT = A.EFFDT
      AND B.ACAD_PLAN in ('PRE-MATRIC','TCEX','VINT','FYST','TRAN') UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW'      AND C.SRVC_IND_REASON IN ('ADVIS','INTER') AND C.AMOUNT = :year";
-  $year = substr($semester,0,3)+ 1900;
+  /* now see if it's Spring and if we have to go back a semester because the
+     year of Spring is 2013, but it's the "2012" school year for the above
+     query */
+  $season = get_season_from_semester($semester);
+  if ($season == "Spring") {
+    $year--;
+  }
   $sth = oci_parse($psdb,$statement);
   oci_bind_by_name($sth,':strm',$semester);
   oci_bind_by_name($sth,':year',$year);
   if (!oci_execute($sth)) {
     return false;
   }
+ 
   /*wesid->username */
   $wesid_statement = "select sysadm.wes_get_email(:wesid) from dual";
   $wesid_sth = oci_parse($psdb,$wesid_statement);
@@ -255,6 +269,12 @@ function wes_get_first_year_students($psdb,$semester) {
       print "Email is $wesid_row[0] and is not Wesleyan for user id $emplid, skipping\n";
     }
   }
+  if ($season == "Spring") {
+    $ps_year = substr($semester,0,3);
+    $prev_semester = $ps_year . '9';
+    $prev_students = wes_get_first_year_students($psdb,$prev_semester);
+    $members = array_merge($prev_students,$members);
+  }
   return array_unique($members);
 }
 /*updates moodlecreate database with updated status */
@@ -270,10 +290,10 @@ function flag_as_created( $db_handle, $idnumber,$redirect=0 ) {
 
 /*gets the season given a given semester */
 function get_season_from_semester($semester) {
-  $season = substr($semester,3,1);
+  $season = substr($semester,-1,1);
   if ($season == 9) {
     $season = "Fall";
-  } else if ($season == 1 ) {
+  } else if ($season == 0 ) {
     $season = "Spring";
   } else if ($season == 6 ) {
     $season = "Summer";
