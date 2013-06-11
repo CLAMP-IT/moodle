@@ -431,16 +431,17 @@ class enrol_wessync_plugin extends enrol_plugin {
   public function get_moodle_category ($course) {
       global $DB;
       $term = $course['term'];
+      var_dump($course);
       $glsp_types = array('GLSP','DCST','GLS');
       if (isset($course['acad_career']) and in_array($course['acad_career'],$glsp_types)) {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term . '-gls'));
-    } else {
+      } else {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term));
-    }
-    if (!$category_to_return) {
-      $category_to_return = $DB->get_record('course_categories',array('name' => 'Miscellaneous'));
-    } 
-    return $category_to_return;
+      }
+      if (!$category_to_return) {
+        $category_to_return = $DB->get_record('course_categories',array('name' => 'Miscellaneous'));
+      } 
+      return $category_to_return;
   }
     /* when given a course, return with the correct category */
   public function get_moodle_category_old ($course ) {
