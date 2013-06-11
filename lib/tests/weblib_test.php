@@ -70,8 +70,27 @@ class web_testcase extends advanced_testcase {
     }
 
     function test_s() {
-        $this->assertEquals(s("This Breaks \" Strict"), "This Breaks &quot; Strict");
-        $this->assertEquals(s("This Breaks <a>\" Strict</a>"), "This Breaks &lt;a&gt;&quot; Strict&lt;/a&gt;");
+        // Special cases.
+        $this->assertSame('0', s(0));
+        $this->assertSame('0', s('0'));
+        $this->assertSame('0', s(false));
+        $this->assertSame('', s(null));
+
+        // Normal cases.
+        $this->assertEquals('This Breaks &quot; Strict', s('This Breaks " Strict'));
+        $this->assertEquals('This Breaks &lt;a&gt;&quot; Strict&lt;/a&gt;', s('This Breaks <a>" Strict</a>'));
+
+        // Unicode characters.
+        $this->assertEquals('Café', s('Café'));
+        $this->assertEquals('一, 二, 三', s('一, 二, 三'));
+
+        // Don't escape already-escaped numeric entities. (Note, this behaviour
+        // may not be desirable. Perhaps we should remove these tests and that
+        // functionality, but we can only do that if we understand why it was added.)
+        $this->assertEquals('An entity: &#x09ff;.', s('An entity: &#x09ff;.'));
+        $this->assertEquals('An entity: &#1073;.', s('An entity: &#1073;.'));
+        $this->assertEquals('An entity: &amp;amp;.', s('An entity: &amp;.'));
+        $this->assertEquals('Not an entity: &amp;amp;#x09ff;.', s('Not an entity: &amp;#x09ff;.'));
     }
 
     function test_format_text_email() {
@@ -179,8 +198,23 @@ class web_testcase extends advanced_testcase {
     }
 
     function test_out_as_local_url() {
+        global $CFG;
+        // Test http url.
         $url1 = new moodle_url('/lib/tests/weblib_test.php');
         $this->assertEquals('/lib/tests/weblib_test.php', $url1->out_as_local_url());
+
+        // Test https url.
+        $httpswwwroot = str_replace("http://", "https://", $CFG->wwwroot);
+        $url2 = new moodle_url($httpswwwroot.'/login/profile.php');
+        $this->assertEquals('/login/profile.php', $url2->out_as_local_url());
+
+        // Test http url matching wwwroot.
+        $url3 = new moodle_url($CFG->wwwroot);
+        $this->assertEquals('', $url3->out_as_local_url());
+
+        // Test http url matching wwwroot ending with slash (/).
+        $url3 = new moodle_url($CFG->wwwroot.'/');
+        $this->assertEquals('/', $url3->out_as_local_url());
     }
 
     /**
@@ -190,6 +224,31 @@ class web_testcase extends advanced_testcase {
     function test_out_as_local_url_error() {
         $url2 = new moodle_url('http://www.google.com/lib/tests/weblib_test.php');
         $url2->out_as_local_url();
+    }
+
+    /**
+     * You should get error with modified url
+     *
+     * @expectedException coding_exception
+     * @return void
+     */
+    public function test_modified_url_out_as_local_url_error() {
+        global $CFG;
+
+        $modifiedurl = $CFG->wwwroot.'1';
+        $url3 = new moodle_url($modifiedurl.'/login/profile.php');
+        $url3->out_as_local_url();
+    }
+
+    /**
+     * Try get local url from external https url and you should get error
+     *
+     * @expectedException coding_exception
+     * @return void
+     */
+    public function test_https_out_as_local_url_error() {
+        $url4 = new moodle_url('https://www.google.com/lib/tests/weblib_test.php');
+        $url4->out_as_local_url();
     }
 
     public function test_clean_text() {

@@ -37,7 +37,6 @@ $string['displayselect_help'] = 'This setting, together with the URL file type a
 
 * Automatic - The best display option for the URL is selected automatically
 * Embed - The URL is displayed within the page below the navigation bar together with the URL description and any blocks
-* Force download - The user is prompted to download the URL file
 * Open - Only the URL is displayed in the browser window
 * In pop-up - The URL is displayed in a new browser window without menus or an address bar
 * In frame - The URL is displayed within a frame below the the navigation bar and URL description
@@ -64,9 +63,9 @@ $string['parametersheader'] = 'Parameters';
 $string['parametersheader_help'] = 'Some internal Moodle variables may be automatically appended to the URL. Type your name for the parameter into each text box(es) and then select the required matching variable.';
 $string['pluginadministration'] = 'URL module administration';
 $string['pluginname'] = 'URL';
-$string['popupheight'] = 'Popup height (in pixels)';
+$string['popupheight'] = 'Pop-up height (in pixels)';
 $string['popupheightexplain'] = 'Specifies default height of popup windows.';
-$string['popupwidth'] = 'Popup width (in pixels)';
+$string['popupwidth'] = 'Pop-up width (in pixels)';
 $string['popupwidthexplain'] = 'Specifies default width of popup windows.';
 $string['printheading'] = 'Display URL name';
 $string['printheadingexplain'] = 'Display URL name above content? Some display types may not display URL name even if enabled.';

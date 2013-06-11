@@ -335,7 +335,7 @@ if ($mform->is_cancelled()) {
         $cm->groupmembersonly = $fromform->groupmembersonly;
 
         $completion = new completion_info($course);
-        if ($completion->is_enabled()) {
+        if ($completion->is_enabled() && !empty($fromform->completionunlocked)) {
             // Update completion settings
             $cm->completion                = $fromform->completion;
             $cm->completiongradeitemnumber = $fromform->completiongradeitemnumber;
@@ -412,6 +412,7 @@ if ($mform->is_cancelled()) {
         $newcm->module           = $fromform->module;
         $newcm->instance         = 0; // not known yet, will be updated later (this is similar to restore code)
         $newcm->visible          = $fromform->visible;
+        $newcm->visibleold       = $fromform->visible;
         $newcm->groupmode        = $fromform->groupmode;
         $newcm->groupingid       = $fromform->groupingid;
         $newcm->groupmembersonly = $fromform->groupmembersonly;

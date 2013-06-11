@@ -96,7 +96,7 @@
     if (!empty($CFG->enablerssfeeds) && !empty($CFG->forum_enablerssfeeds) && $forum->rsstype && $forum->rssarticles) {
         require_once("$CFG->libdir/rsslib.php");
 
-        $rsstitle = format_string($course->shortname, true, array('context' => get_context_instance(CONTEXT_COURSE, $course->id))) . ': %fullname%';
+        $rsstitle = format_string($course->shortname, true, array('context' => get_context_instance(CONTEXT_COURSE, $course->id))) . ': ' . format_string($forum->name);
         rss_add_http_header($context, 'mod_forum', $forum, $rsstitle);
     }
 
@@ -156,9 +156,10 @@
     }
 
     if (!empty($forum->blockafter) && !empty($forum->blockperiod)) {
+        $a = new stdClass();
         $a->blockafter = $forum->blockafter;
         $a->blockperiod = get_string('secondstotime'.$forum->blockperiod);
-        echo $OUTPUT->notification(get_string('thisforumisthrottled','forum',$a));
+        echo $OUTPUT->notification(get_string('thisforumisthrottled', 'forum', $a));
     }
 
     if ($forum->type == 'qanda' && !has_capability('moodle/course:manageactivities', $context)) {

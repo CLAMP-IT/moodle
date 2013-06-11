@@ -162,17 +162,17 @@ function lti_view($instance) {
 
     if (empty($key) || empty($secret)) {
         $returnurlparams['unsigned'] = '1';
-
-        //Add the return URL. We send the launch container along to help us avoid frames-within-frames when the user returns
-        $url = new moodle_url('/mod/lti/return.php', $returnurlparams);
-        $returnurl = $url->out(false);
-
-        if ($typeconfig['forcessl'] == '1') {
-            $returnurl = lti_ensure_url_is_https($returnurl);
-        }
-
-        $requestparams['launch_presentation_return_url'] = $returnurl;
     }
+
+    // Add the return URL. We send the launch container along to help us avoid frames-within-frames when the user returns.
+    $url = new moodle_url('/mod/lti/return.php', $returnurlparams);
+    $returnurl = $url->out(false);
+
+    if ($typeconfig['forcessl'] == '1') {
+        $returnurl = lti_ensure_url_is_https($returnurl);
+    }
+
+    $requestparams['launch_presentation_return_url'] = $returnurl;
 
     if (!empty($key) && !empty($secret)) {
         $parms = lti_sign_parameters($requestparams, $endpoint, "POST", $key, $secret);
@@ -285,7 +285,7 @@ function lti_build_request($instance, $typeconfig, $course) {
     if ($customstr) {
         $custom = lti_split_custom_parameters($customstr);
     }
-    if (!isset($typeconfig['allowinstructorcustom']) || $typeconfig['allowinstructorcustom'] == LTI_SETTING_NEVER) {
+    if (isset($typeconfig['allowinstructorcustom']) && $typeconfig['allowinstructorcustom'] == LTI_SETTING_NEVER) {
         $requestparams = array_merge($custom, $requestparams);
     } else {
         if ($instructorcustomstr) {
@@ -561,6 +561,23 @@ function lti_filter_get_types($course) {
     }
 
     return $DB->get_records('lti_types', $filter);
+}
+
+/**
+ * Given an array of tools, filter them based on their state
+ *
+ * @param array $tools An array of lti_types records
+ * @param int $state One of the LTI_TOOL_STATE_* constants
+ * @return array
+ */
+function lti_filter_tool_types(array $tools, $state) {
+    $return = array();
+    foreach ($tools as $key => $tool) {
+        if ($tool->state == $state) {
+            $return[$key] = $tool;
+        }
+    }
+    return $return;
 }
 
 function lti_get_types_for_add_instance() {

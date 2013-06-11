@@ -218,6 +218,14 @@ function forum_update_instance($forum, $mform) {
 
     $DB->update_record('forum', $forum);
 
+    $modcontext = get_context_instance(CONTEXT_MODULE, $forum->coursemodule);
+    if (($forum->forcesubscribe == FORUM_INITIALSUBSCRIBE) && ($oldforum->forcesubscribe <> $forum->forcesubscribe)) {
+        $users = forum_get_potential_subscribers($modcontext, 0, 'u.id, u.email', '');
+        foreach ($users as $user) {
+            forum_subscribe($user->id, $forum->id);
+        }
+    }
+
     forum_grade_item_update($forum);
 
     return true;
@@ -714,6 +722,14 @@ function forum_cron() {
                 $eventdata->fullmessagehtml  = $posthtml;
                 $eventdata->notification = 1;
 
+                // If forum_replytouser is not set then send mail using the noreplyaddress.
+                if (empty($CFG->forum_replytouser)) {
+                    // Clone userfrom as it is referenced by $users.
+                    $cloneduserfrom = clone($userfrom);
+                    $cloneduserfrom->email = $CFG->noreplyaddress;
+                    $eventdata->userfrom = $cloneduserfrom;
+                }
+
                 $smallmessagestrings = new stdClass();
                 $smallmessagestrings->user = fullname($userfrom);
                 $smallmessagestrings->forumname = "$shortname: ".format_string($forum->name,true).": ".$discussion->name;
@@ -1015,10 +1031,9 @@ function forum_cron() {
                 }
 
                 $attachment = $attachname='';
-                $usetrueaddress = true;
                 // Directly email forum digests rather than sending them via messaging, use the
                 // site shortname as 'from name', the noreply address will be used by email_to_user.
-                $mailresult = email_to_user($userto, $site->shortname, $postsubject, $posttext, $posthtml, $attachment, $attachname, $usetrueaddress, $CFG->forum_replytouser);
+                $mailresult = email_to_user($userto, $site->shortname, $postsubject, $posttext, $posthtml, $attachment, $attachname);
 
                 if (!$mailresult) {
                     mtrace("ERROR!");
@@ -2953,7 +2968,7 @@ function forum_subscribed_users($course, $forum, $groupid=0, $context = null, $f
  */
 function forum_get_course_forum($courseid, $type) {
 // How to set up special 1-per-course forums
-    global $CFG, $DB, $OUTPUT;
+    global $CFG, $DB, $OUTPUT, $USER;
 
     if ($forums = $DB->get_records_select("forum", "course = ? AND type = ?", array($courseid, $type), "id ASC")) {
         // There should always only be ONE, but with the right combination of
@@ -2967,6 +2982,9 @@ function forum_get_course_forum($courseid, $type) {
     $forum = new stdClass();
     $forum->course = $courseid;
     $forum->type = "$type";
+    if (!empty($USER->htmleditor)) {
+        $forum->introformat = $USER->htmleditor;
+    }
     switch ($forum->type) {
         case "news":
             $forum->name  = get_string("namenews", "forum");
@@ -7059,21 +7077,26 @@ function forum_get_separate_modules($courseid) {
 }
 
 /**
- * @global object
- * @global object
- * @global object
- * @param object $forum
- * @param object $cm
- * @return bool
+ * Handles the situation where the user has reached the blocking or warning threshold.
+ * The function will either echo out a message, or throw an exception depending on the
+ * threshold reached (warning or blocked). If the forum passed is invalid false is
+ * returned, otherwise if no restriction is needed true is returned.
+ *
+ * @param int|stdClass $forum the forum id or the forum object
+ * @param stdClass $cm the course module
+ * @param bool $display do we want to echo out the message?
+ * @return bool returns false if $forum is invalid or true
+ *         if there is no message to show.
  */
-function forum_check_throttling($forum, $cm=null) {
+function forum_check_throttling($forum, $cm = null, $display = true) {
     global $USER, $CFG, $DB, $OUTPUT;
 
     if (is_numeric($forum)) {
         $forum = $DB->get_record('forum',array('id'=>$forum));
     }
+
     if (!is_object($forum)) {
-        return false;  // this is broken.
+        return false; // This is broken.
     }
 
     if (empty($forum->blockafter)) {
@@ -7091,18 +7114,18 @@ function forum_check_throttling($forum, $cm=null) {
     }
 
     $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
-    if(has_capability('mod/forum:postwithoutthrottling', $modcontext)) {
+    if (has_capability('mod/forum:postwithoutthrottling', $modcontext)) {
         return true;
     }
 
-    // get the number of posts in the last period we care about
+    // Get the number of posts in the last period we care about.
     $timenow = time();
     $timeafter = $timenow - $forum->blockperiod;
 
-    $numposts = $DB->count_records_sql('SELECT COUNT(p.id) FROM {forum_posts} p'
-                                      .' JOIN {forum_discussions} d'
-                                      .' ON p.discussion = d.id WHERE d.forum = ?'
-                                      .' AND p.userid = ? AND p.created > ?', array($forum->id, $USER->id, $timeafter));
+    $numposts = $DB->count_records_sql('SELECT COUNT(p.id) FROM {forum_posts} p
+                                        JOIN {forum_discussions} d
+                                        ON p.discussion = d.id WHERE d.forum = ?
+                                        AND p.userid = ? AND p.created > ?', array($forum->id, $USER->id, $timeafter));
 
     $a = new stdClass();
     $a->blockafter = $forum->blockafter;
@@ -7112,11 +7135,12 @@ function forum_check_throttling($forum, $cm=null) {
     if ($forum->blockafter <= $numposts) {
         print_error('forumblockingtoomanyposts', 'error', $CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id, $a);
     }
+
     if ($forum->warnafter <= $numposts) {
-        echo $OUTPUT->notification(get_string('forumblockingalmosttoomanyposts','forum',$a));
+        if ($display) {
+            echo $OUTPUT->notification(get_string('forumblockingalmosttoomanyposts', 'forum', $a));
+        }
     }
-
-
 }
 
 

@@ -126,21 +126,21 @@ class qformat_xhtml extends qformat_default {
             foreach($question->options->subquestions as $subquestion) {
                 // build drop down for answers
                 $quest_text = $this->repchar( $subquestion->questiontext );
-                $dropdown = html_writer::label(get_string('answer', 'qtype_match', $option+1), 'quest_'.$id.'_'.$option, false, array('class' => 'accesshide'));
-                $dropdown .= "<select id=\"quest_{$id}_{$option}\" name=\"quest_{$id}_{$option}\">\n".$selectoptions."</select>\n";
-                $expout .= "  <li>$quest_text</li>\n";
-                $expout .= $dropdown;
-                $option++;
+                if ($quest_text != '') {
+                    $dropdown = html_writer::label(get_string('answer', 'qtype_match', $option+1), 'quest_'.$id.'_'.$option, false, array('class' => 'accesshide'));
+                    $dropdown .= "<select id=\"quest_{$id}_{$option}\" name=\"quest_{$id}_{$option}\">\n".$selectoptions."</select>\n";
+                    $expout .= "  <li>$quest_text</li>\n";
+                    $expout .= $dropdown;
+                    $option++;
+                }
             }
             $expout .= "</ul>\n";
             break;
         case DESCRIPTION:
             break;
         case MULTIANSWER:
-            $expout .= "<!-- CLOZE type is not supported  -->\n";
-            break;
         default:
-            echo $OUTPUT->notification("No handler for qtype $question->qtype for GIFT export" );
+            $expout .= "<!-- export of $question->qtype type is not supported  -->\n";
         }
         // close off div
         $expout .= "</div>\n\n\n";
