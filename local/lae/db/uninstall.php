@@ -12,6 +12,13 @@
         $table = new xmldb_table('forum_posts');
         $field = new xmldb_field('hiddenuserid');
         if ($dbman->field_exists($table, $field)) $dbman->drop_field($table, $field);
+
+        // Restore the normal course schema
+        $table = new xmldb_table('course');
+        $field = new xmldb_field('filedisplaydefault', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOT_NULL, null, null);
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
         return true;
     }
 ?>

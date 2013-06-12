@@ -1,6 +1,8 @@
 <?php
 $string['auser_firstname'] = 'Anonymous';
 $string['auser_lastname'] = 'User';
+$string['course:filedisplay_default'] = 'Default display option for files';
+$string['course:filedisplay_default_help'] = 'This setting determines the default display option for new files added to the course. It can be used to override the system-wide default.';
 $string['forum:allowanonymous'] = 'Anonymize posts?';
 $string['forum:allowanonymous_help'] = 'If anonymous posts for forums are enabled, users can post messages in forums and discussions without revealing their name to other users. All such posts will appear as by an anonymous user.
 
