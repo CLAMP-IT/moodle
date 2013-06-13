@@ -146,6 +146,8 @@ if (empty($searchcourses)) {
         if (!has_capability('enrol/meta:selectaslinked', $coursecontext)) {
             unset($courses[$c->id]);
             continue;
+        } else {
+            $courses[$c->id] = $c->fullname;
         }
     }
     $numcourses = sizeof($courses);
