@@ -52,6 +52,12 @@ if ($ADMIN->fulltree) {
     } else {
         $categories = get_categories("0");
     }
+	if ($categories) {
+		foreach ($categories as $cat) {
+			$cat_list[$cat->id] = $cat->name;
+		}
+	}
+				
     $settings->add(new admin_setting_configselect('block_filtered_course_list_categories', get_string('categories', 'block_filtered_course_list'), 
 	get_string('configcategories', 'block_filtered_course_list'), '', $cat_list));
 
