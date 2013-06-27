@@ -1,4 +1,0 @@
-New in version 2.1:
-* Updated ATBar
-* Added French Translation
-* Various bug fixes
