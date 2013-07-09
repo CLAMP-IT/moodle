@@ -326,6 +326,14 @@ class theme_config {
     public $yuicssmodules = array('cssreset', 'cssfonts', 'cssgrids', 'cssbase');
 
     /**
+     * An associative array of block manipulations that should be made if the user is using an rtl language.
+     * The key is the original block region, and the value is the block region to change to.
+     * This is used when displaying blocks for regions only.
+     * @var array
+     */
+    public $blockrtlmanipulations = array();
+
+    /**
      * @var renderer_factory Instance of the renderer_factory implementation
      * we are using. Implementation detail.
      */
@@ -418,7 +426,7 @@ class theme_config {
         $configurable = array('parents', 'sheets', 'parents_exclude_sheets', 'plugins_exclude_sheets', 'javascripts', 'javascripts_footer',
                               'parents_exclude_javascripts', 'layouts', 'enable_dock', 'enablecourseajax', 'supportscssoptimisation',
                               'rendererfactory', 'csspostprocess', 'editor_sheets', 'rarrow', 'larrow', 'hidefromselector', 'doctype',
-                              'yuicssmodules');
+                              'yuicssmodules', 'blockrtlmanipulations');
 
         foreach ($config as $key=>$value) {
             if (in_array($key, $configurable)) {
@@ -525,7 +533,10 @@ class theme_config {
                 $this->rarrow = '&#x25B6;';
                 $this->larrow = '&#x25C0;';
             }
-            elseif (false !== strpos($uagent, 'Konqueror')) {
+            elseif ((false !== strpos($uagent, 'Konqueror'))
+                || (false !== strpos($uagent, 'Android')))  {
+                // The fonts on Android don't include the characters required for this to work as expected.
+                // So we use the same ones Konqueror uses.
                 $this->rarrow = '&rarr;';
                 $this->larrow = '&larr;';
             }
