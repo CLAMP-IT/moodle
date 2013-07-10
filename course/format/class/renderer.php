@@ -15,9 +15,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Renderer for outputting the class by date course format.
+ * Renderer for outputting the class course format.
  *
  * @package format_class
+ * @copyright 2012 Dan Poltawski
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since Moodle 2.3
  */
@@ -35,6 +36,7 @@ require_once($CFG->dirroot.'/course/format/class/lib.php');
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class format_class_renderer extends format_section_renderer_base {
+
     /**
      * Generate the starting container html for a list of sections
      * @return string HTML to output.
@@ -58,5 +60,4 @@ class format_class_renderer extends format_section_renderer_base {
     protected function page_title() {
         return get_string('classoutline');
     }
-
 }

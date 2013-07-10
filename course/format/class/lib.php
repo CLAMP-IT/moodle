@@ -15,173 +15,358 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file contains general functions for the course format class
- * modified version of the weekly format
+ * This file contains main class for the course format class by date
  *
- * @since 2.0
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     2.0
+ * @package   format_class
  */
 
+defined('MOODLE_INTERNAL') || die();
+require_once($CFG->dirroot. '/course/format/lib.php');
 
 /**
- * Indicates this format uses sections.
+ * Main class for the class by date course format
  *
- * @return bool Returns true
+ * @package    format_class
  */
-function callback_class_uses_sections() {
-    return true;
-}
+class format_class extends format_base {
 
-
-/**
- * Used to display the course structure for a course where format=class
- *
- * This is called automatically by {@link load_course()} if the current course
- * format = class.
- *
- * @param navigation_node $navigation The course node
- * @param array $path An array of keys to the course node
- * @param stdClass $course The course we are loading the section for
- */
-function callback_class_load_content(&$navigation, $course, $coursenode) {
-	global $class_sections;
-	$class_sections = format_class_get_meeting_times($course);
-    return $navigation->load_generic_course_sections($course, $coursenode, 'class');
-}
-
-/**
- * The string that is used to describe a section of the course
- * e.g. Topic, Week...
- *
- * @return string
- */
-function callback_class_definition() {
-    return get_string('class');
-}
-
-/**
- * Gets the name for the provided section.
- *
- * @param stdClass $course
- * @param stdClass $section
- * @return string
- */
-function callback_class_get_section_name($course, $section) {
-	global $class_sections;
-    // We can't add a node without text
-    if (!empty($section->name)) {
-        // Return the name the user set.
-        return format_string($section->name, true, array('context' => context_course::instance($course->id)));
-    } else if ($section->section == 0) {
-        // Return the general section.
-        return get_string('section0name', 'format_class');
-    } else {
-		
-		if(isset($class_sections[$section->section])) {
-			return $class_sections[$section->section];
-		}
-		else {
-			return "";
-		}
-
+    /**
+     * Returns true if this course format uses sections
+     *
+     * @return bool
+     */
+    public function uses_sections() {
+        return true;
     }
-}
 
-/**
- * Declares support for course AJAX features
- *
- * @see course_format_ajax_support()
- * @return stdClass
- */
-function callback_class_ajax_support() {
-    $ajaxsupport = new stdClass();
-    $ajaxsupport->capable = true;
-    $ajaxsupport->testedbrowsers = array('MSIE' => 6.0, 'Gecko' => 20061111, 'Safari' => 531, 'Chrome' => 6.0);
-    return $ajaxsupport;
-}
 
-function format_class_get_meeting_times($course) {
-	global $DB;
+    /**
+     * Returns the display name of the given section that the course prefers.
+     *
+     * @param int|stdClass $section Section object from database or just field section.section
+     * @return string Display name that the course format prefers, e.g. "Topic 2"
+     */
+    public function get_section_name($section) {
 
-	$class_sections = array();
-	// gets all course desc data from the db
-	$desc_info = $DB->get_record('block_course_description', array('courseid' => $course->id));
-	if(!empty($desc_info->mtg_days)) {
+		global $DB;
+		if(empty($class_sections)) {
+			$course = $this->get_course();
 
-		$desc_info->mtg_days = preg_replace("/SU/", "0", $desc_info->mtg_days);
-		$desc_info->mtg_days = preg_replace("/TH/", "4", $desc_info->mtg_days);
-		$desc_info->mtg_days = preg_replace("/M/", "1", $desc_info->mtg_days);
-		$desc_info->mtg_days = preg_replace("/T/", "2", $desc_info->mtg_days);
-		$desc_info->mtg_days = preg_replace("/W/", "3", $desc_info->mtg_days);
-		$desc_info->mtg_days = preg_replace("/F/", "5", $desc_info->mtg_days);
-		$desc_info->mtg_days = preg_replace("/S/", "6", $desc_info->mtg_days);
+			// gets all course desc data from the db
+			$desc_info = $DB->get_record('block_course_description', array('courseid' => $course->id));
+			if(!empty($desc_info->mtg_days)) {
 
-		// multiples are stored w/ ; as delimiter so this breaks em out into arrays
-		$mtg_days = explode(";", $desc_info->mtg_days);
-		$mtg_start_times = explode(";", $desc_info->mtg_start_times);
-		$mtg_end_times = explode(";", $desc_info->mtg_end_times);
+				$desc_info->mtg_days = preg_replace("/SU/", "0", $desc_info->mtg_days);
+				$desc_info->mtg_days = preg_replace("/TH/", "4", $desc_info->mtg_days);
+				$desc_info->mtg_days = preg_replace("/M/", "1", $desc_info->mtg_days);
+				$desc_info->mtg_days = preg_replace("/T/", "2", $desc_info->mtg_days);
+				$desc_info->mtg_days = preg_replace("/W/", "3", $desc_info->mtg_days);
+				$desc_info->mtg_days = preg_replace("/F/", "5", $desc_info->mtg_days);
+				$desc_info->mtg_days = preg_replace("/S/", "6", $desc_info->mtg_days);
 
-		// sets up arrays of weekdays and buildings used for display
-		$weekdays = array("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday");
+				// multiples are stored w/ ; as delimiter so this breaks em out into arrays
+				$mtg_days = explode(";", $desc_info->mtg_days);
+				$mtg_start_times = explode(";", $desc_info->mtg_start_times);
+				$mtg_end_times = explode(";", $desc_info->mtg_end_times);
 
-		$numofdays = count($mtg_days);
+				// sets up arrays of weekdays and buildings used for display
+				$weekdays = array("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday");
 
-		$timenow = time();
-		$classdate = $course->startdate;
-		$classdate += 7200;                 // Add two hours to avoid possible DST problems
-		$section = 1;
-		$sectionmenu = array();
-		$weekofseconds = 604800;
-		$course->enddate = $course->startdate + ($weekofseconds * 15); // limits it to 15 weeks at most since classes don't run longer than that
+				$numofdays = count($mtg_days);
 
-		$strftimedateshort = ' '.get_string('strftimedateshort');
+				$timenow = time();
+				$classdate = $course->startdate;
+				$classdate += 7200;                 // Add two hours to avoid possible DST problems
+				$tmpsection = 1;
+				$sectionmenu = array();
+				$weekofseconds = 604800;
+				$course->enddate = $course->startdate + ($weekofseconds * 15); // limits it to 15 weeks at most since classes don't run longer than that
 
-		for($stamp=$classdate;$stamp<=$course->enddate;$stamp=strtotime(strftime("%Y-%m-%d",$stamp)." +1 day")) {
-        	if($section <= $course->numsections) {
-            	for($tmp=0;$tmp<$numofdays;$tmp++) {
+				$strftimedateshort = ' '.get_string('strftimedateshort');
 
-                	for ($k=0;$k<strlen($mtg_days[$tmp]);$k++) {
-                    	$daynum = substr($mtg_days[$tmp], $k, 1);
-                    	$start = $mtg_start_times[$tmp];
-                    	$end = $mtg_end_times[$tmp];
+				for($stamp=$classdate;$stamp<=$course->enddate;$stamp=strtotime(strftime("%Y-%m-%d",$stamp)." +1 day")) {
+					if($tmpsection <= $course->numsections) {
+						for($tmp=0;$tmp<$numofdays;$tmp++) {
 
-                    	if(strftime("%A",$stamp)==$weekdays[$daynum]) {
-                        	// only adds 1 hour (instead of 1 day) in case we have multiple class sessions on the same day
-                        	$nextclassdate = strtotime(strftime("%Y-%m-%d",$stamp)." +1 hour");
-                        	//$classday = userdate($stamp, $strftimedateshort);
-                        	$classdatelabel = strftime("%A, %e %B", $stamp).' ('.$start.' - '.$end.')';
-                        	$classday = strftime("%A", $stamp);
+							for ($k=0;$k<strlen($mtg_days[$tmp]);$k++) {
+								$daynum = substr($mtg_days[$tmp], $k, 1);
+								$start = $mtg_start_times[$tmp];
+								$end = $mtg_end_times[$tmp];
 
-                            $class_sections[$section] = $classdatelabel;
-							$section++;
+								if(strftime("%A",$stamp)==$weekdays[$daynum]) {
+									// only adds 1 hour (instead of 1 day) in case we have multiple class sessions on the same day
+									$nextclassdate = strtotime(strftime("%Y-%m-%d",$stamp)." +1 hour");
+									//$classday = userdate($stamp, $strftimedateshort);
+									$classdatelabel = strftime("%A, %e %B", $stamp).' ('.$start.' - '.$end.')';
+									$classday = strftime("%A", $stamp);
+
+									$class_sections[$tmpsection] = $classdatelabel;
+									$tmpsection++;
+								}
+							}
 						}
 					}
 				}
 			}
+
 		}
-	}
+			$section = $this->get_section($section);
+			// We can't add a node without text
+			if (!empty($section->name)) {
+				// Return the name the user set.
+				return format_string($section->name, true, array('context' => context_course::instance($course->id)));
+			} else if ($section->section == 0) {
+				// Return the general section.
+				return get_string('section0name', 'format_class');
+			} else {
 
-	return $class_sections;
-}
+						if(isset($class_sections[$section->section])) {
+								return $class_sections[$section->section];
+						}
+						else {
+								return "";
+						}
 
+			}
 
-/**
- * Callback function to do some action after section move
- *
- * @param stdClass $course The course entry from DB
- * @return array This will be passed in ajax respose.
- */
-function callback_class_ajax_section_move($course) {
-    global $COURSE, $PAGE;
-
-    $titles = array();
-    rebuild_course_cache($course->id);
-    $modinfo = get_fast_modinfo($COURSE);
-    $renderer = $PAGE->get_renderer('format_class');
-    if ($renderer && ($sections = $modinfo->get_section_info_all())) {
-        foreach ($sections as $number => $section) {
-            $titles[$number] = $renderer->section_title($section, $course);
-        }
     }
-    return array('sectiontitles' => $titles, 'action' => 'move');
+
+    /**
+     * The URL to use for the specified course (with section)
+     *
+     * @param int|stdClass $section Section object from database or just field course_sections.section
+     *     if omitted the course view page is returned
+     * @param array $options options for view URL. At the moment core uses:
+     *     'navigation' (bool) if true and section has no separate page, the function returns null
+     *     'sr' (int) used by multipage formats to specify to which section to return
+     * @return null|moodle_url
+     */
+    public function get_view_url($section, $options = array()) {
+        $course = $this->get_course();
+        $url = new moodle_url('/course/view.php', array('id' => $course->id));
+
+        $sr = null;
+        if (array_key_exists('sr', $options)) {
+            $sr = $options['sr'];
+        }
+        if (is_object($section)) {
+            $sectionno = $section->section;
+        } else {
+            $sectionno = $section;
+        }
+        if ($sectionno !== null) {
+            if ($sr !== null) {
+                if ($sr) {
+                    $usercoursedisplay = COURSE_DISPLAY_MULTIPAGE;
+                    $sectionno = $sr;
+                } else {
+                    $usercoursedisplay = COURSE_DISPLAY_SINGLEPAGE;
+                }
+            } else {
+                $usercoursedisplay = $course->coursedisplay;
+            }
+            if ($sectionno != 0 && $usercoursedisplay == COURSE_DISPLAY_MULTIPAGE) {
+                $url->param('section', $sectionno);
+            } else {
+                if (!empty($options['navigation'])) {
+                    return null;
+                }
+                $url->set_anchor('section-'.$sectionno);
+            }
+        }
+        return $url;
+    }
+
+    /**
+     * Returns the information about the ajax support in the given source format
+     *
+     * The returned object's property (boolean)capable indicates that
+     * the course format supports Moodle course ajax features.
+     * The property (array)testedbrowsers can be used as a parameter for {@link ajaxenabled()}.
+     *
+     * @return stdClass
+     */
+    public function supports_ajax() {
+        $ajaxsupport = new stdClass();
+        $ajaxsupport->capable = true;
+        $ajaxsupport->testedbrowsers = array('MSIE' => 6.0, 'Gecko' => 20061111, 'Safari' => 531, 'Chrome' => 6.0);
+        return $ajaxsupport;
+    }
+
+    /**
+     * Loads all of the course sections into the navigation
+     *
+     * @param global_navigation $navigation
+     * @param navigation_node $node The course node within the navigation
+     */
+    public function extend_course_navigation($navigation, navigation_node $node) {
+        global $PAGE;
+        // if section is specified in course/view.php, make sure it is expanded in navigation
+        if ($navigation->includesectionnum === false) {
+            $selectedsection = optional_param('section', null, PARAM_INT);
+            if ($selectedsection !== null && (!defined('AJAX_SCRIPT') || AJAX_SCRIPT == '0') &&
+                    $PAGE->url->compare(new moodle_url('/course/view.php'), URL_MATCH_BASE)) {
+                $navigation->includesectionnum = $selectedsection;
+            }
+        }
+        parent::extend_course_navigation($navigation, $node);
+
+    }
+
+    /**
+     * Custom action after section has been moved in AJAX mode
+     *
+     * Used in course/rest.php
+     *
+     * @return array This will be passed in ajax respose
+     */
+    function ajax_section_move() {
+        global $PAGE;
+        $titles = array();
+        $course = $this->get_course();
+        $modinfo = get_fast_modinfo($course);
+        $renderer = $this->get_renderer($PAGE);
+        if ($renderer && ($sections = $modinfo->get_section_info_all())) {
+            foreach ($sections as $number => $section) {
+                $titles[$number] = $renderer->section_title($section, $course);
+            }
+        }
+        return array('sectiontitles' => $titles, 'action' => 'move');
+    }
+
+    /**
+     * Returns the list of blocks to be automatically added for the newly created course
+     *
+     * @return array of default blocks, must contain two keys BLOCK_POS_LEFT and BLOCK_POS_RIGHT
+     *     each of values is an array of block names (for left and right side columns)
+     */
+    public function get_default_blocks() {
+        return array(
+            BLOCK_POS_LEFT => array(),
+            BLOCK_POS_RIGHT => array('participants', 'quickmail', 'private_files', 'activity_modules', 'library', 'filtered_course_list')
+        );
+    }
+
+    /**
+     * Definitions of the additional options that this course format uses for course
+     *
+     * Class by date format uses the following options:
+     * - coursedisplay
+     * - numsections
+     * - hiddensections
+     *
+     * @param bool $foreditform
+     * @return array of options
+     */
+    public function course_format_options($foreditform = false) {
+        static $courseformatoptions = false;
+        if ($courseformatoptions === false) {
+            $courseconfig = get_config('moodlecourse');
+            $courseformatoptions = array(
+                'numsections' => array(
+                    'default' => $courseconfig->numsections,
+                    'type' => PARAM_INT,
+                ),
+                'hiddensections' => array(
+                    'default' => $courseconfig->hiddensections,
+                    'type' => PARAM_INT,
+                ),
+                'coursedisplay' => array(
+                    'default' => $courseconfig->coursedisplay,
+                    'type' => PARAM_INT,
+                ),
+            );
+        }
+        if ($foreditform && !isset($courseformatoptions['coursedisplay']['label'])) {
+            $courseconfig = get_config('moodlecourse');
+            $sectionmenu = array();
+            $max = $courseconfig->maxsections;
+            if (!isset($max) || !is_numeric($max)) {
+                $max = 52;
+            }
+            for ($i = 0; $i <= $max; $i++) {
+                $sectionmenu[$i] = "$i";
+            }
+            $courseformatoptionsedit = array(
+                'numsections' => array(
+                    'label' => new lang_string('numberweeks'),
+                    'element_type' => 'select',
+                    'element_attributes' => array($sectionmenu),
+                ),
+                'hiddensections' => array(
+                    'label' => new lang_string('hiddensections'),
+                    'help' => 'hiddensections',
+                    'help_component' => 'moodle',
+                    'element_type' => 'select',
+                    'element_attributes' => array(
+                        array(
+                            0 => new lang_string('hiddensectionscollapsed'),
+                            1 => new lang_string('hiddensectionsinvisible')
+                        )
+                    ),
+                ),
+                'coursedisplay' => array(
+                    'label' => new lang_string('coursedisplay'),
+                    'element_type' => 'select',
+                    'element_attributes' => array(
+                        array(
+                            COURSE_DISPLAY_SINGLEPAGE => new lang_string('coursedisplay_single'),
+                            COURSE_DISPLAY_MULTIPAGE => new lang_string('coursedisplay_multi')
+                        )
+                    ),
+                    'help' => 'coursedisplay',
+                    'help_component' => 'moodle',
+                )
+            );
+            $courseformatoptions = array_merge_recursive($courseformatoptions, $courseformatoptionsedit);
+        }
+        return $courseformatoptions;
+    }
+
+    /**
+     * Updates format options for a course
+     *
+     * In case if course format was changed to 'class', we try to copy options
+     * 'coursedisplay', 'numsections' and 'hiddensections' from the previous format.
+     * If previous course format did not have 'numsections' option, we populate it with the
+     * current number of sections
+     *
+     * @param stdClass|array $data return value from {@link moodleform::get_data()} or array with data
+     * @param stdClass $oldcourse if this function is called from {@link update_course()}
+     *     this object contains information about the course before update
+     * @return bool whether there were any changes to the options values
+     */
+    public function update_course_format_options($data, $oldcourse = null) {
+        global $DB;
+        if ($oldcourse !== null) {
+            $data = (array)$data;
+            $oldcourse = (array)$oldcourse;
+            $options = $this->course_format_options();
+            foreach ($options as $key => $unused) {
+                if (!array_key_exists($key, $data)) {
+                    if (array_key_exists($key, $oldcourse)) {
+                        $data[$key] = $oldcourse[$key];
+                    } else if ($key === 'numsections') {
+                        // If previous format does not have the field 'numsections'
+                        // and $data['numsections'] is not set,
+                        // we fill it with the maximum section number from the DB
+                        $maxsection = $DB->get_field_sql('SELECT max(section) from {course_sections}
+                            WHERE course = ?', array($this->courseid));
+                        if ($maxsection) {
+                            // If there are no sections, or just default 0-section, 'numsections' will be set to default
+                            $data['numsections'] = $maxsection;
+                        }
+                    }
+                }
+            }
+        }
+        return $this->update_format_options($data);
+    }
+
+	public function is_section_current($section) {
+		// we've never had the current functionality working since we'd have to loop through all the custom meeting times. again.
+		// maybe in the future we'll add this, but doesn't seem worth it
+		return false;
+	}
 }

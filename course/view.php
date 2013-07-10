@@ -294,7 +294,6 @@
             print_error('cannotcreateorfindstructs', 'error');
         }
     }
-    // hampshire custom
 
     // CAUTION, hacky fundamental variable defintion to follow!
     // Note that because of the way course fromats are constructed though

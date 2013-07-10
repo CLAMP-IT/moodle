@@ -38,9 +38,9 @@ if ($class = optional_param('class', 0, PARAM_INT)) {
 $renderer = $PAGE->get_renderer('format_class');
 
 if (!empty($displaysection) && $course->coursedisplay == COURSE_DISPLAY_MULTIPAGE) {
-    $renderer->print_single_section_page($course, $sections, $mods, $modnames, $modnamesused, $displaysection);
+    $renderer->print_single_section_page($course, null, null, null, null, $displaysection);
 } else {
-    $renderer->print_multiple_section_page($course, $sections, $mods, $modnames, $modnamesused);
+    $renderer->print_multiple_section_page($course, null, null, null, null);
 }
 
 $PAGE->requires->js('/course/format/class/format.js');

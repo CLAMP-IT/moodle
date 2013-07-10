@@ -81,35 +81,27 @@ function lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $widt
                 // ---- the following is Damon, 9-13-12 ----
                 // autoresize of 1 is just screen, 2 and 3 are upload ones
                 if (($width != 0 and $height != 0) or ($gallery->autoresize == 2 or $gallery->autoresize == 3)) {
-	                if ($gallery->autoresize) {
-		            	// get the default autoresize amount
-		            	$resizeamount = $gallery->resize;
-		            	$resizeoptions = lightboxgallery_resize_options();
-		            	list($width, $height) = explode('x', $resizeoptions[$resizeamount]);
+                        if ($gallery->autoresize) {
+                                // get the default autoresize amount
+                                $resizeamount = $gallery->resize;
+                                $resizeoptions = lightboxgallery_resize_options();
+                                list($width, $height) = explode('x', $resizeoptions[$resizeamount]);
 
-		                $image = $image->resize_image($width, $height);
-		            
-	                } else {
-		                $image = $image->resize_image($width, $height);
-		            }
-	// lightbox lib
-				
-		                $image->resize_image($width, $height);
-		            
-	                } else {
-		                $image->resize_image($width, $height);
-		        }
-	// fixed resize bug with lightbox gallery
-	// lightbox lib
+                                $image->resize_image($width, $height);
+
+                        } else {
+                                $image->resize_image($width, $height);
+                        }
                 }
                 // ---- end of Damon's shenanigans -----
-                
-                
+
+
             }
         }
     }
     $fs->delete_area_files($context->id, 'mod_lightboxgallery', 'unpacktemp', 0);
 }
+
 
 function lightboxgallery_config_defaults() {
     $defaults = array(
