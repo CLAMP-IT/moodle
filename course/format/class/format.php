@@ -35,6 +35,10 @@ if ($class = optional_param('class', 0, PARAM_INT)) {
 }
 // End backwards-compatible aliasing..
 
+// make sure all sections are created
+$course = course_get_format($course)->get_course();
+course_create_sections_if_missing($course, range(0, $course->numsections));
+
 $renderer = $PAGE->get_renderer('format_class');
 
 if (!empty($displaysection) && $course->coursedisplay == COURSE_DISPLAY_MULTIPAGE) {

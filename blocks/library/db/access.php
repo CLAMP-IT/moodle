@@ -15,15 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Hampshire course description block
+ * Hampshire library block
  *
- * @package    block_course_description
+ * @package    block_library
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 $capabilities = array(
  
-     'block/course_description:addinstance' => array(
+     'block/library:addinstance' => array(
         'riskbitmask' => RISK_SPAM | RISK_XSS,
  
         'captype' => 'write',
@@ -35,4 +35,14 @@ $capabilities = array(
  
         'clonepermissionsfrom' => 'moodle/site:manageblocks'
     ),
+
+    'block/library:canconfig' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+        )
+    ),
+
 );

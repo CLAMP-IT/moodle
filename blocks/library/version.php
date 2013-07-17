@@ -2,5 +2,5 @@
 
 // Migrated for 2 by sryder
 
-$plugin->version = 2012030911;
-$plugin->requires = 2010112400;
+$plugin->version = 2013070710;
+$plugin->requires = 2012112900;

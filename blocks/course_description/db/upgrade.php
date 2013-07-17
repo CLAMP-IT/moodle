@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,24 +16,28 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Hampshire course description block
+ * This file keeps track of upgrades to the course description block
  *
- * @package    block_course_description
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since 2.0
+ * @package block_course_description
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$capabilities = array(
- 
-     'block/course_description:addinstance' => array(
-        'riskbitmask' => RISK_SPAM | RISK_XSS,
- 
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => array(
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        ),
- 
-        'clonepermissionsfrom' => 'moodle/site:manageblocks'
-    ),
-);
+/**
+ *
+ * @param int $oldversion
+ * @param object $block
+ */
+function xmldb_block_course_description_upgrade($oldversion) {
+    global $CFG, $DB;
+
+    // Moodle v2.3.0 release upgrade line
+    // Put any upgrade step following this
+
+
+    // Moodle v2.4.0 release upgrade line
+    // Put any upgrade step following this
+
+
+    return true;
+}
