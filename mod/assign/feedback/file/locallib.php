@@ -144,9 +144,6 @@ class assign_feedback_file extends assign_feedback_plugin {
         $mform->addElement('filemanager', $elementname . '_filemanager', html_writer::tag('span', $this->get_name(),
             array('class' => 'accesshide')), null, $fileoptions);
 
-        $mform->addElement('filemanager', $elementname . '_filemanager', '', null, $fileoptions);
-	// Fixed (applied patch) bug with assignment feedback files, MDL-36289
-
         return true;
     }
 
@@ -174,23 +171,6 @@ class assign_feedback_file extends assign_feedback_plugin {
     public function update_file_count($grade) {
         global $DB;
 
-    public function save(stdClass $grade, stdClass $data) {
-        global $DB;
-
-        $fileoptions = $this->get_file_options();
-
-        $userid = $grade->userid;
-        $elementname = 'files_' . $userid;
-
-        $data = file_postupdate_standard_filemanager($data,
-                                                     $elementname,
-                                                     $fileoptions,
-                                                     $this->assignment->get_context(),
-                                                     'assignfeedback_file',
-                                                     ASSIGNFEEDBACK_FILE_FILEAREA,
-                                                     $grade->id);
-
-	// Fixed (applied patch) bug with assignment feedback files, MDL-36289
         $filefeedback = $this->get_file_feedback($grade->id);
         if ($filefeedback) {
             $filefeedback->numfiles = $this->count_files($grade->id, ASSIGNFEEDBACK_FILE_FILEAREA);
@@ -600,5 +580,3 @@ class assign_feedback_file extends assign_feedback_plugin {
         return array('uploadzip'=>get_string('uploadzip', 'assignfeedback_file'));
     }
 }
-}
-// Fixed (applied patch) bug with assignment feedback files, MDL-36289
