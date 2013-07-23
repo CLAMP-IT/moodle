@@ -25,7 +25,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: MoodleMarginalia.js 549 2012-06-22 21:05:41Z geof.glass $
+ * $Id: MoodleMarginalia.js 558 2012-07-12 21:44:06Z geof.glass $
  */
 
 function MoodleMarginalia( annotationPath, url, moodleRoot, userId, prefs, params )
@@ -145,8 +145,7 @@ MoodleMarginalia.prototype.init = function( selectors )
 		allowAnyUserPatch: this.allowAnyUserPatch ? true : false,
 		displayNote: function(m,a,e,p,i) { moodleMarginalia.displayNote(m,a,e,p,i); },
 		editors: {
-			link: null,
-			'default':  Marginalia.newEditorFunc( YuiAutocompleteNoteEditor )
+			link: null
 		},
 		onMarginHeight: function( post ) { moodleMarginalia.fixControlMargin( post ); },
 		selectors: selectors
@@ -187,13 +186,6 @@ MoodleMarginalia.prototype.init = function( selectors )
 	var margin = jQuery( '.mia_margin' );
 	margin.mouseover( function( e ) { margin.toggleClass( 'hover', e.target == margin[0] ); } );
 	margin.mouseleave( function( ) { margin.removeClass( 'hover' ); } );
-	
-	// Enable smartquotes and quote logging
-	if ( this.useSmartquote )
-	{
-		this.smartquote = new Smartquote( this.moodleRoot, this.selectors, this.smartquoteService );
-		this.smartquote.enable( marginalia.listPosts( ), marginalia.skipContent );
-	}
 	
 	if ( this.splash && this.sheet != Marginalia.SHEET_NONE )
 	{
@@ -341,6 +333,7 @@ MoodleMarginalia.prototype.changeSheet = function( sheetControl, url )
  */
 function getLocalized( s )
 {
-	return LocalizedAnnotationStrings[ s ];
+	var l = LocalizedAnnotationStrings[ s ];
+	return l ? l : s;
 }
 

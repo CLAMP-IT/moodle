@@ -86,6 +86,15 @@ table td#annotation-controls {
 	list-style-type: none;
 }
 
+/* Ack! Moodle is putting padding on divs.  This is bad,
+ * because the textarea child has width 100%, so it is then overflowing
+ * and inserting a horizontal scroll bar.  Sheesh.  The Moodle
+ * selector should be more precise.
+ */
+.forumpost .content .mia_margin div {
+	padding: 0;
+}
+
 .mia_margin .mia_tip:hover {
 	outline: #aaa 1px dotted;
 }

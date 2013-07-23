@@ -122,10 +122,18 @@ abstract class mia_page_profile
 		$PAGE->requires->js( $blockpath.'/marginalia-config.js', true );
 		$PAGE->requires->js( $blockpath.'/MoodleMarginalia.js', true );
 		
-		$PAGE->requires->css( "/lib/yui/autocomplete/assets/skins/sam/autocomplete.css" );
+		// Moodle has changed how YUI2 code is included. The correct way to deal
+		// with this means changing how Marginalia uses YUI. I don't want to mess
+		// with that now. My plan (admittedly not high priority) is to use jQuery
+		// autocomplete instead, and to apply it only when users type twitter-style 
+		// tags (e.g. #mytag). This also eliminates the YUI code, which makes me
+		// happy (not that there's anything necessarily wrong with YUI, but for
+		// jQuery is far more practical for the DOM manipulation Marginalia needs).
+		// For now I'm simply disabling autocomplete. Sorry! #geof#
+		//$PAGE->requires->css( "/lib/yui/autocomplete/assets/skins/sam/autocomplete.css" );
 		//$PAGE->requires->yui2_lib( '/lib/yui/yahoo-dom-event/yahoo-dom-event.js' );
 		//		'/lib/yui/datasource/datasource-min.js',
-		$PAGE->requires->yui2_lib( 'autocomplete' );
+		//$PAGE->requires->yui2_lib( 'autocomplete' );
 	}
 	
 	/**
@@ -352,12 +360,17 @@ SCRIPT;
 		return $output;
 	}
 	
-	public function output_quote_button( )
+	public function output_quote_button( $canreply=true )
 	{
-		$output  = html_writer::tag( 'button', '<span>'.get_string( 'quote_button', ANNOTATION_STRINGS ).'</span>',
-			array( 'class'=>'smartquote' ) );
-		//$output .= html_writer::end_tag( 'button' );
-		return $output;
+		if ( $canreply )
+		{
+			$output  = html_writer::tag( 'button',
+				'<span>'.get_string( 'quote_button', ANNOTATION_STRINGS ).'</span>',
+				array( 'class'=>'smartquote' ) );
+			//$output .= html_writer::end_tag( 'button' );
+			return $output;
+		}
+			return '';
 	}
 
 	/**
@@ -374,13 +387,13 @@ SCRIPT;
 	 * Get the type of object (for annotation creation).  Defaults to
 	 * null.
 	 */
-	public function get_object_type( )
+	public function get_object_type( $url )
 	{  return null;  }
 	
 	/**
 	 * Get the id of an object (for annotation creation).  Defaults to null.
 	 */
-	public function get_object_id( )
+	public function get_object_id( $url )
 	{  return null;  }
 }
 
@@ -416,12 +429,12 @@ class mia_profile_forum_display extends mia_page_profile
 		$this->moodlemia->emit_plugin_body( );
 	}
 	
-	public function get_object_type( )
+	public function get_object_type( $url )
 	{
 		return $this->object_type;
 	}
 	
-	public function get_object_id( )
+	public function get_object_id( $url )
 	{
 		return $this->object_id;
 	}
@@ -817,18 +830,18 @@ class moodle_marginalia
 		$sheet = $annotation->getSheet( );
 		$record->sheet_type = $this->sheet_type( $sheet );
 			
-		$record->url = addslashes( $annotation->getUrl( ) );
-		$record->note = addslashes( $annotation->getNote( ) );
-		$record->quote = addslashes( $annotation->getQuote( ) );
-		$record->quote_title = addslashes( $annotation->getQuoteTitle( ) );
+		$record->url = $annotation->getUrl( );
+		$record->note = $annotation->getNote( );
+		$record->quote = $annotation->getQuote( );
+		$record->quote_title = $annotation->getQuoteTitle( );
 		
 		// Map author username to id #
 		$userid = $annotation->getQuoteAuthorId( );
 		$user = $DB->get_record( 'user', array( 'id' => (int) $userid ) );
 		$record->quote_author_id = $user ? $user->id : null;
 		
-		$record->link = addslashes( $annotation->getLink( ) );
-		$record->link_title = addslashes( $annotation->getLinkTitle( ) );
+		$record->link = $annotation->getLink( );
+		$record->link_title = $annotation->getLinkTitle( );
 		$record->created = $annotation->getCreated( );
 		$record->modified = $annotation->getModified( );
 
@@ -841,14 +854,14 @@ class moodle_marginalia
 			$xpathEnd = $xpathRange->getEnd( );
 		}
 		
-		$record->start_block = addslashes( $sequenceStart->getPaddedPathStr( ) );
-		$record->start_xpath = null === $xpathRange ? null : addslashes( $xpathStart->getPathStr( ) );
+		$record->start_block = $sequenceStart->getPaddedPathStr( );
+		$record->start_xpath = null === $xpathRange ? null : $xpathStart->getPathStr( );
 		$record->start_line = $sequenceStart->getLines( );
 		$record->start_word = $sequenceStart->getWords( ) ? $sequenceStart->getWords( ) : 0;
 		$record->start_char = $sequenceStart->getChars( );
 		
-		$record->end_block = addslashes( $sequenceEnd->getPaddedPathStr( ) );
-		$record->end_xpath = null === $xpathRange ? null : addslashes( $xpathEnd->getPathStr( ) );
+		$record->end_block = $sequenceEnd->getPaddedPathStr( );
+		$record->end_xpath = null === $xpathRange ? null : $xpathEnd->getPathStr( );
 		$record->end_line = $sequenceEnd->getLines( );
 		$record->end_word = $sequenceEnd->getWords( ) ? $sequenceEnd->getWords( ) : 0;
 		$record->end_char = $sequenceEnd->getChars( );

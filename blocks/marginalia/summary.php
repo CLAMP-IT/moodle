@@ -364,7 +364,8 @@ class annotation_summary_page
 				// Controls for current user
 				if ( isloggedin() && $annotation->userid == $USER->id )  {
 					$delid = s( 'del'.$annotation->id );
-					echo "<button class='delete-button' id='$delid'>x</button>\n";
+					$deltitle = get_string( 'js_delete_annotation_button', ANNOTATION_STRINGS );
+					echo "<button class='delete-button' id='$delid' title='$deltitle'>x</button>\n";
 				}
 				
 				// User name (or "me" for current user)
