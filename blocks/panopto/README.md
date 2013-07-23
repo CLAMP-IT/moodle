@@ -20,7 +20,7 @@ Fork the block, fix a bug or add a new feature, and send us a pull-request. Or, 
 
 ## Copyright
 
- Copyright Panopto 2009 - 2011 / With contributions from Spenser Jones (sjones@ambrose.edu)
+ Copyright Panopto 2009 - 2013 / With contributions from Spenser Jones (sjones@ambrose.edu)
  
 ## License
 

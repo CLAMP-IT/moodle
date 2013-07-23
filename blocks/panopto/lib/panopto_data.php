@@ -1,5 +1,5 @@
-<?php
-/* Copyright Panopto 2009 - 2011 / With contributions from Spenser Jones (sjones@ambrose.edu)
+﻿<?php
+/* Copyright Panopto 2009 - 2013 / With contributions from Spenser Jones (sjones@ambrose.edu)
  * 
  * This file is part of the Panopto plugin for Moodle.
  * 
@@ -18,8 +18,7 @@
  */
 
 global $CFG;
-if(empty($CFG))
-{
+if(empty($CFG)) {
     require_once("../../config.php");
 }
 require_once ($CFG->libdir . '/dmllib.php');
@@ -27,8 +26,7 @@ require_once ($CFG->libdir . '/dmllib.php');
 require_once("block_panopto_lib.php");
 require_once("PanoptoSoapClient.php");
 
-class panopto_data
-{
+class panopto_data {
     var $instancename;
 
     var $moodle_course_id;
@@ -40,8 +38,7 @@ class panopto_data
 
     var $sessiongroup_id;
 
-    function __construct($moodle_course_id)
-    {
+    function __construct($moodle_course_id) {
         global $USER, $CFG;
 
         // Fetch global settings from DB
@@ -49,14 +46,10 @@ class panopto_data
         $this->servername = $CFG->block_panopto_server_name;
         $this->applicationkey = $CFG->block_panopto_application_key;
 
-        if(!empty($this->servername))
-        {
-            if(isset($USER->username))
-            {
+        if(!empty($this->servername)) {
+            if(isset($USER->username)) {
                 $username = $USER->username;
-            }
-            else
-            {
+            } else {
                 $username = "guest";
             }
 
@@ -70,26 +63,22 @@ class panopto_data
 
         // Fetch current CC course mapping if we have a Moodle course ID.
         // Course will be null initially for batch-provisioning case.
-        if(!empty($moodle_course_id))
-        {
+        if(!empty($moodle_course_id)) {
             $this->moodle_course_id = $moodle_course_id;
             $this->sessiongroup_id = panopto_data::get_panopto_course_id($moodle_course_id);
         }
     }
 
     // returns SystemInfo
-    function get_system_info()
-    {
+    function get_system_info() {
         return $this->soap_client->GetSystemInfo();
     }
 
     // Create the Panopto course and populate its ACLs.
-    function provision_course($provisioning_info)
-    {
+    function provision_course($provisioning_info) {
         $course_info = $this->soap_client->ProvisionCourse($provisioning_info);
 
-        if(!empty($course_info) && !empty($course_info->PublicID))
-        {
+        if(!empty($course_info) && !empty($course_info->PublicID)) {
             panopto_data::set_panopto_course_id($this->moodle_course_id, $course_info->PublicID);
         }
 
@@ -97,14 +86,13 @@ class panopto_data
     }
 
     // Fetch course name and membership info from DB in preparation for provisioning operation.
-    function get_provisioning_info()
-    {
+    function get_provisioning_info() {
         global $DB;
         $provisioning_info->ShortName = $DB->get_field('course', 'shortname', array('id' => $this->moodle_course_id));
         $provisioning_info->LongName = $DB->get_field('course', 'fullname', array('id' => $this->moodle_course_id));
         $provisioning_info->ExternalCourseID = $this->instancename . ":" . $this->moodle_course_id;
 
-        $course_context = get_context_instance(CONTEXT_COURSE, $this->moodle_course_id);
+        $course_context = context_course::instance($this->moodle_course_id, MUST_EXIST);
 
         // Lookup table to avoid adding instructors as Viewers as well as Creators.
         $instructor_hash = array();
@@ -113,11 +101,9 @@ class panopto_data
         // Could also use moodle/legacy:teacher, moodle/legacy:editingteacher, etc. if those turn out to be more appropriate.
         $instructors = get_users_by_capability($course_context, 'moodle/course:update');
 
-        if(!empty($instructors))
-        {
+        if(!empty($instructors)) {
             $provisioning_info->Instructors = array();
-            foreach($instructors as $instructor)
-            {
+            foreach($instructors as $instructor) {
                 $instructor_info = new stdClass;
                 $instructor_info->UserKey = $this->panopto_decorate_username($instructor->username);
                 $instructor_info->FirstName = $instructor->firstname;
@@ -135,11 +121,9 @@ class panopto_data
         // Use get_enrolled_users because, as of Moodle 2.0, capability moodle/course:view no longer corresponds to a participant list.
         $students = get_enrolled_users($course_context);
 
-        if(!empty($students))
-        {
+        if(!empty($students)) {
             $provisioning_info->Students = array();
-            foreach($students as $student)
-            {
+            foreach($students as $student) {
                 if(array_key_exists($student->username, $instructor_hash)) continue;
 
                 $student_info = new stdClass;
@@ -153,16 +137,13 @@ class panopto_data
     }
 
     // Get courses visible to the current user.
-    function get_courses()
-    {
+    function get_courses() {
         $courses_result = $this->soap_client->GetCourses();
         $courses = array();
-        if(!empty($courses_result->CourseInfo))
-        {
+        if(!empty($courses_result->CourseInfo)) {
             $courses = $courses_result->CourseInfo;
             // Single-element return set comes back as scalar, not array (?)
-            if(!is_array($courses))
-            {
+            if(!is_array($courses)) {
                 $courses = array($courses);
             }
         }
@@ -171,23 +152,19 @@ class panopto_data
     }
 
     // Get info about the currently mapped course.
-    function get_course()
-    {
+    function get_course() {
         return $this->soap_client->GetCourse($this->sessiongroup_id);
     }
 
     // Get ongoing Panopto sessions for the currently mapped course.
-    function get_live_sessions()
-    {
+    function get_live_sessions() {
         $live_sessions_result = $this->soap_client->GetLiveSessions($this->sessiongroup_id);
 
         $live_sessions = array();
-        if(!empty($live_sessions_result->SessionInfo))
-        {
+        if(!empty($live_sessions_result->SessionInfo)) {
             $live_sessions = $live_sessions_result->SessionInfo;
             // Single-element return set comes back as scalar, not array (?)
-            if(!is_array($live_sessions))
-            {
+            if(!is_array($live_sessions)) {
                 $live_sessions = array($live_sessions);
             }
         }
@@ -196,17 +173,14 @@ class panopto_data
     }
 
     // Get recordings available to view for the currently mapped course.
-    function get_completed_deliveries()
-    {
+    function get_completed_deliveries() {
         $completed_deliveries_result = $this->soap_client->GetCompletedDeliveries($this->sessiongroup_id);
 
         $completed_deliveries = array();
-        if(!empty($completed_deliveries_result->DeliveryInfo))
-        {
+        if(!empty($completed_deliveries_result->DeliveryInfo)) {
             $completed_deliveries = $completed_deliveries_result->DeliveryInfo;
             // Single-element return set comes back as scalar, not array (?)
-            if(!is_array($completed_deliveries))
-            {
+            if(!is_array($completed_deliveries)) {
                 $completed_deliveries = array($completed_deliveries);
             }
         }
@@ -215,68 +189,54 @@ class panopto_data
     }
 
     // Instance method caches Moodle instance name from DB (vs. block_panopto_lib version).
-    function panopto_decorate_username($moodle_username)
-    {
+    function panopto_decorate_username($moodle_username) {
         return ($this->instancename . "\\" . $moodle_username);
     }
 
     // We need to retrieve the current course mapping in the constructor, so this must be static.
-    static function get_panopto_course_id($moodle_course_id)
-    {
+    static function get_panopto_course_id($moodle_course_id) {
         global $DB;
         return $DB->get_field('block_panopto_foldermap', 'panopto_id', array('moodleid' => $moodle_course_id));
     }
 
     // Called by Moodle block instance config save method, so must be static.
-    static function set_panopto_course_id($moodle_course_id, $sessiongroup_id)
-    {
+    static function set_panopto_course_id($moodle_course_id, $sessiongroup_id) {
         global $DB;
-        if($DB->get_records('block_panopto_foldermap', array('moodleid' => $moodle_course_id)))
-        {
+        if($DB->get_records('block_panopto_foldermap', array('moodleid' => $moodle_course_id))) {
             return $DB->set_field('block_panopto_foldermap', 'panopto_id', $sessiongroup_id, array('moodleid' => $moodle_course_id));
-        }
-        else
-        {
+        } else {
             $row = (object) array('moodleid' => $moodle_course_id, 'panopto_id' => $sessiongroup_id);
             return $DB->insert_record('block_panopto_foldermap', $row);
         }
     }
 
-    function get_course_options()
-    {
+    function get_course_options() {
         $courses_by_access_level = array("Creator" => array(), "Viewer" => array(), "Public" => array());
 
         $panopto_courses = $this->get_courses();
-        if(!empty($panopto_courses))
-        {
-            foreach($panopto_courses as $course_info)
-            {
+        if(!empty($panopto_courses)) {
+            foreach($panopto_courses as $course_info) {
                 array_push($courses_by_access_level[$course_info->Access], $course_info);
             }
 
             $options = array();
-            foreach(array_keys($courses_by_access_level) as $access_level)
-            {
+            foreach(array_keys($courses_by_access_level) as $access_level) {
                 $courses = $courses_by_access_level[$access_level];
                 $group = array();
-                foreach($courses as $course_info)
-                {
+                foreach($courses as $course_info) {
                     $display_name = s($course_info->DisplayName);
                     $group[$course_info->PublicID] = $display_name;
                 }
                 $options[$access_level] = $group;
             }
         }
-        else if(isset($panopto_courses))
-        {
+        else if(isset($panopto_courses)) {
             $options = array('Error' => array('-- No Courses Available --'));
-        }
-        else
-        {
+        } else {
             $options = array('Error' => array('!! Unable to retrieve course list !!'));
         }
 
         return array('courses' => $options, 'selected' => $this->sessiongroup_id);
     }
 }
-?>
+/* End of file panopto_data.php */
