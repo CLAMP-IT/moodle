@@ -9,7 +9,7 @@
  */
 
 $string['course_description:addinstance'] = 'Add a new course information block';
-$string['course_description:canedit'] = 'Can edit course information block';
+$string['course_description:canedit'] = 'Edit course information block';
 $string['add_info'] = 'Additional Information';
 $string['blockname'] = 'Course Information';
 $string['course_description'] = 'Course Description';

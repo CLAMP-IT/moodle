@@ -284,13 +284,9 @@ class lightboxgallery_image {
         }
         */
         //imagecopybicubic($resized, $image, 0, 0, $srcx, $srcy, $width, $height, $srcw, $srch);
-        imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
-        //imagecopybicubic($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
         //imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
-	// fix lightbox bug
 	// resampled causes problems with thumbnail deleting for some strange-ass reason
 	imagecopyresampled($resized, $image, 0, 0, 0, 0, $width, $height, $this->width, $this->height);
-	// fixed resize bug with lightbox gallery
 
         return $resized;
 

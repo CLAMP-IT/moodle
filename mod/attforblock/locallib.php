@@ -40,9 +40,11 @@ class attforblock_permissions {
     private $canbelisted;
     private $canaccessallgroups;
 
+    private $cm;
     private $context;
 
-    public function __construct($context) {
+    public function __construct($cm, $context) {
+        $this->cm = $cm;
         $this->context = $context;
     }
 
@@ -73,6 +75,20 @@ class attforblock_permissions {
             $this->cantake = has_capability('mod/attforblock:takeattendances', $this->context);
 
         return $this->cantake;
+    }
+
+    public function can_take_session($groupid) {
+        if (!$this->can_take()) {
+            return false;
+        }
+
+        if ($groupid == attforblock::SESSION_COMMON
+            || $this->can_access_all_groups()
+            || array_key_exists($groupid, groups_get_activity_allowed_groups($this->cm))) {
+            return true;
+        }
+
+        return false;
     }
 
     public function can_change() {
@@ -199,7 +215,8 @@ class att_page_with_filter_controls {
     public function init_start_end_date() {
         global $CFG;
 
-        $date = usergetdate($this->curdate);
+        // HOURSECS solves issue for weeks view with Daylight saving time and clocks adjusting by one hour backward
+        $date = usergetdate($this->curdate + HOURSECS);
         $mday = $date['mday'];
         $wday = $date['wday'] - $CFG->calendar_startwday;
         if ($wday < 0) $wday += 7;
@@ -257,8 +274,6 @@ class att_page_with_filter_controls {
             } else {
                 $this->sesstype = $SESSION->attsessiontype[$this->cm->course];
             }
-
-            if (is_null($this->sesstype)) $this->calc_sessgroupslist();
         } elseif ($this->selectortype == self::SELECTOR_GROUP) {
             if ($group == 0) {
                 $SESSION->attsessiontype[$this->cm->course] = self::SESSTYPE_ALL;
@@ -273,7 +288,12 @@ class att_page_with_filter_controls {
             }
         }
 
-        $this->calc_sessgroupslist();
+        if (is_null($this->sessgroupslist)) $this->calc_sessgroupslist();
+        // for example, we set SESSTYPE_ALL but user can access only to limited set of groups
+        if (!array_key_exists($this->sesstype, $this->sessgroupslist)){
+            reset($this->sessgroupslist);
+            $this->sesstype = key($this->sessgroupslist);
+        }
     }
     
     private function calc_sessgroupslist() {
@@ -540,7 +560,7 @@ class attforblock {
 
         $this->pageparams = $pageparams;
 
-        $this->perm = new attforblock_permissions($this->context);
+        $this->perm = new attforblock_permissions($this->cm, $this->context);
     }
 
     public function get_group_mode() {
@@ -809,7 +829,7 @@ class attforblock {
         $rec->lasttakenby = $USER->id;
         $DB->update_record('attendance_sessions', $rec);
 
-        $this->update_users_grade(array_keys($sesslog));
+        if ($this->grade != 0) $this->update_users_grade(array_keys($sesslog));
 
         $params = array(
                 'sessionid' => $this->pageparams->sessionid,
@@ -849,7 +869,7 @@ class attforblock {
                      WHERE ue.userid $usql
                            AND e.status = :estatus
                            AND e.courseid = :courseid
-                  GROUP BY ue.userid, ue.status, ue.timestart, ue.timeend;";
+                  GROUP BY ue.userid, ue.status, ue.timestart, ue.timeend";
             $params = array_merge($uparams, array('estatus'=>ENROL_INSTANCE_ENABLED, 'courseid'=>$this->course->id));
             $enrolmentsparams = $DB->get_records_sql($sql, $params);
 
@@ -991,6 +1011,7 @@ class attforblock {
         $grades = array();
 
         foreach ($userids as $userid) {
+            $grades[$userid] = new stdClass();
             $grades[$userid]->userid = $userid;
             $grades[$userid]->rawgrade = att_calc_user_grade_fraction($this->get_user_grade($userid), $this->get_user_max_grade($userid)) * $this->grade;
         }
@@ -1030,20 +1051,18 @@ class attforblock {
     public function get_user_filtered_sessions_log_extended($userid) {
         global $DB;
 
-        $groups = array_keys(groups_get_all_groups($this->course->id, $userid));
-        $groups[] = 0;
-        list($gsql, $gparams) = $DB->get_in_or_equal($groups, SQL_PARAMS_NAMED, 'gid0');
+        // all taked sessions (including previous groups)
 
         if ($this->pageparams->startdate && $this->pageparams->enddate) {
             $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND 
-                      ats.sessdate >= :sdate AND ats.sessdate < :edate AND ats.groupid $gsql";
+                      ats.sessdate >= :sdate AND ats.sessdate < :edate";
         } else {
-            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND ats.groupid $gsql";
+            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate";
         }
 
-        $sql = "SELECT ats.id, ats.sessdate, ats.duration, ats.description, al.statusid, al.remarks
+        $sql = "SELECT ats.id, ats.groupid, ats.sessdate, ats.duration, ats.description, al.statusid, al.remarks
                   FROM {attendance_sessions} ats
-             LEFT JOIN {attendance_log} al
+            RIGHT JOIN {attendance_log} al
                     ON ats.id = al.sessionid AND al.studentid = :uid
                  WHERE $where
               ORDER BY ats.sessdate ASC";
@@ -1054,8 +1073,33 @@ class attforblock {
                 'csdate'    => $this->course->startdate,
                 'sdate'     => $this->pageparams->startdate,
                 'edate'     => $this->pageparams->enddate);
-        $params = array_merge($params, $gparams);
         $sessions = $DB->get_records_sql($sql, $params);
+
+
+        // all sessions for current groups
+
+        $groups = array_keys(groups_get_all_groups($this->course->id, $userid));
+        $groups[] = 0;
+        list($gsql, $gparams) = $DB->get_in_or_equal($groups, SQL_PARAMS_NAMED, 'gid0');
+
+        if ($this->pageparams->startdate && $this->pageparams->enddate) {
+            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND
+                      ats.sessdate >= :sdate AND ats.sessdate < :edate AND ats.groupid $gsql";
+        } else {
+            $where = "ats.attendanceid = :aid AND ats.sessdate >= :csdate AND ats.groupid $gsql";
+        }
+
+        $sql = "SELECT ats.id, ats.groupid, ats.sessdate, ats.duration, ats.description, al.statusid, al.remarks
+                  FROM {attendance_sessions} ats
+             LEFT JOIN {attendance_log} al
+                    ON ats.id = al.sessionid AND al.studentid = :uid
+                 WHERE $where
+              ORDER BY ats.sessdate ASC";
+
+        $params = array_merge($params, $gparams);
+        $sessions = array_merge($sessions, $DB->get_records_sql($sql, $params));
+
+
         foreach ($sessions as $sess) {
             if (empty($sess->description)) {
                 $sess->description = get_string('nodescription', 'attforblock');
@@ -1271,12 +1315,14 @@ function att_update_all_users_grades($attid, $course, $context) {
     $statuses = att_get_statuses($attid);
     $gradebook_maxgrade = att_get_gradebook_maxgrade($attid);
     foreach ($userids as $userid) {
-        $grades[$userid]->userid = $userid;
+        $grade = new stdClass;
+        $grade->userid = $userid;
         $userstatusesstat = att_get_user_statuses_stat($attid, $course->startdate, $userid);
         $usertakensesscount = att_get_user_taken_sessions_count($attid, $course->startdate, $userid);
         $usergrade = att_get_user_grade($userstatusesstat, $statuses);
         $usermaxgrade = att_get_user_max_grade($usertakensesscount, $statuses);
-        $grades[$userid]->rawgrade = att_calc_user_grade_fraction($usergrade, $usermaxgrade) * $gradebook_maxgrade;
+        $grade->rawgrade = att_calc_user_grade_fraction($usergrade, $usermaxgrade) * $gradebook_maxgrade;
+        $grades[$userid] = $grade;
     }
 
     return grade_update('mod/attforblock', $course->id, 'mod', 'attforblock',

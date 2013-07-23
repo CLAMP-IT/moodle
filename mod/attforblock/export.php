@@ -77,6 +77,7 @@ if ($mform->is_submitted()) {
         $filename = clean_filename($course->shortname.'_Attendances_'.userdate(time(), '%Y%m%d-%H%M'));
 
 		$group = $formdata->group ? $reportdata->groups[$formdata->group] : 0;
+        $data = new stdClass;
         $data->tabhead = array();
         $data->course = $att->course->fullname;
         $data->group = $group ? $group->name : get_string('allparticipants');
@@ -159,9 +160,9 @@ function ExportToTableEd($data, $filename, $format) {
 /// Sending HTTP headers
     $workbook->send($filename);
 /// Creating the first worksheet
-    $myxls =& $workbook->add_worksheet('Attendances');
+    $myxls = $workbook->add_worksheet('Attendances');
 /// format types
-    $formatbc =& $workbook->add_format();
+    $formatbc = $workbook->add_format();
     $formatbc->set_bold(1);
 
     $myxls->write(0, 0, get_string('course'), $formatbc);
