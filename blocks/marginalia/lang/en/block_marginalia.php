@@ -42,7 +42,7 @@ $string['whole_course'] = 'whole course';
 $string['unknown_post'] = 'unknown discussion post';
 $string['post_name'] = 'discussion post "{$a->name}"';
 $string['annotation_help'] = 'creating and using annotations';
-$string['annotate_help_link'] = 'Annotation Help...';
+$string['annotate_help_link'] = 'Annotation Help';
 $string['annotation_summary_help_link'] = 'How to use this page';
 $string['missing_help'] = 'No help for topic.';
 
@@ -124,6 +124,9 @@ $string['js_quote_too_long'] = 'The passage you have attempted to highlight is t
 $string['js_zero_length_quote'] = 'You must select some text to annotate.';
 $string['js_quote_not_found'] = 'The highlighted passage could not be found';
 $string['js_create_overlapping_edits'] = 'You may not create overlapping edits';
+$string['js_browser_support_of_WCC_range_required_for_smartquote'] = 'Your browser does not support the range standard required for quoting.';
+$string['js_select_text_to_quote'] = 'You must select some text to quote.';
+
 
 $string['marginalia:view_all'] = 'View all';
 $string['marginalia:fix_notes'] = 'Fix notes';

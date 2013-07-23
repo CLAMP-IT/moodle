@@ -40,6 +40,7 @@ require_once( ANNOTATION_DIR.'/marginalia-php/XPathRange.php' );
 function xmldb_block_marginalia_upgrade( $oldversion )
 {
 	global $CFG, $DB;
+	$result = true;
 	
 	$dbman = $DB->get_manager( );
 	

@@ -144,20 +144,23 @@ Smartquote.prototype.quotePostMicro = function( content, skipContent, postId )
 {
 	var pub = this.getPostMicroQuote( content, skipContent, postId );
 	var bus = new CookieBus( 'smartquote' );
-	if ( bus.getSubscriberCount( ) > 0 )
+	if ( pub )
 	{
-		bus.publish( pub );
+		if ( bus.getSubscriberCount( ) > 0 )
+		{
+			bus.publish( pub );
 	
-		if ( this.extService )
-			this.extService.createEvent( 'smartquote', 'send', pub, 'forum_post', postId );
-	}
-	else if ( this.wwwroot && postId )
-	{
-		window.location = this.wwwroot + '/mod/forum/post.php?reply=' + postId
-			+ '&message=' + restutil.encodeURIParameter( pub + "<p>&nbsp;");
+			if ( this.extService )
+				this.extService.createEvent( 'smartquote', 'send', pub, 'forum_post', postId );
+		}
+		else if ( this.wwwroot && postId )
+		{
+			bus.publish( pub );
+			window.location = this.wwwroot + '/mod/forum/post.php?reply=' + postId;
 	
-		if ( this.extService )
-			this.extService.createEvent( 'smartquote', 'new post', pub, 'forum_post', postId );
+			if ( this.extService )
+				this.extService.createEvent( 'smartquote', 'new post', pub, 'forum_post', postId );
+		}
 	}
 }
 	
@@ -195,14 +198,26 @@ Smartquote.prototype.quoteAnnotation = function( annotation, loginUserId, postId
 	}
 	
 	var bus = new CookieBus( 'smartquote' );
+	// The user is editing a post:  paste the quote in there
 	if ( bus.getSubscriberCount( ) > 0 )
 	{
 		bus.publish( pub );
 		if ( this.extService )
 			this.extService.createEvent( 'smartquote', 'send', quote, 'annotation', annotation.getId() );
 	}
+	// Otherwise, reply to this post and use the quoted text
 	else if ( this.wwwroot && postId )
 	{
+		// Ideally this should never happen if the user doesn't have
+		// permission to post to this forum.  Unfortunately, Moodle
+		// doesn't calculate $canreply until *after* the page header
+		// has been output.  This makes it difficult to know about it
+		// here.  Marginalia could search for a Reply button on the
+		// page, or it could calculate it itself, or it could set an
+		// internal field after Moodle has done its calculation.  But
+		// all of these are kludges that make relatively deep 
+		// assumptions about Moodle's underlying behavior, so could
+		// increase the likelihood of Marginalia breaking.
 		bus.publish( pub );
 		window.location = this.wwwroot + '/mod/forum/post.php?reply=' + postId;
 	
