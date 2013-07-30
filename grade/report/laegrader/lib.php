@@ -31,7 +31,7 @@ require_once $CFG->dirroot.'/grade/report/grader/lib.php';
  * @package gradebook
  * DONE
  */
-class grade_report_laegrader extends grade_report {
+class grade_report_laegrader extends grade_report_grader {
     /**
      * The final grades.
      * @var array $grades
@@ -69,12 +69,14 @@ class grade_report_laegrader extends grade_report {
      * @var array $userselectparams
      */
     public $userselectparams = array();
-    
+
     /**
      * List of collapsed categories from user preference
      * @var array $collapsed
      */
     public $collapsed;
+
+    public $showtotalsifcontainhidden;
 
     /**
      * A count of the rows, used for css classes.
@@ -95,7 +97,7 @@ class grade_report_laegrader extends grade_report {
      * @var int $feedback_trunc_length
      */
     protected $feedback_trunc_length = 50;
-    
+
     /**
      * Constructor. Sets local copies of user preferences and initialises grade_tree.
      * @param int $courseid
@@ -111,6 +113,8 @@ class grade_report_laegrader extends grade_report {
 
         $this->canviewhidden = has_capability('moodle/grade:viewhidden', get_context_instance(CONTEXT_COURSE, $this->course->id));
         $this->accuratetotals		= ($temp = grade_get_setting($this->courseid, 'report_laegrader_accuratetotals', $CFG->grade_report_laegrader_accuratetotals)) ? $temp : 0;
+        $this->showtotalsifcontainhidden = array($this->courseid => grade_get_setting($this->courseid, 'report_user_showtotalsifcontainhidden', $CFG->grade_report_user_showtotalsifcontainhidden));
+        $showtotalsifcontainhidden = $this->showtotalsifcontainhidden[$this->courseid];
 
         // need this array, even tho its useless in the laegrader report or we'll generate warnings
         $this->collapsed = array('aggregatesonly' => array(), 'gradesonly' => array());
@@ -125,25 +129,26 @@ class grade_report_laegrader extends grade_report {
         $switch = true;
 
         // Grab the grade_tree for this course
-        $this->gtree = new grade_tree_local($this->courseid, false, true, null, $nooutcomes);
+        $this->gtree = grade_tree_local_helper($this->courseid, false, true, null, $nooutcomes, $this->currentgroup);
 
         // Fill items with parent information needed later for laegrader report
         $this->gtree->parents = array();
 		$this->gtree->cats = array();
-        fill_cats($this->gtree);
-        fill_parents($this->gtree->parents, $this->gtree->items, $this->gtree->cats, $this->gtree->top_element, $this->gtree->top_element['object']->grade_item->id, $this->accuratetotals);
-                
+        if ($this->accuratetotals) { // don't even go to fill_parents unless accuratetotals is set
+    		$this->gtree->fill_cats();
+            $this->gtree->fill_parents($this->gtree->top_element, $this->gtree->top_element['object']->grade_item->id, $showtotalsifcontainhidden);
+        }
         $this->sortitemid = $sortitemid;
 
         // base url for sorting by first/last name
-        $studentsperpage = 0; //forced for laegrader report
+        $studentsperpage = 300; //forced for laegrader report
         $perpage = '';
         $curpage = '';
 
         $this->baseurl = new moodle_url('index.php', array('id' => $this->courseid));
-        
-        $this->pbarurl = new moodle_url('/grade/report/grader/index.php', array('id' => $this->courseid, 'perpage' => $studentsperpage));
-        
+
+        $this->pbarurl = new moodle_url('/grade/report/laegrader/index.php', array('id' => $this->courseid, 'perpage' => $studentsperpage));
+
         $this->setup_groups();
 
         $this->setup_sortitemid();
@@ -489,7 +494,7 @@ class grade_report_laegrader extends grade_report {
                     $this->grades[$userid][$itemid] = new grade_grade();
                     $this->grades[$userid][$itemid]->itemid = $itemid;
                     $this->grades[$userid][$itemid]->userid = $userid;
-                    $this->grades[$userid][$itemid]->grade_item =& $this->gtree->get_item($itemid); // db caching
+                    $this->grades[$userid][$itemid]->grade_item = $this->gtree->get_item($itemid); // db caching
                 }
             }
         }
@@ -622,13 +627,13 @@ class grade_report_laegrader extends grade_report {
         $studentheader->header = true;
         $studentheader->id = 'studentheader';
 
-        // LAE here's where we insert the "Copy to Excel" button 
-//        $output = '<div class="inlinebutton" title="Download contents of gradebook as-is to Excel. SAVE CHANGES FIRST!">';
-//        $output .= '<a href="' . $CFG->wwwroot . '/grade/report/laegrader/index.php?id=' . $this->courseid
-//                . '&action=quick-dump" class="inlinebutton"><img src="' . $CFG->wwwroot . '/grade/report/laegrader/images/copytoexcel.png" /></a></div>';
-        
-//        $studentheader->text = $output . $arrows['studentname'];
-        $studentheader->text = $arrows['studentname'];
+        // LAE here's where we insert the "Copy to Excel" button
+        $output = '<div class="inlinebutton" title="Download contents of gradebook to csv suitable for Excel or Google">';
+        $output .= '<a href="' . $CFG->wwwroot . '/grade/report/laegrader/index.php?id=' . $this->courseid
+                . '&action=quick-dump" class="inlinebutton"><img src="' . $CFG->wwwroot . '/grade/report/laegrader/images/copytoexcel.png" /></a></div>';
+
+        $studentheader->text = $output . $arrows['studentname'];
+ //       $studentheader->text = $arrows['studentname'];
 
         $headerrow->cells[] = $studentheader;
 
@@ -777,8 +782,13 @@ class grade_report_laegrader extends grade_report {
 				$arrow = $this->get_sort_arrow('move', $sortlink);
 			}
 
+			if (!$USER->gradeediting[$this->courseid]) {
+				$display = $this->gtree->get_changedisplay_icon($element);
+			} else {
+			    $display = null;
+			}
 			// LAE this line calls a local instance of get_element_header with the name of the grade item or category
-			$headerlink = $this->gtree->get_element_header($element, true, $this->get_pref('showactivityicons'), false);
+			$headerlink = $this->gtree->get_element_header_local($element, true, $this->get_pref('showactivityicons'), false, 25,$this->gtree->items[$key]->itemname);
 
 			$itemcell = new html_table_cell();
 			$itemcell->attributes['class'] = $type . ' ' . $catlevel . 'highlightable' . $currentcatcolor;
@@ -788,7 +798,7 @@ class grade_report_laegrader extends grade_report {
 			}
 
 			$itemcell->colspan = 1; // $colspan;
-			$itemcell->text = $headerlink . $arrow;
+			$itemcell->text = $headerlink . $arrow . $display;
 			$itemcell->header = true;
 			$itemcell->scope = 'col';
 
@@ -809,9 +819,9 @@ class grade_report_laegrader extends grade_report {
             $scale = null;
             if (!empty($item->scaleid)) {
                 $scaleslist[] = $item->scaleid;
-                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'scale', 'scale'=>$item->scaleid, 'decimals'=>$item->get_decimals());
+//                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'scale', 'scale'=>$item->scaleid, 'decimals'=>$item->get_decimals());
             } else {
-                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'value', 'scale'=>false, 'decimals'=>$item->get_decimals());
+//                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'value', 'scale'=>false, 'decimals'=>$item->get_decimals());
             }
             $tabindices[$item->id]['grade'] = $gradetabindex;
             $tabindices[$item->id]['feedback'] = $gradetabindex + $numusers;
@@ -863,6 +873,16 @@ class grade_report_laegrader extends grade_report {
                     $gradeval = $altered[$itemid];
                 } else {
                     $gradeval = $grade->finalgrade;
+                }
+
+                if (!empty($grade->finalgrade)) {
+                    $gradevalforJS = null;
+                    if ($item->scaleid && !empty($scalesarray[$item->scaleid])) {
+                        $gradevalforJS = (int)$gradeval;
+                    } else {
+                        $gradevalforJS = format_float($gradeval, $decimalpoints);
+                    }
+                    $jsarguments['grades'][] = array('user'=>$userid, 'item'=>$itemid, 'grade'=>$gradevalforJS);
                 }
 
                 // MDL-11274
@@ -973,17 +993,20 @@ class grade_report_laegrader extends grade_report {
 
                     } else if ($item->gradetype != GRADE_TYPE_TEXT) { // Value type
                     	// We always want to display the correct (first) displaytype when editing
+
                     	// regardless of grade_report_gradeeditalways
+
                     	$gradedisplaytype = (integer) substr( (string) $item->get_displaytype(),0,1);
+
 
                     	// if we have an accumulated total points that's not accurately reflected in the db, then we want to display the ACCURATE number
                         // we only need to take the extra calculation into account if points display since percent and letter are accurate by their nature
                         // If the settings don't call for ACCURATE point totals ($this->accuratetotals) then there will be no earned_total value
 	                    $tempmax = $item->grademax;
-                        if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && isset($this->grades[$userid][$grade->itemid]->cat_item)) {
+                        if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && isset($grade->cat_item)) {
                         	$items = $this->gtree->items;
-		               		$grade_values = $this->grades[$userid][$grade->itemid]->cat_item;
-		               		$grade_maxes = $this->grades[$userid][$grade->itemid]->cat_max;
+		               		$grade_values = $grade->cat_item;
+		               		$grade_maxes = $grade->cat_max;
 		               		$this_cat = $this->gtree->items[$grade->itemid]->get_item_category();
 		               		$this->gtree->limit_item($this_cat,$items,$grade_values,$grade_maxes);
 			       			$gradeval = array_sum($grade_values);
@@ -1004,6 +1027,7 @@ class grade_report_laegrader extends grade_report {
 	                                          .$userid.'_' .$item->id.'" id="grade_'.$userid.'_'.$item->id.'" value="'.$value.'" rel="' . $item->id . '" />';
                             } else {
                             	$itemcell->text .= html_writer::tag('span', format_float($gradeval, $decimalpoints), array('class'=>"gradevalue$hidden$gradepass"));
+
                             }
                         }
                     }
@@ -1033,26 +1057,25 @@ class grade_report_laegrader extends grade_report {
                     if ($item->needsupdate) {
                         $itemcell->text .= html_writer::tag('span', get_string('error'), array('class'=>"gradingerror$hidden$gradepass"));
                     } else {
-                        // We always want to display the correct (first) displaytype when editing
-                    	// regardless of grade_report_gradeeditalways
                     	$gradedisplaytype = (integer) substr( (string) $item->get_displaytype(),0,1);
 
                     	// if we have an accumulated total points that's not accurately reflected in the db, then we want to display the ACCURATE number
                         // we only need to take the extra calculation into account if points display since percent and letter are accurate by their nature
-                        // If the settings don't call for ACCURATE point totals ($this->accuratetotals) then there will be no earned_total value
+                        // If the settings don't call for ACCURATE point totals ($this->accuratetotals) then there will be no cat_item value
 	                    $tempmax = $item->grademax;
-                        if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && isset($this->grades[$userid][$grade->itemid]->cat_item)) {
+	                    // TODO: check to see if cat_item is getting set whether accurate points is set or not
+                        if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && isset($grade->cat_item)) {
                         	$items = $this->gtree->items;
-		               		$grade_values = $this->grades[$userid][$grade->itemid]->cat_item;
-		               		$grade_maxes = $this->grades[$userid][$grade->itemid]->cat_max;
+		               		$grade_values = $grade->cat_item;
+		               		$grade_maxes = $grade->cat_max;
 		               		$this_cat = $this->gtree->items[$grade->itemid]->get_item_category();
 		               		$this->gtree->limit_item($this_cat,$items,$grade_values,$grade_maxes);
 			       			$gradeval = array_sum($grade_values);
 			       			$item->grademax = array_sum($grade_maxes);
                         }
 //                      	$value = grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null);
-						$item->grademax = $tempmax;  // TODO: check on this clause to make sure it does what we want it to do
-                      	if (! $grade->is_hidden() && $gradeval !== null && $this->accuratetotals && isset($this->gtree->parents[$grade->itemid]->id)) {
+						$item->grademax = $tempmax;
+                      	if (! $grade->is_hidden() && $gradeval <> null && $this->accuratetotals && isset($this->gtree->parents[$grade->itemid]->id)) {
                 			$this->grades[$userid][$this->gtree->parents[$grade->itemid]->id]->cat_item[$grade->itemid] = $gradeval;
 							$this->grades[$userid][$this->gtree->parents[$grade->itemid]->id]->cat_max[$grade->itemid] = $grade->rawgrademax;
 				   		}
@@ -1071,7 +1094,7 @@ class grade_report_laegrader extends grade_report {
             }
             $rows[] = $itemrow;
         }
-/*
+
         if ($this->get_pref('enableajax')) {
             $jsarguments['cfg']['ajaxenabled'] = true;
             $jsarguments['cfg']['scales'] = array();
@@ -1087,7 +1110,7 @@ class grade_report_laegrader extends grade_report {
         $jsarguments['cfg']['courseid'] =  $this->courseid;
         $jsarguments['cfg']['studentsperpage'] =  $this->get_pref('studentsperpage');
         $jsarguments['cfg']['showquickfeedback'] =  (bool)$this->get_pref('showquickfeedback');
-*/
+
         return $rows;
     }
 
@@ -1259,10 +1282,13 @@ class grade_report_laegrader extends grade_report {
      * Builds and return the row of ranges for the right part of the grader report.
      * @param array $rows The Array of rows for the right part of the report
      * @return array Array of rows for the right part of the report
+     * This method needs to calculate up what the maximum is before its calculated while
+     * traversing the tree so it needs to traverse on its own
      */
     public function get_right_range_row($rows=array()) {
         global $OUTPUT;
 
+        $showtotalsifcontainhidden = $this->showtotalsifcontainhidden[$this->courseid];
         if ($this->get_pref('showranges')) {
             $rangesdisplaytype   = $this->get_pref('rangesdisplaytype');
             $rangesdecimalpoints = $this->get_pref('rangesdecimalpoints');
@@ -1272,24 +1298,16 @@ class grade_report_laegrader extends grade_report {
             foreach ($this->gtree->items as $itemid=>$unused) {
                 $item =& $this->gtree->items[$itemid];
                 $itemcell = new html_table_cell();
-//                $itemcell->header = true;
                 $itemcell->attributes['class'] .= ' range';
                 // if we have an accumulated total points that's not accurately reflected in the db, then we want to display the ACCURATE number
                 // we only need to take the extra calculation into account if points display since percent and letter are accurate by their nature
                 // If the settings don't call for ACCURATE point totals ($this->accuratetotals) then there will be no earned_total value
                 $tempmax = $item->grademax;
                 if (isset($this->gtree->items[$itemid]->cat_max)) {
-//                	$items = $this->gtree->items;
-//                	$grade_values = $this->gtree->items[$itemid]->cat_item;
                 	$grade_maxes = $this->gtree->items[$itemid]->cat_max;
-//                	$this_cat = $this->gtree->items[$itemid]->get_item_category();
-//                	$this->gtree->limit_item($this_cat,$items,$grade_values,$grade_maxes);
-//                	$gradeval = array_sum($grade_values);
                 	$item->grademax = array_sum($grade_maxes);
                 }
-//                $value = grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null);
-                if ($this->accuratetotals && isset($this->gtree->parents[$itemid]->id)) {
-//                	$this->gtree->items[$this->gtree->parents[$itemid]->id]->cat_item[$itemid] = $gradeval;
+               	if ((!$unused->is_hidden() || $showtotalsifcontainhidden == GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN) && $this->accuratetotals && isset($this->gtree->parents[$itemid]->id)) {
                 	$this->gtree->items[$this->gtree->parents[$itemid]->id]->cat_max[$itemid] = $item->grademax;
                 }
 
@@ -1297,9 +1315,7 @@ class grade_report_laegrader extends grade_report {
                 if ($item->is_hidden()) {
                     $hidden = ' hidden ';
                 }
-
                 $formattedrange = $item->get_formatted_range(GRADE_DISPLAY_TYPE_REAL, $rangesdecimalpoints);
-
                 $itemcell->text = $OUTPUT->container($formattedrange, 'rangevalues'.$hidden);
                 $rangerow->cells[] = $itemcell;
                 $item->grademax = $tempmax;
@@ -1514,6 +1530,7 @@ class grade_report_laegrader extends grade_report {
         $showhideicon        = '';
         $lockunlockicon      = '';
         $zerofillicon      = '';
+        $clearoverridesicon = '';
 
         if (has_capability('moodle/grade:manage', $this->context)) {
             if ($this->get_pref('showcalculations')) {
@@ -1533,6 +1550,10 @@ class grade_report_laegrader extends grade_report {
             	$zerofillicon = $this->gtree->get_zerofill_icon($element, $this->gpr);
             }
 
+            if ($this->get_pref('showclearoverrides') && $element['type'] !== 'grade') {
+            	$clearoverridesicon = $this->gtree->get_clearoverrides_icon($element, $this->gpr);
+            }
+
         }
 
         $gradeanalysisicon   = '';
@@ -1540,7 +1561,7 @@ class grade_report_laegrader extends grade_report {
             $gradeanalysisicon .= $this->gtree->get_grade_analysis_icon($element['object']);
         }
 
-        return $OUTPUT->container($editicon.$zerofillicon.$editcalculationicon.$showhideicon.$lockunlockicon.$gradeanalysisicon, 'grade_icons');
+        return $OUTPUT->container($editicon.$zerofillicon.$clearoverridesicon.$editcalculationicon.$showhideicon.$lockunlockicon.$gradeanalysisicon, 'grade_icons');
     }
 
     /**
@@ -1576,6 +1597,7 @@ class grade_report_laegrader extends grade_report {
         }
         return $icon;
     }
+
 
 
     /**
@@ -1744,372 +1766,143 @@ class grade_report_laegrader extends grade_report {
 
         return $arrows;
     }
-/*
-    public function quick_dump() {
+}
+    function quick_dump($items, $parents, $accuratetotals, $course) {
         global $CFG;
-        require_once($CFG->dirroot.'/lib/excellib.class.php');
-
-//        $export_tracking = $this->track_exports();
-
         $strgrades = get_string('grades');
-        $accuratetotals = get_user_preferences('accuratepointtotals') == null ? 1 : 0;
 
-    /// Calculate file name
-        $shortname = format_string($this->course->shortname, true, array('context' => get_context_instance(CONTEXT_COURSE, $this->course->id)));
-        $downloadfilename = clean_filename("$shortname $strgrades.xls");
-    /// Creating a workbook
-        $workbook = new MoodleExcelWorkbook("-");
-    /// Sending HTTP headers
-        $workbook->send($downloadfilename);
-    /// Adding the worksheet
-        $myxls =& $workbook->add_worksheet($strgrades);
-
-    /// Print names of all the fields
-        $myxls->write_string(0,0,get_string("firstname"));
-        $myxls->write_string(0,1,get_string("lastname"));
-        $myxls->write_string(0,2,get_string("idnumber"));
-        $myxls->write_string(0,3,get_string("email"));
-        $pos=4;
-
-
-/*
-        foreach ($this->columns as $grade_item) {
-            $myxls->write_string(0, $pos++, $this->format_column_name($grade_item));
-
-            /// add a column_feedback column
-            if ($this->export_feedback) {
-                $myxls->write_string(0, $pos++, $this->format_column_name($grade_item, true));
-            }
+		// print headers
+		$rows = array();
+        $col = array();
+        $col[] = '';
+        foreach ($items as $grade_item) {
+        	$colcounter++;
+        	if (is_null($grade_item->itemmodule)) {
+        		$col[] = strtoupper($grade_item->itemtype);
+        		$col[] = '';
+        	} else {
+        		$col[] = $grade_item->itemmodule;
+        	}
         }
-*/
-        // write out column headers
-/*        foreach ($this->gtree->items as $grade_item) {
-//            $myxls->write_string(0, $pos++, $this->format_column_name($grade_item));
-            switch ($grade_item->itemtype) {
-                    case 'category':
-                        $grade_item->item_category = grade_category::fetch(array('id'=>$grade_item->iteminstance));
-//                        $grade_item->load_category();
-                        $myxls->write_string(0, $pos++, $grade_item->item_category->fullname . ' Category total');
-                        break;
-                    case 'course':
-                        $myxls->write_string(0, $pos++, 'Course total');
-                        break;
-                    default:
-                        $myxls->write_string(0, $pos++, $grade_item->itemname);
-            }
+		$rows[] = $col;
 
-            /// add a column_feedback column
-            if (isset($this->export_feedback) AND $this->export_feedback) {
-//                $myxls->write_string(0, $pos++, $this->format_column_name($grade_item, true));
-                $myxls->write_string(0, $pos++, $grade_item->itemname);
-            }
+		/// Print names of all the fields
+		unset($col);
+        $col[] = get_string("firstname") . ' ' . get_string("lastname") . chr(10) . get_string("email");
+        foreach ($items as $grade_item) {
+        	$col[] = $grade_item->itemname;
+        	if (is_null($grade_item->itemmodule)) {
+	        	$col[] = '';
+        	}
         }
-/*
+        $rows[] = $col;
+
         // write out range row
-        $myxls->write_string(1, 2, 'Maximum grade->');
-        $pos=4;
-        foreach ($this->gtree->items as $grade_item) {
-//            $myxls->write_string(0, $pos++, $this->format_column_name($grade_item));
-            $myxls->write_number(1, $pos++, $grade_item->grademax);
-//            $myxls->write_number($i,$j++,$gradestr);
-            /// add a column_feedback column
-            if (isset($this->export_feedback) AND $this->export_feedback) {
-//                $myxls->write_string(0, $pos++, $this->format_column_name($grade_item, true));
-                $myxls->write_string(1, $pos++, $grade_item->name);
+        unset($col);
+        $col[] = 'Maximum points->';
+        foreach ($items as $grade_item) { // TODO: fix for cat andcourse maxpoints, also no decimals
+            if (isset($grade_item->max_earnable)) {
+               	$gradestr = grade_format_gradevalue_real($grade_item->max_earnable, $items[$itemid], 2);
+    	    	$col[] = $gradestr;
+            	$col[] = '';
+            } else {
+	        	$gradestr = grade_format_gradevalue_real($grade_item->grademax, $items[$itemid], 2);
+    	    	$col[] = $gradestr;
             }
         }
+        $rows[] = $col;
 
         // write out weights row
-        $myxls->write_string(2, 2, 'Weight->');
-        $pos=4;
-        foreach ($this->gtree->items as $grade_item) {
-            if (isset($this->gtree->parents[$grade_item->id]->id) && $this->gtree->parents[$grade_item->id]->agg == GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                $myxls->write_number(2,$pos++,$grade_item->aggregationcoef);
-//                $myxls->write_string(1, $pos++, format_float($grade_item->aggregationcoef,0));
+        unset($col);
+        $col[] = 'Weight->';
+		$colcounter = 1;
+        foreach ($items as $grade_item) {
+        	$colcounter++;
+        	if (isset($parents[$grade_item->id]->id) && $parents[$grade_item->id]->agg == GRADE_AGGREGATE_WEIGHTED_MEAN) {
+				$col[] = $grade_item->aggregationcoef . '%';
             } else {
-                $myxls->write_string(2, $pos++, "");
+                $col[] = '';
             }
-            /// add a column_feedback column
-            if (isset($this->export_feedback) AND $this->export_feedback) {
-                $myxls->write_string(2, $pos++, $grade_item->name);
-            }
+           	if (is_null($grade_item->itemmodule)) {
+	        	$col[] = '';
+        	}
         }
+        $rows[] = $col;
 
-*/
-/*
-    /// Print all the lines of data.
-        $i = 2;
-//        $geub = new grade_export_update_buffer();
-        $gui = new graded_users_iterator($this->course, $this->gtree->items);
+    	/// Print all the lines of data.
+        $gui = new graded_users_iterator($course, $items);
         $gui->init();
         while ($userdata = $gui->next_user()) {
-            $i++;
-            $user = $userdata->user;
+        	unset($col);
+        	$user = $userdata->user;
 
-            $myxls->write_string($i,0,$user->firstname);
-            $myxls->write_string($i,1,$user->lastname);
-            $myxls->write_string($i,2,$user->idnumber);
-//            $myxls->write_string($i,3,$user->institution);
-//            $myxls->write_string($i,4,$user->department);
-//            $myxls->write_string($i,5,$user->email);
-            $j=4;
+        	// name and points line
+            $col[] = $user->firstname . ' ' . $user->lastname;
             foreach ($userdata->grades as $itemid => $grade) {
-                if ($export_tracking) {
-//                    $status = $geub->track($grade);
-                }
-
-                $gradestr = $this->format_grade($grade);
-                if (is_numeric($gradestr)) {
-                    $myxls->write_number($i,$j++,$gradestr);
-                }
-                else {
-                    $myxls->write_string($i,$j++,$gradestr);
-                }
-
-                // writing feedback if requested
-                if ($this->export_feedback) {
-                    $myxls->write_string($i, $j++, $this->format_feedback($userdata->feedbacks[$itemid]));
-                }
+            	if (in_array($items[$itemid]->itemtype, array('course','category'))) {// categories and course items get their actual points from the accumulation in cat_item
+            		$tempmax = $items[$itemid]->grademax;
+            		$items[$itemid]->grademax = array_sum($grade->cat_max);
+            		$gradestr = grade_format_gradevalue_real(array_sum($grade->cat_item), $items[$itemid], 2);
+            		$items[$itemid]->grademax = $tempmax;
+                   	if (! $grade->is_hidden() && $grade->finalgrade !== null && $accuratetotals && isset($parents[$grade->itemid]->id)) {
+               			$userdata->grades[$parents[$itemid]->id]->cat_item[$itemid] = array_sum($grade->cat_item); // accumulate earned points
+               			// can't use rawgrademax from grade_grades because it never gets updated
+						$userdata->grades[$parents[$itemid]->id]->cat_max[$itemid] = array_sum($grade->cat_max); // accumulate earnable points
+			   		}
+    	        	$col[] = $gradestr;
+			   		$col[] = '';
+            	} else {
+	                $gradestr = grade_format_gradevalue_real($grade->finalgrade, $items[$itemid], 2);
+                   	if (! $grade->is_hidden() && $grade->finalgrade !== null && $accuratetotals && isset($parents[$grade->itemid]->id)) {
+               			$userdata->grades[$parents[$itemid]->id]->cat_item[$itemid] = $grade->finalgrade;
+               			// can't use rawgrademax from grade_grades because it never gets updated
+						$userdata->grades[$parents[$itemid]->id]->cat_max[$itemid] = $items[$itemid]->grademax;
+			   		}
+    	        	$col[] = $gradestr;
+            	}
             }
+			$rows[] = $col;
+			unset($col);
+
+			// email and percentage line
+            $col[] = $user->email;
+            foreach ($userdata->grades as $itemid => $grade) {
+            	if (in_array($items[$itemid]->itemtype, array('course','category'))) {// categories and course items get their actual points from the accumulation in cat_item
+            		$gradestr = array_sum($grade->cat_max);
+	                $col[] = $gradestr;
+                	$col[] = '';
+            	} else {
+                	$col[] = '';
+            	}
+            }
+			$rows[] = $col;
         }
-/*
-    /// Print all the lines of data.
-        $i = 2;
-//        $geub = new grade_export_update_buffer();
-//        $gui = new graded_users_iterator($this->course, $this->columns, $this->groupid);
-//        $gui->init();
-        foreach ($this->users as $key=>$user) {
-            $i++;
-//            $user = $userdata->user;
-
-            $myxls->write_string($i,0,$user->firstname);
-            $myxls->write_string($i,1,$user->lastname);
-            $myxls->write_string($i,2,$user->idnumber);
-            $myxls->write_string($i,3,$user->email);
-//           $myxls->write_string($i,3,$user->institution);
-//            $myxls->write_string($i,4,$user->department);
-//            $myxls->write_string($i,3,$user->email);
-            $j=4;
-            foreach ($this->gtree->items as $itemid => $item) {
-//                if ($export_tracking) {
-//                    $status = $geub->track($grade);
-//                }
-
-                $grade = $this->grades[$key][$itemid];
-				$gradeval = $grade->finalgrade;
-                // if gradeeditalways then we only want the first displaytype (in case multiple displaytypes are requested)
-                $gradedisplaytype = (integer) substr( (string) $item->get_displaytype(),0,1);
-                // if we have an accumulated total points that's not accurately reflected in the db, then we want to display the ACCURATE number
-                if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && isset($this->grades[$userid][$grade->itemid]->cat_item)) {
-                   	$items = $this->gtree->items;
-               		$grade_values = $this->grades[$userid][$grade->itemid]->cat_item;
-               		$grade_maxes = $this->grades[$userid][$grade->itemid]->cat_max;
-               		$this_cat = $this->gtree->items[$grade->itemid]->get_item_category();
-               		limit_item($this_cat,$items,$grade_values,$grade_maxes);
-	       			$gradeval = array_sum($grade_values);
-					$item->grademax = array_sum($grade_maxes);
-                    }
-           		// is calculating accurate totals store the earned_total for this item to its parent, if there is one
-                if (! $grade->is_hidden() && $gradeval <> null && $this->accuratetotals) {
-          			$this->grades[$userid][$this->gtree->parents[$grade->itemid]->id]->cat_item[$grade->itemid] = $gradeval;
-					$this->grades[$userid][$this->gtree->parents[$grade->itemid]->id]->cat_max[$grade->itemid] = $grade->rawgrademax;
-		   		}
-                $gradestr = grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null);
-
-/*
-		   		if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && $this->accuratetotals) {
-                    $gradestr = grade_format_gradevalue($grade->earned_total, $item, true, $gradedisplaytype, null);
-                } else {
-                    $gradestr = grade_format_gradevalue($grade->finalgrade, $item, true, $gradedisplaytype, null);
-                }
-*/
-/*                if (is_percentage($gradestr)) {
-                    $myxls->write_number($i,$j++,$gradestr * .01);
-//                    $myxls->write_number($i,$j++,substr(trim($gradestr),0,strlen(trim($gradestr))-1), array(num_format=>'Percent'));
-                } else if (is_numeric($gradestr)) {
-                    $myxls->write_number($i,$j++,$gradestr);
-                } else {
-                    $myxls->write_string($i,$j++,$gradestr);
-                }
-/*
-                // writing feedback if requested
-                if ($this->export_feedback) {
-                    $myxls->write_string($i, $j++, $this->format_feedback($userdata->feedbacks[$itemid]));
-                }
- *
- */
-//            }
-//        }
-
-
-
-/*
 
         $gui->close();
-        $geub->close();
-
-    /// Close the workbook
-        $workbook->close();
-
-        exit;
-    }
+	    // Calculate file name
+        $shortname = $course->shortname;
+        $filename = clean_filename("$shortname . $strgrades.csv");
+/*        $getfile = $CFG->dataroot.'/courseevals/' . $filename;
+        $target = fopen($getfile,'w');
+        foreach ($rows as $row ) {
+        	fputcsv($target,$row);
+        }
+        fclose($target);
 */
-    function quick_dumpOLD() {
-        global $CFG;
-        require_once($CFG->dirroot.'/lib/excellib.class.php');
+        	// tell the browser it's going to be a csv file
+        	header('Content-Type: text/csv; charset=utf-8');
+        	// tell the browser we want to save it instead of displaying it
+        	header("Content-Disposition: attachment; filename=\"" . $filename . "\"");
 
-//        $export_tracking = $this->track_exports();
-
-        $strgrades = get_string('grades');
-        $accuratetotals = get_user_preferences('accuratepointtotals') == null ? 1 : 0;
-
-
-    /// Calculate file name
-        $downloadfilename = clean_filename("{$this->course->shortname} $strgrades.xls");
-    /// Creating a workbook
-        $workbook = new MoodleExcelWorkbook("-");
-    /// Sending HTTP headers
-        $workbook->send($downloadfilename);
-    /// Adding the worksheet
-        $myxls =& $workbook->add_worksheet($strgrades);
-
-    /// Print names of all the fields
-        $myxls->write_string(0,0,get_string("firstname"));
-        $myxls->write_string(0,1,get_string("lastname"));
-        $myxls->write_string(0,2,get_string("idnumber"));
-        $myxls->write_string(0,3,get_string("email"));
-        $pos=4;
-
-        // write out column headers
-        foreach ($this->gtree->items as $grade_item) {
-//            $myxls->write_string(0, $pos++, $this->format_column_name($grade_item));
-            switch ($grade_item->itemtype) {
-                    case 'category':
-                        $grade_item->item_category = grade_category::fetch(array('id'=>$grade_item->iteminstance));
-//                        $grade_item->load_category();
-                        $myxls->write_string(0, $pos++, $grade_item->item_category->fullname . ' Category total');
-                        break;
-                    case 'course':
-                        $myxls->write_string(0, $pos++, 'Course total');
-                        break;
-                    default:
-                        $myxls->write_string(0, $pos++, $grade_item->itemname);
-            }
-
-            /// add a column_feedback column
-            if (isset($this->export_feedback) AND $this->export_feedback) {
-//                $myxls->write_string(0, $pos++, $this->format_column_name($grade_item, true));
-                $myxls->write_string(0, $pos++, $grade_item->itemname);
-            }
-        }
-
-        // write out range row
-        $myxls->write_string(1, 2, 'Maximum grade->');
-        $pos=4;
-        foreach ($this->gtree->items as $grade_item) {
-//            $myxls->write_string(0, $pos++, $this->format_column_name($grade_item));
-            $myxls->write_number(1, $pos++, $grade_item->grademax);
-//            $myxls->write_number($i,$j++,$gradestr);
-            /// add a column_feedback column
-            if (isset($this->export_feedback) AND $this->export_feedback) {
-//                $myxls->write_string(0, $pos++, $this->format_column_name($grade_item, true));
-                $myxls->write_string(1, $pos++, $grade_item->name);
-            }
-        }
-
-        // write out weights row
-        $myxls->write_string(2, 2, 'Weight->');
-        $pos=4;
-        foreach ($this->gtree->items as $grade_item) {
-            if (isset($this->gtree->parents[$grade_item->id]->id) && $this->gtree->parents[$grade_item->id]->agg == GRADE_AGGREGATE_WEIGHTED_MEAN) {
-                $myxls->write_number(2,$pos++,$grade_item->aggregationcoef);
-//                $myxls->write_string(1, $pos++, format_float($grade_item->aggregationcoef,0));
-            } else {
-                $myxls->write_string(2, $pos++, "");
-            }
-            /// add a column_feedback column
-            if (isset($this->export_feedback) AND $this->export_feedback) {
-                $myxls->write_string(2, $pos++, $grade_item->name);
-            }
-        }
-
-
-    /// Print all the lines of data.
-        $i = 2;
-//        $geub = new grade_export_update_buffer();
-//        $gui = new graded_users_iterator($this->course, $this->columns, $this->groupid);
-//        $gui->init();
-        foreach ($this->users as $key=>$user) {
-            $i++;
-//            $user = $userdata->user;
-
-            $myxls->write_string($i,0,$user->firstname);
-            $myxls->write_string($i,1,$user->lastname);
-            $myxls->write_string($i,2,$user->idnumber);
-            $myxls->write_string($i,3,$user->email);
-//           $myxls->write_string($i,3,$user->institution);
-//            $myxls->write_string($i,4,$user->department);
-//            $myxls->write_string($i,3,$user->email);
-            $j=4;
-            foreach ($this->gtree->items as $itemid => $item) {
-//                if ($export_tracking) {
-//                    $status = $geub->track($grade);
-//                }
-
-                $grade = $this->grades[$key][$itemid];
-				$gradeval = $grade->finalgrade;
-                // if gradeeditalways then we only want the first displaytype (in case multiple displaytypes are requested)
-                $gradedisplaytype = (integer) substr( (string) $item->get_displaytype(),0,1);
-                // if we have an accumulated total points that's not accurately reflected in the db, then we want to display the ACCURATE number
-                if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && isset($this->grades[$userid][$grade->itemid]->cat_item)) {
-                   	$items = $this->gtree->items;
-               		$grade_values = $this->grades[$userid][$grade->itemid]->cat_item;
-               		$grade_maxes = $this->grades[$userid][$grade->itemid]->cat_max;
-               		$this_cat = $this->gtree->items[$grade->itemid]->get_item_category();
-               		limit_item($this_cat,$items,$grade_values,$grade_maxes);
-	       			$gradeval = array_sum($grade_values);
-					$item->grademax = array_sum($grade_maxes);
-                    }
-           		// is calculating accurate totals store the earned_total for this item to its parent, if there is one
-                if (! $grade->is_hidden() && $gradeval <> null && $this->accuratetotals) {
-          			$this->grades[$userid][$this->gtree->parents[$grade->itemid]->id]->cat_item[$grade->itemid] = $gradeval;
-					$this->grades[$userid][$this->gtree->parents[$grade->itemid]->id]->cat_max[$grade->itemid] = $grade->rawgrademax;
-		   		}
-                $gradestr = grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null);
-
-/*
-		   		if ($gradedisplaytype == GRADE_DISPLAY_TYPE_REAL && $this->accuratetotals) {
-                    $gradestr = grade_format_gradevalue($grade->earned_total, $item, true, $gradedisplaytype, null);
-                } else {
-                    $gradestr = grade_format_gradevalue($grade->finalgrade, $item, true, $gradedisplaytype, null);
-                }
-*/
-                if (is_percentage($gradestr)) {
-                    $myxls->write_number($i,$j++,$gradestr * .01);
-//                    $myxls->write_number($i,$j++,substr(trim($gradestr),0,strlen(trim($gradestr))-1), array(num_format=>'Percent'));
-                } else if (is_numeric($gradestr)) {
-                    $myxls->write_number($i,$j++,$gradestr);
-                } else {
-                    $myxls->write_string($i,$j++,$gradestr);
-                }
-/*
-                // writing feedback if requested
-                if ($this->export_feedback) {
-                    $myxls->write_string($i, $j++, $this->format_feedback($userdata->feedbacks[$itemid]));
-                }
- *
- */
-            }
-        }
-//        $gui->close();
-//        $geub->close();
-
-    /// Close the workbook
-        $workbook->close();
-
-        exit;
+        	// open raw memory as file so no temp files needed, you might run out of memory though
+        	$output = fopen('php://output', 'w');
+        	// loop over the input array
+            foreach ($rows as $row ) {
+	        	fputcsv($output,$row);
+        	}
+        	fclose($output);
+			exit;
     }
-}
 
 function grade_report_laegrader_settings_definition(&$mform) {
 	global $CFG;
@@ -2125,5 +1918,3 @@ function grade_report_laegrader_settings_definition(&$mform) {
 
 	$mform->addElement('select', 'report_laegrader_accuratetotals', get_string('accuratetotals', 'gradereport_laegrader'), $options);
 }
-
-

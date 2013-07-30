@@ -105,7 +105,7 @@ class laegrader_report_preferences_form extends moodleform {
 
         // View capability is the lowest permission. Users with grade:manage or grade:edit must also have grader:view
         if (has_capability('gradereport/laegrader:view', $context)) {
-//            $preferences['prefgeneral']['studentsperpage'] = 'text'; no students per page in LAE grader report
+            $preferences['prefgeneral']['studentsperpage'] = 'text'; //no students per page in LAE grader report
 /* Removed because the agg position for categories HAS to be last in the LAE grader report
  *          $preferences['prefgeneral']['aggregationposition'] = array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
                                                                        GRADE_REPORT_AGGREGATION_POSITION_FIRST => get_string('positionfirst', 'grades'),
@@ -117,8 +117,9 @@ class laegrader_report_preferences_form extends moodleform {
             $preferences['prefshow']['showactivityicons'] = $checkbox_default;
             $preferences['prefshow']['showranges'] = $checkbox_default;
             $preferences['prefshow']['showanalysisicon'] = $checkbox_default;
-            $preferences['prefshow']['showzerofill'] = $checkbox_default; // have to get this fixed first
-            
+            $preferences['prefshow']['showzerofill'] = $checkbox_default;
+            $preferences['prefshow']['showclearoverrides'] = $checkbox_default;
+
             if ($canviewhidden) {
                 $preferences['prefrows']['shownumberofgrades'] = $checkbox_default;
             }
@@ -175,7 +176,7 @@ class laegrader_report_preferences_form extends moodleform {
                     $options[GRADE_REPORT_PREFERENCE_DEFAULT] = get_string('reportdefault', 'grades', $default);
                 }
 
-                if ($lang_string == 'gradeeditalways' || $lang_string == 'laegraderreportheight' || $lang_string == 'showzerofill') {
+                if ($lang_string == 'showclearoverrides' || $lang_string == 'laegraderreportheight' || $lang_string == 'showzerofill') {
                 	$label = get_string($lang_string, 'gradereport_laegrader') ;
                 } else {
                 	$label = get_string($lang_string, 'grades') . $number;

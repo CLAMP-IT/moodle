@@ -31,7 +31,7 @@ $page          = optional_param('page', 0, PARAM_INT);   // active page
 $perpageurl    = optional_param('perpage', 0, PARAM_INT);
 $edit          = optional_param('edit', -1, PARAM_BOOL); // sticky editting mode
 
-$itemid        = optional_param('sortitemid', 0, PARAM_ALPHANUM); // item to zerofill -- laegrader
+$itemid        = optional_param('itemid', 0, PARAM_ALPHANUM); // item to zerofill or clear overrides -- laegrader
 $sortitemid    = optional_param('sortitemid', 0, PARAM_ALPHANUM); // sort by which grade item
 $action        = optional_param('action', 0, PARAM_ALPHAEXT);
 $move          = optional_param('move', 0, PARAM_INT);
@@ -39,6 +39,7 @@ $type          = optional_param('type', 0, PARAM_ALPHA);
 $target        = optional_param('target', 0, PARAM_ALPHANUM);
 $toggle        = optional_param('toggle', NULL, PARAM_INT);
 $toggle_type   = optional_param('toggle_type', 0, PARAM_ALPHANUM);
+$CFG->grade_report_aggregationposition = 1;
 
 $PAGE->set_url(new moodle_url('/grade/report/laegrader/index.php', array('id'=>$courseid)));
 
@@ -55,6 +56,42 @@ require_capability('moodle/grade:viewall', $context);
 
 /// return tracking object
 $gpr = new grade_plugin_return(array('type'=>'report', 'plugin'=>'laegrader', 'courseid'=>$courseid, 'page'=>$page));
+
+if ($action === 'quick-dump') {
+
+	require_capability('moodle/grade:export', $context);
+	require_capability('gradeexport/xls:view', $context);
+
+	if (groups_get_course_groupmode($COURSE) == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
+		if (!groups_is_member($groupid, $USER->id)) {
+			print_error('cannotaccessgroup', 'grades');
+		}
+	}
+
+	$report = new grade_report_laegrader($courseid, $gpr, $context, $page, $sortitemid); // END OF HACK
+
+	// print all the exported data here
+	quick_dump($report->gtree->items, $report->gtree->parents, $report->accuratetotals, $report->course);
+	//	$report->quick_dump();
+	redirect($PAGE->url_get_path(), null, 0);
+}
+
+// clear all overrides in a column when the clearoverrides icon is clicked
+if ($action == 'clearoverrides' && $itemid !== 0) {
+	$records = $DB->get_records('grade_grades', array('itemid'=>$itemid));
+	foreach($records as $record) {
+		$record->overridden = 0;
+		$DB->update_record('grade_grades', $record);
+	}
+} elseif ($action == 'changedisplay' && $itemid !==0) {
+	$record = $DB->get_record('grade_items', array('id'=>$itemid));
+	if ($record->display == GRADE_DISPLAY_TYPE_DEFAULT) {
+		$record->display = max(1,($CFG->grade_displaytype + 1) % 4);
+	} else {
+		$record->display = max(1, ($record->display + 1) % 4);
+	}
+	$success = $DB->update_record('grade_items', $record);
+}
 
 /// last selected report session tracking
 if (!isset($USER->grade_last_report)) {
@@ -131,43 +168,12 @@ if ($data = data_submitted() and confirm_sesskey() and has_capability('moodle/gr
     $warnings = array();
 }
 
-
 // final grades MUST be loaded after the processing
 $report->load_users();
 $numusers = $report->get_numusers();
 $report->load_final_grades();
-/*
 // AT THIS POINT WE HAVE ACCURATE GRADES FOR DISPLAY
 // no other grader actions are relevant as they expand or compress the column headers
-if ($action === 'quick-dump') {
-//	$groupid           = optional_param('groupid', 0, PARAM_INT);
-	$groupid		   = 0;
-//	$itemids           = required_param('itemids', PARAM_RAW);
-	$displaytype       = $CFG->grade_export_displaytype;
-	$decimalpoints     = $CFG->grade_export_decimalpoints;
-	
-	require_capability('moodle/grade:export', $context);
-	require_capability('gradeexport/xls:view', $context);
-	
-	if (groups_get_course_groupmode($COURSE) == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
-	    if (!groups_is_member($groupid, $USER->id)) {
-	        print_error('cannotaccessgroup', 'grades');
-	    }
-	}
-	
-	// print all the exported data here
-	$itemids = implode(',', array_keys($report->gtree->items));
-	$export = new lae_grade_export_xls($course, $groupid, $itemids, 0, false, $displaytype, $decimalpoints);
-	$export->print_grades();
-//	$report->quick_dump();
-} elseif ($action === 'zerofill' && !is_null($itemid)) {
-    /// bunch of code here
-    echo '';
-    foreach ($report->grades as $usergrades) {
-
-    }
-}
-*/
 echo $report->group_selector;
 echo '<div class="clearer"></div>';
 // echo $report->get_toggles_html();
@@ -177,12 +183,16 @@ foreach($warnings as $warning) {
     echo $OUTPUT->notification($warning);
 }
 
-$studentsperpage = 0; // forced for laegrader
+
+$studentsperpage = $report->get_students_per_page();
+// Don't use paging if studentsperpage is empty or 0 at course AND site levels
+if (!empty($studentsperpage)) {
+	echo $OUTPUT->paging_bar($numusers, $report->page, $studentsperpage, $report->pbarurl);
+}
+
 $reporthtml = $report->get_grade_table();
 $reporthtml .= "<link rel=\"stylesheet\" type=\"text/css\" href=\"$CFG->wwwroot/grade/report/laegrader/styles.css\" />";
-$reporthtml .= '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/jquery-1.7.2.min.js" type="text/javascript"></script>';
-
-
+$reporthtml .= '<script src="jquery-1.7.2.min.js" type="text/javascript"></script>';
 		/*
        	 * code going into the html entity to enable scrolling columns and rows
        	 */
@@ -203,7 +213,7 @@ $reporthtml .= '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/jquery
 		$reporthtml .=
 		        '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/fxHeader_0.6.min.js" type="text/javascript"></script>
 		        <script type="text/javascript">' .$headerinit . 'fxheader(); </script>';
-		
+
 		$reporthtml .=
 		        '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/my_jslib.js" type="text/javascript"></script>';
 
