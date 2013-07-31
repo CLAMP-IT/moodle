@@ -3,7 +3,7 @@ text-align:right;
 display:inline;
 	}
 
-.ic { 
+.ic {
 display:inline;
 }
 
@@ -13,28 +13,32 @@ display:inline;
 }
 
 .block_quickset span.updatesettings input {
-	cursor: hand; 
-	cursor: pointer; 
+	cursor: hand;
+	cursor: pointer;
 	display:inline-block;
-	font-size:90%;
+	font-size:85%;
 	float:left;
 	margin-right:0px;
-	margin-left:0px;
+	margin-top:4px;
 	padding-left:0px;
 	background-color: #ff9999;
+	width: 45%;
+	margin-left: 4%;
 }
 
 .block_quickset span.noaction input {
-	cursor: hand; 
-	cursor: pointer; 
+	cursor: hand;
+	cursor: pointer;
 	display:inline-block;
-	font-size:90%;
+	font-size:85%;
 	float:left;
 	margin-right:0px;
-	margin-left:0px;
+	margin-top:4px;
 	padding-left:0px;
 	background-color: #66ff33;
-	}
+	width: 45%;
+	margin-left: 4%;
+}
 
 .block_quickset div.sorder {
 	line-height:1em;
@@ -67,6 +71,7 @@ display:inline;
 	font-size:90%;
 	float:left;
 	width:70%;
+	height: 1.5em;
 }
 .block_quickset span.leftradio input {
 	margin-top:4px;
@@ -82,6 +87,13 @@ display:inline;
 	float:right;
 	width:30%;
 	margin-top:4px;
+	height: 1.5em;
+}
+
+.block_quickset .numsections {
+	width: 2em;
+	margin-top:0px;
+	height: 1.5em;
 }
 
 .block_quickset .toplevel {
@@ -109,7 +121,7 @@ color: #009900;
 .block_quickset div.smallred {
 	text-align:center;
 	color:red;
-	font-size: 100%;
+	font-size: 75%;
 	}
 .block_quickset .small {
 	font-size:75%;
@@ -122,15 +134,16 @@ color: #009900;
 #sections {text-align:center;}
 #sections div.content{background-color:#F9F9F9; width:87%;float:none;margin: auto; position:relative;-webkit-border-radius:0.6em;-webkit-border-radius-bottomleft:0;-webkit-border-radius-topleft:0;border-radius:0.6em;border-radius-bottomleft:0;border-radius-topleft:0;line-height:1.4em;padding:0.5em;}
 #sections div.snum {padding-top:0.2em;}
-#sections div.section {padding-top:0.3em;display: inline-block;}
+#sections div.section {padding-top:0.3em;display: inline-block; width:100%}
 #sections span.sectionname, #sections span.nameheader
 #sections span.sectiontext{display:inline-block;}
-#sections span.sectioncontainer{display: block;}
-#sections .section .sectioncontainer span.sectnum {width:2.6em;float:left;padding-top:.2em; vertical-align:middle;}
-#sections .section .sectioncontainer span.singlesection {display:inline-block;}
+#sections span.sectioncontainer{display: block; width:100%}
+#sections .section .sectioncontainer span.sectnum {width:10%;float:left;padding-top:.2em; vertical-align:middle;}
+#sections .section .sectioncontainer span.singlesection input {display:inline-block; width:80%; float: left}
 #sections .section .sectioncontainer span.sectnum label {font-size:80%;display:inline-block;margin-right:.25em;}
-#sections .section span.sorder {display: inline-block;}
-#sections div.reordercontrols {text-align: center;} 
+#sections .section .sectioncontainer span.sectnum input {inline-block;margin-left:.25em;}
+#sections .section span.sorder input{display: inline-block; width:5%}
+#sections div.reordercontrols {text-align: center;}
 #sections .reordercontrols .nodisplay {display: none;}
 #sections .reordercontrols .nameheader{float:none;}
 #sections .reordercontrols .moveselectedonpage input{background-color: #66ff33; cursor: hand; cursor: pointer; display:inline-block;}

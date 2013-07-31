@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /* Copyright Panopto 2009 - 2013
  * 
  * This file is part of the Panopto plugin for Moodle.

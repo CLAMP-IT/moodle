@@ -1,25 +1,36 @@
 <?php
-// These params are only passed from page request to request while we stay on
-// this page otherwise they would go in section_edit_setup.
-require_once('../../config.php');
-// require_once('lib.php');
-global $COURSE,$PAGE, $OUTPUT;
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-//$courseid = $PAGE->course->id;
+require_once('../../config.php');
+global $COURSE, $PAGE, $OUTPUT;
+
 $courseid = required_param('courseid', PARAM_NUMBER);
-$thispageurl = required_param('pageurl', PARAM_URL); //always sent as the course page
+$thispageurl = required_param('pageurl', PARAM_URL); // Always sent as the course page
 $returnurl = optional_param('returnurl', false, PARAM_URL);
 if ($returnurl) {
-	$thispageurl = $returnurl;
+    $thispageurl = $returnurl;
 }
 $PAGE->set_url($thispageurl);
 
 // Get the course object and related bits.
 $course = $DB->get_record('course', array('id' => $courseid));
-$PAGE->set_course($course);
 if (!$course) {
     print_error('invalidcourseid', 'error');
 }
+$PAGE->set_course($course);
 // Log this visit.
 add_to_log($courseid, 'block_quickset', 'editsections',
             "edit.php");
@@ -40,32 +51,33 @@ foreach ($params as $key => $value) {
 }
 
 if (optional_param('returntocourse', null, PARAM_TEXT)) {
-	redirect("$CFG->wwwroot/course/view.php?id=$courseid");
+    redirect("$CFG->wwwroot/course/view.php?id=$courseid");
 }
 
 if (optional_param('updatesettings', null, PARAM_TEXT)) {
-	process_form($courseid, $params);
-	redirect("$CFG->wwwroot/course/view.php?id=$courseid");
+    process_form($courseid, $params);
+    rebuild_course_cache($courseid, true);
+    redirect("$CFG->wwwroot/course/view.php?id=$courseid");
 }
 
 if (optional_param('addnewsectionafterselected', null, PARAM_CLEAN) &&
         !empty($selectedsectionids) && confirm_sesskey()) {
     $sections = array(); // For sections in the new order.
     foreach ($selectedsectionids as $sectionid) {
-    	// clone the previous sectionid
-    	$newsection = $DB->get_record('course_sections', array('id'=>$sectionid));
-    	$newsection->name = null;
-    	$newsection->summary = '';
-    	$newsection->sequence = '';
-    	$newsection->section = $params['o'.$sectionid] * 100;
-    	unset($newsection->id);
-    	$newsection->id = $DB->insert_record('course_sections', $newsection, true);
+        // Clone the previous sectionid
+        $newsection = $DB->get_record('course_sections', array('id'=>$sectionid));
+        $newsection->name = null;
+        $newsection->summary = '';
+        $newsection->sequence = '';
+        $newsection->section = $params['o'.$sectionid] * 100;
+        unset($newsection->id);
+        $newsection->id = $DB->insert_record('course_sections', $newsection, true);
 
-    	// get the present order of the selected sectionid and insert newsection into the param array
-    	$params['o'.$newsection->id] = $params['o'.$sectionid] + 1;
+        // Get the present order of the selected sectionid and insert newsection into the param array
+        $params['o'.$newsection->id] = $params['o'.$sectionid] + 1;
     }
     foreach ($params as $key => $value) {
-		if (preg_match('!^o(pg)?([0-9]+)$!', $key, $matches)) {
+        if (preg_match('!^o(pg)?([0-9]+)$!', $key, $matches)) {
             // Parse input for ordering info.
             $sectionid = $matches[2];
             // Make sure two sections don't overwrite each other. If we get a second
@@ -77,59 +89,61 @@ if (optional_param('addnewsectionafterselected', null, PARAM_CLEAN) &&
 
     // If ordering info was given, reorder the sections.
     if ($sections) {
-	    ksort($sections);
-		$counter = 0;
-	    foreach ($sections as $rank=>$sectionid) {
-	       	$counter++;
-	       	$DB->set_field('course_sections', 'section', $counter * 100, array('course' => $courseid, 'id' => $sectionid));
-	    }
-	    $sql = "UPDATE mdl_course_sections set section = section / 100
-	       			WHERE course = '$courseid'
-	       			AND section <> 0";
-	    $DB->execute($sql);
+        ksort($sections);
+        $counter = 0;
+        foreach ($sections as $rank => $sectionid) {
+               $counter++;
+               $DB->set_field('course_sections', 'section', $counter * 100, array('course' => $courseid, 'id' => $sectionid));
+        }
+        $sql = "UPDATE mdl_course_sections set section = section / 100
+                       WHERE course = '$courseid'
+                       AND section <> 0";
+        $DB->execute($sql);
 
-	    // update the course_format_options table
-    	$conditions = array('courseid' => $courseid, 'name' => 'numsections');
-    	if (!$courseformat = $DB->get_record('course_format_options', $conditions)) {
-    		error('Course format record doesn\'t exist');
-    	}
-    	$courseformat->value = min($counter,52);
-    	if (!$DB->update_record('course_format_options',$courseformat)) {
-    		print_error('coursenotupdated');
-    	}
+        // Update the course_format_options table
+        $conditions = array('courseid' => $courseid, 'name' => 'numsections');
+        if (!$courseformat = $DB->get_record('course_format_options', $conditions)) {
+            error('Course format record doesn\'t exist');
+        }
+        $courseformat->value = min($counter, 52);
+        if (!$DB->update_record('course_format_options', $courseformat)) {
+            print_error('coursenotupdated');
+        }
     }
+    rebuild_course_cache($courseid, true);
 }
 
 if (optional_param('sectiondeleteselected', false, PARAM_BOOL) &&
         !empty($selectedsectionids) && confirm_sesskey()) {
-    $zerosection = $DB->get_record('course_sections', array('section'=>0, 'course'=>$courseid));
-	foreach ($selectedsectionids as $sectionid) {
-        $section = $DB->get_record('course_sections', array('id'=>$sectionid));
+    $zerosection = $DB->get_record('course_sections', array('section'=>0, 'course' => $courseid));
+    foreach ($selectedsectionids as $sectionid) {
+        $section = $DB->get_record('course_sections', array('id' =>$sectionid));
         if ($section->sequence != '') {
-	        $zerosection->sequence .= ',' . $section->sequence;
-			$DB->update_record('course_sections', $zerosection);
+            $zerosection->sequence .= ',' . $section->sequence;
+            $DB->update_record('course_sections', $zerosection);
         }
-        $DB->delete_records('course_sections', array('id'=>$sectionid));
+        $DB->delete_records('course_sections', array('id' =>$sectionid));
     }
     $sql = "SELECT * FROM mdl_course_sections
-    		WHERE course = $courseid
-    		ORDER BY section";
-	$sections = $DB->get_records_sql($sql);
-	$counter = 0;
-	foreach( $sections as $section) {
-		$section->section = $counter;
-		$DB->update_record('course_sections', $section);
-		$counter++;
-	}
-	// update the course_format_options table
-	$conditions = array('courseid' => $courseid, 'name' => 'numsections');
-	if (!$courseformat = $DB->get_record('course_format_options', $conditions)) {
-		error('Course format record doesn\'t exist');
-	}
-	$courseformat->value = min($counter - 1,52);
-	if (!$DB->update_record('course_format_options',$courseformat)) {
-		print_error('coursenotupdated');
-	}
+            WHERE course = $courseid
+            ORDER BY section";
+    $sections = $DB->get_records_sql($sql);
+    $counter = 0;
+    foreach ($sections as $section) {
+        $section->section = $counter;
+        $DB->update_record('course_sections', $section);
+        $counter++;
+    }
+    // Update the course_format_options table
+    $conditions = array('courseid' => $courseid, 'name' => 'numsections');
+    if (!$courseformat = $DB->get_record('course_format_options', $conditions)) {
+        error('Course format record doesn\'t exist');
+    }
+    $courseformat->value = min($counter - 1, 52);
+    if (!$DB->update_record('course_format_options', $courseformat)) {
+        print_error('coursenotupdated');
+    }
+    rebuild_course_cache($courseid, true);
 }
 
 if (optional_param('savechanges', false, PARAM_BOOL) && confirm_sesskey()) {
@@ -139,45 +153,45 @@ if (optional_param('savechanges', false, PARAM_BOOL) && confirm_sesskey()) {
     $rawdata = (array) data_submitted();
 
     foreach ($rawdata as $key => $value) {
-		if (preg_match('!^o(pg)?([0-9]+)$!', $key, $matches)) {
+        if (preg_match('!^o(pg)?([0-9]+)$!', $key, $matches)) {
             // Parse input for ordering info.
             $sectionid = $matches[2];
             // Make sure two sections don't overwrite each other. If we get a second
             // section with the same position, shift the second one along to the next gap.
             $value = clean_param($value, PARAM_INTEGER);
             $sections[$value] = $sectionid;
-        } elseif (preg_match('!^n(pg)?([0-9]+)$!', $key, $namematches)) {
+        } else if (preg_match('!^n(pg)?([0-9]+)$!', $key, $namematches)) {
             // Parse input for ordering info.
-            $sectionname = $matches[2];
+            $sectionname = $namematches[2];
             // Make sure two sections don't overwrite each other. If we get a second
             // section with the same position, shift the second one along to the next gap.
             $value = clean_param($value, PARAM_TEXT);
-            $sectionnames[$value] = $sectionid;
+            $sectionnames[$value] = $sectionname;
         }
     }
 
     // If ordering info was given, reorder the sections.
     if ($sections) {
         ksort($sections);
-		$counter = 0;
-        foreach ($sections as $rank=>$sectionid) {
-        	$counter++;
-        	$DB->set_field('course_sections', 'section', $counter * 100, array('course' => $courseid, 'id' => $sectionid));
+        $counter = 0;
+        foreach ($sections as $rank => $sectionid) {
+            $counter++;
+            $DB->set_field('course_sections', 'section', $counter * 100, array('course' => $courseid, 'id' => $sectionid));
         }
-       	$sql = "UPDATE mdl_course_sections set section = section / 100
-       			WHERE course = '$courseid'
-       			AND section <> 0";
-       	$DB->execute($sql);
+           $sql = "UPDATE mdl_course_sections set section = section / 100
+                   WHERE course = '$courseid'
+                   AND section <> 0";
+           $DB->execute($sql);
     }
     // If ordering info was given, reorder the sections.
     if ($sectionnames) {
-    	foreach ($sectionnames as $sectionname=>$sectionid) {
-			if ($sectionname !== "Untitled") {
-	    		$DB->set_field('course_sections', 'name', $sectionname, array('course' => $courseid, 'id' => $sectionid));
-			}
-    	}
+        foreach ($sectionnames as $sectionname => $sectionid) {
+            if ($sectionname !== "Untitled") {
+                $DB->set_field('course_sections', 'name', $sectionname, array('course' => $courseid, 'id' => $sectionid));
+            }
+        }
     }
-
+    rebuild_course_cache($courseid, true);
 }
 
 // End of process commands =====================================================
@@ -188,7 +202,7 @@ $PAGE->set_heading($course->fullname);
 $node = $PAGE->settingsnav->find('mod_quiz_edit', navigation_node::TYPE_SETTING);
  echo $OUTPUT->header();
 
-$sections = $DB->get_records('course_sections', array('course'=>$courseid));
+$sections = $DB->get_records('course_sections', array('course' =>$courseid));
 section_print_section_list($sections, $thispageurl, $courseid);
 
 echo $OUTPUT->footer();
@@ -201,55 +215,54 @@ echo $OUTPUT->footer();
  *     for links returning to the current page, as a moodle_url object
  */
 function section_print_section_list($sections, $thispageurl, $courseid) {
-	require_once('../../config.php');
-	global $CFG, $DB, $OUTPUT;
+    require_once('../../config.php');
+    global $CFG, $DB, $OUTPUT;
 
-	$strorder = get_string('order');
-	$strreturn = get_string('returntocourse', 'block_quickset');
-	$strremove = get_string('removeselected', 'block_quickset');
-	$stredit = get_string('edit');
-	$strview = get_string('view');
-	$straction = get_string('action');
-	$strmove = get_string('move');
-	$strmoveup = get_string('moveup');
-	$strmovedown = get_string('movedown');
-	$strreordersections = get_string('reordersections', 'block_quickset');
-	$straddnewsectionafterselected = get_string('addnewsectionsafterselected', 'block_quickset');
-	$strareyousureremoveselected = get_string('areyousureremoveselected', 'block_quickset');
+    $strorder = get_string('order');
+    $strreturn = get_string('returntocourse', 'block_quickset');
+    $strremove = get_string('removeselected', 'block_quickset');
+    $stredit = get_string('edit');
+    $strview = get_string('view');
+    $straction = get_string('action');
+    $strmove = get_string('move');
+    $strmoveup = get_string('moveup');
+    $strmovedown = get_string('movedown');
+    $strreordersections = get_string('reordersections', 'block_quickset');
+    $straddnewsectionafterselected = get_string('addnewsectionsafterselected', 'block_quickset');
+    $strareyousureremoveselected = get_string('areyousureremoveselected', 'block_quickset');
 
-	//	$sections = $DB->get_records('course_sections', array('course'=>$courseid));
-	foreach ($sections as $section) {
-		$order[] = $section->section;
-		$sections[$section->section] = $section;
-		unset($sections[$section->id]);
-	}
+    foreach ($sections as $section) {
+        $order[] = $section->section;
+        $sections[$section->section] = $section;
+        unset($sections[$section->id]);
+    }
 
-	$lastindex = count($order) - 1;
+    $lastindex = count($order) - 1;
 
-	$reordercontrolssetdefaultsubmit = '<span class="nodisplay">' .
-			'<input type="submit" name="savechanges" value="' .
-			$strreordersections . '" /></span>';
+    $reordercontrolssetdefaultsubmit = '<span class="nodisplay">' .
+            '<input type="submit" name="savechanges" value="' .
+            $strreordersections . '" /></span>';
 
-	$reordercontrols1 = '<span class="sectiondeleteselected">' .
-			'<input type="submit" name="sectiondeleteselected" ' .
-			'onclick="return confirm(\'' .
-			$strareyousureremoveselected . '\');" style="background-color: #ffb2b2" value="' .
-			get_string('removeselected', 'block_quickset') . '" /></span>';
-	$reordercontrols1 .= '<span class="addnewsectionafterselected">' .
-			'<input type="submit" name="addnewsectionafterselected" value="' .
-			$straddnewsectionafterselected . '" /></span>';
+    $reordercontrols1 = '<span class="sectiondeleteselected">' .
+            '<input type="submit" name="sectiondeleteselected" ' .
+            'onclick="return confirm(\'' .
+            $strareyousureremoveselected . '\');" style="background-color: #ffb2b2" value="' .
+            get_string('removeselected', 'block_quickset') . '" /></span>';
+    $reordercontrols1 .= '<span class="addnewsectionafterselected">' .
+            '<input type="submit" name="addnewsectionafterselected" value="' .
+            $straddnewsectionafterselected . '" /></span>';
 
-	$reordercontrols2top = '<span class="moveselectedonpage">' .
-			'<input type="submit" name="savechanges" value="' .
-			$strreordersections . '" /></span>';
-	$reordercontrols2bottom = '<span class="moveselectedonpage">' .
-			'<input type="submit" name="savechanges" value="' .
-			$strreordersections . '" /></span>';
+    $reordercontrols2top = '<span class="moveselectedonpage">' .
+            '<input type="submit" name="savechanges" value="' .
+            $strreordersections . '" /></span>';
+    $reordercontrols2bottom = '<span class="moveselectedonpage">' .
+            '<input type="submit" name="savechanges" value="' .
+            $strreordersections . '" /></span>';
 
-	$reordercontrols3 = '<span class="nameheader"></span>';
-	$reordercontrols4 = '<span class="returntocourse">' .
-			'<input type="submit" name="returntocourse" value="' .
-			$strreturn . '" /></span>';
+    $reordercontrols3 = '<span class="nameheader"></span>';
+    $reordercontrols4 = '<span class="returntocourse">' .
+            '<input type="submit" name="returntocourse" value="' .
+            $strreturn . '" /></span>';
 
     $reordercontrolstop = '<div class="reordercontrols">' .
             $reordercontrolssetdefaultsubmit .
@@ -258,33 +271,33 @@ function section_print_section_list($sections, $thispageurl, $courseid) {
             $reordercontrolssetdefaultsubmit .
             $reordercontrols4 . $reordercontrols2bottom . "</div>";
 
-	echo '<div class="editsectionsform">';
+    echo '<div class="editsectionsform">';
     echo '<form method="post" action="edit.php" id="sections"><div>';
 
-	echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
-	echo '<input type="hidden" name="courseid" value="' . $courseid . '" />';
-	echo '<input type="hidden" name="pageurl" value="' . $thispageurl . '" />';
+    echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
+    echo '<input type="hidden" name="courseid" value="' . $courseid . '" />';
+    echo '<input type="hidden" name="pageurl" value="' . $thispageurl . '" />';
 
-	echo $reordercontrolstop;
-	$sectiontotalcount = count($order);
+    echo $reordercontrolstop;
+    $sectiontotalcount = count($order);
 
-	// The current section ordinal (no descriptions).
-	$sno = -1;
+    // The current section ordinal (no descriptions).
+    $sno = -1;
 
-	foreach ($order as $count => $sectnum) {
+    foreach ($order as $count => $sectnum) {
 
-		$sno++;
-		$reordercheckbox = '';
-		$reordercheckboxlabel = '';
-		$reordercheckboxlabelclose = '';
-		if ($sectnum != 0) {
-			$section = $sections[$sectnum];
-			$sectionparams = array();
-			$sectionurl = new moodle_url('/section/section.php',
-					$sectionparams);
+        $sno++;
+        $reordercheckbox = '';
+        $reordercheckboxlabel = '';
+        $reordercheckboxlabelclose = '';
+        if ($sectnum != 0) {
+            $section = $sections[$sectnum];
+            $sectionparams = array();
+            $sectionurl = new moodle_url('/section/section.php',
+                    $sectionparams);
 
-				// This is an actual section.
-				?>
+                // This is an actual section.
+                ?>
                 <div class="section">
                     <span class="sectioncontainer">
                         <span class="sectnum">
@@ -307,13 +320,13 @@ function section_print_section_list($sections, $thispageurl, $courseid) {
                                     print_section_reordertool($section, $lastindex, $sno);
                                 ?>
                             </span>
-                			<span class="sorder">
+                            <span class="sorder">
                                 <?php
                                 echo '<input type="text" name="o' . $section->id .
                                         '" size="2" value="' . (10*$count) .
                                         '" tabindex="' . ($lastindex + $sno) . '" />';
                                 ?>
-                			</span>
+                            </span>
                         </span>
                 </span>
             </div>
@@ -333,11 +346,11 @@ function section_print_section_list($sections, $thispageurl, $courseid) {
  * @param object $quiz The quiz in the context of which the section is being displayed
  */
 function print_section_reordertool($section, $lastindex, $sno) {
-	echo '<span class="singlesection ">';
-	echo '<label for="n' . $section->id . '">';
-	echo ' ' . section_tostring($section, $lastindex, $sno);
-	echo '</label>';
-	echo "</span>\n";
+    echo '<span class="singlesection ">';
+    echo '<label for="n' . $section->id . '">';
+    echo ' ' . section_tostring($section, $lastindex, $sno);
+    echo '</label>';
+    echo "</span>\n";
 }
 
 /**
@@ -355,11 +368,11 @@ function section_tostring($section, $lastindex, $sno, $showicon = false,
     $result = '';
     $result .= '<span class="">';
     if ($section->name == '') {
-    	$result .= '<input type="text" name="n' . $section->id .
-                                '" size="75" value="Untitled" tabindex="' . ($lastindex + $sno) . '" /></span>';
+        $result .= '<input type="text" name="n' . $section->id .
+                                '" value="Untitled" tabindex="' . ($lastindex + $sno) . '" /></span>';
     } else {
-    	$result .= '<input type="text" name="n' . $section->id .
-                                '" size="75" value="' . $section->name .
+        $result .= '<input type="text" name="n' . $section->id .
+                                '" value="' . $section->name .
                                 '" tabindex="' . ($lastindex + $sno) . '" /></span>';
     }
     if ($return) {
@@ -370,52 +383,51 @@ function section_tostring($section, $lastindex, $sno, $showicon = false,
 }
 
 function process_form($courseid, $data) {
-	ini_set('error_reporting', E_ALL);
-	ini_set('display_errors', 1);
-	require_once('../../config.php');
-	global $CFG, $DB, $COURSE, $USER;
-	require_once($CFG->dirroot.'/lib/accesslib.php');
+    ini_set('error_reporting', E_ALL);
+    ini_set('display_errors', 1);
+    require_once('../../config.php');
+    global $CFG, $DB, $COURSE, $USER;
+    require_once($CFG->dirroot.'/lib/accesslib.php');
 
-	$conditions = array('id' => $courseid);
-	if (!$course = $DB->get_record('course', $conditions)) {
-		error('Course ID was incorrect');
-	}
-	$shortname = $COURSE->shortname;
+    $conditions = array('id' => $courseid);
+    if (!$course = $DB->get_record('course', $conditions)) {
+        error('Course ID was incorrect');
+    }
+    $shortname = $COURSE->shortname;
 
-	$conditions = array('courseid' => $courseid, 'name' => 'numsections');
-	if (!$courseformat = $DB->get_record('course_format_options', $conditions)) {
-		error('Course format record doesn\'t exist');
-	}
+    $conditions = array('courseid' => $courseid, 'name' => 'numsections');
+    if (!$courseformat = $DB->get_record('course_format_options', $conditions)) {
+        error('Course format record doesn\'t exist');
+    }
 
-	$context = get_context_instance(CONTEXT_COURSE, $courseid);
-	$context = get_context_instance(CONTEXT_COURSE, $courseid);
-	if (has_capability('moodle/course:update', $context)) {
-		//// process making grades available data
-		$course->showgrades = $data['grades'];
-		//// Process course availability
-		$course->visible = $data['course'];
-		//// Process number of sections
-		if (!$DB->update_record('course',$course)) {
-			print_error('coursenotupdated');
-		}
-		$courseformat->value = min($data['number'],52);
-		if (!$DB->update_record('course_format_options',$courseformat)) {
-			print_error('coursenotupdated');
-		}
-		// check to see if new sections need to be added onto the end
-		$sql = " SELECT MAX(section) from " . $CFG->prefix . "course_sections
-		            WHERE course = '$courseid'";
-		$maxsection = $DB->get_field_sql($sql);
-		for ($i = $data['number'] - $maxsection; $i > 0; $i--) {
-		    // clone the previous sectionid
-		    $newsection = $DB->get_record('course_sections', array('course' => $courseid, 'section' => $maxsection));
-		    $newsection->name = null;
-		    $newsection->summary = '';
-		    $newsection->sequence = '';
-		    $newsection->section = $maxsection + $i;
-		    unset($newsection->id);
-		    $newsection->id = $DB->insert_record('course_sections', $newsection, true);
-		}
-	}
+    $context = get_context_instance(CONTEXT_COURSE, $courseid);
+    $context = get_context_instance(CONTEXT_COURSE, $courseid);
+    if (has_capability('moodle/course:update', $context)) {
+        // Process making grades available data
+        $course->showgrades = $data['grades'];
+        // Process course availability
+        $course->visible = $data['course'];
+        // Process number of sections
+        if (!$DB->update_record('course', $course)) {
+            print_error('coursenotupdated');
+        }
+        $courseformat->value = min($data['number'], 52);
+        if (!$DB->update_record('course_format_options', $courseformat)) {
+            print_error('coursenotupdated');
+        }
+        // Check to see if new sections need to be added onto the end
+        $sql = " SELECT MAX(section) from " . $CFG->prefix . "course_sections
+                    WHERE course = '$courseid'";
+        $maxsection = $DB->get_field_sql($sql);
+        for ($i = $data['number'] - $maxsection; $i > 0; $i--) {
+            // Clone the previous sectionid
+            $newsection = $DB->get_record('course_sections', array('course' => $courseid, 'section' => $maxsection));
+            $newsection->name = null;
+            $newsection->summary = '';
+            $newsection->sequence = '';
+            $newsection->section = $maxsection + $i;
+            unset($newsection->id);
+            $newsection->id = $DB->insert_record('course_sections', $newsection, true);
+        }
+    }
 }
-?>
