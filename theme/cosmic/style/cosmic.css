@@ -677,9 +677,6 @@ margin: 0 10px;
     top: 3.5em;
     padding: 0.2em 0;
 }
-.yui-skin-sam .yui-panel-container {
-    z-index: 999999!important;
-}
 body#page-course-view-topics.path-course div.moodle-dialogue-base div.yui3-widget{
     z-index: 600!important;
 }

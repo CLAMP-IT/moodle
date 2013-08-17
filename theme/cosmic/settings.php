@@ -46,6 +46,14 @@ if ($ADMIN->fulltree) {
     $setting = new admin_setting_configselect($name, $title, $description, $default, $choices);
     $settings->add($setting);
 
+    // Set allowed devices for Autohide functionality.
+    $name = 'theme_cosmic/autohide_devices';
+    $title = get_string('autohide_devices', 'theme_cosmic');
+    $description = get_string('autohide_devices_desc', 'theme_cosmic');
+    $default = 'default,legacy';
+    $setting = new admin_setting_configtext($name, $title, $description, $default);
+    $settings->add($setting);
+
     // Set status of Edit Toggle functionality.
     $name = 'theme_cosmic/edittoggle';
     $title = get_string('editmodetoggle', 'theme_cosmic');
