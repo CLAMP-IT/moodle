@@ -302,6 +302,18 @@ function cosmic_set_customcss($css, $customcss) {
     return $css;
 }
 
+function cosmic_allow_autohide($device) {
+    global $PAGE;
+    if (!isset($PAGE->theme->settings->autohide_devices)) {
+        return false;
+    }
+    $devices = explode(",", $PAGE->theme->settings->autohide_devices);
+    if (!empty($devices)) {
+        return in_array($device, $devices);
+    }
+    return false;
+}
+
 /**
  * Generate updated custommenu with enroled courses listed
  */
