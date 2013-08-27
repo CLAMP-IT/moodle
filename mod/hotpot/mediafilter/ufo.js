@@ -71,6 +71,10 @@ var UFO = {
 	 * @param xxx id
 	 */
 	main: function(id) {
+		if (! document.getElementById(id)) {
+		    if(!window.gdb)window.gdb=!confirm("Oops, document.getElementById("+id+") not found");
+		    return;
+		}
 		var _fo = UFO.foList[id];
 		if (_fo.mainCalled) return;
 		UFO.foList[id].mainCalled = true;
