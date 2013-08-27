@@ -53,7 +53,7 @@ class mod_hotpot_report_analysis_renderer extends mod_hotpot_report_renderer {
     function add_responses_to_rawdata(&$table) {
         // attach each response to its parent attempt
         // using the "add_response_to_rawdata()" method
-        parent::add_responses_to_rawdata(&$table);
+        parent::add_responses_to_rawdata($table);
 
         // the fields we are interested in, in the order we want them
         $fields = array('correct', 'wrong', 'ignored', 'hints', 'clues', 'checks'); // , 'weighting'

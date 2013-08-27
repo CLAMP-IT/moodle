@@ -89,6 +89,12 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
 
         switch ($type) {
 
+            case 'dropdown':
+                // adding missing brackets to call to Is_ExerciseFinished() in CheckAnswers()
+                $search = '/(Finished\s*=\s*Is_ExerciseFinished)(;)/';
+                $this->headcontent = preg_replace($search, '$1()$2', $this->headcontent);
+                break;
+
             case 'findit':
                 // get position of last </style> tag and
                 // insert CSS to make <b> and <em> tags bold
@@ -185,6 +191,12 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function fix_js_Client(&$str, $start, $length)  {
         $substr = substr($str, $start, $length);
+
+        // refine detection of Chrome browser
+        $search = 'this.geckoVer < 20020000';
+        if ($pos = strpos($substr, $search)) {
+            $substr = substr_replace($substr, 'this.geckoVer > 10000000 && ', $pos, 0);
+        }
 
         // add detection of Chrome browser
         $search = '/(\s*)if \(this\.min == false\)\{/s';
@@ -689,7 +701,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             $substr = preg_replace($search, $replace, $substr, 1);
         }
 
-        $substr = preg_replace($search, $replace, $substr, 1);
+        $str = substr_replace($str, $substr, $start, $length);
     }
 
     /**
@@ -793,13 +805,22 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
                 ."// create HP object (to collect and send responses)\n"
                 ."	window.HP = new ".$this->js_object_type."('".$this->can_clickreport()."','".$forceajax."');\n"
                 ."\n"
-                ."// call HP.onunload to send results when this page unloads\n"
-                ."	var s = '';\n"
-                ."	if (typeof(window.onunload)=='function'){\n"
-                ."		window.onunload_StartUp = onunload;\n"
-                ."		s += 'window.onunload_StartUp();'\n"
+                //."// call HP.onunload to send results when this page unloads\n"
+                //."	var s = '';\n"
+                //."	if (typeof(window.onunload)=='function'){\n"
+                //."		window.onunload_StartUp = onunload;\n"
+                //."		s += 'window.onunload_StartUp();'\n"
+                //."	}\n"
+                //."	window.onunload = new Function(s + 'if(window.HP){HP.status=$onunload_status;HP.onunload();object_destroy(HP);}return true;');\n"
+                //."\n"
+                ."	window.onunload = function() {\n"
+                ."		if (window.HP) {\n"
+                ."			HP.status=$onunload_status;\n"
+                ."			HP.onunload();\n"
+                ."			object_destroy(HP);\n"
+                ."		}\n"
+                ."		return true;\n"
                 ."	}\n"
-                ."	window.onunload = new Function(s + 'if(window.HP){HP.status=$onunload_status;HP.onunload();object_destroy(HP);}return true;');\n"
                 ."\n"
             ;
             $substr = substr_replace($substr, $append, $pos, 0);
@@ -1063,7 +1084,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         if ($name = $this->get_stop_function_name()) {
             return 'if('.$this->get_stop_function_confirm().')'.$name.'('.$this->get_stop_function_args().')';
         } else {
-            return 'if(window.HP)HP.onunload('.QUIZPORT_STATUS_ABANDONED.')';
+            return 'if(window.HP)HP.onunload('.hotpot::STATUS_ABANDONED.')';
         }
     }
 
@@ -1144,6 +1165,11 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         } else {
             $flag = 0; // set form values and send form
         }
+        if ($this->hotpot->delay3==hotpot::TIME_DISABLE) {
+            $forceredirect = '(ForceQuizStatus ? 1 : 0)';
+        } else {
+            $forceredirect = 1;
+        }
         return "\n"
             ."	if ($1){\n"
             ."		var QuizStatus = 4; // completed\n"
@@ -1163,12 +1189,13 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             ."		Finished = true;\n"
             ."	}\n"
             ."	if (Finished || HP.sendallclicks){\n"
+            ."		var ForceRedirect = $forceredirect;\n"
             ."		if (ForceQuizStatus || QuizStatus==1){\n"
             ."			// send results immediately\n"
-            ."			HP.onunload(QuizStatus);\n"
+            ."			HP.onunload(QuizStatus, 0, ForceRedirect);\n"
             ."		} else {\n"
             ."			// send results after delay\n"
-            ."			setTimeout('HP.onunload('+QuizStatus+',$flag)', SubmissionTimeout);\n"
+            ."			setTimeout('HP.onunload('+QuizStatus+',$flag,'+ForceRedirect+')', SubmissionTimeout);\n"
             ."		}\n"
             ."	}\n"
         ;
@@ -1271,9 +1298,6 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         // insert the stop button, if required
         if ($this->hotpot->stopbutton) {
 
-            // get text conversion library
-            $textlib = hotpot_get_textlib();
-
             // replace top nav buttons with a single stop button
             if ($this->hotpot->stopbutton==hotpot::STOPBUTTON_LANGPACK) {
                 if ($pos = strpos($this->hotpot->stoptext, '_')) {
@@ -1301,7 +1325,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
                     .'onfocus="FuncBtnOver(this)" onblur="FuncBtnOut(this)" '
                     .'onmouseover="FuncBtnOver(this)" onmouseout="FuncBtnOut(this)" '
                     .'onmousedown="FuncBtnDown(this)" onmouseup="FuncBtnOut(this)">'
-                    .$textlib->utf8_to_entities($stoptext)
+                    .hotpot_textlib('utf8_to_entities', $stoptext)
                 .'</button>'
                 .'</div>'
             ;
@@ -1470,12 +1494,11 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function filter_text_to_utf8($str, $search) {
         if (preg_match_all($search, $str, $matches, PREG_OFFSET_CAPTURE)) {
-            $textlib = hotpot_get_textlib();
             $i_max = count($matches[0]) - 1;
             for ($i=$i_max; $i>=0; $i--) {
                 list($match, $start) = $matches[0][$i];
                 $char = $matches[1][$i][0];
-                $char = $textlib->code2utf8(hexdec($char));
+                $char = hotpot_textlib('code2utf8', hexdec($char));
                 $str = substr_replace($str, $char, $start, strlen($match));
             }
         }
@@ -1487,10 +1510,9 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function filter_text_bodycontent()  {
         // convert entities to utf8, filter text and convert back
-        //$textlib = hotpot_get_textlib();
-        //$this->bodycontent = $textlib->entities_to_utf8($this->bodycontent);
+        //$this->bodycontent = hotpot_textlib('entities_to_utf8', $this->bodycontent);
         //$this->bodycontent = filter_text($this->bodycontent);
-        //$this->bodycontent = $textlib->utf8_to_entities($this->bodycontent);
+        //$this->bodycontent = hotpot_textlib('utf8_to_entities', $this->bodycontent);
     }
 
     /**
@@ -1616,21 +1638,26 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      * @return xxx
      */
     function get_feedback_teachers()  {
-        $context = get_context_instance(CONTEXT_COURSE, $this->hotpot->source->courseid);
-        $teachers = get_users_by_capability($context, 'mod/hotpot:grade');
-        if (! $teachers) {
-            return '';
-        }
-        if ($this->hotpot->studentfeedback==hotpot::FEEDBACK_MOODLEMESSAGING) {
-            $detail = 'id';
-        } else {
-            $detail = 'email';
-        }
+        $context = hotpot_get_context(CONTEXT_COURSE, $this->hotpot->source->courseid);
+        $teachers = get_users_by_capability($context, 'mod/hotpot:reviewallattempts');
+
         $details = array();
-        foreach ($teachers as $teacher) {
-            $details[] = "new Array('".addslashes_js(fullname($teacher))."', '".addslashes_js($teacher->$detail)."')";
+        if (isset($teachers) && count($teachers)) {
+            if ($this->hotpot->studentfeedback==hotpot::FEEDBACK_MOODLEMESSAGING) {
+                $detail = 'id';
+            } else {
+                $detail = 'email';
+            }
+            foreach ($teachers as $teacher) {
+                $details[] = "new Array('".addslashes_js(fullname($teacher))."', '".addslashes_js($teacher->$detail)."')";
+            }
         }
-        return 'new Array('.implode(', ', $details).')';
+
+        if ($details = implode(', ', $details)) {
+            return 'new Array('.$details.')';
+        } else {
+            return ''; // no teachers
+        }
     }
 
     /**
@@ -1840,17 +1867,23 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function expand_DublinCoreMetadata()  {
         $dc = '';
-        if ($str = $this->hotpot->source->xml_value('', "['rdf:RDF'][0]['@']['xmlns:dc']")) {
-            $dc .= '<link rel="schema.DC" href="'.str_replace('"', '&quot;', $str).'" />'."\n";
+        if ($value = $this->hotpot->source->xml_value('', "['rdf:RDF'][0]['@']['xmlns:dc']")) {
+            $dc .= '<link rel="schema.DC" href="'.str_replace('"', '&quot;', $value).'" />'."\n";
         }
-        if (is_string($this->hotpot->source->xml_value('rdf:RDF,rdf:Description'))) {
-            // do nothing (there is no more dc info)
-        } else {
-            if ($str = $this->hotpot->source->xml_value('rdf:RDF,rdf:Description,dc:creator')) {
-                $dc .= '<meta name="DC:Creator" content="'.str_replace('"', '&quot;', $str).'" />'."\n";
-            }
-            if ($str = strip_tags($this->hotpot->source->xml_value('rdf:RDF,rdf:Description,dc:title'))) {
-                $dc .= '<meta name="DC:Title" content="'.str_replace('"', '&quot;', $str).'" />'."\n";
+        if (is_array($this->hotpot->source->xml_value('rdf:RDF,rdf:Description'))) {
+            $names = array('DC:Creator'=>'dc:creator', 'DC:Title'=>'dc:title');
+            foreach ($names as $name => $tag) {
+                $i = 0;
+                $values = array();
+                while($value = $this->hotpot->source->xml_value("rdf:RDF,rdf:Description,$tag", "[$i]['#']")) {
+                    if ($value = trim(strip_tags($value))) {
+                        $values[strtoupper($value)] = htmlspecialchars($value);
+                    }
+                    $i++;
+                }
+                if ($value = implode(', ', $values)) {
+                    $dc .= '<meta name="'.$name.'" content="'.$value.'" />'."\n";
+                }
             }
         }
         return $dc;
@@ -2358,7 +2391,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
                 $images = array_merge($images, $matches[1]);
             }
 
-            // extract all urls from QuizPort's [square bracket] notation
+            // extract all urls from HotPot's [square bracket] notation
             // e.g. [%sitefiles%/images/screenshot.jpg image 350 265 center]
             $search = '/\['."([^\?\]]*\.(?:jpg|gif|png)(?:\?[^ \t\r\n\]]*)?)".'[^\]]*'.'\]/s';
             if (preg_match_all($search, $this->hotpot->source->filecontents, $matches)) {
@@ -2729,8 +2762,8 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function hotpot_keypad_char_value($char)  {
 
-        $textlib = hotpot_get_textlib();
-        $ord = ord($textlib->entities_to_utf8($char));
+        $char = hotpot_textlib('entities_to_utf8', $char);
+        $ord = ord($char);
 
         // lowercase letters (plain or accented)
         if (($ord>=97 && $ord<=122) || ($ord>=224 && $ord<=255)) {
@@ -3049,6 +3082,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
                     // get the definition for this word
                     $def = '';
                     $word = ($direction=='A') ? $aword : $dword;
+                    $word = hotpot_textlib('utf8_to_entities', $word);
 
                     $i = 0;
                     $clues = 'data,crossword,clues,item';
