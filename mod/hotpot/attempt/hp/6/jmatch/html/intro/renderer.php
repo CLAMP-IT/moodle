@@ -124,6 +124,11 @@ class mod_hotpot_attempt_hp_6_jmatch_html_intro_renderer extends mod_hotpot_atte
             } else {
                 $flag = 0; // set form values and send form
             }
+            if ($this->hotpot->delay3==hotpot::TIME_DISABLE) {
+                $forceredirect = '(ForceQuizStatus ? 1 : 0)';
+            } else {
+                $forceredirect = 1;
+            }
             $insert = "\n"
                 ."	if (QuizStatus > 1) {\n"
                 ."		TimeOver = true;\n"
@@ -131,12 +136,13 @@ class mod_hotpot_attempt_hp_6_jmatch_html_intro_renderer extends mod_hotpot_atte
                 ."		Finished = true;\n"
                 ."	}\n"
                 ."	if (Finished || HP.sendallclicks){\n"
+                ."		var ForceRedirect = $forceredirect;\n"
                 ."		if (ForceQuizStatus || QuizStatus==1){\n"
                 ."			// send results immediately\n"
-                ."			HP.onunload(QuizStatus);\n"
+                ."			HP.onunload(QuizStatus, 0, ForceRedirect);\n"
                 ."		} else {\n"
                 ."			// send results after delay\n"
-                ."			setTimeout('HP.onunload('+QuizStatus+',$flag)', SubmissionTimeout);\n"
+                ."			setTimeout('HP.onunload('+QuizStatus+',$flag,'+ForceRedirect+')', SubmissionTimeout);\n"
                 ."		}\n"
                 ."	}\n"
             ;

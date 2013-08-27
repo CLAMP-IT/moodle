@@ -275,7 +275,7 @@ class mod_hotpot_attempt_html_renderer extends mod_hotpot_attempt_renderer {
                 if (array_key_exists(2, $match)) {
                     // it used to be possible to send the id of the next quiz back as the "redirect" parameter
                     // but that doesn't work any more bacuse of changes to view.php
-                    // $params = array('quizattemptid'=>$QUIZPORT->quizattemptid, 'redirect'=>$match[2]);
+                    // $params = array('id'=>$this->hotpot->attempt->id, 'redirect'=>$match[2]);
                     $params = array('id'=>$this->hotpot->attempt->id, 'status'=>STATUS_COMPLETED, 'redirect'=>$match[2]);
                     $newurl = $this->format_url('view.php', '', $params);
                     $this->bodycontent = substr_replace($this->bodycontent, $newurl, $match[1], strlen($match[0]));

@@ -146,7 +146,7 @@ class mod_hotpot_storage {
 
         // add details of this quiz attempt, if required
         // "hotpot_storedetails" is set by administrator
-        // Site Admin -> Modules -> Activities -> QuizPort
+        // Site Admin -> Modules -> Activities -> HotPot
         if ($CFG->hotpot_storedetails) {
 
             // delete/update/add the details record
