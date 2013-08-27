@@ -15,7 +15,6 @@ M.block_annotate.init = function(Y, tgts, rt) {
 	function activate() {
 	// only run once
 	//
-		alert("doit");
 		if (activated) {
 			return;
 		}
@@ -44,7 +43,7 @@ M.block_annotate.init = function(Y, tgts, rt) {
 				                "powerpoint-":bppt, "jpeg-":bjpg};
 	
 		
-		var applyToWes = { "pdf":bpdf,"document":bdoc,"spreadsheet":bxls,"powerpoint":bbpt,"jpeg":bjpg}
+		var applyToWes = { "pdf":bpdf, "document":bdoc, "spreadsheet":bxls, "powerpoint":bppt, "jpeg":bjpg}
 		// find the anchors we need to add links to. Don't mess with them here so we don't change the document while
 		// we are iterating over it
 		var toActivate = [];
@@ -92,7 +91,7 @@ M.block_annotate.init = function(Y, tgts, rt) {
 					shouldLink = true;
 				}
 	
-				if (applyToWes[fnm] == true ) {
+				if (applyToWes[fnm] === true ) {
 					shouldLink = true;
 				}
 			}
