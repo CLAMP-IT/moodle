@@ -99,6 +99,9 @@ class hotpot {
     const CONTINUE_RESTARTUNIT      = 3;
     const CONTINUE_ABANDONUNIT      = 4;
 
+    const HTTP_NO_RESPONSE          = 0; // was false
+    const HTTP_204_RESPONSE         = 1; // was true
+
     const STATUS_INPROGRESS         = 1;
     const STATUS_TIMEDOUT           = 2;
     const STATUS_ABANDONED          = 3;
@@ -134,6 +137,11 @@ class hotpot {
     const EXITOPTIONS_INDEX         = 0x20;
     const EXITOPTIONS_COURSE        = 0x40;
     const EXITOPTIONS_GRADES        = 0x80;
+
+    const BODYSTYLES_BACKGROUND     = 0x01;
+    const BODYSTYLES_COLOR          = 0x02;
+    const BODYSTYLES_FONT           = 0x04;
+    const BODYSTYLES_MARGIN         = 0x08;
 
     /**
      * three sets of 6 bits define the times at which a quiz may be reviewed
@@ -365,7 +373,7 @@ class hotpot {
         $this->cm = $cm;
         $this->course = $course;
         if (is_null($context)) {
-            $this->context = get_context_instance(CONTEXT_MODULE, $this->cm->id);
+            $this->context = hotpot_get_context(CONTEXT_MODULE, $this->cm->id);
         } else {
             $this->context = $context;
         }
@@ -942,7 +950,29 @@ class hotpot {
         if (is_null($course)) {
             $course = $this->course;
         }
-        return new moodle_url('/course/view.php', array('id' => $course->id));
+        $params = array('id' => $course->id);
+        $sectionnum = 0;
+        if (isset($course->coursedisplay) && defined('COURSE_DISPLAY_MULTIPAGE')) {
+            // Moodle >= 2.3
+            if ($course->coursedisplay==COURSE_DISPLAY_MULTIPAGE) {
+                $courseid = $course->id;
+                $sectionid = $this->cm->section;
+                if ($modinfo = get_fast_modinfo($this->course)) {
+                    $sections = $modinfo->get_section_info_all();
+                    foreach ($sections as $section) {
+                        if ($section->id==$sectionid) {
+                            $sectionnum = $section->section;
+                            break;
+                        }
+                    }
+                }
+                unset($modinfo, $sections, $section);
+            }
+        }
+        if ($sectionnum) {
+            $params['section'] = $sectionnum;
+        }
+        return new moodle_url('/course/view.php', $params);
     }
 
     /**
@@ -964,12 +994,11 @@ class hotpot {
             // get sourcetype e.g. hp_6_jcloze_xml
             $sourcefile = $this->get_sourcefile();
             if (! $sourcetype = clean_param($this->sourcetype, PARAM_SAFEDIR)) {
-                if ($sourcetype = hotpot::get_sourcetype($sourcefile)) {
-                    $DB->set_field('hotpot', 'sourcetype', $sourcetype, array('id' => $this->id));
-                    $this->sourcetype = $sourcetype;
-                } else {
-                    throw new moodle_exception('missingsourcetype', 'hotpot');
+                if (! $sourcetype = hotpot::get_sourcetype($sourcefile)) {
+                    return null;
                 }
+                $DB->set_field('hotpot', 'sourcetype', $sourcetype, array('id' => $this->id));
+                $this->sourcetype = $sourcetype;
             }
 
             $dir = str_replace('_', '/', $sourcetype);
@@ -1081,7 +1110,7 @@ class hotpot {
             'sortorder'=>1, 'itemid'=>0, 'filepath'=>$filepath, 'filename'=>$filename
         );
 
-        $coursecontext  = get_context_instance(CONTEXT_COURSE, $this->course->id);
+        $coursecontext  = hotpot_get_context(CONTEXT_COURSE, $this->course->id);
         $filehash = sha1('/'.$coursecontext->id.'/course/legacy/0'.$filepath.$filename);
 
         if ($file = $fs->get_file_by_hash($filehash)) {
@@ -1111,11 +1140,13 @@ class hotpot {
      * @return string $subtype
      */
     public function get_outputformat() {
-        if (empty($this->outputformat)) {
-            return $this->get_source()->get_best_outputformat();
-        } else {
+        if ($this->outputformat) {
             return clean_param($this->outputformat, PARAM_SAFEDIR);
         }
+        if ($source = $this->get_source()) {
+            return $source->get_best_outputformat();
+        }
+        return ''; // shouldn't happen !!
     }
 
     /**
@@ -1242,7 +1273,9 @@ class hotpot {
         if (is_null($canstart)) {
             if (is_null($this->canstart)) {
                 // set automatically
-                if (! $this->can_attempt()) {
+                if (has_capability('mod/hotpot:preview', $this->context)) {
+                    $this->canstart = true;
+                } else if (! $this->can_attempt()) {
                     $this->canstart = false;
                 } else if ($this->require_isopen()) {
                     $this->canstart = false;
@@ -1274,7 +1307,11 @@ class hotpot {
      * @return string $subtype
      */
     public function get_attempt_renderer_subtype() {
-        return 'attempt_'.$this->get_outputformat();
+        if ($outputformat = $this->get_outputformat()) {
+            return 'attempt_'.$outputformat;
+        } else {
+            return ''; // shouldn't happen !!
+        }
     }
 
     /**
@@ -1434,9 +1471,12 @@ class hotpot {
         if (empty($this->attempt)) {
 
             // get max attempt number so far
-            $select = 'hotpotid=? AND userid=?';
-            $params = array($this->id, $USER->id);
-            $max_attempt = $DB->count_records_select('hotpot_attempts', $select, $params, 'MAX(attempt)');
+            $sql = "SELECT MAX(attempt) FROM {hotpot_attempts} WHERE hotpotid=? AND userid=?";
+            if ($max_attempt = $DB->get_field_sql($sql, array($this->id, $USER->id))) {
+                $max_attempt ++;
+            } else {
+                $max_attempt = 1;
+            }
 
             // create attempt record
             $this->attempt = new stdClass();
@@ -1446,7 +1486,7 @@ class hotpot {
             $this->attempt->endtime        = 0;
             $this->attempt->score          = 0;
             $this->attempt->penalties      = 0;
-            $this->attempt->attempt        = $max_attempt + 1;
+            $this->attempt->attempt        = $max_attempt;
             $this->attempt->timestart      = $this->time;
             $this->attempt->timefinish     = 0;
             $this->attempt->status         = self::STATUS_INPROGRESS;
@@ -1840,8 +1880,7 @@ class hotpot {
         if ($shorterror) {
             return get_string('nomoreattempts', 'hotpot');
         } else {
-            $textlib = hotpot_get_textlib();
-            $attemptlimitstr = $textlib->moodle_strtolower(get_string('attemptlimit', 'hotpot'));
+            $attemptlimitstr = hotpot_textlib('moodle_strtolower', get_string('attemptlimit', 'hotpot'));
             $msg = html_writer::tag('b', format_string($this->name))." ($attemptlimitstr = $this->attemptlimit)";
             return html_writer::tag('p', get_string('nomoreattempts', 'hotpot')).html_writer::tag('p', $msg);
         }

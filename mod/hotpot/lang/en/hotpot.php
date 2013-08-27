@@ -39,6 +39,7 @@ $string['hotpot:view'] = 'View the entry page of a HotPot activity';
 
 // more strings
 $string['abandoned'] = 'Abandoned';
+$string['abandonhotpot'] = 'Your results so far will be saved but you cannot resume or restart this activity later.';
 $string['activitycloses'] = 'Activity closes';
 $string['activitygrade'] = 'Activity grade';
 $string['activityopens'] = 'Activity opens';
@@ -66,10 +67,14 @@ $string['attemptscore'] = 'Attempt score';
 $string['attemptsunlimited'] = 'Unlimited attempts';
 $string['average'] = 'Average';
 $string['averagescore'] = 'Average score';
+$string['bodystyles'] = 'Body styles';
+$string['bodystylesbackground'] = 'Background color and image';
+$string['bodystylescolor'] = 'Text color';
+$string['bodystylesfont'] = 'Font size and family';
+$string['bodystylesmargin'] = 'Left and right margin';
 $string['cacherecords'] = 'HotPot cache records';
-$string['canrestartquiz'] = 'Your results so far will be saved and you can redo "{$a}" later';
-$string['canrestartunit'] = 'Your results so far will be saved but if you want to redo this activity again later, you will have to start from the beginning.';
-$string['canresumequiz'] = 'Your results so far will be saved and you can resume "{$a}" later.';
+$string['canrestarthotpot'] = 'Your results so far will be saved and you can redo "{$a}" later';
+$string['canresumehotpot'] = 'Your results so far will be saved and you can resume "{$a}" later.';
 $string['checks'] = 'Checks';
 $string['checksomeboxes'] = 'Please check some boxes';
 $string['clearcache'] = 'Clear HotPot cache';
@@ -82,6 +87,7 @@ $string['clicktrailreport'] = 'Click trails';
 $string['closed'] = 'This activity has closed';
 $string['clues'] = 'Clues';
 $string['completed'] = 'Completed';
+$string['configbodystyles'] = 'By default, Moodle theme styles will override HotPot activity styles. However, for any styles selected here, the HotPot activity styles will be given priority over the Moodle theme styles.';
 $string['configenablecache'] = 'Maintaining a cache of HotPot quizzes can dramatically speed up the delivery of quizzes to the students.';
 $string['configenablecron'] = 'Specify the hours in your time zone at which the HotPot cron script may run';
 $string['configenablemymoodle'] = 'This settings controls whether HotPots are listed on the MyMoodle page or not';
@@ -507,6 +513,7 @@ $string['title_help'] = 'This setting specifies the title to be displayed on the
 **Use source file path**
 : the source file path, including any folder names, will be used as the web page title.';
 $string['unitname_help'] = 'help text for unit name';
+$string['unrecognizedsourcefile'] = 'Sorry, the HotPot module could not detect the type of the source file: {$a}';
 $string['updated'] = 'Updated';
 $string['usefilters'] = 'Use filters';
 $string['usefilters_help'] = 'If this setting is enabled, the content will be passed through the Moodle filters before being sent to the browser.';

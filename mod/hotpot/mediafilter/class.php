@@ -51,11 +51,12 @@ class hotpot_mediafilter {
         'mp3'=>'none', 'ra'=>'none', 'ram'=>'none', 'rm'=>'none', 'rv'=>'none'
     );
 
-    public $param_names = 'movie|src|url';
+    public $param_names = 'movie|song_url|src|url';
     //  wmp        : url
     //  quicktime  : src
     //  realplayer : src
     //  flash      : movie
+    //  other      : song_url
 
     public $tagopen = '(?:(<)|(\\\\u003C))'; // left angle-bracket (uses two parenthese)
     public $tagchars = '(?(1)[^>]|(?(2).(?!\\\\u003E)))*?';  // string of chars inside the tag
@@ -268,7 +269,7 @@ class hotpot_mediafilter {
         $pos = 1;
         switch ($pos) {
             case 0: $search = '/^[^?]*\?'.'[^=]+=([^&]*)'.'.*$/'; break;
-            case 1: $search = '/^[^?]*\?'.'(?:file|src|thesound|mp3)+=([^&]*)'.'.*$/'; break;
+            case 1: $search = '/^[^?]*\?'.'(?:file|song_url|src|thesound|mp3)+=([^&]*)'.'.*$/'; break;
             case 2: $search = '/^[^?]*\?'.'(?:[^=]+=[^&]*&(?:amp;))*'.'[^=]+=([^&]*)'.'$/'; break;
         }
         $url = preg_replace($search, '$1', $url, 1);
@@ -604,18 +605,15 @@ class hotpot_mediafilter {
         $flashvars = $match[2];
         $after  = $match[3];
 
-        // get text manipulation library
-        $textlib = hotpot_get_textlib();
-
         // entities_to_utf8() is required undo the call to htmlentities(), see MDL-5223
         // this is necessary to allow waitForPlay and autoPlay to be effective on Firefox
-        $flashvars = $textlib->entities_to_utf8($flashvars);
+        $flashvars = hotpot_textlib('entities_to_utf8', $flashvars);
 
         $vars = explode('&', $flashvars);
         foreach ($this->moodle_flashvars as $var) {
             if (array_key_exists($var, $options)) {
                 $vars = preg_grep("/^$var=/", $vars, PREG_GREP_INVERT);
-                $vars[] = "$var=".$textlib->utf8_to_entities($options[$var]);
+                $vars[] = "$var=".hotpot_textlib('utf8_to_entities', $options[$var]);
             }
         }
 
