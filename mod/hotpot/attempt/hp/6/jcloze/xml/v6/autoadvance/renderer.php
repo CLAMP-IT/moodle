@@ -119,7 +119,7 @@ class mod_hotpot_attempt_hp_6_jcloze_xml_v6_autoadvance_renderer extends mod_hot
 
             $dots = 'squares'; // default
             if ($param = clean_param($this->expand_UserDefined1(), PARAM_ALPHANUM)) {
-                if (is_dir($CFG->dirroot."/mod/quizport/output/hp/6/jquiz/xml/v6/autoadvance/$param")) {
+                if (is_dir($CFG->dirroot."/mod/hotpot/output/hp/6/jquiz/xml/v6/autoadvance/$param")) {
                     $dots = $param;
                 }
             }

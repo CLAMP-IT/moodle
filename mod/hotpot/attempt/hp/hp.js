@@ -213,11 +213,12 @@ function hpQuizAttempt() {
     /**
      * onunload
      *
-     * @param xxx status
-     * @param xxx flag
+     * @param xxx status   0=undefined, 1=in progress, 2=timed out, 3=abandoned, 4=completed
+     * @param xxx flag     0=do everything, 1=set form values, -1=send form
+     * @param xxx redirect 0=NO, 1=YES
      * @return xxx
      */
-    this.onunload = function (status, flag) {
+    this.onunload = function (status, flag, redirect) {
         if (! this.form) {
             // results have already been submitted
             return true;
@@ -248,9 +249,13 @@ function hpQuizAttempt() {
             if (status) {
                 this.status = status;
                 if (status>1) {
-                    // we set this flag here to tell the server that it is OK to redirect,
-                    // but whether we actually get redirected or not is up to the server
-                    this.redirect = 1;
+                    // we set the redirect flag here to tell the server to redirect or not,
+                    //however, whether we actually get redirected or not is up to the server
+                    if (typeof(redirect)=='number' || typeof(redirect)=='string') {
+                        this.redirect = redirect;
+                    } else {
+                        this.redirect = 1;
+                    }
                 }
                 var forceRecalculate = false;
             } else {
@@ -346,9 +351,9 @@ function hpQuizAttempt() {
             if (this.status>1) {
                 // quiz is finished, so ensure results do not get submitted again
                 this.form = null;
-            } else if (window.quizportbeforeunload) {
+            } else if (window.hotpotbeforeunload) {
                 // quiz is not finished yet, so restore onbeforeunload
-               window.onbeforeunload = window.quizportbeforeunload;
+               window.onbeforeunload = window.hotpotbeforeunload;
             }
        }
 
