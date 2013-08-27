@@ -188,7 +188,7 @@ class mod_hotpot_attempt_hp_renderer extends mod_hotpot_attempt_renderer {
      * set_headcontent
      */
     function set_headcontent()  {
-        global $CFG, $QUIZPORT;
+        global $CFG;
 
         if (isset($this->headcontent)) {
             return;
@@ -312,38 +312,34 @@ class mod_hotpot_attempt_hp_renderer extends mod_hotpot_attempt_renderer {
      * @return xxx
      */
     function fix_headcontent_beforeonunload()  {
-        global $QUIZPORT;
-
         // warn user about consequences of navigating away from this page
         switch ($this->can_continue()) {
             case hotpot::CONTINUE_RESUMEQUIZ:
-                $onbeforeunload = get_string('canresumequiz', 'hotpot', format_string($QUIZPORT->quiz->name));
+                $onbeforeunload = ''.get_string('canresumehotpot', 'hotpot', format_string($this->hotpot->name));
                 break;
             case hotpot::CONTINUE_RESTARTQUIZ:
-                $onbeforeunload = get_string('canrestartquiz', 'hotpot', format_string($QUIZPORT->quiz->name));
-                break;
             case hotpot::CONTINUE_RESTARTUNIT:
-                $onbeforeunload = get_string('canrestartunit', 'hotpot');
+                $onbeforeunload = get_string('canrestarthotpot', 'hotpot', format_string($this->hotpot->name));
                 break;
             case hotpot::CONTINUE_ABANDONUNIT:
-                $onbeforeunload = get_string('abandonunit', 'hotpot');
+                $onbeforeunload = get_string('abandonhotpot', 'hotpot');
                 break;
             default:
                 $onbeforeunload = ''; // shouldn't happen !!
         }
         if ($onbeforeunload) {
-            $search = "/(\s*)window.onunload = new Function[^\r\n]*;/s";
-            $replace = '$0$1'
-                ."window.hotpotbeforeunload = function(){".'$1'
-                ."	return '".$this->hotpot->source->js_value_safe($onbeforeunload, true)."';".'$1'
-                ."}".'$1'
-                ."if (window.opera) {".'$1'
-                // user scripts (this is here for reference only)
-                // ."	opera.setOverrideHistoryNavigationMode('compatible');".'$1'
-                // web page scripts
-                ."	history.navigationMode = 'compatible';".'$1'
-                ."}".'$1'
-                ."window.onbeforeunload = window.hotpotbeforeunload;"
+            $onunload_status = hotpot::STATUS_INPROGRESS;
+            $search = "/(\s*)window\.onunload = function/s";
+            $replace = ''
+                .'$1'."window.hotpotbeforeunload = function() {"
+                .'$1'."	return '".$this->hotpot->source->js_value_safe($onbeforeunload, true)."';"
+                .'$1'."}"
+                .'$1'."if (window.opera) {"
+                .'$1'."	opera.setOverrideHistoryNavigationMode('compatible');"
+                .'$1'."	history.navigationMode = 'compatible';"
+                .'$1'."}"
+                .'$1'."window.onbeforeunload = window.hotpotbeforeunload;"
+                .'$0'
             ;
             $this->headcontent = preg_replace($search, $replace, $this->headcontent, 1);
         }

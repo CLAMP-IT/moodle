@@ -89,7 +89,14 @@ if ($show_aggregates) {
 
 $usesections = course_format_uses_sections($course->format);
 if ($usesections) {
-    $sections = get_all_sections($course->id);
+    if (method_exists('course_modinfo', 'get_section_info_all')) {
+        // Moodle >= 2.3
+        $modinfo = get_fast_modinfo($course);
+        $sections = $modinfo->get_section_info_all();
+    } else {
+        // Moodle 2.0 - 2.2
+        $sections = get_all_sections($course->id);
+    }
 }
 
 /// Print the list of instances (your module will probably extend this)

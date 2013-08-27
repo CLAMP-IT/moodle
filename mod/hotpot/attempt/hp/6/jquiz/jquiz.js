@@ -134,6 +134,8 @@ function JQuiz(sendallclicks, forceajax) {
     this.setScoreAndPenalties = function (forceRecalculate) {
         if (forceRecalculate) {
             // based on JQuiz calculateOverallScore()
+            // but calculates score for ALL questions
+            // not just those that have been attempted
             var TotalWeighting = 0;
             var TotalScore = 0;
             var TotalCount = 0;
