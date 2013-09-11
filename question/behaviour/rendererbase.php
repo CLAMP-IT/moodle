@@ -176,7 +176,7 @@ abstract class qbehaviour_renderer extends plugin_renderer_base {
             $url = new moodle_url($options->manualcommentlink, array('slot' => $qa->get_slot()));
             $link = $this->output->action_link($url, get_string('commentormark', 'question'),
                     new popup_action('click', $url, 'commentquestion',
-                    array('width' => 600, 'height' => 800)));
+                    array('width' => 1200, 'height' => 800)));
             $output .= html_writer::tag('div', $link, array('class' => 'commentlink'));
         }
         return $output;
