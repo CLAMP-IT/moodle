@@ -191,3 +191,8 @@ table#lae-user-grades tr.odd td.overridden {
 .grade-report-grader table#fixed_column tr.even th, .grade-report-grader table#lae-user-grades tr.even th { height: 40px; } 
 .grade-report-grader table#lae-user-grades td.cell { height: 40px; }
 */
+
+.path-grade-report-laegrader .useremail,
+.path-grade-report-laegrader .useridnumber {
+    display: none;
+}

@@ -614,7 +614,7 @@ class grade_report_laegrader extends grade_report_grader {
         if (has_capability('gradereport/'.$CFG->grade_profilereport.':view', $this->context)) {
             $colspan++;
         }
-        $colspan += count($extrafields);
+//        $colspan += count($extrafields);
 
         $levels = count($this->gtree->levels) - 1;
 
