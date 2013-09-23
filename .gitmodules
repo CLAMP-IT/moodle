@@ -1,0 +1,3 @@
+[submodule "theme/cosmic"]
+	path = theme/cosmic
+	url = /home/git/cosmic
