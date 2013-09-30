@@ -137,6 +137,9 @@
 
     echo '<div class="userlist">';
 
+    // Hampshire-specific note to inform users that official roster is on thehub. Added by sryder 9/2013
+    echo("Please note that the official class roster is found on <a href='https://thehub.hampshire.edu'>TheHub</a>. Adding students to a Moodle site does not register them. Any students added manually are not enrolled in the course until they appear on the official roster on <a href='https://thehub.hampshire.edu'>TheHub</a>.");
+
     if ($isseparategroups and (!$currentgroup) ) {
         // The user is not in the group so show message and exit
         echo $OUTPUT->heading(get_string("notingroup"));
