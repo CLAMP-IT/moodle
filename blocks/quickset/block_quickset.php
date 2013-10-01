@@ -43,6 +43,10 @@ class block_quickset extends block_base {
         global $CFG, $COURSE, $USER, $PAGE, $DB;
         $available = 1;
         $unavailable = 0;
+        $updatesettings = get_string('updatesettings', 'block_quickset');
+        $blockinvisible = get_string('blockinvisible', 'block_quickset');
+        $moresettings = get_string('moresettings', 'block_quickset');
+        $editsections = get_string('editsections', 'block_quickset');
         $this->content = new stdClass;
         $returnurl = "$CFG->wwwroot/course/view.php?id=$COURSE->id";
         $numsections = $DB->get_field('course_format_options', 'value', array('courseid' => $COURSE->id, 'name' => 'numsections', 'format' => $COURSE->format));
@@ -104,23 +108,23 @@ class block_quickset extends block_base {
 
                     . '<div>'
                         . '<span class="nodisplay defaultaction">'
-                            . '<input type="submit" name="updatesettings"  value="Update settings">'
+                            . '<input type="submit" name="updatesettings"  value="' . $updatesettings . '">'
                         . '</span>'
                         . '<span class="noaction">'
-                            . '<input type="submit" name="noaction" value="Edit Sections" >'
+                            . '<input type="submit" name="noaction" value="' . $editsections . '">'
                         . '</span>'
                         . '<span class="updatesettings">'
-                            . '<input type="submit" name="updatesettings"  value="Update settings">'
+                            . '<input type="submit" name="updatesettings"  value="' . $updatesettings . '">'
                         . '</span>'
                     . '</div>'
 
                     . '<br /><br />'
 
                     . '<div class="textcenter">
-                            <a href="' . $CFG->wwwroot . '/course/edit.php?id=' . $COURSE->id . '"> More Settings </a>
+                            <a href="' . $CFG->wwwroot . '/course/edit.php?id=' . $COURSE->id . '">' . $moresettings . '</a>
                             </div>'
                     . '</div></form>';
-            $this->content->text .= '<div class="smallred">Note: This block invisible to students</div>';
+            $this->content->text .= '<div class="smallred">"' . $blockinvisible . '"</div>';
         }
         $this->content->footer = '';
         return $this->content;

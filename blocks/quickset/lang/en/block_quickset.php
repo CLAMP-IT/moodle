@@ -16,10 +16,14 @@
 
 // This is block_quickset.php - created by Bob Puffer CLAMP, Luther College
 
-$string['pluginname'] = 'Quicksets';
-$string['addnewsectionsafterselected'] = 'Add new course section after selected';
-$string['reordersections'] = 'Reorder and/or submit section changes';
-$string['removeselected'] = 'Remove selected';
+$string['addnewsectionsafterselected'] = 'Add section after selected/ save';
 $string['areyousureremoveselected'] = 'All resources and modules will be moved to the top (0) section.  Summary information will be discarded';
+$string['blockinvisible'] = 'This block is not visible to students';
 $string['editingcoursesections'] = 'Editing sections for course: {$a}';
+$string['editsections'] = 'Edit sections';
+$string['moresettings'] = ' More settings ';
+$string['pluginname'] = 'Quicksets';
+$string['reordersections'] = 'Save changes, return to course';
+$string['removeselected'] = 'Remove selected/ save';
 $string['returntocourse'] = 'Return to course, discard unsaved changes';
+$string['updatesettings'] = 'Update settings';

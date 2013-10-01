@@ -49,8 +49,8 @@ display:inline;
 	-webkit-border-radius-bottomleft:0;
 	-webkit-border-radius-topleft:0;
 	border-radius:0.2em;
-	border-radius-bottomleft:0;
-	border-radius-topleft:0;
+	border-bottom-left-radius:0;
+	border-top-left-radius:0;
 	z-index:900;
 	display:inline-block;
 	margin:0;
@@ -97,7 +97,7 @@ display:inline;
 }
 
 .block_quickset .toplevel {
-    z-index = 1500;
+    z-index: 1500;
 }
 .block_quickset .blue {
 color: #0000ff;
@@ -132,21 +132,21 @@ color: #009900;
 
 /***** edit sections styles *****/
 #sections {text-align:center;}
-#sections div.content{background-color:#F9F9F9; width:87%;float:none;margin: auto; position:relative;-webkit-border-radius:0.6em;-webkit-border-radius-bottomleft:0;-webkit-border-radius-topleft:0;border-radius:0.6em;border-radius-bottomleft:0;border-radius-topleft:0;line-height:1.4em;padding:0.5em;}
+#sections div.content{background-color:#F9F9F9; width:87%;float:none;margin: auto; position:relative;-webkit-border-radius:0.6em;-webkit-border-radius-bottomleft:0;-webkit-border-radius-topleft:0;border-radius:0.6em;border-bottom-left-radius:0;border-top-left-radius:0;line-height:1.4em;padding:0.5em;}
 #sections div.snum {padding-top:0.2em;}
-#sections div.section {padding-top:0.3em;display: inline-block; width:100%}
+#sections div.section {padding-top:0.3em;display: inline-block; width:100%;}
 #sections span.sectionname, #sections span.nameheader
 #sections span.sectiontext{display:inline-block;}
-#sections span.sectioncontainer{display: block; width:100%}
+#sections span.sectioncontainer{display: inline-block; width:100%;}
 #sections .section .sectioncontainer span.sectnum {width:10%;float:left;padding-top:.2em; vertical-align:middle;}
-#sections .section .sectioncontainer span.singlesection input {display:inline-block; width:80%; float: left}
+#sections .section .sectioncontainer span.singlesection input {display:inline-block; width:80%; float: left;}
 #sections .section .sectioncontainer span.sectnum label {font-size:80%;display:inline-block;margin-right:.25em;}
-#sections .section .sectioncontainer span.sectnum input {inline-block;margin-left:.25em;}
-#sections .section span.sorder input{display: inline-block; width:5%}
+#sections .section .sectioncontainer span.sectnum input {display: inline-block; margin-left:.25em;}
+#sections .section span.sorder input{display: inline-block; width:5%;}
 #sections div.reordercontrols {text-align: center;}
 #sections .reordercontrols .nodisplay {display: none;}
 #sections .reordercontrols .nameheader{float:none;}
 #sections .reordercontrols .moveselectedonpage input{background-color: #66ff33; cursor: hand; cursor: pointer; display:inline-block;}
 #sections .reordercontrols .sectiondeleteselected input{cursor: hand; cursor: pointer;display:inline-block; margin-right:1em;}
 #sections .reordercontrols .addnewsectionafterselected input{background-color: #99ccff; cursor: hand; cursor: pointer; display:inline-block; margin-right:1em;}
-#sections .reordercontrols .returntocourse input{background-color: #cccccc; cursor: hand; cursor: pointer; display:inline-block; margin-right:1em}
+#sections .reordercontrols .returntocourse input{background-color: #cccccc; cursor: hand; cursor: pointer; display:inline-block; margin-right:1em;}
