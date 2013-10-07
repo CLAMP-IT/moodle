@@ -142,7 +142,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
 
         if ($this->config->multiauth) {
             $authCAS = optional_param('authCAS', '', PARAM_RAW);
-            if ($authCAS == 'NOCAS') {
+            if ($authCAS == 'NOCAS' or $_SERVER['HTTP_USER_AGENT'] == '') {
                 return;
             }
 
