@@ -57,7 +57,7 @@
     } else {
 
         // Generate a signed url and use it to check for 404 (mapping not configured)
-        $signedresponse = $essapi->generate_sso_url($USER->username, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, false);
+        $signedresponse = $essapi->generate_sso_url($USER, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, false);
 
         if ($signedresponse['success']) {
             // we want to test for a 404
@@ -89,7 +89,7 @@
 
     if ($error_message == "") {
         // all good - but we already used the request - need to sign again (generate a new nonce)
-        $signedresponse = $essapi->generate_sso_url($USER->username, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, true);
+        $signedresponse = $essapi->generate_sso_url($USER, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, true);
         header("Location:" . $signedresponse['url']);
     } else {
         print_error($error_message, 'block_echo360_echocenter', '', $error_detail);
