@@ -38,21 +38,19 @@ class echosystem_remote_api {
     private $baseurl = 'https://localhost:8443/';
     private $consumerkey = 'moodle';
     private $consumersecret = '';
-    private $realm = '';
 
     private $sessionkey = '';
 
     /**
-     * Save the baseurl, consumer key, consumer secret and realm.
+     * Save the baseurl, consumer key, consumer secret.
      *
      * If the base url does not end in '/' add one.
      *
      * @param string - baseurl
      * @param string - consumer key
      * @param string - consumer secret
-     * @param string - realm
      */
-    function __construct($baseurl, $consumerkey, $consumersecret, $realm) {
+    function __construct($baseurl, $consumerkey, $consumersecret) {
         if ($baseurl != null) {
             $this->baseurl = $baseurl;
             if (!$this->baseurl[strlen($this->baseurl) -1] === '/') {
@@ -64,9 +62,6 @@ class echosystem_remote_api {
         }
         if ($consumersecret != null) {
             $this->consumersecret = trim($consumersecret);
-        }
-        if ($realm != null) {
-            $this->realm = $realm;
         }
     }
 
@@ -134,6 +129,7 @@ class echosystem_remote_api {
             }
 
             $result = curl_exec($curl);
+//print_object($result);
             $error = curl_error($curl);
             if ($error !== '') {
                 $headers['error'] = $error;
@@ -142,11 +138,11 @@ class echosystem_remote_api {
 
             // add new entry to headers array
             $headers[] = array();
-            $headers[count($headers) - 1]['http'] = strtok($result, "\r\n");
-
-            $header = strtok("\r\n");
-            while ($header !== false) {
-                $split = explode(": ", $header, 2);
+			$arrayOfStuff = explode("\n", $result);
+			//print_object($arrayOfStuff);
+            $headers[count($headers) - 1]['http'] = strtok($result, "\r\n");		
+			foreach($arrayOfStuff as $header) {
+			    $split = explode(": ", $header, 2);
                 if (count($split) > 1) {
                     $headers[count($headers) - 1][$split[0]] = $split[1];
                     // get the next url
@@ -157,10 +153,19 @@ class echosystem_remote_api {
                     if ($split[0] === "Set-Cookie") {
                         $cookie = strtok($split[1], ";");
                     }
-                }
-                $header = strtok("\r\n");
-            }
-
+                } else { //not an actual header, lets try something else
+					$found404Text = strstr($split[0], "Error 404");
+					if (strlen($found404Text) > 0) {
+	                    $headers[count($headers) - 1]['http'] = "HTTP/1.1 404 Not Found";
+						continue;
+					}
+					$successFull = strstr($split[0], "/ess/client/section/");
+					if (strlen($successFull) > 0) {
+					    $headers[count($headers) - 1]['http'] = "HTTP/1.1 200 Success";
+	               		continue;
+					}
+				} 	
+			}
             $redirects -= 1;
         }
         return $headers;
@@ -171,21 +176,33 @@ class echosystem_remote_api {
      * Generate a SSO URL for this course.
      * The response is the same as sign_oauth_request above.
      *
-     * @param string - username
+     * @param Object - global $USER object
      * @param boolean - is an instructor
      * @param string - the course id (whichever field is configured)
      * @param boolean - show a heading with branding for the course (false for iframe)
      * @return array
      */
-    public function generate_sso_url($username, $is_instructor, $externalid, $show_heading) {
+    public function generate_sso_url($userObject, $is_instructor, $externalid, $show_heading) {
         // this is the url for seamless login with a redirect to the echocenter course page
-        $echocenterurl = $this->baseurl . 'ess/portal/section/' . urlencode($externalid) . '?showheading=' . ($show_heading?"true":"false");
+        $username=$userObject->username;
+        $echocenterurl = $this->baseurl . 'ess/portal/section/' . urlencode(trim($externalid)) . '?showheading=' . ($show_heading?"true":"false");
+        // $echocenterurl .= "&firstname=" . urlencode(trim($userObject->firstname));
+        // $echocenterurl .= "&lastname=" . urlencode(trim($userObject->lastname));
+        // $echocenterurl .= "&email=" . urlencode(trim($userObject->email));
+        // $echocenterurl .= "&instructor=" . urlencode(($is_instructor?'true':'false'));
+        $echocenterurl .= "&firstname=" . trim($userObject->firstname);
+        $echocenterurl .= "&lastname=" . trim($userObject->lastname);
+        $echocenterurl .= "&email=" . trim($userObject->email);
+        $echocenterurl .= "&instructor=" . ($is_instructor?'true':'false');
+
         $apiurl = $this->baseurl . 'ess/personapi/v1/' . urlencode($username) . '/session';
-        $apiparams = array('redirecturl' => $echocenterurl,
-                            'instructor' => ($is_instructor?'true':'false'),
-                            'security-realm' => $this->realm);
+        //$apiurl = $this->baseurl;
+        $apiparams = array('redirecturl' => $echocenterurl);
 
         //  oauth
+// print_object($apiurl);
+// print_object($apiparams);
+// print_object($userObject);
         $urlresponse = $this->sign_oauth_request($apiurl, $apiparams, 'GET');
         
         return $urlresponse; 
