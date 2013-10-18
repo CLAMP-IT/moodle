@@ -471,12 +471,13 @@ abstract class moodleform_mod extends moodleform {
         if ($this->_features->groupings or $this->_features->groupmembersonly) {
             //groupings selector - used for normal grouping mode or also when restricting access with groupmembersonly
             $options = array();
-            $options[0] = get_string('none');
             if ($groupings = $DB->get_records('groupings', array('courseid'=>$COURSE->id))) {
                 foreach ($groupings as $grouping) {
                     $options[$grouping->id] = format_string($grouping->name);
                 }
             }
+            asort($options); // Sort the values but leave the keys intact
+            $options = array(get_string('none')) + $options; // Add 'None' to start of array with key=0
             $mform->addElement('select', 'groupingid', get_string('grouping', 'group'), $options);
             $mform->addHelpButton('groupingid', 'grouping', 'group');
             $mform->setAdvanced('groupingid');
