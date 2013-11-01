@@ -476,7 +476,7 @@ abstract class moodleform_mod extends moodleform {
                     $options[$grouping->id] = format_string($grouping->name);
                 }
             }
-            asort($options); // Sort the values but leave the keys intact
+            natcasesort($options); // Sort the values but leave the keys intact
             $options = array(get_string('none')) + $options; // Add 'None' to start of array with key=0
             $mform->addElement('select', 'groupingid', get_string('grouping', 'group'), $options);
             $mform->addHelpButton('groupingid', 'grouping', 'group');
