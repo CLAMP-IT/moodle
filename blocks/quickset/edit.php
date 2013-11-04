@@ -159,6 +159,9 @@ if (optional_param('savechanges', false, PARAM_BOOL) && confirm_sesskey()) {
             // Make sure two sections don't overwrite each other. If we get a second
             // section with the same position, shift the second one along to the next gap.
             $value = clean_param($value, PARAM_INTEGER);
+            while (array_key_exists($value,$sections)) {
+                $value++;
+            }
             $sections[$value] = $sectionid;
         } else if (preg_match('!^n(pg)?([0-9]+)$!', $key, $namematches)) {
             // Parse input for ordering info.
@@ -166,7 +169,7 @@ if (optional_param('savechanges', false, PARAM_BOOL) && confirm_sesskey()) {
             // Make sure two sections don't overwrite each other. If we get a second
             // section with the same position, shift the second one along to the next gap.
             $value = clean_param($value, PARAM_TEXT);
-            $sectionnames[$value] = $sectionname;
+            $sectionnames[$sectionname] = $value;
         }
     }
 
@@ -185,7 +188,7 @@ if (optional_param('savechanges', false, PARAM_BOOL) && confirm_sesskey()) {
     }
     // If ordering info was given, reorder the sections.
     if ($sectionnames) {
-        foreach ($sectionnames as $sectionname => $sectionid) {
+        foreach ($sectionnames as $sectionid => $sectionname) {
             if ($sectionname !== "Untitled") {
                 $DB->set_field('course_sections', 'name', $sectionname, array('course' => $courseid, 'id' => $sectionid));
             }
