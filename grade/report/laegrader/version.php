@@ -25,6 +25,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2013090600;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->version   = 2013110601;        // The current plugin version (Date: YYYYMMDDXX)
 $plugin->requires  = 2012062500;        // Requires this Moodle version
 $plugin->component = 'gradereport_laegrader'; // Full name of the plugin (used for diagnostics)

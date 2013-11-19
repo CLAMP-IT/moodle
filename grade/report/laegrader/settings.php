@@ -61,10 +61,10 @@ if ($ADMIN->fulltree) {
 
     $settings->add(new admin_setting_configcheckbox('grade_report_showanalysisicon', get_string('showanalysisicon', 'core_grades'),
                                                 get_string('showanalysisicon_desc', 'core_grades'), 1));
-
+/*
     $settings->add(new admin_setting_configcheckbox('grade_report_showzerofill', get_string('showzerofill', 'gradereport_laegrader'),
                                                 '', 1));
-
+*/
     $settings->add(new admin_setting_configcheckbox('grade_report_showclearoverrides', get_string('showclearoverrides', 'gradereport_laegrader'),
                                                 '', 1));
 
@@ -111,4 +111,41 @@ if ($ADMIN->fulltree) {
                                                      '5' => '5')));
 	$settings->add(new admin_setting_configcheckbox('grade_report_laegrader_accuratetotals', get_string('accuratetotals', 'gradereport_laegrader'), get_string('configaccuratetotals', 'gradereport_laegrader'), 2, PARAM_INT));
                                               
+    $settings->add(new admin_setting_configcheckbox('grade_report_laegrader_extrafields', get_string('laegrader_extrafields', 'gradereport_laegrader'), get_string('laegrader_extrafields_help', 'gradereport_laegrader'), 0));
+	$options = array(
+			GRADE_REPORT_PREFERENCE_INHERIT,
+			0 => '300',
+			1 => '340',
+			2 => '380',
+			3 => '420',
+			4 => '460',
+			5 => '500',
+			6 => '540',
+			7 => '580',
+			8 => '620',
+			9 => '660',
+			10 => '700',
+			11 => '740',
+			12 => '780',
+			13 => '820',
+			14 => '860',
+			15 => '900');
+    $settings->add(new admin_setting_configselect('grade_report_laegrader_reportheight', get_string('laegrader_reportheight', 'gradereport_laegrader'), null, 8, $options));
+	$options = array(
+			GRADE_REPORT_PREFERENCE_INHERIT => $strinherit,
+			0 => '25',
+			1 => '30',
+			2 => '35',
+			3 => '40',
+			4 => '45',
+			5 => '50',
+			6 => '55',
+			7 => '60',
+			8 => '65',
+			9 => '70',
+			10 => '75',
+			11 => '80',
+			12 => '85',
+			13 => '90');
+    $settings->add(new admin_setting_configselect('grade_report_laegrader_columnwidth', get_string('laegrader_columnwidth', 'gradereport_laegrader'), null, 0, $options));
 }

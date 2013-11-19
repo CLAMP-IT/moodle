@@ -1,102 +1,172 @@
-/*
-table#lae-user-grades th.cell { 
-	width: 30em; 
-} 
-*/
-.laegradestable {
-	font-size: 1em;
+/* COVERS MULTIPLE ZONES */
+body#page-grade-report-laegrader-index {
 	line-height: 1.2em;
-	vertical-align: middle;
-	margin: 0px;
-	margin: 0px;
-	padding: 0px;
+}
+
+.laegradestable {
+	font-size:10px;
+	width:auto;
+	background-color:transparent;
+	border-style:solid;
+	border-width:1px;
+	border-color:#CECECE;
+}
+
+.laegradestable td,.laegradestable th {
+	border-color:#CECECE;
+}
+/*
+.laegradestable th {
+	padding:0px 10px;
+}
+*/
+.laegradestable h1 {
+text-align:center;
+clear:both;
+}
+
+.laegradestable cell {
+	padding-left:5px;
+	padding-right:5px;
+	vertical-align:middle;
+	line-height: 0;
+}
+
+.laegradestable .gradestable th.user,
+.laegradestable .gradestable th.range,
+.laegradestable .flexible th,
+.laegradestable .flexible td,
+.laegradestable .flexible th a,
+.laegradestable .flexible td a,
+.laegradestable .gradestable th.range,
+.laegradestable td {
+	white-space:nowrap;
+}
+
+/***** LEFT ROWS *****/
+.laegradestable th#studentheader {
+	width: 194px;
+	min-width: 194px;
+	text-align: center;
+}
+.laegradestable th#studentheader,
+.laegradestable th#userreport {
+	background-color: #ccffcc;
+}
+
+.laegradestable th#userreport {
+	min-width: 20px;
+	max-width: 20px;
+}
+
+.laegradestable td.userreport {
 	text-align: center;
 }
 
-.grade-report-laegrader table#lae-user-grades {
-/*	padding:0;
-	margin:0;*/
-    font-style:bold;
-/*    border:1px solid #cccccc;
-    border-collapse:collapse;*/
-}
-
-.laegradestable .cell {
-    border:1px solid #cccccc;
-    border-collapse:separate;
-    min-width: 15em;
-    height: 56px;
-}
-
-.laegradestable th.user img {
-	width:35px;
-	height:35px;
-}
-
 .laegradestable th.user {
+	width: 154px;
+	min-width: 154px;
 	text-align:left;
-	line-height: 0px;
+	border-style:solid;
+	border-width:0 0 1px;
 }
 
 .laegradestable th.user a {
-	margin-left:5px;
+	font-size: 1em;
+	line-height: 3em;
+    vertical-align:bottom;
+    margin-right: 5px;
 }
 
-.laegradestable th.useremail {
-	min-width:160px;
-	height:20px;
-	vertical-align:middle;
+.laegradestable th.userfield {
+border-style:solid;
+border-width:0 0 1px 1px;
 }
 
-.laegradestable th#studentheader {
-	vertical-align:middle;
-/*	line-height: 70%; */
-	min-width:15em;
-}
-/*
-.laegradestable a.action-icon {
-	left-margin: 5px;
-}
-*/
-
-.laegradestable img.iconsmall,
-.laegradestable img.smallicon {
-	margin-left: 5px;
-	vertical-align:middle;
-	width: 10px;
-	height: 10px;
-	display:inline;
+.laegradestable table th.user,
+.laegradestable table td.userfield {
+    text-align:left;
+    vertical-align:middle;
 }
 
-path.grade-report-laegrader table#lae-user-grades th.range, .grade-report-laegrader table#lae-user-grades td.grade {
-    text-align:center;
-    background-color: #F3EAD8
-}	
-/*
-td.controls.action-icon {
-    margin:2px;
-}	
-*/
-
-.laegradestable td.range {
-	text-align:center;
-    font-style:bold;
+.laegradestable .userpic {
+display:inline;
+margin-right:10px;
 }
 
-/*
-.laegradestable td.header, td.controls {
-	text-align:right;
-    font-style:bold;
+.laegradestable th.user img.userpicture {
+border:3px double #cecece;
+vertical-align:top;
+width:2.7em;
+height:2.7em;
 }
-*/
 
-.laegradestable td.header, 
-.laegradestable th.range,
-.laegradestable th.controls {
-	text-align: right;
-    font-style:bold;
-    height: 1.2em;
-    background-color: #F3EAD8;
+.laegradestable th.user img {
+width:20px;
+height:20px;
+}
+
+.laegradestable td.userfield,
+.laegradestable th,
+.laegradestable div.gradeparent,
+.laegradestable .ie6 form,
+.laegradestable td.ajax {
+text-align:left;
+}
+
+.laegradestable .heading_name_row th {
+white-space:nowrap;
+width:2000px;
+}
+
+/*MDL-21088 - IE 7 ignores nowraps on tds or ths so we put a span within it with a nowrap on it*/
+.laegradestable heading_name_row th span {
+    white-space:nowrap;
+}
+
+.laegradestable .usersuspended a:link,
+.laegradestable .usersuspended a:visited {
+    color: #666;
+}
+
+.laegradestable table th.usersuspended img.usersuspendedicon {
+    vertical-align: text-bottom;
+    margin-left: .45em;
+}
+
+.laegradestable th img {
+    vertical-align: text-bottom;
+    padding-bottom: 0;
+}
+
+.laegradestable table tr.odd th.header {
+background-color:#efefef;
+background-image:none;
+border-width:0 0 1px;
+}
+
+.laegradestable table tr.heading th.header {
+border-top:1px solid #cecece;
+}
+
+/***** RIGHT ROWS *****/
+/***** CATEGORYITEMS, COURSEITEMS and ITEMS HEADERS *****/
+
+.laegradestable th.item ,
+.laegradestable th.categoryitem,
+.laegradestable th.courseitem,
+.laegradestable th.useremail,
+.laegradestable th.useridnumber {
+vertical-align:bottom;
+border-style:solid;
+border-width:1px;
+min-width: 16em;
+max-width: 16em;
+line-height: 1.2em;
+text-align: center;
+padding-bottom: 4px;
+padding-top: 4px;
+vertical-align:bottom;
 }
 
 .catblue {
@@ -107,115 +177,368 @@ td.controls.action-icon {
 	background-color:#D0DBF3;
 }
 
-.laegradestable cell#userreport {
-/*	border:0px;*/
-/*	vertical-align:middle;*/
-/*    border-collapse:collapse;*/
+.laegradestable .catlevel2 {
+background-color:#f9f9f9;
 }
 
-.laegradestable th#userreport, 
-.laegradestable td.userreport, 
-.laegradestable cell#userreport{
-	min-width:13px;
-	max-width: 1.7em;
-	min-height:1em; 
+.laegradestable td.cat,
+.laegradestable td.course {
+font-weight:700;
 }
 
-.laegradestable img.usergradesicon {
-	height: 1em;
-}
-
-table#lae-user-grades .quickfeedback {
-	border:1px dashed;
-	margin-left: 5px;
-}
-
-.path-grade-report-laegrader div.submit {
-	text-align:center;
-}
-
-/*MDL-21088 - IE 7 ignores nowraps on tds or ths so we put a span within it with a nowrap on it*/
-.heading_name_row th span {
-	white-space:nowrap;
-}
-/*
-.laegradestable tr.heading th.categoryitem, 
-.laegradestable tr.heading th.courseitem, 
-.laegradestable tr.heading th.item {
-	border: 1px solid #cccccc;
-	vertical-align:bottom;
-	min-width:130px;
-}
-*/
-/*
-.laegradestable th.highlightable {
-	vertical-align:bottom;
-	min-width:130px;
-}
-*/
-
-table#lae-user-grades.laegradestable tr.avg td.cell,
-.laegradestable div.rangevalues {
-	font-weight:bold;
-    background-color: #F3EAD8;
-}
-
-.laegradestable td.avg,
+/***** AVERAGE, RANGE and CONTROLS HEADER CELLS *****/
+.laegradestable tr.avg,
+.laegradestable tr.controls,
 .laegradestable td.controls,
-.laegradestable td.range {
-	text-align:center;
-    font-style:bold;
-    background-color: #F3EAD8;
-    height: 1.2em;
+.laegradestable th.controls,
+.laegradestable tr.groupavg,
+.laegradestable tr.range,
+.laegradestable th.range,
+.laegradestable td.range,
+.laegradestable tr.heading th.range {
+height:2em!important;
+white-space:nowrap;
 }
 
-.laegradestable td.userreport {
-/*	border:0px;
-	border-top:1px solid #cccccc;
-	border-bottom:1px solid #cccccc;*/
-	vertical-align:middle;
+.laegradestable table tr.avg td.cell,
+.laegradestable td.controls,
+.laegradestable td.range,
+.laegradestable th.controls,
+.laegradestable th.range,
+.laegradestable table tr.avg,
+.laegradestable table tr.avg td,
+.laegradestable table tr.avg th {
+background-color:#f3ead8;
+text-align: center;
+font-weight: bold;
+min-width: 16em;
+maxd-width:16em;
 }
 
-.laegradestable tr.odd td.cell, 
-.laegradestable tr.odd th.cell {
-	background-color:#dfdfdf;
-/*	white-space:nowrap;*/
+.laegradestable table tr.avg,
+.laegradestable table tr.groupavg td,
+.laegradestable table tr.avg td,
+.laegradestable table tr.groupavg th,
+.laegradestable table tr.avg th,
+.laegradestable table tr.controls_row,
+.laegradestable table tr.controls_row th,
+.laegradestable table tr.range_row,
+.laegradestable table tr.range_row th,
+div.right_scroller tr {
+height:2em;
 }
 
-.laegradestable th.item.cell.hidden, 
-.laegradestable td.cell.grade.hidden,
-.laegradestable th.item.cell.gray, 
-.laegradestable td.cell.grade.gray {
-	background-color:#cfcfcf;
+.laegradestable th.controls,
+.laegradestable th.range {
+text-align:right;
+border-style:solid;
+border-width:1px;
+min-width: 16em;
+max-width: 16em;
+}
+.laegradestable div.rangevalues {
+	min-width: 8em;
+	max-width:8em;
+	margin-left: auto;
+	margin-right: auto;
 }
 
-table#lae-user-grades tr td.overridden {
-	background-color:#F3E4C0;
+.laegradestable tr.groupavg td.cell {
+background-color:#efffef;
+font-weight:700;
+color:#006400;
 }
 
-table#lae-user-grades tr.odd td.overridden {
-	background-color:#EFD9A4;
+.laegradestable tr.avg td.cell {
+background-color:#efefff;
+font-weight:700;
+color:#00008B;
 }
 
-.laegradestable select {
-    height: 2.1em;
-    line-height: 2.1em;
-    font-size: .9em;
-    margin-bottom: 0px;
-/*    padding: 0px 0px;*/
+.laegradestable div.grade_icons {
+	line-height: 0;
+	min-width: 10em;
+	max-width: 10em;
+	margin-left: auto;
+	margin-right: auto;
 }
 
-table#lae-user-grades input[type="text"] {
-	font-size: 1em;
+.laegradestable .grade_icons { 
+	margin-bottom: .3em;
+	text-align: center;
+	margin-top: .3em;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/* GRADE CELLS */
+span.gradevalue {
+	min-width: 16em;
+	max-width: 16em;
+	text-align: center;
+}
+
+.laegradestable td input.text {
+	border:1px solid #666;
+	width: 3.5em;
+	margin: 0;
 	height: 1.2em;
-	margin-bottom: 0px;
-/*    padding: 0px;*/
-    vertical-align: bottom;
-    width: 6em;
-    line-height: 1.2em;
-    text-align: center;
+	padding: 0;
+	margin-left: 10px;
+	float: left;
 }
 
-/***
-*** added the following for the alignment issues
-***/
+.laegradestable .quickfeedback {
+border:1px dashed #000;
+margin-left: 10px;
+margin-bottom: 0px;
+width: 3.5em;
+height: 1.2em;
+padding: 0;
+float: left;
+}
+
+.laegradestable tr.odd td.cell,
+.laegradestable tr.odd th.cell {
+background-color:#efefef;
+white-space:nowrap;
+}
+
+.laegradestable span.gradepass {
+color:#298721;
+}
+
+.laegradestable span.gradefail {
+color:#890d0d;
+}
+
+.laegradestable .gradeweight {
+color:#461d7c;
+font-weight:700;
+}
+
+.laegradestable td select {
+font-size:100%;
+padding:0;
+}
+
+.laegradestable tr td.overridden {background-color:#F3E4C0;}
+.laegradestable tr.odd td.overridden {background-color:#EFD9A4;}
+
+.laegradestable tr td.ajaxoverridden {background-color:#FFE3A0;}
+.laegradestable tr.odd td.ajaxoverridden {background-color:#FFDA83;}
+
+.laegradestable tr.even td.excluded {
+background-color:#EABFFF;
+}
+
+.laegradestable tr.odd td.excluded {
+background-color:#E5AFFF;
+}
+
+.laegradestable form td.excluded {
+color:red;
+}
+
+.laegradestable tr.controls td.gray,
+.laegradestable tr.heading th.gray,
+.laegradestable tr.range td.gray,
+.laegradestable tr.avg td.gray,
+.laegradestable tr.even td.gray,
+.laegradestable tr.odd td.gray {
+background-color:#dddddd;
+}
+
+.laegradestable .excludedfloater {
+font-weight:700;
+color:red;
+font-size:9px;
+float:left;
+}
+
+.laegradestable td {
+text-align:right;
+border-style:solid;
+border-width:0 1px 1px 0;
+}
+
+.laegradestable td.grade {
+	text-align: center;
+}
+
+.laegradestable td.average,
+.laegradestable td.controls,
+.laegradestable td.range,
+.laegradestable td.grade {
+	min-width: 16em;
+	max-width: 16em;
+/*	text-align: center;*/
+}
+
+/**** SUBMIT *****/
+.laegradestable input.submit {
+margin: auto;
+align: center;
+clear: both;
+}
+
+.laegradestable div.submit {
+margin-top:4px;
+text-align:center;
+clear: both;
+}
+
+/***** QUICK EDIT, WE DON'T HAVE *****/
+.laegradestable table#quick_edit td.fullname {
+border-left:0;
+padding-left:5px;
+}
+
+.laegradestable table#quick_edit td.picture {
+border-right:0;
+}
+
+.laegradestable table#quick_edit td.finalgrade input {
+width:3em;
+}
+
+.laegradestable a.quickedit {
+line-height:1em;
+display:block;
+float:right;
+clear:none;
+font-size:9px;
+background-color:transparent;
+margin:.1em 0 0;
+}
+
+.laegradestable a.quickedit2 {
+display:block;
+float:right;
+clear:none;
+background-color:transparent;
+margin:1.3em 0 0;
+}
+
+.laegradestable table#quick_edit {
+border:1px solid #cecece;
+margin:0 auto;
+}
+
+.laegradestable table#quick_edit td {
+vertical-align:middle;
+border:1px solid #cecece;
+text-align:left;
+margin:0;
+padding:5px;
+}
+
+.laegradestable table#quick_edit td img {
+border:3px double #cecece;
+vertical-align:middle;
+padding:0;
+}
+
+
+/***** RTL *****/
+.dir-rtl .laegradestable td.userfield,
+.dir-rtl .laegradestable th,
+.laegradestable.dir-rtl  div.gradeparent,
+.laegradestable.dir-rtl  .ie6 form,
+.dir-rtl .laegradestable td.ajax {
+text-align:right;
+}
+
+.dir-rtl .laegradestable th img.sorticon { margin-left: 0; margin-right: .3em; }
+
+.dir-rtl .laegradestable .quickfeedback { margin-left: 0; margin-right: 10px;}
+
+
+/***** DON'T KNOW WHAT THESE DO *****/
+.laegradestable .gradeparent {
+    overflow:auto;
+}
+
+.laegradestable input.center {
+margin:10px auto 0;
+}
+
+.laegradestable .lefttbody {
+width:auto;
+vertical-align:middle;
+}
+
+.laegradestable th.category.header.catlevel1 {
+vertical-align:top;
+border-style:solid;
+border-width:1px 1px 0 0;
+}
+
+.laegradestable #siteconfiglink {
+text-align:right;
+}
+
+.laegradestable .datesubmitted {
+font-size:.7em;
+}
+
+.laegradestable span.inclusion-links {
+margin:0 5px 0 10px;
+}
+
+.laegradestable table td.topleft {
+border-bottom:0;
+}
+
+.laegradestable td.topleft {
+background-color:#fff;
+}
+
+div.gradertoggle {
+display:inline;
+margin-left:20px;
+}
+.laegradestable table#participants th {
+vertical-align:top;
+width:auto;
+}
+
+.laegradestable td.vmarked,
+.laegradestable tr.odd td.vmarked,
+.laegradestable td.vmarked,
+.laegradestable tr.odd td.vmarked,
+.laegradestable tr.even td.vmarked {
+background-color:#fc3;
+}
+
+.laegradestable td.hmarked,
+.laegradestable tr.odd td.hmarked,
+.laegradestable td.hmarked,
+.laegradestable tr.odd td.hmarked,
+.laegradestable tr.even td.hmarked {
+background-color:#ff9;
+}
+
+.laegradestable td.hmarked.vmarked,
+.laegradestable tr.odd td.hmarked.vmarked,
+.laegradestable td.hmarked.vmarked,
+.laegradestable tr.even td.hmarked.vmarked,
+.laegradestable tr.odd td.hmarked.vmarked {
+background-color:#fc9;
+}
+
+.laegradestable th.category {
+vertical-align:top;
+border-style:solid;
+border-width:1px 1px 0;
+}
+
+/* RTL support (Basic)
+   TODO: Switch activities header and grades to RTL too
+*/
+
+.dir-rtl .laegradestable .cell {height: 10px;}
+.dir-rtl .laegradestable .userpicture {margin: 0; border-radius:10px;}
+.dir-rtl#page-grade-report-laegrader-index .gradeparent {direction: ltr;}
+.laegradestable th.user {text-align: right;direction: rtl;}
+.dir-rtl [id="lae-user-grades:scroller:fxcol"] {float:right !important;}

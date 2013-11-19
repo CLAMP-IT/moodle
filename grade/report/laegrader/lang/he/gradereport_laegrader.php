@@ -23,23 +23,23 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['accuratetotals'] = 'Accurate POINT TOTALS';
 $string['ajaxclicktoclose'] = 'Click this box to remove it';
 $string['ajaxerror'] = 'Error';
 $string['ajaxfailedupdate'] = 'Unable to update [1] for [2]';
 $string['ajaxfieldchanged'] = 'The field you are currently editing has changed, would you like to use the updated value?';
 $string['ajaxchoosescale'] = 'Choose';
-$string['changedisplay'] = 'Toggle display of this item between Percent, Real, Letter';
-$string['clearoverrides'] = 'Clear all overridden conditions in this column';
-$string['configaccuratetotals'] = 'Categories and course POINT TOTALS computed accurately';
 $string['grader:manage'] = 'Manage the grader report';
-$string['laegrader_columnwidth'] = 'Number of characters wide before grade titles wrap';
-$string['laegrader_extrafields'] = 'Show extra user fields';
-$string['laegrader_extrafields_help'] = 'Show extra user fields (such as user email or user idnumber -- as set by a site administrator in user policies) in the grader report';
-$string['laegrader_reportheight'] = 'Height (in pixels) of scrollable portion of LAE grader report';
 $string['laegrader:view'] = 'View the LAE grader report';
-$string['pluginname'] = 'LAE Grader Report';
-$string['preferences'] = 'LAE Grader report preferences';
-$string['showclearoverrides'] = 'Show icon that allows clearing overridden conditions in a column';
-$string['showzerofill'] = 'Show icon that allows filling of all empty grades in this column with zeroes';
+$string['pluginname'] = 'דוח ציונים (נגלל)';
+$string['laegrader:view'] = 'View the LAE grader report';
+$string['gradeeditalways'] = 'Editing ALWAYS on for laegrader';
+$string['configgradeeditalways'] = 'Configure Always-on Editing for laegrader';
+$string['laegraderreportheight'] = 'Height (in pixels) of scrollable portion of LAE grader report';
+$string['accuratetotals'] = 'Accurate POINT TOTALS';
+$string['configaccuratetotals'] = 'Categories and course POINT TOTALS computed accurately';
 $string['zerofill'] = 'Fill empty grades in this column with zeroes (changes not automatically saved)';
+$string['preferences'] = 'מאפייני דוח ציונים (נגלל)';
+$string['showzerofill'] = 'Show icon that allows filling of all empty grades in this column with zeroes';
+$string['coursetotal'] = 'ציון סופי';
+$string['categorytotal'] = 'סהכ בקטגוריה<br />';
+$string['youcansearch'] = 'תצוגת משתמשים אשר "השם הפרטי" או "שם המשפחה" או "תעודת־הזהות" מכילים את התווים';
