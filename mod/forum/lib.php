@@ -7111,10 +7111,12 @@ function forum_check_throttling($forum, $cm = null) {
     // Get the number of posts in the last period we care about.
     $timenow = time();
     $timeafter = $timenow - $forum->blockperiod;
+    // CLAMP-538 Check anonymous postings for hiddenid when calculating posts in throttling window
     $numposts = $DB->count_records_sql('SELECT COUNT(p.id) FROM {forum_posts} p
                                         JOIN {forum_discussions} d
                                         ON p.discussion = d.id WHERE d.forum = ?
-                                        AND p.userid = ? AND p.created > ?', array($forum->id, $USER->id, $timeafter));
+                                        AND (p.userid = ? OR p.hiddenuserid = ?) AND p.created > ?',
+                                        array($forum->id, $USER->id, $USER->id, $timeafter));
 
     $a = new stdClass();
     $a->blockafter = $forum->blockafter;
