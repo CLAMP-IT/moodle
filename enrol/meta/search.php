@@ -28,11 +28,11 @@ echo $OUTPUT->header();
 require_login();
 require_sesskey();
 
-$id         = required_param('id', PARAM_INT);// course id
-$searchtext = required_param('searchtext', PARAM_RAW);// Get the search parameter.
+$id         = required_param('id', PARAM_INT); // Course id.
+$searchtext = required_param('searchtext', PARAM_RAW); // Get the search parameter.
 
-$course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
+$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 
 $result = enrol_meta_course_search($course->id, $searchtext, true);
 
-echo json_encode(array('result'=>$result));
+echo json_encode(array('result' => $result));

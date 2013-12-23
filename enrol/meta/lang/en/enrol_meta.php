@@ -35,7 +35,6 @@ $string['pluginname'] = 'Course meta link';
 $string['pluginname_desc'] = 'Course meta link enrolment plugin synchronises enrolments and roles in two different courses.';
 $string['syncall'] = 'Synchronise all enrolled users';
 $string['syncall_desc'] = 'If enabled all enrolled users are synchronised even if they have no role in parent course, if disabled only users that have at least one synchronised role are enrolled in child course.';
-$string['searchanywhere'] = 'Search any where';
 $string['toomanycoursesmatchsearch'] = 'Too many courses ({$a->matches}) match \'{$a->query}\'';
 $string['toomanycoursestoshow'] = 'Too many courses ({$a}) to show';
 $string['coursesmatchingsearch'] = 'Found courses ({$a}) matching search';

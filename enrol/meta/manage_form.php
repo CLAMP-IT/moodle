@@ -32,33 +32,30 @@ class enrol_meta_manage_form extends moodleform {
         $mform  = $this->_form;
         $course = $this->_customdata['course'];
         $this->course = $course;
-        
+
         $mform->disable_form_change_checker();
-        
-        $mform->addElement('header','general', get_string('pluginname', 'enrol_meta'));
-      
+
+        $mform->addElement('header', 'general', get_string('pluginname', 'enrol_meta'));
+
         $currentlylinked = enrol_meta_linked_courses($course->id);
-        $listdata = array($currentlylinked->label=>$currentlylinked->display);
-        
-        $mform->addElement('selectgroups', 'remove', get_string('linkedcourses', 'enrol_meta'), $listdata, array('size'=>10, 'multiple'=>true));
+        $listdata = array($currentlylinked->label => $currentlylinked->display);
+
+        $mform->addElement('selectgroups', 'remove', get_string('linkedcourses', 'enrol_meta'), $listdata, array('size' => 10, 'multiple' => true));
         $mform->addElement('submit', 'removebutton', get_string('unlinkselected', 'enrol_meta'));
-        
-        $mform->addElement('html', html_writer::empty_tag('br'));
 
         $searchselectname = 'link';
         $searchtext = optional_param($searchselectname.'_searchtext', '', PARAM_TEXT);
-        
+
         $result = enrol_meta_course_search($course->id, $searchtext, true);
         $display = array();
-        foreach($result->results->display as $item) {
+        foreach ($result->results->display as $item) {
             $display[$item->courseid] = $item->name;
         }
-        $listdata = array($result->results->label=>$display);
-        //$listdata = array($result->results->label=>$result->results->display);
+        $listdata = array($result->results->label => $display);
 
-        //$mform->addElement('selectgroups', $searchselectname, '', null, array('size'=>10, 'multiple'=>true));
-        $mform->addElement('selectgroups', $searchselectname, '', $listdata, array('size'=>10, 'multiple'=>true));
-        
+        $mform->addElement('selectgroups', $searchselectname, '', $listdata, array('size' => 10, 'multiple' => true));
+        $mform->addElement('submit', $searchselectname.'_submitbutton', get_string('linkselected', 'enrol_meta'));
+
         $searchgroup = array();
         $searchgroup[] = &$mform->createElement('text', $searchselectname.'_searchtext');
         $mform->setType($searchselectname.'_searchtext', PARAM_TEXT);
@@ -66,25 +63,19 @@ class enrol_meta_manage_form extends moodleform {
         $mform->registerNoSubmitButton($searchselectname.'_searchbutton');
         $searchgroup[] = &$mform->createElement('submit', $searchselectname.'_clearbutton', get_string('clear'));
         $mform->registerNoSubmitButton($searchselectname.'_clearbutton');
-        $searchgroup[] = &$mform->createElement('submit', $searchselectname.'_submitbutton', get_string('linkselected', 'enrol_meta'));
         $mform->addGroup($searchgroup, 'searchgroup', get_string('search') , array(''), false);
-        
-        $mform->addElement('checkbox', 'courseselector_searchanywhere', get_string('searchanywhere', 'enrol_meta'));
-        
+
+
         $mform->addElement('hidden', 'id', null);
         $mform->setType('id', PARAM_INT);
-        
-        $cancellink = html_writer::link(new moodle_url('/enrol/instances.php', array('id'=>$course->id)), get_string('cancel'));
+
+        $cancellink = html_writer::link(new moodle_url('/enrol/instances.php', array('id' => $course->id)), get_string('cancel'));
         $mform->addElement('static', 'cancel', $cancellink);
         $mform->closeHeaderBefore('cancel');
-        
-        $this->set_data(array('id'=>$course->id));
-        user_preference_allow_ajax_update('courseselector_searchanywhere', 'bool');
-        $searchanywhere = get_user_preferences('courseselector_searchanywhere', false);
-        $this->set_data(array('courseselector_searchanywhere'=>$searchanywhere));
-        
+
+        $this->set_data(array('id' => $course->id));
+
         $PAGE->requires->js_init_call('M.core_enrol.init_course_selector', array($searchselectname, $course->id), true, self::$jsmodule);
-        $PAGE->requires->js_init_call('M.core_enrol.init_course_selector_options_tracker', array(), true, self::$jsmodule);
     }
 
     function validation($data, $files) {
@@ -92,7 +83,5 @@ class enrol_meta_manage_form extends moodleform {
         $errors = array();
         return $errors;
     }
-    
-}
 
-?>
+}
