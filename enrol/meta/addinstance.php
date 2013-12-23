@@ -157,7 +157,7 @@ if (empty($searchcourses)) {
             unset($courses[$c->id]);
             continue;
         }
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $c->id);
+        $coursecontext = context_course::instance($c->id);
         if (!$c->visible and !has_capability('moodle/course:viewhiddencourses', $coursecontext)) {
             unset($courses[$c->id]);
             continue;
