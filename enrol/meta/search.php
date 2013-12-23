@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Adds new instance of enrol_meta to specified course.
+ *
+ * @package    enrol_meta
+ * @copyright  2014 Troy Williams
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 define('AJAX_SCRIPT', true);
 
 require_once(dirname(__FILE__) . '/../../config.php');
@@ -28,11 +36,11 @@ echo $OUTPUT->header();
 require_login();
 require_sesskey();
 
-$id         = required_param('id', PARAM_INT);// course id
-$searchtext = required_param('searchtext', PARAM_RAW);// Get the search parameter.
+$id         = required_param('id', PARAM_INT); // Course id.
+$searchtext = required_param('searchtext', PARAM_RAW); // Get the search parameter.
 
-$course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
+$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 
 $result = enrol_meta_course_search($course->id, $searchtext, true);
 
-echo json_encode(array('result'=>$result));
+echo json_encode(array('result' => $result));

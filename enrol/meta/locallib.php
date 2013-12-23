@@ -606,11 +606,10 @@ function enrol_meta_create_new_group($courseid, $linkedcourseid) {
  * Returns an object with extra information so can be easily used with
  * ajax.
  *
- * @global type $DB
- * @param type $courseid
- * @param type $query
- * @param type $anywhere
- * @param type $limit
+ * @param int $courseid
+ * @param string $query
+ * @param boolean $anywhere
+ * @param int $limit
  * @return stdClass $result
  */
 function enrol_meta_course_search($courseid, $query, $anywhere = true, $limit = 200) {
@@ -618,7 +617,7 @@ function enrol_meta_course_search($courseid, $query, $anywhere = true, $limit = 
 
     $return = new stdClass();
     $return->query = $query;
-    $return->maxlimit= $limit;
+    $return->maxlimit = $limit;
     $return->matches = 0;
     $return->results = new stdClass();
     $return->results->raw = array();
@@ -627,31 +626,28 @@ function enrol_meta_course_search($courseid, $query, $anywhere = true, $limit = 
     $plugin = enrol_get_plugin('meta');
     $showshortname = $plugin->get_config('manageuishowshortname');
 
-    // build sql for exclude courses
-    $existing = $DB->get_records('enrol', array('enrol'=>'meta', 'courseid'=>$courseid), '', 'customint1, id');
+    // Build sql for exclude courses.
+    $existing = $DB->get_records('enrol', array('enrol' => 'meta', 'courseid' => $courseid), '', 'customint1, id');
     $excludes = array_merge(array_keys($existing), array(SITEID, $courseid));
     list($excludesql, $excludeparams) = $DB->get_in_or_equal($excludes, SQL_PARAMS_NAMED, 'ex', false);
     $excludesql = 'c.id '.$excludesql;
-    // build search sql
+
+    // Build search sql.
     $searchsql = '';
     $searchparams = array();
     if (!empty($query)) {
-        $searchanywhere = get_user_preferences('courseselector_searchanywhere', false);
-        if ($searchanywhere) {
-            $query = '%' . $query . '%';
-        } else {
-            $query = $query . '%';
-        }
-        $searchfields = array('c.shortname', 'c.fullname');
+        $query = '%' . $query . '%';
+        $searchfields = array('c.shortname', 'c.fullname', 'c.idnumber');
         for ($i = 0; $i < count($searchfields); $i++) {
             $searchlikes[$i] = $DB->sql_like($searchfields[$i], ":s{$i}", false, false);
             $searchparams["s{$i}"] = $query;
         }
         $searchsql = ' AND (' .implode(' OR ', $searchlikes).')';
     }
-    // put all the param together
+
+    // Put all the parameters together.
     $params = $excludeparams + $searchparams;
-    // count statement
+    // Count statement.
     $countsql = "SELECT
                   COUNT(1)
                    FROM {course} c
@@ -673,7 +669,7 @@ function enrol_meta_course_search($courseid, $query, $anywhere = true, $limit = 
     }
 
     if ($return->matches <= $return->maxlimit) {
-        // records get statement
+        // Records get statement.
         $fields = 'c.id, c.shortname, c.fullname, c.visible';
         $sql = "SELECT $fields
                   FROM {course} c
@@ -689,7 +685,6 @@ function enrol_meta_course_search($courseid, $query, $anywhere = true, $limit = 
             if ($showshortname) {
                 $displayname = '['.$c->shortname.'] '.$displayname;
             }
-            //$return->results->display[$c->id] = shorten_text(format_string($displayname), 80, true);
             $display = new stdClass();
             $display->courseid = $c->id;
             $display->name = shorten_text(format_string($displayname), 80, true);
@@ -698,55 +693,4 @@ function enrol_meta_course_search($courseid, $query, $anywhere = true, $limit = 
     }
     return $return;
 
-}
-/**
- * @todo needs work
- * @global type $DB
- * @param type $courseid
- * @return \stdClass
- */
-function enrol_meta_linked_courses($courseid) {
-    global $DB;
-
-    $result = new stdClass();
-    $result->raw = array();
-    $result->display = array();
-
-    $plugin = enrol_get_plugin('meta');
-    $showshortname = $plugin->get_config('manageuishowshortname');
-
-    // count statement
-    $countsql = "SELECT COUNT(1) ";
-
-    // records get statement
-    $fields = 'c.id, c.shortname, c.fullname, c.visible ';
-    $selectsql = "SELECT $fields ";
-    $wheresql = "FROM {course} c
-                 WHERE c.id IN (SELECT e.customint1
-                                FROM {enrol} e
-                                WHERE e.enrol = 'meta'
-                                AND e.courseid = :courseid)";
-    $orderby =  "ORDER BY c.shortname ASC";
-
-    $params = array('courseid'=>$courseid);
-    $result->matches = $DB->count_records_sql($countsql.$wheresql, $params);
-    if ($result->matches) {
-        $result->label = get_string('metalinkedcourses',
-                                    'enrol_meta', $result->matches);
-    } else {
-        $result->label = get_string('nometalinkedcourses',
-                                    'enrol_meta');
-    }
-    $courses = $DB->get_records_sql($selectsql.$wheresql.$orderby, $params);
-
-    foreach ($courses as $c) {
-        $displayname = $c->fullname;
-        if ($showshortname) {
-            $displayname = '['.$c->shortname.'] '.$displayname;
-        }
-        $result->raw[$c->id] = $c;
-        $result->display[$c->id] = shorten_text(format_string($displayname), 80, true);
-    }
-
-    return $result;
 }

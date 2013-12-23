@@ -29,49 +29,29 @@ require_once("$CFG->libdir/formslib.php");
 class enrol_meta_addinstance_form extends moodleform {
     protected $course;
 
+    /** @var array Included javascript for course selector. */
+    private static $jsmodule = array(
+        'name' => 'course_selector',
+        'fullpath' => '/enrol/meta/module.js',
+        'requires' => array('node', 'event-custom', 'datasource', 'json'));
+
     function definition() {
-        global $CFG, $DB;
+        global $CFG, $DB, $PAGE;
 
         $mform  = $this->_form;
         $course = $this->_customdata['course'];
         $instance = $this->_customdata['instance'];
         $this->course = $course;
 
-        if ($instance) {
-            $where = 'WHERE c.id = :courseid';
-            $params = array('courseid' => $instance->customint1);
-            $existing = array();
-        } else {
-            $where = '';
-            $params = array();
-            $existing = $DB->get_records('enrol', array('enrol' => 'meta', 'courseid' => $course->id), '', 'customint1, id');
+        $mform->disable_form_change_checker();
+
+        $searchtext = optional_param('link_searchtext', '', PARAM_TEXT);
+        $result  = enrol_meta_course_search($course->id, $searchtext, true);
+        $display = array();
+        foreach ($result->results->display as $item) {
+            $display[$item->courseid] = $item->name;
         }
-
-        // TODO: this has to be done via ajax or else it will fail very badly on large sites!
-        $courses = array('' => get_string('choosedots'));
-        $select = ', ' . context_helper::get_preload_record_columns_sql('ctx');
-        $join = "LEFT JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)";
-
-        $plugin = enrol_get_plugin('meta');
-        $sortorder = 'c.' . $plugin->get_config('coursesort', 'sortorder') . ' ASC';
-
-        $sql = "SELECT c.id, c.fullname, c.shortname, c.visible $select FROM {course} c $join $where ORDER BY $sortorder";
-        $rs = $DB->get_recordset_sql($sql, array('contextlevel' => CONTEXT_COURSE) + $params);
-        foreach ($rs as $c) {
-            if ($c->id == SITEID or $c->id == $course->id or isset($existing[$c->id])) {
-                continue;
-            }
-            context_helper::preload_from_record($c);
-            $coursecontext = context_course::instance($c->id);
-            if (!$c->visible and !has_capability('moodle/course:viewhiddencourses', $coursecontext)) {
-                continue;
-            }
-            if (!has_capability('enrol/meta:selectaslinked', $coursecontext)) {
-                continue;
-            }
-            $courses[$c->id] = $coursecontext->get_context_name(false);
-        }
-        $rs->close();
+        $listdata = array($result->results->label => $display);
 
         $groups = array(0 => get_string('none'));
         if (has_capability('moodle/course:managegroups', context_course::instance($course->id))) {
@@ -82,9 +62,17 @@ class enrol_meta_addinstance_form extends moodleform {
         }
 
         $mform->addElement('header','general', get_string('pluginname', 'enrol_meta'));
+        $mform->addElement('selectgroups', 'link', '', $listdata, array('size' => 10, 'multiple' => true));
+        $mform->addElement('submit', 'link_submitbutton', get_string('linkselected', 'enrol_meta'));
 
-        $mform->addElement('select', 'link', get_string('linkedcourse', 'enrol_meta'), $courses);
-        $mform->addRule('link', get_string('required'), 'required', null, 'client');
+        $searchgroup = array();
+        $searchgroup[] = &$mform->createElement('text', 'link_searchtext');
+        $mform->setType('link_searchtext', PARAM_TEXT);
+        $searchgroup[] = &$mform->createElement('submit', 'link_searchbutton', get_string('search'));
+        $mform->registerNoSubmitButton('link_searchbutton');
+        $searchgroup[] = &$mform->createElement('submit', 'link_clearbutton', get_string('clear'));
+        $mform->registerNoSubmitButton('link_clearbutton');
+        $mform->addGroup($searchgroup, 'searchgroup', get_string('search') , array(''), false);
 
         $mform->addElement('select', 'customint2', get_string('addgroup', 'enrol_meta'), $groups);
 
@@ -105,6 +93,14 @@ class enrol_meta_addinstance_form extends moodleform {
             $this->add_add_buttons();
         }
         $this->set_data($data);
+        $mform->addElement('static', 'cancel', html_writer::link(
+            new moodle_url('/enrol/instances.php', array('id' => $course->id)), get_string('cancel'))
+        );
+        $mform->closeHeaderBefore('cancel');
+
+        $this->set_data(array('id'=>$course->id));
+
+        $PAGE->requires->js_init_call('M.core_enrol.init_course_selector', array('link', $course->id), true, self::$jsmodule);
     }
 
     /**
@@ -122,31 +118,7 @@ class enrol_meta_addinstance_form extends moodleform {
 
     function validation($data, $files) {
         global $DB, $CFG;
-
-        $errors = parent::validation($data, $files);
-
-        if ($this->_customdata['instance']) {
-            // Nothing to validate in case of editing.
-            return $errors;
-        }
-
-        // TODO: this is duplicated here because it may be necessary once we implement ajax course selection element
-
-        if (!$c = $DB->get_record('course', array('id'=>$data['link']))) {
-            $errors['link'] = get_string('required');
-        } else {
-            $coursecontext = context_course::instance($c->id);
-            $existing = $DB->get_records('enrol', array('enrol'=>'meta', 'courseid'=>$this->course->id), '', 'customint1, id');
-            if (!$c->visible and !has_capability('moodle/course:viewhiddencourses', $coursecontext)) {
-                $errors['link'] = get_string('error');
-            } else if (!has_capability('enrol/meta:selectaslinked', $coursecontext)) {
-                $errors['link'] = get_string('error');
-            } else if ($c->id == SITEID or $c->id == $this->course->id or isset($existing[$c->id])) {
-                $errors['link'] = get_string('error');
-            }
-        }
-
+        $errors = array();
         return $errors;
     }
 }
-

@@ -75,10 +75,10 @@ M.core_enrol.init_course_selector = function (Y, name, courseid, lastsearch) {
         handle_keyup : function(e) {
             //  Trigger an ajax search after a delay.
             this.cancel_timeout();
-            this.timeoutid = Y.later(this.querydelay*1000, e, function(obj){obj.send_query(false)}, this);
+            this.timeoutid = Y.later(this.querydelay*1000, e, function(obj){obj.send_query(false);}, this);
 
             // If enter was pressed, prevent a form submission from happening.
-            if (e.keyCode == 13) {
+            if (e.keyCode === 13) {
                 e.halt();
             }
         },
@@ -112,7 +112,7 @@ M.core_enrol.init_course_selector = function (Y, name, courseid, lastsearch) {
             var value = this.get_search_text();
 
             this.searchfield.removeClass('error');
-            if (this.lastsearch == value && !forceresearch) {
+            if (this.lastsearch === value && !forceresearch) {
                 return;
             }
 
@@ -151,7 +151,9 @@ M.core_enrol.init_course_selector = function (Y, name, courseid, lastsearch) {
             this.searchfield.addClass('error');
             // If we are in developer debug mode, output a link to help debug the failure.
             if (M.cfg.developerdebug) {
-                this.searchfield.insert(Y.Node.create('<a href="'+M.cfg.wwwroot +'/enrol/meta/search.php?sesskey='+M.cfg.sesskey+'&search='+this.get_search_text()+'&debug=1">Ajax call failed. Click here to try the search call directly.</a>'));
+                this.searchfield.insert(Y.Node.create('<a href="'+M.cfg.wwwroot +'/enrol/meta/search.php?sesskey='
+                    +M.cfg.sesskey+'&search='+this.get_search_text()
+                    +'&debug=1">Ajax call failed. Click here to try the search call directly.</a>'));
             }
         },
         output_list : function(data) {
@@ -164,7 +166,7 @@ M.core_enrol.init_course_selector = function (Y, name, courseid, lastsearch) {
                             id : option.get('value'),
                             name : option.get('innerText') || option.get('textContent'),
                             disabled: option.get('disabled')
-                        }
+                        };
                     }
                     option.remove();
                 }, this);
@@ -231,44 +233,4 @@ M.core_enrol.init_course_selector = function (Y, name, courseid, lastsearch) {
     this.course_selectors[name] = course_selector;
     // Return the course selector
     return course_selector;
-};
-
-/**
- * Initialise a class that updates the user's preferences when they change one of
- * the options checkboxes.
- * @constructor
- * @param {YUI} Y
- * @return Tracker object
- */
-M.core_enrol.init_course_selector_options_tracker = function(Y) {
-    // Create a course selector options tracker
-    var course_selector_options_tracker = {
-        /**
-         * Initlises the option tracker and gets everything going.
-         * @constructor
-         */
-        init : function() {
-            var settings = [
-                'courseselector_searchanywhere'
-            ];
-            for (var s in settings) {
-                var setting = settings[s];
-                console.info(setting);
-                Y.one('#id_'+setting).on('click', this.set_user_preference, this, setting);
-               // Y.one('#id_'+setting).on('click', function (e){ alert('hello');});
-            }
-        },
-        /**
-         * Sets a user preference for the options tracker
-         * @param {Y.Event|null} e
-         * @param {string} name The name of the preference to set
-         */
-        set_user_preference : function(e, name) {
-            M.util.set_user_preference(name, Y.one('#id_'+name).get('checked'));
-        }
-    };
-    // Initialise the options tracker
-    course_selector_options_tracker.init();
-    // Return it just incase it is ever wanted
-    return course_selector_options_tracker;
 };

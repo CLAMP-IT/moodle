@@ -60,24 +60,13 @@ if ($mform->is_cancelled()) {
     redirect(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
 
 } else if ($data = $mform->get_data()) {
-    if (!empty($data->customint2) && $data->customint2 == ENROL_META_CREATE_GROUP) {
-        $data->customint2 = enrol_meta_create_new_group($course->id, $data->link);
-    }
-    if ($instance) {
-        if ($data->customint2 != $instance->customint2) {
-            $DB->update_record('enrol', array('id' => $instance->id, 'customint2' => $data->customint2));
-            enrol_meta_sync($course->id);
-        }
-    } else {
-        $eid = $enrol->add_instance($course, array('customint1' => $data->link,
-                                               'customint2' => $data->customint2));
-        enrol_meta_sync($course->id);
-        if (!empty($data->submitbuttonnext)) {
-            redirect(new moodle_url('/enrol/meta/addinstance.php',
-                    array('id' => $course->id, 'message' => 'added')));
+    foreach ($data->link as $link) {
+        if (!empty($link)) { // Because of formlib selectgroups.
+            $eid = $enrol->add_instance($course, array('customint1' => $link));
         }
     }
-    redirect(new moodle_url('/enrol/instances.php', array('id' => $course->id)));
+    enrol_meta_sync($course->id);
+    redirect(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
 }
 
 $PAGE->set_heading($course->fullname);
