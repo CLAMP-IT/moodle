@@ -1,0 +1,25 @@
+This filter takes advantage of the excellent open-source Jmol/JSmol 3D chemical structure visualisation project 
+
+http://jmol.sourceforge.net
+ 
+The filter includes some some basic controls and help files.
+
+This version uses the JSmol JavaScript/HTML5 version of Jmol for maximum cross-platform functionality.
+Tested with Firefox 20, Chrome 26, Opera 12, Internet Explorer 10, 9 and 8 (IE 8 defaults to Java applet)
+
+This filter deploys JSmol as a YUI module in order to work with Moodle 2 (tested with Moodle 2.3, 2.4 and 2.5 beta)
+
+TO INSTALL:
+
+1. Unpack this .zip or .tar.gz download.
+2. Rename the /moodle-filter_jmol folder to /jmol. Copy this /jmol folder (and all its contents) to inside the /filter folder of your Moodle 2.0.x installation i.e. alongside the folders for other filters. Set the permissions of the /jmol folder to be those of the Web server.
+
+Remember to activate the filter in Moodle's filter admin screen. 
+Depending on settings, you may need to activate this filter in individual Moodle courses.
+
+Jmol/JSmol is under active development. The latest JSmol version is available from:
+
+http://chemapps.stolaf.edu/jmol/jsmol.zip
+
+If required, this may be downloaded and and unpacked and the /jsmol folder (and its contents) used to replace the /filter/jmol/yui/jsmol folder
+to update to the very latest version.

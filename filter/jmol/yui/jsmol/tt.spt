@@ -1,0 +1,31 @@
+function doit(){
+
+sm = "c1ccccc1CCN"
+select @{{*}.find(sm)}
+selectionHalos on
+color {1.1} yellow
+label %a
+color labels white
+
+//print {1.1}.find(sm, "BONDS")
+
+x = compare({1.1},{2.1},sm,"BONDS")
+rotate branch @x 3
+
+background blue
+delay 1
+compare {1.1} {2.1} smarts @sm rotate translate
+color background red
+delay 1
+
+}
+
+
+background black
+load files "$tyrosine" "$lysergamide";select 2.1; translateSelected {10 0 0}; frame *;zoomto 0 {*} 0;
+delay 1
+
+background green	
+delay 1
+doit()
+background black

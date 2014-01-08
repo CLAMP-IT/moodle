@@ -55,6 +55,8 @@ $string['footnotedesc'] = 'The content from this textarea will be displayed in t
 $string['autohide'] = 'Autohide Functionality';
 $string['autohidedesc'] = 'Enabling this feature will change how moodle looks when editing mode is turned on. Edit icons only appear when hovering over a particular item or block. This makes the interface alot cleaner and less intimidating.';
 
+$string['autohide_devices'] = 'Autohide Devices';
+$string['autohide_devices_desc'] = 'Allow Autohide functionality for these device types. Device detection must be enabled.';
 
 $string['editmodetoggle'] = 'Edit Mode Toggle';
 $string['edittoggledesc'] = 'When enabled this replaces the "Turn Editing On" button with a status toggle instead.';

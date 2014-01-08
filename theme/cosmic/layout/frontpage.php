@@ -46,7 +46,7 @@ echo $OUTPUT->doctype();
 
 <!-- START AUTOHIDE STATUS CHECK -->
 <?php
-if (!empty($PAGE->theme->settings->autohide)) {
+if (!empty($PAGE->theme->settings->autohide) && cosmic_allow_autohide($this->page->devicetypeinuse)) {
     $autohide = $PAGE->theme->settings->autohide;
 } else {
     $autohide = 'disable';

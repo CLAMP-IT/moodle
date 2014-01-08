@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Prosat Selection Page</title>
+<meta charset="utf-8">
+<script type="text/javascript" src="JSmol.min.js"></script>
+<script>
+var Info = {
+	width: 480,
+	height: 300,
+	color: "lightgrey",
+	addSelectionOptions: false,
+	use: "JAVA",
+	jarPath: "java",
+	jarFile: "JmolAppletSigned.jar",
+	isSigned: true,
+	disableInitialConsole: true,
+	script: "load http://jelos.de/jmolcheckbox/1hti.pdb;"+
+     "display all;spacefill off; wireframe off;" +
+	 "getProperty polymerInfo;backbone 0.2, 0.2;color backbone chain;color background lightgrey;",
+	allowJavaScript: true
+}
+</script> 
+</head>
+<body>
+<script>Jmol.getApplet("jmol", Info)</script>
+<table>
+<tr><th>parent</th><th>child</th></tr>
+<tr><th rowspan="2">
+<script>
+Jmol.jmolCheckbox(jmol, "","","Chain A",false,"chain_A")
+</script></th>
+<td><script>
+Jmol.jmolCheckbox(jmol, "select 165:A;color blue;wireframe 100;",
+                     "select 165:A;color backbone chain; wireframe off;",
+                      "active site",
+                      false,
+                      "Homo_sapiens_active site",
+                      "active site")
+</script></td>
+</tr>
+<tr><td><script>
+Jmol.jmolCheckbox(jmol, "select 200:A;color red;wireframe 100;",
+                     "select 200:A;color backbone chain; wireframe off;",
+                      "active site2",
+                      false,
+                      "Homo_sapiens_active site2",
+                      "active site2")
+</script></td></tr>
+</table>
+<script>
+Jmol.setCheckboxGroup("chain_A",["Homo_sapiens_active site2","Homo_sapiens_active site"])
+Jmol.jmolRadio(jmol, "background white", "white")
+Jmol.jmolRadio(jmol, "background black", "black")
+</script>
+</body>
+</html>
