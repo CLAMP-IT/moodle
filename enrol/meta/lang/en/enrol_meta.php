@@ -24,6 +24,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['backto'] = 'Back to {$a}';
 $string['linkedcourse'] = 'Link course';
 $string['linkedcourses'] = 'Linked courses';
 $string['meta:config'] = 'Configure meta enrol instances';

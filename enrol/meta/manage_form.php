@@ -65,11 +65,10 @@ class enrol_meta_manage_form extends moodleform {
         $mform->registerNoSubmitButton($searchselectname.'_clearbutton');
         $mform->addGroup($searchgroup, 'searchgroup', get_string('search') , array(''), false);
 
-
         $mform->addElement('hidden', 'id', null);
         $mform->setType('id', PARAM_INT);
 
-        $cancellink = html_writer::link(new moodle_url('/enrol/instances.php', array('id' => $course->id)), get_string('cancel'));
+        $cancellink = html_writer::link(new moodle_url('/enrol/instances.php', array('id' => $course->id)), get_string('backto', 'enrol_meta', get_string('enrolmentmethods')));
         $mform->addElement('static', 'cancel', $cancellink);
         $mform->closeHeaderBefore('cancel');
 
