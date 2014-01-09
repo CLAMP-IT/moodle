@@ -86,7 +86,6 @@ class auth_plugin_cas extends auth_plugin_ldap {
         $site = get_site();
         $CASform = get_string('CASform', 'auth_cas');
         $username = optional_param('username', '', PARAM_RAW);
-
         if (!empty($username)) {
             if (isset($SESSION->wantsurl) && (strstr($SESSION->wantsurl, 'ticket') ||
                                               strstr($SESSION->wantsurl, 'NOCAS'))) {
@@ -114,7 +113,18 @@ class auth_plugin_cas extends auth_plugin_ldap {
             $frm->password = 'passwdCas';
             return;
         }
-
+	if (isset($SESSION->wantsurl) && strstr($SESSION->wantsurl,"/course/view.php?id=")) {
+		$matches = array();
+	   	preg_match('/\\/course\\/view\.php\?id=(\d+)$/',$SESSION->wantsurl,$matches);
+		$enrol_instances = enrol_get_instances($matches[1],true);
+		foreach ($enrol_instances as $instance) {
+		  if ($instance->enrol == "guest") {
+		    $frm->username = 'guest';
+		    $frm->password = 'guest';
+		    return;
+		  }
+	        }
+	}
         if (isset($_GET['loginguest']) && ($_GET['loginguest'] == true)) {
             $frm->username = 'guest';
             $frm->password = 'guest';
@@ -155,12 +165,25 @@ class auth_plugin_cas extends auth_plugin_ldap {
      *
      */
     function prelogout_hook() {
-        global $CFG;
-
+        global $CFG,$PAGE,$SESSION;
+	$matches = array();
+#	if ($PAGE->url['path'] == '/course/loginas.php') {
+#	  var_dump("HI");
+#	}
+	$url = $PAGE->url;
+#	if (preg_match('/\\/course\\/loginas.php\?id=(\d+)$/',$url->out(false),$matches)) {
+#	    return 1;
+#	}
         if (!empty($this->config->logoutcas)) {
             $backurl = $CFG->wwwroot;
             $this->connectCAS();
-            phpCAS::logoutWithURL($backurl);
+	    /*me - customization to handle Wesleyan CAS customization */
+	     if ($SESSION->fromdiscussion) {
+               phpCAS::logoutWithURL($SESSION->fromdiscussion);
+	     } else {
+               phpCAS::logoutWithURL($backurl . "/");
+	     }
+	   
         }
     }
 
