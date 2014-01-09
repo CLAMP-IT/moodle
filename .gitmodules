@@ -1,3 +1,6 @@
 [submodule "blocks/quickset"]
 	path = blocks/quickset
 	url = https://github.com/kwiliarty/moodle-block_quickset.git
+[submodule "blocks/course_search"]
+	path = blocks/course_search
+	url = https://github.com/oohoo/moodle-block_course_search.git
