@@ -67,7 +67,7 @@ class laegrader_report_preferences_form extends moodleform {
             }
             $preferences['prefshow']['showlocks']         = $checkbox_default;
 
-            $preferences['prefrows'] = array(
+            $preferences['prefshow'] = array(
                         'rangesdisplaytype'      => array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
                                                           GRADE_REPORT_PREFERENCE_INHERIT => get_string('inherit', 'grades'),
                                                           GRADE_DISPLAY_TYPE_REAL => get_string('real', 'grades'),
@@ -76,59 +76,29 @@ class laegrader_report_preferences_form extends moodleform {
                         'rangesdecimalpoints'    => array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
                                                           GRADE_REPORT_PREFERENCE_INHERIT => get_string('inherit', 'grades'),
                                                           0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5));
-            $advanced = array_merge($advanced, array('rangesdisplaytype', 'rangesdecimalpoints'));
 
-/*
-            if ($canviewhidden) {
-                $preferences['prefrows']['averagesdisplaytype'] = array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
-                                                                        GRADE_REPORT_PREFERENCE_INHERIT => get_string('inherit', 'grades'),
-                                                                        GRADE_DISPLAY_TYPE_REAL => get_string('real', 'grades'),
-                                                                        GRADE_DISPLAY_TYPE_PERCENTAGE => get_string('percentage', 'grades'),
-                                                                        GRADE_DISPLAY_TYPE_LETTER => get_string('letter', 'grades'));
-                $preferences['prefrows']['averagesdecimalpoints'] = array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
-                                                                          GRADE_REPORT_PREFERENCE_INHERIT => get_string('inherit', 'grades'),
-                                                                          0=>0, 1=>1, 2=>2, 3=>3, 4=>4, 5=>5);
-                $preferences['prefrows']['meanselection']  = array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
-                                                                   GRADE_REPORT_MEAN_ALL => get_string('meanall', 'grades'),
-                                                                   GRADE_REPORT_MEAN_GRADED => get_string('meangraded', 'grades'));
-
-                $advanced = array_merge($advanced, array('averagesdisplaytype', 'averagesdecimalpoints'));
-            }
-*/
-        }
-
-        // quickgrading and showquickfeedback are conditional on grade:edit capability
-        if (has_capability('moodle/grade:edit', $context)) {
-            $preferences['prefgeneral']['quickgrading'] = $checkbox_default;
-            $preferences['prefgeneral']['showquickfeedback'] = $checkbox_default;
-//            $preferences['prefgeneral']['gradeeditalways'] = $checkbox_default; // later for Luther only
-            $preferences['prefgeneral']['laegraderreportheight'] = array(300,340,380,420,460,500,540,580,620,660,700,740,780,820,860,900);
         }
 
         // View capability is the lowest permission. Users with grade:manage or grade:edit must also have grader:view
         if (has_capability('gradereport/laegrader:view', $context)) {
-            $preferences['prefgeneral']['studentsperpage'] = 'text'; //no students per page in LAE grader report
-/* Removed because the agg position for categories HAS to be last in the LAE grader report
- *          $preferences['prefgeneral']['aggregationposition'] = array(GRADE_REPORT_PREFERENCE_DEFAULT => '*default*',
-                                                                       GRADE_REPORT_AGGREGATION_POSITION_FIRST => get_string('positionfirst', 'grades'),
-                                                                       GRADE_REPORT_AGGREGATION_POSITION_LAST => get_string('positionlast', 'grades'));
-*/
-            $preferences['prefgeneral']['enableajax'] = $checkbox_default;
-
+            $preferences['prefshow']['studentsperpage'] = 'text'; //no students per page in LAE grader report
             $preferences['prefshow']['showuserimage'] = $checkbox_default;
             $preferences['prefshow']['showactivityicons'] = $checkbox_default;
             $preferences['prefshow']['showranges'] = $checkbox_default;
             $preferences['prefshow']['showanalysisicon'] = $checkbox_default;
-            $preferences['prefshow']['showzerofill'] = $checkbox_default;
+//            $preferences['prefshow']['showzerofill'] = $checkbox_default;
             $preferences['prefshow']['showclearoverrides'] = $checkbox_default;
-
-            if ($canviewhidden) {
-//                $preferences['prefrows']['shownumberofgrades'] = $checkbox_default;
-            }
-
-            $advanced = array_merge($advanced, array('aggregationposition'));
         }
 
+        // quickgrading and showquickfeedback are conditional on grade:edit capability
+        if (has_capability('moodle/grade:edit', $context)) {
+            $preferences['prefshow']['quickgrading'] = $checkbox_default;
+            $preferences['prefshow']['showquickfeedback'] = $checkbox_default;
+            $preferences['prefshow']['laegrader_reportheight'] = array(300,340,380,420,460,500,540,580,620,660,700,740,780,820,860,900);
+            $preferences['prefshow']['laegrader_columnwidth'] = array(25,30,35,40,45,50,55,60,65,70,75,80,85);
+            $ef_default = $CFG->grade_report_laegrader_extrafields == 1 ? get_string('yes') : get_string('no') ;
+            $preferences['prefshow']['laegrader_extrafields'] = array(GRADE_REPORT_PREFERENCE_DEFAULT => get_string('reportdefault', 'grades', $ef_default), 0 => get_string('no'), 1 => get_string('yes'));
+        }
 
         foreach ($preferences as $group => $prefs) {
             $mform->addElement('header', $group, get_string($group, 'grades'));
@@ -164,6 +134,7 @@ class laegrader_report_preferences_form extends moodleform {
                         } else {
                             $default = $options[$CFG->grade_aggregationposition];
                         }
+                    } else if ($full_pref == 'grade_report_laegrader_reportheight') {
                     } elseif (isset($options[$CFG->{$full_pref}])) {
                         $default = $options[$CFG->{$full_pref}];
                     } else {
@@ -178,14 +149,17 @@ class laegrader_report_preferences_form extends moodleform {
                     $options[GRADE_REPORT_PREFERENCE_DEFAULT] = get_string('reportdefault', 'grades', $default);
                 }
 
-                if ($lang_string == 'showclearoverrides' || $lang_string == 'laegraderreportheight' || $lang_string == 'showzerofill') {
+                if ($lang_string == 'showclearoverrides' || $lang_string == 'laegrader_reportheight' || $lang_string == 'laegrader_columnwidth' || $lang_string == 'showzerofill' || $lang_string == 'laegrader_extrafields') {
                 	$label = get_string($lang_string, 'gradereport_laegrader') ;
                 } else {
                 	$label = get_string($lang_string, 'grades') . $number;
                 }
 
                 $mform->addElement($type, $full_pref, $label, $options);
-                if ($lang_string != 'showuserimage' && $lang_string != 'showclearoverrides' && $lang_string != 'laegraderreportheight' && $lang_string != 'showzerofill') {
+                if ($lang_string == 'laegrader_extrafields') {
+                    $mform->addHelpButton($full_pref, $lang_string, 'gradereport_laegrader');
+                }
+                elseif ($lang_string != 'showuserimage' && $lang_string != 'showclearoverrides' && $lang_string != 'laegrader_reportheight' && $lang_string != 'laegrader_columnwidth' && $lang_string != 'showzerofill') {
                     $mform->addHelpButton($full_pref, $lang_string, 'grades');
                 }
                 $mform->setDefault($full_pref, $pref_value);

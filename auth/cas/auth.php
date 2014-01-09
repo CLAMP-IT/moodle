@@ -142,7 +142,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
             // in background from CAS server to the php server)
 	   /* Wes, ME - disable this all users get directed to CAS
             if ($authCAS != 'CAS' && !isset($_GET['pgtIou'])) {
-                $PAGE->set_url('/auth/cas/auth.php');
+                $PAGE->set_url('/login/index.php');
                 $PAGE->navbar->add($CASform);
                 $PAGE->set_title("$site->fullname: $CASform");
                 $PAGE->set_heading($site->fullname);
