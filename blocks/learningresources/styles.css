@@ -1,7 +1,0 @@
-/**
- * use image as bullet for learning resource list
- */
-.block_learningresources li {
-    padding-bottom: 0.5em;
-    list-style-image: url([[pix:block_learningresources|link]]);
-}

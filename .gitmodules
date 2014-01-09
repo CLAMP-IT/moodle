@@ -4,3 +4,6 @@
 [submodule "blocks/course_search"]
 	path = blocks/course_search
 	url = https://github.com/oohoo/moodle-block_course_search.git
+[submodule "blocks/learningresources"]
+	path = blocks/learningresources
+	url = kw:/home4/kevinwi1/public_html/git/learningresources.git
