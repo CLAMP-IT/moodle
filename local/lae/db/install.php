@@ -52,6 +52,8 @@ function xmldb_local_lae_install() {
         $anon_user->auth = 'nologin';
         $anon_user->firstname = get_string('auser_firstname', 'local_lae');
         $anon_user->lastname = get_string('auser_lastname', 'local_lae');
+        $anon_user->mnethostid = $CFG->mnet_localhost_id;
+        $anon_user->email = get_string('auser_email', 'local_lae');
         if ($result = $DB->insert_record('user', $anon_user)) {
             set_config('anonymous_userid', $result);
         } else {
