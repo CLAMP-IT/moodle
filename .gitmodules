@@ -7,3 +7,6 @@
 [submodule "blocks/learningresources"]
 	path = blocks/learningresources
 	url = kw:/home4/kevinwi1/public_html/git/learningresources.git
+[submodule "theme/smithstandard"]
+	path = theme/smithstandard
+	url = kw:/home4/kevinwi1/public_html/git/smithstandard.git
