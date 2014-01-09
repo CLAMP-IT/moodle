@@ -1,0 +1,3 @@
+[submodule "blocks/quickset"]
+	path = blocks/quickset
+	url = https://github.com/kwiliarty/moodle-block_quickset.git
