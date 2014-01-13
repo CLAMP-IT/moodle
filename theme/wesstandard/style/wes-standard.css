@@ -14,6 +14,10 @@ img.iconsmall {
 	background-repeat: no-repeat;
 }
 
+body#page-mod-assign-feedback-pdf-editcomment #page-header {
+	background-image: none;
+}
+
 h1.headermain {
 	display: none;
 }
