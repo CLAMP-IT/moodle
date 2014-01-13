@@ -1,0 +1,5 @@
+.assignsubmission_pdf_invalid {
+    border: solid 1px #ff0000;
+    background-color: #ffd0d0;
+    padding: 5px;
+}
