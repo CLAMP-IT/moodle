@@ -132,6 +132,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
 
             return;
         }
+	/* Work around to allow courses with guest access to be direct linked to */
 	if (isset($SESSION->wantsurl) && strstr($SESSION->wantsurl,"/course/view.php?id=")) {
 		$matches = array();
 	   	preg_match('/\\/course\\/view\.php\?id=(\d+)$/',$SESSION->wantsurl,$matches);
@@ -186,14 +187,6 @@ class auth_plugin_cas extends auth_plugin_ldap {
      */
     function prelogout_hook() {
         global $CFG,$PAGE,$SESSION;
-	$matches = array();
-#	if ($PAGE->url['path'] == '/course/loginas.php') {
-#	  var_dump("HI");
-#	}
-	$url = $PAGE->url;
-#	if (preg_match('/\\/course\\/loginas.php\?id=(\d+)$/',$url->out(false),$matches)) {
-#	    return 1;
-#	}
         if (!empty($this->config->logoutcas)) {
             $backurl = $CFG->wwwroot;
             $this->connectCAS();
