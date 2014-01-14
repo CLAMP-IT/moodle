@@ -16,7 +16,7 @@
 
 require_once($CFG->dirroot . '/course/lib.php');
 
-class block_filtered_course_list extends block_list {
+class block_filtered_course_list extends block_base {
     public function init() {
         $this->title   = get_string('blockname', 'block_filtered_course_list');
     }
@@ -33,10 +33,8 @@ class block_filtered_course_list extends block_list {
         }
 
         $this->content         = new stdClass;
-        $this->content->items  = array();
-        $this->content->icons  = array();
+        $this->content->text   = '';
         $this->content->footer = '';
-        $icon  = '<img src="' . $OUTPUT->pix_url('i/course') . '" class="icon" alt="" />&nbsp;';
 
         // Obtain values from our config settings.
         $filter_type = 'term';
@@ -100,24 +98,13 @@ class block_filtered_course_list extends block_list {
                     if (count($course_list) == 0) {
                         continue;
                     }
-
-                    $this->content->items[]= "<center>$section</center>";
-                    $this->content->icons[]= '';
+                    $this->content->text .= html_writer::tag('div', $section, array('class' => 'course-section'));
+                    $this->content->text .= '<ul class="list">';
 
                     foreach ($course_list as $course) {
-                        $linkcss = $course->visible ? "" : " class=\"dimmed\" ";
-                        $this->content->items[]= "<a $linkcss title=\"" .
-                                                 format_string($course->shortname) .
-                                                 "\" " .
-                                                 "href=\"$CFG->wwwroot/course/view.php?id=$course->id\">" .
-                                                 format_string($course->fullname) .
-                                                 "</a>";
-                        $this->content->icons[]= $icon;
+                        $this->content->text .= $this->_print_single_course($course);
                     }
-
-                    $this->content->items[]="<hr width=\"50%\">";
-                    $this->content->icons[]="";
-
+                    $this->content->text .= '</ul>';
                     // If we can update any course of the view all isn't hidden.
                     // Show the view all courses link.
                     if (has_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM)) ||
@@ -138,14 +125,15 @@ class block_filtered_course_list extends block_list {
                 if (count($categories) > 1 ||
                    (count($categories) == 1 &&
                     count($course_list) > 100)) {
+                    $this->content->text .= '<ul class="list">';
                     foreach ($categories as $category) {
-                        $linkcss = $category->visible ? "" : " class=\"dimmed\" ";
-                        $this->content->items[] = "<a $linkcss href=\"$CFG->wwwroot/course/category.php?id=$category->id\">" .
-                                                  format_string($category->name) .
-                                                  "</a>";
-                        $this->content->icons[] = $icon;
+                        $linkcss = $category->visible ? "" : "dimmed";
+                        $this->content->text .= html_writer::tag('li',
+                            html_writer::tag('a', format_string($category->name),
+                            array('href' => $CFG->wwwroot . '/course/category.php?id=' . $category->id)),
+                            array('class' => $linkcss));
                     }
-
+                    $this->content->text .= '</ul>';
                     $this->content->footer .= "<br><a href=\"$CFG->wwwroot/course/index.php\">" .
                                               get_string('searchcourses') .
                                               '</a> ...<br />';
@@ -166,17 +154,11 @@ class block_filtered_course_list extends block_list {
                     $courses = get_courses($category->id);
 
                     if ($courses) {
+                        $this->content->text .= '<ul class="list">';
                         foreach ($courses as $course) {
-                            $linkcss = $course->visible ? "" : " class=\"dimmed\" ";
-
-                            $this->content->items[] = "<a $linkcss title=\"" .
-                                                      format_string($course->shortname) .
-                                                      "\" " .
-                                                      "href=\"$CFG->wwwroot/course/view.php?id=$course->id\">" .
-                                                      format_string($course->fullname) .
-                                                      "</a>";
-                            $this->content->icons[]=$icon;
+                            $this->content->text .= $this->_print_single_course($course);
                         }
+                        $this->content->text .= '</ul>';
 
                         // If we can update any course of the view all isn't hidden.
                         // Show the view all courses link.
@@ -193,7 +175,18 @@ class block_filtered_course_list extends block_list {
         return $this->content;
     }
 
+    private function _print_single_course($course) {
+        global $CFG;
+        $linkcss = $course->visible ? "" : "dimmed";
+        $html = html_writer::tag('li',
+            html_writer::tag('a', format_string($course->fullname),
+                array('href' => $CFG->wwwroot . '/course/view.php?id=' . $course->id, 'title' => format_string($course->shortname))),
+                array('class' => $linkcss));
+        return $html;
+    }
+
     private function _filter_by_term($courses, $term_current, $term_future) {
+        global $CFG;
         $results = array('Current Courses' => array(),
                          'Future Courses'  => array(),
                          'Other Courses'     => array());
@@ -207,7 +200,8 @@ class block_filtered_course_list extends block_list {
                 $results['Current Courses'] []= $course;
             } else if (stristr($course->shortname, $term_future)) {
                 $results['Future Courses']  []= $course;
-            } else {
+            } else if (empty($CFG->block_filtered_course_list_hideothercourses)
+                || (!$CFG->block_filtered_course_list_hideothercourses)){
                 $results['Other Courses']     []= $course;
             }
         }

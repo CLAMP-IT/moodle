@@ -1,0 +1,9 @@
+.block_filtered_course_list.block  .list li {
+    list-style-image:url([[pix:moodle|i/course]]);
+    margin-left: 20px;
+    padding: 5px;
+}
+
+.block_filtered_course_list .course-section {
+    text-align: center;
+}

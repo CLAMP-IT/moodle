@@ -31,7 +31,7 @@ $page          = optional_param('page', 0, PARAM_INT);   // active page
 $perpageurl    = optional_param('perpage', 0, PARAM_INT);
 $edit          = optional_param('edit', -1, PARAM_BOOL); // sticky editting mode
 
-$itemid        = optional_param('sortitemid', 0, PARAM_ALPHANUM); // item to zerofill -- laegrader
+$itemid        = optional_param('itemid', 0, PARAM_ALPHANUM); // item to zerofill or clear overrides -- laegrader
 $sortitemid    = optional_param('sortitemid', 0, PARAM_ALPHANUM); // sort by which grade item
 $action        = optional_param('action', 0, PARAM_ALPHAEXT);
 $move          = optional_param('move', 0, PARAM_INT);
@@ -39,6 +39,7 @@ $type          = optional_param('type', 0, PARAM_ALPHA);
 $target        = optional_param('target', 0, PARAM_ALPHANUM);
 $toggle        = optional_param('toggle', NULL, PARAM_INT);
 $toggle_type   = optional_param('toggle_type', 0, PARAM_ALPHANUM);
+$CFG->grade_report_aggregationposition = 1;
 
 $PAGE->set_url(new moodle_url('/grade/report/laegrader/index.php', array('id'=>$courseid)));
 
@@ -55,6 +56,23 @@ require_capability('moodle/grade:viewall', $context);
 
 /// return tracking object
 $gpr = new grade_plugin_return(array('type'=>'report', 'plugin'=>'laegrader', 'courseid'=>$courseid, 'page'=>$page));
+
+// clear all overrides in a column when the clearoverrides icon is clicked
+if ($action == 'clearoverrides' && $itemid !== 0) {
+	$records = $DB->get_records('grade_grades', array('itemid'=>$itemid));
+	foreach($records as $record) {
+		$record->overridden = 0;
+		$DB->update_record('grade_grades', $record);
+	}
+} elseif ($action == 'changedisplay' && $itemid !==0) {
+	$record = $DB->get_record('grade_items', array('id'=>$itemid));
+	if ($record->display == GRADE_DISPLAY_TYPE_DEFAULT) {
+		$record->display = max(1,($CFG->grade_displaytype + 1) % 4);
+	} else {
+		$record->display = max(1, ($record->display + 1) % 4);
+	}
+	$success = $DB->update_record('grade_items', $record);
+}
 
 /// last selected report session tracking
 if (!isset($USER->grade_last_report)) {
@@ -83,22 +101,14 @@ if (has_capability('moodle/grade:edit', $context)) {
     $options = $gpr->get_options();
     $options['sesskey'] = sesskey();
 
-    // allow for always editing config
-/*
-    if (get_user_preferences('grade_report_gradeeditalways')) {
-        $USER->gradeediting[$course->id] = 1;
+    if ($USER->gradeediting[$course->id]) {
+        $options['edit'] = 0;
+        $string = get_string('turneditingoff');
     } else {
-*/
-        if ($USER->gradeediting[$course->id]) {
-            $options['edit'] = 0;
-            $string = get_string('turneditingoff');
-        } else {
-            $options['edit'] = 1;
-            $string = get_string('turneditingon');
-        }
-	    $buttons = new single_button(new moodle_url('index.php', $options), $string, 'get');
-//    }
-
+        $options['edit'] = 1;
+        $string = get_string('turneditingon');
+    }
+    $buttons = new single_button(new moodle_url('index.php', $options), $string, 'get');
 } else {
     $USER->gradeediting[$course->id] = 0;
     $buttons = '';
@@ -112,7 +122,9 @@ grade_regrade_final_grades($courseid);
 $reportname = get_string('pluginname', 'gradereport_laegrader');
 
 /// Print header
-print_grade_page_head($COURSE->id, 'report', 'laegrader', $reportname, false, $buttons);
+if ($action !== 'quick-dump') {
+    print_grade_page_head($COURSE->id, 'report', 'laegrader', $reportname, false, $buttons);
+}
 
 // Initialise the grader report object
 $report = new grade_report_laegrader($courseid, $gpr, $context, $page, $sortitemid); // END OF HACK
@@ -126,48 +138,33 @@ if ($report->currentgroup == -2) {
 
 /// processing posted grades & feedback here
 if ($data = data_submitted() and confirm_sesskey() and has_capability('moodle/grade:edit', $context)) {
-    $warnings = $report->process_data($data);
+    $warnings = $report->pre_process_grade($data);
 } else {
     $warnings = array();
 }
-
 
 // final grades MUST be loaded after the processing
 $report->load_users();
 $numusers = $report->get_numusers();
 $report->load_final_grades();
-/*
+
+if ($action === 'quick-dump') {
+
+    require_capability('moodle/grade:export', $context);
+    require_capability('gradeexport/xls:view', $context);
+
+    if (groups_get_course_groupmode($COURSE) == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
+        if (!groups_is_member($groupid, $USER->id)) {
+            print_error('cannotaccessgroup', 'grades');
+        }
+    }
+
+    // print all the exported data here
+    $report->quick_dump();
+}
+
 // AT THIS POINT WE HAVE ACCURATE GRADES FOR DISPLAY
 // no other grader actions are relevant as they expand or compress the column headers
-if ($action === 'quick-dump') {
-//	$groupid           = optional_param('groupid', 0, PARAM_INT);
-	$groupid		   = 0;
-//	$itemids           = required_param('itemids', PARAM_RAW);
-	$displaytype       = $CFG->grade_export_displaytype;
-	$decimalpoints     = $CFG->grade_export_decimalpoints;
-	
-	require_capability('moodle/grade:export', $context);
-	require_capability('gradeexport/xls:view', $context);
-	
-	if (groups_get_course_groupmode($COURSE) == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
-	    if (!groups_is_member($groupid, $USER->id)) {
-	        print_error('cannotaccessgroup', 'grades');
-	    }
-	}
-	
-	// print all the exported data here
-	$itemids = implode(',', array_keys($report->gtree->items));
-	$export = new lae_grade_export_xls($course, $groupid, $itemids, 0, false, $displaytype, $decimalpoints);
-	$export->print_grades();
-//	$report->quick_dump();
-} elseif ($action === 'zerofill' && !is_null($itemid)) {
-    /// bunch of code here
-    echo '';
-    foreach ($report->grades as $usergrades) {
-
-    }
-}
-*/
 echo $report->group_selector;
 echo '<div class="clearer"></div>';
 // echo $report->get_toggles_html();
@@ -177,17 +174,20 @@ foreach($warnings as $warning) {
     echo $OUTPUT->notification($warning);
 }
 
-$studentsperpage = 0; // forced for laegrader
+
+$studentsperpage = $report->get_students_per_page();
+// Don't use paging if studentsperpage is empty or 0 at course AND site levels
+if (!empty($studentsperpage)) {
+	echo $OUTPUT->paging_bar($numusers, $report->page, $studentsperpage, $report->pbarurl);
+}
+
 $reporthtml = $report->get_grade_table();
-$reporthtml .= "<link rel=\"stylesheet\" type=\"text/css\" href=\"$CFG->wwwroot/grade/report/laegrader/styles.css\" />";
-$reporthtml .= '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/jquery-1.7.2.min.js" type="text/javascript"></script>';
-
-
+$reporthtml .= '<script src="jquery-1.7.2.min.js" type="text/javascript"></script>';
 		/*
        	 * code going into the html entity to enable scrolling columns and rows
        	 */
         // get how tall the scrolling window is by user configuration
-		$scrolling = get_user_preferences('grade_report_laegraderreportheight');
+		$scrolling = get_user_preferences('grade_report_laegrader_reportheight');
 		$scrolling = $scrolling == null ? 380 : 300 + ($scrolling * 40);
 
 		// initialize the javascript that will be used to enable scrolling
@@ -195,15 +195,14 @@ $reporthtml .= '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/jquery
 		$headerrows = ($USER->gradeediting[$courseid]) ? 2 : 1;
 		$headerrows += ($report->get_pref('showaverages')) ? 1 : 0;
 		$headerrows += ($report->get_pref('showranges')) ? 1 : 0;
-		$extrafields = get_extra_user_fields($context);
+		$extrafields = $report->extrafields;
 		$headercols = 1 + count($extrafields);
-//		$headercols = ($report->get_pref('showuseridnumber')) ? 3 : 2;
 		$headercols += has_capability('gradereport/'.$CFG->grade_profilereport.':view', $context) ? 1 : 0;
         $headerinit = "fxheaderInit('lae-user-grades', $scrolling," . $headerrows . ',' . $headercols . ');';
 		$reporthtml .=
 		        '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/fxHeader_0.6.min.js" type="text/javascript"></script>
 		        <script type="text/javascript">' .$headerinit . 'fxheader(); </script>';
-		
+
 		$reporthtml .=
 		        '<script src="' . $CFG->wwwroot . '/grade/report/laegrader/my_jslib.js" type="text/javascript"></script>';
 
@@ -214,7 +213,8 @@ if ($USER->gradeediting[$course->id] && ($report->get_pref('showquickfeedback') 
     echo '<div>';
     echo '<input type="hidden" value="'.s($courseid).'" name="id" />';
     echo '<input type="hidden" value="'.sesskey().'" name="sesskey" />';
-    echo '<input type="hidden" value="grader" name="report"/>';
+    echo '<input type="hidden" value="laegrader" name="report"/>';
+    echo '<input type="hidden" value="'.$page.'" name="page"/>';
     echo $reporthtml;
     echo '<div class="submit"><input type="submit" value="'.s(get_string('update')).'" /></div>';
     echo '</div></form>';

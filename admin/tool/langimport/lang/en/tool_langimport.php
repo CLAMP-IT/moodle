@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['install'] = 'Install selected language pack';
+$string['install'] = 'Install selected language pack(s)';
 $string['installedlangs'] = 'Installed language packs';
 $string['langimport'] = 'Language import utility';
 $string['langimportdisabled'] = 'Language import feature has been disabled. You have to update your language packs manually at the file-system level. Do not forget to purge string caches after you do so.';

@@ -97,6 +97,102 @@ class courselib_testcase extends advanced_testcase {
         $this->assertEquals(range(0, $course->numsections + 1), $sectionscreated);
     }
 
+    public function test_update_course() {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $defaultcategory = $DB->get_field_select('course_categories', 'MIN(id)', 'parent = 0');
+
+        $course = new stdClass();
+        $course->fullname = 'Apu loves Unit Təsts';
+        $course->shortname = 'test1';
+        $course->idnumber = '1';
+        $course->summary = 'Awesome!';
+        $course->summaryformat = FORMAT_PLAIN;
+        $course->format = 'topics';
+        $course->newsitems = 0;
+        $course->numsections = 5;
+        $course->category = $defaultcategory;
+
+        $created = create_course($course);
+        // Ensure the checks only work on idnumber/shortname that are not already ours.
+        update_course($created);
+
+        $course->shortname = 'test2';
+        $course->idnumber = '2';
+
+        $created2 = create_course($course);
+
+        // Test duplicate idnumber.
+        $created2->idnumber = '1';
+        try {
+            update_course($created2);
+            $this->fail('Expected exception when trying to update a course with duplicate idnumber');
+        } catch (moodle_exception $e) {
+            $this->assertEquals(get_string('idnumbertaken', 'error'), $e->getMessage());
+        }
+
+        // Test duplicate shortname.
+        $created2->idnumber = '2';
+        $created2->shortname = 'test1';
+        try {
+            update_course($created2);
+            $this->fail('Expected exception when trying to update a course with a duplicate shortname');
+        } catch (moodle_exception $e) {
+            $this->assertEquals(get_string('shortnametaken', 'error', $created2->shortname), $e->getMessage());
+        }
+    }
+
+    public function test_course_add_cm_to_section() {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        // Create course with 1 section.
+        $course = $this->getDataGenerator()->create_course(
+                array('shortname' => 'GrowingCourse',
+                    'fullname' => 'Growing Course',
+                    'numsections' => 1),
+                array('createsections' => true));
+
+        // Trash modinfo.
+        rebuild_course_cache($course->id, true);
+
+        // Create some cms for testing.
+        $cmids = array();
+        for ($i=0; $i<4; $i++) {
+            $cmids[$i] = $DB->insert_record('course_modules', array('course' => $course->id));
+        }
+
+        // Add it to section that exists.
+        course_add_cm_to_section($course, $cmids[0], 1);
+
+        // Check it got added to sequence.
+        $sequence = $DB->get_field('course_sections', 'sequence', array('course' => $course->id, 'section' => 1));
+        $this->assertEquals($cmids[0], $sequence);
+
+        // Add a second, this time using courseid variant of parameters.
+        course_add_cm_to_section($course->id, $cmids[1], 1);
+        $sequence = $DB->get_field('course_sections', 'sequence', array('course' => $course->id, 'section' => 1));
+        $this->assertEquals($cmids[0] . ',' . $cmids[1], $sequence);
+
+        // Check modinfo was not rebuilt (important for performance if calling
+        // repeatedly).
+        $this->assertNull($DB->get_field('course', 'modinfo', array('id' => $course->id)));
+
+        // Add one to section that doesn't exist (this might rebuild modinfo).
+        course_add_cm_to_section($course, $cmids[2], 2);
+        $this->assertEquals(3, $DB->count_records('course_sections', array('course' => $course->id)));
+        $sequence = $DB->get_field('course_sections', 'sequence', array('course' => $course->id, 'section' => 2));
+        $this->assertEquals($cmids[2], $sequence);
+
+        // Add using the 'before' option.
+        course_add_cm_to_section($course, $cmids[3], 2, $cmids[2]);
+        $this->assertEquals(3, $DB->count_records('course_sections', array('course' => $course->id)));
+        $sequence = $DB->get_field('course_sections', 'sequence', array('course' => $course->id, 'section' => 2));
+        $this->assertEquals($cmids[3] . ',' . $cmids[2], $sequence);
+    }
+
     public function test_reorder_sections() {
         global $DB;
         $this->resetAfterTest(true);

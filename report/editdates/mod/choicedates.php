@@ -24,7 +24,7 @@ class report_editdates_mod_choice_date_extractor
 
     public function get_settings(cm_info $cm) {
         $choice = $this->mods[$cm->instance];
-        if ($choice->timeopen != 0 && $choice->timeclose != 0 ) {
+        if ($choice->timeopen != 0 && $choice->timeclose != 0) {
             return array('timeopen' => new report_editdates_date_setting(
                                 get_string('choiceopen', 'choice'),
                                 $choice->timeopen,
@@ -41,7 +41,7 @@ class report_editdates_mod_choice_date_extractor
 
     public function validate_dates(cm_info $cm, array $dates) {
         $errors = array();
-        if ($dates['timeopen'] != 0 && $dates['timeclose'] != 0 &&
+        if (!empty($dates['timeopen']) && !empty($dates['timeclose']) &&
                             $dates['timeclose'] < $dates['timeopen']) {
             $errors['timeclose'] = get_string('timeclose', 'report_editdates');
         }

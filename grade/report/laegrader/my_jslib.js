@@ -8,4 +8,9 @@
 function zerofill(_itemid) {
 $("[title=Grade][rel=" + _itemid + "][value='']").attr("value","0.00");
 alert("Zero Fill Complete! Make Sure You Save Your Changes!");
-    }
+}
+
+function clearoverrides(_itemid) {
+	$("[title=Grade][rel=" + _itemid + "]").attr("overridden","0");
+	alert("Overrides for this column cleared! Make Sure You Save Your Changes!");	
+}
