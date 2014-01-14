@@ -179,14 +179,18 @@ function filter_jmol_replace_callback($matches) {
         $initscript = '';
     }
     // Force Java applet for binary files (.pdb.gz or .pse) with some browsers (IE or Chrome)
-    $theUA = strtolower($_SERVER['HTTP_USER_AGENT']);
+    $browser = strtolower($_SERVER['HTTP_USER_AGENT']);
     if ($matches[3] == "pdb.gz" || $matches[3] == "pse") { 
-        if (strpos($theUA,'msie')) {
+        if (strpos($browser,'trident')) {
             $technol = 'JAVA';
-        } else if (strpos($theUA,'chrome')) {
+        } else if (strpos($browser,'msie')) {
             $technol = 'JAVA';
-        } else if (strpos($theUA,'safari')) {
+        } else if (strpos($browser,'chrome')) {
             $technol = 'JAVA';
+        } else if (strpos($browser,'safari')) {
+            $technol = 'JAVA';
+        } else if (strpos($browser,'opera')) {
+            $technol = 'HTML5';
         } else {
             $technol = 'HTML5';
         }
@@ -217,8 +221,8 @@ function filter_jmol_replace_callback($matches) {
             serverURL: '".$wwwroot."/filter/jmol/yui/jsmol/jsmol.php',
             j2sPath: '".$wwwroot."/filter/jmol/yui/jsmol/j2s',
             jarPath: '".$wwwroot."/filter/jmol/yui/jsmol/java',
-            jarFile: 'JmolApplet0.jar',
-            isSigned: false,
+            jarFile: 'JmolAppletSigned0.jar',
+            isSigned: true,
             addSelectionOptions: false,
             readyFunction: null,
             console: 'jmol_infodiv',
@@ -230,6 +234,7 @@ function filter_jmol_replace_callback($matches) {
 
         Y.on('load', function () {
         	   Jmol.setDocument(0);
+        	   Jmol._alertNoBinary = false;
         	   Jmol.getApplet('jmol".$id."', Info);
             $('#jmoldiv".$id."').html(Jmol.getAppletHtml(jmol".$id."));
             $('#control".$id."').html(".$control.");

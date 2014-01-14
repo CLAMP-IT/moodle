@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.adapter.smarter");
-Clazz.load (["J.util.SB"], "J.adapter.smarter.AtomSetCollectionReader", ["java.lang.Boolean", "$.Character", "$.Float", "J.adapter.smarter.Atom", "$.AtomSetCollection", "J.api.Interface", "$.JmolAdapter", "J.util.BS", "$.BSUtil", "$.JmolList", "$.Logger", "$.Matrix3f", "$.P3", "$.Parser", "$.Quaternion", "$.TextFormat", "$.V3"], function () {
+Clazz.load (["JU.SB"], "J.adapter.smarter.AtomSetCollectionReader", ["java.io.BufferedReader", "java.lang.Boolean", "$.Character", "$.Float", "JU.BS", "$.List", "$.M3", "$.P3", "$.PT", "$.V3", "J.adapter.smarter.Atom", "$.AtomSetCollection", "J.api.Interface", "$.JmolAdapter", "$.JmolDocument", "J.util.BSUtil", "$.Logger", "$.Parser", "$.Quaternion"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.isBinary = false;
 this.atomSetCollection = null;
@@ -38,11 +38,13 @@ this.ignoreFileSpaceGroupName = false;
 this.notionalUnitCell = null;
 this.desiredModelNumber = -2147483648;
 this.symmetry = null;
-this.os = null;
+this.out = null;
 this.iHaveFractionalCoordinates = false;
 this.doPackUnitCell = false;
 this.strSupercell = null;
 this.ptSupercell = null;
+this.mustFinalizeModelSet = false;
+this.forcePacked = false;
 this.loadNote = null;
 this.doConvertToFractional = false;
 this.fileCoordinatesAreFractional = false;
@@ -73,6 +75,7 @@ this.filterChain = false;
 this.filterAtomName = false;
 this.filterAtomType = false;
 this.filterAtomTypeStr = null;
+this.filterAtomNameTerminator = ";";
 this.filterElement = false;
 this.filterHetero = false;
 this.filterEveryNth = false;
@@ -96,10 +99,15 @@ Clazz.instantialize (this, arguments);
 }, J.adapter.smarter, "AtomSetCollectionReader");
 Clazz.prepareFields (c$, function () {
 this.next =  Clazz.newIntArray (1, 0);
-this.loadNote =  new J.util.SB ();
+this.loadNote =  new JU.SB ();
 });
 $_M(c$, "setup", 
 function (fullPath, htParams, reader) {
+this.setupASCR (fullPath, htParams, reader);
+}, "~S,java.util.Map,~O");
+$_M(c$, "setupASCR", 
+function (fullPath, htParams, reader) {
+if (fullPath == null) return;
 this.htParams = htParams;
 this.filePath = fullPath.$replace ('\\', '/');
 var i = this.filePath.lastIndexOf ('/');
@@ -118,17 +126,34 @@ if (this.line == null && this.continuing) this.readLine ();
 while (this.line != null && this.continuing) if (this.checkLine ()) this.readLine ();
 
 } else {
+this.doc.setOutputChannel (this.out);
 this.processBinaryDocument (this.doc);
 }this.finalizeReader ();
 } catch (e) {
 J.util.Logger.info ("Reader error: " + e);
-if (!this.viewer.isJS ()) e.printStackTrace ();
+if (!this.viewer.isJS) e.printStackTrace ();
 this.setError (e);
 }
 if (this.reader != null) this.reader.close ();
 if (this.doc != null) this.doc.close ();
 return this.finish ();
 });
+$_M(c$, "fixBaseIndices", 
+($fz = function () {
+try {
+var baseAtomIndex = (this.htParams.get ("baseAtomIndex")).intValue ();
+var baseModelIndex = (this.htParams.get ("baseModelIndex")).intValue ();
+baseAtomIndex += this.atomSetCollection.getAtomCount ();
+baseModelIndex += this.atomSetCollection.getAtomSetCount ();
+this.htParams.put ("baseAtomIndex", Integer.$valueOf (baseAtomIndex));
+this.htParams.put ("baseModelIndex", Integer.$valueOf (baseModelIndex));
+} catch (e) {
+if (Clazz.exceptionOf (e, Exception)) {
+} else {
+throw e;
+}
+}
+}, $fz.isPrivate = true, $fz));
 $_M(c$, "readDataObject", 
 function (node) {
 this.initialize ();
@@ -172,7 +197,7 @@ $_M(c$, "initializeTrajectoryFile",
 function () {
 this.atomSetCollection.addAtom ( new J.adapter.smarter.Atom ());
 this.trajectorySteps = this.htParams.get ("trajectorySteps");
-if (this.trajectorySteps == null) this.htParams.put ("trajectorySteps", this.trajectorySteps =  new J.util.JmolList ());
+if (this.trajectorySteps == null) this.htParams.put ("trajectorySteps", this.trajectorySteps =  new JU.List ());
 });
 $_M(c$, "finalizeReader", 
 function () {
@@ -182,6 +207,7 @@ $_M(c$, "finalizeReaderASCR",
 function () {
 this.applySymmetryAndSetTrajectory ();
 this.setLoadNote ();
+this.atomSetCollection.finalizeStructures ();
 if (this.doCentralize) this.atomSetCollection.centralize ();
 });
 $_M(c$, "setLoadNote", 
@@ -193,9 +219,7 @@ function () {
 this.atomSetCollection.setGlobalBoolean (4);
 this.atomSetCollection.setAtomSetAuxiliaryInfo ("isPDB", Boolean.TRUE);
 if (this.htParams.get ("pdbNoHydrogens") != null) this.atomSetCollection.setAtomSetCollectionAuxiliaryInfo ("pdbNoHydrogens", this.htParams.get ("pdbNoHydrogens"));
-});
-$_M(c$, "setPdb", 
-function () {
+if (this.checkFilterKey ("ADDHYDROGENS")) this.atomSetCollection.setAtomSetCollectionAuxiliaryInfo ("pdbAddHydrogens", Boolean.TRUE);
 });
 $_M(c$, "finish", 
 ($fz = function () {
@@ -216,6 +240,7 @@ this.atomSetCollection.setAtomSetAuxiliaryInfoForSet ("fileType", fileType, i);
 this.atomSetCollection.freeze (this.reverseModels);
 if (this.atomSetCollection.errorMessage != null) return this.atomSetCollection.errorMessage + "\nfor file " + this.filePath + "\ntype " + name;
 if ((this.atomSetCollection.bsAtoms == null ? this.atomSetCollection.getAtomCount () : this.atomSetCollection.bsAtoms.cardinality ()) == 0 && fileType.indexOf ("DataOnly") < 0 && this.atomSetCollection.getAtomSetCollectionAuxiliaryInfo ("dataOnly") == null) return "No atoms found\nfor file " + this.filePath + "\ntype " + name;
+this.fixBaseIndices ();
 return this.atomSetCollection;
 }, $fz.isPrivate = true, $fz));
 $_M(c$, "setError", 
@@ -228,7 +253,7 @@ else
 s = e.toString();
 }if (this.line == null) this.atomSetCollection.errorMessage = "Error reading file at end of file \n" + s;
  else this.atomSetCollection.errorMessage = "Error reading file at line " + this.ptLine + ":\n" + this.line + "\n" + s;
-if (!this.viewer.isJS ()) e.printStackTrace ();
+if (!this.viewer.isJS) e.printStackTrace ();
 }, $fz.isPrivate = true, $fz), "Throwable");
 $_M(c$, "initialize", 
 ($fz = function () {
@@ -242,7 +267,7 @@ this.merging = this.htParams.containsKey ("merging");
 this.getHeader = this.htParams.containsKey ("getHeader");
 this.isSequential = this.htParams.containsKey ("isSequential");
 this.readerName = this.htParams.get ("readerName");
-if (this.htParams.containsKey ("OutputStream")) this.os = this.htParams.get ("OutputStream");
+if (this.htParams.containsKey ("outputChannel")) this.out = this.htParams.get ("outputChannel");
 if (this.htParams.containsKey ("vibrationNumber")) this.desiredVibrationNumber = (this.htParams.get ("vibrationNumber")).intValue ();
  else if (this.htParams.containsKey ("modelNumber")) this.desiredModelNumber = (this.htParams.get ("modelNumber")).intValue ();
 this.applySymmetryToBonds = this.htParams.containsKey ("applySymmetryToBonds");
@@ -252,7 +277,7 @@ var ptFile = (this.htParams.containsKey ("ptFile") ? (this.htParams.get ("ptFile
 this.isTrajectory = this.htParams.containsKey ("isTrajectory");
 if (ptFile > 0 && this.htParams.containsKey ("firstLastSteps")) {
 var val = (this.htParams.get ("firstLastSteps")).get (ptFile - 1);
-if (Clazz.instanceOf (val, J.util.BS)) {
+if (Clazz.instanceOf (val, JU.BS)) {
 this.bsModels = val;
 } else {
 this.firstLastStep = val;
@@ -272,30 +297,16 @@ for (var i = this.firstLastStep[0]; i <= this.firstLastStep[1]; i += this.firstL
 
 }}if (this.bsModels != null && (this.firstLastStep == null || this.firstLastStep[1] != -1)) this.lastModelNumber = this.bsModels.length ();
 this.symmetryRange = (this.htParams.containsKey ("symmetryRange") ? (this.htParams.get ("symmetryRange")).floatValue () : 0);
-this.latticeCells =  Clazz.newIntArray (3, 0);
-if (this.htParams.containsKey ("lattice")) {
-var pt = (this.htParams.get ("lattice"));
-this.latticeCells[0] = Clazz.floatToInt (pt.x);
-this.latticeCells[1] = Clazz.floatToInt (pt.y);
-this.latticeCells[2] = Clazz.floatToInt (pt.z);
-this.doCentroidUnitCell = (this.htParams.containsKey ("centroid"));
-if (this.doCentroidUnitCell && (this.latticeCells[2] == -1 || this.latticeCells[2] == 0)) this.latticeCells[2] = 1;
-this.centroidPacked = this.doCentroidUnitCell && this.htParams.containsKey ("packed");
-this.doPackUnitCell = !this.doCentroidUnitCell && (this.htParams.containsKey ("packed") || this.latticeCells[2] < 0);
-}this.doApplySymmetry = (this.latticeCells[0] > 0 && this.latticeCells[1] > 0);
-if (!this.doApplySymmetry) {
-this.latticeCells[0] = 0;
-this.latticeCells[1] = 0;
-this.latticeCells[2] = 0;
-}if (this.htParams.containsKey ("spaceGroupIndex")) {
+this.initializeSymmetryOptions ();
+if (this.htParams.containsKey ("spaceGroupIndex")) {
 this.desiredSpaceGroupIndex = (this.htParams.get ("spaceGroupIndex")).intValue ();
 if (this.desiredSpaceGroupIndex == -2) this.spaceGroup = this.htParams.get ("spaceGroupName");
 this.ignoreFileSpaceGroupName = (this.desiredSpaceGroupIndex == -2 || this.desiredSpaceGroupIndex >= 0);
 this.ignoreFileSymmetryOperators = (this.desiredSpaceGroupIndex != -1);
 }if (this.htParams.containsKey ("unitCellOffset")) {
-this.fileScaling = J.util.P3.new3 (1, 1, 1);
+this.fileScaling = JU.P3.new3 (1, 1, 1);
 this.fileOffset = this.htParams.get ("unitCellOffset");
-this.fileOffsetFractional = J.util.P3.newP (this.fileOffset);
+this.fileOffsetFractional = JU.P3.newP (this.fileOffset);
 this.unitCellOffsetFractional = this.htParams.containsKey ("unitCellOffsetFractional");
 }if (this.htParams.containsKey ("unitcell")) {
 var fParams = this.htParams.get ("unitcell");
@@ -309,6 +320,26 @@ this.setUnitCell (fParams[0], fParams[1], fParams[2], fParams[3], fParams[4], fP
 }this.ignoreFileUnitCell = this.iHaveUnitCell;
 if (this.merging && !this.iHaveUnitCell) this.setFractionalCoordinates (false);
 }}, $fz.isPrivate = true, $fz));
+$_M(c$, "initializeSymmetryOptions", 
+function () {
+this.latticeCells =  Clazz.newIntArray (3, 0);
+var pt = (this.htParams.get ("lattice"));
+if (this.forcePacked && pt == null) pt = JU.P3.new3 (1, 1, 1);
+if (pt != null) {
+this.latticeCells[0] = Clazz.floatToInt (pt.x);
+this.latticeCells[1] = Clazz.floatToInt (pt.y);
+this.latticeCells[2] = Clazz.floatToInt (pt.z);
+this.doCentroidUnitCell = (this.htParams.containsKey ("centroid"));
+if (this.doCentroidUnitCell && (this.latticeCells[2] == -1 || this.latticeCells[2] == 0)) this.latticeCells[2] = 1;
+var isPacked = this.forcePacked || this.htParams.containsKey ("packed");
+this.centroidPacked = this.doCentroidUnitCell && isPacked;
+this.doPackUnitCell = !this.doCentroidUnitCell && (isPacked || this.latticeCells[2] < 0);
+}this.doApplySymmetry = (this.latticeCells[0] > 0 && this.latticeCells[1] > 0);
+if (!this.doApplySymmetry) {
+this.latticeCells[0] = 0;
+this.latticeCells[1] = 0;
+this.latticeCells[2] = 0;
+}});
 $_M(c$, "doGetModel", 
 function (modelNumber, title) {
 if (title != null && this.nameRequired != null && this.nameRequired.length > 0 && title.toUpperCase ().indexOf (this.nameRequired) < 0) return false;
@@ -363,10 +394,12 @@ J.util.Logger.info ("Setting space group name to " + this.spaceGroup);
 }, "~S");
 $_M(c$, "setSymmetryOperator", 
 function (xyz) {
-if (this.ignoreFileSymmetryOperators) return;
-this.atomSetCollection.setLatticeCells (this.latticeCells, this.applySymmetryToBonds, this.doPackUnitCell, this.doCentroidUnitCell, this.centroidPacked, this.strSupercell, this.ptSupercell);
-if (!this.atomSetCollection.addSpaceGroupOperation (xyz)) J.util.Logger.warn ("Skipping symmetry operation " + xyz);
+if (this.ignoreFileSymmetryOperators) return -1;
+this.setLatticeCells (false);
+var isym = this.atomSetCollection.addSpaceGroupOperation (xyz);
+if (isym < 0) J.util.Logger.warn ("Skipping symmetry operation " + xyz);
 this.iHaveSymmetryOperators = true;
+return isym;
 }, "~S");
 $_M(c$, "initializeCartesianToFractional", 
 ($fz = function () {
@@ -447,6 +480,11 @@ function (TF) {
 this.iHaveFractionalCoordinates = this.fileCoordinatesAreFractional = TF;
 this.checkUnitCellOffset ();
 }, "~B");
+$_M(c$, "setFilterAtomTypeStr", 
+function (s) {
+this.filterAtomTypeStr = s;
+this.filterAtomNameTerminator = "\0";
+}, "~S");
 $_M(c$, "setFilter", 
 function (filter0) {
 if (filter0 == null) {
@@ -463,10 +501,10 @@ this.useAltNames = this.checkFilterKey ("ALTNAME");
 this.reverseModels = this.checkFilterKey ("REVERSEMODELS");
 if (this.checkFilterKey ("NAME=")) {
 this.nameRequired = this.filter.substring (this.filter.indexOf ("NAME=") + 5);
-if (this.nameRequired.startsWith ("'")) this.nameRequired = J.util.TextFormat.splitChars (this.nameRequired, "'")[1];
- else if (this.nameRequired.startsWith ("\"")) this.nameRequired = J.util.TextFormat.splitChars (this.nameRequired, "\"")[1];
-filter0 = this.filter = J.util.TextFormat.simpleReplace (this.filter, this.nameRequired, "");
-filter0 = this.filter = J.util.TextFormat.simpleReplace (this.filter, "NAME=", "");
+if (this.nameRequired.startsWith ("'")) this.nameRequired = JU.PT.split (this.nameRequired, "'")[1];
+ else if (this.nameRequired.startsWith ("\"")) this.nameRequired = JU.PT.split (this.nameRequired, "\"")[1];
+filter0 = this.filter = JU.PT.simpleReplace (this.filter, this.nameRequired, "");
+filter0 = this.filter = JU.PT.simpleReplace (this.filter, "NAME=", "");
 }if (this.filter == null) return;
 this.filterAtomName = this.checkFilterKey ("*.") || this.checkFilterKey ("!.");
 this.filterElement = this.checkFilterKey ("_");
@@ -480,7 +518,7 @@ if (this.filterEveryNth) this.filterN = this.parseIntStr (this.filter.substring 
 if (this.filterN == -2147483648) this.filterEveryNth = false;
 this.haveAtomFilter = this.filterAtomName || this.filterAtomType || this.filterElement || this.filterGroup3 || this.filterChain || this.filterAltLoc || this.filterHetero || this.filterEveryNth || this.checkFilterKey ("/=");
 if (this.bsFilter == null) {
-this.bsFilter =  new J.util.BS ();
+this.bsFilter =  new JU.BS ();
 this.htParams.put ("bsFilter", this.bsFilter);
 this.filter = (";" + this.filter + ";").$replace (',', ';');
 J.util.Logger.info ("filtering with " + this.filter);
@@ -491,6 +529,11 @@ if ((ipt = this.filter.indexOf ("|")) >= 0) {
 this.filter1 = this.filter.substring (0, ipt).trim () + ";";
 this.filter2 = ";" + this.filter.substring (ipt).trim ();
 }}}}, "~S");
+$_M(c$, "getFilter", 
+function (key) {
+var pt = (this.filter == null ? -1 : this.filter.indexOf (key));
+return (pt < 0 ? null : this.filter.substring (pt + key.length, this.filter.indexOf (";", pt)));
+}, "~S");
 $_M(c$, "checkFilterKey", 
 function (key) {
 return (this.filter != null && this.filter.indexOf (key) >= 0);
@@ -506,8 +549,16 @@ return isOK;
 }, "J.adapter.smarter.Atom,~N");
 $_M(c$, "checkFilter", 
 ($fz = function (atom, f) {
-return (!this.filterGroup3 || atom.group3 == null || !this.filterReject (f, "[", atom.group3.toUpperCase () + "]")) && (!this.filterAtomName || atom.atomName == null || !this.filterReject (f, ".", atom.atomName.toUpperCase () + (this.filterAtomTypeStr == null ? ";" : "\0"))) && (this.filterAtomTypeStr == null || atom.atomName == null || atom.atomName.toUpperCase ().indexOf ("\0" + this.filterAtomTypeStr) >= 0) && (!this.filterElement || atom.elementSymbol == null || !this.filterReject (f, "_", atom.elementSymbol.toUpperCase () + ";")) && (!this.filterChain || atom.chainID == '\0' || !this.filterReject (f, ":", "" + atom.chainID)) && (!this.filterAltLoc || atom.alternateLocationID == '\0' || !this.filterReject (f, "%", "" + atom.alternateLocationID)) && (!this.filterHetero || !this.filterReject (f, "HETATM", atom.isHetero ? "HETATM" : "ATOM"));
+return (!this.filterGroup3 || atom.group3 == null || !this.filterReject (f, "[", atom.group3.toUpperCase () + "]")) && (!this.filterAtomName || this.allowAtomName (atom.atomName, f)) && (this.filterAtomTypeStr == null || atom.atomName == null || atom.atomName.toUpperCase ().indexOf ("\0" + this.filterAtomTypeStr) >= 0) && (!this.filterElement || atom.elementSymbol == null || !this.filterReject (f, "_", atom.elementSymbol.toUpperCase () + ";")) && (!this.filterChain || atom.chainID == 0 || !this.filterReject (f, ":", "" + this.viewer.getChainIDStr (atom.chainID))) && (!this.filterAltLoc || atom.alternateLocationID == '\0' || !this.filterReject (f, "%", "" + atom.alternateLocationID)) && (!this.filterHetero || !this.filterReject (f, "HETATM", atom.isHetero ? "HETATM" : "ATOM"));
 }, $fz.isPrivate = true, $fz), "J.adapter.smarter.Atom,~S");
+$_M(c$, "rejectAtomName", 
+function (name) {
+return this.filterAtomName && !this.allowAtomName (name, this.filter);
+}, "~S");
+$_M(c$, "allowAtomName", 
+($fz = function (atomName, f) {
+return (atomName == null || !this.filterReject (f, ".", atomName.toUpperCase () + this.filterAtomNameTerminator));
+}, $fz.isPrivate = true, $fz), "~S,~S");
 $_M(c$, "filterReject", 
 function (f, code, atomCode) {
 return (f.indexOf (code) >= 0 && (f.indexOf ("!" + code) >= 0 ? f.indexOf (code + atomCode) >= 0 : f.indexOf (code + atomCode) < 0));
@@ -524,8 +575,8 @@ return this.addVibrations && (this.desiredVibrationNumber <= 0 || vibrationNumbe
 $_M(c$, "setTransform", 
 function (x1, y1, z1, x2, y2, z2, x3, y3, z3) {
 if (this.matrixRotate != null || !this.doSetOrientation) return;
-this.matrixRotate =  new J.util.Matrix3f ();
-var v =  new J.util.V3 ();
+this.matrixRotate =  new JU.M3 ();
+var v =  new JU.V3 ();
 v.set (x1, y1, z1);
 v.normalize ();
 this.matrixRotate.setColumnV (0, v);
@@ -535,7 +586,7 @@ this.matrixRotate.setColumnV (1, v);
 v.set (x3, y3, z3);
 v.normalize ();
 this.matrixRotate.setColumnV (2, v);
-this.atomSetCollection.setAtomSetCollectionAuxiliaryInfo ("defaultOrientationMatrix", J.util.Matrix3f.newM (this.matrixRotate));
+this.atomSetCollection.setAtomSetCollectionAuxiliaryInfo ("defaultOrientationMatrix", JU.M3.newM (this.matrixRotate));
 var q = J.util.Quaternion.newM (this.matrixRotate);
 this.atomSetCollection.setAtomSetCollectionAuxiliaryInfo ("defaultOrientationQuaternion", q);
 J.util.Logger.info ("defaultOrientationMatrix = " + this.matrixRotate);
@@ -581,26 +632,30 @@ this.applySymTrajASCR ();
 });
 $_M(c$, "applySymTrajASCR", 
 function () {
+if (this.forcePacked) this.initializeSymmetryOptions ();
+var sym = null;
 if (this.iHaveUnitCell && this.doCheckUnitCell) {
 this.atomSetCollection.setCoordinatesAreFractional (this.iHaveFractionalCoordinates);
 this.atomSetCollection.setNotionalUnitCell (this.notionalUnitCell, this.matUnitCellOrientation, this.unitCellOffset);
+sym = this.atomSetCollection.symmetry;
 this.atomSetCollection.setAtomSetSpaceGroupName (this.spaceGroup);
 this.atomSetCollection.setSymmetryRange (this.symmetryRange);
 if (this.doConvertToFractional || this.fileCoordinatesAreFractional) {
-this.atomSetCollection.setLatticeCells (this.latticeCells, this.applySymmetryToBonds, this.doPackUnitCell, this.doCentroidUnitCell, this.centroidPacked, this.strSupercell, this.ptSupercell);
+this.setLatticeCells (false);
 if (this.ignoreFileSpaceGroupName || !this.iHaveSymmetryOperators) {
 if (!this.merging || this.symmetry == null) this.getSymmetry ();
 if (this.symmetry.createSpaceGroup (this.desiredSpaceGroupIndex, (this.spaceGroup.indexOf ("!") >= 0 ? "P1" : this.spaceGroup), this.notionalUnitCell)) {
+this.atomSetCollection.applySymmetry (this.symmetry);
 this.atomSetCollection.setAtomSetSpaceGroupName (this.symmetry.getSpaceGroupName ());
-this.atomSetCollection.applySymmetryUsing (this.symmetry);
 }} else {
-this.atomSetCollection.applySymmetry ();
+this.atomSetCollection.applySymmetry (null);
 }}if (this.iHaveFractionalCoordinates && this.merging && this.symmetry != null) {
 this.atomSetCollection.toCartesian (this.symmetry);
 this.atomSetCollection.setCoordinatesAreFractional (false);
 this.addVibrations = false;
 }}if (this.isTrajectory) this.atomSetCollection.setTrajectory ();
 this.initializeSymmetry ();
+return sym;
 });
 $_M(c$, "finalizeMOData", 
 function (moData) {
@@ -734,11 +789,11 @@ if (!this.line.endsWith ("#noautobond")) this.line += "#noautobond";
 J.util.Logger.info (this.line);
 var data =  Clazz.newFloatArray (15, 0);
 this.parseStringInfestedFloatArray (this.line.substring (10).$replace ('=', ' ').$replace ('{', ' ').$replace ('}', ' '), data);
-var minXYZ = J.util.P3.new3 (data[0], data[1], data[2]);
-var maxXYZ = J.util.P3.new3 (data[3], data[4], data[5]);
-this.fileScaling = J.util.P3.new3 (data[6], data[7], data[8]);
-this.fileOffset = J.util.P3.new3 (data[9], data[10], data[11]);
-var plotScale = J.util.P3.new3 (data[12], data[13], data[14]);
+var minXYZ = JU.P3.new3 (data[0], data[1], data[2]);
+var maxXYZ = JU.P3.new3 (data[3], data[4], data[5]);
+this.fileScaling = JU.P3.new3 (data[6], data[7], data[8]);
+this.fileOffset = JU.P3.new3 (data[9], data[10], data[11]);
+var plotScale = JU.P3.new3 (data[12], data[13], data[14]);
 if (plotScale.x <= 0) plotScale.x = 100;
 if (plotScale.y <= 0) plotScale.y = 100;
 if (plotScale.z <= 0) plotScale.z = 100;
@@ -746,9 +801,9 @@ if (this.fileScaling.y == 0) this.fileScaling.y = 1;
 if (this.fileScaling.z == 0) this.fileScaling.z = 1;
 this.setFractionalCoordinates (true);
 this.latticeCells =  Clazz.newIntArray (3, 0);
-this.atomSetCollection.setLatticeCells (this.latticeCells, true, false, false, false, null, null);
+this.setLatticeCells (true);
 this.setUnitCell (plotScale.x * 2 / (maxXYZ.x - minXYZ.x), plotScale.y * 2 / (maxXYZ.y - minXYZ.y), plotScale.z * 2 / (maxXYZ.z == minXYZ.z ? 1 : maxXYZ.z - minXYZ.z), 90, 90, 90);
-this.unitCellOffset = J.util.P3.newP (plotScale);
+this.unitCellOffset = JU.P3.newP (plotScale);
 this.unitCellOffset.scale (-1);
 this.symmetry.toFractional (this.unitCellOffset, false);
 this.unitCellOffset.scaleAdd2 (-1.0, minXYZ, this.unitCellOffset);
@@ -765,6 +820,11 @@ script = script.substring (0, script.indexOf ("#"));
 }this.addJmolScript (script);
 this.line = this.line.substring (0, pt).trim ();
 }});
+$_M(c$, "setLatticeCells", 
+($fz = function (isReset) {
+if (isReset) this.atomSetCollection.setLatticeCells (this.latticeCells, true, false, false, false, null, null);
+ else this.atomSetCollection.setLatticeCells (this.latticeCells, this.applySymmetryToBonds, this.doPackUnitCell, this.doCentroidUnitCell, this.centroidPacked, this.strSupercell, this.ptSupercell);
+}, $fz.isPrivate = true, $fz), "~B");
 $_M(c$, "addJmolScript", 
 function (script) {
 J.util.Logger.info ("#jmolScript: " + script);
@@ -788,12 +848,11 @@ $_M(c$, "RL",
 function () {
 this.prevline = this.line;
 this.line = this.reader.readLine ();
-if (this.os != null && this.line != null) {
+if (this.out != null && this.line != null) {
 var b = this.line.getBytes ();
-this.os.write (b, 0, b.length);
-{
-this.os.writeByteAsInt(0x0A);
-}}this.ptLine++;
+this.out.write (b, 0, b.length);
+this.out.writeByteAsInt (0x0A);
+}this.ptLine++;
 if (J.util.Logger.debugging) J.util.Logger.debug (this.line);
 return this.line;
 });
@@ -806,7 +865,7 @@ return fields;
 }, "~S,~N,~N");
 $_M(c$, "getTokens", 
 function () {
-return J.util.Parser.getTokens (this.line);
+return JU.PT.getTokens (this.line);
 });
 $_M(c$, "parseStringInfestedFloatArray", 
 function (s, data) {
@@ -815,79 +874,79 @@ J.util.Parser.parseStringInfestedFloatArray (s, null, data);
 c$.getTokensFloat = $_M(c$, "getTokensFloat", 
 function (s, f, n) {
 if (f == null) f =  Clazz.newFloatArray (n, 0);
-J.util.Parser.parseFloatArrayDataN (J.adapter.smarter.AtomSetCollectionReader.getTokensStr (s), f, n);
+JU.PT.parseFloatArrayDataN (J.adapter.smarter.AtomSetCollectionReader.getTokensStr (s), f, n);
 return f;
 }, "~S,~A,~N");
 c$.getTokensStr = $_M(c$, "getTokensStr", 
 function (s) {
-return J.util.Parser.getTokens (s);
+return JU.PT.getTokens (s);
 }, "~S");
 c$.getTokensAt = $_M(c$, "getTokensAt", 
 function (s, iStart) {
-return J.util.Parser.getTokensAt (s, iStart);
+return JU.PT.getTokensAt (s, iStart);
 }, "~S,~N");
 $_M(c$, "parseFloat", 
 function () {
-return J.util.Parser.parseFloatNext (this.line, this.next);
+return JU.PT.parseFloatNext (this.line, this.next);
 });
 $_M(c$, "parseFloatStr", 
 function (s) {
 this.next[0] = 0;
-return J.util.Parser.parseFloatNext (s, this.next);
+return JU.PT.parseFloatNext (s, this.next);
 }, "~S");
 $_M(c$, "parseFloatRange", 
 function (s, iStart, iEnd) {
 this.next[0] = iStart;
-return J.util.Parser.parseFloatRange (s, iEnd, this.next);
+return JU.PT.parseFloatRange (s, iEnd, this.next);
 }, "~S,~N,~N");
 $_M(c$, "parseInt", 
 function () {
-return J.util.Parser.parseIntNext (this.line, this.next);
+return JU.PT.parseIntNext (this.line, this.next);
 });
 $_M(c$, "parseIntStr", 
 function (s) {
 this.next[0] = 0;
-return J.util.Parser.parseIntNext (s, this.next);
+return JU.PT.parseIntNext (s, this.next);
 }, "~S");
 $_M(c$, "parseIntAt", 
 function (s, iStart) {
 this.next[0] = iStart;
-return J.util.Parser.parseIntNext (s, this.next);
+return JU.PT.parseIntNext (s, this.next);
 }, "~S,~N");
 $_M(c$, "parseIntRange", 
 function (s, iStart, iEnd) {
 this.next[0] = iStart;
-return J.util.Parser.parseIntRange (s, iEnd, this.next);
+return JU.PT.parseIntRange (s, iEnd, this.next);
 }, "~S,~N,~N");
 $_M(c$, "parseToken", 
 function () {
-return J.util.Parser.parseTokenNext (this.line, this.next);
+return JU.PT.parseTokenNext (this.line, this.next);
 });
 $_M(c$, "parseTokenStr", 
 function (s) {
 this.next[0] = 0;
-return J.util.Parser.parseTokenNext (s, this.next);
+return JU.PT.parseTokenNext (s, this.next);
 }, "~S");
 $_M(c$, "parseTokenNext", 
 function (s) {
-return J.util.Parser.parseTokenNext (s, this.next);
+return JU.PT.parseTokenNext (s, this.next);
 }, "~S");
 $_M(c$, "parseTokenRange", 
 function (s, iStart, iEnd) {
 this.next[0] = iStart;
-return J.util.Parser.parseTokenRange (s, iEnd, this.next);
+return JU.PT.parseTokenRange (s, iEnd, this.next);
 }, "~S,~N,~N");
 c$.parseTrimmedAt = $_M(c$, "parseTrimmedAt", 
 function (s, iStart) {
-return J.util.Parser.parseTrimmedAt (s, iStart);
+return JU.PT.parseTrimmedAt (s, iStart);
 }, "~S,~N");
 c$.parseTrimmedRange = $_M(c$, "parseTrimmedRange", 
 function (s, iStart, iEnd) {
-return J.util.Parser.parseTrimmedRange (s, iStart, iEnd);
+return JU.PT.parseTrimmedRange (s, iStart, iEnd);
 }, "~S,~N,~N");
 c$.getFortranFormatLengths = $_M(c$, "getFortranFormatLengths", 
 function (s) {
-var vdata =  new J.util.JmolList ();
+var vdata =  new JU.List ();
 var n = 0;
 var c = 0;
 var factor = 1;
@@ -938,7 +997,7 @@ if (i == 0 && this.line != null) {
 i = -1;
 continue;
 }}this.fillFloatArray (this.line, 0, f);
-vectors[i] =  new J.util.V3 ();
+vectors[i] =  new JU.V3 ();
 vectors[i].setA (f);
 if (isBohr) vectors[i].scale (0.5291772);
 }
@@ -954,8 +1013,18 @@ str = str.substring (("" + isotope).length);
 atom.elementNumber = (str.length == 0 ? isotope : ((isotope << 7) + J.api.JmolAdapter.getElementNumber (str)));
 }}, "J.adapter.smarter.Atom,~S");
 $_M(c$, "finalizeModelSet", 
-function (baseModelIndex, baseAtomIndex) {
-}, "~N,~N");
+function () {
+});
+$_M(c$, "setChainID", 
+function (atom, ch) {
+atom.chainID = this.viewer.getChainID ("" + ch);
+}, "J.adapter.smarter.Atom,~S");
+$_M(c$, "setU", 
+function (atom, i, val) {
+var data = this.atomSetCollection.getAnisoBorU (atom);
+if (data == null) this.atomSetCollection.setAnisoBorU (atom, data =  Clazz.newFloatArray (8, 0), 8);
+data[i] = val;
+}, "J.adapter.smarter.Atom,~N,~N");
 Clazz.defineStatics (c$,
 "ANGSTROMS_PER_BOHR", 0.5291772);
 });

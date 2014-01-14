@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.io");
-Clazz.load (null, "J.io.FileReader", ["java.io.BufferedReader", "J.api.Interface", "J.io.JmolBinary", "J.util.Escape", "$.Logger", "$.TextFormat"], function () {
+Clazz.load (null, "J.io.FileReader", ["java.io.BufferedInputStream", "$.BufferedReader", "$.Reader", "javajs.api.ZInputStream", "JU.PT", "J.api.Interface", "$.JmolDocument", "J.io.JmolBinary", "J.util.Logger"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.fm = null;
 this.viewer = null;
@@ -23,7 +23,7 @@ this.fullPathNameIn = fullPathName;
 this.nameAsGivenIn = nameAsGiven;
 this.fileTypeIn = type;
 this.reader = (Clazz.instanceOf (reader, java.io.BufferedReader) ? reader : Clazz.instanceOf (reader, java.io.Reader) ?  new java.io.BufferedReader (reader) : null);
-this.bytes = (J.util.Escape.isAB (reader) ? reader : null);
+this.bytes = (JU.PT.isAB (reader) ? reader : null);
 this.htParams = htParams;
 this.isAppend = isAppend;
 }, "J.viewer.FileManager,J.viewer.Viewer,~S,~S,~S,~S,~O,java.util.Map,~B");
@@ -33,9 +33,7 @@ if (!this.isAppend && this.viewer.displayLoadErrors) this.viewer.zap (false, tru
 var errorMessage = null;
 var t = null;
 if (this.reader == null) {
-if (this.fileTypeIn == null) this.fileTypeIn = J.io.JmolBinary.getBinaryType (this.fullPathNameIn);
-var isBinary = J.io.JmolBinary.checkBinaryType (this.fileTypeIn);
-t = this.fm.getUnzippedBufferedReaderOrErrorMessageFromName (this.fullPathNameIn, this.bytes, true, isBinary, false, true);
+t = this.fm.getUnzippedReaderOrStreamFromName (this.fullPathNameIn, this.bytes, true, false, false, true, this.htParams);
 if (t == null || Clazz.instanceOf (t, String)) {
 errorMessage = (t == null ? "error opening:" + this.nameAsGivenIn : t);
 if (!errorMessage.startsWith ("NOTE:")) J.util.Logger.error ("file ERROR: " + this.fullPathNameIn + "\n" + errorMessage);
@@ -43,17 +41,16 @@ this.atomSetCollection = errorMessage;
 return;
 }if (Clazz.instanceOf (t, java.io.BufferedReader)) {
 this.reader = t;
-} else if (Clazz.instanceOf (t, J.api.ZInputStream)) {
+} else if (Clazz.instanceOf (t, javajs.api.ZInputStream)) {
 var name = this.fullPathNameIn;
-isBinary = (J.io.JmolBinary.getBinaryType (name) != null);
 var subFileList = null;
 if (name.indexOf ("|") >= 0 && !name.endsWith (".zip")) {
-subFileList = J.util.TextFormat.splitChars (name, "|");
+subFileList = JU.PT.split (name, "|");
 name = subFileList[0];
 }if (subFileList != null) this.htParams.put ("subFileList", subFileList);
 var zis = t;
 var zipDirectory = this.fm.getZipDirectory (name, true);
-this.atomSetCollection = t = J.io.JmolBinary.getAtomSetCollectionOrBufferedReaderFromZip (this.viewer.getModelAdapter (), zis, name, zipDirectory, this.htParams, false, isBinary);
+this.atomSetCollection = t = J.io.JmolBinary.getAtomSetCollectionOrBufferedReaderFromZip (this.viewer.getModelAdapter (), zis, name, zipDirectory, this.htParams, false);
 try {
 zis.close ();
 } catch (e) {

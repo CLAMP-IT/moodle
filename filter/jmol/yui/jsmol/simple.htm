@@ -48,7 +48,7 @@ var Info = {
 	debug: false,
 	color: "white",
 	addSelectionOptions: false,
-	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/jsmol.php",
+	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
 	use: "HTML5",
 	j2sPath: "j2s",
 	readyFunction: jmol_isReady,
@@ -91,7 +91,20 @@ function jmolMenu(a) {Jmol.jmolMenu(jmolApplet0, a)}
 <center>
 
 
-<table><tr><td align=center>
+<table><tr>
+<td>
+<i>set platformSpeed...</i>
+<br>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 8')">8</a>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 7')">7</a>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 6')">6</a>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 5')">5</a>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 4')">4</a>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 3')">3</a>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 2')">2</a>
+<a href="javascript:Jmol.script(jmolApplet0, 'set platformSpeed 1')">1</a>
+</td>
+<td align=center>
 
 <script type="text/javascript">
 
@@ -142,8 +155,9 @@ jmolBr()
 </script>
 </form>
 </td></tr>
-
-<tr><td align=center>
+<tr>
+<td></td>
+<td align=center>
 
 
 

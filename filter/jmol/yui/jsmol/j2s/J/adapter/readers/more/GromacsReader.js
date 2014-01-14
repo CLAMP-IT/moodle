@@ -1,12 +1,12 @@
 Clazz.declarePackage ("J.adapter.readers.more");
-Clazz.load (["J.adapter.smarter.AtomSetCollectionReader"], "J.adapter.readers.more.GromacsReader", ["java.lang.Float", "J.adapter.smarter.Atom", "J.api.JmolAdapter", "J.util.Logger", "$.P3"], function () {
+Clazz.load (["J.adapter.smarter.AtomSetCollectionReader"], "J.adapter.readers.more.GromacsReader", ["java.lang.Float", "JU.P3", "J.adapter.smarter.Atom", "J.api.JmolAdapter", "J.util.Logger"], function () {
 c$ = Clazz.declareType (J.adapter.readers.more, "GromacsReader", J.adapter.smarter.AtomSetCollectionReader);
-Clazz.overrideMethod (c$, "initializeReader", 
+$_V(c$, "initializeReader", 
 function () {
 this.atomSetCollection.newAtomSet ();
 this.setIsPDB ();
 });
-Clazz.overrideMethod (c$, "checkLine", 
+$_V(c$, "checkLine", 
 function () {
 this.checkCurrentLineForScript ();
 this.atomSetCollection.setAtomSetName (this.line.trim ());
@@ -44,7 +44,7 @@ var vx = this.parseFloatRange (this.line, 44, 52) * 10;
 var vy = this.parseFloatRange (this.line, 52, 60) * 10;
 var vz = this.parseFloatRange (this.line, 60, 68) * 10;
 if (Float.isNaN (vx) || Float.isNaN (vy) || Float.isNaN (vz)) continue;
-this.atomSetCollection.addVibrationVector (atom.atomIndex, vx, vy, vz);
+this.atomSetCollection.addVibrationVector (atom.index, vx, vy, vz);
 }
 }, $fz.isPrivate = true, $fz));
 $_M(c$, "setAtomName", 
@@ -75,7 +75,7 @@ var c = 10 * this.parseFloatStr (tokens[2]);
 this.setUnitCell (a, b, c, 90, 90, 90);
 this.setSpaceGroupName ("P1");
 var atoms = this.atomSetCollection.getAtoms ();
-var pt = J.util.P3.new3 (0.5, 0.5, 0.5);
+var pt = JU.P3.new3 (0.5, 0.5, 0.5);
 for (var i = this.atomSetCollection.getAtomCount (); --i >= 0; ) {
 this.setAtomCoord (atoms[i]);
 atoms[i].add (pt);

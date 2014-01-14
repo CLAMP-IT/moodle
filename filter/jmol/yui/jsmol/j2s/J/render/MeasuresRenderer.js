@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.render");
-Clazz.load (["J.render.LabelsRenderer", "J.util.AxisAngle4f", "$.Matrix3f"], "J.render.MeasuresRenderer", ["J.render.FontLineShapeRenderer", "J.util.Point3fi"], function () {
+Clazz.load (["J.render.LabelsRenderer", "JU.A4", "$.M3"], "J.render.MeasuresRenderer", ["J.render.FontLineShapeRenderer", "J.util.Point3fi"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.measurement = null;
 this.doJustify = false;
@@ -9,10 +9,10 @@ this.matrixT = null;
 Clazz.instantialize (this, arguments);
 }, J.render, "MeasuresRenderer", J.render.LabelsRenderer);
 Clazz.prepareFields (c$, function () {
-this.aaT =  new J.util.AxisAngle4f ();
-this.matrixT =  new J.util.Matrix3f ();
+this.aaT =  new JU.A4 ();
+this.matrixT =  new JU.M3 ();
 });
-Clazz.overrideMethod (c$, "render", 
+$_V(c$, "render", 
 function () {
 if (!this.g3d.checkTranslucent (false)) return false;
 if (this.atomPt == null) this.atomPt =  new J.util.Point3fi ();
@@ -23,13 +23,13 @@ this.mad0 = measures.mad;
 this.font3d = this.g3d.getFont3DScaled (measures.font3d, this.imageFontScaling);
 this.renderPendingMeasurement (measures.measurementPending);
 if (!this.viewer.getBoolean (603979926)) return false;
-var showMeasurementLabels = this.viewer.getBoolean (603979878);
+var showMeasurementLabels = this.viewer.getBoolean (603979879);
 var dynamicMeasurements = this.viewer.getBoolean (603979835);
 measures.setVisibilityInfo ();
 for (var i = measures.measurementCount; --i >= 0; ) {
 var m = measures.measurements.get (i);
 if (dynamicMeasurements || m.isDynamic) m.refresh ();
-if (!m.isVisible) continue;
+if (!m.isVisible || !m.$isValid) continue;
 this.colix = m.colix;
 if (this.colix == 0) this.colix = measures.colix;
 if (this.colix == 0) this.colix = this.viewer.getColixBackgroundContrast ();
@@ -56,7 +56,7 @@ $_M(c$, "renderMeasurement",
 ($fz = function (count, measurement, renderLabel) {
 this.measurement = measurement;
 var s = (renderLabel ? measurement.getString () : null);
-if ( new Boolean (s != null & s.length == 0).valueOf ()) s = null;
+if (s != null && s.length == 0) s = null;
 if (s != null && measurement.text != null) {
 measurement.text.setText (s);
 measurement.text.setColix (this.labelColix);
@@ -196,7 +196,7 @@ $_M(c$, "renderPendingMeasurement",
 if (this.isExport || measurementPending == null) return;
 var count = measurementPending.getCount ();
 if (count == 0) return;
-this.g3d.setColix (measurementPending.traceX == -2147483648 ? this.viewer.getColixRubberband () : count == 2 ? 20 : 23);
+this.g3d.setColix (this.labelColix = (measurementPending.traceX == -2147483648 ? this.viewer.getColixRubberband () : count == 2 ? 20 : 23));
 measurementPending.refresh ();
 if (measurementPending.haveTarget ()) this.renderMeasurement (count, measurementPending, measurementPending.traceX == -2147483648);
  else this.renderPendingWithCursor (count, measurementPending);
@@ -214,7 +214,7 @@ x <<= 1;
 y <<= 1;
 }this.drawLine (atomLast.screenX, atomLast.screenY, lastZ, x, y, 0, this.mad);
 }, $fz.isPrivate = true, $fz), "~N,J.modelset.MeasurementPending");
-Clazz.overrideMethod (c$, "drawLine", 
+$_V(c$, "drawLine", 
 function (x1, y1, z1, x2, y2, z2, mad) {
 var diameter = Clazz.floatToInt (mad >= 20 && this.exportType != 1 ? this.viewer.scaleToScreen (Clazz.doubleToInt ((z1 + z2) / 2), mad) : mad);
 if (this.dotsOrDashes && (this.dashDots == null || this.dashDots === J.render.FontLineShapeRenderer.ndots)) this.width = diameter;

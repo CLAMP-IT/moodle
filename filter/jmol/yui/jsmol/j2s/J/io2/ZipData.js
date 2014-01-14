@@ -25,6 +25,21 @@ return nBytesRemaining - nToAdd;
 }, "~A,~N,~N");
 $_M(c$, "addTo", 
 function (data) {
-data.append (J.io2.ZipUtil.staticGetGzippedBytesAsString (this.buf));
-}, "J.util.SB");
+data.append (J.io2.ZipData.getGzippedBytesAsString (this.buf));
+}, "JU.SB");
+c$.getGzippedBytesAsString = $_M(c$, "getGzippedBytesAsString", 
+function (bytes) {
+try {
+var bis = J.io2.ZipUtil.getUnGzippedInputStream (bytes);
+var s = J.io2.ZipUtil.getStreamAsString (bis);
+bis.close ();
+return s;
+} catch (e) {
+if (Clazz.exceptionOf (e, Exception)) {
+return "";
+} else {
+throw e;
+}
+}
+}, "~A");
 });

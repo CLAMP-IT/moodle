@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.render");
-Clazz.load (["J.render.FontLineShapeRenderer", "J.util.P3"], "J.render.AxesRenderer", ["J.constant.EnumAxesMode", "J.util.Point3fi"], function () {
+Clazz.load (["J.render.FontLineShapeRenderer", "JU.P3"], "J.render.AxesRenderer", ["J.constant.EnumAxesMode", "J.util.Point3fi"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.screens = null;
 this.originScreen = null;
@@ -9,23 +9,23 @@ Clazz.instantialize (this, arguments);
 Clazz.prepareFields (c$, function () {
 this.screens =  new Array (6);
 {
-for (var i = 6; --i >= 0; ) this.screens[i] =  new J.util.P3 ();
+for (var i = 6; --i >= 0; ) this.screens[i] =  new JU.P3 ();
 
-}this.originScreen =  new J.util.P3 ();
+}this.originScreen =  new JU.P3 ();
 this.colixes =  Clazz.newShortArray (3, 0);
 });
-Clazz.overrideMethod (c$, "initRenderer", 
+$_V(c$, "initRenderer", 
 function () {
 this.endcap = 2;
 this.draw000 = false;
 });
-Clazz.overrideMethod (c$, "render", 
+$_V(c$, "render", 
 function () {
 var axes = this.shape;
 var mad = this.viewer.getObjectMad (1);
 if (mad == 0 || !this.g3d.checkTranslucent (false)) return false;
 var isXY = (axes.axisXY.z != 0);
-if (!isXY && this.viewer.isNavigating () && this.viewer.getBoolean (603979887)) return false;
+if (!isXY && this.viewer.isNavigating () && this.viewer.getBoolean (603979888)) return false;
 var axesMode = this.viewer.getAxesMode ();
 this.imageFontScaling = this.viewer.getImageFontScaling ();
 if (this.viewer.areAxesTainted ()) {
@@ -33,13 +33,14 @@ var f = axes.font3d;
 axes.initShape ();
 if (f != null) axes.font3d = f;
 }this.font3d = this.g3d.getFont3DScaled (axes.font3d, this.imageFontScaling);
-var cellInfos = this.modelSet.unitCells;
 var modelIndex = this.viewer.getCurrentModelIndex ();
 var isUnitCell = (axesMode === J.constant.EnumAxesMode.UNITCELL);
-if (this.viewer.isJmolDataFrameForModel (modelIndex) && !this.viewer.getModelSet ().getJmolFrameType (modelIndex).equals ("plot data") || isUnitCell && modelIndex < 0) return false;
-var nPoints = 6;
+if (this.viewer.isJmolDataFrameForModel (modelIndex) && !this.viewer.getModelSet ().getJmolFrameType (modelIndex).equals ("plot data")) return false;
+if (isUnitCell && modelIndex < 0) {
+if (this.viewer.getCurrentUnitCell () == null) return false;
+}var nPoints = 6;
 var labelPtr = 0;
-if (isUnitCell && cellInfos != null) {
+if (isUnitCell && this.modelSet.unitCells != null) {
 nPoints = 3;
 labelPtr = 6;
 } else if (isXY) {

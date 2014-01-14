@@ -1,40 +1,43 @@
 Clazz.declarePackage ("J.util");
-Clazz.load (null, "J.util.Eigen", ["java.lang.Float", "java.util.Arrays", "J.util.Escape", "$.Logger", "$.Matrix3f", "$.Quadric", "$.V3"], function () {
+Clazz.load (null, "J.util.Eigen", ["JU.V3"], function () {
 c$ = Clazz.decorateAsClass (function () {
-this.n = 0;
+this.n = 3;
 this.d = null;
 this.e = null;
 this.V = null;
 Clazz.instantialize (this, arguments);
 }, J.util, "Eigen");
 Clazz.makeConstructor (c$, 
+function () {
+});
+$_M(c$, "set", 
 function (n) {
 this.n = n;
 this.V =  Clazz.newDoubleArray (n, n, 0);
 this.d =  Clazz.newDoubleArray (n, 0);
 this.e =  Clazz.newDoubleArray (n, 0);
+return this;
 }, "~N");
 c$.newM = $_M(c$, "newM", 
 function (m) {
-var e =  new J.util.Eigen (m.length);
+var e =  new J.util.Eigen ().set (m.length);
 e.calc (m);
 return e;
 }, "~A");
 c$.getUnitVectors = $_M(c$, "getUnitVectors", 
-function (m, unitVectors, lengths) {
-J.util.Eigen.newM (m).set (unitVectors, lengths);
-J.util.Eigen.sort (unitVectors, lengths);
+function (m, eigenVectors, eigenValues) {
+J.util.Eigen.newM (m).fillArrays (eigenVectors, eigenValues);
 }, "~A,~A,~A");
-$_M(c$, "set", 
-($fz = function (unitVectors, lengths) {
-var eigenVectors = this.getEigenvectorsFloatTransposed ();
-var eigenValues = this.getRealEigenvalues ();
+$_M(c$, "fillArrays", 
+function (eigenVectors, eigenValues) {
+var vectors = this.getEigenvectorsFloatTransposed ();
+var lambdas = this.getRealEigenvalues ();
 for (var i = 0; i < this.n; i++) {
-if (unitVectors[i] == null) unitVectors[i] =  new J.util.V3 ();
-unitVectors[i].setA (eigenVectors[i]);
-lengths[i] = Math.sqrt (Math.abs (eigenValues[i]));
+if (eigenVectors[i] == null) eigenVectors[i] =  new JU.V3 ();
+eigenVectors[i].setA (vectors[i]);
+eigenValues[i] = lambdas[i];
 }
-}, $fz.isPrivate = true, $fz), "~A,~A");
+}, "~A,~A");
 $_M(c$, "calc", 
 function (A) {
 for (var i = 0; i < this.n; i++) {
@@ -69,7 +72,7 @@ $_M(c$, "getEigenVectors3",
 function () {
 var v =  new Array (3);
 for (var i = 0; i < 3; i++) {
-v[i] = J.util.V3.new3 (this.V[0][i], this.V[1][i], this.V[2][i]);
+v[i] = JU.V3.new3 (this.V[0][i], this.V[1][i], this.V[2][i]);
 }
 return v;
 });
@@ -261,61 +264,4 @@ r = Math.abs (b) * Math.sqrt (1 + r * r);
 r = 0.0;
 }return r;
 }, $fz.isPrivate = true, $fz), "~N,~N");
-c$.getEllipsoidDD = $_M(c$, "getEllipsoidDD", 
-function (a) {
-var eigen =  new J.util.Eigen (3);
-eigen.calc (a);
-var m =  new J.util.Matrix3f ();
-var mm =  Clazz.newFloatArray (9, 0);
-for (var i = 0, p = 0; i < 3; i++) for (var j = 0; j < 3; j++) mm[p++] = a[i][j];
-
-
-m.setA (mm);
-var evec = eigen.getEigenVectors3 ();
-var n =  new J.util.V3 ();
-var cross =  new J.util.V3 ();
-for (var i = 0; i < 3; i++) {
-n.setT (evec[i]);
-m.transform (n);
-cross.cross (n, evec[i]);
-J.util.Logger.info ("v[i], n, n x v[i]" + evec[i] + " " + n + " " + cross);
-n.setT (evec[i]);
-n.normalize ();
-cross.cross (evec[i], evec[(i + 1) % 3]);
-J.util.Logger.info ("draw id eigv" + i + " " + J.util.Escape.eP (evec[i]) + " color " + (i == 0 ? "red" : i == 1 ? "green" : "blue") + " # " + n + " " + cross);
-}
-J.util.Logger.info ("eigVl (" + eigen.d[0] + " + " + eigen.e[0] + "I) (" + eigen.d[1] + " + " + eigen.e[1] + "I) (" + eigen.d[2] + " + " + eigen.e[2] + "I)");
-var unitVectors =  new Array (3);
-var lengths =  Clazz.newFloatArray (3, 0);
-eigen.set (unitVectors, lengths);
-J.util.Eigen.sort (unitVectors, lengths);
-return  new J.util.Quadric ().fromVectors (unitVectors, lengths, false);
-}, "~A");
-c$.getEllipsoid = $_M(c$, "getEllipsoid", 
-function (vectors, lengths, isThermal) {
-var unitVectors =  new Array (vectors.length);
-for (var i = vectors.length; --i >= 0; ) unitVectors[i] = J.util.V3.newV (vectors[i]);
-
-J.util.Eigen.sort (unitVectors, lengths);
-return  new J.util.Quadric ().fromVectors (unitVectors, lengths, isThermal);
-}, "~A,~A,~B");
-c$.sort = $_M(c$, "sort", 
-($fz = function (vectors, lengths) {
-var o = [[vectors[0], Float.$valueOf (Math.abs (lengths[0]))], [vectors[1], Float.$valueOf (Math.abs (lengths[1]))], [vectors[2], Float.$valueOf (Math.abs (lengths[2]))]];
-java.util.Arrays.sort (o,  new J.util.Eigen.EigenSort ());
-for (var i = 0; i < 3; i++) {
-vectors[i] = J.util.V3.newV (o[i][0]);
-vectors[i].normalize ();
-lengths[i] = (o[i][1]).floatValue ();
-}
-}, $fz.isPrivate = true, $fz), "~A,~A");
-Clazz.pu$h ();
-c$ = Clazz.declareType (J.util.Eigen, "EigenSort", null, java.util.Comparator);
-Clazz.overrideMethod (c$, "compare", 
-function (a, b) {
-var c = (a[1]).floatValue ();
-var d = (b[1]).floatValue ();
-return (c < d ? -1 : c > d ? 1 : 0);
-}, "~A,~A");
-c$ = Clazz.p0p ();
 });

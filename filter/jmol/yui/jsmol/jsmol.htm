@@ -8,7 +8,6 @@
 <script type="text/javascript">
 
 // 1/21/2013 10:54:15 PM -- adds image handling
-
 var jmolApplet0; // set up in HTML table, below
 
 // logic is set by indicating order of USE -- default is HTML5 for this test page, though
@@ -26,7 +25,7 @@ var s = document.location.search;
 Jmol.debugCode = (s.indexOf("debugcode") >= 0);
 
 jmol_isReady = function(applet) {
-	document.title = (applet._id + " is ready")
+	document.title = (applet._id + " - Jmol " + ___JmolVersion)
 	Jmol._getElement(applet, "appletdiv").style.border="1px solid blue"
 }		
 
@@ -37,7 +36,7 @@ var Info = {
 	debug: false,
 	color: "0xFFFFFF",
 	addSelectionOptions: true,
-	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/jsmol.php",
+	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
 	use: "HTML5",
 	j2sPath: "j2s",
 	readyFunction: jmol_isReady,
@@ -51,44 +50,43 @@ var Info = {
 	//defaultModel: "$dopamine",
 	//console: "none", // default will be jmolApplet0_infodiv
 }
+
+$(document).ready(function() {
+  $("#appdiv").html(Jmol.getAppletHtml("jmolApplet0", Info))
+})
+var lastPrompt=0;
 </script>
 </head>
 <body>
 <table width=1000 cellpadding=10>
 <tr><td colspan=2 style="font-size:8pt">
 <b><a href="http://jsmol.sourceforge.net">JSmol</a> is an HTML5-only version of <a href="http://jmol.sourceforge.net">Jmol</a>.</b> For a zip file containing all the files in this directory, 
-see <a href=http://chemapps.stolaf.edu/jmol/jsmol.zip>http://chemapps.stolaf.edu/jmol/jsmol.zip</a>. 
+see <a href=http://chemapps.stolaf.edu/jmol/zip/Jmol.zip>http://chemapps.stolaf.edu/jmol/zip/Jmol.zip</a>. 
 
-This page demonstrates HTML5-only and a compressed JavaScript library. See <a href="test2.htm">test2.htm</a> for a version that can use the signed Jmol applet, the unsigned Jmol applet
-with server-side help, or JSmol, using HTML5 with or without WebGL and the uncompressed libraries.  
+This page demonstrates HTML5-only Jmol. See <a href="test2.htm">test2.htm</a> for a version that can use the signed Jmol applet, the unsigned Jmol applet, or JavaScript/HTML5 with or without WebGL.  
 Credits:                           
 WebGL interface written by <b>Takanori Nakane</b>. 
 Java2Script written by <b>Zhou Renjian, et al.</b>
 Jzlib written by <b>Atsuhiko Yamanaka</b>.
-Jmol code conversion to JavaScript by <b>Bob Hanson</b>. 
-
 </td></tr>
 <tr><td valign="top">
-
-<script>
-
-// note that the variable name MUST match the first parameter in quotes
-
-jmolApplet0 = Jmol.getApplet("jmolApplet0", Info)
-
-// note that now scripts can be sent immediately after the _Applet object is created
-
-//Jmol.script(jmolApplet0,"background gray;delay 0.5;background black")
-var lastPrompt=0;
-</script>
-
-<br>
+<div id="appdiv"></div>
 <br>
 <a href="javascript:Jmol.script(jmolApplet0,'console')">console</a>
 <a href="javascript:Jmol.script(jmolApplet0,'write PNGJ jmol.png')">image</a>
 display
 <a href="javascript:Jmol.script(jmolApplet0,'set antialiasDisplay false')">faster</a>
 <a href="javascript:Jmol.script(jmolApplet0,'set antialiasDisplay true')">sharper</a>
+<br>
+platformSpeed:
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 8')" title='all features'>8</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 7')" title='no antialiasing'>7</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 6')" title='no translucency'>6</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 5')" title='surfaces dotted'>5</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 4')" title='cartoons as trace'>4</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 3')" title='geosurfaces as dots'>3</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 2')" title='ellipsoids as dots'>2</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 1')" title='wireframe only'>1</a>
 <br>
 info <a href="javascript:Jmol.showInfo(jmolApplet0, true)">show</a>
 <a href="javascript:Jmol.clearConsole(jmolApplet0)">clear</a>
@@ -141,9 +139,14 @@ Enter "!" and a command into the search box and press ENTER or open the <a href=
 </td><td valign=top>
 	<b>this-domain calls</b>
 <br />
+ <a href="javascript:Jmol.script(jmolApplet0,'load data/1cbs.cif; set echo top left;echo loading map file...;refresh;isosurface downsample 2 cutoff 0.5 boundbox &quot;data/1cbs_2fofc.map&quot mesh nofill;isosurface display within 2.0 {*};echo')">2.2MB EDM test</a>
+<br />  
+ local file <a href="javascript:Jmol.script(jmolApplet0,'load ?')">reading</a> <a href="javascript:Jmol.script(jmolApplet0,'write FILE ?')">writing</a>
+  <a href="javascript:Jmol.script(jmolApplet0,'write PNGJ test.png')">saving(PNGJ)</a>
+<br />
  <a href="javascript:Jmol.script(jmolApplet0,'!quit;script data/rabe.spt;')">make a nanotube</a>
 <br />
- <a href="javascript:Jmol.script(jmolApplet0,'minimize')">minimize</a> 
+ <a href="javascript:Jmol.script(jmolApplet0,'load data/c60af.mol;rotate x -60;delay 1;minimize')">minimize</a> 
  <a href="javascript:Jmol.script(jmolApplet0,'set modelkitmode;set picking dragMinimize')">drag-minimize</a>
  <a href="javascript:Jmol.script(jmolApplet0,'!quit;set modelkitmode false;set picking ident;')">!quit</a>
 <br />
@@ -205,7 +208,7 @@ Enter "!" and a command into the search box and press ENTER or open the <a href=
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage scale 1.0')">x 1.0</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage scale 2.0')">x 2.0</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage off')">off</a>         
- <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage image &quot;data/bob.png&quot;set echo myimage depth 50')">on</a>
+ <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage image &quot;data/bob.png&quot;;set echo myimage depth 50')">on</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage depth 100')">front</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage depth 50')">mid</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage depth 0')">back</a>
@@ -217,7 +220,7 @@ Enter "!" and a command into the search box and press ENTER or open the <a href=
  <br /> 
 
  </td><td valign=top>
-	<b>direct database calls(<a href="javascript:alert('MSIE cannot do synchronous cross-domain file transfer, so if you want to do that, you must put jsmol.php on your OWN server and point to it using Info.serverURL, which for this page is ' + Info.serverURL + '\nA text version of this php file is at http://chemapps.stolaf.edu/jmol/jsmol/jsmol.php.txt')">unless MSIE</a>)</b>
+	<b>direct database calls(<a href="javascript:alert('MSIE cannot do synchronous cross-domain file transfer, so if you want to do that, you must put jsmol.php on your OWN server and point to it using Info.serverURL, which for this page is ' + Info.serverURL + '\nA text version of this php file is at http://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php.txt')">unless MSIE</a>)</b>
  <br />
  <a href="javascript:Jmol.loadFile(jmolApplet0,'$caffeine')">load $caffeine (from NCI)</a>
  <br /> 

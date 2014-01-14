@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.modelsetbio");
-Clazz.load (["J.util.V3"], "J.modelsetbio.BioPolymer", ["java.lang.Float", "java.util.Hashtable", "J.modelset.LabelToken", "J.util.BS", "$.Escape", "$.JmolList", "$.Logger", "$.P3", "$.Quaternion", "$.TextFormat"], function () {
+Clazz.load (["JU.V3"], "J.modelsetbio.BioPolymer", ["java.lang.Float", "java.util.Hashtable", "JU.BS", "$.List", "$.P3", "J.util.Escape", "$.Logger", "$.Quaternion", "$.Txt"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.monomers = null;
 this.model = null;
@@ -24,7 +24,7 @@ this.haveParameters = false;
 Clazz.instantialize (this, arguments);
 }, J.modelsetbio, "BioPolymer");
 Clazz.prepareFields (c$, function () {
-this.unitVectorX = J.util.V3.new3 (1, 0, 0);
+this.unitVectorX = JU.V3.new3 (1, 0, 0);
 });
 $_M(c$, "getGroups", 
 function () {
@@ -42,7 +42,7 @@ $_M(c$, "getRange",
 function (bs) {
 if (this.monomerCount == 0) return;
 bs.setBits (this.monomers[0].firstAtomIndex, this.monomers[this.monomerCount - 1].lastAtomIndex + 1);
-}, "J.util.BS");
+}, "JU.BS");
 $_M(c$, "clearStructures", 
 function () {
 for (var i = 0; i < this.monomerCount; i++) this.monomers[i].setStructure (null);
@@ -70,12 +70,14 @@ this.invalidLead = false;
 }return this.leadAtomIndices;
 });
 $_M(c$, "getIndex", 
-function (chainID, seqcode) {
+function (chainID, seqcode, istart, iend) {
 var i;
-for (i = this.monomerCount; --i >= 0; ) if (this.monomers[i].getChainID () == chainID) if (this.monomers[i].getSeqcode () == seqcode) break;
-
+for (i = this.monomerCount; --i >= 0; ) {
+var m = this.monomers[i];
+if (m.chain.chainID == chainID && m.seqcode == seqcode && (istart < 0 || istart == m.firstAtomIndex || iend == m.lastAtomIndex)) break;
+}
 return i;
-}, "~S,~N");
+}, "~N,~N,~N,~N");
 $_M(c$, "getLeadPoint", 
 function (monomerIndex) {
 return this.monomers[monomerIndex].getLeadAtom ();
@@ -98,7 +100,7 @@ midPoint.add (this.getLeadPoint (groupIndex - 1));
 midPoint.scale (0.5);
 return;
 }midPoint.setT (this.getLeadPoint (groupIndex));
-}, "~N,J.util.P3");
+}, "~N,JU.P3");
 $_M(c$, "getWingPoint", 
 function (polymerIndex) {
 return this.monomers[polymerIndex].getWingAtom ();
@@ -109,14 +111,14 @@ var atoms = this.model.getModelSet ().atoms;
 for (var i = this.monomerCount; --i >= 0; ) this.monomers[i].getConformation (atoms, bsConformation, conformationIndex);
 
 this.recalculateLeadMidpointsAndWingVectors ();
-}, "J.util.BS,~N");
+}, "JU.BS,~N");
 $_M(c$, "setConformation", 
 function (bsSelected) {
 var atoms = this.model.getModelSet ().atoms;
 for (var i = this.monomerCount; --i >= 0; ) this.monomers[i].updateOffsetsForAlternativeLocations (atoms, bsSelected);
 
 this.recalculateLeadMidpointsAndWingVectors ();
-}, "J.util.BS");
+}, "JU.BS");
 $_M(c$, "recalculateLeadMidpointsAndWingVectors", 
 function () {
 this.invalidLead = this.invalidControl = true;
@@ -146,7 +148,7 @@ $_M(c$, "getControlPoints2",
 ($fz = function (sheetSmoothing) {
 if (!this.invalidControl && sheetSmoothing == this.sheetSmoothing) return this.controlPoints;
 this.getLeadPoints ();
-var v =  new J.util.V3 ();
+var v =  new JU.V3 ();
 if (this.controlPoints == null) this.controlPoints =  new Array (this.monomerCount + 1);
 if (!Float.isNaN (sheetSmoothing)) this.sheetSmoothing = sheetSmoothing;
 for (var i = 0; i < this.monomerCount; i++) this.controlPoints[i] = this.getControlPoint (i, v);
@@ -158,7 +160,7 @@ return this.controlPoints;
 $_M(c$, "getControlPoint", 
 function (i, v) {
 return this.leadPoints[i];
-}, "~N,J.util.V3");
+}, "~N,JU.V3");
 $_M(c$, "getWingVectors", 
 function () {
 if (this.leadMidpoints == null) this.calcLeadMidpointsAndWingVectors ();
@@ -171,13 +173,13 @@ this.leadMidpoints =  new Array (this.monomerCount + 1);
 this.leadPoints =  new Array (this.monomerCount + 1);
 this.wingVectors =  new Array (this.monomerCount + 1);
 this.sheetSmoothing = 1.4E-45;
-}if (this.reversed == null) this.reversed = J.util.BS.newN (this.monomerCount);
+}if (this.reversed == null) this.reversed = JU.BS.newN (this.monomerCount);
  else this.reversed.clearAll ();
 this.twistedSheets = this.model.modelSet.viewer.getBoolean (603979968);
-var vectorA =  new J.util.V3 ();
-var vectorB =  new J.util.V3 ();
-var vectorC =  new J.util.V3 ();
-var vectorD =  new J.util.V3 ();
+var vectorA =  new JU.V3 ();
+var vectorB =  new JU.V3 ();
+var vectorC =  new JU.V3 ();
+var vectorD =  new JU.V3 ();
 var leadPointPrev;
 var leadPoint;
 this.leadMidpoints[0] = this.getInitiatorPoint ();
@@ -186,7 +188,7 @@ var previousVectorD = null;
 for (var i = 1; i < this.monomerCount; ++i) {
 leadPointPrev = leadPoint;
 this.leadPoints[i] = leadPoint = this.getLeadPoint (i);
-var midpoint = J.util.P3.newP (leadPoint);
+var midpoint = JU.P3.newP (leadPoint);
 midpoint.add (leadPointPrev);
 midpoint.scale (0.5);
 this.leadMidpoints[i] = midpoint;
@@ -199,7 +201,7 @@ vectorD.normalize ();
 if (!this.twistedSheets && previousVectorD != null && previousVectorD.angle (vectorD) > 1.5707963267948966) {
 this.reversed.set (i);
 vectorD.scale (-1);
-}previousVectorD = this.wingVectors[i] = J.util.V3.newV (vectorD);
+}previousVectorD = this.wingVectors[i] = JU.V3.newV (vectorD);
 }}
 this.leadPoints[this.monomerCount] = this.leadMidpoints[this.monomerCount] = this.getTerminatorPoint ();
 if (!this.hasWingPoints) {
@@ -213,7 +215,7 @@ vectorB.sub2 (this.leadPoints[i], this.leadMidpoints[i + 1]);
 vectorC.cross (vectorA, vectorB);
 vectorC.normalize ();
 if (previousVectorC != null && previousVectorC.angle (vectorC) > 1.5707963267948966) vectorC.scale (-1);
-previousVectorC = this.wingVectors[i] = J.util.V3.newV (vectorC);
+previousVectorC = this.wingVectors[i] = JU.V3.newV (vectorC);
 }
 }}this.wingVectors[0] = this.wingVectors[1];
 this.wingVectors[this.monomerCount] = this.wingVectors[this.monomerCount - 1];
@@ -226,7 +228,7 @@ var a = this.monomers[i].getLeadAtom ();
 if (!a.isVisible (0) || bsNot != null && bsNot.get (a.index)) continue;
 if (mads[i] > 0 || mads[i + 1] > 0) this.monomers[i].findNearestAtomIndex (xMouse, yMouse, closest, mads[i], mads[i + 1]);
 }
-}, "~N,~N,~A,~A,~N,J.util.BS");
+}, "~N,~N,~A,~A,~N,JU.BS");
 $_M(c$, "getSelectedMonomerCount", 
 function () {
 return this.selectedMonomerCount;
@@ -234,14 +236,14 @@ return this.selectedMonomerCount;
 $_M(c$, "calcSelectedMonomersCount", 
 function (bsSelected) {
 this.selectedMonomerCount = 0;
-if (this.bsSelectedMonomers == null) this.bsSelectedMonomers =  new J.util.BS ();
+if (this.bsSelectedMonomers == null) this.bsSelectedMonomers =  new JU.BS ();
 this.bsSelectedMonomers.clearAll ();
 for (var i = 0; i < this.monomerCount; i++) {
 if (this.monomers[i].isSelected (bsSelected)) {
 ++this.selectedMonomerCount;
 this.bsSelectedMonomers.set (i);
 }}
-}, "J.util.BS");
+}, "JU.BS");
 $_M(c$, "isMonomerSelected", 
 function (i) {
 return (i >= 0 && this.bsSelectedMonomers.get (i));
@@ -252,15 +254,15 @@ var points = this.getControlPoints (isTraceAlpha, sheetSmoothing, false);
 var vectors = this.getWingVectors ();
 var count = this.monomerCount;
 for (var j = 0; j < count; j++) if (bs.get (this.monomers[j].leadAtomIndex)) {
-vList.addLast ([points[j], J.util.P3.newP (vectors[j])]);
+vList.addLast ([points[j], JU.P3.newP (vectors[j])]);
 last = j;
 } else if (last != 2147483646) {
-vList.addLast ([points[j], J.util.P3.newP (vectors[j])]);
+vList.addLast ([points[j], JU.P3.newP (vectors[j])]);
 last = 2147483646;
 }
-if (last + 1 < count) vList.addLast ([points[last + 1], J.util.P3.newP (vectors[last + 1])]);
+if (last + 1 < count) vList.addLast ([points[last + 1], JU.P3.newP (vectors[last + 1])]);
 return last;
-}, "~N,J.util.BS,J.util.JmolList,~B,~N");
+}, "~N,JU.BS,JU.List,~B,~N");
 $_M(c$, "getSequence", 
 function () {
 var buf =  Clazz.newCharArray (this.monomerCount, '\0');
@@ -271,7 +273,7 @@ return String.valueOf (buf);
 $_M(c$, "getPolymerInfo", 
 function (bs) {
 var returnInfo =  new java.util.Hashtable ();
-var info =  new J.util.JmolList ();
+var info =  new JU.List ();
 var structureInfo = null;
 var ps;
 var psLast = null;
@@ -285,7 +287,7 @@ if ((ps = this.getProteinStructure (i)) != null && ps !== psLast) {
 var psInfo =  new java.util.Hashtable ();
 (psLast = ps).getInfo (psInfo);
 if (structureInfo == null) {
-structureInfo =  new J.util.JmolList ();
+structureInfo =  new JU.List ();
 }psInfo.put ("index", Integer.$valueOf (n++));
 structureInfo.addLast (psInfo);
 }}}
@@ -294,12 +296,12 @@ returnInfo.put ("sequence", this.getSequence ());
 returnInfo.put ("monomers", info);
 if (structureInfo != null) returnInfo.put ("structures", structureInfo);
 }return returnInfo;
-}, "J.util.BS");
+}, "JU.BS");
 $_M(c$, "getPolymerSequenceAtoms", 
 function (group1, nGroups, bsInclude, bsResult) {
 for (var i = Math.min (this.monomerCount, group1 + nGroups); --i >= group1; ) this.monomers[i].getMonomerSequenceAtoms (bsInclude, bsResult);
 
-}, "~N,~N,J.util.BS,J.util.BS");
+}, "~N,~N,JU.BS,JU.BS");
 $_M(c$, "getProteinStructure", 
 function (monomerIndex) {
 return this.monomers[monomerIndex].getProteinStructure ();
@@ -362,7 +364,7 @@ bothEnds = false;
 for (var j = 0; j < (bothEnds ? 2 : 1); j++, factor *= -1) for (var i = 0; i < (mStep < 1 ? 1 : mStep); i++) J.modelsetbio.BioPolymer.getData (viewer, i, mStep, p, ctype, qtype, derivType, bsAtoms, bsSelected, isDraw, isRamachandran, calcRamachandranStraightness, useQuaternionStraightness, writeRamachandranStraightness, quaternionStraightness, factor, isAmino, isRelativeAlias, tokens, pdbATOM, pdbCONECT, bsWritten);
 
 
-}, "J.viewer.Viewer,J.modelsetbio.BioPolymer,~S,~S,~N,~N,J.util.BS,J.util.BS,~B,~B,~B,~A,J.io.OutputStringBuilder,J.util.SB,J.util.BS");
+}, "J.viewer.Viewer,J.modelsetbio.BioPolymer,~S,~S,~N,~N,JU.BS,JU.BS,~B,~B,~B,~A,JU.OC,JU.SB,JU.BS");
 c$.getData = $_M(c$, "getData", 
 ($fz = function (viewer, m0, mStep, p, ctype, qtype, derivType, bsAtoms, bsSelected, isDraw, isRamachandran, calcRamachandranStraightness, useQuaternionStraightness, writeRamachandranStraightness, quaternionStraightness, factor, isAmino, isRelativeAlias, tokens, pdbATOM, pdbCONECT, bsWritten) {
 var prefix = (derivType > 0 ? "dq" + (derivType == 2 ? "2" : "") : "q");
@@ -380,7 +382,7 @@ var w = 0;
 var strExtra = "";
 var val1 = NaN;
 var val2 = NaN;
-var pt = (isDraw ?  new J.util.P3 () : null);
+var pt = (isDraw ?  new JU.P3 () : null);
 var dm = (mStep <= 1 ? 1 : mStep);
 for (var m = m0; m < p.monomerCount; m += dm) {
 var monomer = p.monomers[m];
@@ -388,10 +390,10 @@ if (bsAtoms == null || bsAtoms.get (monomer.leadAtomIndex)) {
 var a = monomer.getLeadAtom ();
 var id = monomer.getUniqueID ();
 if (isRamachandran) {
-if (ctype == 'S') monomer.setGroupParameter (1112539148, NaN);
-x = monomer.getGroupParameter (1112539143);
-y = monomer.getGroupParameter (1112539144);
-z = monomer.getGroupParameter (1112539142);
+if (ctype == 'S') monomer.setGroupParameter (1112539150, NaN);
+x = monomer.getGroupParameter (1112539145);
+y = monomer.getGroupParameter (1112539146);
+z = monomer.getGroupParameter (1112539144);
 if (z < -90) z += 360;
 z -= 180;
 if (Float.isNaN (x) || Float.isNaN (y) || Float.isNaN (z)) {
@@ -400,7 +402,7 @@ continue;
 }var angledeg = (writeRamachandranStraightness ? p.calculateRamachandranHelixAngle (m, qtype) : 0);
 var straightness = (calcRamachandranStraightness || writeRamachandranStraightness ? J.modelsetbio.BioPolymer.getStraightness (Math.cos (angledeg / 2 / 180 * 3.141592653589793)) : 0);
 if (ctype == 'S') {
-monomer.setGroupParameter (1112539148, straightness);
+monomer.setGroupParameter (1112539150, straightness);
 continue;
 }if (isDraw) {
 if (bsSelected != null && !bsSelected.get (a.getIndex ())) continue;
@@ -417,7 +419,7 @@ continue;
 strExtra = "";
 if (writeRamachandranStraightness) continue;
 } else {
-q = J.util.Quaternion.newVA (J.util.P3.new3 (1, 0, 0), angledeg);
+q = J.util.Quaternion.newVA (JU.P3.new3 (1, 0, 0), angledeg);
 strExtra = q.getInfo ();
 if (writeRamachandranStraightness) {
 z = angledeg;
@@ -429,7 +431,7 @@ q = monomer.getQuaternion (qtype);
 if (q != null) {
 q.setRef (qref);
 qref = J.util.Quaternion.newQ (q);
-}if (derivType == 2) monomer.setGroupParameter (1112539148, NaN);
+}if (derivType == 2) monomer.setGroupParameter (1112539150, NaN);
 if (q == null) {
 qprev = null;
 qref = null;
@@ -452,7 +454,7 @@ q = null;
 q = dq.rightDifference (dqprev);
 val1 = J.modelsetbio.BioPolymer.getQuaternionStraightness (id, dqprev, dq);
 val2 = J.modelsetbio.BioPolymer.get3DStraightness (id, dqprev, dq);
-aprev.getGroup ().setGroupParameter (1112539148, useQuaternionStraightness ? val1 : val2);
+aprev.getGroup ().setGroupParameter (1112539150, useQuaternionStraightness ? val1 : val2);
 }dqprev = dq;
 }aprev = anext;
 qprev = qnext;
@@ -486,7 +488,7 @@ w = q.q1;
 break;
 }
 var ptCenter = monomer.getQuaternionFrameCenter (qtype);
-if (ptCenter == null) ptCenter =  new J.util.P3 ();
+if (ptCenter == null) ptCenter =  new JU.P3 ();
 if (isDraw) {
 if (bsSelected != null && !bsSelected.get (a.getIndex ())) continue;
 var deg = Clazz.doubleToInt (Math.floor (Math.acos (w) * 360 / 3.141592653589793));
@@ -501,20 +503,20 @@ continue;
 }pt.set (x * 2, y * 2, z * 2);
 pdbATOM.append ("draw ID \"").append (prefix).append ("a").append (id).append ("\" VECTOR ").append (J.util.Escape.eP (ptCenter)).append (J.util.Escape.eP (pt)).append (" \">").append (String.valueOf (deg)).append ("\" color ").append (J.modelsetbio.BioPolymer.qColor[derivType]).append ("\n");
 continue;
-}strExtra = q.getInfo () + J.util.TextFormat.sprintf ("  %10.5p %10.5p %10.5p", "p", [ptCenter]);
+}strExtra = q.getInfo () + J.util.Txt.sprintf ("  %10.5p %10.5p %10.5p", "p", [ptCenter]);
 if (qtype == 'n' && isAmino) {
-strExtra += J.util.TextFormat.sprintf ("  %10.5p %10.5p %10.5p", "p", [(monomer).getNitrogenHydrogenPoint ()]);
+strExtra += J.util.Txt.sprintf ("  %10.5p %10.5p %10.5p", "p", [(monomer).getNitrogenHydrogenPoint ()]);
 } else if (derivType == 2 && !Float.isNaN (val1)) {
-strExtra += J.util.TextFormat.sprintf (" %10.5f %10.5f", "F", [[val1, val2]]);
+strExtra += J.util.Txt.sprintf (" %10.5f %10.5f", "F", [[val1, val2]]);
 }}if (pdbATOM == null) continue;
 bsWritten.set ((a.getGroup ()).leadAtomIndex);
-pdbATOM.append (J.modelset.LabelToken.formatLabelAtomArray (viewer, a, tokens, '\0', null));
-pdbATOM.append (J.util.TextFormat.sprintf ("%8.2f%8.2f%8.2f      %6.3f          %2s    %s\n", "ssF", [a.getElementSymbolIso (false).toUpperCase (), strExtra, [x * factor, y * factor, z * factor, w * factor]]));
+pdbATOM.append (viewer.modelSet.getLabeler ().formatLabelAtomArray (viewer, a, tokens, '\0', null));
+pdbATOM.append (J.util.Txt.sprintf ("%8.2f%8.2f%8.2f      %6.3f          %2s    %s\n", "ssF", [a.getElementSymbolIso (false).toUpperCase (), strExtra, [x * factor, y * factor, z * factor, w * factor]]));
 if (atomLast != null && atomLast.getPolymerIndexInModel () == a.getPolymerIndexInModel ()) {
-pdbCONECT.append ("CONECT").append (J.util.TextFormat.formatStringI ("%5i", "i", atomLast.getAtomNumber ())).append (J.util.TextFormat.formatStringI ("%5i", "i", a.getAtomNumber ())).appendC ('\n');
+pdbCONECT.append ("CONECT").append (J.util.Txt.formatStringI ("%5i", "i", atomLast.getAtomNumber ())).append (J.util.Txt.formatStringI ("%5i", "i", a.getAtomNumber ())).appendC ('\n');
 }atomLast = a;
 }}
-}, $fz.isPrivate = true, $fz), "J.viewer.Viewer,~N,~N,J.modelsetbio.BioPolymer,~S,~S,~N,J.util.BS,J.util.BS,~B,~B,~B,~B,~B,~B,~N,~B,~B,~A,J.io.OutputStringBuilder,J.util.SB,J.util.BS");
+}, $fz.isPrivate = true, $fz), "J.viewer.Viewer,~N,~N,J.modelsetbio.BioPolymer,~S,~S,~N,JU.BS,JU.BS,~B,~B,~B,~B,~B,~B,~N,~B,~B,~A,JU.OC,JU.SB,JU.BS");
 $_M(c$, "calculateRamachandranHelixAngle", 
 function (m, qtype) {
 return NaN;
@@ -541,7 +543,7 @@ return (this.monomerCount > 0 && this.monomers[0].isRna ());
 });
 $_M(c$, "getRangeGroups", 
 function (nResidues, bsAtoms, bsResult) {
-var bsTemp =  new J.util.BS ();
+var bsTemp =  new JU.BS ();
 for (var i = 0; i < this.monomerCount; i++) {
 if (!this.monomers[i].isSelected (bsAtoms)) continue;
 bsTemp.setBits (Math.max (0, i - nResidues), i + nResidues + 1);
@@ -549,27 +551,17 @@ i += nResidues - 1;
 }
 for (var i = bsTemp.nextSetBit (0); i >= 0 && i < this.monomerCount; i = bsTemp.nextSetBit (i + 1)) this.monomers[i].selectAtoms (bsResult);
 
-}, "~N,J.util.BS,J.util.BS");
-$_M(c$, "calculateDssp", 
-function (bioPolymers, bioPolymerCount, vHBonds, doReport, dsspIgnoreHydrogens, setStructure) {
-return J.modelsetbio.AminoPolymer.calculateStructuresDssp (bioPolymers, bioPolymerCount, vHBonds, doReport, dsspIgnoreHydrogens, setStructure);
-}, "~A,~N,J.util.JmolList,~B,~B,~B");
-$_M(c$, "addStructure", 
-function (type, structureID, serialID, strandCount, startChainID, startSeqcode, endChainID, endSeqcode, istart, iend, bsAssigned) {
-}, "J.constant.EnumStructure,~S,~N,~N,~S,~N,~S,~N,~N,~N,J.util.BS");
-$_M(c$, "calculateStructures", 
-function (alphaOnly) {
-}, "~B");
+}, "~N,JU.BS,JU.BS");
 $_M(c$, "calcRasmolHydrogenBonds", 
 function (polymer, bsA, bsB, vHBonds, nMaxPerResidue, min, checkDistances, dsspIgnoreHydrogens) {
-}, "J.modelsetbio.BioPolymer,J.util.BS,J.util.BS,J.util.JmolList,~N,~A,~B,~B");
+}, "J.modelsetbio.BioPolymer,JU.BS,JU.BS,JU.List,~N,~A,~B,~B");
 $_M(c$, "setStructureList", 
 function (structureList) {
 }, "java.util.Map");
 $_M(c$, "getPdbData", 
 function (viewer, ctype, qtype, mStep, derivType, bsAtoms, bsSelected, bothEnds, isDraw, addHeader, tokens, pdbATOM, pdbCONECT, bsWritten) {
 return;
-}, "J.viewer.Viewer,~S,~S,~N,~N,J.util.BS,J.util.BS,~B,~B,~B,~A,J.io.OutputStringBuilder,J.util.SB,J.util.BS");
+}, "J.viewer.Viewer,~S,~S,~N,~N,JU.BS,JU.BS,~B,~B,~B,~A,JU.OC,JU.SB,JU.BS");
 $_M(c$, "getType", 
 function () {
 return this.type;
@@ -577,7 +569,7 @@ return this.type;
 $_M(c$, "calculateStruts", 
 function (modelSet, bs1, bs2, vCA, thresh, delta, allowMultiple) {
 return null;
-}, "J.modelset.ModelSet,J.util.BS,J.util.BS,J.util.JmolList,~N,~N,~B");
+}, "J.modelset.ModelSet,JU.BS,JU.BS,JU.List,~N,~N,~B");
 Clazz.defineStatics (c$,
 "TYPE_NOBONDING", 0,
 "TYPE_AMINO", 1,
