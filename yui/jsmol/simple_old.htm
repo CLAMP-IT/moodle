@@ -1,7 +1,7 @@
 <html>
 <head>
 <script type="text/javascript" src="JSmol.min.js"></script>
-<script type="text/javascript" src="Jmol2.js"></script>
+<script type="text/javascript" src="js/Jmol2.js"></script>
 <script type="text/javascript">
 
 // This file simple_old.htm is exactly the same as an old one
@@ -64,12 +64,13 @@ addModel("1d66","transcription")
 //jmolInitialize(".","http://chemapps.stolaf.edu/pe/protexpl/molview/JmolAppletSigned.jar")
 jmolInitialize(".","JmolAppletSigned0.jar")
 
+jmolSetCallback("errorCallback","myCallback")
 
 var xxxx = document.location.search
 if (xxxx.length == 5 || xxxx.length == 0) {
 	xxxx = (xxxx + "?1crn").substring(1,5)
 	script = 'h2oOn=true;set animframecallback "jmolscript:if (!selectionHalos) {select model=_modelNumber}";'
-	+'set errorCallback "myCallback";'
+//	+'set errorCallback "myCallback";'
 	+'set defaultloadscript "isDssp = false;set defaultVDW babel;if(!h2oOn){display !water}";'
 	+'set zoomlarge false;set echo top left;echo loading XXXX...;refresh;'
 	+'load "http://www.rcsb.org/pdb/files/XXXX.pdb";set echo top center;echo XXXX;'

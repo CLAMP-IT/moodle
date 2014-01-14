@@ -18,10 +18,14 @@ this.useTimeout = true;
 this.junk = 0;
 Clazz.instantialize (this, arguments);
 }, J.thread, "JmolThread", Thread);
+$_M(c$, "setManager", 
+function (manager, viewer, params) {
+return 0;
+}, "~O,J.viewer.Viewer,~O");
 $_M(c$, "setViewer", 
 function (viewer, name) {
 this.setName (name);
-this.$name = name + "_" + (($t$ = ++ J.thread.JmolThread.threadIndex, J.thread.JmolThread.prototype.threadIndex = J.thread.JmolThread.threadIndex, $t$));
+this.$name = name + "_" + (++J.thread.JmolThread.threadIndex);
 this.viewer = viewer;
 this.isJS = viewer.isSingleThreaded;
 }, "J.viewer.Viewer,~S");
@@ -47,7 +51,7 @@ this.run ();
 } else {
 Clazz.superCall (this, J.thread.JmolThread, "start", []);
 }});
-Clazz.overrideMethod (c$, "run", 
+$_V(c$, "run", 
 function () {
 this.startTime = System.currentTimeMillis ();
 try {
@@ -70,8 +74,8 @@ throw e$$;
 });
 $_M(c$, "oops", 
 function (e) {
-System.out.println (this.$name + " exception " + e);
-if (!this.viewer.isJS ()) e.printStackTrace ();
+J.util.Logger.debug (this.$name + " exception " + e);
+if (!this.viewer.isJS) e.printStackTrace ();
 this.viewer.queueOnHold = false;
 }, "Exception");
 $_M(c$, "runSleep", 

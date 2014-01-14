@@ -11,11 +11,12 @@ Clazz.makeConstructor (c$,
 function () {
 });
 Clazz.makeConstructor (c$, 
-function (langCode) {
+function (viewer, langCode) {
+J.i18n.GT.viewer = viewer;
 {
 }this.resources = null;
 this.resourceCount = 0;
-($t$ = J.i18n.GT.$getTextWrapper = this, J.i18n.GT.prototype.$getTextWrapper = J.i18n.GT.$getTextWrapper, $t$);
+J.i18n.GT.$getTextWrapper = this;
 if (langCode != null && langCode.length == 0) langCode = "none";
 if (langCode != null) this.language = langCode;
 if ("none".equals (this.language)) this.language = null;
@@ -59,7 +60,7 @@ if ("en_US".equals (la_co)) return;
 if (J.i18n.GT.allowDebug && J.util.Logger.debugging) J.util.Logger.debug ("Instantiating gettext wrapper for " + this.language + " using files for language:" + la + " country:" + la_co + " variant:" + la_co_va);
 if (!J.i18n.GT.$ignoreApplicationBundle) this.addBundles ("Jmol", la_co_va, la_co, la);
 this.addBundles ("JmolApplet", la_co_va, la_co, la);
-}, "~S");
+}, "J.api.JmolViewer,~S");
 c$.getLanguageList = $_M(c$, "getLanguageList", 
 function (gt) {
 if (J.i18n.GT.languageList == null) {
@@ -73,7 +74,7 @@ return J.i18n.GT.getTextWrapper ().language;
 });
 c$.ignoreApplicationBundle = $_M(c$, "ignoreApplicationBundle", 
 function () {
-($t$ = J.i18n.GT.$ignoreApplicationBundle = true, J.i18n.GT.prototype.$ignoreApplicationBundle = J.i18n.GT.$ignoreApplicationBundle, $t$);
+J.i18n.GT.$ignoreApplicationBundle = true;
 });
 c$.setDoTranslate = $_M(c$, "setDoTranslate", 
 function (TF) {
@@ -87,37 +88,34 @@ return J.i18n.GT.getTextWrapper ().doTranslate;
 });
 c$._ = $_M(c$, "_", 
 function (string) {
-return J.i18n.GT.getTextWrapper ().getString (string, null);
+return J.i18n.GT.getTextWrapper ().getString (string);
 }, "~S");
-c$._ = $_M(c$, "_", 
-function (string, item) {
-return J.i18n.GT.getTextWrapper ().getString (string, [item]);
-}, "~S,~S");
-c$._ = $_M(c$, "_", 
-function (string, item) {
-return J.i18n.GT.getTextWrapper ().getString (string, [Integer.$valueOf (item)]);
+c$.o = $_M(c$, "o", 
+function (s, o) {
+if (!(Clazz.instanceOf (o, Array))) o = [o];
+return java.text.MessageFormat.format (s, o);
+}, "~S,~O");
+c$.i = $_M(c$, "i", 
+function (s, n) {
+return J.i18n.GT.o (s, "" + n);
 }, "~S,~N");
-c$._ = $_M(c$, "_", 
-function (string, objects) {
-return J.i18n.GT.getTextWrapper ().getString (string, objects);
-}, "~S,~A");
 c$.escapeHTML = $_M(c$, "escapeHTML", 
 function (msg) {
 var ch;
-for (var i = msg.length; --i >= 0; ) if (((ch = msg.charAt (i))).charCodeAt (0) > 0x7F) {
+for (var i = msg.length; --i >= 0; ) if ((ch = msg.charAt (i)).charCodeAt (0) > 0x7F) {
 msg = msg.substring (0, i) + "&#" + ((ch).charCodeAt (0)) + ";" + msg.substring (i + 1);
 }
 return msg;
 }, "~S");
 c$.getTextWrapper = $_M(c$, "getTextWrapper", 
 ($fz = function () {
-return (J.i18n.GT.$getTextWrapper == null ? ($t$ = J.i18n.GT.$getTextWrapper =  new J.i18n.GT (null), J.i18n.GT.prototype.$getTextWrapper = J.i18n.GT.$getTextWrapper, $t$) : J.i18n.GT.$getTextWrapper);
+return (J.i18n.GT.$getTextWrapper == null ? J.i18n.GT.$getTextWrapper =  new J.i18n.GT (null, null) : J.i18n.GT.$getTextWrapper);
 }, $fz.isPrivate = true, $fz));
 $_M(c$, "createLanguageList", 
 ($fz = function () {
 var wasTranslating = this.doTranslate;
 this.doTranslate = false;
-($t$ = J.i18n.GT.languageList = J.i18n.Language.getLanguageList (), J.i18n.GT.prototype.languageList = J.i18n.GT.languageList, $t$);
+J.i18n.GT.languageList = J.i18n.Language.getLanguageList ();
 this.doTranslate = wasTranslating;
 }, $fz.isPrivate = true, $fz));
 $_M(c$, "getSupported", 
@@ -158,26 +156,26 @@ this.resourceCount++;
 if (J.i18n.GT.allowDebug) J.util.Logger.debug ("GT adding " + className);
 }}, $fz.isPrivate = true, $fz), "~S,~S");
 $_M(c$, "getString", 
-($fz = function (string, objects) {
+($fz = function (s) {
 var trans = null;
 if (this.doTranslate) {
 for (var bundle = this.resourceCount; --bundle >= 0; ) {
-trans = this.resources[bundle].getString (string);
+trans = this.resources[bundle].getString (s);
+if (trans != null) {
+s = trans;
 break;
-}
-if (trans == null) {
-if (this.resourceCount > 0 && J.i18n.GT.allowDebug && J.util.Logger.debugging) J.util.Logger.debug ("No trans, using default: " + string);
-} else {
-string = trans;
-}}if (trans == null) {
-if (string.startsWith ("[")) string = string.substring (string.indexOf ("]") + 1);
- else if (string.endsWith ("]")) string = string.substring (0, string.indexOf ("["));
-}return (objects == null ? string : java.text.MessageFormat.format (string, objects));
-}, $fz.isPrivate = true, $fz), "~S,~A");
+}}
+if (this.resourceCount > 0 && trans == null && J.i18n.GT.allowDebug && J.util.Logger.debugging) J.util.Logger.debug ("No trans, using default: " + s);
+}if (trans == null) {
+if (s.startsWith ("[")) s = s.substring (s.indexOf ("]") + 1);
+ else if (s.endsWith ("]")) s = s.substring (0, s.indexOf ("["));
+}return s;
+}, $fz.isPrivate = true, $fz), "~S");
 Clazz.defineStatics (c$,
 "$ignoreApplicationBundle", false,
 "$getTextWrapper", null,
 "languageList", null,
-"allowDebug", false);
+"allowDebug", false,
+"viewer", null);
 c$.htLanguages = c$.prototype.htLanguages =  new java.util.Hashtable ();
 });

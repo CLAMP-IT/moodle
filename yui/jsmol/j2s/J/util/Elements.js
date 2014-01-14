@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.util");
-Clazz.load (["J.util.BS"], "J.util.Elements", ["java.util.Hashtable", "J.util.Logger"], function () {
+Clazz.load (["JU.BS"], "J.util.Elements", ["java.lang.Character", "java.util.Hashtable", "JU.PT", "J.util.Logger"], function () {
 c$ = Clazz.declareType (J.util, "Elements");
 c$.getAtomicMass = $_M(c$, "getAtomicMass", 
 function (i) {
@@ -21,22 +21,39 @@ var boxed = Integer.$valueOf (J.util.Elements.altElementNumbers[i]);
 map.put (symbol, boxed);
 if (symbol.length == 2) map.put (symbol.toUpperCase (), boxed);
 }
-($t$ = J.util.Elements.htElementMap = map, J.util.Elements.prototype.htElementMap = J.util.Elements.htElementMap, $t$);
+J.util.Elements.htElementMap = map;
 }if (elementSymbol == null) return 0;
 var boxedAtomicNumber = J.util.Elements.htElementMap.get (elementSymbol);
 if (boxedAtomicNumber != null) return boxedAtomicNumber.intValue ();
-if (!isSilent) J.util.Logger.error ("'" + elementSymbol + "' is not a recognized symbol");
+if (Character.isDigit (elementSymbol.charAt (0))) {
+var pt = elementSymbol.length - 2;
+if (pt >= 0 && Character.isDigit (elementSymbol.charAt (pt))) pt++;
+var isotope = (pt > 0 ? JU.PT.parseInt (elementSymbol.substring (0, pt)) : 0);
+if (isotope > 0) {
+var n = J.util.Elements.elementNumberFromSymbol (elementSymbol.substring (pt), true);
+if (n > 0) {
+isotope = J.util.Elements.getAtomicAndIsotopeNumber (n, isotope);
+J.util.Elements.htElementMap.put (elementSymbol.toUpperCase (), Integer.$valueOf (isotope));
+return isotope;
+}}}if (!isSilent) J.util.Logger.error ("'" + elementSymbol + "' is not a recognized symbol");
 return 0;
 }, "~S,~B");
 c$.elementSymbolFromNumber = $_M(c$, "elementSymbolFromNumber", 
-function (elementNumber) {
-if (elementNumber >= J.util.Elements.elementNumberMax) {
-for (var j = J.util.Elements.altElementMax; --j >= 0; ) if (elementNumber == J.util.Elements.altElementNumbers[j]) return J.util.Elements.altElementSymbols[j];
+function (elemNo) {
+var isoNumber = 0;
+if (elemNo >= J.util.Elements.elementNumberMax) {
+for (var j = J.util.Elements.altElementMax; --j >= 0; ) if (elemNo == J.util.Elements.altElementNumbers[j]) return J.util.Elements.altElementSymbols[j];
 
-elementNumber %= 128;
-}if (elementNumber < 0 || elementNumber >= J.util.Elements.elementNumberMax) elementNumber = 0;
-return J.util.Elements.elementSymbols[elementNumber];
+isoNumber = J.util.Elements.getIsotopeNumber (elemNo);
+elemNo %= 128;
+return "" + isoNumber + J.util.Elements.getElementSymbol (elemNo);
+}return J.util.Elements.getElementSymbol (elemNo);
 }, "~N");
+c$.getElementSymbol = $_M(c$, "getElementSymbol", 
+($fz = function (elemNo) {
+if (elemNo < 0 || elemNo >= J.util.Elements.elementNumberMax) elemNo = 0;
+return J.util.Elements.elementSymbols[elemNo];
+}, $fz.isPrivate = true, $fz), "~N");
 c$.elementNameFromNumber = $_M(c$, "elementNameFromNumber", 
 function (elementNumber) {
 if (elementNumber >= J.util.Elements.elementNumberMax) {
@@ -70,11 +87,11 @@ return J.util.Elements.elementSymbolFromNumber (code & 127) + (code >> 7);
 }, "~N");
 c$.getElementNumber = $_M(c$, "getElementNumber", 
 function (atomicAndIsotopeNumber) {
-return (atomicAndIsotopeNumber % 128);
+return atomicAndIsotopeNumber & 127;
 }, "~N");
 c$.getIsotopeNumber = $_M(c$, "getIsotopeNumber", 
 function (atomicAndIsotopeNumber) {
-return (atomicAndIsotopeNumber >> 7);
+return atomicAndIsotopeNumber >> 7;
 }, "~N");
 c$.getAtomicAndIsotopeNumber = $_M(c$, "getAtomicAndIsotopeNumber", 
 function (n, mass) {
@@ -98,14 +115,14 @@ return ("1H,12C,14N,".indexOf (isotopeSymbol + ",") >= 0);
 }, "~S");
 c$.getBondingRadiusFloat = $_M(c$, "getBondingRadiusFloat", 
 function (atomicNumberAndIsotope, charge) {
-var atomicNumber = J.util.Elements.getElementNumber (atomicNumberAndIsotope);
+var atomicNumber = atomicNumberAndIsotope & 127;
 if (charge > 0 && J.util.Elements.bsCations.get (atomicNumber)) return J.util.Elements.getBondingRadFromTable (atomicNumber, charge, J.util.Elements.cationLookupTable);
 if (charge < 0 && J.util.Elements.bsAnions.get (atomicNumber)) return J.util.Elements.getBondingRadFromTable (atomicNumber, charge, J.util.Elements.anionLookupTable);
 return J.util.Elements.covalentMars[atomicNumber] / 1000;
 }, "~N,~N");
 c$.getBondingRadFromTable = $_M(c$, "getBondingRadFromTable", 
 function (atomicNumber, charge, table) {
-var ionic = ((atomicNumber << 4) + (charge + 4));
+var ionic = (atomicNumber << 4) + (charge + 4);
 var iVal = 0;
 var iMid = 0;
 var iMin = 0;
@@ -123,8 +140,8 @@ if (atomicNumber != (iVal >> 4)) iMid++;
 return table[(iMid << 1) + 1] / 1000;
 }, "~N,~N,~A");
 c$.getVanderwaalsMar = $_M(c$, "getVanderwaalsMar", 
-function (i, type) {
-return J.util.Elements.vanderwaalsMars[(i << 2) + (type.pt % 4)];
+function (atomicAndIsotopeNumber, type) {
+return J.util.Elements.vanderwaalsMars[((atomicAndIsotopeNumber & 127) << 2) + (type.pt % 4)];
 }, "~N,J.constant.EnumVdw");
 c$.getHydrophobicity = $_M(c$, "getHydrophobicity", 
 function (i) {
@@ -134,6 +151,10 @@ c$.getAllredRochowElectroNeg = $_M(c$, "getAllredRochowElectroNeg",
 function (elemno) {
 return (elemno > 0 && elemno < J.util.Elements.electroNegativities.length ? J.util.Elements.electroNegativities[elemno] : 0);
 }, "~N");
+c$.isElement = $_M(c$, "isElement", 
+function (atomicAndIsotopeNumber, elemNo) {
+return ((atomicAndIsotopeNumber & 127) == elemNo);
+}, "~N,~N");
 Clazz.defineStatics (c$,
 "elementSymbols", ["Xx", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt"],
 "atomicMass", [0, 1.008, 4.003, 6.941, 9.012, 10.81, 12.011, 14.007, 15.999, 18.998, 20.18, 22.99, 24.305, 26.981, 28.086, 30.974, 32.07, 35.453, 39.948, 39.1, 40.08, 44.956, 47.88, 50.941, 52, 54.938, 55.847, 58.93, 58.69, 63.55, 65.39, 69.72, 72.61, 74.92, 78.96, 79.9, 83.8, 85.47, 87.62, 88.91, 91.22, 92.91, 95.94, 98.91, 101.07, 102.91, 106.42, 107.87, 112.41, 114.82, 118.71, 121.75, 127.6, 126.91, 131.29, 132.91, 137.33, 138.91, 140.12, 140.91, 144.24, 144.9, 150.36, 151.96, 157.25, 158.93, 162.5, 164.93, 167.26, 168.93, 173.04, 174.97, 178.49, 180.95, 183.85, 186.21, 190.2, 192.22, 195.08, 196.97, 200.59, 204.38, 207.2, 208.98, 210, 210, 222, 223, 226.03, 227.03, 232.04, 231.04, 238.03, 237.05, 239.1, 243.1, 247.1, 247.1, 252.1, 252.1, 257.1, 256.1, 259.1, 260.1, 261, 262, 263, 262, 265, 268]);
@@ -156,8 +177,8 @@ Clazz.defineStatics (c$,
 "FORMAL_CHARGE_MAX", 7,
 "cationLookupTable", [53, 680, 69, 440, 70, 350, 85, 350, 87, 230, 104, 160, 117, 680, 119, 160, 121, 130, 133, 220, 138, 90, 155, 80, 165, 1120, 181, 970, 197, 820, 198, 660, 215, 510, 229, 650, 232, 420, 247, 440, 249, 350, 262, 2190, 264, 370, 266, 300, 281, 340, 283, 270, 293, 1540, 309, 1330, 325, 1180, 326, 990, 343, 732, 357, 960, 358, 940, 359, 760, 360, 680, 374, 880, 375, 740, 376, 630, 377, 590, 389, 810, 390, 890, 391, 630, 394, 520, 406, 800, 407, 660, 408, 600, 411, 460, 422, 740, 423, 640, 438, 720, 439, 630, 454, 690, 469, 960, 470, 720, 485, 880, 486, 740, 501, 810, 503, 620, 518, 730, 520, 530, 535, 580, 537, 460, 549, 660, 552, 500, 554, 420, 569, 470, 571, 390, 597, 1470, 614, 1120, 631, 893, 645, 1090, 648, 790, 661, 1000, 664, 740, 665, 690, 677, 930, 680, 700, 682, 620, 699, 979, 712, 670, 727, 680, 742, 800, 744, 650, 757, 1260, 758, 890, 773, 1140, 774, 970, 791, 810, 806, 930, 808, 710, 823, 760, 825, 620, 837, 820, 840, 700, 842, 560, 857, 620, 859, 500, 885, 1670, 901, 1530, 902, 1340, 917, 1390, 919, 1016, 933, 1270, 935, 1034, 936, 920, 951, 1013, 952, 900, 967, 995, 983, 979, 999, 964, 1014, 1090, 1015, 950, 1031, 938, 1047, 923, 1048, 840, 1063, 908, 1079, 894, 1095, 881, 1111, 870, 1126, 930, 1127, 858, 1143, 850, 1160, 780, 1177, 680, 1192, 700, 1194, 620, 1208, 720, 1211, 560, 1224, 880, 1226, 690, 1240, 680, 1254, 800, 1256, 650, 1269, 1370, 1271, 850, 1285, 1270, 1286, 1100, 1301, 1470, 1303, 950, 1318, 1200, 1320, 840, 1333, 980, 1335, 960, 1337, 740, 1354, 670, 1371, 620, 1397, 1800, 1414, 1430, 1431, 1180, 1448, 1020, 1463, 1130, 1464, 980, 1465, 890, 1480, 970, 1482, 800, 1495, 1100, 1496, 950, 1499, 710, 1511, 1080, 1512, 930, 1527, 1070, 1528, 920],
 "anionLookupTable", [19, 1540, 96, 2600, 113, 1710, 130, 1360, 131, 680, 147, 1330, 241, 2120, 258, 1840, 275, 1810, 512, 2720, 529, 2220, 546, 1980, 563, 1960, 800, 2940, 803, 3700, 817, 2450, 834, 2110, 835, 2500, 851, 2200]);
-c$.bsCations = c$.prototype.bsCations =  new J.util.BS ();
-c$.bsAnions = c$.prototype.bsAnions =  new J.util.BS ();
+c$.bsCations = c$.prototype.bsCations =  new JU.BS ();
+c$.bsAnions = c$.prototype.bsAnions =  new JU.BS ();
 {
 for (var i = 0; i < J.util.Elements.anionLookupTable.length; i += 2) J.util.Elements.bsAnions.set (J.util.Elements.anionLookupTable[i] >> 4);
 

@@ -1,20 +1,20 @@
 Clazz.declarePackage ("J.render");
-Clazz.load (null, "J.render.TextRenderer", ["J.modelset.Text"], function () {
+Clazz.load (null, "J.render.TextRenderer", ["java.lang.Float", "J.modelset.Text"], function () {
 c$ = Clazz.declareType (J.render, "TextRenderer");
 c$.render = $_M(c$, "render", 
-function (text, viewer, g3d, scalePixelsPerMicron, imageFontScaling, isExact, boxXY, xy) {
+function (text, viewer, g3d, scalePixelsPerMicron, imageFontScaling, isExact, boxXY, temp) {
 if (text == null || text.image == null && text.lines == null) return;
 var showText = g3d.setColix (text.colix);
 if (!showText && (text.image == null && (text.bgcolix == 0 || !g3d.setColix (text.bgcolix)))) return;
 text.setPosition (viewer, g3d.getRenderWidth (), g3d.getRenderHeight (), scalePixelsPerMicron, imageFontScaling, isExact, boxXY);
 if (text.image == null && text.bgcolix != 0) {
 if (showText) g3d.setColix (text.bgcolix);
-J.render.TextRenderer.showBox (g3d, text.colix, Clazz.floatToInt (text.boxX), Clazz.floatToInt (text.boxY), text.z + 2, text.zSlab, Clazz.floatToInt (text.boxWidth), Clazz.floatToInt (text.boxHeight), text.fontScale, text.isLabelOrHover);
+J.render.TextRenderer.showBox (g3d, text.colix, Clazz.floatToInt (text.boxX), Clazz.floatToInt (text.boxY) + text.boxYoff2 * 2, text.z + 2, text.zSlab, Clazz.floatToInt (text.boxWidth), Clazz.floatToInt (text.boxHeight), text.fontScale, text.isLabelOrHover);
 if (!showText) return;
 }if (text.image == null) {
 for (var i = 0; i < text.lines.length; i++) {
-text.setXYA (xy, i);
-g3d.drawString (text.lines[i], text.font, Clazz.floatToInt (xy[0]), Clazz.floatToInt (xy[1]), text.z, text.zSlab, text.bgcolix);
+text.setXYA (temp, i);
+g3d.drawString (text.lines[i], text.font, Clazz.floatToInt (temp[0]), Clazz.floatToInt (temp[1]), text.z, text.zSlab, text.bgcolix);
 }
 } else {
 g3d.drawImage (text.image, Clazz.floatToInt (text.boxX), Clazz.floatToInt (text.boxY), text.z, text.zSlab, text.bgcolix, Clazz.floatToInt (text.boxWidth), Clazz.floatToInt (text.boxHeight));
@@ -23,11 +23,15 @@ return;
 }, "J.modelset.Text,J.viewer.Viewer,J.api.JmolRendererInterface,~N,~N,~B,~A,~A");
 c$.drawPointer = $_M(c$, "drawPointer", 
 function (text, g3d) {
-if ((text.pointer & 1) != 0) {
-if (!g3d.setColix ((text.pointer & 2) != 0 && text.bgcolix != 0 ? text.bgcolix : text.colix)) return;
-if (text.boxX > text.movableX) g3d.drawLineXYZ (text.movableX, text.movableY, text.zSlab, Clazz.floatToInt (text.boxX), Clazz.floatToInt (text.boxY + text.boxHeight / 2), text.zSlab);
- else if (text.boxX + text.boxWidth < text.movableX) g3d.drawLineXYZ (text.movableX, text.movableY, text.zSlab, Clazz.floatToInt (text.boxX + text.boxWidth), Clazz.floatToInt (text.boxY + text.boxHeight / 2), text.zSlab);
-}}, "J.modelset.Text,J.api.JmolRendererInterface");
+if ((text.pointer & 1) == 0 || !g3d.setColix ((text.pointer & 2) != 0 && text.bgcolix != 0 ? text.bgcolix : text.colix)) return;
+var w = text.boxWidth;
+var h = text.boxHeight;
+var pt = NaN;
+var x = text.boxX + (text.boxX > text.atomX + w ? 0 : text.boxX + w < text.atomX - w ? w : (pt = w / 2));
+var setY = !Float.isNaN (pt);
+var y = text.boxY + (setY && text.boxY > text.atomY ? 0 : setY && text.boxY + h < text.atomY ? h : h / 2);
+g3d.drawLineXYZ (text.atomX, text.atomY, text.atomZ, Clazz.floatToInt (x), Clazz.floatToInt (y), text.zSlab);
+}, "J.modelset.Text,J.api.JmolRendererInterface");
 c$.renderSimpleLabel = $_M(c$, "renderSimpleLabel", 
 function (g3d, font, strLabel, colix, bgcolix, boxXY, z, zSlab, xOffset, yOffset, ascent, descent, doPointer, pointerColix, isExact) {
 var boxWidth = font.stringWidth (strLabel) + 8;
@@ -44,7 +48,7 @@ if (doPointer) {
 g3d.setColix (pointerColix);
 if (xOffset > 0) g3d.drawLineXYZ (x0, y0, zSlab, Clazz.floatToInt (x), Clazz.floatToInt (y + boxHeight / 2), zSlab);
  else if (xOffset < 0) g3d.drawLineXYZ (x0, y0, zSlab, Clazz.floatToInt (x + boxWidth), Clazz.floatToInt (y + boxHeight / 2), zSlab);
-}}, "J.api.JmolRendererInterface,J.util.JmolFont,~S,~N,~N,~A,~N,~N,~N,~N,~N,~N,~B,~N,~B");
+}}, "J.api.JmolRendererInterface,javajs.awt.Font,~S,~N,~N,~A,~N,~N,~N,~N,~N,~N,~B,~N,~B");
 c$.showBox = $_M(c$, "showBox", 
 ($fz = function (g3d, colix, x, y, z, zSlab, boxWidth, boxHeight, imageFontScaling, atomBased) {
 g3d.fillRect (x, y, z, zSlab, boxWidth, boxHeight);

@@ -3,13 +3,17 @@
 <title>HTML5-only and WebGL Jmol Demo</title>
 <head>
 <meta charset="utf-8">
-<script type="text/javascript" src="js/JSmoljQuery.js"></script>
+<!-- breaking out the library for debugging -->
+<script type="text/javascript" src="jquery/jquery.js"></script>
+<script type="text/javascript" src="js/JSmoljQueryExt.js"></script>
 <script type="text/javascript" src="js/JSmolCore.js"></script>
 <script type="text/javascript" src="js/JSmolApplet.js"></script>
 <script type="text/javascript" src="js/JSmolApi.js"></script>
 <script type="text/javascript" src="js/JSmolControls.js"></script>
 <script type="text/javascript" src="js/j2sjmol.js"></script>
 <script type="text/javascript" src="js/JSmol.js"></script>
+<script type="text/javascript" src="js/JSmolConsole.js"></script>
+<script type="text/javascript" src="js/JSmolMenu.js"></script>
 <!-- // following two only necessary for WebGL version: 
 -->
 <script type="text/javascript" src="js/JSmolThree.js"></script>
@@ -17,41 +21,14 @@
 
 <script type="text/javascript">
 
+Jmol.getProfile()
+
 var jmolApplet0; // set up in HTML table, below
 var Info;
 
 ;(function() {
 
-// logic is set by indicating order of USE -- default is HTML5 for this test page, though
-var use = "HTML5"//"JAVA HTML5 IMAGE" // WEBGL only by request by link below.
-var s = document.location.search;
-
-
-// Developers: The debugCode flag is checked in j2s/java/core.z.js, 
-// and, if TRUE, skips loading the core methods, forcing those
-// to be read from their individual directories. Set this
-// true if you want to do some code debugging by inserting
-// System.out.println, document.title, or alert commands
-// anywhere in the Java or Jmol code.
-
-Jmol.debugCode = (s.indexOf("debugcode") >= 0);
-
-//if (s.indexOf("?") < 0) s = "USE=HTML5"
-
-if (s.indexOf("USE=") >= 0)
-  use = s.split("USE=")[1].split("&")[0]
-else if (s.indexOf("JAVA") >= 0)
-  use = "JAVA"
-else if (s.indexOf("IMAGE") >= 0)
-  use = "IMAGE"
-else if (s.indexOf("NOWEBGL") >= 0)
-  use = "JAVA IMAGE"
-else if (s.indexOf("WEBGL") >= 0)
-  use = "WEBGL HTML5"
-if (s.indexOf("NOWEBGL") >= 0)
-  use = use.replace(/WEBGL/,"")
-var useSignedApplet = (s.indexOf("SIGNED") >= 0);
-if(useSignedApplet && use == "HTML5") use = "JAVA";
+// use ?_USE=JAVA or _USE=SIGNED or _USE=HTML5
 
 jmol_isReady = function(applet) {
 	document.title = (applet._id + " is ready")
@@ -59,22 +36,21 @@ jmol_isReady = function(applet) {
  
 }		
 
-
 Info = {
 	width: 300,
 	height: 300,
 	debug: false,
-	color: "0xF0F0F0",
+	color: "#F0F0F0",
 	addSelectionOptions: true,
-	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/jsmol.php",
-	use: use,
+	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
+	use: "HTML5",
   //language: "fr", // NOTE: LOCALIZATION REQUIRES <meta charset="utf-8"> (see JSmolCore Jmol.featureDetection.supportsLocalization)
 	jarPath: "java",
 	j2sPath: "j2s",
-	jarFile: (useSignedApplet ? "JmolAppletSigned.jar" : "JmolApplet.jar"),
-	isSigned: useSignedApplet,
-	disableJ2SLoadMonitor: true,
-	disableInitialConsole: true,
+	jarFile: "JmolApplet.jar",
+	isSigned: false,
+	disableJ2SLoadMonitor: false,
+	disableInitialConsole: false,
 	readyFunction: jmol_isReady,
   allowjavascript: true,
 	script: "set antialiasDisplay;load data/caffeine.mol;"
@@ -95,11 +71,10 @@ Info = {
 <table width=1000 cellpadding=10>
 <tr><td colspan=2 style="font-size:8pt">
 For a zip file containing all the files in this directory, 
-see <a href=http://chemapps.stolaf.edu/jmol/jsmol.zip>http://chemapps.stolaf.edu/jmol/jsmol.zip</a>. 
+see <a href=http://chemapps.stolaf.edu/jmol/zip/Jmol.zip>http://chemapps.stolaf.edu/jmol/zip/Jmol.zip</a>. 
 
-This page can use the signed Jmol applet, the unsigned Jmol applet
-with server-side help, or <a href="http://jsmol.sourceforge.net">JSmol</a> 
-using HTML5 with or without WebGL. It is under active development at this time. 
+This test page uses unminified files and can implement the signed Jmol applet, the unsigned Jmol applet, or just JavaScript and HTML5 with or without WebGL. 
+
 Credits: 
 WebGL interface written by <b>Takanori Nakane</b>. 
 Java2Script written by <b>Zhou Renjian, et al.</b>
@@ -129,6 +104,16 @@ var lastPrompt=0;
 display
 <a href="javascript:Jmol.script(jmolApplet0,'set antialiasDisplay false')">faster</a>
 <a href="javascript:Jmol.script(jmolApplet0,'set antialiasDisplay true')">sharper</a>
+<br>
+platformSpeed:
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 8')" title='all features'>8</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 7')" title='no antialiasing'>7</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 6')" title='no translucency'>6</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 5')" title='surfaces dotted'>5</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 4')" title='cartoons as trace'>4</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 3')" title='geosurfaces as dots'>3</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 2')" title='ellipsoids as dots'>2</a>
+<a href="javascript:Jmol.script(jmolApplet0,'set platformSpeed 1')" title='wireframe only'>1</a>
 <br>
 info <a href="javascript:Jmol.showInfo(jmolApplet0, true)">show</a>
 <a href="javascript:Jmol.clearConsole(jmolApplet0)">clear</a>
@@ -165,13 +150,15 @@ labels <a href="javascript:Jmol.script(jmolApplet0,'if (_fileType == &quot;Pdb&q
 <br /><br /> 
 
 <span style="font-size:8pt">
-Current status: 12/23/12 - 
+Current status: 7 SEP 2013 - 
 <b>Jmol is working completely Java-free, requiring only HTML5.</b>
+The <b>platformSpeed</b> option (set 1 to 10) allows for rapid rotation of models for platforms that have limited JavaScript capability (iPad/iPhone, tablets). 
+
 Popup menu, script queuing, animation, spin, vibration, move, moveto, hover, and (guided) navigation, pause/resume are all working;
 echos/labels working; antialiasDisplay working;
 synchronous binary and XML file reading working; 
-cartoons, translucency, surfaces -- all are working in a simple HTML5 2D canvas. WebGL is less developed. We are very interested in 
-developing the WebGL option further, as the rendering is faster, but to date it is somewhat limited, with just basic shapes and no text. 
+cartoons, translucency, surfaces -- all are working in a simple HTML5 2D canvas. WebGL is less developed, with just basic shapes and no text. 
+
 
 Enter "!" and a command into the search box and press ENTER to execute a <a target=_blank href=http://chemapps.stolaf.edu/jmol/docs>script command</a>.
    </span>
@@ -179,16 +166,13 @@ Enter "!" and a command into the search box and press ENTER to execute a <a targ
 <table cellpadding=5><tr><td valign=top>
 <b>rendering options:</b> 
 	 <br /> 
-  <a href=test2.htm?USE=JAVA>unsigned Jmol applet</a> 
+  <a href=test2.htm?_USE=JAVA>unsigned Jmol applet</a> 
  <br /> 
-<a href=test2.htm?SIGNED>signed Jmol applet</a>
+<a href=test2.htm?_USE=SIGNED>signed Jmol applet</a>
  <br /> 
-<a href=test2.htm?USE=HTML5>JSmol (HTML5 only)</a> 
+<a href=test2.htm?_USE=HTML5>JSmol (HTML5 only)</a> 
  <br /> 
- <a href=test2.htm?WEBGL>JSmol (WebGL)</a> 
- <br /> 
- <a href=test2.htm?IMAGE>image only</a>
- <br />
+ <a href=test2.htm?_USE=WEBGL>JSmol (WebGL)</a> 
  <br />
 	<b>keyword searches</b>
  <br />
@@ -200,6 +184,10 @@ Enter "!" and a command into the search box and press ENTER to execute a <a targ
 </td><td valign=top>
 	<b>this-domain calls</b>
  <br />
+ <a href="javascript:Jmol.script(jmolApplet0,'load data/1cbs.cif; set echo top left;echo loading map file...;refresh;isosurface downsample 2 cutoff 0.5 boundbox &quot;data/1cbs_2fofc.map&quot mesh nofill;isosurface display within 2.0 {*};echo')">2.2MB EDM test</a>
+<br />  
+ <a href="javascript:Jmol.script(jmolApplet0,'load ?')">local file reading</a>
+<br />
  <a href="javascript:Jmol.script(jmolApplet0,'minimize')">minimize</a> 
  <a href="javascript:Jmol.script(jmolApplet0,'set modelkitmode;set picking dragMinimize')">drag-minimize</a>
  <a href="javascript:Jmol.script(jmolApplet0,'!quit;set modelkitmode false;set picking ident;')">!quit</a>
@@ -260,7 +248,7 @@ Enter "!" and a command into the search box and press ENTER to execute a <a targ
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage scale 1.0')">x 1.0</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage scale 2.0')">x 2.0</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage off')">off</a>         
- <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage image &quot;data/bob.png&quot;set echo myimage depth 50')">on</a>
+ <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage image &quot;data/bob.png&quot;;set echo myimage depth 50')">on</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage depth 100')">front</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage depth 50')">mid</a>
  <a href="javascript:Jmol.script(jmolApplet0,'set echo myimage depth 0')">back</a>
@@ -272,7 +260,7 @@ Enter "!" and a command into the search box and press ENTER to execute a <a targ
  <br /> 
 
  </td><td valign=top>
-	<b>direct database calls(<a href="javascript:alert('MSIE cannot do synchronous cross-domain file transfer, so if you want to do that, you must put jsmol.php on your OWN server and point to it using Info.serverURL, which for this page is ' + Info.serverURL + '\nA text version of this php file is at http://chemapps.stolaf.edu/jmol/jsmol/jsmol.php.txt')">unless MSIE</a>)</b>
+	<b>direct database calls(<a href="javascript:alert('MSIE cannot do synchronous cross-domain file transfer, so if you want to do that, you must put jsmol.php on your OWN server and point to it using Info.serverURL, which for this page is ' + Info.serverURL + '\nA text version of this php file is at http://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php.txt')">unless MSIE</a>)</b>
  <br />
  <a href="javascript:Jmol.loadFile(jmolApplet0,'$caffeine')">load $caffeine (from NCI)</a>
  <br /> 

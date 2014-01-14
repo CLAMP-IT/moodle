@@ -1,5 +1,8 @@
 // BH 12/15/2012 1:56:28 PM  adds corezip.z.js and corebio.z.js
 // later additions include coresym.z.js, coresurface.z.js, coremenu.z.js
+
+// NOTE: Any changes here must also be reflected in buildtojs.xml
+
 if (!window["java.registered"])
  window["java.registered"] = false;
 
@@ -8,66 +11,45 @@ if (!window["java.registered"])
 if (window["java.packaged"]) return;
 window["java.packaged"] = true;
 
+var	base = ClazzLoader.fastGetJ2SLibBase() + "core/";
 
-	ClazzLoader.registerPackages ("java", [
-			"io", "lang", 
-			//"lang.annotation", 
-			"lang.reflect",
-			"util", 
-			//"util.concurrent", "util.concurrent.atomic", "util.concurrent.locks",
-			//"util.jar", "util.logging", "util.prefs", 
-			"util.regex",
-			"util.zip",
-			"net", "text"]);
-			
-	window["reflect"] = java.lang.reflect;
+for (var i = 0; i < Jmol._coreFiles.length; i++)
+  ClazzLoader.loadZJar (Jmol._coreFiles[i], ClazzLoader.runtimeKeyClass);
 
-var	base = ClazzLoader.fastGetJ2SLibBase ();//ClazzLoader.getClasspathFor ("core.*");
-	base += "core/"
-var	basefile = base + "core.z.js";
-
-	ClazzLoader.ignore([
-		"net.sf.j2s.ajax.HttpRequest",
-		"java.util.MapEntry.Type",
-		"java.net.UnknownServiceException",
-		"java.lang.Runtime",
-		"java.security.AccessController",
-		"java.security.PrivilegedExceptionAction",
-		"java.io.File",
-		"java.io.FileInputStream",
-		"java.io.FileWriter",
-		"java.io.OutputStreamWriter",
-		"java.util.Calendar", // bypassed in ModelCollection
-		"java.text.SimpleDateFormat", // not used
-		"java.text.DateFormat", // not used
-		"java.util.concurrent.Executors"
-	])
-	
-	ClazzLoader.loadZJar (basefile, ClazzLoader.runtimeKeyClass);
-
-  if (Jmol.debugCode)
+  if (Jmol._debugCode)
     return;
 
-	ClazzLoader.jarClasspath (base + "corescript.z.js",	[  
-    "java.util.regex.Pattern", 
-    "$.Matcher", 
-    "$.MatchResult",     
+// note - we don't need to list ALL the classes -- only the ones that are entry points.
+// several more classe are in each of these files -- see build_03_tojs.xml
 
+	ClazzLoader.jarClasspath (base + "coretext.z.js",	[    
+	"J.modelset.Object2d",
+	"$.Text",
+	"J.shape.Object2dShape",
+	"$.TextShape",
+	"$.Labels",
+	"$.Echo",
+	"$.Hover"
+	]);
+
+	ClazzLoader.jarClasspath (base + "corescript.z.js",	[  
     "J.api.JmolScriptManager", 
     "$.JmolScriptEvaluator",
     "$.JmolScriptFunction",
     "J.script.ScriptEvaluator", 
     "$.ScriptCompiler", 
-    "$.ScriptCompilationTokenParser",
-    "$.ScriptFlowContext", 
-    "$.ScriptFunction", 
-    "$.ScriptInterruption", 
-    "$.ScriptMathProcessor", 
-    "J.thread.CommandWatcherThread", 
+    "$.CommandWatcherThread", 
     "$.ScriptQueueThread", 
-    "J.viewer.ScriptManager" 
+    "$.ScriptDelayThread", 
+    "$.ScriptManager",
+    "$.FileLoadThread"
 	]);
 	
+	ClazzLoader.jarClasspath (base + "corescript2.z.js",	[  
+	"J.script.JmolScriptExtension", 
+	"J.scriptext.ScriptExt"
+	]);
+	                                                 	
 	ClazzLoader.jarClasspath (base + "corestate.z.js",	[  
     "J.api.JmolStateCreator", 
     "J.viewer.StateCreator" 
@@ -86,7 +68,6 @@ var	basefile = base + "core.z.js";
 	]);
 
 	ClazzLoader.jarClasspath (base + "coremenu.z.js",	[
-		"J.api.JmolPopupInterface",
 		"J.awtjs2d.JSmolPopup",		
 		"$.JSPopup",
 		"$.JSmolPopup",
@@ -94,6 +75,25 @@ var	basefile = base + "core.z.js";
 		"$.GenericPopup",
 		"$.PopupResource",
 		"$.MainPopupResourceBundle"
+	]);
+
+	ClazzLoader.jarClasspath (base + "corebinary.z.js",	[
+    "java.io.DataInputStream",
+    "$.PushbackInputStream",
+    "JU.BC",
+    "J.api.JmolDocument",
+    "J.io2.BinaryDocument"
+	]);
+
+	ClazzLoader.jarClasspath (base + "corepymol.z.js",	[
+    "J.api.JmolSceneGenerator",
+    "J.api.PymolAtomReader", // -- required by J.adapter.readers.pymol.PyMOLReader
+    "J.adapter.readers.pymol.PickleReader",
+    "$.PyMOL",
+    "$.JmolObject",
+    "$.PyMOLGroup",
+    "$.PyMOLScene",
+    "$.PyMOLReader"
 	]);
 
 	ClazzLoader.jarClasspath (base + "coremin.z.js",	[
@@ -118,89 +118,20 @@ var	basefile = base + "core.z.js";
 	]);
 
 	ClazzLoader.jarClasspath (base + "corezip.z.js",	[
-		"JZ.Checksum",
-		"$.CRC32",
-		"$.InflaterInputStream",
-		"$.ZStream",
-		"$.Inflater",
-		"$.Adler32",
-		"$.Tree",
-		"$.Deflate",
-		"$.GZIPHeader",
-		"$.StaticTree",
-		"$.Inflate",
-		"$.InfTree",
-		"$.InfBlocks",
-		"$.InfCodes",
-		"$.Inflater",
-		"$.InflaterInputStream",
-		"$.GZIPInputStream",
-		"$.Deflater",
-		"$.DeflaterOutputStream",
-
-		"java.io.ByteArrayOutputStream",
-		"$.PushbackInputStream",
-		"java.util.zip.CRC32",
-		"$.CheckedInputStream",
-		"$.GZIPInputStream",
-		"$.Inflater",
-		"$.InflaterInputStream",
-		"$.ZipException",
-		"$.ZipConstants",
-		"$.ZipEntry",
-		"$.ZipConstants64",
-		"$.ZipInputStream",
-		"$.Deflater",
-		"$.DeflaterOutputStream",
-		"$.ZipOutputStream",
-
 		"J.api.JmolZipUtility",
 		"$.ZInputStream",
-		"$.JmolImageCreatorInterface",
-		"J.export.image.GenericCRCEncoder",
-		"$.GenericPngEncoder",
-		"$.GenericImageCreator",
-		"J.exportjs.JSImageCreator",
 		"J.io2.ZipUtil",
-		"$.JpegEncoder",
-		"$.JmolZipInputStream"		
+		"$.JmolZipInputStream"
 	]);
-	
+
 	ClazzLoader.jarClasspath (base + "corebio.z.js",	[
-		"J.adapter.readers.cifpdb.PdbReader",
+		"J.adapter.readers.pdb.PdbReader",
 		"J.adapter.smarter.Structure",
 		"J.api.JmolBioResolver",
 		"J.modelsetbio.Resolver",
-		"$.Monomer",
-		"$.AlphaMonomer",
-		"$.ProteinStructure",
-		"$.Helix",
-		"$.Sheet",
-		"$.Turn",
-		"$.BioPolymer", 
-		"$.AlphaPolymer",
-		"$.AminoMonomer",
-		"$.AminoPolymer",
-		"$.APBridge",
-		"$.BioModel",
-		"$.CarbohydrateMonomer",
-		"$.CarbohydratePolymer",
-		"$.PhosphorusMonomer", 
-		"$.NucleicMonomer",
-		"$.NucleicPolymer",
-		"$.PhosphorusPolymer",
-		"J.shapebio.BioShape",
-		"$.BioShapeCollection",
-		"$.Rockets",
-		"$.Cartoon",
-    "$.Backbone",
-    "$.Trace",
-		"J.renderbio.BioShapeRenderer",
-		"$.RocketsRenderer",
-		"$.CartoonRenderer",
-    "$.BackboneRenderer",
-    "$.TraceRenderer"
-	]);
+		"$.BioModel"
+ ]);
+
 
 	ClazzLoader.jarClasspath (base + "coresurface.z.js",	[
 		"J.api.VolumeDataInterface",
@@ -218,6 +149,10 @@ var	basefile = base + "core.z.js";
 		"$.VolumeDataReader",
 		"$.AtomDataReader",
 		"$.IsoSolventReader",
+   		"$.SurfaceFileReader",
+    	"$.VolumeFileReader",
+    	"$.XmlReader",
+	    "$.JvxlXmlReader",
 		"J.shapesurface.Isosurface",
 		"$.IsosurfaceMesh",
 		"J.rendersurface.IsosurfaceRenderer"
@@ -229,6 +164,7 @@ var	basefile = base + "core.z.js";
 		"$.PointGroup",
 		"$.SpaceGroup",
 		"$.HallInfo",
+		"$.HallRotationTerm",
 		"$.HallRotation",
 		"$.HallTranslation",
 		"$.SymmetryOperation",
@@ -238,7 +174,8 @@ var	basefile = base + "core.z.js";
 
 	ClazzLoader.jarClasspath (base + "coresmiles.z.js",	[
     "J.api.SmilesMatcherInterface",
-    "J.smiles.SmilesMatcher",
+    "J.smiles.VTemp",
+    "$.SmilesMatcher",
     "$.InvalidSmilesException",
     "$.SmilesSearch",
     "$.SmilesGenerator",
@@ -249,8 +186,23 @@ var	basefile = base + "core.z.js";
     "$.SmilesParser"
 	]);
 
+	ClazzLoader.jarClasspath (base + "corejsvmenu.z.js",	[
+          	"JSV.js2d.JsPopup"
+  ]);
+
+	ClazzLoader.jarClasspath (base + "corejsvexport.z.js",	[
+          	"JSV.export.Exporter"
+	]);
+
+	ClazzLoader.jarClasspath (base + "corejsvdialog.z.js",	[
+        	"JSV.dialog.IntegrationDialog",
+        	"$.PeakListDialog",
+          "$.MeasurementsDialog",
+          "$.OverlayLegendDialog",
+          "$.ViewsDialog"
+	]);
+
+
+
 }) ();
 window["java.registered"] = true;
-
-
-

@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.script");
-Clazz.load (["J.script.ScriptCompilationTokenParser", "J.util.JmolList"], "J.script.ScriptCompiler", ["java.lang.Boolean", "$.Character", "$.Float", "java.util.Hashtable", "J.api.Interface", "J.i18n.GT", "J.io.JmolBinary", "J.modelset.Bond", "$.Group", "J.script.ContextToken", "$.SV", "$.ScriptContext", "$.ScriptEvaluator", "$.ScriptFlowContext", "$.ScriptFunction", "$.T", "J.util.ArrayUtil", "$.BS", "$.Escape", "$.Logger", "$.Parser", "$.SB", "$.TextFormat", "J.viewer.Viewer"], function () {
+Clazz.load (["J.script.ScriptCompilationTokenParser", "JU.List"], "J.script.ScriptCompiler", ["java.lang.Boolean", "$.Character", "$.Float", "java.util.Hashtable", "JU.AU", "$.BS", "$.M3", "$.M4", "$.PT", "$.SB", "J.api.Interface", "J.i18n.GT", "J.io.JmolBinary", "J.modelset.BondSet", "$.Group", "J.script.ContextToken", "$.SV", "$.ScriptContext", "$.ScriptEvaluator", "$.ScriptFlowContext", "$.ScriptFunction", "$.T", "J.util.Escape", "$.Logger", "$.Txt", "J.viewer.Viewer"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.filename = null;
 this.isSilent = false;
@@ -50,7 +50,7 @@ this.chFirst = '\0';
 Clazz.instantialize (this, arguments);
 }, J.script, "ScriptCompiler", J.script.ScriptCompilationTokenParser);
 Clazz.prepareFields (c$, function () {
-this.vPush =  new J.util.JmolList ();
+this.vPush =  new JU.List ();
 });
 Clazz.makeConstructor (c$, 
 function (viewer) {
@@ -126,13 +126,13 @@ return J.io.JmolBinary.getEmbeddedScript (script);
 }, $fz.isPrivate = true, $fz), "~S");
 $_M(c$, "addTokenToPrefix", 
 ($fz = function (token) {
-if (this.logMessages) J.util.Logger.info ("addTokenToPrefix" + token);
+if (this.logMessages) J.util.Logger.debug ("addTokenToPrefix" + token);
 this.ltoken.addLast (token);
 if (token.tok != 0) this.lastToken = token;
 }, $fz.isPrivate = true, $fz), "J.script.T");
 $_M(c$, "compile0", 
 ($fz = function (isFull) {
-this.vFunctionStack =  new J.util.JmolList ();
+this.vFunctionStack =  new JU.List ();
 this.htUserFunctions =  new java.util.Hashtable ();
 this.script = this.cleanScriptComments (this.script);
 this.ichToken = this.script.indexOf ("# Jmol state version ");
@@ -160,8 +160,8 @@ this.lineCurrent = 1;
 this.iCommand = 0;
 this.tokLastMath = 0;
 this.lastToken = J.script.T.tokenOff;
-this.vBraces =  new J.util.JmolList ();
-this.vPush =  new J.util.JmolList ();
+this.vBraces =  new JU.List ();
+this.vPush =  new JU.List ();
 this.pushCount = 0;
 this.iBrace = 0;
 this.braceCount = 0;
@@ -176,8 +176,8 @@ this.ptNewSetModifier = 1;
 this.isShowScriptOutput = false;
 this.iHaveQuotedString = false;
 this.checkImpliedScriptCmd = false;
-this.lltoken =  new J.util.JmolList ();
-this.ltoken =  new J.util.JmolList ();
+this.lltoken =  new JU.List ();
+this.ltoken =  new JU.List ();
 this.tokCommand = 0;
 this.lastFlowCommand = null;
 this.tokenAndEquals = null;
@@ -315,10 +315,10 @@ $_M(c$, "lookingAtComment",
 var ch = this.script.charAt (this.ichToken);
 var ichT = this.ichToken;
 var ichFirstSharp = -1;
-if (this.ichToken == this.ichCurrentCommand && ch == '$') {
+if (this.ichToken == this.ichCurrentCommand && ch == '$' && (this.isShowScriptOutput || this.ichToken == 0)) {
 this.isShowScriptOutput = true;
 this.isShowCommand = true;
-while (ch != ']' && !this.eol (ch = this.charAt (ichT))) ++ichT;
+if (this.charAt (++ichT) == '[') while (ch != ']' && !this.eol (ch = this.charAt (ichT))) ++ichT;
 
 this.cchToken = ichT - this.ichToken;
 return 2;
@@ -437,7 +437,7 @@ break;
 }
 if (doEval) {
 if (this.iCommand == this.lnLength) {
-this.lineNumbers = J.util.ArrayUtil.doubleLengthShort (this.lineNumbers);
+this.lineNumbers = JU.AU.doubleLengthShort (this.lineNumbers);
 var lnI =  Clazz.newIntArray (this.lnLength * 2, 2, 0);
 System.arraycopy (this.lineIndices, 0, lnI, 0, this.lnLength);
 this.lineIndices = lnI;
@@ -534,7 +534,7 @@ $_M(c$, "tokenAt",
 ($fz = function (i) {
 return this.ltoken.get (i);
 }, $fz.isPrivate = true, $fz), "~N");
-Clazz.overrideMethod (c$, "tokAt", 
+$_V(c$, "tokAt", 
 function (i) {
 return (i < this.ltoken.size () ? this.tokenAt (i).tok : 0);
 }, "~N");
@@ -565,13 +565,13 @@ if (this.nTokens == 0) this.isUserToken = isUserVar;
 if (this.nTokens == 1 && (this.tokCommand == 135368713 || this.tokCommand == 102436 || this.tokCommand == 36868) || this.nTokens != 0 && isUserVar || this.isUserFunction (identLC) && (this.thisFunction == null || !this.thisFunction.name.equals (identLC))) {
 ident = identLC;
 this.theToken = null;
-} else if (ident.length == 1) {
+} else if (ident.length == 1 || this.lastToken.tok == 269484066) {
 if ((this.theToken = J.script.T.getTokenFromName (ident)) == null && (this.theToken = J.script.T.getTokenFromName (identLC)) != null) this.theToken = J.script.T.tv (this.theToken.tok, this.theToken.intValue, ident);
 } else {
 ident = identLC;
 this.theToken = J.script.T.getTokenFromName (ident);
 }if (this.theToken == null) {
-if (ident.indexOf ("property_") == 0) this.theToken = J.script.T.o (1716520973, ident);
+if (ident.indexOf ("property_") == 0) this.theToken = J.script.T.o (1716520985, ident);
  else this.theToken = J.script.T.o (1073741824, ident);
 }this.theTok = this.theToken.tok;
 return ident;
@@ -587,8 +587,10 @@ if (!this.getData (str)) {
 return this.ERROR (11, "data");
 }} else {
 this.addTokenToPrefix (J.script.T.o (4, str));
-if (this.implicitString) this.isEndOfCommand = true;
-}return 2;
+if (this.implicitString) {
+this.ichEnd = this.ichToken + this.cchToken;
+this.isEndOfCommand = true;
+}}return 2;
 }if (this.lastToken.tok == 1074790550 && this.lookingAtImpliedString (false, false, false)) {
 this.addTokenToPrefix (J.script.T.o (4, this.script.substring (this.ichToken, this.ichToken + this.cchToken)));
 return 2;
@@ -646,14 +648,14 @@ if (this.nTokens != 1) return 4;
 case 135270407:
 case 1229984263:
 case 1073741983:
-case 1095766028:
+case 1095766030:
 case 135267336:
 case 536870926:
 case 4156:
 this.addTokenToPrefix (token);
 break;
 default:
-var tok = (strFormat.indexOf ("=") == 0 || strFormat.indexOf ("$") == 0 ? 4 : J.util.Parser.isOneOf (strFormat = strFormat.toLowerCase (), "xyz;vxyz;vibration;temperature;occupancy;partialcharge") ? 1073741824 : 0);
+var tok = (strFormat.indexOf ("=") == 0 || strFormat.indexOf ("$") == 0 ? 4 : JU.PT.isOneOf (strFormat = strFormat.toLowerCase (), ";xyz;vxyz;vibration;temperature;occupancy;partialcharge;") ? 1073741824 : 0);
 if (tok != 0) {
 this.addTokenToPrefix (J.script.T.o (tok, strFormat));
 this.iHaveQuotedString = (tok == 4);
@@ -676,7 +678,7 @@ return 2;
 case 4156:
 if (this.nTokens == 1 && this.lookForSyncID ()) {
 var ident = this.script.substring (this.ichToken, this.ichToken + this.cchToken);
-var iident = J.util.Parser.parseInt (ident);
+var iident = JU.PT.parseInt (ident);
 if (iident == -2147483648 || Math.abs (iident) < 1000) this.addTokenToPrefix (J.script.T.o (1073741824, ident));
  else this.addTokenToPrefix (J.script.T.i (iident));
 return 2;
@@ -699,7 +701,7 @@ return 2;
 }
 if (this.implicitString && !(this.tokCommand == 135271429 && this.iHaveQuotedString) && this.lookingAtImpliedString (true, true, true)) {
 var str = this.script.substring (this.ichToken, this.ichToken + this.cchToken);
-if (this.tokCommand == 1826248715 && J.util.Parser.isOneOf (str.toLowerCase (), "on;off;hide;display")) this.addTokenToPrefix (J.script.T.getTokenFromName (str.toLowerCase ()));
+if (this.tokCommand == 1826248715 && JU.PT.isOneOf (str.toLowerCase (), "on;off;hide;display")) this.addTokenToPrefix (J.script.T.getTokenFromName (str.toLowerCase ()));
  else this.addTokenToPrefix (J.script.T.o (4, str));
 return 2;
 }if (this.lookingAtObjectID ()) {
@@ -711,7 +713,7 @@ if (!Float.isNaN (value = this.lookingAtExponential ())) {
 this.addTokenToPrefix (J.script.T.o (3, Float.$valueOf (value)));
 return 2;
 }if (this.lookingAtDecimal ()) {
-value = J.util.Parser.fVal (this.script.substring (this.ichToken, this.ichToken + this.cchToken));
+value = JU.PT.fVal (this.script.substring (this.ichToken, this.ichToken + this.cchToken));
 var intValue = (J.script.ScriptEvaluator.getFloatEncodedInt (this.script.substring (this.ichToken, this.ichToken + this.cchToken)));
 this.addTokenToPrefix (J.script.T.tv (3, intValue, Float.$valueOf (value)));
 return 2;
@@ -749,12 +751,12 @@ return 2;
 var isBondOrMatrix = (this.script.charAt (this.ichToken) == '[');
 var bs = this.lookingAtBitset ();
 if (bs != null) {
-this.addTokenToPrefix (J.script.T.o (10, isBondOrMatrix ?  new J.modelset.Bond.BondSet (bs) : bs));
+this.addTokenToPrefix (J.script.T.o (10, isBondOrMatrix ?  new J.modelset.BondSet (bs) : bs));
 return 2;
 }if (isBondOrMatrix) {
 var m = this.lookingAtMatrix ();
-if (Clazz.instanceOf (m, J.util.Matrix3f) || Clazz.instanceOf (m, J.util.Matrix4f)) {
-this.addTokenToPrefix (J.script.T.o ((Clazz.instanceOf (m, J.util.Matrix3f) ? 11 : 12), m));
+if (Clazz.instanceOf (m, JU.M3) || Clazz.instanceOf (m, JU.M4)) {
+this.addTokenToPrefix (J.script.T.o ((Clazz.instanceOf (m, JU.M3) ? 11 : 12), m));
 return 2;
 }}}return 0;
 }, $fz.isPrivate = true, $fz));
@@ -771,7 +773,10 @@ $_M(c$, "parseKnownToken",
 var token;
 if (this.tokLastMath != 0) this.tokLastMath = this.theTok;
 if (this.flowContext != null && this.flowContext.token.tok == 102410 && this.flowContext.$var != null && this.theTok != 102411 && this.theTok != 102413 && this.lastToken.tok != 102410) return this.ERROR (1, ident);
-switch (this.theTok) {
+if (this.lastToken.tok == 1060866 && this.theTok != 1048586 && this.nTokens != 1) {
+this.addTokenToPrefix (J.script.T.o (4, ident));
+return 2;
+}switch (this.theTok) {
 case 1073741824:
 if (this.nTokens == 0 && !this.checkImpliedScriptCmd) {
 if (ident.charAt (0) == '\'') {
@@ -1307,8 +1312,7 @@ break;
 if (isEnd) {
 this.flowContext.token.intValue = (this.tokCommand == 102412 ? -pt : pt);
 if (this.tokCommand == 364548) this.flowContext = this.flowContext.getParent ();
-if (this.tokCommand == 364558) {
-}} else if (isNew) {
+} else if (isNew) {
 var ct = J.script.ContextToken.newCmd (this.tokCommand, this.tokenCommand.value);
 if (this.tokCommand == 102410) ct.addName ("_var");
 this.setCommand (ct);
@@ -1480,7 +1484,7 @@ if (isFileName) {
 var s = this.script.substring (this.ichToken + 1, this.ichToken + this.cchToken - 1);
 if (s.indexOf ("\\u") >= 0) s = J.util.Escape.unescapeUnicode (s);
 return s;
-}var sb = J.util.SB.newN (this.cchToken - 2);
+}var sb = JU.SB.newN (this.cchToken - 2);
 var ichMax = this.ichToken + this.cchToken - 1;
 var ich = this.ichToken + 1;
 while (ich < ichMax) {
@@ -1539,7 +1543,7 @@ var parseVariables = (isID || !J.script.T.tokAttr (this.tokCommand, 20480) && (t
 var isVariable = (ch == '@');
 var isMath = (isVariable && ichT + 3 < this.cchScript && this.script.charAt (ichT + 1) == '{');
 if (isMath && parseVariables) {
-ichT = J.util.TextFormat.ichMathTerminator (this.script, this.ichToken + 1, this.cchScript);
+ichT = J.util.Txt.ichMathTerminator (this.script, this.ichToken + 1, this.cchScript);
 return (!isID && ichT != this.cchScript && (this.cchToken = ichT + 1 - this.ichToken) > 0);
 }var ptSpace = -1;
 var ptLastChar = -1;
@@ -1574,15 +1578,11 @@ if (ptSpace < 0) ptSpace = ichT;
 ptLastChar = ichT;
 }break;
 }
-if (Character.isWhitespace (ch)) {
-if (ptSpace < 0) ptSpace = ichT;
-} else {
-ptLastChar = ichT;
-}++ichT;
+++ichT;
 }
 if (allowSpace) ichT = ptLastChar + 1;
  else if (ptSpace > 0) ichT = ptSpace;
-if (isVariable && ptSpace < 0 && parenpt <= 0 && ichT - this.ichToken > 1) {
+if (isVariable && (!allowSpace || ptSpace < 0 && parenpt <= 0 && ichT - this.ichToken > 1)) {
 return false;
 }return (this.cchToken = ichT - this.ichToken) > 0;
 }, $fz.isPrivate = true, $fz), "~B,~B,~B");
@@ -1614,7 +1614,7 @@ isOK = true;
 }
 if (!isOK) return NaN;
 this.cchToken = ichT - this.ichToken;
-return J.util.Parser.dVal (this.script.substring (pt0, ichT));
+return JU.PT.dVal (this.script.substring (pt0, ichT));
 }, $fz.isPrivate = true, $fz));
 $_M(c$, "lookingAtDecimal", 
 ($fz = function () {
@@ -1681,7 +1681,7 @@ $_M(c$, "lookingAtBitset",
 function () {
 if (this.script.indexOf ("({null})", this.ichToken) == this.ichToken) {
 this.cchToken = 8;
-return  new J.util.BS ();
+return  new JU.BS ();
 }var ichT;
 if (this.ichToken + 4 > this.cchScript || this.script.charAt (this.ichToken + 1) != '{' || (ichT = this.script.indexOf ("}", this.ichToken)) < 0 || ichT + 1 == this.cchScript) return null;
 var bs = J.util.Escape.uB (this.script.substring (this.ichToken, ichT + 2));
@@ -1788,7 +1788,7 @@ $_M(c$, "lookForSyncID",
 var ch;
 if ((ch = this.charAt (this.ichToken)) == '"' || ch == '@' || ch == '\0') return false;
 var ichT = this.ichToken;
-while (!J.script.ScriptCompiler.isSpaceOrTab (ch = this.script.charAt (ichT)) && ch != '#' && ch != '}' && !this.eol (ch)) ++ichT;
+while (!J.script.ScriptCompiler.isSpaceOrTab (ch = this.charAt (ichT)) && ch != '#' && ch != '}' && !this.eol (ch)) ++ichT;
 
 this.cchToken = ichT - this.ichToken;
 return true;

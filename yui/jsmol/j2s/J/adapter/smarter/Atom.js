@@ -1,8 +1,8 @@
 Clazz.declarePackage ("J.adapter.smarter");
-Clazz.load (["J.util.P3"], "J.adapter.smarter.Atom", ["java.lang.Float"], function () {
+Clazz.load (["JU.P3"], "J.adapter.smarter.Atom", ["java.lang.Float", "JU.AU", "$.List", "$.V3"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.atomSetIndex = 0;
-this.atomIndex = 0;
+this.index = 0;
 this.bsSymmetry = null;
 this.atomSite = 0;
 this.elementSymbol = null;
@@ -10,37 +10,44 @@ this.elementNumber = -1;
 this.atomName = null;
 this.formalCharge = -2147483648;
 this.partialCharge = NaN;
-this.vectorX = NaN;
-this.vectorY = NaN;
-this.vectorZ = NaN;
+this.vib = null;
 this.bfactor = NaN;
-this.occupancy = 100;
+this.foccupancy = 1;
 this.radius = NaN;
 this.isHetero = false;
 this.atomSerial = -2147483648;
-this.chainID = '\0';
+this.chainID = 0;
 this.alternateLocationID = '\0';
 this.group3 = null;
 this.sequenceNumber = -2147483648;
 this.insertionCode = '\0';
 this.anisoBorU = null;
-this.ellipsoid = null;
+this.tensors = null;
 this.ignoreSymmetry = false;
 Clazz.instantialize (this, arguments);
-}, J.adapter.smarter, "Atom", J.util.P3, Cloneable);
-$_M(c$, "setEllipsoid", 
-function (e) {
-if (e == null) return;
-if (this.ellipsoid != null && this.ellipsoid.length == 3) this.ellipsoid[0] = e;
- else this.ellipsoid = [e];
-}, "J.util.Quadric");
+}, J.adapter.smarter, "Atom", JU.P3, Cloneable);
+$_M(c$, "addTensor", 
+function (tensor, type, reset) {
+if (tensor == null) return null;
+if (reset || this.tensors == null) this.tensors =  new JU.List ();
+this.tensors.addLast (tensor);
+if (type != null) tensor.setType (type);
+return tensor;
+}, "J.util.Tensor,~S,~B");
 Clazz.overrideConstructor (c$, 
 function () {
 this.set (NaN, NaN, NaN);
 });
 $_M(c$, "getClone", 
 function () {
-return this.clone ();
+var a = this.clone ();
+if (this.vib != null) a.vib = JU.V3.newV (a.vib);
+if (this.anisoBorU != null) a.anisoBorU = JU.AU.arrayCopyF (this.anisoBorU, -1);
+if (this.tensors != null) {
+a.tensors =  new JU.List ();
+for (var i = this.tensors.size (); --i >= 0; ) a.tensors.addLast ((this.tensors.get (i)).copyTensor ());
+
+}return a;
 });
 $_M(c$, "getElementSymbol", 
 function () {
@@ -96,10 +103,8 @@ return J.adapter.smarter.Atom.isValidElementSymbolNoCaseSecondChar2 (chFirst, ch
 }, "~S");
 $_M(c$, "scaleVector", 
 function (vibScale) {
-if (Float.isNaN (this.vectorX)) return;
-this.vectorX *= vibScale;
-this.vectorY *= vibScale;
-this.vectorZ *= vibScale;
+if (this.vib == null || Float.isNaN (this.vib.z)) return;
+this.vib.scale (vibScale);
 }, "~N");
 Clazz.defineStatics (c$,
 "elementCharMasks", [1972292, -2147351151, -2146019271, -2130706430, 1441792, -2147348464, 25, -2147205008, -2147344384, 0, -2147352576, 1179905, 548936, -2147434213, -2147221504, -2145759221, 0, 1056947, -2147339946, -2147477097, -2147483648, -2147483648, -2147483648, 8388624, -2147483646, 139264]);
