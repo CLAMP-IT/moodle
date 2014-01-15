@@ -401,13 +401,9 @@ class echo360_oauth_request {
      *
      * @return string
      */
-    public function to_header($realm="") {
+    public function to_header() {
         $out ='Authorization: OAuth ';
         $first = true;
-        if ($realm != "") {
-            $out .= 'realm="' . $realm . '"';
-            $first = false;
-        }
         $total = array();
         foreach ($this->parameters as $k => $v) {
             if (substr($k, 0, 5) != "oauth") {
