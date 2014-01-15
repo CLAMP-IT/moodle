@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: zh_tw
 
 $string['addcomment'] = '添加評語';
@@ -313,7 +313,7 @@ $string['turnitintool:view'] = '檢視 Turnitin 工具作業';
 $string['turnitintooladministration'] = 'Turnitin 工具管理';
 $string['turnitintoolagreement'] = '否認聲明/同意書';
 $string['turnitintoolagreement_default'] = '一旦勾選此欄框，我確認此提交物件是我的創作，我亦接受所有可能因提交此物件而產生的侵權之責任。';
-$string['turnitintoolagreement_desc'] = '<b>[要求]</b><br />輸入一個提交的同意確認聲明';
+$string['turnitintoolagreement_desc'] = '<b>[選擇性的]</b><br />為提交物件輸入確認同意陳述。<br />(<b>注意:</b> 若完全沒有填寫同意，那麼學生在提交過程中將無需有同意確認)';
 $string['turnitintooldeleteerror'] = '無法刪除 Turnitin 工具數據';
 $string['turnitintoolgeterror'] = '無法獲得 Turnitin 工具數據';
 $string['turnitintoolintro'] = '總結';
@@ -412,3 +412,44 @@ $string['relinkusers'] = '重新鏈接用戶';
 $string['unlinkrelinkusers'] = '解除鏈接/重新鏈接 Turnitin 用戶';
 $string['usersunlinkrelink'] = '解除鏈接/重新鏈接之用戶';
 $string['turnitinid'] = 'Turnitin 代碼';
+$string['defaults'] = '預設設置';
+$string['defaults_desc'] = '以下的設置將是用在新的 Moodle Direct Turnitin 作業上的預設設置';
+$string['upgradeavailable'] = '有新的更新程式';
+$string['studentdataprivacy'] = '學生資料隱私設置';
+$string['studentdataprivacy_desc'] = '以下的設置可以調整以確保學生&#39;的個人資料不會藉由 API 傳送到 Turnitin。';
+$string['enablepseudo'] = '開啟學生隱私';
+$string['enablepseudo_desc'] = '若選擇此選項，學生電子郵件地址將被轉變為擬似 Turnitin IP 的判定。.<br /><i>(<b>注意:</b> 若任何 Moodle 用戶資料已經與 Turnitin 同步，此選項不能更改)</i>';
+$string['pseudofirstname'] = '學生的假名';
+$string['pseudofirstname_desc'] = '<b>[選擇性的]</b><br />學生名字在 Turnitin 文件檢視器內顯示';
+$string['pseudolastname'] = '學生的假姓';
+$string['pseudolastname_desc'] = '學生的姓在Turnitin 文件檢視器內顯示';
+$string['psuedolastnamegen'] = '自動產生姓氏';
+$string['psuedolastnamegen_desc'] = '若設置為‘是’和熱假姓設為用戶簡介檔案內的一欄，那麼該欄被自動的獨特識別代號填空。';
+$string['pseudoemailsalt'] = '擬似加密鹽';
+$string['pseudoemailsalt_desc'] = '<b>[選擇性的]</b><br />一個選擇性的鹽以添增產生的假的學生電子郵件地址的複雜性。<br />(<b>注意:</b> 鹽應該維持不變以保持一致的假的電子郵件地址)';
+$string['pseudoemaildomain'] = '假的電子郵件網域';
+$string['pseudoemaildomain_desc'] = '<b>[選擇性的]</b><br />一個選擇性的假的電子郵件地址的網域。(若空白的話，將預設為 @tiimoodle.com)';
+$string['pseudoemailaddress'] = '假的電子郵件地址';
+$string['instructor'] = '指導教師';
+$string['files'] = '文檔';
+$string['filedeleteconfirm'] = '您確定您要刪除此文檔嗎？此動作將不能取消。';
+$string['moodle2only'] = '此功能僅被 Moodle 2+ 支持。';
+$string['filebrowser'] = 'Moodle Direct 文檔檢視器';
+$string['deletable'] = '可刪除的';
+$string['inactive'] = '未開啟';
+$string['created'] = '已建立';
+$string['filename'] = '文檔名稱';
+$string['user'] = '用戶';
+$string['sprevious'] = '前';
+$string['snext'] = '次';
+$string['semptytable'] = '未搜尋到任何結果';
+$string['slengthmenu'] = '顯示 {$a} 輸入條目';
+$string['ssearch'] = '搜尋';
+$string['sprocessing'] = '處理中...';
+$string['szerorecords'] = '無法顯示任何記錄。';
+$string['sinfo'] = '顯示輸入條目 {$a->total} 之{$a->start} 至 {$a->end}。';
+$string['unlinkedusers'] = '未連接用戶';
+$string['modulename_help'] = '建立一個 Turnitin Moodle Direct 作業，以連接 Moodle 內的活動至 Turnitin 上的作業。一旦連接，活動允許指導教師使用在 Turnitin 文件檢視器內有的評估工具來評估並提供反饋給學生的作品。';
+$string['transmatch'] = '已翻譯相符功能';
+$string['transmatch_desc'] = '決定是否已翻譯相符功能將會在作業設置視窗內成為可用的設置。<br /><i>(僅有當已翻譯相符功能在您的 Turnitin 賬戶內開啟後才能開啟此選項)</i>';
+$string['turnitintool:addinstance'] = '添加 Turnitin 工具活動';

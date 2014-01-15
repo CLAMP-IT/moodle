@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: fr
 
 $string['addcomment'] = 'Ajouter un commentaire';
@@ -313,7 +313,7 @@ $string['turnitintool:view'] = 'Afficher les outils d’exercices Turnitin';
 $string['turnitintooladministration'] = 'Gestion des exercices Turnitin';
 $string['turnitintoolagreement'] = 'Déclaration légale/Accord';
 $string['turnitintoolagreement_default'] = 'En cochant cette case je confirme que la copie que je transmets est la mienne et j’accepte toutes responsabilités concernant la violation des droits d’auteurs qui pourrait se produire suite à l’envoi de ce document.';
-$string['turnitintoolagreement_desc'] = '<b>[Demandé]</b><br />Déposez la déclaration de l’ accord pour les documents envoyés.';
+$string['turnitintoolagreement_desc'] = '<b>[Optional]</b><br />Inclure la confirmation du contrat d´accord pour les soumissions.<br />(<b>Note:</b> Si le contrat est laissé blanc, aucune confirmation du contrat ne sera requis pour les étudiants lors des transmissions)';
 $string['turnitintooldeleteerror'] = 'Impossible de supprimer les informations de l’outil Turnitin';
 $string['turnitintoolgeterror'] = 'Impossible d&#39;obtenir les informations de l’outil Turnitin';
 $string['turnitintoolintro'] = 'Sommaire';
@@ -412,3 +412,44 @@ $string['relinkusers'] = 'Relier les utilisateurs';
 $string['unlinkrelinkusers'] = 'Dissocier/ Relier les utilisateurs Turnitin';
 $string['usersunlinkrelink'] = 'Utilisateurs à dissocier / relier';
 $string['turnitinid'] = 'N° Turnitin';
+$string['defaults'] = 'Réglage par défaut';
+$string['defaults_desc'] = 'Les paramètres suivants seront les paramètres par défaut utilisés pour les nouveaux exemples des exercices Moodle Direct.';
+$string['upgradeavailable'] = 'Actualisation disponible';
+$string['studentdataprivacy'] = 'Paramètres de confidentialité de l´étudiant';
+$string['studentdataprivacy_desc'] = 'Les paramètres suivants peuvent être configurés pour que les données personelles de l´étudiant&#39; ne soit pas transmises à Turnitin via l´API.';
+$string['enablepseudo'] = 'Activer les paramètres de confidentialité de l´étudiant';
+$string['enablepseudo_desc'] = 'Si cette option est séléctionnée, les adresses e-mails des étudiants seront transformées en pseudo équivalent aux appels API de Turnitin.<br /><i>(<b>Note:</b> Cette option n´est plus modifiable dès qu´un utilisateur, tel qu´il soit, a été synchronisé avec Turnitin)</i>';
+$string['pseudofirstname'] = 'Pseudo prénom de l´étudiant';
+$string['pseudofirstname_desc'] = '<b>[Optional]</b><br />Prénom de l´étudiant qui s´affiche dans le visualiseur de document Turnitin';
+$string['pseudolastname'] = 'Pseudo nom de famille de l´étudiant';
+$string['pseudolastname_desc'] = 'Le nom de l´étudiant qui s´affiche dans le visualiseur de document Turnitin';
+$string['psuedolastnamegen'] = 'Générer automatiquement le nom de famille';
+$string['psuedolastnamegen_desc'] = 'Si cela a été activé (oui) et que le pseudo nom de famille est assigné à un champ du profil utilisateur, l´unique identifiant remplira automatiquement le champ.';
+$string['pseudoemailsalt'] = 'Pseudo grain de sel cryptographique';
+$string['pseudoemailsalt_desc'] = '<b>[Optional]</b><br />Grain de sel optionnel pour augmenter la complexité de la pseudo adresse e-mail de l´étudiant.<br />(<b>Note:</b>Le sel doit rester inchangé pour garder une certaine cohérence des pseudo adresses e-mails)';
+$string['pseudoemaildomain'] = 'Pseudo nom de domaine';
+$string['pseudoemaildomain_desc'] = '<b>[Optional]</b><br />Nom de domaine optionnel pour les pseudo adresses e-mail. (@tiimoodle.com en l´absence de toute indication)';
+$string['pseudoemailaddress'] = 'Pseudo adresse e-mail';
+$string['instructor'] = 'Enseignant';
+$string['files'] = 'Fichiers';
+$string['filedeleteconfirm'] = 'Etes-vous certain de vouloir supprimer ce fichier? Cette action ne peut pas être annulée.';
+$string['moodle2only'] = 'Cette fonction est prise en charge par Moodle 2+ uniquement.';
+$string['filebrowser'] = 'Navigateur Moodle Direct';
+$string['deletable'] = 'Peut être supprimé';
+$string['inactive'] = 'Inactif';
+$string['created'] = 'Créé';
+$string['filename'] = 'Nom du fichier';
+$string['user'] = 'Utilisateur';
+$string['sprevious'] = 'Précédent';
+$string['snext'] = 'Suivant';
+$string['semptytable'] = 'Aucun résultat trouvé';
+$string['slengthmenu'] = 'Afficher {$a} entrées';
+$string['ssearch'] = 'Rechercher:';
+$string['sprocessing'] = 'Traitement en cours...';
+$string['szerorecords'] = 'Il n´y a aucun document à afficher';
+$string['sinfo'] = 'Afficher de {$a->start} à {$a->end} sur {$a->total} entrées.';
+$string['unlinkedusers'] = 'Utilisateurs dissociés';
+$string['modulename_help'] = 'Crée un exercice Moodle Direct Turnitin qui relie une activité de Moodle à un ou plusieurs exercices Turnitin. Une fois reliée, l´activité permet aux enseignants d´évaluer et de délivrer des observations sur les travaux écrits des étudiants utilisant les outils d´évaluation, disponibles depuis le visualiseur de document Turnitin.';
+$string['transmatch'] = 'Traducteur de Similitude';
+$string['transmatch_desc'] = 'Détermine si le traducteur de similitude sera disponible comme un paramètre visible depuis l´écran de l´exercice.<br /><i>(Activer cette option seulement si la fonction Traducteur de Similitude est activé pour votre compte Turnitin)</i>';
+$string['turnitintool:addinstance'] = 'Ajouter des outils Turnitin';

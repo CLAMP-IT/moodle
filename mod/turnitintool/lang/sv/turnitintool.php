@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: sv
 
 $string['addcomment'] = 'Lägg Till Kommentar';
@@ -313,7 +313,7 @@ $string['turnitintool:view'] = 'Visa Turnitin Verktygsuppgifter';
 $string['turnitintooladministration'] = 'Administration för Turnitin Uppgifter';
 $string['turnitintoolagreement'] = 'Friskrivningsklausul / Avtal';
 $string['turnitintoolagreement_default'] = 'Genom att kryssa i denna ruta försäkrar jag att denna inlämning är mitt eget arbete, och jag accepterar allt ansvar för eventuella upphovsrättsintrång som kan uppstå till följd av denna inlämning.';
-$string['turnitintoolagreement_desc'] = '<b>[Obligatoriskt]</b><br />Ange ett uttalande vid bekräftelse av avtal för inlämningar.';
+$string['turnitintoolagreement_desc'] = '<b>[Valfritt]</b><br />Ange ett uttlåtande vid avtalsbekräftelse för inlämningar.<br />(<b>Obs:</b> Om avtalet lämnas helt tomt kommer ingen avtalsbekräftelse att krävas av studenterna vid inlämning)';
 $string['turnitintooldeleteerror'] = 'Kunde inte radera Turnitin verktygsdata';
 $string['turnitintoolgeterror'] = 'Gick inte att hämta Turnitin verktygsdata';
 $string['turnitintoolintro'] = 'Sammanfattning';
@@ -409,6 +409,47 @@ $string['turnitinreceiptemail_desc'] = 'Ställer in huruvida studenter skall erh
 $string['student_read'] = 'Studenten visade uppsatsen den:';
 $string['student_notread'] = 'Studenten har inte visat denna uppsats.';
 $string['relinkusers'] = 'Återkoppla Användare';
-$string['unlinkrelinkusers'] = 'Lösgör Användare';
+$string['unlinkrelinkusers'] = 'Lösgör / Återkoppla Turnitin Användare';
 $string['usersunlinkrelink'] = 'Användare att Lösgöra / Återkoppla';
 $string['turnitinid'] = 'Turnitin-ID';
+$string['defaults'] = 'Standardinställningar';
+$string['defaults_desc'] = 'Följande inställningar kommer att bli de standardinställningar som används för nya instanser av en Moodle Direkt Turnitin Uppgift';
+$string['upgradeavailable'] = 'Uppgradering finns tillgänglig';
+$string['studentdataprivacy'] = 'Sekretessinställningar för Studentuppgifter';
+$string['studentdataprivacy_desc'] = 'Följande inställningar kan konfigureras för att säkerställa att student&#39;s personuppgifter inte överförs till Turnitin via API.';
+$string['enablepseudo'] = 'Aktivera Studentsekretess';
+$string['enablepseudo_desc'] = 'Om detta alternativ väljs kommer studenternas e-postadresser att omvandlas till en pseudo motsvarighet för Turnitin API-samtal.<br /><i>(<b>Obs:</b> Detta alternativ går inte att ändra om Moodle användardata redan har synkroniserats med Turnitin vid ett tidigare tillfälle)</i>';
+$string['pseudofirstname'] = 'Pseudo Förnamn (Student)';
+$string['pseudofirstname_desc'] = '<b>[Tillval]</b><br />Studentens förnamn som ska visas i Turnitins dokumentvisare';
+$string['pseudolastname'] = 'Pseudo Efternamn (Student)';
+$string['pseudolastname_desc'] = 'Studentens efternamn som ska visas i Turnitins dokumentvisare';
+$string['psuedolastnamegen'] = 'Generera Efternamn Automatiskt';
+$string['psuedolastnamegen_desc'] = 'Om inställt på ja och pseudo efternamnet är inställt på ett användarprofil-fält, så kommer fältet automatiskt att fyllas i med en unik identifierare.';
+$string['pseudoemailsalt'] = 'Pseudo Salt-kryptering';
+$string['pseudoemailsalt_desc'] = '<b>[Valfritt]</b><br />Ett valfritt salt för att öka komplexiteten i den genererade Pseudo Student E-postadressen.<br />(<b>Obs:</b> Saltet bör förbli oförändrat för att bibehålla konsekventa pseudo e-postadresser)';
+$string['pseudoemaildomain'] = 'Pseudo E-post Domän';
+$string['pseudoemaildomain_desc'] = '<b>[Valfritt]</b><br />En valfri domän för pseudo e-postadresser. (Standardvärde blir @tiimoodle.com om de lämnas tomma)';
+$string['pseudoemailaddress'] = 'Pseudo E-postadress';
+$string['instructor'] = 'Instruktör';
+$string['files'] = 'Filer';
+$string['filedeleteconfirm'] = 'Är du säker på att du vill radera den här filen? Denna åtgärd går inte att ångra.';
+$string['moodle2only'] = 'Den här funktionen stöds endast av Moodle 2+.';
+$string['filebrowser'] = 'Filhanterare för Moodle Direkt';
+$string['deletable'] = 'Raderbar';
+$string['inactive'] = 'Inaktiv';
+$string['created'] = 'Skapad';
+$string['filename'] = 'Filnamn';
+$string['user'] = 'Användare';
+$string['sprevious'] = 'Föregående';
+$string['snext'] = 'Nästa';
+$string['semptytable'] = 'Inga sökresultat hittades.';
+$string['slengthmenu'] = 'Visa {$a} Inlägg';
+$string['ssearch'] = 'Sök:';
+$string['sprocessing'] = 'Behandlar...';
+$string['szerorecords'] = 'Inga uppgifter att visa.';
+$string['sinfo'] = 'Visar {$a->start} till {$a->end} av {$a->total} inlägg.';
+$string['unlinkedusers'] = 'Olänkade Användare';
+$string['modulename_help'] = 'Skapar en uppgift i Turnitin Moodle Direkt som länkar en aktivitet i Moodle till en uppgift/uppgifter i Turnitin. Så snart aktiviteten blivit länkad tillåts instruktörer att utvärdera och lämna respons för studenternas skriftliga arbeten med hjälp av utvärderingsverktyg som finns tillgängliga inom Turnitins Dokumentvisare.';
+$string['transmatch'] = 'Matchande Översättning';
+$string['transmatch_desc'] = 'Avgör huruvida Matchande Översättning kommer att bli tillgängligt som en inställning på uppgiftens installationsskärm.<br /><i>(Aktivera endast detta alternativ om Matchande Översättning har aktiverats på ditt Turnitin konto)</i>';
+$string['turnitintool:addinstance'] = 'Lägg till Turnitin Verktygsaktivitet';

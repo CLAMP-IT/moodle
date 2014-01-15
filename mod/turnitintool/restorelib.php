@@ -11,6 +11,7 @@ function turnitintool_restore_mods($mod,$restore) {
         $info = $data->info;
 
         // Recreate the turnitintool_course entries
+        $course = new stdClass();
         $course->id = backup_todb($info['MOD']['#']['COURSE']['0']['#']['ID']['0']['#']);
         $course->courseid = backup_todb($info['MOD']['#']['COURSE']['0']['#']['COURSEID']['0']['#']);
         $course->ownerid = backup_todb($info['MOD']['#']['COURSE']['0']['#']['OWNERID']['0']['#']);
@@ -36,6 +37,7 @@ function turnitintool_restore_mods($mod,$restore) {
         if ($CFG->turnitin_account_id!=$backupaccountid) {
             if (!defined('RESTORE_SILENTLY')) {
                 // Course Error
+                $input = new stdClass();
                 $input->current=(!empty($CFG->turnitin_account_id)) ? $CFG->turnitin_account_id : '('.get_string("notavailableyet","turnitintool").')';
                 $input->backupid=$backupaccountid;
                 echo "<li class=\"error\">".get_string("modulename","turnitintool")." : ".get_string("wrongaccountid","turnitintool",$input)."\"</li>";
@@ -58,6 +60,7 @@ function turnitintool_restore_mods($mod,$restore) {
         }
 
         // If the course class connection does not already exist OR if it does it is linked to this host course
+        $insertcourse = new stdClass();
         $insertcourse->courseid=$restore->course_id;
 
         // If the owner had been deleted before back up then
@@ -164,6 +167,7 @@ function turnitintool_restore_mods($mod,$restore) {
         $newpartids = array();
         foreach ($info['MOD']['#']['PARTS']['0']['#']['PART'] as $partarray) {
 
+            $part = new stdClass();
             $part->turnitintoolid = $newid;
             $part->partname = backup_todb($partarray['#']['PARTNAME']['0']['#']);
             $part->tiiassignid = backup_todb($partarray['#']['TIIASSIGNID']['0']['#']);
@@ -226,6 +230,7 @@ function turnitintool_submissions_restore_mods($old_turnitintool_id, $new_turnit
         $oldpartid = backup_todb($sub_info['#']['SUBMISSION_PART']['0']['#']);
 
         //Now, build the ASSIGNMENT_SUBMISSIONS record structure.
+        $submission = new stdClass();
         $submission->userid = backup_todb($sub_info['#']['USERID']['0']['#']);
         $submission->turnitintoolid = $new_turnitintool_id;
         $submission->submission_part = $newpartids[$oldpartid];
@@ -259,6 +264,7 @@ function turnitintool_submissions_restore_mods($old_turnitintool_id, $new_turnit
         }
 
         // Search to see if we already have the Turnitin User for the submitting moodle user
+        $tiiuser = new stdClass();
         $tiiuser->userid = $submission->userid;
         $tiiuser->turnitin_uid = backup_todb($sub_info['#']['TIIUSERID']['0']['#']);
         if ($dbobject) {
@@ -285,6 +291,7 @@ function turnitintool_submissions_restore_mods($old_turnitintool_id, $new_turnit
 
                 if (isset($commentuser->new_id)) {
                     unset($comment);
+                    $comment = new stdClass();
                     $comment->submissionid = $newid;
                     $comment->userid = $commentuser->new_id;
 

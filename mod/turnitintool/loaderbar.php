@@ -4,7 +4,7 @@
  *
  * @package turnitintool
  * @subpackage classes
- * @copyright 2010 iParadigms LLC
+ * @copyright 2012 Turnitin
  */
 class turnitintool_loaderbarclass {
     /**
@@ -21,13 +21,14 @@ class turnitintool_loaderbarclass {
     var $starttime;
 	/**
 	 * A backward compatible constructor / destructor method that works in PHP4 to emulate the PHP5 magic method __construct
+         * DISABLED: Only useful for PHP 4 and most PHP 4 set ups should have been upgraded to 5 by now
 	 */
-    function turnitintool_loaderbarclass(){
+    /*function turnitintool_loaderbarclass(){
         if (version_compare(PHP_VERSION,"5.0.0","<")) {
             $argcv = func_get_args();
             call_user_func_array(array(&$this, '__construct'), $argcv);
         }
-    }
+    }*/
     /**
      * The constructor for the class, Calls the startloader() method
      * 
@@ -56,8 +57,11 @@ class turnitintool_loaderbarclass {
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
                 </head>
 		<body></body>
-		<script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/loaderbar.js"></script>
+                <script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.7.2.min.js"></script>
+                <script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/scripts/turnitintool.js"></script>
+		<script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/scripts/loaderbar.js"></script>
 		<script type="text/javascript" language="javascript">
+                        var loaderBar;
 			function updateLoader(proc,total,percentdone,timeleft,status) {
 				headText.innerHTML=\''.get_string('turnitinloading','turnitintool').'\';
 				if (proc==total) {

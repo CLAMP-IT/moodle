@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: de
 
 $string['addcomment'] = 'Kommentar hinzufügen';
@@ -313,7 +313,7 @@ $string['turnitintool:view'] = 'Aufgaben für Turnitin-Tool anzeigen';
 $string['turnitintooladministration'] = 'Verwaltung der Turnitin-Aufgaben';
 $string['turnitintoolagreement'] = 'Haftungsausschluss / Zustimmung';
 $string['turnitintoolagreement_default'] = 'Durch das Anklicken des Kontrollkästchens bestätige ich, dass diese Einreichung meine eigene Arbeit ist. Ich übernehme die Verantwortung für jede Copyright-Verletzung, die aufgrund meiner Einreichung entstehen könnte.';
-$string['turnitintoolagreement_desc'] = '<b>[Erforderlich]</b><br />Bestätigen Sie die Nutzungsvereinbarung für Einreichungen.';
+$string['turnitintoolagreement_desc'] = '<b>[Optional]</b><br />Geben Sie vor dem Einreichen eine Bestätigung der Nutzungsvereinbarung ab.<br />(<b>Note:</b> Falls dieses Feld frei gelassen wird, wird von Studenten keine Bestätigung der Nutzungsvereinbarung während des Einreichvorgangs gefordert.)';
 $string['turnitintooldeleteerror'] = 'Daten für das Turnitin-Tool konnten nicht gelöscht werden.';
 $string['turnitintoolgeterror'] = 'Daten für das Turnitin-Tool konnten nicht aufgerufen werden.';
 $string['turnitintoolintro'] = 'Zusammenfassung';
@@ -412,3 +412,44 @@ $string['relinkusers'] = 'Benutzer erneut verlinken';
 $string['unlinkrelinkusers'] = 'Benutzer erneut verlinken/Verlinkung aufheben';
 $string['usersunlinkrelink'] = 'Erneut zu verlinkende Benutzer/Benutzer mit aufzuhebender Verlinkung';
 $string['turnitinid'] = 'Turnitin-ID';
+$string['defaults'] = 'Standardeinstellungen';
+$string['defaults_desc'] = 'Die folgenden Einstellungen sind die Standardeinstellungen für neue Vorgänge bei Turnitin-Aufgaben in Moodle Direkt.';
+$string['upgradeavailable'] = 'Upgrade verfügbar';
+$string['studentdataprivacy'] = 'Einstellungen für den Datenschutz (Student)';
+$string['studentdataprivacy_desc'] = 'Die folgenden Einstellungen können vorgenommen werden, um zu verhindern, dass private Daten von Studenten via API an Turnitin weitergeleitet werden.';
+$string['enablepseudo'] = 'Datenschutz aktivieren (Student)';
+$string['enablepseudo_desc'] = 'Ist diese Funktion aktiviert, werden die E-Mail-Adressen von Studenten für Turnitin-API-Anrufe in ein entsprechendes Pseudo umgewandelt. <br /><i>(<b>Hinweis:</b> Diese Option kann nicht geändert werden, wenn Moodle-Benutzerdaten schon mit Turnitin synchronisiert wurden.)</i>';
+$string['pseudofirstname'] = 'Pseudo-Vorname (Student)';
+$string['pseudofirstname_desc'] = '<b>[Optional]</b><br />Den Vornamen des Studenten in der Dokumentenansicht von Turnitin anzeigen';
+$string['pseudolastname'] = 'Pseudo-Nachname (Student)';
+$string['pseudolastname_desc'] = 'Den Nachnamen des Studenten in der Dokumentenansicht von Turnitin anzeigen';
+$string['psuedolastnamegen'] = 'Automatisch Nachnamen erstellen';
+$string['psuedolastnamegen_desc'] = 'Wenn dies auf &#34;Ja&#34; gesetzt sowie der Pseudo-Nachname für ein Benutzerfeld eingestellt ist, wird das Feld automatisch mit einer eindeutigen Identifikationskennung gefüllt.';
+$string['pseudoemailsalt'] = 'Pseudo-Verschlüsselungs-Salt';
+$string['pseudoemailsalt_desc'] = '<b>[Optional]</b><br />Ein optionales Salt zum Erhöhen der Komplexität der erzeugten Pseudo-Studenten-E-Mail-Adressen.<br />(<b>Hinweis:</b> Das Salt sollte nicht verändert werden, um die Konsistenz der Pseudo-Studenten-E-Mail-Adressen zu gewährleisten.)';
+$string['pseudoemaildomain'] = 'Pseudo-E-Mail-Domain';
+$string['pseudoemaildomain_desc'] = '<b>[Optional]</b><br />Eine optionale Domain für Pseudo-E-Mail-Adressen. (Standard für @tiimoodle.com, wenn dieses Feld leer gelassen wird.)';
+$string['pseudoemailaddress'] = 'Pseudo-E-Mail-Adresse';
+$string['instructor'] = 'Lehrkraft';
+$string['files'] = 'Dateien';
+$string['filedeleteconfirm'] = 'Sind Sie sicher, dass Sie diese Datei löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.';
+$string['moodle2only'] = 'Diese Funktion wird nur von Moodle 2+ unterstützt.';
+$string['filebrowser'] = 'Browser für Moodle Direkt-Datei';
+$string['deletable'] = 'Löschbar';
+$string['inactive'] = 'Inaktiv';
+$string['created'] = 'Erstellt';
+$string['filename'] = 'Dateiname';
+$string['user'] = 'Benutzer';
+$string['sprevious'] = 'Zurück';
+$string['snext'] = 'Weiter';
+$string['semptytable'] = 'Keine Ergebnisse vorhanden.';
+$string['slengthmenu'] = 'Einträge {$a} anzeigen';
+$string['ssearch'] = 'Suchen:';
+$string['sprocessing'] = 'In Verarbeitung...';
+$string['szerorecords'] = 'Keine Daten vorhanden';
+$string['sinfo'] = 'Anzeige {$a->start} von {$a->end} aus {$a->total} Einträgen.';
+$string['unlinkedusers'] = 'Nicht-verbundener Benutzer';
+$string['modulename_help'] = 'Erstellen Sie eine Aufgabe in Turnitin Moodle Direkt, die eine Aktivität in Moodle mit einer Aufgabe/Aufgaben in Turnitin verbindet. Sobald diese verbunden sind, können Lehrkräfte die in der Turnitin Dokumentenansicht vorhandenen Bewertungstools verwenden, um ihren Studenten Feedback zu deren schriftlichen Arbeiten zu geben.';
+$string['transmatch'] = 'Übersetzte Übereinstimmung';
+$string['transmatch_desc'] = 'Legen Sie in den Voreinstellung fest, ob &#34;Übersetzte Übereinstimmung&#34; in der Ansicht für Aufgabeneinstellungen angezeigt werden soll.<br /><i>(Aktivieren Sie dies nur, wenn &#34;Übersetzte Übereinstimmung&#34; in Ihrem Turnitin-Account aktiviert ist)</i>';
+$string['turnitintool:addinstance'] = 'Turnitin-Tools hinzufügen';
