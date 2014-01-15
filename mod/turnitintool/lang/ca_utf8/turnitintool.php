@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: ca
 
 $string['addcomment'] = 'Afegir Comentari';
@@ -313,7 +313,6 @@ $string['turnitintool:view'] = 'Visualitzar les assignacions de la eina Turnitin
 $string['turnitintooladministration'] = 'Administració de la assignació Turnitin';
 $string['turnitintoolagreement'] = 'Renúncia/Acord';
 $string['turnitintoolagreement_default'] = 'Marcant aquesta casella confirmo que aquest treball és meu propi i accepto tota la responsabilitat per qualsevol infracció del drets d´autor que puquin esdevenir com a resultat d´aquest lliurament.';
-$string['turnitintoolagreement_desc'] = '<b>[Requirit]</b><br />Introduir una declaració de confirmacio d´acord per lliuraments.';
 $string['turnitintooldeleteerror'] = 'No ha estat possible eliminar les dades de la eina Turnitin';
 $string['turnitintoolgeterror'] = 'No ha estat possible obtenir dades de la eina Turnitin';
 $string['turnitintoolintro'] = 'Resum';
@@ -406,3 +405,4 @@ $string['turnitintutoremail'] = 'Correus electrònics del instructor';
 $string['turnitintutoremail_desc'] = 'Configura si els instructors haurian de rebre correus electrònics amb els details del compte quan el VLE estableix una nova compte Turnitin per a ells.';
 $string['turnitinreceiptemail'] = 'Correus electrònics amb rebut';
 $string['turnitinreceiptemail_desc'] = 'Configura si els estudiants haurian de rebre rebuts digitals dels correus electrònics quan ells lliurant un treball a Turnitin a través del VLE.';
+$string['enablepseudo'] = 'Habilitar a Privacidade do Aluno';

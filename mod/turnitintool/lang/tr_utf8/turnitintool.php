@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: tr
 
 $string['addcomment'] = 'Yorum Ekle';
@@ -313,7 +313,7 @@ $string['turnitintool:view'] = 'Turnitin Araç Ödevlerini Görüntüle';
 $string['turnitintooladministration'] = 'Turnitin Ödev Yönetimi';
 $string['turnitintoolagreement'] = 'Feragatname / Sözleşme';
 $string['turnitintoolagreement_default'] = 'Bu kutuyu işaretleyerek, bu gönderinin kendi çalışmam olduğunu onaylıyor ve bu gönderi sonrasında ortaya çıkabilecek telif hakkı ihlalinin sorumluluğunu kabul ediyorum.';
-$string['turnitintoolagreement_desc'] = '<b>[Required]</b><br />Bu gönderi için bir sözleşme onayı ifadesi giriniz.';
+$string['turnitintoolagreement_desc'] = '<b>[Opsiyonel]</b><br />Gönderi için bir sözleşme onay ifadesi girin.<br />(<b>Note:</b> Öğrenci adı tamamen boş bırakıldığında gönderim sırasında öğrencinin sözleşme onayına gerek yoktur)';
 $string['turnitintooldeleteerror'] = 'Turnitinaraç verileri silinemedi';
 $string['turnitintoolgeterror'] = 'Turnitinaraç verileri alınamadı';
 $string['turnitintoolintro'] = 'Özet';
@@ -412,3 +412,44 @@ $string['relinkusers'] = 'Kullanıcıları yeniden bağlantılandır';
 $string['unlinkrelinkusers'] = 'Kullanıcıların Bağlantısını Kaldır/Yeniden Bağlantılandır';
 $string['usersunlinkrelink'] = 'Bağlantısı Kaldırılacak/Yeniden bağlantılandırılacak Kullanıcılar';
 $string['turnitinid'] = 'Turnitin Numarası';
+$string['defaults'] = 'Varsayılan ayarlar';
+$string['defaults_desc'] = 'Aşağıdaki ayarlar, Moodle Direct Turnitin Ödev örnekleri için varsayılan ayarlar olacaktır.';
+$string['upgradeavailable'] = 'Son Sürüm';
+$string['studentdataprivacy'] = 'Öğrenci Veri Gizlilik Ayarları';
+$string['studentdataprivacy_desc'] = 'Aşağıdaki ayarlar, öğrenci&#39;lerin kişisel verilerinin API aracılığıyla Turnitin&#39;e aktarılmadığından emin olmak için yapılandırılabilir.';
+$string['enablepseudo'] = 'Öğrenci Gizliliğini Etkinleştir';
+$string['enablepseudo_desc'] = 'Bu seçildiğinde öğrenci e-posta adresleri Turnitin API için sahteleri oluşturulacaktır.<br /><i>(<b>Not:</b> Herhangi bir Moodle kullanıcı verisi halihazırda Turnitin ile senkronize edilmişse bu seçenek değiştirilemez)</i>';
+$string['pseudofirstname'] = 'Sahte Öğrenci Adı';
+$string['pseudofirstname_desc'] = '<b>[Opsiyonel]</b><br />Turnitin doküman görüntüleyicide belirecek olan öğrenci adı';
+$string['pseudolastname'] = 'Sahte Öğrenci Soyadı';
+$string['pseudolastname_desc'] = 'Turnitin doküman görüntüleyicide belirecek olan öğrenci soyadı';
+$string['psuedolastnamegen'] = 'Otomatik Soyadı Oluştur';
+$string['psuedolastnamegen_desc'] = 'Eğer evet seçilmişse ve sahte soyadı kullanıcı profil alanı için ayarlanmışsa, bu alan otomatik olarak bir tanımlayıcı oluşturacaktır.';
+$string['pseudoemailsalt'] = 'Sahte şifre kodlaması';
+$string['pseudoemailsalt_desc'] = '<b>[Opsiyonel]</b><br />Oluşturulan Sahte Öğrenci e-posta adresinin karmaşıklığını arttırmak için bir şifre kodlaması.<br />(<b>Not:</b> Kodlama sahte e-posta adresinin tutarlılığı için değiştirilmeden bırakılmalıdır.)';
+$string['pseudoemaildomain'] = 'Sahte E-posta Domaini';
+$string['pseudoemaildomain_desc'] = '<b>[Opsiyonel]</b><br />Sahte e-posta adresleri için opsiyonel domain. (Boş bırakılırsa varsayılan: @tiimoodle.com)';
+$string['pseudoemailaddress'] = 'Sahte E-posta Adresi';
+$string['instructor'] = 'Öğretmen';
+$string['files'] = 'Dosyalar';
+$string['filedeleteconfirm'] = 'Bu dosyayı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.';
+$string['moodle2only'] = 'Bu özellik sadece Moodle 2+ tarafından desteklenmektedir.';
+$string['filebrowser'] = 'Moodle Direct Dosya Tarayıcısı';
+$string['deletable'] = 'Silinebilir';
+$string['inactive'] = 'İnaktif';
+$string['created'] = 'Oluşturuldu';
+$string['filename'] = 'Dosya Adı';
+$string['user'] = 'Kullanıcı';
+$string['sprevious'] = 'Önceki';
+$string['snext'] = 'Sonraki';
+$string['semptytable'] = 'Hiçbir sonuç bulunamadı.';
+$string['slengthmenu'] = 'Girişleri {$a} Göster';
+$string['ssearch'] = 'Arama:';
+$string['sprocessing'] = 'İşleniyor...';
+$string['szerorecords'] = 'Gösterilecek kayıt yok.';
+$string['sinfo'] = '{$a->start} - {$a->end} arası {$a->total} girişleri gösteriliyor.';
+$string['unlinkedusers'] = 'Bağlantısız Kullanıcılar';
+$string['modulename_help'] = 'Moodle&#39;daki bir etkinliği Turnitin&#39;deki ödev(ler) ile ilişkilendiren bir Moodle Direct ödevi oluşturur. Bir kez ilişkilendirildiğinde, etkinlik öğretmenlerin Turnitin&#39;in Doküman Görüntüleyicisindeki değerlendirme araçlarını kullanarak değerlendirme yapmalarına ve öğrencilerin yazılı ödevlerine geri bildirimde bulunmalarına imkan tanır.';
+$string['transmatch'] = 'Çeviri Eşleştirme';
+$string['transmatch_desc'] = 'Ödev kurulum ekranında Çeviri Eşleştirmenin bir ayar olarak gösterilip gösterilmeyeceğini belirler.<br /><i>(Bu seçeneği Turnitin hesabınızda Çeviri Eşleştirme hesabınızda etkin ise etkinleştiriniz)</i>';
+$string['turnitintool:addinstance'] = 'Turnitin Araç Etkinliğini Ekle';

@@ -86,7 +86,6 @@ class auth_plugin_cas extends auth_plugin_ldap {
         $site = get_site();
         $CASform = get_string('CASform', 'auth_cas');
         $username = optional_param('username', '', PARAM_RAW);
-
         if (!empty($username)) {
             if (isset($SESSION->wantsurl) && (strstr($SESSION->wantsurl, 'ticket') ||
                                               strstr($SESSION->wantsurl, 'NOCAS'))) {
@@ -114,7 +113,19 @@ class auth_plugin_cas extends auth_plugin_ldap {
             $frm->password = 'passwdCas';
             return;
         }
-
+	/* Work around to allow courses with guest access to be direct linked to */
+	if (isset($SESSION->wantsurl) && strstr($SESSION->wantsurl,"/course/view.php?id=")) {
+		$matches = array();
+	   	preg_match('/\\/course\\/view\.php\?id=(\d+)$/',$SESSION->wantsurl,$matches);
+		$enrol_instances = enrol_get_instances($matches[1],true);
+		foreach ($enrol_instances as $instance) {
+		  if ($instance->enrol == "guest") {
+		    $frm->username = 'guest';
+		    $frm->password = 'guest';
+		    return;
+		  }
+	        }
+	}
         if (isset($_GET['loginguest']) && ($_GET['loginguest'] == true)) {
             $frm->username = 'guest';
             $frm->password = 'guest';
@@ -123,7 +134,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
 
         if ($this->config->multiauth) {
             $authCAS = optional_param('authCAS', '', PARAM_RAW);
-            if ($authCAS == 'NOCAS') {
+            if ($authCAS == 'NOCAS' or $_SERVER['HTTP_USER_AGENT'] == '') {
                 return;
             }
 
@@ -155,12 +166,17 @@ class auth_plugin_cas extends auth_plugin_ldap {
      *
      */
     function prelogout_hook() {
-        global $CFG;
-
+        global $CFG,$PAGE,$SESSION;
         if (!empty($this->config->logoutcas)) {
             $backurl = $CFG->wwwroot;
             $this->connectCAS();
-            phpCAS::logoutWithURL($backurl);
+	    /*me - customization to handle Wesleyan CAS customization */
+	     if ($SESSION->fromdiscussion) {
+               phpCAS::logoutWithURL($SESSION->fromdiscussion);
+	     } else {
+               phpCAS::logoutWithURL($backurl . "/");
+	     }
+	   
         }
     }
 

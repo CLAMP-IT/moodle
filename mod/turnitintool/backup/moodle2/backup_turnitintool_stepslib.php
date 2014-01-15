@@ -50,7 +50,7 @@ class backup_turnitintool_activity_structure_step extends backup_activity_struct
             'gradedisplay', 'autoupdates', 'commentedittime', 'commentmaxsize',
             'autosubmission', 'shownonsubmission', 'excludebiblio', 'excludequoted',
             'excludevalue', 'excludetype', 'erater', 'erater_handbook', 'erater_dictionary',
-            'erater_spelling', 'erater_grammar', 'erater_usage', 'erater_mechanics', 'erater_style'
+            'erater_spelling', 'erater_grammar', 'erater_usage', 'erater_mechanics', 'erater_style', 'transmatch'
         ));
 
         $parts = new backup_nested_element('parts');
@@ -74,7 +74,7 @@ class backup_turnitintool_activity_structure_step extends backup_activity_struct
             'submission_status', 'submission_queued', 'submission_attempts',
             'submission_modified', 'submission_parent', 'submission_nmuserid',
             'submission_nmfirstname', 'submission_nmlastname', 'submission_unanon',
-            'submission_anonreason', 'tiiuserid'));
+            'submission_anonreason', 'submission_transmatch', 'tiiuserid'));
 
         $comments = new backup_nested_element('comments');
 
