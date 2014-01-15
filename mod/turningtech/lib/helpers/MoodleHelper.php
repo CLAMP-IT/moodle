@@ -446,10 +446,15 @@ class TurningTechMoodleHelper {
             TURNINGTECH_DEFAULT_STUDENT_ROLE
         );
 
-        $sql = "SELECT ue.enrolid ";
+      /*  $sql = "SELECT ue.enrolid ";
         $sql .= "FROM {user_enrolments} ue ";
         $sql .= "INNER JOIN {user} u ON ( u.id = ue.userid AND u.id = :userid ) ";
-        $sql .= "INNER JOIN {enrol} e ON ( e.id = ue.enrolid AND e.courseid = :courseid  AND e.roleid IN ( " . $roles[0] . " ) )";
+        $sql .= "INNER JOIN {enrol} e ON ( e.id = ue.enrolid AND e.courseid = :courseid  AND e.roleid IN ( " . $roles[0] . " ) )";	*/
+	$sql = "SELECT ue.enrolid ";
+	$sql .= "FROM {user_enrolments} ue ";
+	$sql .= "INNER JOIN {role_assignments} ra on (ue.userid=ra.userid and ue.userid = :userid ) ";
+	$sql .= "INNER JOIN {context} ctx on (ra.contextid=ctx.id and ctx.contextlevel= " . "'" . CONTEXT_COURSE . "')";
+        $sql .= "INNER JOIN {enrol} e on (e.id=ue.enrolid and ctx.instanceid=e.courseid and e.courseid = :courseid and ra.roleid IN ( " .$roles[0] . " ) )";
 
         $params             = array();
         $params['userid']   = $user->id;
