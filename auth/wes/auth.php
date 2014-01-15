@@ -34,8 +34,12 @@ class auth_plugin_wes extends auth_plugin_base {
         array_push($result['debug'],"User $username exists");
         $this->sync_user_from_ad($ldapauth,$username,$clobber);
        }
-     }
+    /*throttling so we don't break the F5 */
+#      usleep(750000);
+      sleep 1;
+    }
     return $result;
+
   }
   /* given ldapauth object, username and optional clobber, syncs data from AD over, clobbering if clobber is 1 */
   function sync_user_from_ad($ldapauth,$username,$clobber=0) {
