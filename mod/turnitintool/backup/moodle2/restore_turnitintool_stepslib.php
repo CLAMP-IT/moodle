@@ -61,6 +61,7 @@ class restore_turnitintool_activity_structure_step extends restore_activity_stru
         }
 
         if ($CFG->turnitin_account_id!=$data->tiiaccount) {
+            $a = new stdClass();
             $a->backupid=$data->tiiaccount;
             $a->current=$CFG->turnitin_account_id;
             turnitintool_print_error('wrongaccountid','turnitintool',NULL,$a);
@@ -136,6 +137,7 @@ class restore_turnitintool_activity_structure_step extends restore_activity_stru
 
         // Create TII User Account Details
         if (!$tiiuser = $DB->get_record('turnitintool_users', array('turnitin_uid'=>$data->tiiuserid))) {
+            $tiiuser = new object();
             $tiiuser->userid=$data->userid;
             $tiiuser->turnitin_uid=$data->tiiuserid;
             $DB->insert_record('turnitintool_users',$tiiuser);

@@ -1,44 +1,44 @@
 <?php
 /**
  * @package   turnitintool
- * @copyright 2010 iParadigms LLC
+ * @copyright 2012 Turnitin
  */
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Encryption value passed to the API
  */
-defined("TII_ENCRYPT") or define("TII_ENCRYPT","0");
+defined("TURNITINTOOL_ENCRYPT") or define("TURNITINTOOL_ENCRYPT","0");
 /**
  * The pause in between API calls
  */
-defined("TII_LATENCY_SLEEP") or define("TII_LATENCY_SLEEP","4");
+defined("TURNITINTOOL_LATENCY_SLEEP") or define("TURNITINTOOL_LATENCY_SLEEP","4");
 /**
  * API Error: Start Error Code
  */
-defined("API_ERROR_START") or define("API_ERROR_START","100");
+defined("TURNITINTOOL_API_ERROR_START") or define("TURNITINTOOL_API_ERROR_START","100");
 /**
  * API Error: Database Error inserting unique ID into the database
  */
-defined("DB_UNIQUEID_ERROR") or define("DB_UNIQUEID_ERROR","218");
+defined("TURNITINTOOL_DB_UNIQUEID_ERROR") or define("TURNITINTOOL_DB_UNIQUEID_ERROR","218");
 /**
  * API Error: Creating/Updating/Deleting assignment failed in fid 4
  */
-defined("ASSIGNMENT_UPDATE_ERROR") or define("ASSIGNMENT_UPDATE_ERROR","411");
+defined("TURNITINTOOL_ASSIGNMENT_UPDATE_ERROR") or define("TURNITINTOOL_ASSIGNMENT_UPDATE_ERROR","411");
 /**
  * API Error: The assignment you are trying to access does not exist
  * in Turnitin for this class
  */
-defined("ASSIGNMENT_NOTEXIST_ERROR") or define("ASSIGNMENT_NOTEXIST_ERROR","206");
+defined("TURNITINTOOL_ASSIGNMENT_NOTEXIST_ERROR") or define("TURNITINTOOL_ASSIGNMENT_NOTEXIST_ERROR","206");
 /**
  * API Error: The assignment with the assignment id that you entered does
  * not belong to the class with the class id you entered
  */
-defined("ASSIGNMENT_WRONGCLASS_ERROR") or define("ASSIGNMENT_WRONGCLASS_ERROR","228");
+defined("TURNITINTOOL_ASSIGNMENT_WRONGCLASS_ERROR") or define("TURNITINTOOL_ASSIGNMENT_WRONGCLASS_ERROR","228");
 /**
  * API SRC Value: The src value defines the integration namespace area
  * in the Turnitin integrations database tables
  */
-defined("TURNITIN_APISRC") or define("TURNITIN_APISRC","12");
+defined("TURNITINTOOL_APISRC") or define("TURNITINTOOL_APISRC","12");
 
 /**
  * Include the loaderbar class file
@@ -54,6 +54,7 @@ require_once("comms.php");
  * @return mixed True if module supports feature, null if doesn't know
  */
 function turnitintool_supports($feature) {
+    defined("FEATURE_SHOW_DESCRIPTION") or define("FEATURE_SHOW_DESCRIPTION",null);
     switch($feature) {
         case FEATURE_GROUPS:                  return true;
         case FEATURE_GROUPMEMBERSONLY:        return true;
@@ -62,6 +63,7 @@ function turnitintool_supports($feature) {
         case FEATURE_GRADE_HAS_GRADE:         return true;
         case FEATURE_GRADE_OUTCOMES:          return true;
         case FEATURE_BACKUP_MOODLE2:          return true;
+        case FEATURE_SHOW_DESCRIPTION:        return true;
 
         default: return null;
     }
@@ -104,7 +106,7 @@ function turnitintool_add_instance($turnitintool) {
     }
     // ]]]]
 
-    $loaderbar = new turnitintool_loaderbarclass($total);
+    $loaderbar = null;
     $tii = new turnitintool_commclass(turnitintool_getUID($owner),$owner->firstname,$owner->lastname,$owner->email,2,$loaderbar);
     $tii->startSession();
 
@@ -151,6 +153,7 @@ function turnitintool_add_instance($turnitintool) {
     //## We are creating an assignment for each Moodle Assignment Part [[[[
     for ($i=1;$i<=$turnitintool->numparts;$i++) {
         // Do the turnitin assignment set call to the API [[[[
+        $tiipost = new stdClass();
         $tiipost->courseid=$course->id;
         $tiipost->ctl=turnitintool_getCTL($course->id);
         $tiipost->dtstart=time(); // Set as today and update to a date in the past if needed to later
@@ -175,6 +178,7 @@ function turnitintool_add_instance($turnitintool) {
         $tiipost->exclude_quoted=$turnitintool->excludequoted;
         $tiipost->exclude_value=$turnitintool->excludevalue;
         $tiipost->exclude_type=$turnitintool->excludetype;
+        $tiipost->transmatch=$turnitintool->transmatch;
 
         // Add erater settings
         $tiipost->erater=(isset($turnitintool->erater)) ? $turnitintool->erater : 0;
@@ -185,6 +189,7 @@ function turnitintool_add_instance($turnitintool) {
         $tiipost->erater_usage=(isset($turnitintool->erater_usage)) ? $turnitintool->erater_usage : 0;
         $tiipost->erater_mechanics=(isset($turnitintool->erater_mechanics)) ? $turnitintool->erater_mechanics : 0;
         $tiipost->erater_style=(isset($turnitintool->erater_style)) ? $turnitintool->erater_style : 0;
+        $tiipost->transmatch=(isset($turnitintool->transmatch)) ? $turnitintool->transmatch : 0;
 
         // == Create the assignment with no IDs in order to retreive the correct ==
         // == Assignment ID for future use.                                      ==
@@ -206,6 +211,7 @@ function turnitintool_add_instance($turnitintool) {
         }
 
         $tiipost->cid=turnitintool_getCID($course->id);
+        $part = new stdClass();
         $part->tiiassignid=$tii->getAssignid();
         $tiipost->assignid=$part->tiiassignid;
         $tiipost->dtstart=$turnitintool->defaultdtstart;
@@ -262,7 +268,11 @@ function turnitintool_add_instance($turnitintool) {
     $turnitintool->id = $insertid;
     turnitintool_grade_item_update( $turnitintool );
     // ]]]]
-
+    
+    $cmid = isset( $turnitintool->cmidnumber ) ? $turnitintool->cmidnumber : null;
+    
+    add_to_log($turnitintool->course, "turnitintool", "add turnitintool", "view.php?id=$cmid", "Assignment created '$turnitintool->name'", "$cmid");
+    
     $tii->endSession();
     return $insertid;
 }
@@ -290,6 +300,7 @@ function turnitintool_update_instance($turnitintool) {
     $turnitintool->erater_usage     = (isset($turnitintool->erater_usage))     ? $turnitintool->erater_usage : 0;
     $turnitintool->erater_mechanics = (isset($turnitintool->erater_mechanics)) ? $turnitintool->erater_mechanics : 0;
     $turnitintool->erater_style     = (isset($turnitintool->erater_style))     ? $turnitintool->erater_style : 0;
+    $turnitintool->transmatch       = (isset($turnitintool->transmatch))       ? $turnitintool->transmatch : 0;
 
     // Get Moodle Course Object [[[[
     if (!$course = turnitintool_get_record("course", "id", $turnitintool->course)) {
@@ -332,7 +343,7 @@ function turnitintool_update_instance($turnitintool) {
         $owner=turnitintool_get_owner($course->id);
     }
 
-    $loaderbar = new turnitintool_loaderbarclass($total);
+    $loaderbar = null;
     $tii = new turnitintool_commclass(turnitintool_getUID($owner),$owner->firstname,$owner->lastname,$owner->email,2,$loaderbar);
     $tii->startSession();
 
@@ -347,6 +358,7 @@ function turnitintool_update_instance($turnitintool) {
                 $proc++;
 
                 // Get the Turnitin UIDs [[[[
+                $tiipost = new stdClass();
                 $tiipost->cid=turnitintool_getCID($course->id);
                 $tiipost->assignid=turnitintool_getAID($partids[$i]);
                 // ]]]]
@@ -361,9 +373,9 @@ function turnitintool_update_instance($turnitintool) {
 
                 $tii->deleteAssignment($tiipost,get_string('assignmentdeleteprocess','turnitintool',$n));
 
-                if ($tii->getRerror() AND $tii->getRcode()!=ASSIGNMENT_UPDATE_ERROR AND $tii->getRcode()!=ASSIGNMENT_NOTEXIST_ERROR) {
+                if ($tii->getRerror() AND $tii->getRcode()!=TURNITINTOOL_ASSIGNMENT_UPDATE_ERROR AND $tii->getRcode()!=TURNITINTOOL_ASSIGNMENT_NOTEXIST_ERROR) {
                     if (!$tii->getAPIunavailable()) {
-                        $reason=($tii->getRcode()==DB_UNIQUEID_ERROR) ? get_string('assignmentdoesnotexist','turnitintool') : $tii->getRmessage();
+                        $reason=($tii->getRcode()==TURNITINTOOL_DB_UNIQUEID_ERROR) ? get_string('assignmentdoesnotexist','turnitintool') : $tii->getRmessage();
                     } else {
                         $reason=get_string('apiunavailable','turnitintool');
                     }
@@ -376,13 +388,14 @@ function turnitintool_update_instance($turnitintool) {
                     }
                 }
 
+                $part = new stdClass();
                 $part->id=$partids[$i];
                 $part->partname=turnitintool_partnamefromnum($part->id);
                 $part->deleted=1;
                 if (!$delete=turnitintool_update_record('turnitintool_parts',$part,false)) {
                     turnitintool_print_error('partdberror','turnitintool',NULL,$i,__FILE__,__LINE__);
                 }
-                turnitintool_delete_records('event', 'modulename','turnitintool','instance',$turnitintool->id,'name',$turnitintool->name.' - '.$part->partname);
+                turnitintool_delete_records_select('event', "modulename='turnitintool' AND instance=".$turnitintool->id." AND name='".$turnitintool->name." - ".$part->partname."'");
                 // ]]]]
             }
         }
@@ -395,6 +408,7 @@ function turnitintool_update_instance($turnitintool) {
 
         // Update Turnitin Assignment via the API [[[[
 
+        $tiipost = new stdClass();
         $tiipost->courseid=$course->id;
         $tiipost->ctl=turnitintool_getCTL($course->id);
 
@@ -434,6 +448,7 @@ function turnitintool_update_instance($turnitintool) {
         $tiipost->erater_usage=(isset($turnitintool->erater_usage)) ? $turnitintool->erater_usage : 0;
         $tiipost->erater_mechanics=(isset($turnitintool->erater_mechanics)) ? $turnitintool->erater_mechanics : 0;
         $tiipost->erater_style=(isset($turnitintool->erater_style)) ? $turnitintool->erater_style : 0;
+        $tiipost->transmatch=(isset($turnitintool->transmatch)) ? $turnitintool->transmatch : 0;
 
         if (turnitintool_is_owner($course->id)) {
             $owner=$USER;
@@ -469,12 +484,13 @@ function turnitintool_update_instance($turnitintool) {
             if ($tii->getAPIunavailable()) {
                 $reason=get_string('apiunavailable','turnitintool');
             } else {
-                $reason=($tii->getRcode()==DB_UNIQUEID_ERROR) ? get_string('assignmentdoesnotexist','turnitintool') : $tii->getRmessage();
+                $reason=($tii->getRcode()==TURNITINTOOL_DB_UNIQUEID_ERROR) ? get_string('assignmentdoesnotexist','turnitintool') : $tii->getRmessage();
             }
             turnitintool_print_error('<strong>'.get_string('updateerror','turnitintool').'</strong><br />'.$reason);
             exit();
         }
 
+        $part = new stdClass();
         $part->tiiassignid=$tii->getAssignid();
 
         if ($individualise) {
@@ -542,7 +558,7 @@ function turnitintool_update_instance($turnitintool) {
         }
 
         // Delete existing events for this assignment / part
-        turnitintool_delete_records('event', 'modulename','turnitintool','instance',$turnitintool->id,'name',$turnitintoolnow->name.' - '.$part->partname);
+        turnitintool_delete_records_select('event', "modulename='turnitintool' AND instance=".$turnitintool->id." AND name='".$turnitintoolnow->name.' - '.$part->partname."'");
         add_event($event);
 
         unset($tiipost);
@@ -556,6 +572,9 @@ function turnitintool_update_instance($turnitintool) {
 
     // Define grade settings in Moodle 1.9 and above
     turnitintool_grade_item_update( $turnitintool );
+    
+    $cmid = isset( $turnitintool->cmidnumber ) ? $turnitintool->cmidnumber : null;
+    add_to_log($turnitintool->course, "turnitintool", "update turnitintool", "view.php?id=$cmid", "Assignment updated '$turnitintool->name'", "$cmid");
     
     $tii->endSession();
 
@@ -598,6 +617,17 @@ function turnitintool_grade_item_update( $turnitintool, $grades=null ) {
         return grade_update('mod/turnitintool', $turnitintool->course, 'mod', 'turnitintool', $turnitintool->id, 0, $grades, $params);
     }
     return;
+}
+
+/**
+ * Not used but needed for instance name update via quick update name on the course home page
+ * 
+ * @param  stdClass  $turnitintool
+ * @param  integer $userid
+ * @param  boolean $nullifnone
+ */
+function turnitintool_update_grades($turnitintool, $userid=0, $nullifnone=true) {
+
 }
 
 /**
@@ -646,10 +676,13 @@ function turnitintool_delete_instance($id) {
             $result = false;
         }
 
-        // Delete events for this assignment / part
-        turnitintool_delete_records('event', 'modulename','turnitintool','instance',$turnitintool->id,'name',$turnitintool->name.' - '.$part->partname);
-
     }
+
+    $cm = get_coursemodule_from_instance( "turnitintool", $turnitintool->id, $turnitintool->course );
+    add_to_log( $turnitintool->course, "turnitintool", "delete turnitintool", 'view.php?id='.$cm->id, 'Assignment deleted "'.$turnitintool->name.'"', $cm->id );
+
+    // Delete events for this assignment / part
+    turnitintool_delete_records('event', 'modulename','turnitintool','instance',$turnitintool->id);
 
     if (!turnitintool_delete_records("turnitintool", "id", $turnitintool->id)) {
         $result = false;
@@ -675,7 +708,7 @@ function turnitintool_delete_instance($id) {
         $params['deleted'] = 1;
         grade_update('mod/turnitintool', $turnitintool->course, 'mod', 'turnitintool', $turnitintool->id, 0, NULL, $params);
     }
-
+    
     return $result;
 }
 
@@ -697,11 +730,11 @@ function turnitintool_refresh_events($courseid=0) {
         }
     }
 
-    $module = turnitintool_get_records('modules','name','turnitintool','id');
+    $module = turnitintool_get_records_select('modules',"name='turnitintool'",'id');
     $moduleid=current(array_keys($module));
 
     foreach ($turnitintools as $turnitintool) {
-        $event = NULL;
+        $event = new stdClass();
         $event->description = $turnitintool->intro;
         if (!$parts = turnitintool_get_records("turnitintool_parts","turnitintoolid",$turnitintool->id)) {
             $result=false;
@@ -709,7 +742,7 @@ function turnitintool_refresh_events($courseid=0) {
         foreach ($parts as $part) {
             $event->timestart=$part->dtdue;
 
-            if ($events = turnitintool_get_record('event', 'modulename','turnitintool','instance',$turnitintool->id,'name',$turnitintool->name.' - '.$part->partname)) {
+            if ($events = turnitintool_get_record_select('event', "modulename='turnitintool' AND instance=".$turnitintool->id." AND name='".$turnitintool->name." - ".$part->partname."'")) {
                 $event->id = $events->id;
                 update_event($event);
             } else {
@@ -783,6 +816,7 @@ function turnitintool_print_overview($courses, &$htmlarray) {
                 $numgrades=key($gradequery);
 
                 $allusers=get_users_by_capability($context, 'mod/turnitintool:submit', 'u.id', '', '', '', 0, '', false);
+                $input = new stdClass();
                 $input->submitted=$numsubmissions;
                 $input->graded=$numgrades;
                 $input->total=count($allusers);
@@ -792,6 +826,7 @@ function turnitintool_print_overview($courses, &$htmlarray) {
                 if ($submission=turnitintool_get_record_select('turnitintool_submissions','turnitintoolid='.$turnitintool->id.
                 ' AND submission_part='.$part->id.' AND userid='.$USER->id.' AND submission_objectid IS NOT NULL')) {
 
+                    $input = new stdClass();
                     $input->modified=userdate($submission->submission_modified,get_string('strftimedatetimeshort','langconfig'));
                     $input->objectid=$submission->submission_objectid;
                     $partsarray[$part->id]['status']=get_string('studentstatus','turnitintool',$input);
@@ -924,6 +959,7 @@ function turnitintool_usersetup($userdata,$status='',&$tii,&$loaderbar) {
 
         // Do call with NO IDs to check the email address and retrieve the Turnitin UID
 
+        $post = new stdClass();
         $post->idsync=1;
         if ($tii->utp==1 AND $CFG->turnitin_studentemail!="1") {
             $post->dis=1;
@@ -1005,6 +1041,7 @@ function turnitintool_classsetup($course,$owner,$status='',&$tii,&$loaderbar) {
         $turnitin_ctl=(strlen($course->fullname) > 76)
                 ? substr($course->fullname,0,76)."... (".$uniquestring.")" : $course->fullname." (".$uniquestring.")";
 
+        $post = new stdClass();
         $post->ctl=$turnitin_ctl;
         $post->idsync=1;
         $tii->createClass($post,$status);
@@ -1045,6 +1082,7 @@ function turnitintool_classsetup($course,$owner,$status='',&$tii,&$loaderbar) {
         $loaderbar->total=$loaderbar->total+2;
     }
 
+    $post = new stdClass();
     $post->cid=$turnitintool_course->turnitin_cid;
     $post->ctl=$turnitintool_course->turnitin_ctl;
     $post->idsync=0;
@@ -1163,12 +1201,13 @@ function turnitintool_update_partnames($cm,$turnitintool,$post) {
             $error=true;
         }
         if (strlen($post['partname'])>35) {
+            $input = new stdClass();
             $input->length=35;
             $input->field=get_string('partname','turnitintool');
             $notice['message'].=get_string('maxlength','turnitintool',$input);
             $error=true;
         }
-        if (!ereg ("^[-]?[0-9]+([\.][0-9]+)?$", $post['maxmarks'])) { // ENTRY IS NOT A NUMBER
+        if (!preg_match("/^[-]?[0-9]+([\.][0-9]+)?$/", $post['maxmarks'])) { // ENTRY IS NOT A NUMBER
             $notice['message'].=get_string('partmarkserror','turnitintool');
             $error=true;
         }
@@ -1179,6 +1218,7 @@ function turnitintool_update_partnames($cm,$turnitintool,$post) {
         if (!$error) {
 
             // Update Turnitin Assignment via the API [[[[
+            $tiipost = new stdClass();
             $tiipost->ctl=turnitintool_getCTL($turnitintool->course);
             $tiipost->dtstart=$dtstart;
             $tiipost->dtdue=$dtdue;
@@ -1226,6 +1266,17 @@ function turnitintool_update_partnames($cm,$turnitintool,$post) {
             $tiipost->exclude_quoted=$turnitintool->excludequoted;
             $tiipost->exclude_value=$turnitintool->excludevalue;
             $tiipost->exclude_type=$turnitintool->excludetype;
+            
+            // Add in the erater settings
+            $tiipost->erater=$turnitintool->erater;
+            $tiipost->erater_handbook=$turnitintool->erater_handbook;
+            $tiipost->erater_dictionary=$turnitintool->erater_dictionary;
+            $tiipost->erater_spelling=$turnitintool->erater_spelling;
+            $tiipost->erater_grammar=$turnitintool->erater_grammar;
+            $tiipost->erater_usage=$turnitintool->erater_usage;
+            $tiipost->erater_mechanics=$turnitintool->erater_mechanics;
+            $tiipost->erater_style=$turnitintool->erater_style;
+            $tiipost->transmatch=$turnitintool->transmatch;
 
             $tiipost->name=$turnitintool->name.' - '.$post['partname'].' (Moodle '.$tiipost->assignid.')';
             $tiipost->currentassign=$turnitintool->name.' - '.turnitintool_partnamefromnum($post['submitted']).' (Moodle '.$tiipost->assignid.')';
@@ -1233,7 +1284,7 @@ function turnitintool_update_partnames($cm,$turnitintool,$post) {
             $tii->createAssignment($tiipost,'UPDATE',get_string('assignmentupdate','turnitintool',''));
 
             if ($tii->getRerror()) {
-                if ($tii->getRcode()==DB_UNIQUEID_ERROR) {
+                if ($tii->getRcode()==TURNITINTOOL_DB_UNIQUEID_ERROR) {
                     $reason=get_string('assignmentdoesnotexist','turnitintool');
                 } else {
                     $reason=($tii->getAPIunavailable()) ? get_string('apiunavailable','turnitintool') : $tii->getRmessage();
@@ -1242,6 +1293,7 @@ function turnitintool_update_partnames($cm,$turnitintool,$post) {
                 exit();
             }
 
+            $part = new stdClass();
             $part->id=$post['submitted'];
             $part->dtstart=$dtstart;
             $part->dtdue=$dtdue;
@@ -1250,6 +1302,7 @@ function turnitintool_update_partnames($cm,$turnitintool,$post) {
             $part->maxmarks=$post['maxmarks'];
             $part->deleted=0;
 
+            $event = new stdClass();
             $event->timestart=$part->dtdue;
             $event->name=$turnitintool->name.' - '.$part->partname;
             $currentevent=$turnitintool->name.' - '.turnitintool_partnamefromnum($post['submitted']);
@@ -1258,7 +1311,7 @@ function turnitintool_update_partnames($cm,$turnitintool,$post) {
                 turnitintool_print_error('partdberror','turnitintool',NULL,NULL,__FILE__,__LINE__);
             }
 
-            if ($events = turnitintool_get_record('event', 'modulename','turnitintool','instance',$turnitintool->id,'name',$currentevent)) {
+            if ($events = turnitintool_get_record_select('event', "modulename='turnitintool' AND instance='".$turnitintool->id."' AND name='".$currentevent."'")) {
                 $event->id = $events->id;
                 update_event($event);
             }
@@ -1314,6 +1367,7 @@ function turnitintool_delete_part($cm,$turnitintool,$partid) {
         // ]]]]
 
         # Delete any dependent records here #
+        $part = new stdClass();
         $part->id=$partid;
         $part->deleted=1;
         if (!turnitintool_update_record("turnitintool_parts", $part, false)) {
@@ -1321,8 +1375,9 @@ function turnitintool_delete_part($cm,$turnitintool,$partid) {
         }
 
         // Delete events for this assignment / part
-        turnitintool_delete_records('event', 'modulename','turnitintool','instance',$turnitintool->id,'name',$turnitintool->name.' - '.turnitintool_partnamefromnum($partid));
+        turnitintool_delete_records_select('event', "modulename='turnitintool' AND instance=".$turnitintool->id." AND name='".$turnitintool->name." - ".turnitintool_partnamefromnum($partid)."'");
 
+        $update = new stdClass();
         $update->id=$turnitintool->id;
         $update->numparts=$turnitintool->numparts-1;
         if (!turnitintool_update_record("turnitintool",$update)) {
@@ -1352,26 +1407,31 @@ function turnitintool_partform($cm,$part) {
     $element->setValue($part->id);
     $output.=$element->toHTML().PHP_EOL;
 
+    $table = new stdClass();
     $table->width='100%';
     $table->id='uploadtableid';
     $table->class='uploadtable';
 
     // Part Name Field
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data=get_string('partname','turnitintool');
     $cells[0]->class='cell c0';
     $attr=array('class'=>"formwide");
     $element=new MoodleQuickForm_text('partname',null,$attr);
     $element->setValue($part->partname);
+    $cells[1] = new stdClass();
     $cells[1]->data=$element->toHTML();
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[0] = new stdClass();
+    $table->rows[0]->cells=$cells;
 
     $dateoptions=array('startyear' => date( 'Y', strtotime( '-6 years' )), 'stopyear' => date( 'Y', strtotime( '+6 years' )),
                     'timezone' => 99, 'applydst' => true, 'step' => 1, 'optional' => false);
 
     // Part Start Date
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data=get_string('dtstart','turnitintool');
     $cells[0]->class='cell c0';
     $element=new MoodleQuickForm_date_time_selector('dtstart',null,$dateoptions);
@@ -1382,12 +1442,15 @@ function turnitintool_partform($cm,$part) {
                   'year'=>userdate($part->dtstart,'%Y')
                   );
     $element->setValue($date);
+    $cells[1] = new stdClass();
     $cells[1]->data=$element->toHTML();
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[1] = new stdClass();
+    $table->rows[1]->cells=$cells;
 
     // Part Due Date
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data=get_string('dtdue','turnitintool');
     $cells[0]->class='cell c0';
     $element=new MoodleQuickForm_date_time_selector('dtdue',null,$dateoptions);
@@ -1398,12 +1461,15 @@ function turnitintool_partform($cm,$part) {
                   'year'=>userdate($part->dtdue,'%Y')
                   );
     $element->setValue($date);
+    $cells[1] = new stdClass();
     $cells[1]->data=$element->toHTML();
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[2] = new stdClass();
+    $table->rows[2]->cells=$cells;
 
     // Part Post Date
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data=get_string('dtpost','turnitintool');
     $cells[0]->class='cell c0';
     $element=new MoodleQuickForm_date_time_selector('dtpost',null,$dateoptions);
@@ -1414,31 +1480,39 @@ function turnitintool_partform($cm,$part) {
                   'year'=>userdate($part->dtpost,'%Y')
                   );
     $element->setValue($date);
+    $cells[1] = new stdClass();
     $cells[1]->data=$element->toHTML();
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[3] = new stdClass();
+    $table->rows[3]->cells=$cells;
 
     // Part Max Marks
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data=get_string('maxmarks','turnitintool');
     $cells[0]->class='cell c0';
     $element=new MoodleQuickForm_text('maxmarks');
     $element->setValue($part->maxmarks);
+    $cells[1] = new stdClass();
     $cells[1]->data=$element->toHTML();
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[4] = new stdClass();
+    $table->rows[4]->cells=$cells;
 
     // Submit / Cancel
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data='&nbsp;';
     $cells[0]->class='cell c0';
     $attr=array('onclick'=>"location.href='".$CFG->wwwroot."/mod/turnitintool/view.php?id=".$cm->id."';");
     $element=new MoodleQuickForm_button('cancel','Cancel',$attr);
+    $cells[1] = new stdClass();
     $cells[1]->data=$element->toHTML();
     $element=new MoodleQuickForm_submit('submit','Submit');
     $cells[1]->data.=$element->toHTML();
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[5] = new stdClass();
+    $table->rows[5]->cells=$cells;
 
     $output.=turnitintool_print_table($table,true);
     $output.='</form>'.PHP_EOL;
@@ -1465,20 +1539,24 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
 
     $output.=turnitintool_box_start('generalbox boxwidthwide boxaligncenter eightyfive','introduction',true);
 
+    $table = new stdClass();
     $table->width='100%';
     $table->id='uploadtableid';
     $table->class='uploadtable';
 
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data=get_string('turnitintoolname', 'turnitintool');
     $cells[0]->class='cell c0';
+    $cells[1] = new stdClass();
     $cells[1]->data=$turnitintool->name;
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[0] = new stdClass();
+    $table->rows[0]->cells=$cells;
 
     $exportdisabled=false;
     // Get the post date for the last available part
-    if (!$part=turnitintool_get_record_select('turnitintool_parts','turnitintoolid='.$turnitintool->id,'max(dtpost) AS dtpost')) {
+    if (!$part=turnitintool_get_record_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted = 0','max(dtpost) AS dtpost')) {
         turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
         exit();
     } else if ( $part->dtpost > time() AND $turnitintool->anon > 0 ) {
@@ -1487,33 +1565,43 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
     }
 
     // Get the start date for the first available part
-    if (!$part=turnitintool_get_record_select('turnitintool_parts','turnitintoolid='.$turnitintool->id,'min(dtstart) AS dtstart')) {
+    if (!$part=turnitintool_get_record_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted = 0','min(dtstart) AS dtstart')) {
         turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
         exit();
     }
 
     if ($part->dtstart < time() OR has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) {
-        $intro=$turnitintool->intro;
+        if ( is_callable('format_module_intro') ) {
+            $intro=format_module_intro( 'turnitintool', $turnitintool, $cm->id );
+        } else {
+            $intro=$turnitintool->intro;
+        }
     } else {
         $intro=get_string('notavailableyet','turnitintool');
     }
 
     unset($cells);
+    $cells[0] = new stdClass();
     $cells[0]->data=get_string('turnitintoolintro', 'turnitintool');
     $cells[0]->class='cell c0';
+    $cells[1] = new stdClass();
     $cells[1]->data=$intro;
     $cells[1]->class='cell c1';
-    $table->rows[]->cells=$cells;
+    $table->rows[1] = new stdClass();
+    $table->rows[1]->cells=$cells;
 
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
     if (has_capability('mod/turnitintool:grade', $context)) {
         unset($cells);
+        $cells[0] = new stdClass();
         $cells[0]->data=get_string('turnitintutors','turnitintool');
         $cells[0]->class='cell c0';
+        $cells[1] = new stdClass();
         $cells[1]->data='<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.'&do=tutors" title="'.
-                get_string('edit','turnitintool').'"><img src="pix/editicon.gif" class="tiiicons" alt="'.get_string('edit','turnitintool').'" /></a>';
+                get_string('edit','turnitintool').'"><img src="pix/user-group-edit.png" class="tiiicons" alt="'.get_string('edit','turnitintool').'" /></a>';
         $cells[1]->class='cell c1';
-        $table->rows[]->cells=$cells;
+        $table->rows[2] = new stdClass();
+        $table->rows[2]->cells=$cells;
     }
 
     $output.=turnitintool_print_table($table,true);
@@ -1544,42 +1632,58 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
     }
 
     // Create the actual initial Table with the part summaries
+    $table = new stdClass();
     $table->width='100%';
     $table->id='submissionTableId';
     $table->class='submissionTable';
 
     if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) { // DO TUTOR HEADERS
         unset($cells);
+        $cells[0] = new stdClass();
         $cells[0]->data=get_string('partname','turnitintool');
         $cells[0]->class="header c0 partcell";
+        $cells[1] = new stdClass();
         $cells[1]->data=get_string('dtstart','turnitintool');
         $cells[1]->class="header c1 datecell";
+        $cells[2] = new stdClass();
         $cells[2]->data=get_string('dtdue','turnitintool');
         $cells[2]->class="header c2 datecell";
+        $cells[3] = new stdClass();
         $cells[3]->data=get_string('dtpost','turnitintool');
         $cells[3]->class="header c3 datecell";
+        $cells[4] = new stdClass();
         $cells[4]->data=get_string('maxmarks','turnitintool');
         $cells[4]->class="header c4 markscell";
+        $cells[5] = new stdClass();
         $cells[5]->data=get_string('downloadexport','turnitintool');
         $cells[5]->class="header c5 markscell";
+        $cells[6] = new stdClass();
         $cells[6]->data='&nbsp;';
         $cells[6]->class="header c6 iconcell";
+        $cells[7] = new stdClass();
         $cells[7]->data='&nbsp;';
         $cells[7]->class="header c7 iconcell";
+        $table->rows[0] = new stdClass();
         $table->rows[0]->cells=$cells;
         unset($cells);
     } else { // Do Student Headers
         unset($cells);
+        $cells[0] = new stdClass();
         $cells[0]->data=get_string('partname','turnitintool');
         $cells[0]->class="header c0 partcell";
+        $cells[1] = new stdClass();
         $cells[1]->data=get_string('dtstart','turnitintool');
         $cells[1]->class="header c1 datecell";
+        $cells[2] = new stdClass();
         $cells[2]->data=get_string('dtdue','turnitintool');
         $cells[2]->class="header c2 datecell";
+        $cells[3] = new stdClass();
         $cells[3]->data=get_string('dtpost','turnitintool');
         $cells[3]->class="header c3 datecell";
+        $cells[4] = new stdClass();
         $cells[4]->data=get_string('maxmarks','turnitintool');
         $cells[4]->class="header c4 markscell";
+        $table->rows[0] = new stdClass();
         $table->rows[0]->cells=$cells;
         unset($cells);
     }
@@ -1588,21 +1692,27 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
     foreach($parts as $part) {
         $row++;
         if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) { // DO TUTOR VIEW
+            $cells[0] = new stdClass();
             $cells[0]->data='<span id="partnametext_'.$part->id.'">'.$part->partname.'</span>';
             $cells[0]->class="cell c0 partcell";
 
+            $cells[1] = new stdClass();
             $cells[1]->data='<span id="dtstarttext_'.$part->id.'">'.userdate($part->dtstart,get_string('strftimedatetimeshort','langconfig')).'</span>';
             $cells[1]->class="cell c1 datecell";
 
+            $cells[2] = new stdClass();
             $cells[2]->data='<span id="dtduetext_'.$part->id.'">'.userdate($part->dtdue,get_string('strftimedatetimeshort','langconfig')).'</span>';
             $cells[2]->class="cell c2 datecell";
 
+            $cells[3] = new stdClass();
             $cells[3]->data='<span id="dtposttext_'.$part->id.'">'.userdate($part->dtpost,get_string('strftimedatetimeshort','langconfig')).'</span>';
             $cells[3]->class="cell c3 datecell";
 
+            $cells[4] = new stdClass();
             $cells[4]->data='<span id="maxmarkstext_'.$part->id.'">'.$part->maxmarks.'</span>';
             $cells[4]->class="cell c4 markscell";
 
+            $cells[5] = new stdClass();
             if (turnitintool_count_records_select('turnitintool_submissions','submission_part='.$part->id.' AND submission_objectid IS NOT NULL') AND !$exportdisabled ) {
 
                 $url = $CFG->wwwroot . '/mod/turnitintool/view.php?id=' . $cm->id;
@@ -1610,15 +1720,15 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
 
                 $cells[5]->data='<a href="' . $url . '&export_data=1" onclick="screenOpen(this.href,\'\',\'0\',null,\'width=450,height=200\');'
                         .'return false;" target="_blank" title="'.get_string('downloadorigzip','turnitintool')
-                        .'"><img src="'.$CFG->wwwroot.'/pix/f/docx.gif" class="tiiicons" alt="'.get_string('downloadorigzip','turnitintool')
+                        .'"><img src="pix/file.png" class="tiiicons" alt="'.get_string('downloadorigzip','turnitintool')
                         .'" id="orig_'.$row.'" /></a></span>'.PHP_EOL;
 
                 $cells[5]->data.='<a href="' . $url . '&export_data=2' .'" onclick="screenOpen(this.href,\'\',\'0\',null,\'width=450,height=200\');'
                         .'return false;" target="_blank" title="'.get_string('downloadpdfzip','turnitintool')
-                        .'"><img src="'.$CFG->wwwroot.'/pix/f/pdf.gif" class="tiiicons" alt="'.get_string('downloadpdfzip','turnitintool')
+                        .'"><img src="pix/file-pdf.png" class="tiiicons" alt="'.get_string('downloadpdfzip','turnitintool')
                         .'" id="pdf_'.$row.'" /></a></span>'.PHP_EOL.'<a href="'.$CFG->wwwroot.'/mod/turnitintool/filelink.php?id='.$cm->id
                         .'&part='.$part->id.'" title="'.get_string('downloadgradexls','turnitintool')
-                        .'"><img src="'.$CFG->wwwroot.'/pix/f/excel.gif" class="tiiicons" alt="'.get_string('downloadgradexls','turnitintool')
+                        .'"><img src="pix/file-xls.png" class="tiiicons" alt="'.get_string('downloadgradexls','turnitintool')
                         .'" id="excel_'.$row.'" /></a></span>';
 
             } else {
@@ -1627,9 +1737,10 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
 
             $cells[5]->class="cell c5 markscell";
 
+            $cells[6] = new stdClass();
             $cells[6]->data='<span id="ticktext_'.$part->id.'"><a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id
                     .'&part='.$part->id.'" title="'.get_string('edit','turnitintool')
-                    .'"><img src="pix/editicon.gif" class="tiiicons" alt="'.get_string('edit','turnitintool').'" id="edit_'.$row.'" /></a></span>';
+                    .'"><img src="pix/window-osx-edit.png" class="tiiicons" alt="'.get_string('edit','turnitintool').'" id="edit_'.$row.'" /></a></span>';
             $cells[6]->class="cell c6 iconcell";
 
             if (turnitintool_count_records('turnitintool_submissions','turnitintoolid',$turnitintool->id,'submission_part',$part->id)>0) {
@@ -1640,23 +1751,31 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
                 $warning='';
             }
 
-            $cells[7]->data='<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.
+            $cells[7] = new stdClass();
+            $cells[7]->data=(count($parts)>1) ? '<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.
                     '?id='.$cm->id.'&do=intro&delpart='.$part->id.'" title="'.get_string('delete','turnitintool').
-                    '"'.$warning.'><img src="pix/trashicon.gif" class="tiiicons" alt="'.get_string('delete','turnitintool').'" /></a>';
+                    '"'.$warning.'><img src="pix/delete.png" class="tiiicons" alt="'.get_string('delete','turnitintool').'" /></a>' : '';
             $cells[7]->class="cell c9 iconcell";
 
         } else { // DO STUDENT VIEW
+            $cells[0] = new stdClass();
             $cells[0]->data=$part->partname;
             $cells[0]->class="cell c0 partcell";
+            $cells[1] = new stdClass();
             $cells[1]->data=userdate($part->dtstart,get_string('strftimedatetimeshort','langconfig'));
             $cells[1]->class="cell c1 datecell";
+            $cells[2] = new stdClass();
             $cells[2]->data=userdate($part->dtdue,get_string('strftimedatetimeshort','langconfig'));
             $cells[2]->class="cell c2 datecell";
+            $cells[3] = new stdClass();
             $cells[3]->data=userdate($part->dtpost,get_string('strftimedatetimeshort','langconfig'));
             $cells[3]->class="cell c3 datecell";
+            $cells[4] = new stdClass();
             $cells[4]->data=$part->maxmarks;
             $cells[4]->class="cell c4 markscell";
         }
+        $table->rows[$row] = new stdClass();
+        $table->rows[$row]->cells = new stdClass();
         $table->rows[$row]->cells=$cells;
         $table->rows[$row]->class="row r".(($row%2) ? 0 : 1);
         unset($cells);
@@ -1682,22 +1801,23 @@ function turnitintool_introduction($cm,$turnitintool,$notice='') {
 function turnitintool_get_tiitutors($cm,$turnitintool) {
     $return=null;
     if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) {
-        $loaderbar = new turnitintool_loaderbarclass(3);
+        $loaderbar = null;
         $owner=turnitintool_get_owner($turnitintool->course);
         $owneruid=turnitintool_getUID($owner);
         $tii = new turnitintool_commclass($owneruid,$owner->firstname,$owner->lastname,$owner->email,2,$loaderbar);
-        $tii->startSession();
+        $post = new stdClass();
         $post->cid=turnitintool_getCID($turnitintool->course);
         $post->ctl=turnitintool_getCTL($turnitintool->course);
         $tutors=$tii->getTutors($post,get_string('turnitintutorsretrieving','turnitintool'));
         if ($tii->getRerror()) {
+            $return = new stdClass();
             $return->error=$tii->getRmessage();
             $return->array=null;
         } else {
+            $return = new stdClass();
             $return->error=null;
             $return->array=$tutors;
         }
-        $tii->endSession();
     }
     return $return;
 }
@@ -1717,9 +1837,11 @@ function turnitintool_remove_tiitutor($cm,$turnitintool,$tutor) {
         $thisuid=turnitintool_getUID($thisuser);
         $tii = new turnitintool_commclass($thisuid,$thisuser->firstname,$thisuser->lastname,$thisuser->email,2,$loaderbar);
         $tii->startSession();
+        $post = new stdClass();
         $post->cid=turnitintool_getCID($turnitintool->course);
         $post->ctl=turnitintool_getCTL($turnitintool->course);
 
+        $return = new stdClass();
         $return->error=null;
         $return->array=null;
 
@@ -1730,12 +1852,12 @@ function turnitintool_remove_tiitutor($cm,$turnitintool,$tutor) {
         } else {
             if ($owner=turnitintool_get_owner($turnitintool->course) AND $owner->id==$tutor) {
                 foreach ($tutors as $tutorobj) {
-                    if ($tutorobj['email']!=$owner->email) {
+                    if ((string)$tutorobj->email!=$owner->email) {
                         $loaderbar->total=$loaderbar->total+1;
-                        $post->new_teacher_email=$tutorobj['email'];
+                        $post->new_teacher_email=(string)$tutorobj->email;
                         $tii->changeOwner($post,get_string('changingowner','turnitintool'));
                         unset($post->new_teacher_email);
-                        $newowner=turnitintool_get_record('user','email',$tutorobj['email']);
+                        $newowner=turnitintool_get_record_select('user',"email='".$tutorobj->email."'");
                         $tiicourse=turnitintool_get_record('turnitintool_courses','courseid',$turnitintool->course);
                         $tiicourse->ownerid=$newowner->id;
                         turnitintool_update_record('turnitintool_courses',$tiicourse);
@@ -1764,30 +1886,38 @@ function turnitintool_remove_tiitutor($cm,$turnitintool,$tutor) {
  */
 function turnitintool_view_tiitutors($cm,$turnitintool,$tutors) {
     global $CFG;
+    $table = new stdClass();
     $table->width='85%';
     $table->tablealign='center';
     $table->class='submissionTable';
 
+    $table->rows[0] = new stdClass();
+    $table->rows[0]->cells[0] = new stdClass();
     $table->rows[0]->cells[0]->class='header c0 iconcell';
     $table->rows[0]->cells[0]->data='';
+    $table->rows[0]->cells[1] = new stdClass();
     $table->rows[0]->cells[1]->class='header c1 iconcell';
     $table->rows[0]->cells[1]->data='';
+    $table->rows[0]->cells[2] = new stdClass();
     $table->rows[0]->cells[2]->class='header c2';
     $table->rows[0]->cells[2]->data=get_string('turnitintutors','turnitintool');
 
     $i=0;
-    foreach ($tutors->array as $key => $value) {
-        if (!$tiiuser=turnitintool_get_record('turnitintool_users','turnitin_uid',$value['uid'])) {
+    foreach ($tutors->array as $value) {
+        $uid = (string)$value->uid;
+        if (!$tiiuser=turnitintool_get_record('turnitintool_users','turnitin_uid',$uid)) {
             continue;
         } else {
             $i++;
             $user=turnitintool_get_moodleuser($tiiuser->userid);
+            $table->rows[$i]->cells[0] = new stdClass();
             $table->rows[$i]->cells[0]->class='cell c0 iconcell';
             $table->rows[$i]->cells[0]->data='<a href="'.$CFG->wwwroot
                     .'/mod/turnitintool/view.php?id='.$cm->id.'&do=tutors&unenrol='
                     .$tiiuser->userid.'" title="'.get_string('turnitintutorsremove','turnitintool')
-                    .'"><img src="pix/trashicon.gif" alt="'
+                    .'"><img src="pix/delete.png" alt="'
                     .get_string('turnitintutorsremove','turnitintool').'" class="tiiicons" /></a>';
+            $table->rows[$i]->cells[1] = new stdClass();
             $table->rows[$i]->cells[1]->class='cell c1 iconcell';
             $owner=turnitintool_get_owner($turnitintool->course);
             if ($owner->id==$user->id) {
@@ -1800,10 +1930,11 @@ function turnitintool_view_tiitutors($cm,$turnitintool,$tutors) {
                         .'"><img src="pix/ownerstar_grey.gif" alt="'
                         .get_string('changeowner','turnitintool').'" class="tiiicons" /></a>';
             }
+            $table->rows[$i]->cells[2] = new stdClass();
             $table->rows[$i]->cells[2]->class='cell c2';
             $table->rows[$i]->cells[2]->data='<a href="'.$CFG->wwwroot
                     .'/user/view.php?id='.$tiiuser->userid.'&course='.$turnitintool->course
-                    .'">'.$value['lastname'].', '.$value['firstname'].'</a>'.' ('.$user->username.')';
+                    .'">'.(string)$value->lastname.', '.(string)$value->firstname.'</a>'.' ('.$user->username.')';
         }
     }
 
@@ -1813,18 +1944,22 @@ function turnitintool_view_tiitutors($cm,$turnitintool,$tutors) {
     turnitintool_print_table($table);
 
     unset($table);
+    $table = new stdClass();
     $table->width='85%';
     $table->tablealign='center';
     $table->class='uploadtable';
 
+    $table->rows[0] = new stdClass();
+    $table->rows[0]->cells[0] = new stdClass();
     $table->rows[0]->cells[0]->class='cell c0';
     $table->rows[0]->cells[0]->data=get_string('turnitintutors','turnitintool');
+    $table->rows[0]->cells[1] = new stdClass();
     $table->rows[0]->cells[1]->class='cell c1';
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
     $availabletutors=get_users_by_capability($context,'mod/turnitintool:grade','u.id,u.firstname,u.lastname,u.username','','','',0,'',false);
     $tutorselection=get_string('turnitintutorsallenrolled','turnitintool');
-    foreach ($tutors->array as $key=>$value) {
-        $idarray[]=$value['userid'];
+    foreach ($tutors->array as $value) {
+        $idarray[]=(string)$value->userid;
     }
     $options='';
     foreach ($availabletutors as $available) {
@@ -1843,8 +1978,11 @@ function turnitintool_view_tiitutors($cm,$turnitintool,$tutors) {
     $table->rows[0]->cells[1]->data=$tutorselection;
 
     if (!empty($options)) {
+        $table->rows[1] = new stdClass();
+        $table->rows[1]->cells[0] = new stdClass();
         $table->rows[1]->cells[0]->class='cell c0';
         $table->rows[1]->cells[0]->data='&nbsp;';
+        $table->rows[1]->cells[1] = new stdClass();
         $table->rows[1]->cells[1]->class='cell c1';
         $table->rows[1]->cells[1]->data='<input type="submit" value="'.get_string('turnitintutorsadd','turnitintool').'" />';
     }
@@ -1879,9 +2017,11 @@ function turnitintool_add_tiitutor($cm,$turnitintool,$tutor) {
 
         $tii = new turnitintool_commclass($thisuid,$thisuser->firstname,$thisuser->lastname,$thisuser->email,2,$loaderbar);
         $tii->startSession();
+        $post = new stdClass();
         $post->cid=turnitintool_getCID($turnitintool->course);
         $post->ctl=turnitintool_getCTL($turnitintool->course);
 
+        $return = new stdClass();
         $return->error=null;
         $return->array=null;
 
@@ -1941,6 +2081,7 @@ function turnitintool_ownerprocess($cm,$turnitintool,$newid) {
                 $tii->endSession();
             }
 
+            $post = new stdClass();
             $post->cid=turnitintool_getCID($turnitintool->course);
             $post->ctl=turnitintool_getCTL($turnitintool->course);
 
@@ -1952,6 +2093,7 @@ function turnitintool_ownerprocess($cm,$turnitintool,$newid) {
                 exit();
             } else {
                 $currcourse=turnitintool_get_record('turnitintool_courses','courseid',$turnitintool->course);
+                $update = new stdClass();
                 $update->id=$currcourse->id;
                 $update->ownerid=$newid;
                 if (!$dodb=turnitintool_update_record('turnitintool_courses',$update)) {
@@ -2086,17 +2228,9 @@ function turnitintool_draw_similarityscore($cm,$turnitintool,$submission) {
         $score='-';
     } else {
         $result=$submission->submission_score;
-
         $objectid=$submission->submission_objectid;
 
-        if (!$part=turnitintool_get_record('turnitintool_parts','id',$submission->submission_part)) {
-            turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
-            exit();
-        }
-
         if (!is_null($objectid) AND (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id)) OR $turnitintool->studentreports)) {
-
-            $owner = turnitintool_get_owner($turnitintool->course);
 
             if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) {
                 $utp=2;
@@ -2112,10 +2246,12 @@ function turnitintool_draw_similarityscore($cm,$turnitintool,$submission) {
 
                 $reportlink = $CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id . '&jumppage=report';
                 $reportlink .= '&userid=' . $thisuser->id . '&objectid=' . $submission->submission_objectid . '&utp=' . $utp;
-
+                
+                $transmatch = ( $submission->submission_transmatch == 1 ) ? 'EN' : '&nbsp;';
+                
                 $score='<div class="origLink"><a href="'.$reportlink.'" target="_blank" title="'.get_string('viewreport','turnitintool').
-                        '" class="scoreLink"'.$style.' onclick="screenOpen(\''.$reportlink.'\',\''.$submission->id.'\',\''.
-                        $turnitintool->autoupdates.'\');return false;"><span class="scoreBox"'.$style2.'>'.$result.'</span></a></div>';
+                        '" class="scoreLink" onclick="screenOpen(\''.$reportlink.'\',\''.$submission->id.'\',\''.
+                        $turnitintool->autoupdates.'\');return false;"><span class="scoreBox"'.$style2.'>'.$result.'<span class="scoreColor"'.$style.'>'.$transmatch.'</span></span></a></div>';
             } else {
                 $color='#FCFCFC';
                 $style=' style="background-color: '.$color.';text-align: center;"';
@@ -2157,7 +2293,6 @@ function turnitintool_get_filelink($cm,$turnitintool,$submission,$download=false
         }
 
     } else {
-        $owner = turnitintool_get_owner($turnitintool->course);
 
         if (has_capability('mod/turnitintool:grade', $context)) {
             $utp=2;
@@ -2188,7 +2323,7 @@ function turnitintool_get_filelink($cm,$turnitintool,$submission,$download=false
  */
 function turnitintool_view_student_submissions($cm,$turnitintool) {
     global $CFG,$USER;
-    $output='';
+    $output = '';
     $param_do=optional_param('do',null,PARAM_CLEAN);
 
     $i=0;
@@ -2206,46 +2341,63 @@ function turnitintool_view_student_submissions($cm,$turnitintool) {
 
         } else {
             $output.='
-    <table class="toplinkTabs">
-        <tr>
-            <td class="toggleLinks">&nbsp;</td>
-            <td class="tabLinks"><ul class="tabList">
-                <li style="background-image: url(pix/left-ie-cor.gif);"><a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&do='.$param_do.
-                    '&update=1" style="background-image: url(pix/right-ie-cor.gif);"><span><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/refresh.gif" alt="'.
+    <div class="tabLinks">
+        <div style="display: none;" id="inboxNotice"><span style="background: url(pix/ajax-loader.gif) no-repeat left center;padding-left: 80px;">
+        <span style="background: url(pix/ajax-loader.gif) no-repeat right center;padding-right: 80px;">'
+                .get_string('turnitinloading','turnitintool').'</span></span></div>
+        <a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&do='.$param_do.
+                    '&update=1" onclick="refreshSubmissionsAjax();return false;"><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/refresh.gif" alt="'.
                     get_string('turnitinrefreshsubmissions','turnitintool').'" class="tiiicons" /> '.
-                    get_string('turnitinrefreshsubmissions','turnitintool').'</span></a></li>
-            </ul></td>
-        </tr>
-    </table>';
+                    get_string('turnitinrefreshsubmissions','turnitintool').'</a></div>';
 
+            $table = new stdClass();
             $table->width='85%';
             $table->tablealign='center';
             $table->class='submissionTable';
-
-            $table->rows[0]->cells[0]->class='header c0';
-            $table->rows[0]->cells[0]->data=get_string('submission','turnitintool');
-            $table->rows[0]->cells[1]->class='header c1 datecell';
-            $table->rows[0]->cells[1]->data=get_string('posted','turnitintool');
-            $table->rows[0]->cells[2]->class='header c2 markscell';
-            $table->rows[0]->cells[2]->data=get_string('submissionorig','turnitintool');
-            $table->rows[0]->cells[3]->class='header c3 markscell';
-            $table->rows[0]->cells[3]->data=get_string('submissiongrade','turnitintool');
-            $table->rows[0]->cells[4]->class='header c4 markscell';
-            $table->rows[0]->cells[4]->data=get_string('feedback','turnitintool');
-            $table->rows[0]->cells[5]->class='header c5 iconcell';
-            $table->rows[0]->cells[5]->data='';
-            $table->rows[0]->cells[6]->class='header c6 iconcell';
-            $table->rows[0]->cells[6]->data='';
+            $table->id='inboxTable';
+            $table->rows[0] = new stdClass();
+            $table->rows[0]->hcells[0] = new stdClass();
+            $table->rows[0]->hcells[0]->class='header c0 namecell';
+            $table->rows[0]->hcells[0]->data='<div>'.get_string('submission','turnitintool').'</div>';
+            $table->rows[0]->hcells[1] = new stdClass();
+            $table->rows[0]->hcells[1]->class='header c1 datecell';
+            $table->rows[0]->hcells[1]->data='<div>'.get_string('posted','turnitintool').'</div>';
+            $table->rows[0]->hcells[2] = new stdClass();
+            $table->rows[0]->hcells[2]->class='header c2 markscell';
+            $table->rows[0]->hcells[2]->data='<div>'.get_string('submissionorig','turnitintool').'</div>';
+            $table->rows[0]->hcells[3] = new stdClass();
+            $table->rows[0]->hcells[3]->class='header c3 markscell';
+            $table->rows[0]->hcells[3]->data='<div>'.get_string('submissiongrade','turnitintool').'</div>';
+            $table->rows[0]->hcells[4] = new stdClass();
+            $table->rows[0]->hcells[4]->class='header c4 markscell';
+            $table->rows[0]->hcells[4]->data='<div>'.get_string('feedback','turnitintool').'</div>';
+            $table->rows[0]->hcells[5] = new stdClass();
+            $table->rows[0]->hcells[5]->class='header c5 iconcell';
+            $table->rows[0]->hcells[5]->data='<div>&nbsp;</div>';
+            $table->rows[0]->hcells[6] = new stdClass();
+            $table->rows[0]->hcells[6]->class='header c6 iconcell';
+            $table->rows[0]->hcells[6]->data='<div>&nbsp;</div>';
 
             $table->size=array('','14%','8%','8%','4%','4%','4%');
             $table->align=array('left','center','center','center','center','center','center');
             $table->valign=array('top','center','center','center','center','center','center');
             $table->wrap=array(NULL,'nowrap','nowrap','nowrap','nowrap','nowrap','nowrap');
+            
+            if (!$parts=turnitintool_get_records_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted = 0')) {
+                turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
+                exit();
+            }
+            
+            $submissionids = array_keys( $submissions );
+            $submission_string = join( ',', $submissionids );
+            $comments = turnitintool_get_records_sql( 'SELECT submissionid, count( id ) AS count FROM {turnitintool_comments} WHERE submissionid IN ( '.$submission_string.' ) GROUP BY submissionid' );
 
             $i=0;
             foreach ($submissions as $submission) {
                 unset($cell);
                 $cell=array();
+                
+                $part = $parts[ $submission->submission_part ];
 
                 $filelink=turnitintool_get_filelink($cm,$turnitintool,$submission);
                 $downloadlink=turnitintool_get_filelink($cm,$turnitintool,$submission,$download=true);
@@ -2263,11 +2415,6 @@ function turnitintool_view_student_submissions($cm,$turnitintool) {
                 $doscript='';
                 if (!empty($submission->submission_objectid)) {
                     $doscript=' onclick="screenOpen(\''.$filelink.'\',\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\');return false;"';
-                }
-
-                if (!$part=turnitintool_get_record('turnitintool_parts','id',$submission->submission_part)) {
-                    turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
-                    exit();
                 }
 
                 if ($turnitintool->numparts>1) {
@@ -2313,7 +2460,7 @@ function turnitintool_view_student_submissions($cm,$turnitintool) {
                 // ###################################
 
                 $i++;
-                $grade=turnitintool_dogradeoutput($cm,$turnitintool,$submission,'black','transparent',false);
+                $grade=turnitintool_dogradeoutput($cm,$turnitintool,$submission,$part->dtdue,$part->dtpost,$part->maxmarks,'black','transparent',false);
 
                 $status='<b>'.get_string('status','turnitintool').':</b> '.get_string('submissionnotyetuploaded','turnitintool');
                 if (!empty($submission->submission_status)) {
@@ -2324,7 +2471,8 @@ function turnitintool_view_student_submissions($cm,$turnitintool) {
                 // Get Comments / Feedback ###########
                 // ###################################
 
-                $notes=turnitintool_getnoteslink($cm,$turnitintool,$submission);
+                $num = isset( $comments[$submission->id] ) ? $comments[$submission->id]->count : 0;
+                $notes=turnitintool_getnoteslink($cm,$turnitintool,$submission,$num);
 
                 // ###################################
                 // Print Download Link ###############
@@ -2333,7 +2481,7 @@ function turnitintool_view_student_submissions($cm,$turnitintool) {
                 if (!is_null($submission->submission_objectid)) {
                     $downscript=' onclick="screenOpen(this.href,\''.$submission->id.'\',false,null,\'width=450,height=200\');return false;"';
                     $download='<a href="'.turnitintool_get_filelink($cm,$turnitintool,$submission,true).'" title="'.
-                            get_string('downloadsubmission','turnitintool').'" target="_blank"'.$downscript.'><img src="pix/downloadicon.gif" alt="'.
+                            get_string('downloadsubmission','turnitintool').'" target="_blank"'.$downscript.'><img src="pix/file-download.png" alt="'.
                             get_string('downloadsubmission','turnitintool').'" class="tiiicons" /></a>';
                 } else {
                     $download='';
@@ -2353,40 +2501,53 @@ function turnitintool_view_student_submissions($cm,$turnitintool) {
                     $confirm=' onclick="return confirm(\''.str_replace($fnd, $rep, get_string('studentdeleteconfirm','turnitintool')).'\')"';
                 }
 
-                if (!$part=turnitintool_get_record('turnitintool_parts','id',$submission->submission_part)) {
-                    turnitintool_print_error('partgeterror','turnitintool');
-                    exit();
-                }
                 if (empty($submission->submission_objectid)
                         OR has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) {
                     $delete='<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&delete='.$submission->id.
                             '&do='.$param_do.'"'.$confirm.' title="'.get_string('deletesubmission','turnitintool').
-                            '"><img src="pix/trashicon.gif" alt="'.get_string('deletesubmission','turnitintool').'" class="tiiicons" /></a>';
+                            '"><img src="pix/delete.png" alt="'.get_string('deletesubmission','turnitintool').'" class="tiiicons" /></a>';
                 } else {
                     $delete='-';
                 }
 
+                $cell[0] = new stdClass();
                 $cell[0]->data=$link.$status;
                 $cell[0]->class='cell c0';
+                $cell[1] = new stdClass();
                 $cell[1]->data=$modified;
                 $cell[1]->class='cell c1 datecell';
+                $cell[2] = new stdClass();
                 $cell[2]->data=$score;
                 $cell[2]->class='cell c2 markscell';
+                $cell[3] = new stdClass();
                 $cell[3]->data=$grade;
                 $cell[3]->class='cell c3 markscell';
+                $cell[4] = new stdClass();
                 $cell[4]->data=$notes;
                 $cell[4]->class='cell c4 markscell';
+                $cell[5] = new stdClass();
                 $cell[5]->data=$download;
                 $cell[5]->class='cell c5 iconcell';
+                $cell[6] = new stdClass();
                 $cell[6]->data=$delete;
                 $cell[6]->class='cell c6 iconcell';
 
                 $key=($i%2) ? 0 : 1;
+                $table->rows[$i] = new stdClass();
                 $table->rows[$i]->cells=$cell;
                 $table->rows[$i]->class='row r'.$key;
                 $i++;
             }
 
+            $sessionrefresh = (isset($_SESSION['updatedscores'][$turnitintool->id]) AND $_SESSION['updatedscores'][$turnitintool->id]>0) ? '' : 'refreshSubmissionsAjax();';
+            
+            $output .= '
+<script type="text/javascript">
+    jQuery(document).ready(function() {
+        jQuery("#inboxTable").dataTable( { "sPaginationType": "full_numbers", "sDom": "r<\"top navbar\"lf><\"dt_page\"pi>t<\"bottom\"><\"dt_page\"pi>", } );
+        ' . $sessionrefresh . '
+    });
+</script>';
             $output.=turnitintool_print_table($table,true).'<br />';
             if (!$turnitintool->studentreports) {
                 $output.=turnitintool_box_start('generalbox boxwidthwide boxaligncenter eightyfive', 'introduction',true);
@@ -2421,16 +2582,14 @@ function turnitintool_array_to_object($input) {
  * @param array $input An array to convert to an object
  * @return object The converted array
  */
-function turnitintool_overallgrade($turnitintool,$usersubmissions,$userid) {
+function turnitintool_overallgrade_old($turnitintool,$usersubmissions,$userid,$parts,$scale) {
     $overallgrade=NULL;
-    $parts=turnitintool_get_records_select('turnitintool_parts',"turnitintoolid=".$turnitintool->id." AND deleted=0",false);
     $i=1;
     foreach ($parts as $part) {
         $weightarray[$part->id]=$part->maxmarks;
     }
     $overallweight=array_sum($weightarray);
     if ($turnitintool->grade<0) { // Scale in use
-        $scale=turnitintool_get_record('scale','id',$turnitintool->grade*-1);
         $maxgrade=count(explode(",",$scale->scale));
     } else {
         $maxgrade=$turnitintool->grade;
@@ -2446,6 +2605,38 @@ function turnitintool_overallgrade($turnitintool,$usersubmissions,$userid) {
         return ($overallgrade==0) ? 1 : ceil($overallgrade);
     } else {
         return (!is_nan($overallgrade) AND !is_null($usersubmission->submission_grade)) ? number_format($overallgrade,1) : '-';
+    }
+}
+
+/**
+ * Calculates and returns the overall grade for this activity
+ *
+ * @param array $inboxarray Grade array for this calculation keyed by partid
+ * @param array $grade Max grade for this Turnitin activity
+ * @param object $parts turnitintool_parts DB data transfer object
+ * @param object $scale turnitintool_parts DB data transfer object
+ * @return object The converted array
+ */
+function turnitintool_overallgrade($inboxarray,$maxgrade,$parts,$scale) {
+    $overallgrade=NULL;
+    foreach ( $parts as $part ) {
+        $weightarray[ $part->id ] = $part->maxmarks;
+    }
+    $overallweight = array_sum( $weightarray );
+    if ( $maxgrade < 0 ) { // Scale in use
+        $maxgrade = count( explode( ",", $scale->scale ) );
+    }
+    foreach ( $inboxarray as $inboxrow ) {
+        if ( !is_nan($inboxrow->submission_grade) AND !is_null($inboxrow->submission_grade) AND $weightarray[$inboxrow->submission_part] != 0 ) {
+            $overallgrade += ( $inboxrow->submission_grade / $weightarray[$inboxrow->submission_part] )
+                    * ( $weightarray[$inboxrow->submission_part] / $overallweight )
+                    * $maxgrade;
+        }
+    }
+    if ( !is_null( $overallgrade ) AND gettype( $scale ) == 'object' ) {
+        return ( $overallgrade == 0 ) ? 1 : ceil( $overallgrade );
+    } else {
+        return ( !is_nan( $overallgrade ) AND !is_null( $overallgrade ) ) ? number_format( $overallgrade, 1 ) : '-';
     }
 }
 
@@ -2567,27 +2758,35 @@ function turnitintool_addedit_notes($cm,$turnitintool,$view,$post,$notice) {
         }
         $output.=turnitintool_box_start('generalbox boxwidthwide boxaligncenter eightyfive','notes',true);
         $output.='<b>'.$title.'</b><br />';
+
+        $table = new stdClass();
         $table->width='100%';
         $table->tablealign='center';
         $table->class='uploadtable';
 
+        $cell[0] = new stdClass();
         $cell[0]->data=get_string('comment','turnitintool').' (<span id="charsBlock">'.strlen($comments).'/'.$turnitintool->commentmaxsize.'</span> chars)';
         $cell[0]->class='cell c0';
+        $cell[1] = new stdClass();
         $cell[1]->data='<textarea class="submissionText" name="comments" onkeyup="turnitintool_countchars(this,\'charsBlock\','.$turnitintool->commentmaxsize.',\''.
                 get_string('maxcommentjserror','turnitintool',$turnitintool->commentmaxsize).'\')" onclick="turnitintool_countchars(this,\'charsBlock\','.
                 $turnitintool->commentmaxsize.',\''.get_string('maxcommentjserror','turnitintool',$turnitintool->commentmaxsize).'\')">'.$comments.'</textarea>';
         $cell[1]->class='cell c1';
 
-        $table->rows[]->cells=$cell;
+        $table->rows[0] = new stdClass();
+        $table->rows[0]->cells=$cell;
         unset($cell);
 
+        $cell[0] = new stdClass();
         $cell[0]->data='&nbsp;';
         $cell[0]->class='cell c0';
+        $cell[1] = new stdClass();
         $cell[1]->data=$action.'<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&do=notes&s='.$submission->id.'"><input name="cancel" value="Cancel" type="button" /></a>
         <input name="submitted" value="'.$title.'" type="submit" />';
         $cell[1]->class='cell c1';
 
-        $table->rows[]->cells=$cell;
+        $table->rows[1] = new stdClass();
+        $table->rows[1]->cells=$cell;
         unset($cell);
 
         $output.='<form action="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&do=notes&s='.$submission->id.'" method="post">';
@@ -2632,10 +2831,7 @@ function turnitintool_process_notes($cm,$turnitintool,$view,$post) {
             }
 
             if ($post["action"]=="delete" AND (($comment->userid==$USER->id AND $comment->dateupdated>=time()-$turnitintool->commentedittime) OR $isgrader)) {
-                // Make sure editting allowed and edit window is still open
-                $update->id=$post["comment"];
-                $update->deleted=1;
-                turnitintool_update_record('turnitintool_comments',$update);
+                turnitintool_delete_records('turnitintool_comments','id',$post["comment"]);
                 turnitintool_redirect($CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.'&do=notes&s='.$submission->id);
                 exit();
             } else if (($post["action"]=="edit" AND (($comment->userid==$USER->id AND $comment->dateupdated>=time()-$turnitintool->commentedittime) OR $isgrader)) OR $post["action"]=="add") {
@@ -2643,11 +2839,13 @@ function turnitintool_process_notes($cm,$turnitintool,$view,$post) {
                     $output['error']=true;
                     $output['message']=get_string('nocommenterror','turnitintool');
                 } else if (strlen($post["comments"])>$turnitintool->commentmaxsize) {
+                    $input = new stdClass();
                     $input->actual=strlen($post["comments"]);
                     $input->allowed=$turnitintool->commentmaxsize;
                     $output['error']=true;
                     $output['message']=get_string('maxcommenterror','turnitintool',$input);
                 } else if ($post["action"]=="edit") {
+                    $update = new stdClass();
                     $update->id=$post["comment"];
                     $update->commenttext=strip_tags($post["comments"]);
                     $update->dateupdated=time();
@@ -2655,6 +2853,7 @@ function turnitintool_process_notes($cm,$turnitintool,$view,$post) {
                     turnitintool_redirect($CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.'&do=notes&s='.$submission->id);
                     exit();
                 } else {
+                    $insert = new stdClass();
                     $insert->submissionid=$submission->id;
                     $insert->userid=$USER->id;
                     $insert->commenttext=strip_tags($post["comments"]);
@@ -2714,7 +2913,6 @@ function turnitintool_process_options($cm,$turnitintool,$post) {
     global $CFG, $turnitintool;
     $turnitintool->autosubmission=$post['autosubmission'];
     $turnitintool->shownonsubmission=$post['shownonsubmission'];
-    $turnitintool->perpage=$post['perpage'];
     if (isset($post['usegrademark'])) {
         $turnitintool->usegrademark=$post['usegrademark'];
     }
@@ -2746,6 +2944,7 @@ function turnitintool_view_options($cm,$turnitintool) {
 
     $output.='<fieldset class="clearfix"><legend>'.get_string('generalsettings','turnitintool').'</legend>';
 
+    $table = new stdClass();
     $table->width='100%';
     $table->tablealign='center';
     $table->class='optionstable1';
@@ -2754,9 +2953,13 @@ function turnitintool_view_options($cm,$turnitintool) {
     $selected=array('1'=>'','0'=>'');
     $selected[$turnitintool->autosubmission]=' selected';
 
+    $row = 0;
+
     unset($cell);
+    $cell[0] = new stdClass();
     $cell[0]->class='cell c0';
     $cell[0]->data=get_string('autosubmit','turnitintool').turnitintool_help_icon('autosubmit',get_string('autosubmit','turnitintool'),'turnitintool',true,false,'',true);
+    $cell[1] = new stdClass();
     $cell[1]->class='cell c1';
     $cell[1]->data='<select name="autosubmission" class="formwide">';
 
@@ -2764,23 +2967,10 @@ function turnitintool_view_options($cm,$turnitintool) {
 
     $cell[1]->data.='<option label="'.get_string('autosubmitoff','turnitintool').'" value="0"'.$selected['0'].'>'.get_string('autosubmitoff','turnitintool').'</option>';
     $cell[1]->data.='</select>';
-    $table->rows[]->cells=$cell;
-
-    $selected=array('10'=>'','25'=>'','50'=>'','100'=>'','0'=>'');
-    $selected[$turnitintool->perpage]=' selected';
-
+    $table->rows[$row] = new stdClass();
+    $table->rows[$row]->cells=$cell;
+    $row++;
     unset($cell);
-    $cell[0]->class='cell c0';
-    $cell[0]->data=get_string('resultsperpage','turnitintool').turnitintool_help_icon('resultsperpage',get_string('resultsperpage','turnitintool'),'turnitintool',true,false,'',true);
-    $cell[1]->class='cell c1';
-    $cell[1]->data='<select name="perpage" class="formwide">';
-    $cell[1]->data.='<option label="10" value="10"'.$selected['10'].'>10</option>';
-    $cell[1]->data.='<option label="25" value="25"'.$selected['25'].'>25</option>';
-    $cell[1]->data.='<option label="50" value="50"'.$selected['50'].'>50</option>';
-    $cell[1]->data.='<option label="100" value="100"'.$selected['100'].'>100</option>';
-    $cell[1]->data.='<option label="'.get_string('all').'" value="0"'.$selected['0'].'>'.get_string('all').'</option>';
-    $cell[1]->data.='</select>';
-    $table->rows[]->cells=$cell;
 
     $output.=turnitintool_print_table($table,true);
     $output.=turnitintool_box_end(true);
@@ -2800,6 +2990,7 @@ function turnitintool_view_options($cm,$turnitintool) {
         $selected[$turnitintool->usegrademark]=' selected';
 
         unset($cell);
+        $cell[0] = new stdClass();
         $cell[0]->class='cell c0';
         $cell[0]->data=get_string('turnitinusegrademark','turnitintool').turnitintool_help_icon(  'turnitinusegrademark',
                 get_string('turnitinusegrademark','turnitintool'),
@@ -2810,12 +3001,15 @@ function turnitintool_view_options($cm,$turnitintool) {
                 true
         );
 
+        $cell[1] = new stdClass();
         $cell[1]->class='cell c1';
         $cell[1]->data='<select name="usegrademark" class="formwide">';
         $cell[1]->data.='<option label="'.get_string('yesgrademark','turnitintool').'" value="1"'.$selected['1'].'>'.get_string('yesgrademark','turnitintool').'</option>';
         $cell[1]->data.='<option label="'.get_string('nogrademark','turnitintool').'" value="0"'.$selected['0'].'>'.get_string('nogrademark','turnitintool').'</option>';
         $cell[1]->data.='</select>';
-        $table->rows[]->cells=$cell;
+        $table->rows[$row] = new stdClass();
+        $table->rows[$row]->cells=$cell;
+        $row++;
 
     }
 
@@ -2824,36 +3018,46 @@ function turnitintool_view_options($cm,$turnitintool) {
     $selected[$turnitintool->gradedisplay]=' selected';
 
     unset($cell);
+    $cell[0] = new stdClass();
     $cell[0]->class='cell c0';
     $cell[0]->data=get_string('displaygradesas','turnitintool').turnitintool_help_icon('displaygradesas',get_string('displaygradesas','turnitintool'),'turnitintool',true,false,'',true);
+    $cell[1] = new stdClass();
     $cell[1]->class='cell c1';
     $cell[1]->data='<select name="gradedisplay" class="formwide">';
     $cell[1]->data.='<option label="'.get_string('displaygradesaspercent','turnitintool').'" value="1"'.$selected['1'].'>'.get_string('displaygradesaspercent','turnitintool').'</option>';
     $cell[1]->data.='<option label="'.get_string('displaygradesasfraction','turnitintool').'" value="2"'.$selected['2'].'>'.get_string('displaygradesasfraction','turnitintool').'</option>';
     $cell[1]->data.='</select>';
-    $table->rows[]->cells=$cell;
+    $table->rows[$row] = new stdClass();
+    $table->rows[$row]->cells=$cell;
+    $row++;
 
     unset($selected);
     $selected=array('1'=>'','0'=>'');
     $selected[$turnitintool->autoupdates]=' selected';
 
     unset($cell);
+    $cell[0] = new stdClass();
     $cell[0]->class='cell c0';
     $cell[0]->data=get_string('autorefreshgrades','turnitintool').turnitintool_help_icon('autorefreshgrades',get_string('autorefreshgrades','turnitintool'),'turnitintool',true,false,'',true);
+    $cell[1] = new stdClass();
     $cell[1]->class='cell c1';
     $cell[1]->data='<select name="autoupdates" class="formwide">';
     $cell[1]->data.='<option label="'.get_string('yesgrades','turnitintool').'" value="1"'.$selected['1'].'>'.get_string('yesgrades','turnitintool').'</option>';
     $cell[1]->data.='<option label="'.get_string('nogrades','turnitintool').'" value="0"'.$selected['0'].'>'.get_string('nogrades','turnitintool').'</option>';
     $cell[1]->data.='</select>';
-    $table->rows[]->cells=$cell;
+    $table->rows[$row] = new stdClass();
+    $table->rows[$row]->cells=$cell;
+    $row++;
 
     unset($selected);
     $selected=array('1'=>'','0'=>'');
     $selected[$turnitintool->shownonsubmission]=' selected';
 
     unset($cell);
+    $cell[0] = new stdClass();
     $cell[0]->class='cell c0';
     $cell[0]->data=get_string('submissionlist','turnitintool').turnitintool_help_icon('submissionlist',get_string('submissionlist','turnitintool'),'turnitintool',true,false,'',true);
+    $cell[1] = new stdClass();
     $cell[1]->class='cell c1';
     $cell[1]->data='<select name="shownonsubmission" class="formwide">';
 
@@ -2861,7 +3065,9 @@ function turnitintool_view_options($cm,$turnitintool) {
 
     $cell[1]->data.='<option label="'.get_string('showonlysubmissions','turnitintool').'" value="0"'.$selected['0'].'>'.get_string('showonlysubmissions','turnitintool').'</option>';
     $cell[1]->data.='</select>';
-    $table->rows[]->cells=$cell;
+    $table->rows[$row] = new stdClass();
+    $table->rows[$row]->cells=$cell;
+    $row++;
 
     $output.=turnitintool_print_table($table,true);
     $output.=turnitintool_box_end(true);
@@ -2869,6 +3075,7 @@ function turnitintool_view_options($cm,$turnitintool) {
     $output.='</fieldset>';
 
     unset($table->rows);
+    $row = 0;
     $output.=turnitintool_box_start('generalbox boxwidthwide boxaligncenter eightyfive','notes',true);
 
     $output.='<fieldset class="clearfix">';
@@ -2879,8 +3086,10 @@ function turnitintool_view_options($cm,$turnitintool) {
     $selected=array('0'=>'','300'=>'','600'=>'','900'=>'','1200'=>'','1500'=>'','1800'=>'','3600'=>'','7200'=>'','10800'=>'','14400'=>'','18000'=>'','21600'=>'','43200'=>'','86400'=>'');
     $selected[$turnitintool->commentedittime]=' selected';
 
+    $cell[0] = new stdClass();
     $cell[0]->class='cell c0';
     $cell[0]->data=get_string('commenteditwindow','turnitintool').turnitintool_help_icon('commenteditwindow',get_string('commenteditwindow','turnitintool'),'turnitintool',true,false,'',true);
+    $cell[1] = new stdClass();
     $cell[1]->class='cell c1';
     $cell[1]->data='<select name="commentedittime" class="formwide">';
     $cell[1]->data.='<option label="'.get_string('nolimit','turnitintool').'" value="0"'.$selected['0'].'>'.get_string('nolimit','turnitintool').'</option>';
@@ -2900,15 +3109,19 @@ function turnitintool_view_options($cm,$turnitintool) {
     $cell[1]->data.='<option label="24 '.get_string('hours','turnitintool').'" value="86400"'.$selected['86400'].'>24 '.get_string('hours','turnitintool').'</option>';
 
     $cell[1]->data.='</select>';
-    $table->rows[]->cells=$cell;
+    $table->rows[$row] = new stdClass();
+    $table->rows[$row]->cells=$cell;
+    $row++;
 
     unset($cell);
 
     $selected=array('100'=>'','200'=>'','300'=>'','400'=>'','500'=>'','600'=>'','700'=>'','800'=>'','900'=>'','1000'=>'','1100'=>'','1200'=>'','1300'=>'','1400'=>'','1500'=>'');
     $selected[$turnitintool->commentmaxsize]=' selected';
 
+    $cell[0] = new stdClass();
     $cell[0]->class='cell c0';
     $cell[0]->data=get_string('maxcommentsize','turnitintool').turnitintool_help_icon('maxcommentsize',get_string('maxcommentsize','turnitintool'),'turnitintool',true,false,'',true);
+    $cell[1] = new stdClass();
     $cell[1]->class='cell c1';
     $cell[1]->data='<select name="commentmaxsize" class="formwide">';
 
@@ -2918,21 +3131,30 @@ function turnitintool_view_options($cm,$turnitintool) {
     }
 
     $cell[1]->data.='</select>';
-    $table->rows[]->cells=$cell;
+    $table->rows[$row] = new stdClass();
+    $table->rows[$row]->cells=$cell;
+    $row++;
+
     $output.=turnitintool_print_table($table,true);
     $output.=turnitintool_box_end(true);
 
     $output.='</fieldset>';
 
     unset($table->rows);
+    $row = 0;
+
     $output.=turnitintool_box_start('generalbox boxwidthwide boxaligncenter eightyfive','notes',true);
 
     unset($cell);
+    $cell[0] = new stdClass();
     $cell[0]->class='cell c0';
     $cell[0]->data='';
+    $cell[1] = new stdClass();
     $cell[1]->class='cell c1';
     $cell[1]->data='<input type="submit" value="'.get_string('savechanges','turnitintool').'" />';
-    $table->rows[]->cells=$cell;
+    $table->rows[$row] = new stdClass();
+    $table->rows[$row]->cells=$cell;
+    $row++;
 
     $output.=turnitintool_print_table($table,true);
     $output.=turnitintool_box_end(true);
@@ -3011,10 +3233,13 @@ function turnitintool_revealuser($cm,$turnitintool,$post,$loaderbar=null) {
     } else {
         $owner=turnitintool_get_owner($turnitintool->course);
         $tii = new turnitintool_commclass(turnitintool_getUID($owner),$owner->firstname,$owner->lastname,$owner->email,2,$loaderbar);
+        
+        $tiipost = new stdClass();
         $tiipost->cid=turnitintool_getCID($turnitintool->course);
         $tiipost->paperid=$submission->submission_objectid;
         $tiipost->anon_reason=(strlen($reason)>1 AND strlen($reason)<6) ? str_pad($reason,6," ") : $reason;
 
+        $input = new stdClass();
         $input->from=1;
         $input->to=1;
         $result=$tii->revealAnon($tiipost,get_string('updatestudent','turnitintool',$input));
@@ -3025,6 +3250,7 @@ function turnitintool_revealuser($cm,$turnitintool,$post,$loaderbar=null) {
             exit();
         }
 
+        $update = new stdClass();
         $update->id=$submission->id;
         $update->submission_unanon=1;
         $update->submission_unanonreason=$reason;
@@ -3032,100 +3258,6 @@ function turnitintool_revealuser($cm,$turnitintool,$post,$loaderbar=null) {
         unset($tii);
         unset($loaderbar);
     }
-}
-/**
- * Outputs Inbox pagination controls and provides framework for filter controls
- *
- * @global object
- * @param object $cm The moodle course module object for this instance
- * @param object $turnitintool The turnitintool object for this activity
- * @param int $from The inbox entry number to start listing from
- * @param int $show The number of inbox entries to show
- * @param int $total The number of inbox entries in total
- * @param int $display Display type, 1 (default) top, 2 bottom
- * @return string Output of the tutor view submission inbox
- */
-function turnitintool_output_inboxfilter($cm,$turnitintool,$from,$show,$total,$display=1) {
-    global $CFG;
-    $param_do=optional_param('do',null,PARAM_CLEAN);
-    $param_ob=optional_param('ob',null,PARAM_CLEAN);
-    $numpages=($show==0) ? 1 : ceil($total/$show);
-    $thispage=1;
-    $pageoptions='';
-    $baselink=$CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.'&do=allsubmissions';
-    $baselink.=(!is_null($param_ob)) ? '&ob='.$param_ob : '';
-    for ($i=0;$i<$numpages;$i++) {
-        $selected='';
-        if ($from>=(($i*$show)+1) AND $from<=(($i+1)*$show)) {
-            $thispage=$i+1;
-            $selected=' selected=\"selected\"';
-        }
-        $link=$baselink.'&sh='.$show.'&fr='.(($i*$show)+1);
-        $pageoptions.='document.write("<option label=\"'.get_string('page').' '
-            .($i+1).' '.get_string('of','turnitintool').' '.$numpages.'\" value=\"'.$link.'\"'.$selected.'>'
-            .get_string('page').' '.($i+1).' '.get_string('of','turnitintool').' '.$numpages.'</option>");';
-    }
-
-    // << Previous   10 25 50 100 All (Page 1 / 1)v  Next >>
-    // Noscript (Page 1 / 5) || Script Page 1 / 5 with dropdown jump menu
-
-    $linkprev=$baselink.'&sh='.$show.'&fr='.((($thispage-2)*$show)+1);
-    $linknext=$baselink.'&sh='.$show.'&fr='.($thispage+$show);
-
-    $link1=$baselink.'&sh=10&fr=1';
-    $link2=$baselink.'&sh=25&fr=1';
-    $link3=$baselink.'&sh=50&fr=1';
-    $link4=$baselink.'&sh=100&fr=1';
-    $link5=$baselink.'&sh=0&fr=1';
-    $links='<div class="linksLine">';
-    $links.='<noscript><div id="pageSelect">';
-    $links.=($thispage!=1) ? '<a href="'.$linkprev.'" class="linkPrevious">&lt;&lt; '.get_string('previous').'</a>' : '<span class="linkPrevious">&lt;&lt; '.get_string('previous').'</span>';
-    $links.='<span id="linkpages">'.get_string('page').' '.$thispage.' / '.$numpages.'</span>';
-    $links.=($thispage==$numpages) ?  '<span class="linkNext">'.get_string('next').' &gt;&gt;</span>' : '<a href="'.$linknext.'" class="linkNext">'.get_string('next').' &gt;&gt;</a>';
-    $links.='</div></noscript>';
-    $links.='<script language="javascript" type="text/javascript">';
-    $links.='document.write("<form id=\"pageSelect\">");';
-    $links.='document.write("<select onchange=\"document.location.href=this.value\">");';
-    $links.=$pageoptions;
-    $links.='document.write("</select>");';
-    $links.='document.write("</form>");';
-    $links.='</script>';
-    $links.='<span class="linksDisplay">('.get_string('show').' ';
-    $links.=($show==10) ? '<span id="link1" class="linkactive">10</span>' : '<span id="link1"><a href="'.$link1.'">10</a></span>';
-    $links.=($show==25) ? '<span id="link2" class="linkactive">25</span>' : '<span id="link2"><a href="'.$link2.'">25</a></span>';
-    $links.=($show==50) ? '<span id="link3" class="linkactive">50</span>' : '<span id="link3"><a href="'.$link3.'">50</a></span>';
-    $links.=($show==100) ? '<span id="link4" class="linkactive">100</span>' : '<span id="link4"><a href="'.$link4.'">100</a></span>';
-    $links.=($show==0) ? '<span id="link5">'.get_string('all').'</span>' : '<span id="link5"><a href="'.$link5.'">'.get_string('all').'</a></span>';
-    $links.=')</span>';
-    $links.='</div>';
-
-    if ($display==1) {
-        // Draw Table Tabs and Toggle Links
-
-        $output='<table class="toplinkTabs">
-            <tr><td class="toggleLinks">';
-        $output.= '<script language="javascript" type="text/javascript">
-            document.write(\'<a href="javascript:;" onclick="toggleshowall()">'.get_string('showall','turnitintool').'</a> / <a href="javascript:;" onclick="togglehideall()">'.
-                get_string('hideall','turnitintool').'</a>\');
-            </script>
-            ';
-        $output.='</td>
-                <td class="pageLinks">'.$links.'</td>
-                <td class="tabLinks"><ul class="tabList">
-                    <li style="background-image: url(pix/left-ie-cor.gif);"><a href="'.$baselink.'&sh='.$show.'&fr='.$from.
-                '&update=1" style="background-image: url(pix/right-ie-cor.gif);"><span><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/refresh.gif" alt="'.
-                get_string('turnitinrefreshsubmissions','turnitintool').'" class="tiiicons" /> '.
-                get_string('turnitinrefreshsubmissions','turnitintool').'</span></a></li>
-                    <li style="background-image: url(pix/left-ie-cor.gif);"><a href="'.$baselink.'&sh='.$show.'&fr='.$from.
-                '&enroll=1" style="background-image: url(pix/right-ie-cor.gif);"><span><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/enrollicon.gif" alt="'.
-                get_string('turnitinenrollstudents','turnitintool').'" class="tiiicons" /> '.
-                get_string('turnitinenrollstudents','turnitintool').'</span></a></li>
-                </ul></td>
-            </tr>
-        </table>';
-    }
-
-    return $output;
 }
 /**
  * Outputs submission inbox for student submissions (Teacher View)
@@ -3138,865 +3270,528 @@ function turnitintool_output_inboxfilter($cm,$turnitintool,$from,$show,$total,$d
  */
 function turnitintool_view_all_submissions($cm,$turnitintool,$orderby='1') {
     global $CFG, $USER;
-    $output_array=array();
-    $output='';
+    
     $param_do=optional_param('do',null,PARAM_CLEAN);
     $param_reason=optional_param('reason',array(),PARAM_CLEAN);
-    $param_from=optional_param('fr',1,PARAM_CLEAN);
-    $param_show=optional_param('sh',$turnitintool->perpage,PARAM_CLEAN);
-    $javascriptUsers='';
-    $javascriptCount='';
-    $entryCount=array();
 
-    if (!$parts=turnitintool_get_records_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted=0')) {
-        turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
-        exit();
+    $module_group = turnitintool_module_group( $cm );
+    $context = get_context_instance(CONTEXT_COURSE, $turnitintool->course);
+    $studentusers = get_users_by_capability($context,'mod/turnitintool:submit','u.id,u.firstname,u.lastname','','','',$module_group,'',false);
+    $studentuser_array = array_keys($studentusers);
+    $scale=turnitintool_get_record('scale','id',$turnitintool->grade*-1);
+    $parts=turnitintool_get_records_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted != 1');
+    $concat = turnitintool_sql_concat("COALESCE(u.id,0)","'-'","COALESCE(s.id,0)","'-'","COALESCE(s.submission_objectid,0)");
+
+    $usifieldid = 'NULL';
+    $usifield = '';
+    $displayusi = 'false';
+    if ( $CFG->turnitin_enablepseudo AND $CFG->turnitin_pseudolastname > 0 ) {
+        $uf = turnitintool_get_record( 'user_info_field', 'id', $CFG->turnitin_pseudolastname );
+        $usifield = $uf->name;
+        $usifieldid = $CFG->turnitin_pseudolastname;
     }
 
-    // Construct Styles (contain image links which do not seem to work when included in regular moodle css methods)
-    $styles='
-        <style>
-            .gradeTable .leftmark td.c0 {
-                padding-left: 18px;
-                background-image: url(pix/leftmarker.gif);
-                background-position: 5px center;
-                background-repeat: no-repeat;
-            }
-            .gradeTable .lastmark td.c0 {
-                padding-left: 18px;
-                background-image: url(pix/leftmarkerlast.gif);
-                background-position: 5px center;
-                background-repeat: no-repeat;
-            }
-            .gradeTable a.fileicon {
-                padding-left: 18px;
-                background-image: url(pix/fileicon.gif);
-                background-position: 2px 0px;
-                background-repeat: no-repeat;
-            }
-        </style>';
+    $group_in = join(',', $studentuser_array);
+    $groupselect = ( $module_group != 0 ) ? "u.id IN ( select gm.userid from {groups_members} gm where gm.groupid = $module_group ) AND" : "";
 
-    // Create a blank query as a basis for building a query where the first query section may or may not be used
-    $sql_query='';
-    $users=array();
+    $query = "
+SELECT
+    $concat AS keyid,
+    s.id AS id,
+    u.id AS userid,
+    u.firstname AS firstname,
+    u.lastname AS lastname,
+    ud.data AS usi,
+    tu.turnitin_uid AS turnitin_uid,
+    p.id AS partid,
+    p.partname AS partname,
+    p.dtstart AS dtstart,
+    p.dtdue AS dtdue,
+    p.dtpost AS dtpost,
+    p.maxmarks AS maxmarks,
+    t.name AS assignmentname,
+    t.grade AS overallgrade,
+    t.anon AS anon,
+    t.id AS turnitintoolid,
+    s.submission_part AS submission_part,
+    s.submission_title AS submission_title,
+    s.submission_type AS submission_type,
+    s.submission_filename AS submission_filename,
+    s.submission_objectid AS submission_objectid,
+    s.submission_score AS submission_score,
+    s.submission_grade AS submission_grade,
+    s.submission_gmimaged AS submission_gmimaged,
+    s.submission_status AS submission_status,
+    s.submission_queued AS submission_queued,
+    s.submission_attempts AS submission_attempts,
+    s.submission_modified AS submission_modified,
+    s.submission_parent AS submission_parent,
+    s.submission_nmuserid AS submission_nmuserid,
+    s.submission_nmfirstname AS submission_nmfirstname,
+    s.submission_nmlastname AS submission_nmlastname,
+    s.submission_unanon AS submission_unanon,
+    s.submission_unanonreason AS submission_unanonreason,
+    s.submission_transmatch AS submission_transmatch
+FROM {turnitintool_submissions} s
+    LEFT JOIN
+        {user} u ON u.id = s.userid
+    LEFT JOIN
+        {turnitintool_parts} p ON p.id = s.submission_part
+    LEFT JOIN
+        {turnitintool} t ON t.id = p.turnitintoolid
+    LEFT JOIN
+        {turnitintool_users} tu ON u.id = tu.userid
+    LEFT JOIN
+        {user_info_data} ud ON u.id = ud.userid AND ud.fieldid = $usifieldid
+WHERE
+    $groupselect
+    s.turnitintoolid = ".$turnitintool->id."
+ORDER BY s.submission_grade DESC
+";
 
-    $postdatespassed = (!turnitintool_count_records_select('turnitintool_parts', "turnitintoolid='".$turnitintool->id."' AND deleted=0 AND dtpost > ".time())) ? 1 : 0;
+    $records = turnitintool_get_records_sql( $query );
+    $records = is_array( $records ) ? $records : array();
 
-    if (!$turnitintool->anon OR $postdatespassed) { // If Multi Part and NOT Anonymous OR all post dates have passed
-        // Get all enrolled students (by group) submitters and non submitters
-        $context = get_context_instance(CONTEXT_COURSE, $turnitintool->course);
-        $studentusers=get_users_by_capability($context,'mod/turnitintool:submit','u.id,u.firstname,u.lastname','','','',turnitintool_module_group($cm),'',false);
-        $studentusers=(!$studentusers) ? array() : $studentusers;
-        foreach ($studentusers as $student) {
-            $submission["firstname"] = $student->firstname;
-            $submission["lastname"] = $student->lastname;
-            $submission["avscore"] = NULL;
-            $submission["avgrade"] = NULL;
-            $submission["nonmoodle"] = 0;
-            $submission["unanon"] = 1;
-            $submission["count"] = 0;
-            $submission["highscore"] = NULL;
-            $submission["lowscore"] = NULL;
-            $submission["mindate"] = NULL;
-            $submission["maxdate"] = NULL;
-            $submission["userid"] = $student->id;
-            $users[$submission["userid"]] = $submission;
+    $userrows = array();
+    $subuser_array = array();
+    $submissionids = array();
+    foreach ( $records as $record ) {
+        $turnitin_uid = ( !is_null( $record->turnitin_uid ) ) ? $record->turnitin_uid : $record->submission_nmuserid;
+        $key = $record->userid . '-' . $turnitin_uid;
+        $record->nonmoodle = ( $record->submission_nmuserid ) ? true : false;
+        $userrows[$key][]=$record;
+        if ( !is_null( $record->id ) ) $submissionids[] = $record->id;
+        if ( !is_null( $record->userid ) ) $subuser_array[] = $record->userid;
+    }
+    
+    $comments = array();
+    if ( count( $submissionids ) > 0 ) {
+        $submission_string = join( ',', $submissionids );
+        $comments = turnitintool_get_records_sql( 'SELECT submissionid, count( id ) AS count FROM {turnitintool_comments} WHERE deleted = 0 AND submissionid IN ( '.$submission_string.' ) GROUP BY submissionid' );
+    }
+
+    $nosubuser_array = ( !$turnitintool->shownonsubmission OR $turnitintool->anon ) ? array() : array_diff( $studentuser_array, $subuser_array );
+    
+    foreach ( $nosubuser_array as $user ) {
+        $key = $studentusers[$user]->id . '-' . 0;
+        $record = new stdClass();
+        $record->userid = $studentusers[$user]->id;
+        $record->firstname = $studentusers[$user]->firstname;
+        $record->lastname = $studentusers[$user]->lastname;
+        $userrows[$key][]=$record;
+    }
+
+    $table = new stdClass();
+    $table->style = 'display: none;';
+    $table->width = '100%';
+    $table->id = 'inboxTable';
+    $table->class = 'gradeTable';
+    $table->tablealign = 'center';
+    $n = 0;
+    $table->rows[0] = new stdClass();
+    $table->rows[0]->class = 'header';
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' iconcell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' iconcell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c'.$n.' namecell';
+    $table->rows[0]->hcells[$n]->data = '<div>'.get_string( 'submissionstudent', 'turnitintool' ).'</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '&nbsp;';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;'.$usifield.'</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '<div>'.get_string( 'objectid', 'turnitintool' ).'</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' datecell';
+    $table->rows[0]->hcells[$n]->data = '<div>'.get_string( 'posted', 'turnitintool' ).'</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '&nbsp;';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '<div>'.get_string( 'submissionorig', 'turnitintool' ).'</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '&nbsp;';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '&nbsp;';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' markscell';
+    $table->rows[0]->hcells[$n]->data = '<div>'.get_string( 'submissiongrade', 'turnitintool' ).'</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' iconcell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' iconcell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' iconcell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' iconcell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;</div>';
+    $n++;
+    $table->rows[0]->hcells[$n] = new stdClass();
+    $table->rows[0]->hcells[$n]->class = 'header c' . $n . ' iconcell';
+    $table->rows[0]->hcells[$n]->data = '<div>&nbsp;</div>';
+    $n++;
+    
+    $i = 1;
+    foreach ( $userrows as $key => $userrow ) {
+        
+        if ( isset( $userrow[0]->id ) ) $overall_grade = turnitintool_overallgrade( $userrow, $turnitintool->grade, $parts, $scale );
+        $rowcount = ( count( $userrow ) == 1 && !isset( $userrow[0]->id ) ) ? 0 : count( $userrow );
+        
+        $submissionstring=( $rowcount == 1 ) ? get_string('submission','turnitintool') : get_string('submissions','turnitintool');
+        if ( is_null( $userrow[0]->firstname ) ) {
+            $student='<i>'.$userrow[0]->submission_nmlastname.', '.$userrow[0]->submission_nmfirstname.
+                    ' ('.get_string('nonmoodleuser','turnitintool').')</i> - ('.$rowcount.
+                    ' '.$submissionstring.')';
+        } else {
+            $student='<b><a href="'.$CFG->wwwroot.'/user/view.php?id='.
+                    $userrow[0]->userid.'&course='.$turnitintool->course.'">'.$userrow[0]->lastname.', '.$userrow[0]->firstname.
+                    '</a></b> - ('.$rowcount.' '.$submissionstring.')';
         }
 
-        // Now get submissions that were made where a moodle userid is known
-        // Contains moodle users both enrolled or not enrolled
-        if ($submissions = turnitintool_get_records_select("turnitintool_submissions",
-        "userid!=0 AND turnitintoolid=". $turnitintool->id." GROUP BY userid",
-        "",
-        "userid,avg(submission_score) AS avscore, ".
-        "avg(submission_grade) AS avgrade,count(submission_nmuserid) AS count,max(submission_score) AS highscore,".
-        "min(submission_score) AS lowscore, min(submission_modified) AS mindate, ".
-        "max(submission_modified) AS maxdate, max(submission_objectid) AS objectid")) {
-            foreach ($submissions as $submission_data) {
-                $user=turnitintool_get_record('user', 'id', $submission_data->userid);
-                $submission["firstname"] = $user->firstname;
-                $submission["lastname"] = $user->lastname;
-                $submission["avscore"] = $submission_data->avscore;
-                $submission["avgrade"] = $submission_data->avgrade;
-                $submission["unanon"] = 1;
-                $submission["count"] = $submission_data->count;
-                $submission["highscore"] = $submission_data->highscore;
-                $submission["lowscore"] = $submission_data->lowscore;
-                $submission["mindate"] = $submission_data->mindate;
-                $submission["maxdate"] = $submission_data->maxdate;
-                $submission["userid"] = $submission_data->userid;
-                $submission["objectid"] = $submission_data->objectid;
-                if ( isset($users[$user->id]) ) {
-                    // user is a moodle user ie in array from moodle user call above
-                    $submission["nonmoodle"] = 0;
-                    $users[$submission["userid"]] = $submission;
-                } else if ( turnitintool_module_group($cm)==0 ) {
-                    // user is not a moodle user ie not in array from moodle user call above
-                    // and group list is set to all users
-                    $submission["nonmoodle"] = 1;
-                    $users[$submission["userid"]] = $submission;
+        foreach ( $userrow as $submission ) {
+            
+            $postdatepassed = ( isset( $submission->submission_part ) AND $parts[$submission->submission_part]->dtpost > time() ) ? 0 : 1;
+            $displayusi = ( ( $turnitintool->anon == 1 AND !$postdatepassed )
+                    OR !isset( $CFG->turnitin_enablepseudo ) OR $CFG->turnitin_enablepseudo === "0" ) ? 'false' : 'true';
+            
+            $n = 0;
+            if ( !isset( $submission->id ) OR is_null( $submission->id ) ) {
+                // Do blank user line and continue
+                $nmuserid = ( isset( $submission->submission_nmuserid ) ) ? $submission->submission_nmuserid : 0;
+                $grouprow=$submission->userid . '-' . $nmuserid;
+                $table->rows[$i]->cells[$n] = new stdClass();
+                $table->rows[$i]->cells[$n]->class = 'cell c' . $n;
+                $table->rows[$i]->cells[$n]->data = $grouprow;
+                $n++;
+                $table->rows[$i]->cells[$n] = new stdClass();
+                $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' hide';
+                $table->rows[$i]->cells[$n]->data = $student;
+                $n++;
+                for ( $j = 0; $j < 15; $j++ ) {
+                    
+                    $table->rows[$i]->cells[$n] = new stdClass();
+                    $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' hide';
+                    if ( $j == 4 ) {
+                        $output = '00/00/00, 00:00:00';
+                    } else {
+                        $output = '&nbsp;&nbsp;';
+                    }
+                    $table->rows[$i]->cells[$n]->data = $output;
+                    $n++;
                 }
-            }
-        }
-        // Filter out non submitters if the option is set ($turnitintool->shownonsubmission)
-        if ( !$turnitintool->shownonsubmission ) {
-            foreach ( $users as $user ) {
-                if ( is_null($user["avscore"]) ) {
-                    unset( $users[ $user["userid"] ] );
-                }
-            }
-        }
-
-        // Now get submissions that were made by a non moodle students
-        // These are unknown to moodle possibly non-enrolled on turnitin
-        // possibly real but not yet linked Turnitin users
-        // if group list is set do not get these non group users
-        if ($submissions = turnitintool_get_records_select("turnitintool_submissions",
-        "userid=0 AND turnitintoolid=". $turnitintool->id." GROUP BY submission_nmuserid",
-        "",
-        "submission_nmuserid AS nmuserid,avg(submission_score) AS avscore, ".
-        "avg(submission_grade) AS avgrade,count(submission_nmuserid) AS count,max(submission_score) AS highscore,".
-        "min(submission_score) AS lowscore, min(submission_modified) AS mindate, ".
-        "max(submission_modified) AS maxdate, max(submission_objectid) AS objectid") AND turnitintool_module_group($cm)==0) {
-            foreach ($submissions as $submission_data) {
-                $nm_user=turnitintool_get_record('turnitintool_submissions', 'submission_objectid', $submission_data->objectid);
-                $submission["firstname"] = $nm_user->submission_nmfirstname;
-                $submission["lastname"] = $nm_user->submission_nmlastname;
-                $submission["avscore"] = $submission_data->avscore;
-                $submission["avgrade"] = $submission_data->avgrade;
-                $submission["nonmoodle"] = 1;
-                $submission["unanon"] = 1;
-                $submission["count"] = $submission_data->count;
-                $submission["highscore"] = $submission_data->highscore;
-                $submission["lowscore"] = $submission_data->lowscore;
-                $submission["mindate"] = $submission_data->mindate;
-                $submission["maxdate"] = $submission_data->maxdate;
-                $submission["userid"] = "nm-".$submission_data->nmuserid;
-                $submission["objectid"] = $submission_data->objectid;
-                $users[$submission["userid"]] = $submission;
-            }
-        }
-
-        $lastname=array();
-        $avscore=array();
-        $avgrade=array();
-        $mindate=array();
-        $maxdate=array();
-        $count=array();
-        // Obtain the columns to sort on
-        foreach ($users as $key => $row) {
-            $lastname[$key]  = $row['lastname'];
-            $avscore[$key] = $row['avscore'];
-            $avgrade[$key] = $row['avgrade'];
-            $mindate[$key] = $row['mindate'];
-            $maxdate[$key] = $row['maxdate'];
-            $count[$key] = $row['count'];
-        }
-
-        // ORDER BY: 1: Av. Originality Score - Max-Min,
-        //           2: Av. Originality Score - Min-Max,
-        //           3: Av. Grade - Max-Min,
-        //           4: Av. Grade - Min-Max,
-        //           5: Submission Date - Min-Max,
-        //           6: Submission Date - Max-Min,
-        //           7: Students Last Name - A-Z,
-        //           8: Student Last Name - Z-A
-
-        if ($orderby=='1') {
-            array_multisort($avscore, SORT_DESC, $count, SORT_DESC, $lastname, SORT_ASC, $users);
-            $sub_order='submission_score DESC';
-        } else if ($orderby=='2') {
-            array_multisort($avscore, SORT_ASC, $count, SORT_ASC, $lastname, SORT_ASC, $users);
-            $sub_order='submission_score ASC';
-        } else if ($orderby=='3') {
-            array_multisort($avgrade, SORT_DESC, $count, SORT_DESC, $lastname, SORT_ASC, $users);
-            $sub_order='submission_grade DESC';
-        } else if ($orderby=='4') {
-            array_multisort($avgrade, SORT_ASC, $count, SORT_ASC, $lastname, SORT_ASC, $users);
-            $sub_order='submission_grade ASC';
-        } else if ($orderby=='5') {
-            array_multisort($maxdate, SORT_DESC, $lastname, SORT_ASC, $users);
-            $sub_order='submission_modified DESC';
-        } else if ($orderby=='6') {
-            array_multisort($mindate, SORT_ASC, $lastname, SORT_ASC, $users);
-            $sub_order='submission_modified ASC';
-        } else if ($orderby=='7') {
-            array_multisort($lastname, SORT_DESC, $count, SORT_DESC, $users);
-            $sub_order='submission_title DESC';
-        } else if ($orderby=='8') {
-            array_multisort($lastname, SORT_ASC, $count, SORT_DESC, $users);
-            $sub_order='submission_title ASC';
-        }
-
-        if (!is_array($users)) {
-            $users=array();
-        }
-
-        $rs=0;
-        $totalentries=count($users);
-        foreach ($users as $key=>$values) {
-            $rs++;
-            if ($rs<$param_from) {
+                $i++;
                 continue;
             }
-            if ($rs>($param_from-1)+$param_show AND $param_show!=0) {
-                break;
-            }
-            $values=turnitintool_array_to_object($values);
-            $javascriptUsers.=(!empty($javascriptUsers)) ? ',"'.$values->userid.'"' : '"'.$values->userid.'"';
-            if ($values->userid!=0) {
-                $where="userid=".$values->userid." AND turnitintoolid=".$turnitintool->id;
+            
+            
+            $entryCount[$submission->userid]=(!isset($entryCount[$submission->userid]))
+                        ? 1 : $entryCount[$submission->userid]+1;
+            $i++;
+            $lastclass=($i==$rowcount) ? ' lastmark' : ' leftmark';
+
+            // Do Sort Row, Part Name if Anon and User Name if not
+            if ( $submission->anon AND !$postdatepassed ) {
+                $grouprow=$submission->partid;
             } else {
-                $where="submission_nmuserid='".str_replace('nm-','',$values->userid)."' AND turnitintoolid=".$turnitintool->id;
+                $grouprow=$submission->userid . '-' . $submission->submission_nmuserid;
             }
-            if ( $CFG->turnitin_enablepseudo AND $CFG->turnitin_pseudolastname > 0 ) {
-                $user_info = turnitintool_get_record( 'user_info_data', 'userid', $values->userid, 'fieldid', $CFG->turnitin_pseudolastname );
-                $values->usi = ( isset( $user_info->data ) ) ? $user_info->data : '';
-            }
-            $entryCount[$values->userid]=0;
-            if ($submissions=turnitintool_get_records_select('turnitintool_submissions',$where,$sub_order)) {
-                $values->count=count($submissions);
-                if ($values->count>0) { // Draw Plus Link if there is more than one submission
-                    $pluslink='
-                    <script language="javascript" type="text/javascript">
-                    document.write("<a href=\"javascript:;\" onclick=\"toggleview(\''.$values->userid.'\',\''.$values->count.'\');\">");
-                    </script>
-                    <img src="pix/clearpixel.gif" class="plusminus" id="userblock_'.$values->userid.'" />
-                    <script language="javascript" type="text/javascript">
-                    document.write(\'</a>\');
-                    document.getElementById(\'userblock_'.$values->userid.'\').src="pix/plus.gif";
-                    </script>';
-                } else { // Draw a place holder spacer if there are less than one submissions
-                    $pluslink='
-                    <img src="pix/clearpixel.gif" class="plusminus" id="userblock_'.$values->userid.'" />
-                    ';
-                }
-                if ( $CFG->turnitin_enablepseudo == 1 AND $CFG->turnitin_pseudolastname > 0 ) {
-                    $cells['usi']=$values->usi;
-                }
-                $cells['objectid']='&nbsp;';
-                $submissionstring=($values->count==1) ? get_string('submission','turnitintool') : get_string('submissions','turnitintool');
-                if ($values->nonmoodle) {
-                    $cells['student']='<i>'.$pluslink.$values->lastname.', '.$values->firstname.
-                            ' ('.get_string('nonmoodleuser','turnitintool').')</i> - ('.$values->count.
-                            ' '.$submissionstring.')';
-                } else {
-                    $cells['student']=''.$pluslink.'<a href="'.$CFG->wwwroot.'/user/view.php?id='.
-                            $values->userid.'&course='.$turnitintool->course.'">'.$values->lastname.', '.$values->firstname.
-                            '</a> - ('.$values->count.' '.$submissionstring.')';
-                }
-                $cells['modified']='&nbsp;';
-
-                $score=($values->lowscore==$values->highscore OR empty($values->lowscore)) ? $values->highscore.'%' : $values->lowscore.'% <b>&raquo;</b> '.$values->highscore.'%';
-                if ($score=='%') {
-                    $score='-';
-                }
-                $cells['score']=$score;
-
-                $usersubmissions[$values->userid]=$submissions;
-
-                $overallgrade=turnitintool_overallgrade($turnitintool,$usersubmissions,$values->userid);
-                if ($turnitintool->grade==0 OR $overallgrade==='-') {
-                    $overallgrade='-';
-                } else if ($turnitintool->grade < 0) { // Scale
-                    $scale=turnitintool_get_record('scale','id',$turnitintool->grade*-1);
-                    $scalearray=explode(",",$scale->scale);
-                    $overallmax=count($scalearray);
-                    // Array is zero indexed
-                    // Scale positions are from 1 upward
-                    $index = $overallgrade-1;
-                    $overallgrade=$scalearray[$index];
-                } else if ($turnitintool->gradedisplay==2) { // 2 is fraction
-                    $overallgrade.='/'.$turnitintool->grade;
-                } else if ($turnitintool->gradedisplay==1) { // 1 is percentage
-                    $overallgrade=round($overallgrade/$turnitintool->grade*100,1).'%';
-                }
-
-                $cells['grade']=$overallgrade;
-                $cells['studentview']='&nbsp;';
-                $cells['feedback']='&nbsp;';
-                $cells['download']='&nbsp;';
-                $cells['delete']='&nbsp;';
-                $cells['rowid']='row_'.$values->userid.'_top';
-                $cells['class']='top';
-                $output_array[]=$cells;
-                $i=0;
-
-                foreach ($parts as $part) {
-                    $tiiparts[$part->id]=$part;
-                    $parthassubmissions[$part->id]=false;
-                }
-
-                foreach ($submissions as $submission) {
-                    $entryCount[$values->userid]=(!isset($entryCount[$values->userid]))
-                                ? 1 : $entryCount[$values->userid]+1;
-                    $i++;
-                    $lastclass=($i==$values->count) ? ' lastmark' : ' leftmark';
-
-                    $cells['rowid']='row_'.$values->userid.'_sub_'.$i;
-                    $cells['class']='submission'.$lastclass;
-
-                    $part=$tiiparts[$submission->submission_part];
-                    $parthassubmissions[$submission->submission_part]=true;
-
-                    // ###############################
-                    // Do Submission Filelink
-                    // ###############################
-                    $filelink=turnitintool_get_filelink($cm,$turnitintool,$submission);
-                    $doscript='';
-                    if (!empty($submission->submission_objectid)) {
-                        $doscript=' onclick="screenOpen(\''.$filelink.'\',\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\');return false;"';
-                    }
-
-                    $length = 60;
-                    $truncate = (strlen($part->partname.' - '.$submission->submission_title)>$length)
-                            ? substr($part->partname.' - '.$submission->submission_title,0,$length).'...'
-                            : $part->partname.' - '.$submission->submission_title;
-
-                    $cells['student']='<a href="'.$filelink.
-                            '" target="_blank" class="fileicon"'.$doscript.' title="'.$part->partname.' - '.$submission->submission_title.'">'.$truncate.'</a>';
-
-                    // ###############################
-                    // Output USI if required
-                    // ###############################
-                    
-                    if ( $CFG->turnitin_enablepseudo == 1 AND $CFG->turnitin_pseudolastname > 0 ) {
-                        unset($cells['usi']);
-                        $cells['usi']='&nbsp;';
-                    }
-                    
-                    // ###############################
-                    // Do Paper ID column
-                    // ###############################
-
-                    unset($cells['objectid']);
-                    $cells['objectid']=(is_null($submission->submission_objectid)
-                                        OR empty($submission->submission_objectid))
-                                            ? '-' : $submission->submission_objectid;
-
-                    // ###############################
-                    // Do Submission to Turnitin Form
-                    // ###############################
-                    $modified='-';
-                    if (empty($submission->submission_objectid) AND $turnitintool->autosubmission) {
-                        $modified='<div class="submittoLinkSmall"><img src="'.$CFG->wwwroot.'/mod/turnitintool/icon.gif" /><a href="'.$CFG->wwwroot.
-                                '/mod/turnitintool/view.php'.'?id='.$cm->id.'&up='.$submission->id.'">'.get_string('submittoturnitin','turnitintool').'</a></div>';
-                    } else if (!is_null($submission->id)) {
-                        $modified=(empty($submission->submission_objectid)) ? '-' : userdate($submission->submission_modified,get_string('strftimedatetimeshort','langconfig'));
-                        if ($submission->submission_modified>$part->dtdue) {
-                            $modified='<span style="color: red;">'.$modified.'</span>';
-                        }
-                    }
-                    $cells['modified']=$modified;
-
-                    // ###################################
-                    // Get originality score if available
-                    // ###################################
-                    $score = turnitintool_draw_similarityscore($cm,$turnitintool,$submission);
-                    $cells['score']=$score;
-
-                    // ###################################
-                    // Get grade if available
-                    // ###################################
-                    $grade=turnitintool_dogradeoutput($cm,$turnitintool,$submission);
-                    $cells['grade']='<form action="'.$CFG->wwwroot.
-                            '/mod/turnitintool/view.php'.'?id='.$cm->id.'&do=allsubmissions" method="POST">'.$grade.'</form>';
-
-                    // ###################################
-                    // Get Student View indicator
-                    // ###################################
-                    $grademarkurl = $CFG->wwwroot . '/mod/turnitintool/view.php?id=' . $cm->id . '&jumppage=grade';
-                    $grademarkurl .= '&userid=' . $USER->id . '&utp=2&objectid=' . $submission->submission_objectid;
-                    $warn=($turnitintool->reportgenspeed==1 AND $part->dtpost > time()) ? $warn=',\''.get_string('resubmissiongradewarn','turnitintool').'\'' : '';
-
-                    if ( $submission->submission_attempts > 0 ) {
-                        $cells['studentview']='<a href="' . $grademarkurl . '" title="' . get_string( 'student_read', 'turnitintool' ) . ' ' . userdate($submission->submission_attempts) . '" ';
-                        $cells['studentview'].=' onclick="screenOpen(this.href,\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\''.$warn.');return false;"';
-                        $cells['studentview'].='><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/icon-student-read.png" class="tiiicons" /></a>';
-                    } else {
-                        $cells['studentview']='<a href="' . $grademarkurl . '" title="' . get_string( 'student_notread', 'turnitintool' ) . '" ';
-                        $cells['studentview'].=' onclick="screenOpen(this.href,\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\''.$warn.');return false;"';
-                        $cells['studentview'].='><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/icon-dot.png" class="tiiicons" /></a>';
-                    }
-
-                    // ###################################
-                    // Get Feedback Icon if needed
-                    // ###################################
-                    if (!$values->nonmoodle) {
-                        $notes=turnitintool_getnoteslink($cm,$turnitintool,$submission);
-                    } else {
-                        $notes='-';
-                    }
-                    $cells['feedback']=$notes;
-
-                    // ###################################
-                    // Get Download Icon if needed
-                    // ###################################
-                    if (!is_null($submission->submission_objectid)) {
-                        $downscript=' onclick="screenOpen(this.href,\''.$submission->id.'\',false,null,\'width=450,height=200\');return false;"';
-                        $download='<a href="'.turnitintool_get_filelink($cm,$turnitintool,$submission,$download=true).'" title="'.
-                                get_string('downloadsubmission','turnitintool').'" target="_blank"'.$downscript.'><img src="pix/downloadicon.gif" alt="'.
-                                get_string('downloadsubmission','turnitintool').'" class="tiiicons" /></a>';
-                    } else {
-                        $download='';
-                    }
-                    $cells['download']=$download;
-
-                    // ###################################
-                    // Get Delete Icon if needed
-                    // ###################################
-                    $fnd = array("\n","\r");
-                    $rep = array('\n','\r');
-                    if (empty($submission->submission_objectid)) {
-                        $confirm=' onclick="return confirm(\''.str_replace($fnd, $rep, get_string('deleteconfirm','turnitintool')).'\');"';
-                    } else {
-                        $confirm=' onclick="return confirm(\''.str_replace($fnd, $rep, get_string('turnitindeleteconfirm','turnitintool')).'\')"';
-                    }
-
-                    if (empty($submission->submission_objectid) OR has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) {
-                        $delete='<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&delete='.$submission->id.'&do='.$param_do.
-                                '"'.$confirm.' title="'.get_string('deletesubmission','turnitintool').'"><img src="pix/trashicon.gif" alt="'.
-                                get_string('deletesubmission','turnitintool').'" class="tiiicons" /></a>';
-                    } else {
-                        $delete='-';
-                    }
-                    $cells['delete']=$delete;
-                    $output_array[]=$cells;
-                }
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n;
+            $table->rows[$i]->cells[$n]->data = $grouprow;
+            $n++;
+            
+            // Do Sort header table
+            if ( $submission->anon AND !$postdatepassed ) {
+                $grouptable='<b>'.$submission->partname.'</b>';
             } else {
-                $pluslink='
-                    <img src="pix/clearpixel.gif" class="plusminus" id="userblock_'.$values->userid.'" />
-                    ';
-                $cells['student']='<div class="student">'.$pluslink.'<a href="'.$CFG->wwwroot.'/user/view.php?id='.$values->userid.'&course='.
-                        $turnitintool->course.'">'.$values->lastname.', '.$values->firstname.'</a> - (0 '.
-                        get_string('submissions','turnitintool').')</div>';
-
-                if ( $CFG->turnitin_enablepseudo == 1 AND $CFG->turnitin_pseudolastname > 0 ) {
-                    $cells['usi']='<div class="student">'.$values->usi.'</div>';
-                }
-                $cells['objectid']='<div class="student">&nbsp;</div>';
-                $cells['modified']='<div class="student">&nbsp;</div>';
-                $cells['score']='<div class="student">&nbsp;</div>';
-                $cells['grade']='<div class="student">&nbsp;</div>';
-                $cells['studentview']='<div class="student">&nbsp;</div>';
-                $cells['feedback']='<div class="student">&nbsp;</div>';
-                $cells['download']='<div class="student">&nbsp;</div>';
-                $cells['delete']='<div class="student">&nbsp;</div>';
-                $cells['rowid']='row_'.$values->userid.'_top';
-                $cells['class']='top';
-                $output_array[]=$cells;
+                $grouptable=$student;
             }
-        }
-    } else { // If Anonymous
-        $n=0;
-
-        $sql_query='';
-        $submissions=array();
-        // Get Moodle User Submissions first
-        if ($submissions_data = turnitintool_get_records_select("turnitintool_submissions",
-        "turnitintoolid=". $turnitintool->id,
-        "",
-        "id, userid, submission_score, submission_grade, submission_objectid, 0 AS nonmoodle,".
-        "submission_part, submission_filename, submission_title, submission_gmimaged, ".
-        "submission_unanon unanon, submission_modified, submission_attempts")) {
-
-            foreach ($submissions_data as $submission_data) {
-                $user=turnitintool_get_record('user', 'id', $submission_data->userid);
-                $submission["userid"] = $submission_data->userid;
-                $submission["firstname"] = (isset($user->firstname)) ? $user->firstname : null;
-                $submission["lastname"] = (isset($user->lastname)) ? $user->lastname : null;
-                $submission["submission_score"] = $submission_data->submission_score;
-                $submission["submission_grade"] = $submission_data->submission_grade;
-                $submission["submission_objectid"] = $submission_data->submission_objectid;
-                $submission["nonmoodle"] = 0;
-                $submission["submission_part"] = $submission_data->submission_part;
-                $submission["submission_filename"] = $submission_data->submission_filename;
-                $submission["submission_title"] = $submission_data->submission_title;
-                $submission["submission_gmimaged"] = $submission_data->submission_gmimaged;
-                $submission["unanon"] = $submission_data->unanon;
-                $submission["submission_modified"] = $submission_data->submission_modified;
-                $submission["submission_attempts"] = $submission_data->submission_attempts;
-                $submission["id"] = $submission_data->id;
-                $submissions[$submission["id"]] = $submission;
+            
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' hide';
+            $table->rows[$i]->cells[$n]->data = $grouptable;
+            $n++;
+            
+            // Do Submission Filelink / Anon Button Column
+            $filelink=turnitintool_get_filelink($cm,$turnitintool,$submission);
+            $doscript='';
+            if (!empty($submission->submission_objectid)) {
+                $doscript=' onclick="screenOpen(\''.$filelink.'\',\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\');return false;"';
             }
-        }
+            
+            $length = 60;
+            $truncate = (strlen($submission->submission_title)>$length)
+                    ? substr($submission->submission_title,0,$length).'...'
+                    : $submission->submission_title;
+             
+            
+            if ( !$turnitintool->anon OR $postdatepassed ) {
+                
+                 $submission_link = '<b>'.$submission->partname.'</b>: <a href="'.$filelink.'" target="_blank" class="fileicon"'
+                        .$doscript.' title="'.$submission->submission_title.'">'.$truncate.'</a>';
+                
+            } else if ( $submission->submission_unanon AND $turnitintool->anon ) {
 
-        // Now get the Non Moodle User submissions
-        if ($submissions_data = turnitintool_get_records_select("turnitintool_submissions",
-        "userid=0 AND turnitintoolid=". $turnitintool->id,
-        "",
-        "id, submission_nmuserid AS userid, submission_nmfirstname AS firstname, submission_nmlastname AS lastname, ".
-        "submission_score, submission_grade, submission_objectid, 0 AS nonmoodle,".
-        "submission_part, submission_filename, submission_title, submission_gmimaged, ".
-        "submission_unanon AS unanon, submission_modified, submission_attempts")) {
-            foreach ($submissions_data as $submission_data) {
-                $submission["userid"] = "nm-".$submission_data->userid;
-                $submission["firstname"] = $submission_data->firstname;
-                $submission["lastname"] = $submission_data->lastname;
-                $submission["submission_score"] = $submission_data->submission_score;
-                $submission["submission_grade"] = $submission_data->submission_grade;
-                $submission["submission_objectid"] = $submission_data->submission_objectid;
-                $submission["nonmoodle"] = 1;
-                $submission["submission_part"] = $submission_data->submission_part;
-                $submission["submission_filename"] = $submission_data->submission_filename;
-                $submission["submission_title"] = $submission_data->submission_title;
-                $submission["submission_gmimaged"] = $submission_data->submission_gmimaged;
-                $submission["unanon"] = $submission_data->unanon;
-                $submission["submission_modified"] = $submission_data->submission_modified;
-                $submission["submission_attempts"] = $submission_data->submission_attempts;
-                $submission["id"] = $submission_data->id;
-                $submissions[$submission["id"]] = $submission;
+                $submission_link = '<b><a href="'.$CFG->wwwroot.'/user/view.php?id='.
+                    $userrow[0]->userid.'&course='.$turnitintool->course.'">'.$userrow[0]->lastname.', '.$userrow[0]->firstname.
+                    '</a></b>: ';
+                $submission_link .= '<a href="'.$filelink.'" target="_blank" class="fileicon"'
+                        .$doscript.' title="'.$submission->submission_title.'">'.$truncate.'</a>';
+                
+            } else if ( $turnitintool->anon AND !$postdatepassed ) {
+                
+                $reason=(isset($param_reason[$submission->submission_objectid])) ? $param_reason[$submission->submission_objectid] : get_string('revealreason','turnitintool');
+                $submission_link = '<a href="'.$filelink.'" target="_blank" class="fileicon"'
+                        .$doscript.' title="'.$submission->submission_title.'" style="line-height: 1.8em;">'.$truncate.'</a><br /><span id="anonform_'.$submission->submission_objectid.
+                        '" style="display: none;"><form action="'.$CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.
+                        '&do=allsubmissions" method="POST" class="" onsubmit="return anonValidate(this.reason);">&nbsp;&nbsp;&nbsp;<input id="reason" name="reason['.
+                        $submission->submission_objectid.']" value="'.$reason.'" type="text" onclick="this.value=\'\';" /><input id="anonid" name="anonid" value="'.
+                        $submission->submission_objectid.'" type="hidden" />&nbsp;<input value="'.get_string('reveal','turnitintool').
+                        '" type="submit" /></form></span><button id="studentname_'.$submission->submission_objectid.
+                        '" onclick="document.getElementById(\'anonform_'.$submission->submission_objectid.'\').style.display = \'block\';this.style.display = \'none\';">'.
+                        get_string('anonenabled','turnitintool').'</button>';
+                
             }
-        }
-
-        $submission_part=array();
-        $submission_score=array();
-        $submission_grade=array();
-        $submission_modified=array();
-        $lastname=array();
-        // Obtain the columns to sort on
-        foreach ($submissions as $key => $row) {
-            $lastname[$key]  = $row['lastname'];
-            $submission_part[$key] = $row['submission_part'];
-            $submission_score[$key] = $row['submission_score'];
-            $submission_grade[$key] = $row['submission_grade'];
-            $submission_modified[$key] = $row['submission_modified'];
-        }
-
-        // ORDER BY: 1: Originality Score - Max-Min,
-        //           2: Originality Score - Min-Max,
-        //           3: Grade - Max-Min,
-        //           4: Grade - Min-Max,
-        //           5: Submitted Date - Min-Max,
-        //           6: Submitted Date - Max-Min,
-        //           7: Students Last Name - A-Z,
-        //           8: Student Last Name - Z-A
-
-        if ($orderby=='1') {
-            array_multisort($submission_part, SORT_ASC, $submission_score, SORT_DESC, $submission_modified, SORT_DESC, $lastname, SORT_ASC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,submission_score DESC,submission_modified DESC,lastname ASC';
-        } else if ($orderby=='2') {
-            array_multisort($submission_part, SORT_ASC, $submission_score, SORT_ASC, $submission_modified, SORT_DESC, $lastname, SORT_ASC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,submission_score ASC,submission_modified DESC,lastname ASC';
-        } else if ($orderby=='3') {
-            array_multisort($submission_part, SORT_ASC, $submission_grade, SORT_DESC, $submission_score, SORT_DESC, $lastname, SORT_ASC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,submission_grade DESC,submission_score DESC,lastname ASC';
-        } else if ($orderby=='4') {
-            array_multisort($submission_part, SORT_ASC, $submission_grade, SORT_ASC, $submission_score, SORT_DESC, $lastname, SORT_ASC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,submission_grade ASC,submission_score DESC,lastname ASC';
-        } else if ($orderby=='5') {
-            array_multisort($submission_part, SORT_ASC, $submission_modified, SORT_DESC, $submission_score, SORT_DESC, $lastname, SORT_ASC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,submission_modified DESC,submission_score DESC,submission_modified DESC,lastname ASC';
-        } else if ($orderby=='6') {
-            array_multisort($submission_part, SORT_ASC, $submission_modified, SORT_ASC, $submission_score, SORT_DESC, $lastname, SORT_ASC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,submission_modified ASC,submission_score DESC,lastname ASC';
-        } else if ($orderby=='7') {
-            array_multisort($submission_part, SORT_ASC, $lastname, SORT_DESC, $submission_score, SORT_DESC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,lastname DESC,submission_score DESC';
-        } else if ($orderby=='8') {
-            array_multisort($submission_part, SORT_ASC, $lastname, SORT_ASC, $submission_score, SORT_DESC, $submissions);
-            $order_by=' ORDER BY submission_part ASC,lastname ASC,submission_score DESC';
-        }
-
-        if (!$submissions) {
-            $submissions=array();
-        }
-
-        // Count the number of students enrolled on this course
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
-        $studentusers=get_users_by_capability($context,'mod/turnitintool:submit','u.id','','','',0,'',false);
-        $numstudents=(!is_array($studentusers)) ? 0 : count($studentusers);
-
-        $totalentries=count($submissions);
-        foreach ($parts as $part) {
-            $parthassubmissions[$part->id]=false;
-
-            $i=0;
-            $rs=0;
-            $entryCount[$part->id]=0;
-            foreach ($submissions as $submission) {
-                $rs++;
-                if ($rs<$param_from) {
-                    continue;
-                }
-                if ($rs>($param_from-1)+$param_show AND $param_show!=0) {
-                    break;
-                }
-                $parthassubmissions[$part->id]=true;
-                $submission=turnitintool_array_to_object($submission);
-
-                if ($part->id==$submission->submission_part) {
-                    if (!isset($toprow) OR $toprow!=$part->id) {
-                        // Count the number of submissions made to this part
-                        $numsubs=turnitintool_count_records('turnitintool_submissions','submission_part',$part->id);
-                        $javascriptUsers.=(!empty($javascriptUsers)) ? ',"'.$submission->submission_part.'"' : '"'.$submission->submission_part.'"';
-                        if ($numsubs>0) { // Draw Plus Link if there are any submissions
-                            $pluslink='
-                            <script language="javascript" type="text/javascript">
-                            document.write("<a href=\"javascript:;\" onclick=\"toggleview(\''.$part->id.'\',\''.$numsubs.'\');\">");
-                            </script>
-                            <img src="pix/clearpixel.gif" class="plusminus" id="userblock_'.$part->id.'" />
-                            <script language="javascript" type="text/javascript">
-                            document.write(\'</a>\');
-                            document.getElementById(\'userblock_'.$part->id.'\').src="pix/plus.gif";
-                            </script>';
-                        } else { // Draw a place holder spacer if there are less than one submissions
-                            $pluslink='
-                            <img src="pix/clearpixel.gif" class="plusminus" id="userblock_'.$part->id.'" />
-                            ';
-                        }
-                        $cells['student']='<div class="student"><b>'.$pluslink.$part->partname.'</b> - ('.$numsubs.' '.get_string('submissions','turnitintool').
-                                ' / '.$numstudents.' '.get_string('students').')</div>';
-                        $cells['objectid']='<div class="student">&nbsp;</div>';
-                        $cells['modified']='<div class="student">&nbsp;</div>';
-                        $cells['score']='<div class="student">&nbsp;</div>';
-                        $cells['grade']='<div class="student">&nbsp;</div>';
-                        $cells['studentview']='<div class="student">&nbsp;</div>';
-                        $cells['feedback']='<div class="student">&nbsp;</div>';
-                        $cells['download']='<div class="student">&nbsp;</div>';
-                        $cells['delete']='<div class="student">&nbsp;</div>';
-                        $cells['rowid']='row_'.$part->id.'_top';
-                        $cells['class']='top';
-                        $output_array[]=$cells;
-                        $toprow=$part->id;
-                    }
-
-                    $entryCount[$part->id]=(!isset($entryCount[$part->id]))
-                                ? 1 : $entryCount[$part->id]+1;
-
-                    $i++;
-                    $lastclass=($i==$numsubs) ? ' lastmark' : ' leftmark';
-                    $cells['rowid']='row_'.$part->id.'_sub_'.$i;
-                    $cells['class']='submission'.$lastclass;
-
-                    // ###################################
-                    // Do Student / Submission Filelink
-                    // ###################################
-
-                    if (!$submission->unanon AND $part->dtpost>time() AND !empty($submission->submission_filename) AND !empty($submission->submission_objectid)) {
-                        // Anonymous marking is on and postdate has not passed and a submission has been made
-                        $reason=(isset($param_reason[$submission->submission_objectid])) ? $param_reason[$submission->submission_objectid] : get_string('revealreason','turnitintool');
-
-                        $namedisplay='<b>'.get_string('student','turnitintool').':</b> <span id="studentname_'.$submission->submission_objectid.'"><i>'.
-                                get_string('anonenabled','turnitintool').'</i><br /></span><span id="anonform_'.$submission->submission_objectid.
-                                '"><form action="'.$CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.
-                                '&do=allsubmissions" method="POST" onsubmit="return anonValidate(this.reason);">&nbsp;&nbsp;&nbsp;<input id="reason" name="reason['.
-                                $submission->submission_objectid.']" value="'.$reason.'" type="text" onclick="this.value=\'\';" /><input id="anonid" name="anonid" value="'.
-                                $submission->submission_objectid.'" type="hidden" />&nbsp;<input value="'.get_string('reveal','turnitintool').
-                                '" type="submit" /></form></span>';
-
-                        $namedisplay.='<script language="javascript" type="text/javascript">
-            toggleAnonView('.$submission->submission_objectid.',false);
-        </script>';
-                    } else if (($part->dtpost<=time() OR $submission->unanon) AND !$submission->nonmoodle) {
-                        // Post date has passed or anonymous marking disabled for user and user is a moodle user
-                        $namedisplay='<b>'.get_string('student','turnitintool').':</b> '.'<a href="'.$CFG->wwwroot.'/user/view.php?id='.
-                                $submission->userid.'&course='.$turnitintool->course.'">'.$submission->lastname.', '.$submission->firstname.'</a>';
-                    } else if (($part->dtpost<=time() OR $submission->unanon) AND $submission->nonmoodle) {
-                        // Post date has passed or anonymous marking disabled for user and user is a NON moodle user
-                        $namedisplay='<b>'.get_string('student','turnitintool').':</b> <i>'.$submission->lastname.', '.$submission->firstname.
-                                ' ('.get_string('nonmoodleuser','turnitintool').')</i>';
-                    } else {
-                        // User has not made a submission
-                        $namedisplay='<b>'.get_string('student','turnitintool').':</b> <i>'.get_string('anonenabled','turnitintool').'</i>';
-                    }
-                    $title='';
-                    if (!empty($submission->submission_title)) {
-                        $filelink=turnitintool_get_filelink($cm,$turnitintool,$submission);
-                        // Create screen opener with a return checker but only for submissions with object ids
-                        $doscript='';
-                        if (!empty($submission->submission_objectid)) {
-                            $doscript=' onclick="screenOpen(\''.$filelink.'\',\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\');return false;"';
-                        }
-                        // Create download link to download submission from either Moodle or Turnitin
-                        $downloadlink=turnitintool_get_filelink($cm,$turnitintool,$submission,$download=true);
-
-                        $length = 60;
-                        $truncate = (strlen($submission->submission_title)>$length)
-                                ? substr($submission->submission_title,0,$length).'...'
-                                : $submission->submission_title;
-
-                        $title='<b>'.get_string('file','turnitintool').':</b> <a href="'.$filelink.'" target="_blank" class="tiiicons"'.$doscript.
-                                ' title="'.$submission->submission_title.'">'.$truncate.'</a><br />';
-                    } else {
-                        $title='<b>'.get_string('file','turnitintool').':</b> '.get_string('nosubmission','turnitintool').'<br />';
-                    }
-                    $cells['student']=$title.$namedisplay;
-
-                    // ###############################
-                    // Do Paper ID column
-                    // ###############################
-
-                    $cells['objectid']=(is_null($submission->submission_objectid)
-                                        OR empty($submission->submission_objectid))
-                                            ? '-' : $submission->submission_objectid;
-
-                    // ###########################################
-                    // Do Submission to Turnitin Form / Object ID
-                    // ###########################################
-                    $modified='-';
-                    if (empty($submission->submission_objectid) AND $turnitintool->autosubmission) {
-                        $modified='<div class="submittoLinkSmall"><img src="'.$CFG->wwwroot.'/mod/turnitintool/icon.gif" /><a href="'.$CFG->wwwroot.
-                                '/mod/turnitintool/view.php'.'?id='.$cm->id.'&up='.$submission->id.'">'.get_string('submittoturnitin','turnitintool').'</a></div>';
-                    } else if (!is_null($submission->id)) {
-                        $modified=(empty($submission->submission_objectid)) ? '-' : userdate($submission->submission_modified,get_string('strftimedatetimeshort','langconfig'));
-                        if ($submission->submission_modified>$part->dtdue) {
-                            $modified='<span style="color: red;">'.$modified.'</span>';
-                        }
-                    }
-                    $cells['modified']=$modified;
-
-                    // ###################################
-                    // Get originality score if available
-                    // ###################################
-                    $score = turnitintool_draw_similarityscore($cm,$turnitintool,$submission);
-                    $cells['score']=$score;
-
-                    // ###################################
-                    // Get grade if available
-                    // ###################################
-                    $grade=turnitintool_dogradeoutput($cm,$turnitintool,$submission);
-                    $cells['grade']='<form action="'.$CFG->wwwroot.
-                            '/mod/turnitintool/view.php'.'?id='.$cm->id.'&do=allsubmissions" method="POST">'.$grade.'</form>';
-
-                    // ###################################
-                    // Get Student View indicator
-                    // ###################################
-                    $grademarkurl = $CFG->wwwroot . '/mod/turnitintool/view.php?id=' . $cm->id . '&jumppage=grade';
-                    $grademarkurl .= '&userid=' . $USER->id . '&utp=2&objectid=' . $submission->submission_objectid;
-                    $warn=($turnitintool->reportgenspeed==1 AND $part->dtpost > time()) ? $warn=',\''.get_string('resubmissiongradewarn','turnitintool').'\'' : '';
-
-                    if ( $submission->submission_attempts > 0 ) {
-                        $cells['studentview']='<a href="' . $grademarkurl . '" title="' . get_string( 'student_read', 'turnitintool' ) . ' ' . userdate($submission->submission_attempts) . '" ';
-                        $cells['studentview'].=' onclick="screenOpen(this.href,\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\''.$warn.');return false;"';
-                        $cells['studentview'].='><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/icon-student-read.png" class="tiiicons" /></a>';
-                    } else {
-                        $cells['studentview']='<a href="' . $grademarkurl . '" title="' . get_string( 'student_notread', 'turnitintool' ) . '" ';
-                        $cells['studentview'].=' onclick="screenOpen(this.href,\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\''.$warn.');return false;"';
-                        $cells['studentview'].='><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/icon-dot.png" class="tiiicons" /></a>';
-                    }
-
-                    // ###################################
-                    // Get Feedback Icon if needed
-                    // ###################################
-                    if (!$submission->nonmoodle AND !is_null($submission->id)) {
-                        $notes=turnitintool_getnoteslink($cm,$turnitintool,$submission);
-                    } else {
-                        $notes='-';
-                    }
-                    $cells['feedback']=$notes;
-
-                    // ###################################
-                    // Get Download Icon if needed
-                    // ###################################
-                    if (!is_null($submission->submission_objectid) AND $part->dtpost<=time()) {
-                        $downscript=' onclick="screenOpen(this.href,\''.$submission->id.'\',false,null,\'width=450,height=200\');return false;"';
-                        $download='<a href="'.turnitintool_get_filelink($cm,$turnitintool,$submission,$download=true).'" title="'.
-                                get_string('downloadsubmission','turnitintool').'" target="_blank"'.$downscript.'><img src="pix/downloadicon.gif" alt="'.
-                                get_string('downloadsubmission','turnitintool').'" class="tiiicons" /></a>';
-                    } else {
-                        $download='';
-                    }
-                    $cells['download']=$download;
-
-                    // ###################################
-                    // Get Delete Icon if needed
-                    // ###################################
-                    $fnd = array("\n","\r");
-                    $rep = array('\n','\r');
-                    if (empty($submission->submission_objectid)) {
-                        $confirm=' onclick="return confirm(\''.str_replace($fnd, $rep, get_string('deleteconfirm','turnitintool')).'\');"';
-                    } else {
-                        $confirm=' onclick="return confirm(\''.str_replace($fnd, $rep, get_string('turnitindeleteconfirm','turnitintool')).'\')"';
-                    }
-
-                    if ((empty($submission->submission_objectid) OR has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) AND !is_null($submission->id)) {
-
-                        $delete='<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&delete='.$submission->id.'&do='.
-                                $param_do.'"'.$confirm.' title="'.get_string('deletesubmission','turnitintool').'"><img src="pix/trashicon.gif" alt="'.
-                                get_string('deletesubmission','turnitintool').'" class="tiiicons" /></a>';
-
-                    } else {
-                        $delete='-';
-                    }
-                    $cells['delete']=$delete;
-                    $output_array[]=$cells;
-                }
-
-            }
-
+            
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . $lastclass;
+            $table->rows[$i]->cells[$n]->data = $submission_link;
             $n++;
 
-        }
+            // Output USI if required
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            $table->rows[$i]->cells[$n]->data = ( !isset($submission->usi) OR ( $submission->anon AND !$postdatepassed ) ) ? '&nbsp;' : $submission->usi;
+            $n++;
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            $table->rows[$i]->cells[$n]->data = '&nbsp;';
+            $n++;
+            
+            // Do Paper ID column
+            $objectid=(is_null($submission->submission_objectid)
+                                OR empty($submission->submission_objectid))
+                                    ? '-' : $submission->submission_objectid;
 
-        $output='
-        <script language="javascript" type="text/javascript">
-            function toggleAnonView(userview,onoff) {
-                var anonform=document.getElementById(\'anonform_\'+userview);
-                var studentname=document.getElementById(\'studentname_\'+userview);
-                if (onoff==true) {
-                    anonform.style.display="inline";
-                    studentname.innerHTML="'.get_string('anonenabled','turnitintool').'";
-                } else {
-                    anonform.style.display="none";
-                    studentname.innerHTML="<input value=\"'.get_string('anonenabled','turnitintool').'\" type=\"button\" onclick=\"toggleAnonView("+userview+",true)\" />";
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            $table->rows[$i]->cells[$n]->data = $objectid;
+            $n++;
+
+            // Do Submission to Turnitin Form
+            $modified='-';
+            if (empty($submission->submission_objectid) AND $turnitintool->autosubmission) {
+                $modified='<div class="submittoLinkSmall"><img src="'.$CFG->wwwroot.'/mod/turnitintool/icon.gif" /><a href="'.$CFG->wwwroot.
+                        '/mod/turnitintool/view.php'.'?id='.$cm->id.'&up='.$submission->id.'">'.get_string('submittoturnitin','turnitintool').'</a></div>';
+            } else if (!is_null($submission->id)) {
+                $modified=(empty($submission->submission_objectid)) ? '-' : userdate($submission->submission_modified,get_string('strftimedatetimeshort','langconfig'));
+                if ($submission->submission_modified>$submission->dtdue) {
+                    $modified='<span style="color: red;">'.$modified.'</span>';
                 }
             }
-            function anonValidate(reason) {
-                if (!reason.value || reason.value=="'.get_string('revealreason','turnitintool').'") {
-                    reason.style.color="red";
-                    reason.style.borderColor="red";
-                    alert("'.get_string('revealerror','turnitintool').'");
-                    return false;
-                } else {
-                    return true;
-                }
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' datecell';
+            $table->rows[$i]->cells[$n]->data = $modified;
+            $n++;
 
+            // Get originality score if available
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            $table->rows[$i]->cells[$n]->data = $submission->submission_score;
+            $n++;
+            $score = turnitintool_draw_similarityscore($cm,$turnitintool,$submission);
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            $table->rows[$i]->cells[$n]->data = $score;
+            $n++;
+
+            // Get grade if available
+            $grade=turnitintool_dogradeoutput($cm,$turnitintool,$submission,$submission->dtdue,$submission->dtpost,$submission->maxmarks);
+            $grade='<form action="'.$CFG->wwwroot.
+                    '/mod/turnitintool/view.php'.'?id='.$cm->id.'&do=allsubmissions" method="POST">'.$grade.'</form>';
+            // Raw grade goes in hidden column for sorting
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            
+            if ($turnitintool->grade==0 OR $overall_grade==='-') {
+                $overall_grade='-';
+            } else if ($turnitintool->grade < 0) { // Scale
+                $scalearray=explode(",",$scale->scale);
+                // Array is zero indexed
+                // Scale positions are from 1 upward
+                $index = $overall_grade-1;
+                $overall_grade = ( $index < 0 ) ? $scalearray[0] : $scalearray[$index];
+            } else if ($turnitintool->gradedisplay==2) { // 2 is fraction
+                $overall_grade.='/'.$turnitintool->grade;
+            } else if ($turnitintool->gradedisplay==1) { // 1 is percentage
+                $overall_grade=round($overall_grade/$turnitintool->grade*100,1).'%';
             }
-        </script>';
-    }
+            $overall_grade = ( $turnitintool->anon AND !$postdatepassed ) ? '-'.$submission->submission_part : $overall_grade;
+            $table->rows[$i]->cells[$n]->data = $overall_grade;
+            $n++;
+            
+            $subgrade = $submission->submission_grade;
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            $table->rows[$i]->cells[$n]->data = ( !is_null( $subgrade ) AND $subgrade != '-' ) ? $subgrade : 0;
+            $n++;
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' markscell';
+            $table->rows[$i]->cells[$n]->data = $grade;
+            $n++;
 
-    if (!isset($output_array) OR count($output_array)==0) { // If no students enrolled
-        $output_array=array(array(
-                        'student'=>'<div class="student">'.get_string('nosubmissions','turnitintool').'</div>',
-                        'objectid'=>'<div class="student">&nbsp;</div>',
-                        'modified'=>'<div class="student">&nbsp;</div>',
-                        'score'=>'<div class="student">&nbsp;</div>',
-                        'grade'=>'<div class="student">&nbsp;</div>',
-                        'studentview'=>'<div class="student">&nbsp;</div>',
-                        'feedback'=>'<div class="student">&nbsp;</div>',
-                        'download'=>'<div class="student">&nbsp;</div>',
-                        'delete'=>'<div class="student">&nbsp;</div>'
-        ));
-        if ( $CFG->turnitin_enablepseudo == 1 AND $CFG->turnitin_pseudolastname > 0 ) {
-            $output_array[0]['usi']='<div class="student">&nbsp;</div>';
+            // Get Student View indicator
+            $grademarkurl = $CFG->wwwroot . '/mod/turnitintool/view.php?id=' . $cm->id . '&jumppage=grade';
+            $grademarkurl .= '&userid=' . $USER->id . '&utp=2&objectid=' . $submission->submission_objectid;
+            $warn=($turnitintool->reportgenspeed==1 AND $submission->dtdue > time()) ? $warn=',\''.get_string('resubmissiongradewarn','turnitintool').'\'' : '';
+
+            if ( $submission->submission_attempts > 0 ) {
+                $cells['studentview']='<a href="' . $grademarkurl . '" title="' . get_string( 'student_read', 'turnitintool' ) . ' ' . userdate($submission->submission_attempts) . '" ';
+                $cells['studentview'].=' onclick="screenOpen(this.href,\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\''.$warn.');return false;"';
+                $cells['studentview'].='><img style="position: relative; top: 4px;" src="'.$CFG->wwwroot.'/mod/turnitintool/pix/icon-student-read.png" class="tiiicons" /></a>';
+            } else {
+                $cells['studentview']='<a href="' . $grademarkurl . '" title="' . get_string( 'student_notread', 'turnitintool' ) . '" ';
+                $cells['studentview'].=' onclick="screenOpen(this.href,\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\''.$warn.');return false;"';
+                $cells['studentview'].='><img style="position: relative; top: 4px;" src="'.$CFG->wwwroot.'/mod/turnitintool/pix/icon-dot.png" class="tiiicons" /></a>';
+            }
+            
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' iconcell';
+            $table->rows[$i]->cells[$n]->data = $cells['studentview'];
+            $n++;
+
+            // Get Feedback Icon if needed
+            if (!$submission->nonmoodle) {
+                $comment_count = ( isset($comments[$submission->id]) ) ? $comments[$submission->id]->count : 0;
+                $notes=turnitintool_getnoteslink($cm,$turnitintool,$submission,$comment_count);
+            } else {
+                $notes='-';
+            }
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' iconcell';
+            $table->rows[$i]->cells[$n]->data = $notes;
+            $n++;
+
+            // Get Download Icon if needed
+            if (!is_null($submission->submission_objectid)) {
+                $downscript=' onclick="screenOpen(this.href,\''.$submission->id.'\',false,null,\'width=450,height=200\');return false;"';
+                $download='<a href="'.turnitintool_get_filelink($cm,$turnitintool,$submission,$download=true).'" title="'.
+                        get_string('downloadsubmission','turnitintool').'" target="_blank"'.$downscript.'><img src="pix/file-download.png" alt="'.
+                        get_string('downloadsubmission','turnitintool').'" class="tiiicons" /></a>';
+            } else {
+                $download='';
+            }
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' iconcell';
+            $table->rows[$i]->cells[$n]->data = $download;
+            $n++;
+
+            // Get Refresh Icon if needed
+            if (!is_null($submission->submission_objectid) && $submission->userid > 0) {
+                $refresh='<a class="refreshrow" style="cursor: pointer;" id="refreshrow-'.$cm->id.'-'.$turnitintool->id.'-'.$submission->id.'-'.$submission->submission_objectid.'" title="'.
+                        get_string('refresh','turnitintool').'"><img src="pix/refresh.gif" alt="'.
+                        get_string('refresh','turnitintool').'" class="tiiicons" /></a>';
+            } else {
+                $refresh='';
+            }
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' iconcell';
+            $table->rows[$i]->cells[$n]->data = $refresh;
+            $n++;
+
+            // Get Delete Icon if needed
+            $fnd = array("\n","\r");
+            $rep = array('\n','\r');
+            if (empty($submission->submission_objectid)) {
+                $confirm=' onclick="return confirm(\''.str_replace($fnd, $rep, get_string('deleteconfirm','turnitintool')).'\');"';
+            } else {
+                $confirm=' onclick="return confirm(\''.str_replace($fnd, $rep, get_string('turnitindeleteconfirm','turnitintool')).'\')"';
+            }
+
+            $delete='<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&delete='.$submission->id.'&do='.$param_do.
+                        '"'.$confirm.' title="'.get_string('deletesubmission','turnitintool').'"><img src="pix/delete.png" alt="'.
+                        get_string('deletesubmission','turnitintool').'" class="tiiicons" /></a>';
+            $table->rows[$i]->cells[$n] = new stdClass();
+            $table->rows[$i]->cells[$n]->class = 'cell c' . $n . ' iconcell';
+            $table->rows[$i]->cells[$n]->data = $delete;
+            $n++;
+            $i++;
         }
     }
+    
+$sessionrefresh = (isset($_SESSION['updatedscores'][$turnitintool->id]) AND $_SESSION['updatedscores'][$turnitintool->id]>0) ? '' : 'refreshSubmissionsAjax();';
+    
+$output = "
+<script type=\"text/javascript\">
+    var users = ".json_encode($studentuser_array).";
+    var message = '".get_string('turnitinenrollstudents','turnitintool')."';
+    jQuery(document).ready(function() {
+        jQuery(this).inboxTable( '".$cm->id."', ".$displayusi.", ".turnitintool_datatables_strings()." );
+        jQuery('#loader').css( 'display', 'none' );
+        $sessionrefresh
+    });
+</script>";
 
-    foreach ($entryCount as $thisCount) {
-        $javascriptCount.=(!empty($javascriptCount)) ? ',"'.$thisCount.'"' : '"'.$thisCount.'"';
-    }
-    $output.= $styles.'
-        <script language="javascript" type="text/javascript">
-            var users= new Array('.$javascriptUsers.');
-            var count= new Array('.$javascriptCount.');
-        </script>
-        <script src="turnitintool.js" language="javascript" type="text/javascript"></script>
-            ';
+$output .= '
+        <div class="tabLinks">
+        <div style="display: none;" id="inboxNotice"><span style="background: url(pix/ajax-loader.gif) no-repeat left center;padding-left: 80px;">
+        <span style="background: url(pix/ajax-loader.gif) no-repeat right center;padding-right: 80px;">'
+                .get_string('turnitinloading','turnitintool').'</span></span></div>
+            <a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.'&do=allsubmissions'.
+        '&update=1" onclick="refreshSubmissionsAjax();return false;" class="rightcor"><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/refresh.gif" alt="'.
+        get_string('turnitinrefreshsubmissions','turnitintool').'" class="tiiicons" /> '.
+        get_string('turnitinrefreshsubmissions','turnitintool').'</a>
+            <a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php?id='.$cm->id.'&do=allsubmissions'.
+        '&enroll=1" onclick="enrolStudentsAjax( users, message );return false;" class="rightcor"><img src="'.$CFG->wwwroot.'/mod/turnitintool/pix/enrollicon.gif" alt="'.
+        get_string('turnitinenrollstudents','turnitintool').'" class="tiiicons" /> '.
+        get_string('turnitinenrollstudents','turnitintool').'</a>
+        </div>';
 
-    $output.=turnitintool_output_inboxfilter($cm,$turnitintool,$param_from,$param_show,$totalentries);
-    $output.=turnitintool_draw_submission_table($cm, $turnitintool, $output_array);
+if ( count( $table->rows ) == 1 ) { // If we only have one row it's a header and we found no data to display
+    
+    $output .= '<div style="padding: 18px; margin: 0;text-align: center;vertical-align: center" class="navbar" id="loader">'
+        .get_string('nosubmissions','turnitintool').'</div><br /><br />';
 
-    $output .= '
-        <script language="javascript" type="text/javascript">
-            assignmentcheck('.$turnitintool->id.');
-            setuserchoice();
-        ';
-    if ($turnitintool->numparts==1) {
-        $output.='toggleshowall();
-        ';
-    }
-    $output.='</script>';
+} else {
+
+    $output .= '<div id="loader" style="padding: 18px; margin: 0;text-align: center;vertical-align: center" class="navbar">
+        <noscript>Javascript Required</noscript>
+        <script>
+        jQuery("#loader span").css( "display", "inline" );
+        </script><span style="display: none;background: url(pix/ajax-loader.gif) no-repeat left center;padding-left: 80px;">
+        <span style="background: url(pix/ajax-loader.gif) no-repeat right center;padding-right: 80px;">'.get_string('turnitinloading','turnitintool').'</span></span></div>';
+
+    $output .= turnitintool_print_table( $table, true );
+    
+}
 
     return $output;
 }
@@ -4012,6 +3807,7 @@ function turnitintool_view_all_submissions($cm,$turnitintool,$orderby='1') {
 function turnitintool_draw_submission_table($cm, $turnitintool, $input=array()) {
     global $CFG;
     // Input Multi Dimensional Array of table data
+    $table = new stdClass();
     $table->width='85%';
     $table->tablealign='center';
     $table->class='gradeTable';
@@ -4026,31 +3822,42 @@ function turnitintool_draw_submission_table($cm, $turnitintool, $input=array()) 
     $submissiongrade_header=turnitintool_doheaderlinks($cm,$turnitintool,get_string('submissiongrade','turnitintool'),'3','4');
     $feedback_header=get_string('feedback','turnitintool');
 
+    $cells[0] = new stdClass();
     $cells[0]->data=$student_header;
     $cells[0]->class='header c0';
     $plus=0;
     if ( $CFG->turnitin_enablepseudo == 1 AND $CFG->turnitin_pseudolastname > 0 ) {
         $user_info = turnitintool_get_record( 'user_info_field', 'id', $CFG->turnitin_pseudolastname );
+        $cells[1] = new stdClass();
         $cells[1]->data=$user_info->name;
         $cells[1]->class='header c1 markscell';
         $plus=1;
     }
+    $cells[1+$plus] = new stdClass();
     $cells[1+$plus]->data=$objectid_header;
     $cells[1+$plus]->class='header c'.(1+$plus).' markscell';
+    $cells[2+$plus] = new stdClass();
     $cells[2+$plus]->data=$modified_header;
     $cells[2+$plus]->class='header c'.(2+$plus).' datecell';
+    $cells[3+$plus] = new stdClass();
     $cells[3+$plus]->data=$submissionorig_header;
     $cells[3+$plus]->class='header c'.(3+$plus).' markscell';
+    $cells[4+$plus] = new stdClass();
     $cells[4+$plus]->data=$submissiongrade_header;
     $cells[4+$plus]->class='header c'.(4+$plus).' markscell';
+    $cells[5+$plus] = new stdClass();
     $cells[5+$plus]->data='';
     $cells[5+$plus]->class='header c'.(5+$plus).' iconcell';
+    $cells[6+$plus] = new stdClass();
     $cells[6+$plus]->data='';
     $cells[6+$plus]->class='header c'.(6+$plus).' markscell';
+    $cells[7+$plus] = new stdClass();
     $cells[7+$plus]->data='';
     $cells[7+$plus]->class='header c'.(7+$plus).' iconcell';
+    $cells[8+$plus] = new stdClass();
     $cells[8+$plus]->data='';
     $cells[8+$plus]->class='header c'.(8+$plus).' iconcell';
+    $table->rows[0] = new stdClass();
     $table->rows[0]->cells=$cells;
     $table->rows[0]->id='tableHeader';
     $table->rows[0]->class='header';
@@ -4058,30 +3865,41 @@ function turnitintool_draw_submission_table($cm, $turnitintool, $input=array()) 
     $i=0;
     foreach ($input as $row) {
         $i++;
+        $cells[0] = new stdClass();
         $cells[0]->class='cell c0';
         $cells[0]->data=$row['student'];
         $plus=0;
         if ( $CFG->turnitin_enablepseudo == 1 AND $CFG->turnitin_pseudolastname > 0 ) {
+            $cells[1] = new stdClass();
             $cells[1]->data=( isset( $row['usi'] ) ) ? $row['usi'] : '';
             $cells[1]->class='cell c1 markscell';
             $plus=1;
         }
+        $cells[1+$plus] = new stdClass();
         $cells[1+$plus]->class='cell c'.(1+$plus).' markscell';
         $cells[1+$plus]->data=$row['objectid'];
+        $cells[2+$plus] = new stdClass();
         $cells[2+$plus]->class='cell c'.(1+$plus).' datecell';
         $cells[2+$plus]->data=$row['modified'];
+        $cells[3+$plus] = new stdClass();
         $cells[3+$plus]->class='cell c'.(1+$plus).' markscell';
         $cells[3+$plus]->data=$row['score'];
+        $cells[4+$plus] = new stdClass();
         $cells[4+$plus]->class='cell c'.(1+$plus).' markscell';
         $cells[4+$plus]->data=$row['grade'];
+        $cells[5+$plus] = new stdClass();
         $cells[5+$plus]->class='cell c'.(1+$plus).' iconcell';
         $cells[5+$plus]->data=$row['studentview'];
+        $cells[6+$plus] = new stdClass();
         $cells[6+$plus]->class='cell c'.(1+$plus).' markscell';
         $cells[6+$plus]->data=$row['feedback'];
+        $cells[7+$plus] = new stdClass();
         $cells[7+$plus]->class='cell c'.(1+$plus).' iconcell';
         $cells[7+$plus]->data=$row['download'];
+        $cells[8+$plus] = new stdClass();
         $cells[8+$plus]->class='cell c'.(1+$plus).' iconcell';
         $cells[8+$plus]->data=$row['delete'];
+        $table->rows[$i] = new stdClass();
         $table->rows[$i]->cells=$cells;
         $table->rows[$i]->id=(isset($row['rowid'])) ? $row['rowid'] : '';
         $table->rows[$i]->class=(isset($row['rowid'])) ? $row['class'] : '';
@@ -4092,14 +3910,210 @@ function turnitintool_draw_submission_table($cm, $turnitintool, $input=array()) 
     return turnitintool_print_table($table,true);
 }
 
-function turnitintool_getnoteslink($cm,$turnitintool,$submission) {
+function turnitintool_reloadinbox_row( $cm, $turnitintool, $objectid ) {
+
+    // Must be instructor on the class
+    if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id)) OR $turnitintool->studentreports OR $trigger>0) {
+
+        // Get the current submission values from the database
+        if ( !$submissions = turnitintool_get_records_select('turnitintool_submissions','submission_objectid='.$objectid.' AND turnitintoolid='.$turnitintool->id,'id DESC') ) {
+            header('HTTP/1.0 400 Bad Request');
+            echo get_string('submissiongeterror','turnitintool');
+            exit();
+        }
+
+        $first_submission = current( $submissions );
+        $userid = isset($first_submission->userid) ? $first_submission->userid : 0;
+        if ( $userid < 1 ) {
+            header('HTTP/1.0 400 Bad Request');
+            echo get_string('usergeterror','turnitintool');
+            exit();
+        }
+
+        $user = turnitintool_get_moodleuser( $userid );
+
+        // Instantiate the TII Comms Class
+        $loaderbar = null;
+        $tii=new turnitintool_commclass(turnitintool_getUID($user),$user->firstname,$user->lastname,$user->email,2,$loaderbar);
+
+        // Set the user up with a TII account if they do not already have one
+        turnitintool_usersetup($user,get_string('userprocess','turnitintool'),$tii,$loaderbar);
+        if (isset( $tii->result) AND $tii->getRerror() ) {
+            header('HTTP/1.0 400 Bad Request');
+            if ($tii->getAPIunavailable()) {
+                echo get_string('apiunavailable','turnitintool');
+            } else {
+                echo $tii->getRmessage();
+            }
+            exit();
+        }
+
+        $grade = null;
+        $score = null;
+        $transmatch = null;
+
+        // Get all submissions for this user and this assignment part
+        $post = new stdClass();
+        $owner=turnitintool_get_owner($turnitintool->course);
+        $post->ctl=turnitintool_getCTL($turnitintool->course);
+        $post->cid=turnitintool_getCID($turnitintool->course);
+        $post->tem=$owner->email;
+        if (!$part=turnitintool_get_record('turnitintool_parts','id',$first_submission->submission_part)) {
+            header('HTTP/1.0 400 Bad Request');
+            echo get_string('partgeterror', 'turnitintool');
+            exit();
+        }
+        $post->assignid=turnitintool_getAID($part->id); // Get the Assignment ID for this Assignment / Turnitintool instance
+        $post->assign=$turnitintool->name.' - '.$part->partname.' (Moodle '.$post->assignid.')';
+
+        $tii->listSubmissions($post,'');
+        $tiisub_array=$tii->getSubmissionArray();
+
+        // loop through the submission array and grab the score and grade
+        foreach ( $tiisub_array as $index => $value ) {
+            if ( $index == $objectid ) {
+                $grade=turnitintool_processgrade($value["grademark"],$part,$owner,$post,$key,$tii,$loaderbar);
+                $score = $value["overlap"];
+                if ( $value["overlap"] !== '0' && empty( $value["overlap"] ) ) {
+                    $score = null;
+                }
+                $transmatch = ($value["transmatch"]==1) ? 1 : 0;
+                break;
+            }
+        }
+
+        // If there are more than one row, which rarely happens but nice to deal with that here as part of this process
+        if ( count( $submissions ) > 1 ) {
+            $num_exists = 0;
+            // For each submission check to see if there are comments if there are do not delete the row, if not delete all and reinsert a single submission row
+            foreach ( $submissions as $submission ) {
+                if ( turnitintool_count_records('turnitintool_comments', 'submissionid', $submission->id) < 1 ) {
+                    turnitintool_delete_records( 'turnitintool_submissions', 'id', $submission->id );
+                } else {
+                    // There were comments, update what we have and increment the numebr that existed $num_exists
+                    $submission->submission_score = $score;
+                    if ( $submission->submission_score !== '0' && empty( $submission->submission_score ) ) {
+                        $submission->submission_score = null;
+                    }
+                    $submission->submission_grade = $grade;
+                    $submission->submission_transmatch = $transmatch;
+                    turnitintool_update_record('turnitintool_submissions',$submission);
+                    $num_exists++;
+                }
+            }
+            // If we didn't find any associated comments then we deleted all rows to insert the highest id submission values back into the table
+            if ( $num_exists == 0 ) {
+                $submission = array_shift( $submissions );
+                $submission->id = null;
+                if ( $submission->submission_score !== '0' && empty( $submission->submission_score ) ) {
+                    $submission->submission_score = null;
+                }
+                $submission->submission_grade = $grade;
+                $submission->submission_transmatch = $transmatch;
+                turnitintool_insert_record('turnitintool_submissions',$submission);
+            }
+        } else {
+            // We should get here most times, this is where we only had one submission, in this case we update the row we have with the new values from the API
+            $submission = array_shift( $submissions );
+            $submission->submission_score = $score;
+            if ( $submission->submission_score !== '0' && empty( $submission->submission_score ) ) {
+                $submission->submission_score = null;
+            }
+            $submission->submission_grade = $grade;
+            $submission->submission_transmatch = $transmatch;
+            turnitintool_update_record('turnitintool_submissions',$submission);
+        }
+
+        // Return the submission details in a JSON response message
+        echo $submission->id;
+
+    } else {
+        header('HTTP/1.0 403 Not Found');
+        echo get_string('permissiondeniederror','turnitintool');
+        exit();
+    }
+
+}
+
+function turnitintool_getnoteslink( $cm, $turnitintool, $submission, $num=null ) {
     global $CFG;
-    $num=turnitintool_count_records_select('turnitintool_comments','submissionid='.$submission->id.' AND deleted<1');
+    $num = ( is_null( $num ) ) ? turnitintool_count_records_select('turnitintool_comments','submissionid='.$submission->id.' AND deleted<1') : $num;
 
     $notes='(<a href="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&do=notes&s='.$submission->id.'" title="'.get_string('notes','turnitintool').'">'.$num.'</a>)';
     return $notes;
 }
+/**
+ * Enrolls a single Moodle user as a student onto the Turnitin Class
+ *
+ * @param object $cm The moodle course module object for this instance
+ * @param object $turnitintool The turnitintool object for this activity
+ * @param integer $userid The moodle student user id
+ */
+function turnitintool_enroll_student($cm,$turnitintool,$userid) {
+    if (!$user = turnitintool_get_record('user','id',$userid)) {
+        $reason=get_string('usergeterror','turnitintool');
+        $response["status"] = 'error';
+        $response["description"] = get_string('updateerror','turnitintool').': '.get_string('turnitinenrollstudents','turnitintool');
+        $response["msg"] = $reason." (".$userid.")\n\n";
+        echo json_encode( $response );
+        exit();
+    }
+    if ( !has_capability( 'mod/turnitintool:submit', get_context_instance( CONTEXT_MODULE, $cm->id ) ) ) {
+        $reason=get_string('permissiondeniederror','turnitintool');
+        $response["status"] = 'error';
+        $response["description"] = get_string('updateerror','turnitintool').': '.get_string('turnitinenrollstudents','turnitintool');
+        $response["msg"] = $user->lastname.", ".$user->firstname." (".$user->email.")\n".$reason."\n\n";
+        echo json_encode( $response );
+        exit();
+    }
+    
+    if (!$course = turnitintool_get_record('course','id',$turnitintool->course)) {
+        $reason=get_string('coursegeterror','turnitintool');
+        $response["status"] = 'error';
+        $response["description"] = get_string('updateerror','turnitintool').': '.get_string('turnitinenrollstudents','turnitintool');
+        $response["msg"] = $user->lastname.", ".$user->firstname." (".$user->email.")\n".$reason."\n\n";
+        echo json_encode( $response );
+        exit();
+    }
 
+    $post = new stdClass();
+    $post->cid=turnitintool_getCID($course->id); // Get the Turnitin Class ID for Course
+    $post->ctl=turnitintool_getCTL($course->id);
+    $owner = turnitintool_get_owner($turnitintool->course);
+    $post->tem=turnitintool_get_tutor_email($owner->id);
+    
+    $tii = new turnitintool_commclass(turnitintool_getUID($user),$user->firstname,$user->lastname,$user->email,1,$loaderbar);
+    $tii->startSession();
+    $loaderbar = null;
+    $newuser=turnitintool_usersetup($user,get_string('userprocess','turnitintool'),$tii,$loaderbar);
+
+    if ($tii->getRerror()) {
+        $reason=($tii->getAPIunavailable()) ? get_string('apiunavailable','turnitintool') : $tii->getRmessage();
+        $response["status"] = 'error';
+        $response["description"] = get_string('updateerror','turnitintool').': '.get_string('turnitinenrollstudents','turnitintool');
+        $response["msg"] = $user->lastname.", ".$user->firstname." (".$user->email.")\n".$reason."\n\n";
+        $tii->endSession();
+        echo json_encode( $response );
+        exit();
+    }
+
+    $tii->uid=$newuser->turnitin_uid;
+    $tii->joinClass($post,'');
+
+    if ($tii->getRerror()) {
+        $reason=($tii->getAPIunavailable()) ? get_string('apiunavailable','turnitintool') : $tii->getRmessage();
+        $response["status"] = 'error';
+        $response["description"] = get_string('updateerror','turnitintool').': '.get_string('turnitinenrollstudents','turnitintool');
+        $response["msg"] = $user->lastname.", ".$user->firstname." (".$user->email.")\n".$reason."\n\n";
+    } else {
+        $response["status"] = 'success';
+        $response["description"] = '';
+        $response["msg"] = '';
+    }
+    $tii->endSession();
+    echo json_encode( $response );
+    exit();
+}
 /**
  * Enrolls all of the students enrolled in the Moodle Course onto the Turnitin Class
  *
@@ -4121,6 +4135,7 @@ function turnitintool_enroll_all_students($cm,$turnitintool) {
             exit();
         }
 
+        $post = new stdClass();
         $post->cid=turnitintool_getCID($course->id); // Get the Turnitin Class ID for Course
         $post->ctl=turnitintool_getCTL($course->id);
         $owner = turnitintool_get_owner($turnitintool->course);
@@ -4172,15 +4187,17 @@ function turnitintool_enroll_all_students($cm,$turnitintool) {
  * @param object $cm The moodle course module object for this instance
  * @param object $turnitintool The turnitintool object for this activity
  * @param object $submission The submission object from the turnitintool_submissions table
+ * @param int $duedate The due date for this assignment part
+ * @param int $postdate The post date for this assignment part
+ * @param int $maxmarks The maximum marks allowed for this assignment part
  * @param string $textcolour The colour of the grade text
  * @param string $background The colour of the background for the grade box
  * @param boolean $gradeable Is the grade gradeable or read only
  * @return string Output of the grade form / display
  */
-function turnitintool_dogradeoutput($cm,$turnitintool,$submission,$textcolour='#666666',$background='transparent',$gradeable=true) {
+function turnitintool_dogradeoutput($cm,$turnitintool,$submission,$duedate,$postdate,$maxmarks,$textcolour='#666666',$background='transparent',$gradeable=true) {
     global $CFG, $USER;
 
-    $owner=turnitintool_get_owner($turnitintool->course);
     if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) {
         $utp=2;
     } else {
@@ -4188,19 +4205,16 @@ function turnitintool_dogradeoutput($cm,$turnitintool,$submission,$textcolour='#
     }
 
     $thisuser=$USER;
-    if (!$part = turnitintool_get_record('turnitintool_parts','id',$submission->submission_part)) {
-        turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
-        exit();
-    }
+
     $output='';
-    if ($CFG->turnitin_usegrademark AND $turnitintool->usegrademark AND ($utp==2 OR ($utp==1 AND $part->dtpost<=time()))) {
+    if ($CFG->turnitin_usegrademark AND $turnitintool->usegrademark AND ($utp==2 OR ($utp==1 AND $postdate<=time()))) {
 
         $grademarkurl = $CFG->wwwroot . '/mod/turnitintool/view.php?id=' . $cm->id . '&jumppage=grade';
         $grademarkurl .= '&userid=' . $thisuser->id . '&utp=' . $utp . '&objectid=' . $submission->submission_objectid;
 
         $doscript='';
         if (!empty($submission->submission_objectid)) {
-            $warn=($turnitintool->reportgenspeed==1 AND $part->dtpost > time()) ? $warn=',\''.get_string('resubmissiongradewarn','turnitintool').'\'' : '';
+            $warn=($turnitintool->reportgenspeed==1 AND $duedate > time()) ? $warn=',\''.get_string('resubmissiongradewarn','turnitintool').'\'' : '';
             $doscript=' onclick="screenOpen(\''.$grademarkurl.'\',\''.$submission->id.'\',\''.$turnitintool->autoupdates.'\''.$warn.');return false;"';
         }
         if (!empty($submission->submission_grade) OR $submission->submission_grade==0) {
@@ -4208,31 +4222,31 @@ function turnitintool_dogradeoutput($cm,$turnitintool,$submission,$textcolour='#
                 $submission->submission_grade='-';
             }
             $output.='<input name="grade['.$submission->id.']" type="text" readonly="readonly" size="3" class="gradebox" value="'.
-                    $submission->submission_grade.'" style="border: 0px solid white;background-color: '.$background.';color: '.$textcolour.';" />/'.$part->maxmarks.' ';
+                    $submission->submission_grade.'" style="border: 0px solid white;background-color: '.$background.';color: '.$textcolour.';" />/'.$maxmarks.' ';
         }
-        if (!empty($submission->submission_objectid) AND ($utp==2 OR ($utp==1 AND $part->dtpost<=time()))) {
+        if (!empty($submission->submission_objectid) AND ($utp==2 OR ($utp == 1 AND $postdate <= time()))) {
             if (!$submission->submission_gmimaged) {
-                $output.='<img src="pix/grademarkapple_grey.gif" class="tiiicons" />';
+                $output.='<img src="pix/icon-edit-grey.png" class="tiiicons" />';
             } else {
-                $output.='<a href="'.$grademarkurl.'"'.$doscript.'><img src="pix/grademarkapple.gif" class="tiiicons" /></a>';
+                $output.='<a href="'.$grademarkurl.'"'.$doscript.'><img src="pix/icon-edit.png" class="tiiicons" /></a>';
             }
         }
 
     } else {
 
         if ($utp==2 AND $gradeable) {
-            $warn=($turnitintool->reportgenspeed==1 AND $part->dtpost > time()) ? $warn=',\''.get_string('resubmissiongradewarn','turnitintool').'\'' : '';
+            $warn=($turnitintool->reportgenspeed==1 AND $postdate > time()) ? $warn=',\''.get_string('resubmissiongradewarn','turnitintool').'\'' : '';
             $output.='
             <span id="hideshow_'.$submission->id.'"><input name="grade['.$submission->id.']" id="grade_'.$submission->id.
-                    '" type="text" size="3" class="gradebox" value="'.$submission->submission_grade.'" style="border: 1px inset;color: black;" />/'.$part->maxmarks.'</span>';
+                    '" type="text" size="3" class="gradebox" value="'.$submission->submission_grade.'" style="border: 1px inset;color: black;" />/'.$maxmarks.'</span>';
             $output.='<input src="pix/tickicon.gif" name="updategrade" value="updategrade" id="tick_'.$submission->id.'" class="tiiicons" type="image" />';
             $output.='<script language="javascript" type="text/javascript">
                 viewgrade(\''.$submission->id.'\',\''.$textcolour.'\',\''.$background.'\''.$warn.');
             </script>';
-        } else if ($utp==2 OR $part->dtpost<=time()) {
+        } else if ($utp==2 OR $postdate<=time()) {
             $output.='
             <input name="grade['.$submission->id.']" id="grade_'.$submission->id.'" type="text" size="3" class="gradebox" value="'.$submission->submission_grade.
-                    '" style="border: 0px;color: black;background-color: '.$background.'" readonly="readonly" />/'.$part->maxmarks;
+                    '" style="border: 0px;color: black;background-color: '.$background.'" readonly="readonly" />/'.$maxmarks;
         }
 
     }
@@ -4240,7 +4254,7 @@ function turnitintool_dogradeoutput($cm,$turnitintool,$submission,$textcolour='#
         $output.='
             <input name="grade['.$submission->id.']" id="grade_'.$submission->id.
                 '" type="text" size="3" class="gradebox" value="-" style="border: 0px;color: black;background-color: '.
-                $background.'" readonly="readonly" />/'.$part->maxmarks;
+                $background.'" readonly="readonly" />/'.$maxmarks;
     }
     return $output;
 
@@ -4254,7 +4268,7 @@ function turnitintool_dogradeoutput($cm,$turnitintool,$submission,$textcolour='#
  * @param array $post The POST array supplied from the grade update form
  * @return string Returns $notice in the event of an error
  */
-function turnitintool_update_grades($cm,$turnitintool,$post) {
+function turnitintool_update_form_grades($cm,$turnitintool,$post) {
     global $CFG;
     $notice='';
     $total=0;
@@ -4273,7 +4287,7 @@ function turnitintool_update_grades($cm,$turnitintool,$post) {
     $tii->startSession();
     $proc=0;
     foreach ($post['grade'] as $id => $thisgrade) {
-        $thisgrade=round($thisgrade); // round the grade to an integer
+        $thisgrade=round($thisgrade); // round the grade to an integer / Turnitin won't accept a null grade via the API
         if (!$submission=turnitintool_get_record('turnitintool_submissions','id',$id)) {
             turnitintool_print_error('submissiongeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
             exit();
@@ -4283,16 +4297,18 @@ function turnitintool_update_grades($cm,$turnitintool,$post) {
             exit();
         }
 
-        // work out if the grade has changed from what is stored
-
-        if ($thisgrade!=$submission->submission_grade) {
+        // work out if the grade has changed from what is stored     
+        if (empty($thisgrade) OR $thisgrade!=$submission->submission_grade) {
 
             $user=turnitintool_get_moodleuser($submission->userid,NULL,__FILE__,__LINE__);
             $update = new object;
             $update->id=$id;
-            $update->submission_grade=(!empty($thisgrade) OR $thisgrade===0) ? $thisgrade : NULL;
+            $update->submission_grade=$thisgrade;
+            
+            print_object( $update );
 
             if ($thisgrade>$part->maxmarks) {
+                $input = new stdClass();
                 $input->fullname=$user->firstname.' '.$user->lastname;
                 $input->part=turnitintool_partnamefromnum($submission->submission_part);
                 $input->maximum=$part->maxmarks;
@@ -4311,6 +4327,7 @@ function turnitintool_update_grades($cm,$turnitintool,$post) {
 
             $proc++;
 
+            $add = new stdClass();
             $add->num=$proc;
             $add->total=$total;
             $tii->setGradeMark($post,get_string('pushinggrade','turnitintool',$add));
@@ -4339,7 +4356,7 @@ function turnitintool_update_grades($cm,$turnitintool,$post) {
     $tii->endSession();
     $loaderbar->endloader();
     // Update gradebook grades in Moodle 1.9 and above
-    turnitintool_redirect($CFG->wwwroot."/mod/turnitintool/view.php?id=".$cm->id."&do=allsubmissions");
+    turnitintool_redirect($CFG->wwwroot."/mod/turnitintool/view.php?id=".$cm->id."&do=allsubmissions&update=1");
 
     return $notice;
 }
@@ -4360,6 +4377,8 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
     $param_ob=optional_param('ob',null,PARAM_CLEAN);
     $param_sh=optional_param('sh',null,PARAM_CLEAN);
     $param_fr=optional_param('fr',null,PARAM_CLEAN);
+    
+    $api_error=false;
 
     // Check to see if the results for this user's session has been updated from
     // Turnitin in the last two minutes. If they have then we should skip this refresh
@@ -4398,13 +4417,12 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
         if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id)) OR $turnitintool->studentreports OR $trigger>0) {
 
             $total=count($parts);
-            $loaderbar = ( is_null( $loaderbar ) ) ? new turnitintool_loaderbarclass( 2 ) : $loaderbar;
+            $loaderbar = ( is_null( $loaderbar ) ) ? new turnitintool_loaderbarclass( 0 ) : $loaderbar;
             $loaderbar->total=$loaderbar->total+$total;
             $tii=new turnitintool_commclass(turnitintool_getUID($owner),$owner->firstname,$owner->lastname,$owner->email,2,$loaderbar);
-            $tii->startSession();
 
             turnitintool_usersetup($owner,get_string('userprocess','turnitintool'),$tii,$loaderbar);
-            if ($tii->getRerror()) {
+            if (isset( $tii->result) AND $tii->getRerror() ) {
                 if ($tii->getAPIunavailable()) {
                     turnitintool_print_error('apiunavailable','turnitintool',NULL,NULL,__FILE__,__LINE__);
                 } else {
@@ -4412,7 +4430,18 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
                 }
                 exit();
             }
+            
+            if (!$ids=turnitintool_get_records_select('turnitintool_submissions','turnitintoolid='.$turnitintool->id.' AND submission_objectid IS NOT NULL','','submission_objectid,id,submission_grade,submission_score,submission_modified,submission_status,submission_attempts,userid,submission_unanon')) {
+                $ids=array();
+            }
+            
+            $context = get_context_instance( CONTEXT_COURSE, $turnitintool->course );
+            $studentusers = get_users_by_capability($context,'mod/turnitintool:submit','u.id,u.firstname,u.lastname','','','',0,'',false);
+            $studentuser_array = array_keys($studentusers);
+            $users_string = join( $studentuser_array, "," );
+            $users = turnitintool_get_records_sql('SELECT turnitin_uid,userid FROM {turnitintool_users} WHERE userid IN ('.$users_string.')');
 
+            $post = new stdClass();
             $post->cid=turnitintool_getCID($course->id); // Get the Turnitin Class ID for Course
             $post->tem=$owner->email; // Get the Turnitin Course Tutor Email
             $post->ctl=turnitintool_getCTL($course->id);
@@ -4420,6 +4449,7 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
                 $post->assignid=turnitintool_getAID($part->id); // Get the Assignment ID for this Assignment / Turnitintool instance
                 $post->assign=$turnitintool->name.' - '.$part->partname.' (Moodle '.$post->assignid.')';
 
+                $status = new stdClass();
                 $status->user=get_string('student','turnitintool');
                 $status->proc=(isset($loaderbar->proc)) ? $loaderbar->proc : null;
 
@@ -4434,12 +4464,9 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
                 }
 
                 if ($tii->getRerror()) {
-                    $return=false;
+                    $api_error=true;
                 } else {
                     // Create an array of submission IDs with the TII Paper ID as key to repatriate the feedback with submissions
-                    if (!$ids=turnitintool_get_records_select('turnitintool_submissions','turnitintoolid='.$turnitintool->id.' AND submission_objectid IS NOT NULL','','submission_objectid,id,submission_grade,submission_status')) {
-                        $ids=array();
-                    }
                     unset($inserts);
                     $inserts=array();
                     foreach ($resultArray as $key => $value) {
@@ -4452,15 +4479,10 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
                         $insert->submission_filename=str_replace(" ","_",$value["title"]).'.doc';
                         $insert->submission_objectid=$key;
                         $insert->submission_score=$value["overlap"];
-                        if (is_null($insert->submission_score)) {
-                            unset($insert->submission_score);
+                        if ( $value["overlap"] !== '0' && empty( $value["overlap"] ) ) {
+                            $insert->submission_score = null;
                         }
-                        if ($CFG->turnitin_usegrademark AND $turnitintool->usegrademark) {
-                            // If we are using TII GradeMark to grade TII gets priority otherwise give moodle grading priority
-                            $insert->submission_grade=turnitintool_processgrade($value["grademark"],$part,$owner,$post,$key,$tii,$loaderbar);
-                        } else {
-                            $insert->submission_grade=$ids[$key]->submission_grade;
-                        }
+                        $insert->submission_grade=turnitintool_processgrade($value["grademark"],$part,$owner,$post,$key,$tii,$loaderbar);
                         $insert->submission_status=get_string('submissionuploadsuccess','turnitintool');
                         $insert->submission_queued=0;
                         $insert->submission_attempts=( $value["student_view"] > 0 ) ? strtotime($value["student_view"]) : 0;
@@ -4468,16 +4490,15 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
                         $insert->submission_modified=strtotime($value["date_submitted"]);
                         $insert->submission_parent=0;
                         $insert->submission_unanon=($value["anon"]==1) ? 0 : 1;
+                        $insert->submission_transmatch=($value["transmatch"]==1) ? 1 : 0;
 
-                        if ($userdata=turnitintool_get_record('turnitintool_users','turnitin_uid',$value["userid"])
-                                AND
-                                has_capability('mod/turnitintool:submit', get_context_instance(CONTEXT_MODULE, $cm->id), $userdata->userid)) {
+                        if ( isset($users[$value["userid"]]) ) {
                             // If returned userid is already stored and the user is enrolled on the course
                             // we can use real Moodle user to store against
                             $insert->submission_nmuserid=0;
                             $insert->submission_nmfirstname=NULL;
                             $insert->submission_nmlastname=NULL;
-                            $insert->userid=$userdata->userid;
+                            $insert->userid=$users[$value["userid"]]->userid;
 
                         } else {
                             // If userid is not already stored we can not use real user to store against, use (Non Moodle) Marker
@@ -4496,10 +4517,24 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
                             }
                             $insert->userid=0;
                         }
-                        $inserts[]=$insert;
+                        // Only do DB update if the record has changed, saves DB calls
+                        if ( !isset( $ids[$key] ) OR $insert->submission_grade != $ids[$key]->submission_grade
+                                OR $insert->submission_score != $ids[$key]->submission_score
+                                OR $insert->submission_modified != $ids[$key]->submission_modified
+                                OR $insert->submission_attempts != $ids[$key]->submission_attempts
+                                OR $insert->userid != $ids[$key]->userid
+                                OR $insert->submission_unanon != $ids[$key]->submission_unanon ) {
+                            $inserts[]=$insert;
+                        }
+                        $keys_found[] = $key;
                     }
-                    // Purge old submissions listings and insert the new ones
-                    // turnitintool_delete_records_select('turnitintool_submissions','submission_objectid IS NOT NULL AND submission_part='.$part->id);
+                    // Purge old submissions listings
+                    foreach ( $ids as $submission ) {
+                        if ( !in_array( $submission->submission_objectid, $keys_found ) ) {
+                            turnitintool_delete_records_select('turnitintool_submissions','submission_objectid='.$submission->submission_objectid.' AND submission_part='.$part->id);
+                        }
+                    }
+
                     // Now insert the new submissions and update existing submissions
                     foreach ($inserts as $insert) {
                         $key = $insert->submission_objectid;
@@ -4529,9 +4564,14 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
                     }
                 }
             }
-            $tii->endSession();
+            if ( $api_error ) {
+                $notice=($tii->getAPIunavailable()) ? get_string('apiunavailable','turnitintool') : $tii->getRmessage();
+                $loaderbar->endloader();
+                return false;
+            }
+            
             $loaderbar->endloader();
-
+            
             if (isset($return)) {
                 $_SESSION['updatedscores'][$turnitintool->id]=0;
             } else {
@@ -4542,6 +4582,7 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
             $redirectlink.=(!is_null($param_fr)) ? '&fr='.$param_fr : '';
             $redirectlink.=(!is_null($param_sh)) ? '&sh='.$param_sh : '';
             $redirectlink.=(!is_null($param_ob)) ? '&ob='.$param_ob : '';
+
             turnitintool_redirect($redirectlink);
             
         }
@@ -4560,11 +4601,12 @@ function turnitintool_update_all_report_scores($cm,$turnitintool,$trigger,$loade
  * @return string Returns the corrected / processed grade
  */
 function turnitintool_processgrade($grade,$part,$owner,$post,$objectid,&$tii,&$loaderbar) {
-    $grade=(!empty($grade) OR $grade==0) ? $grade : NULL;
+    $grade=($grade==='0' OR $grade===0 OR !empty($grade)) ? $grade : NULL;
     if ($grade<=$part->maxmarks) { // If grade is LOWER or equal to max grade fine.... RETURN GRADE
         $output=$grade;
     } else {                       // If grade is HIGHER than max grade correct it.... UPDATE TII GRADE TO MAXMARKS and RETURN MAXMARKS
         $output=$part->maxmarks;
+        $post = new stdClass();
         $post->oid=$objectid;
         $post->score=$output;
         if (!is_null($loaderbar)) {
@@ -4582,7 +4624,7 @@ function turnitintool_processgrade($grade,$part,$owner,$post,$objectid,&$tii,&$l
  * @param string $left The left offset of the coloured block part of the originality score output box
  * @return string Outputs the style attribute for the originality box
  */
-function turnitintool_percent_to_gradpos($percent,$left='36') {
+function turnitintool_percent_to_gradpos($percent,$left='0') {
     $pos=floor(($percent/100)*(-380));
     $style=' style="background: url(pix/gradback.jpg) no-repeat '.$left.'px '.$pos.'px";';
     return $style;
@@ -4624,6 +4666,8 @@ function turnitintool_delete_submission($cm,$turnitintool,$userid,$submission) {
             exit();
         }
         // ]]]]
+        
+        add_to_log($turnitintool->course, "turnitintool", "delete submission", "view.php?id=$cm->id", "User deleted submission '$submission->submission_title'", "$cm->id");
 
         // Only do this at this point if the user is a grader OR resubmissions allowed [[[[
         if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))
@@ -4652,6 +4696,7 @@ function turnitintool_delete_submission($cm,$turnitintool,$userid,$submission) {
                 }
 
                 // Gather the variables required for this Function [[[[
+                $post = new stdClass();
                 $post->paperid=$submission->submission_objectid;
                 // ]]]]
 
@@ -4786,7 +4831,7 @@ function turnitintool_cansubmit($cm,$turnitintool,$user) { // Returns an array o
                             ' AND submission_part='.$partavailable->id.' AND userid='.$studentuser->id)) ? 0 : 1;
                     if (!$submitted // Student has made no submissions
                             OR
-                         ($turnitintool->reportgenspeed==1 AND $partavailable->dtdue>=time() AND $submitted) // Resubmissions Allowed and due date hasn't passed
+                         ( $turnitintool->reportgenspeed > 0 AND $partavailable->dtdue >= time() AND $submitted ) // Resubmissions Allowed and due date hasn't passed
                         ) {
                         // If the student has not made a submission or reportgenspeed is 1 or 2 ie reports can be overwritten add student to the array
                         // If late submissions is enabled one submission is allowed after due date even if resubmission is on
@@ -4875,12 +4920,14 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
         }
         $output.='</script>'.PHP_EOL;
 
+        $table = new stdClass();
         $table->width='100%';
         $table->id='uploadtable';
         $table->class='uploadtable';
 
         unset($cells);
         $cells=array();
+        $cells[0] = new stdClass();
         $cells[0]->class='cell c0';
         $cells[0]->data=get_string('submissiontype', 'turnitintool').turnitintool_help_icon('submissiontype',get_string('submissiontype','turnitintool'),'turnitintool',true,false,'',true);
 
@@ -4897,6 +4944,7 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
                 $param_type=0;
             }
 
+            $cells[1] = new stdClass();
             $cells[1]->class='cell c1';
             $cells[1]->data='<select onchange="turnitintool_jumptopage(this.value)">';
             $cells[1]->data.='<option label="Select Submission Type" value="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.
@@ -4916,15 +4964,18 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
             <input id="submissiontype" name="submissiontype" type="hidden" value="'.$param_type.'" />';
         } else if ($turnitintool->type==1) {
             $param_type=1;
+            $cells[1] = new stdClass();
             $cells[1]->data='<input id="submissiontype" name="submissiontype" type="hidden" value="1" />'.get_string('fileupload','turnitintool');
         } else if ($turnitintool->type==2) {
             $param_type=2;
+            $cells[1] = new stdClass();
             $cells[1]->data='<input id="submissiontype" name="submissiontype" type="hidden" value="2" />'.get_string('textsubmission','turnitintool');
         }
 
         $output.='<b>'.get_string('submit','turnitintool').'</b><br />
     <form enctype="multipart/form-data" action="'.$CFG->wwwroot.'/mod/turnitintool/view.php'.'?id='.$cm->id.'&do=submissions&type='.$param_type.'" method="POST" name="submissionform">';
 
+        $table->rows[0] = new stdClass();
         $table->rows[0]->class='r0';
         $table->rows[0]->cells=$cells;
         $context = get_context_instance(CONTEXT_MODULE, $cm->id);
@@ -4935,15 +4986,20 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
                 $utype="tutor";
                 // If tutor submitting on behalf of student
                 unset($cells);
+                $cells[0] = new stdClass();
                 $cells[0]->class='cell c0';
                 $cells[0]->data=get_string('studentsname', 'turnitintool').turnitintool_help_icon('studentsname',get_string('studentsname','turnitintool'),'turnitintool',true,false,'',true);
 
                 if (count($cansubmit)>0) {
+                    $cells[1] = new stdClass();
                     $cells[1]->data='<select name="userid" id="userid" onchange="updateSubForm(submissionArray,stringsArray,this.form,'.$turnitintool->reportgenspeed.')">';
+
+                    $module_group = turnitintool_module_group( $cm ); 
+                    $studentusers = array_keys( get_users_by_capability($context,'mod/turnitintool:submit','u.id','','','',$module_group,'',false) );
 
                     foreach ($cansubmit as $courseuser) {
                         // Filter Guest users, admins and grader users
-                        if (has_capability('mod/turnitintool:submit',$context, $courseuser->id, false)) {
+                        if (in_array( $courseuser->id, $studentusers ) ) {
 
                             if (!is_null($param_userid) AND $param_userid==$courseuser->id) {
                                 $selected=' selected';
@@ -4962,17 +5018,22 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
                         $disableform=true;
                     }
                 } else {
+                    $cells[1] = new stdClass();
                     $cells[1]->data='<i>'.get_string('noenrolledstudents','turnitintool').'</i>';
                 }
+                $table->rows[1] = new stdClass();
                 $table->rows[1]->class='r1';
                 $table->rows[1]->cells=$cells;
             } else {
                 $utype="student";
                 // If student submitting
                 unset($cells);
+                $cells[0] = new stdClass();
                 $cells[0]->class='cell c0';
                 $cells[0]->data='';
+                $cells[1] = new stdClass();
                 $cells[1]->data='<input id="userid" name="userid" type="hidden" value="'.$USER->id.'" />';
+                $table->rows[1] = new stdClass();
                 $table->rows[1]->class='r1';
                 $table->rows[1]->cells=$cells;
             }
@@ -4980,6 +5041,7 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
             if (!$disableform) {
 
                 unset($cells);
+                $cells[0] = new stdClass();
                 $cells[0]->class='cell c0';
                 $cells[0]->data=get_string('submissiontitle', 'turnitintool').turnitintool_help_icon('submissiontitle',
                         get_string('submissiontitle','turnitintool'),
@@ -4988,16 +5050,20 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
                         false,
                         '',
                         true);
+                $cells[1] = new stdClass();
                 $cells[1]->data='<input type="text" name="submissiontitle" class="formwide" maxlength="200" value="'.$submissiontitle.'" />&nbsp;<span id="submissionnotice"></span>';
+                $table->rows[2] = new stdClass();
                 $table->rows[2]->class='r0';
                 $table->rows[2]->cells=$cells;
 
                 if (count($parts)>1) {
 
                     unset($cells);
+                    $cells[0] = new stdClass();
                     $cells[0]->class='cell c0';
                     $cells[0]->data=get_string('submissionpart', 'turnitintool').turnitintool_help_icon('submissionpart', get_string('submissionpart','turnitintool'),
                             'turnitintool',true,false,'',true);
+                    $cells[1] = new stdClass();
                     $cells[1]->data='<select name="submissionpart" class="formwide" onchange="updateSubForm(submissionArray,stringsArray,this.form,'.$turnitintool->reportgenspeed.',\''.$utype.'\')">';
 
                     $i=0;
@@ -5007,29 +5073,36 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
                     }
 
                     $cells[1]->data.='</select>';
+                    $table->rows[3] = new stdClass();
                     $table->rows[3]->class='r1';
                     $table->rows[3]->cells=$cells;
 
                 } else {
                     unset($cells);
+                    $cells[0] = new stdClass();
                     $cells[0]->class='cell c0';
                     $cells[0]->data=get_string('submissionpart', 'turnitintool').
                             turnitintool_help_icon('submissionpart',get_string('submissionpart','turnitintool'),'turnitintool',true,false,'',true);
 
                     foreach ($parts as $part) { // Do parts that have not yet been submitted to
+                        $cells[1] = new stdClass();
                         $cells[1]->data=$part->partname.'<input type="hidden" name="submissionpart" value="'.$part->id.'" />';
                         break;
                     }
+                    $table->rows[3] = new stdClass();
                     $table->rows[3]->class='r1';
                     $table->rows[3]->cells=$cells;
                 }
 
                 if ($param_type==1) {
                     unset($cells);
+                    $cells[0] = new stdClass();
                     $cells[0]->class='cell c0';
                     $cells[0]->data=get_string('filetosubmit', 'turnitintool').turnitintool_help_icon('filetosubmit',get_string('filetosubmit','turnitintool'),'turnitintool',true,false,'',true);
+                    $cells[1] = new stdClass();
                     $cells[1]->data='<input type="hidden" name="MAX_FILE_SIZE" value="'.$turnitintool->maxfilesize.'" />';
                     $cells[1]->data.='<input type="file" name="submissionfile" size="55%" />';
+                    $table->rows[4] = new stdClass();
                     $table->rows[4]->class='r0';
                     $table->rows[4]->cells=$cells;
                 }
@@ -5038,9 +5111,12 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
                     unset($cells);
                     $submissiontext=optional_param('submissiontext','',PARAM_CLEAN);
 
+                    $cells[0] = new stdClass();
                     $cells[0]->class='cell c0';
                     $cells[0]->data=get_string('texttosubmit', 'turnitintool').turnitintool_help_icon('texttosubmit',get_string('texttosubmit','turnitintool'),'turnitintool',true,false,'',true);
+                    $cells[1] = new stdClass();
                     $cells[1]->data='<textarea name="submissiontext" class="submissionText">'.$submissiontext.'</textarea>';
+                    $table->rows[5] = new stdClass();
                     $table->rows[5]->class='r1';
                     $table->rows[5]->cells=$cells;
                 }
@@ -5049,9 +5125,12 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
                     unset($cells);
                     $submissionurl=optional_param('submissionurl','',PARAM_CLEAN);
 
+                    $cells[0] = new stdClass();
                     $cells[0]->class='cell c0';
                     $cells[0]->data=get_string('urltosubmit', 'turnitintool').turnitintool_help_icon('urltosubmit',get_string('urltosubmit','turnitintool'),'turnitintool',true,false,'',true);
+                    $cells[1] = new stdClass();
                     $cells[1]->data='<input type="text" name="submissionurl" class="formwide" value="'.$submissionurl.'" />';
+                    $table->rows[6] = new stdClass();
                     $table->rows[6]->class='r0';
                     $table->rows[6]->cells=$cells;
                 }
@@ -5063,24 +5142,33 @@ function turnitintool_view_submission_form($cm,$turnitintool,$submissionid=NULL)
 
                 if ( has_capability('mod/turnitintool:grade', $context) OR empty($CFG->turnitin_agreement) ) {
                     unset($cells);
+                    $cells[0] = new stdClass();
                     $cells[0]->class='cell c0';
                     $cells[0]->data='';
+                    $cells[1] = new stdClass();
                     $cells[1]->data='<input type="hidden" name="agreement" value="1" />';
+                    $table->rows[7] = new stdClass();
                     $table->rows[7]->class='r1';
                     $table->rows[7]->cells=$cells;
                 } else {
                     unset($cells);
+                    $cells[0] = new stdClass();
                     $cells[0]->class='cell c0';
                     $cells[0]->data='<input type="checkbox" name="agreement" value="1"'.$checked.' />';
+                    $cells[1] = new stdClass();
                     $cells[1]->data=$CFG->turnitin_agreement;
+                    $table->rows[7] = new stdClass();
                     $table->rows[7]->class='r1';
                     $table->rows[7]->cells=$cells;
                 }
 
                 unset($cells);
+                $cells[0] = new stdClass();
                 $cells[0]->class='cell c0';
                 $cells[0]->data='&nbsp;';
+                $cells[1] = new stdClass();
                 $cells[1]->data='<input name="submitbutton" type="submit" value="'.get_string('addsubmission', 'turnitintool').'" />';
+                $table->rows[8] = new stdClass();
                 $table->rows[8]->class='r0';
                 $table->rows[8]->cells=$cells;
             }
@@ -5181,6 +5269,7 @@ function turnitintool_checkforsubmission($cm,$turnitintool,$partid,$userid) {
     $loaderbar = new turnitintool_loaderbarclass(2);
 
     $owner=turnitintool_get_owner($turnitintool->course);
+    $post = new stdClass();
     $post->ctl=turnitintool_getCTL($turnitintool->course);
     $post->cid=turnitintool_getCID($turnitintool->course);
     $post->tem=$owner->email;
@@ -5191,6 +5280,7 @@ function turnitintool_checkforsubmission($cm,$turnitintool,$partid,$userid) {
     $post->assignid=turnitintool_getAID($part->id); // Get the Assignment ID for this Assignment / Turnitintool instance
     $post->assign=$turnitintool->name.' - '.$part->partname.' (Moodle '.$post->assignid.')';
 
+    $status = new stdClass();
     $status->user=get_string('student','turnitintool');
     $status->proc=1;
     $tii->listSubmissions($post,get_string('updatingscores','turnitintool',$status));
@@ -5225,6 +5315,7 @@ function turnitintool_checkforsubmission($cm,$turnitintool,$partid,$userid) {
             $subupdate['submission_nmfirstname']='';
             $subupdate['submission_nmlastname']='';
             if (!$updateid=turnitintool_update_record('turnitintool_submissions',$subupdate)) {
+exit();
                 turnitintool_print_error('submissionupdateerror', 'turnitintool', null, null, __FILE__, __LINE__);
                 exit();
             }
@@ -5275,9 +5366,10 @@ function turnitintool_dofileupload($cm,$turnitintool,$userid,$post) {
         $error=true;
     }
 
-    $allowed=array('doc','docx','rtf','txt','pdf','htm','html');
-
-    if (!in_array(array_pop(explode('.',$_FILES['submissionfile']['name'])),$allowed)) {
+    $allowed=array('doc','docx','rtf','txt','pdf','htm','html','odt','hwp','ps','wpd');
+    $explode = explode('.',$_FILES['submissionfile']['name']);
+    $pop = array_pop($explode);
+    if (!in_array($pop,$allowed)) {
         $notice["error"].=get_string('submissionfiletypeerror','turnitintool',join(', ',$allowed)).'<br />';
         $error=true;
     }
@@ -5311,7 +5403,8 @@ function turnitintool_dofileupload($cm,$turnitintool,$userid,$post) {
         exit();
     }
 
-    $extension=array_pop(explode('.',$_FILES['submissionfile']['name']));
+    $explode = explode('.',$_FILES['submissionfile']['name']);
+    $extension=array_pop($explode);
     $_FILES['submissionfile']['name']=$post['submissionpart'].'_'.time().'_'.$userid.'.'.$extension;
 
     $upload = new upload_manager();
@@ -5571,7 +5664,7 @@ function turnitintool_tempfile($suffix) {
  * @param object $submission The submission object for this submission
  */
 function turnitintool_upload_submission($cm,$turnitintool,$submission) {
-    global $CFG;
+    global $CFG, $USER;
 
     if (!$course = turnitintool_get_record('course','id',$turnitintool->course)) {
         turnitintool_print_error('coursegeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
@@ -5585,6 +5678,7 @@ function turnitintool_upload_submission($cm,$turnitintool,$submission) {
 
     $user=turnitintool_get_moodleuser($submission->userid,NULL,__FILE__,__LINE__);
     $owner = turnitintool_get_owner($turnitintool->course);
+    $post = new stdClass();
     $post->oid=(!is_null($submission->submission_objectid)) ? $submission->submission_objectid : '';
 
     $loaderbar = new turnitintool_loaderbarclass(4); // (2xStart/End Session and Submit Paper total 3
@@ -5624,11 +5718,11 @@ function turnitintool_upload_submission($cm,$turnitintool,$submission) {
         fwrite($tempfile,$file->get_content());
         fclose($tempfile);
         $filepath=$tempname;
-        activityLog("SUBID: ".$submission->id." - Using 2.0 File API","UPLOAD");
+        turnitintool_activitylog("SUBID: ".$submission->id." - Using 2.0 File API","UPLOAD");
     } else {
         $tempname=null;
         $filepath=$CFG->dataroot.'/'.turnitintool_file_path($cm,$turnitintool,$submission->userid).'/'.$submission->submission_filename;
-        activityLog("SUBID: ".$submission->id." - Using pre 2.0 File API","UPLOAD");
+        turnitintool_activitylog("SUBID: ".$submission->id." - Using pre 2.0 File API","UPLOAD");
     }
 
     // Give join class 3 tries, fix for 220 errors, fail over and log failure in activity logs
@@ -5638,7 +5732,7 @@ function turnitintool_upload_submission($cm,$turnitintool,$submission) {
             break;
         } else {
             $loaderbar->total = $loaderbar->total + 1;
-            activityLog( "Failed: " . $tii->getRcode(), "JOINCLASS FAILED" );
+            turnitintool_activitylog( "Failed: " . $tii->getRcode(), "JOINCLASS FAILED" );
         }
     }
 
@@ -5665,6 +5759,7 @@ function turnitintool_upload_submission($cm,$turnitintool,$submission) {
             $queued=0;
         }
         if (!$queued) {
+            $update->submission_score=null;
             $update->submission_status=$status;
             $update->submission_queued=$queued;
             $update->submission_modified=time();
@@ -5693,6 +5788,20 @@ function turnitintool_upload_submission($cm,$turnitintool,$submission) {
         turnitintool_print_error('submissionupdateerror','turnitintool',NULL,NULL,__FILE__,__LINE__);
         exit();
     }
+
+    if (function_exists('events_trigger')) {
+        // Trigger assessable_submitted event on submission.
+        $eventdata = new stdClass();
+        $eventdata->modulename = 'turnitintool';
+        $eventdata->cmid = $cm->id;
+        $eventdata->itemid = $submission->id;
+        $eventdata->courseid = $course->id;
+        $eventdata->userid = $USER->id;
+        events_trigger('assessable_submitted', $eventdata);
+    }
+    
+    add_to_log($turnitintool->course, "turnitintool", "submit", "view.php?id=$cm->id", "User submitted '$submission->submission_title'", "$cm->id", $user->id);
+    
     $tii->endSession();
 
     if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id))) {
@@ -5754,6 +5863,7 @@ function turnitintool_synch_parts($cm,$turnitintool,$forced=false,$loaderbar=NUL
         $tii->startSession();
         $tiitooldone=false;
         foreach ($parts as $part) {
+            $post = new stdClass();
             $post->cid=turnitintool_getCID($turnitintool->course);
             $post->ctl=turnitintool_getCTL($turnitintool->course);
             $post->assign=$turnitintool->name.' - '.$part->partname.' (Moodle: '.$part->tiiassignid.')';
@@ -5768,6 +5878,7 @@ function turnitintool_synch_parts($cm,$turnitintool,$forced=false,$loaderbar=NUL
 
                 if (!$tiitooldone) {
 
+                    $tiiupdate = new stdClass();
                     $tiiupdate->id=$turnitintool->id;
                     $tiiupdate->anon=$assignObj->anon;
                     $tiiupdate->reportgenspeed=$assignObj->report_gen_speed;
@@ -5780,6 +5891,7 @@ function turnitintool_synch_parts($cm,$turnitintool,$forced=false,$loaderbar=NUL
                         mtrace(get_string('turnitintoolupdateerror','turnitintool').' - ID: '.$turnitintool->id.'\n');
                     }
 
+                    $partupdate = new stdClass();
                     $partupdate->id=$part->id;
                     $partupdate->maxmarks=$assignObj->maxpoints;
                     $partupdate->dtstart=$assignObj->dtstart;
@@ -5925,6 +6037,7 @@ function turnitintool_duplicate_recycle($courseid,$action,$legacy=false) {
         if (!$parts=turnitintool_get_records_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted=0')) {
             turnitintool_print_error('partgeterror','turnitintool',NULL,NULL,__FILE__,__LINE__);
         }
+        // Now build up the part array
         foreach ($parts as $part) {
             $partsarray[$courseid][$turnitintool->id][$part->id]['cid']=turnitintool_getCID($courseid);
             $partsarray[$courseid][$turnitintool->id][$part->id]['ctl']=turnitintool_getCTL($courseid);
@@ -5977,6 +6090,7 @@ function turnitintool_duplicate_recycle($courseid,$action,$legacy=false) {
             foreach ($v2 as $partid => $data) {
 
                 // Get the current assignment part settings from Turnitin
+                $post = new stdClass();
                 $post->cid=$data['cid'];
                 $post->ctl=$data['ctl'];
                 $post->assign=$data['assign'];
@@ -6175,30 +6289,31 @@ function turnitintool_grades($turnitintoolid) {
         $parts=turnitintool_get_records_select('turnitintool_parts',"turnitintoolid=".$turnitintoolid." AND deleted=0","dtpost DESC");
         $partsarray=array_keys($parts);
         $cm=get_coursemodule_from_instance("turnitintool", $turnitintool->id, $turnitintool->course);
+        $scale=turnitintool_get_record('scale','id',$turnitintool->grade*-1);
 
         // Convert the data object into a userid based more useful array
         // ie submission[userid][submission][key]=data [[[[
         foreach ($submissions as $submission) {
             $submission=get_object_vars($submission);
             $keys=array_keys($submission);
+            $thisuserid=$submission["userid"];
+            $thissubmissionid=$submission["id"];
+            $usersubmissions[$thisuserid][$thissubmissionid] = new stdClass();
             for ($i=0;$i<count($keys);$i++) {
                 if (in_array($submission['submission_part'],$partsarray)) {
                     $thiskey=$keys[$i];
                     $thisvalue=$submission[$thiskey];
-                    $thisuserid=$submission["userid"];
-                    $thissubmissionid=$submission["id"];
                     $usersubmissions[$thisuserid][$thissubmissionid]->$thiskey=$thisvalue;
                 }
             }
         }
         // ]]]]
 
-        $userids=array_keys($usersubmissions); // Make userids an array using the keys (Real Userid)
-
-        foreach ($userids as $userid) {
-            $grades[$userid]=turnitintool_overallgrade($turnitintool,$usersubmissions,$userid);
+        foreach ( $usersubmissions as $userid => $userdataarray ) {
+            $grades[$userid]=turnitintool_overallgrade($userdataarray,$turnitintool->grade,$parts,$scale);
         }
 
+        $return = new stdClass();
         $return->grades = $grades;
         $return->maxgrade = $turnitintool->grade;
 
@@ -6290,11 +6405,16 @@ function turnitintool_get_owner($courseid) {
 function turnitintool_url_jumpto($userid,$jumppage,$turnitintool,$utp=null,$objectid=null,$partid=null,$export_data=null) {
     global $CFG;
     $thisuser=turnitintool_get_moodleuser($userid,NULL,__FILE__,__LINE__);
+    $cm=get_coursemodule_from_instance("turnitintool", $turnitintool->id, $turnitintool->course);
+    if ( $utp > 1 AND !has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $cm->id)) ) {
+        turnitintool_print_error('permissiondeniederror','turnitintool',NULL,NULL,__FILE__,__LINE__);
+    }
     $loaderbar = NULL;
     $tii = new turnitintool_commclass(turnitintool_getUID($thisuser),$thisuser->firstname,$thisuser->lastname,$thisuser->email,$utp,$loaderbar,false);
     $tii->startSession();
     $newuser=turnitintool_usersetup($thisuser,get_string('userprocess','turnitintool'),$tii,$loaderbar);
 
+    $post = new stdClass();
     $post->cid = turnitintool_getCID( $turnitintool->course );
     $post->ctl = turnitintool_getCTL( $turnitintool->course );
     $post->paperid = $objectid;
@@ -6341,11 +6461,11 @@ function turnitintool_url_jumpto($userid,$jumppage,$turnitintool,$utp=null,$obje
  */
 function turnitintool_redirect($url) {
     if (!headers_sent($f,$l)) {
-        activityLog("header() REDIRECT START ".$url,"REDIRECT");
+        turnitintool_activitylog("header() REDIRECT START ".$url,"REDIRECT");
         header('Location: '.$url);
-        activityLog("header() REDIRECT END ".$url,"REDIRECT");
+        turnitintool_activitylog("header() REDIRECT END ".$url,"REDIRECT");
     } else {
-        activityLog("JS / META REDIRECT START ".$url,"REDIRECT");
+        turnitintool_activitylog("JS / META REDIRECT START ".$url,"REDIRECT");
         echo '
         <a href="'.$url.'" id="redirectlink">'.get_string('redirect','turnitintool').'</a>
         <script language="javascript">
@@ -6356,7 +6476,7 @@ function turnitintool_redirect($url) {
         <meta http-equiv="Refresh" content="0;url='.$url.'" />
         </noscript>
         ';
-        activityLog("JS / META REDIRECT END ".$url,"REDIRECT");
+        turnitintool_activitylog("JS / META REDIRECT END ".$url,"REDIRECT");
     }
     exit();
 }
@@ -6371,11 +6491,15 @@ function turnitintool_redirect($url) {
  * @return array An array of data objects
  */
 function turnitintool_get_records_sql($sql,$params=NULL,$limitfrom=0,$limitnum=0) {
-    global $DB;
+    global $DB, $CFG;
     if (is_callable(array($DB,'get_records_sql'))) {
         $return = $DB->get_records_sql($sql,$params,$limitfrom,$limitnum);
     } else {
-        $return = get_records_sql($sql,$params,$limitfrom,$limitnum);
+        $sql = preg_replace('/\{([a-z][a-z0-9_]*)\}/', $CFG->prefix.'$1', $sql);
+        $params = addslashes_recursive( $params );
+        $sql = vsprintf( str_replace("?","'%s'",$sql), $params );
+        //$sql = sql_magic_quotes_hack( $sql );
+        $return = get_records_sql($sql,$limitfrom,$limitnum);
     }
     return $return;
 }
@@ -6392,6 +6516,21 @@ function turnitintool_count_records_sql($sql,$params=NULL) {
         return $DB->count_records_sql($sql,$params);
     } else {
         return count_records_sql($sql,$params);
+    }
+}
+/**
+ * Abstracts the sql_concat function to work across versions
+ *
+ * @param string $element
+ * @return string
+ */
+function turnitintool_sql_concat() {
+    global $DB;
+    $args = func_get_args();
+    if (is_callable(array($DB,'sql_concat'))) {
+        return call_user_func_array( array($DB, 'sql_concat'), $args );
+    } else {
+        return call_user_func_array( 'sql_concat', $args );
     }
 }
 /**
@@ -6498,7 +6637,7 @@ function turnitintool_get_record_select($table,$select,$fields='*') {
  */
 function turnitintool_update_record($table,$dataobject) {
     global $DB;
-    $dataobject=(object) array_map('turnitintool_replace_quote', (array)$dataobject);
+    $dataobject = json_decode(json_encode($dataobject));
     if (is_callable(array($DB,'update_record'))) {
         return $DB->update_record($table,$dataobject);
     } else {
@@ -6517,7 +6656,7 @@ function turnitintool_update_record($table,$dataobject) {
  */
 function turnitintool_insert_record($table,$dataobject,$returnid=true,$primarykey='id') {
     global $DB;
-    $dataobject=(object) array_map('turnitintool_replace_quote', (array)$dataobject);
+    $dataobject = json_decode(json_encode($dataobject));
     if (is_callable(array($DB,'insert_record'))) {
         return $DB->insert_record($table,$dataobject,$returnid,$primarykey);
     } else {
@@ -6718,33 +6857,51 @@ function turnitintool_modform_help_icon($element, $string, $module, $mform) {
  */
 function turnitintool_print_table($table, $return=false) {
     // Table Object use:
+    // $table = new stdClass();
     // $table->width = '';
     // $table->id = '';
     // $table->class = '';
     // $table->tablealign = '';
-    // $table->rows[]->id = '';
-    // $table->rows[]->class = '';
-    // $table->rows[]->cells[]->id = '';
-    // $table->rows[]->cells[]->class = '';
-    // $table->rows[]->cells[]->data = '';
+    // $table->rows[0] = new stdClass();
+    // $table->rows[0]->id = '';
+    // $table->rows[0]->class = '';
+    // $table->rows[0]->cells[0]->id = '';
+    // $table->rows[0]->cells[0]->class = '';
+    // $table->rows[0]->cells[0]->data = '';
     $width=(isset($table->width) AND strlen($table->width)>0) ? " width=\"".$table->width."\"" : "";
     $id=(isset($table->id) AND strlen($table->id)>0) ? " id=\"".$table->id."\"" : "";
     $class=(isset($table->class) AND strlen($table->class)>0) ? " class=\"".$table->class."\"" : "";
     $tablealign=(isset($table->tablealign) AND strlen($table->tablealign)>0) ? " align=\"".$table->tablealign."\"" : "";
-    $output="<table".$width.$id.$class.$tablealign.">\n";
+    $style=(isset($table->style) AND strlen($table->style)>0) ? " style=\"".$table->style."\"" : "";
+    $output="<table".$width.$id.$class.$tablealign.$style."><thead>\n";
+    $thead = false;
     foreach ($table->rows as $row) {
         $class=(isset($row->class) AND strlen($row->class)>0) ? " class=\"".$row->class."\"" : "";
         $id=(isset($row->id) AND strlen($row->id)>0) ? " id=\"".$row->id."\"" : "";
         $output.="\t<tr".$id.$class.">\n";
-        foreach ($row->cells as $cell) {
+        if ( isset( $row->cells ) ) {
+            $celltag = 'td';
+            $cells = $row->cells;
+        } else if ( isset( $row->hcells ) ) {
+            $celltag = 'th';
+            $cells = $row->hcells;
+        }
+        foreach ($cells as $cell) {
             $class=(isset($cell->class) AND strlen($cell->class)>0) ? " class=\"".$cell->class."\"" : "";
             $id=(isset($cell->id) AND strlen($cell->id)>0) ? " id=\"".$cell->id."\"" : "";
             $data=(isset($cell->data) AND strlen($cell->data)>0) ? $cell->data : "&nbsp;";
-            $output.="\t\t<td".$id.$class.">".$data."</td>\n";
+            $output.="\t\t<".$celltag.$id.$class.">".$data."</".$celltag.">\n";
         }
-        $output.="\t</tr>\n";
+        if ( !$thead ) {
+            $thead = true;
+            $body_ot = ( count( $table->rows ) == 1 ) ? '' : '<tbody>';
+            $body_ct = ( count( $table->rows ) == 1 ) ? '' : '</tbody>';
+            $output.="\t</tr></thead>$body_ot\n";
+        } else {
+            $output.="\t</tr>\n";
+        }
     }
-    $output.="</table>\n";
+    $output.="$body_ct</table><br /><br />\n";
     if ($return) {
         return $output;
     } else {
@@ -6782,13 +6939,15 @@ function turnitintool_header($cm,$course,$url,$title='', $heading='', $navigatio
         if (!is_null($cmid)) {
             $category = $DB->get_record('course_categories', array('id'=>$course->category));
             $PAGE->navbar->ignore_active();
-            $PAGE->navbar->add($category->name, new moodle_url($CFG->wwwroot.'/course/category.php', array('id'=>$course->category)));
+            if (isset($category->name)) $PAGE->navbar->add($category->name, new moodle_url($CFG->wwwroot.'/course/category.php', array('id'=>$course->category)));
             $PAGE->navbar->add($course->shortname, new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$course->id)));
             $PAGE->navbar->add(get_string('modulenameplural', 'turnitintool'), new moodle_url($CFG->wwwroot.'/mod/turnitintool/index.php', array('id'=>$course->id)));
             $PAGE->navbar->add($title);
             $PAGE->set_button(update_module_button($cmid, $courseid, get_string('modulename', 'turnitintool')));
         }
 
+        $url_array = explode( '/mod/turnitintool', $url, 2 );
+        $url = '/mod/turnitintool/'.$url_array[1];
         $PAGE->set_url($url);
         $PAGE->set_title($title);
         $PAGE->set_heading($heading);
@@ -6838,7 +6997,7 @@ function turnitintool_duplicatewarning($cm, $turnitintool) {
         foreach ($parts as $part) {
             $dup_parts = turnitintool_get_records_select('turnitintool_parts',
                                                          'tiiassignid='.$part->tiiassignid.
-                                                         ' AND turnitintoolid!='.$part->turnitintoolid);
+                                                         ' AND turnitintoolid!='.$part->turnitintoolid.' AND deleted=0');
             $dup_parts = (is_array($dup_parts)) ? $dup_parts : array();
             foreach ($dup_parts as $dup_part) {
                 $dups[] = $dup_part;
@@ -6878,7 +7037,7 @@ function turnitintool_duplicatewarning($cm, $turnitintool) {
  */
 function turnitintool_print_error($input,$module=NULL,$link=NULL,$param=NULL,$file=__FILE__,$line=__LINE__) {
     global $CFG;
-    activityLog($input,"PRINT_ERROR");
+    turnitintool_activitylog($input,"PRINT_ERROR");
 
     if (is_null($module)) {
         $message=$input;
@@ -6921,7 +7080,7 @@ function turnitintool_print_error($input,$module=NULL,$link=NULL,$param=NULL,$fi
  * @param string $activity The activity prompting the log
  * e.g. PRINT_ERROR (default), API_ERROR, INCLUDE, REQUIRE_JS, REQUIRE_ONCE, REQUEST, REDIRECT
  */
-function activityLog($string,$activity) {
+function turnitintool_activitylog($string,$activity) {
     global $CFG;
     if (isset($CFG->turnitin_enablediagnostic) AND $CFG->turnitin_enablediagnostic) {
         // ###### DELETE SURPLUS LOGS #########
@@ -6956,36 +7115,10 @@ function activityLog($string,$activity) {
 function turnitintool_process_api_error() {
     if (isset($_SESSION['turnitintool_errorarray'])) {
         $errorarray=$_SESSION['turnitintool_errorarray'];
-        activityLog($errorarray['input'],"API_ERROR");
+        turnitintool_activitylog($errorarray['input'],"API_ERROR");
         unset($_SESSION['turnitintool_errorarray']);
         turnitintool_print_error($errorarray['input'],$errorarray['module'],$errorarray['link'],$errorarray['param'],$errorarray['file'],$errorarray['line']);
         exit();
-    }
-}
-/**
- * Replaces single quotes (') with '&#39;'
- *
- * @param string $string The string input
- * @return string A reformatted string
- */
-function turnitintool_replace_quote($string) {
-    if (!is_null($string)) {
-        return str_replace("'","&#39;",$string);
-    } else {
-        return null;
-    }
-}
-/**
- * Replaces single html (&#39;) with (')
- *
- * @param string $string The string input
- * @return string A reformatted string
- */
-function turnitintool_fix_quote($string) {
-    if (!is_null($string)) {
-        return str_replace("&#39;","'",$string);
-    } else {
-        return null;
     }
 }
 /**
@@ -7011,7 +7144,7 @@ function turnitintool_module_group($cm) {
  */
 function turnitintool_pseudoemail( $email ) {
     global $CFG;
-    $salt = $CFG->turnitin_pseudosalt;
+    $salt = !isset( $CFG->turnitin_pseudosalt ) ? '' : $CFG->turnitin_pseudosalt;
     $domain = empty( $CFG->turnitin_pseudoemaildomain ) ? '@tiimoodle.com' : $CFG->turnitin_pseudoemaildomain;
     if ( substr( $domain, 0, 1 ) != '@' ) {
         $domain = '@' . $domain;
@@ -7041,6 +7174,7 @@ function turnitintool_pseudolastname( $email ) {
     $user_info = turnitintool_get_record( 'user_info_data', 'userid', $user->id, 'fieldid', $CFG->turnitin_pseudolastname );
     if ( ( !isset( $user_info->data ) OR empty( $user_info->data ) ) AND $CFG->turnitin_pseudolastname != 0 AND $CFG->turnitin_lastnamegen == 1 ) {
         $uniqueid = strtoupper(strrev(uniqid()));
+        $userinfo = new stdClass();
         $userinfo->userid = $user->id;
         $userinfo->fieldid = $CFG->turnitin_pseudolastname;
         $userinfo->data = $uniqueid;
@@ -7051,7 +7185,7 @@ function turnitintool_pseudolastname( $email ) {
             turnitintool_insert_record( 'user_info_data', $userinfo );
         }
     } else if ( $CFG->turnitin_pseudolastname != 0 ) {
-        $uniqueid = $user_info->data;
+        $uniqueid = isset( $user_info->data ) ? $user_info->data : 'Unset';
     } else {
         $uniqueid = get_string( 'user' );
     }
@@ -7081,18 +7215,70 @@ function turnitintool_updateavailable( $module ) {
     // Use the comms class so we can make sure the call is using any proxy in place
     $tii = new turnitintool_commclass('','','','','',$loaderbar);
     $result = $tii->doRequest("GET", $basedir . "moodledirect_latest.xml", "");
-    if ( strlen( $result ) > 0 AND $tii->xmlToArray( $result ) ) {
-        $version = $tii->_xmlarray["MOODLEDIRECT"][0]["VERSION"]['value'];
-        if ( $version <= $module->version ) {
+    $tii->xmlToSimple( $result, false );
+    $moduleversion = ( isset( $module->version ) ) ? $module->version : $module->versiondb;
+    if ( strlen( $result ) > 0 AND isset( $tii->simplexml->version ) ) {
+        $version = $tii->simplexml->version;
+        if ( $version <= $moduleversion ) {
             // No update available
             return null;
         } else {
             // Update available return URL
-            return $basedir . $tii->_xmlarray["MOODLEDIRECT"][0]["FILENAME"]['value'];
+            return $tii->simplexml->filename;
         }
     }
     // Could not find the xml file can't return URL so return null
     return null;
+}
+
+/**
+ * Build a datatables localization array
+ *
+ * @return array Array of translatable Datatable strings 
+ */
+function turnitintool_datatables_strings() {
+    
+    $return = array();
+    $return["oPaginate"]["sPrevious"] = get_string( 'sprevious', 'turnitintool' );
+    $return["oPaginate"]["sNext"] = get_string( 'snext', 'turnitintool' );
+    $return["sEmptyTable"] = get_string( 'semptytable', 'turnitintool' );
+    
+    $a = '<select>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="30">30</option>
+        <option value="40">40</option>
+        <option value="50">50</option>
+        <option value="-1">All</option>
+    </select>';
+    $return["sLengthMenu"] = get_string( 'slengthmenu', 'turnitintool', $a );
+    $return["sSearch"] = get_string( 'ssearch', 'turnitintool' );
+    $return["sProcessing"] = get_string( 'sprocessing', 'turnitintool' );
+    $return["sZeroRecords"] = get_string( 'szerorecords', 'turnitintool' );
+    
+    $a = new stdClass();
+    $a->start = '_START_';
+    $a->end = '_END_';
+    $a->total = '_TOTAL_';
+    $return["sInfo"] = get_string( 'sinfo', 'turnitintool', $a );
+    
+    return json_encode($return);
+}
+/**
+ * Moodle participation hook method for views
+ *
+ * @return array Array of available log labels
+ */
+function turnitintool_get_view_actions() {
+    return array('view');
+}
+/**
+ * Moodle participation hook method for views
+ *
+ * @return array Array of available log labels
+ */
+function turnitintool_get_post_actions() {
+    return array('submit');
 }
 
 /* ?> */

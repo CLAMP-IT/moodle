@@ -72,6 +72,30 @@ class restore_turnitintool_activity_task extends restore_activity_task {
         return $rules;
 
     }
+
+    /**
+     * Define the restore log rules that will be applied by the {@link restore_logs_processor} when restoring {@link restore_log_rule} objects
+     */
+    static public function define_restore_log_rules() {
+        $rules = array();
+
+        $rules[] = new restore_log_rule('turnitintool', 'view', 'view.php?id={course_module}', '{turnitintool}');
+        $rules[] = new restore_log_rule('turnitintool', 'add', 'view.php?id={course_module}', '{turnitintool}');
+        $rules[] = new restore_log_rule('turnitintool', 'update', 'view.php?id={course_module}', '{turnitintool}');
+        $rules[] = new restore_log_rule('turnitintool', 'delete', 'view.php?id={course_module}', '{turnitintool}');
+        $rules[] = new restore_log_rule('turnitintool', 'submit', 'view.php?id={course_module}', '{turnitintool}');
+
+        return $rules;
+    }
+
+    /**
+     * Define the restore log rules that will be applied by the {@link restore_logs_processor} when restoring {@link restore_log_rule} objects
+     */
+    static public function define_restore_log_rules_for_course() {
+        $rules = array();
+        return $rules;
+    }
+
 }
 
 //?>

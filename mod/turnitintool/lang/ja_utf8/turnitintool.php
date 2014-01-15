@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: ja
 
 $string['addcomment'] = 'コメントを追加';
@@ -313,7 +313,7 @@ $string['turnitintool:view'] = 'Turnitinツール課題を閲覧する';
 $string['turnitintooladministration'] = 'Turnitin課題管理';
 $string['turnitintoolagreement'] = '免責事項／契約';
 $string['turnitintoolagreement_default'] = 'このボックスをチェックすることによって、私はこの提出物が私自身の物であることを確認し、この提出物に関しての全ての著作権侵害の責任を負うこと誓います。';
-$string['turnitintoolagreement_desc'] = '<b>[必須]</b><br />課題においての契約確認文を入力してください。';
+$string['turnitintoolagreement_desc'] = '<b>[オプション]</b><br />提出物に対する同意確認書を記入してください。<br />(<b>注意：</b>同意が完全に空白の場合、提出中に受講生の同意確認は必要ありません）';
 $string['turnitintooldeleteerror'] = 'turnitintoolデータを削除することができませんでした';
 $string['turnitintoolgeterror'] = 'turnitintoolデータを得ることができませんでした';
 $string['turnitintoolintro'] = '概要';
@@ -412,3 +412,44 @@ $string['relinkusers'] = 'ユーザーを再リンクする';
 $string['unlinkrelinkusers'] = 'ユーザーのリンクを削除／再リンクする';
 $string['usersunlinkrelink'] = 'リンクを削除／再リンクしたいユーザー';
 $string['turnitinid'] = 'Turnitin ID';
+$string['defaults'] = '既定設定';
+$string['defaults_desc'] = '次の設定は Moodle Direct Turnitin の新しい課題に使用される既定設定となります。';
+$string['upgradeavailable'] = '更新がご利用できます';
+$string['studentdataprivacy'] = '受講生データプライバシー設定';
+$string['studentdataprivacy_desc'] = '次の設定は受講生&#39;sの個人情報がAPIによってTurnitinに送信されないように設定できます。';
+$string['enablepseudo'] = '受講生プライバシーを作動';
+$string['enablepseudo_desc'] = 'このオプションが選択されると、受講生メールアドレスは Turnitin API コールに変更されます。<br /><i>(<b>注意：</b> このオプションは Moodle ユーザーデータがTurnitinと既にシンクされている場合、変更することができません)</i>';
+$string['pseudofirstname'] = '受講生の偽の名前';
+$string['pseudofirstname_desc'] = '<b>[オプション]</b><br />Turnitin の文書閲覧に受講生の名前のみが表示されます。';
+$string['pseudolastname'] = '受講生の偽の名字';
+$string['pseudolastname_desc'] = '文書閲覧に受講生の名字が表示されます。';
+$string['psuedolastnamegen'] = '名字を自動作成する';
+$string['psuedolastnamegen_desc'] = 'はいに設定され、偽名字がユーザープロファイルに設定されると、そのフィールドは自動的に独特の識別名が事前設定されます。';
+$string['pseudoemailsalt'] = '偽暗号化されたサルト';
+$string['pseudoemailsalt_desc'] = '<b>[オプション]</b><br/>偽受講生メールアドレス作成の複雑さを増すために、オプショナルサルトを使用することができます。<br />(<b>注意：</b> サルトは一貫した偽メールアドレスを保つため、変更しないでください。）';
+$string['pseudoemaildomain'] = '偽メールドメイン';
+$string['pseudoemaildomain_desc'] = '<b>[オプション]</b><br />偽メールアドレスのオプションドメイン。（空白に残すと、既定で @tiimoodle.com に設定されます）';
+$string['pseudoemailaddress'] = '偽メールアドレス';
+$string['instructor'] = '講師';
+$string['files'] = 'ファイル';
+$string['filedeleteconfirm'] = 'このファイルを削除しますか？一度削除すると元に戻すことができません。';
+$string['moodle2only'] = 'この機能はMoodle 2+のみでサポートされています。';
+$string['filebrowser'] = 'Moodle Direct ファイルブラウザ';
+$string['deletable'] = '消去可能';
+$string['inactive'] = '無効';
+$string['created'] = '作成済み';
+$string['filename'] = 'ファイル名';
+$string['user'] = 'ユーザー';
+$string['sprevious'] = '前';
+$string['snext'] = '次';
+$string['semptytable'] = '検索結果がありません。';
+$string['slengthmenu'] = '{$a} 記録項目を表示';
+$string['ssearch'] = '検索：';
+$string['sprocessing'] = '処理中．．．';
+$string['szerorecords'] = '表示できる記録がありません。';
+$string['sinfo'] = '{$a->start} から {$a->end} までの {$a->total} 項目を表示する。';
+$string['unlinkedusers'] = 'リンクされていないユーザー';
+$string['modulename_help'] = 'Moodle 内のアクティビティーとTurnitinの課題をリンクする、Turnitin Moodle Direct 課題を作成します。一度リンクされると、アクティビティーは講師がTurnitin文書閲覧内の評価ツールを使って、受講生の作文を評価、およびフィードバックを提供することを可能にしてくれます。';
+$string['transmatch'] = '翻訳一致機能';
+$string['transmatch_desc'] = '翻訳一致機能が課題設定画面で利用できる機能かどうかを決定します。<br /><i>（Turnitin アカウントで翻訳一致機能が作動されている場合のみにこのプションを作動してください）</i>';
+$string['turnitintool:addinstance'] = 'Turnitin ツールアクティビティーを追加する';

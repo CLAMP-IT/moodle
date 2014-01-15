@@ -1,7 +1,7 @@
 <?php
 /**
  * @package   turnitintool
- * @copyright 2010 iParadigms LLC
+ * @copyright 2012 Turnitin
  */
 
 require_once("../../config.php");
@@ -69,6 +69,7 @@ if (!is_null($param_sub)) {
     $loaderbar = null;
     $tii = new turnitintool_commclass(turnitintool_getUID($owner),$owner->firstname,$owner->lastname,$owner->email,2,$loaderbar);
 
+    $post = new stdClass();
     $post->cid=turnitintool_getCID($course->id);
     $post->assignid=turnitintool_getAID($param_part);
     $post->ctl=turnitintool_getCTL($course->id);
@@ -78,7 +79,7 @@ if (!is_null($param_sub)) {
 
     if ($tii->getRerror()) {
         if (!$tii->getAPIunavailable()) {
-            $reason=($tii->getRcode()==DB_UNIQUEID_ERROR) ? get_string('assignmentdoesnotexist','turnitintool') : $tii->getRmessage();
+            $reason=($tii->getRcode()==TURNITINTOOL_DB_UNIQUEID_ERROR) ? get_string('assignmentdoesnotexist','turnitintool') : $tii->getRmessage();
         } else {
             $reason=get_string('apiunavailable','turnitintool');
         }

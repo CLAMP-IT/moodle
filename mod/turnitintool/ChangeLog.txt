@@ -1,3 +1,57 @@
+2013-05-20 : Refresh individual inbox row now fetches Translated Matching similarity
+2013-05-20 : Fixed issue where deleted parts were being flagged as duplicates after course reset
+2013-05-20 : Added support for backing up / restoring activity logs
+2013-05-20 : Added support for .wpd and .ps file types
+2013-05-20 : Warning that grades will be overwritten now correctly disables after due date rather than post date
+2013-05-20 : Fixed issue where user's were not able to resubmit for the option 'Generate reports on due date'
+2013-05-20 : Fixed issue with Student data privacy auto generated last name
+2013-05-20 : Fixed isse where submission modified dates
+2013-05-20 : Fixed issue in database delete call when updating inbox and purging old records
+2013-05-20 : Fixed issue where updating individual row set the submitted date to now()
+2013-04-26 : Using conventional names for all classes, constants and method names outside classes should begin TURNITINTOOL_ or turnitintool_
+2013-04-26 : Added support for quick name change in course home page where applicable to Moodle version
+2013-04-26 : Added support for .odt and .hwp files
+2013-04-26 : Fixed issue where old records that no longer exist in Turnitin were not being purged from inbox
+2013-04-26 : Added ability to refresh individual rows, this will also purge duplicates if found
+2013-04-26 : Fixed issue where db calls were called inside a loop on the submission form screen
+2013-03-19 : Adding alternative method for adding curl certificate bundles
+2013-03-19 : Fixed issue with using 'AS' in Oracle DB column aliases in JOIN clauses
+2013-03-19 : Fixed regression where 0% OR was displayed as 'Pending'
+2013-03-19 : Added missing support for groups in new inbox function
+2013-03-05 : Added fix for differing profile language when loading javascript before login
+2013-03-05 : Added some user checks to the javascript jump to page
+2013-02-25 : Fixed a warning when refreshing inbox, which caused unnecessary database updates
+2013-02-25 : Fixed a Moodel 1.9 backwards compatibility issue
+2013-02-25 : Fixed some postgres related DB issues
+2013-02-18 : Fixed issue where deleted anonymous marking parts were making export links disappear
+2013-02-18 : Fixed issue where redirects were failing if the Moodle site was ran under a sub directory e.g. examplemoodle.org/moodle/
+2013-02-18 : Added the submission title back into the anonymous marking in box rows
+2013-02-18 : Fixed issue in postgres when accessing student My Submissions page
+2012-12-04 : Moved 'Enroll All Students' actions into ajax, enroll all students can now happen while refresh submissions is running
+2012-12-04 : Removed quote conversion functions, they were causing quote duplication in oracle DBs and are no longer
+2012-12-04 : Updated assignment setup screen to allow selection of grade category where supported
+2012-12-04 : Added support for showing descriptions in the course home page where supported
+2012-12-04 : Fixed issue where $cm->id wasn't available when logging create and update assignments actions
+2012-12-03 : Fixed issue with missing parameter in sql query
+2012-11-26 : Moved refresh submission actions into ajax calls triggered by click and unload events
+2012-11-26 : Added event trigger on user submission (thanks to Andrew Nicols)
+2012-11-26 : Added more logging and implemented course participation hooks
+2012-11-26 : Removed several database queries from inside loops to improve performance
+2012-11-26 : Refactored Submission inbox views, jQuery filtering implemented to reduce database requests
+2012-11-13 : Fixed issue where 'assignment does not belong to class' errors would loop endlessly
+2012-11-04 : Fixed issue with PLUGINFILE being output, now using 'format_module_intro' when available
+2012-11-04 : Updated create assignment to use Moodle Default timezone rather than server timezone
+2012-11-04 : Added check to make sure version check XML isn't parsed unless in admin screens (thanks to Andrew Nicols)
+2012-11-04 : Refactored Refresh Submissions API call to only update database rows where values have changed
+2012-11-04 : Replaced custom XML parser with SimpleXML to decrease memory usage when parsing API responses
+2012-09-24 : Update icons with current Turnitin icons, update icons to allow multi version support
+2012-09-24 : Fixed bug where Erater settings would reset when editing an assignment part
+2012-09-24 : Added support for Translated Matching
+2012-09-24 : Fixed numerous PHP strict standards warnings
+2012-09-24 : Re-factored Unlink / Relink users page to paginate user data and reduce memory usage
+2012-09-24 : Added a config level mod_turnitintool component file browser when using Moodle 2.0+ for mod_turnitintool
+2012-09-24 : Fixed issue when defaults are used in a course reset
+2012-09-24 : Fixed Tutor management screen HTML bug
 2012-04-27 : Fixed assignment start, due and post dates to correctly use server default timezone rather than user default timezone
 2012-04-27 : Fixed issue where invalid HTML was generated after an inbox refresh
 2012-04-27 : Added feature to allow anonymized student name data during API calls

@@ -1,6 +1,6 @@
 <?php
-// Version: 2012020201
-// Date: 2012-02-02
+// Version: 2012120401
+// Date: 2012-12-04
 // Language: ko
 
 $string['addcomment'] = '논평 추가';
@@ -313,7 +313,7 @@ $string['turnitintool:view'] = 'Turnitin 도구 과제 보기';
 $string['turnitintooladministration'] = 'Turnitin 과제 관리';
 $string['turnitintoolagreement'] = '면책조항/동의';
 $string['turnitintoolagreement_default'] = '이 박스에 체크함으로써 본 제출물이 나의 저작임을 확인하며 이의 제출 결과로 발생할 수 있는 모든 저작권 침해에 대해 책임을 받아들입니다.';
-$string['turnitintoolagreement_desc'] = '<b>[필수]</b><br />제출물에 대한 동의 확인 문장을 입력하십시오.';
+$string['turnitintoolagreement_desc'] = '<b>[옵션]</b><br />제출물에 대한 동의 확인 서명을 입력하십시오.<br />(<b>참고:</b>동의서가 완전히 공백일 경우, 제출시, 학생들에 의해 동의 확인이 요구되지 않을 것입니다)';
 $string['turnitintooldeleteerror'] = 'turnitintool 데이타를 삭제할 수 없었음';
 $string['turnitintoolgeterror'] = 'turnitintool 데이타를 취득할 수 없었음';
 $string['turnitintoolintro'] = '요약';
@@ -412,3 +412,44 @@ $string['relinkusers'] = '사용자 재연결하기';
 $string['unlinkrelinkusers'] = 'Turnitin 사용자 연결 취소/재연결하기';
 $string['usersunlinkrelink'] = '연결 취소/재연결할 사용자';
 $string['turnitinid'] = 'Turnitin 아이디';
+$string['defaults'] = '기본 설정 환경';
+$string['defaults_desc'] = '다음의 환경은 새로운 Moodle 직접 Turnitin 과제에 대한 기본 설정 환경이 될 것입니다';
+$string['upgradeavailable'] = '업그레이드 가능';
+$string['studentdataprivacy'] = '학생 개인 데이타 보호 환경';
+$string['studentdataprivacy_desc'] = '학생&#39;s의 개인 데이타가 API를 통해 Turnitin에 전달되지 않을 것을 보장하는 것으로 다음의 설정 환경을 구성할 수 있습니다.';
+$string['enablepseudo'] = '학생 개인 정보 보호 활성화하기';
+$string['enablepseudo_desc'] = '본 옵션을 선택할 경우, 학생 이메일들이 Turnitin API 콜을 위해 가명으로 전환될 것입니다.<br /><i>(<b>참고:</b> 본 옵션은 Moodle 사용자 데이타가 벌써 동시화된 경우 변경할 수 없습니다))</i>';
+$string['pseudofirstname'] = '학생 가명 (이름)';
+$string['pseudofirstname_desc'] = '<b>[옵션]</b><br />Turnitin의 문서보기 창에 나타날 학생의 이름';
+$string['pseudolastname'] = '학생 가명 (성)';
+$string['pseudolastname_desc'] = 'Turnitin의 문서보기 창에 나타날 학생의 (가족) 성';
+$string['psuedolastnamegen'] = '(가족) 성 자동 작성하기';
+$string['psuedolastnamegen_desc'] = '가명 (가족) 성에 대해 동의하고, 이를 사용자 프로파일 필드에 설정한 경우, 본 필드는 자동적으로 고유한 식별력을 갖게 됩니다.';
+$string['pseudoemailsalt'] = '가 암호화 Salt';
+$string['pseudoemailsalt_desc'] = '<b>[옵션]</b><br />학생의 가이메일의 복합성을 높이기 위한 salt 옵션.<br />(<b>참고:</b>지속적인 가이메일을 유지하기 위해서는 이 salt를 변경할 수 없습니다)';
+$string['pseudoemaildomain'] = '가 이메일 도메인';
+$string['pseudoemaildomain_desc'] = '<b>[옵션]</b><br />가 이메일 주소에 대한 옵션 도메인. (공백으로 남겨져 있는 경우 @tiimoodle.com 로 설정됨)';
+$string['pseudoemailaddress'] = '가 이메일 주소';
+$string['instructor'] = '강사';
+$string['files'] = '파일';
+$string['filedeleteconfirm'] = '이 파일을 정말로 삭제하시겠습니까? 본 활동은 취소할 수 없습니다.';
+$string['moodle2only'] = '본 기능은 Moodle 2+에 의해서만 지원됩니다.';
+$string['filebrowser'] = 'Moodle 직접 파일 브라우저';
+$string['deletable'] = '삭제 가능';
+$string['inactive'] = '비활성화됨';
+$string['created'] = '생성됨';
+$string['filename'] = '파일명';
+$string['user'] = '사용자';
+$string['sprevious'] = '이전';
+$string['snext'] = '다음';
+$string['semptytable'] = '발견된 결과가 없음';
+$string['slengthmenu'] = '{$a}개의 사항 표시하기';
+$string['ssearch'] = '검색:';
+$string['sprocessing'] = '처리중...';
+$string['szerorecords'] = '기록이 없음';
+$string['sinfo'] = '{$a->total} 개의 사항 중 {$a->start} - {$a->end} 표시.';
+$string['unlinkedusers'] = '링크되지 않은 사용자들';
+$string['modulename_help'] = 'Moodle에 있는 활동과 Turnitin에 있는 과제(들)을 링크하는 Turnitin Moodle 직접 과제를 생성함. 일단 링크되면, 본 활동은 강사들이 Turnitin의 문서보기창에 있는 평가 도구들을 사용하여 학생의 작문에 대한 피드백을 제공할 수 있도록 해줍니다.';
+$string['transmatch'] = '번역된 일치';
+$string['transmatch_desc'] = '번역된 일치가 과제 설정 스크린상에서 설정환경으로 나타날 지를 결정함.<br /><i>(번역된 일치가 귀하의 Turnitin 계정에서 활성화된 경우에만 본 옵션을 활성화하십시오)</i>';
+$string['turnitintool:addinstance'] = 'Turnitin 도구 활동 추가하기';

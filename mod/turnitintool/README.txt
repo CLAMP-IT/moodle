@@ -1,5 +1,31 @@
 Moodle Direct Release Notes
 ------------------------------------------------------------------------------------
+Date:       2012-Dec-04
+Release:    v2012120401
+
+- Refactored Submission inbox views, jQuery filtering implemented to reduce database requests
+- Refactored 'Enroll All Students' and 'Refresh Submissions' to use ajax
+- Optimised database queries on inbox views and refresh submissions calls
+- Added more granular logging, now logging submission add and delete, assignment add, delete and update
+- Added a submission event handler (for Moodle 2+ only)
+
+####################################################################################
+Date:       2012-Nov-04
+Release:    v2012110401
+
+- Moodle Direct now requires PHP 5.0 server environments and above
+- Added performance improvements, specifically in-box refresh on large assignments
+- Added time-zone synchronisation improvements
+
+####################################################################################
+Date:       2012-Sept-24
+Release:    v2012092401
+
+- Added support for Translated Matching
+- Update icons with current Turnitin icons, update icons to allow multi version support
+- Added a config level mod_turnitintool component file browser when using Moodle 2.0+ for mod_turnitintool
+- Re-factored Unlink / Relink users page to paginate user data and reduce memory usage
+
 ####################################################################################
 Date:       2011-Aug-18
 Release:    v2011081801
@@ -82,7 +108,7 @@ Release:	v2010040601
 - Provides seamless integration into Turnitin using Moodle workflow 
 - Uses an activity module so that we can update Turnitin independently of Moodle 
 - Uses real Turnitin accounts to allow users to log directly in to Turnitin (should they need to) 
-- Uses a �pull� approach to information and has no �call-backs� to the local VLE 
+- Uses a 'pull' approach to information and has no 'call-backs' to the local VLE 
 - Will run behind a fire wall 
 - Will handle multi-part assignments (one assignment many files) 
 - Sends GradeMark marking information to the Moodle GradeBook 
@@ -92,10 +118,8 @@ Release:	v2010040601
 - Turnitin classes can only have one owner. The class owner is set to the person that created the course in Moodle. Only the class owner will be able to see the assignments when logging in to Native Turnitin. However you can change the class owner from within Moodle if you are an instructor. 
 
 Current Limitations
-- Doesn�t manage Moodle groups 
 - Does not support Oracle as the Moodle database
 - Will not update information changed in Turnitin by users in native Turnitin 
-- Backup and restore not yet implemented
 - Will not work with assignments created under the framed-in API 
 - No support for revision assignment, master classes, GradeMark analytics, translations, Zip file upload, PeerMark, QuickSubmit
 
