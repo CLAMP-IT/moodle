@@ -238,7 +238,7 @@ function wes_get_first_year_students($psdb,$semester) {
      AND A.EFFSEQ = B.EFFSEQ
      AND B.EFFDT = A.EFFD
      AND B.ACAD_PLAN in ('PRE-MATRIC','TCEX','VINT','FYST','TRAN') UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW'      AND C.SRVC_IND_REASON IN ('ADVIS','INTER') AND C.AMOUNT = :year";*/
-  $statement = "SELECT A.EMPLID FROM SYSADM.PS_WES_NEW_STU_TRM A WHERE A.STRM >=:strm UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW' AND C.SRVC_IND_REASON IN ('ADVIS','INTER') AND C.AMOUNT = :year";
+  $statement = "SELECT A.EMPLID FROM SYSADM.PS_WES_NEW_STU_TRM A WHERE A.STRM >=:strm UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW' AND C.SRVC_IND_REASON IN ('ADVIS','INTER','JTRAN') AND C.AMOUNT = :year";
   /* now see if it's Spring and if we have to go back a semester because the
      year of Spring is 2013, but it's the "2012" school year for the above
      query */
@@ -278,6 +278,7 @@ function wes_get_first_year_students($psdb,$semester) {
     $prev_students = wes_get_first_year_students($psdb,$prev_semester);
     $members = array_merge($prev_students,$members);
   }
+  print $members;
   return array_unique($members);
 }
 /*updates moodlecreate database with updated status */
@@ -296,8 +297,10 @@ function get_season_from_semester($semester) {
   $season = substr($semester,-1,1);
   if ($season == 9) {
     $season = "Fall";
-  } else if ($season == 0 ) {
+  } else if ($season == 1 ) {
     $season = "Spring";
+  } else if ($season == 0 ) {
+    $season = "Winter";
   } else if ($season == 6 ) {
     $season = "Summer";
   }
