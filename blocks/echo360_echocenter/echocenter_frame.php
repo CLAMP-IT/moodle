@@ -56,7 +56,7 @@
 
     // get a url to generate a session
 
-    $essapi = new echosystem_remote_api($CFG->block_echo360_configuration_echosystem_url, $CFG->block_echo360_configuration_trusted_system_consumer_key, $CFG->block_echo360_configuration_trusted_system_consumer_secret, $CFG->block_echo360_configuration_security_realm);
+    $essapi = new echosystem_remote_api($CFG->block_echo360_configuration_echosystem_url, $CFG->block_echo360_configuration_trusted_system_consumer_key, $CFG->block_echo360_configuration_trusted_system_consumer_secret);
 
     $mapping = $CFG->block_echo360_configuration_moodle_external_id_field;
 
@@ -74,17 +74,22 @@
     } else {
 
         // Generate a signed url and use it to check for 404 (mapping not configured)
-        $signedresponse = $essapi->generate_sso_url($USER->username, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, false);
-
+        $signedresponse = $essapi->generate_sso_url($USER, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, false);
+//print_object($signedresponse);
+        
         if ($signedresponse['success']) {
             // we want to test for a 404
             $curl = $essapi->get_curl_with_defaults();
-            $headers = $essapi->get_headers($curl, $signedresponse['url'], 1);
+            $headers = $essapi->get_headers($curl, $signedresponse['url'], 0);
+            // echo "Headers:<br/>";
+            // print_object($headers);
             if (!strstr($headers[0]['http'], "302")) {
                 $error_message = 'unexpected_response';
                 $e = explode(" ", $headers[0]['http'], 3);
                 $error_detail = $e[2];
-            } else if (strstr($headers[1]['http'], "404")) {
+            } 
+/*
+            else if (strstr($headers[1]['http'], "404")) {
                 $error_message = 'not_found_response';
                 $e = explode(" ", $headers[1]['http'], 3);
                 $error_detail = $e[2];
@@ -97,15 +102,17 @@
                 $e = explode(" ", $headers[1]['http'], 3);
                 $error_detail = $e[2];
             }
+            */
             curl_close($curl);
         } else {
             $error_message = 'error_generating_url';
         }
+        
     }
 
     if ($error_message == "") {
         // all good - but we already used the request - need to sign again (generate a new nonce)
-        $signedresponse = $essapi->generate_sso_url($USER->username, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, false);
+        $signedresponse = $essapi->generate_sso_url($USER, has_capability("block/echo360_configuration:viewasinstructor", $context), $COURSE->$mapping, false);
         ?>
             <div class="echocentercontrols"><a href="direct_link.php?id=<?php p($id); ?>" target="_blank" title="<?php print_string('openinnewwindow', 'block_echo360_echocenter'); ?>"><img src="<?php print($CFG->wwwroot .'/blocks/echo360_echocenter/pix/newwindow.png'); ?>" alt="<?php print_string('openinnewwindow', 'block_echo360_echocenter'); ?>" width="24" height="24"/></a></div>
             <iframe src="<?php p($signedresponse['url']); ?>" width="100%" height="1200">
