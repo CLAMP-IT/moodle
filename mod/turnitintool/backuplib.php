@@ -77,6 +77,7 @@ function turnitintool_backup_one_mod($bf,$preferences,$turnitintool) {
     fwrite ($bf,full_tag("ERATERUSAGE",4,false,$turnitintool->erater_usage));
     fwrite ($bf,full_tag("ERATERMECHANICS",4,false,$turnitintool->erater_mechanics));
     fwrite ($bf,full_tag("ERATERSTYLE",4,false,$turnitintool->erater_style));
+    fwrite ($bf,full_tag("TRANSMATCH",4,false,$turnitintool->transmatch));
 
     // Get the parts for this assignment, add check to determine the database call to enable backward compatibility
     if (is_callable(array($DB,'get_records'))) {
@@ -176,6 +177,7 @@ function backup_turnitintool_submissions($bf,$preferences,$turnitintool) {
             fwrite ($bf,full_tag("SUBMISSION_NMLASTNAME",6,false,$tii_sub->submission_nmlastname));
             fwrite ($bf,full_tag("SUBMISSION_UNANON",6,false,$tii_sub->submission_unanon));
             fwrite ($bf,full_tag("SUBMISSION_UNANONREASON",6,false,$tii_sub->submission_unanonreason));
+            fwrite ($bf,full_tag("SUBMISSION_TRANSMATCH",6,false,$tii_sub->submission_transmatch));
 
             // Get the turnitin user data for this submission, add check to determine the database call to enable backward compatibility
             if (is_callable(array($DB,'get_record'))) {
