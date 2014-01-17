@@ -10,3 +10,6 @@
 [submodule "theme/smithstandard"]
 	path = theme/smithstandard
 	url = kw:/home4/kevinwi1/public_html/git/smithstandard.git
+[submodule "local/smith-course-upload"]
+	path = local/smith-course-upload
+	url = http://kevinwiliarty.com/git/smith-course-upload.git
