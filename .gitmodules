@@ -1,0 +1,3 @@
+[submodule "report/customsql"]
+	path = report/customsql
+	url = https://github.com/timhunt/moodle-report_customsql.git
