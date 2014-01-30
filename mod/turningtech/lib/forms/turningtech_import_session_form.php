@@ -1,15 +1,25 @@
 <?php
+/**
+ * File for importing session
+ * @author jacob
+ * @package    mod_turningtech
+ * @copyright  2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
 global $CFG;
 require_once($CFG->dirroot . '/lib/formslib.php');
 /**
  * form that allows user to import session file
  * @author jacob
+ * @copyright  2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  */
 class turningtech_import_session_form extends moodleform {
     /**
-     * (non-PHPdoc)
-     * @see docroot/lib/moodleform#definition()
+     * form Definition
+     * @return unknown_type
      */
     function definition() {
         $mform =& $this->_form;
@@ -20,15 +30,13 @@ class turningtech_import_session_form extends moodleform {
         // visible elements
         $mform->addElement('header', 'turningtechimportheader', get_string('importformtitle', 'turningtech'));
         $mform->setType('turningtechimportheader', PARAM_RAW);
-        $mform->addElement('text', 'assignment_title', get_string('assignmenttitle', 'turningtech'));
-        $mform->addElement('filepicker', 'sessionfile', get_string('filetoimport', 'turningtech'), null, array(
-            'accepted_types' => 'txt'
+        $mform->addElement('filemanager', 'sessionfile', get_string('filetoimport', 'turningtech'), null, array(
+            'accepted_types' => array('.tpzx'), 'maxfiles' => 50
         ));
 
         // buttons
         $mform->addElement('checkbox', 'override', get_string('overrideallexisting', 'turningtech'));
         $mform->addRule(array(
-            'assignment_title',
             'sessionfile'
         ), null, 'required');
         // add submit/cancel buttons
@@ -48,15 +56,17 @@ class turningtech_import_session_form extends moodleform {
         $html_formatting = '</div>';
     }
     /**
-     * (non-PHPdoc)
-     * @see docroot/lib/moodleform#validation($data, $files)
+     * Validate
+     * @param unknown_type $data
+     * @param unknown_type $files
+     * @return unknown_type
      */
     function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
         // If the file actually has been uploaded.
         if (count($_FILES)) {
-            $isValid = TurningTechTurningHelper::isImportSessionFileValid($_FILES["session_file"]);
+            $isValid = TurningTechTurningHelper::isimportsessionfilevalid($_FILES["sessionfile"]);
 
             if ($isValid < 1) {
                 $errors['session_file'] = get_string('importedsesionfilenotvalid', 'turningtech');
