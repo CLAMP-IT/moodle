@@ -1,15 +1,25 @@
 <?php
+/**
+ * File for deleting course specific DeviceMaps
+ * @author jacob
+ * @package    mod_turningtech
+ * @copyright  2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
 global $CFG;
 require_once($CFG->dirroot . '/lib/formslib.php');
 
 /**
- *
+ * form class for deleting course specific devicemap
  * @author jacob
+ * @copyright  2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  */
 class turningtech_purge_course_form extends moodleform {
     /**
-     *
+     * form Definition
      * @return unknown_type
      */
     function definition() {
@@ -24,9 +34,9 @@ class turningtech_purge_course_form extends moodleform {
     }
 
     /**
-     *
-     * @param $data
-     * @param $files
+     * Validate
+     * @param unknown_type $data
+     * @param unknown_type $files
      * @return unknown_type
      */
     function validation($data, $files) {
