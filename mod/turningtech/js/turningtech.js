@@ -2,7 +2,8 @@
  * TurningTechnologies functions
  * @author jacob
  */
-
+YUI().use("yui2-dom","yui2-event", function(Y) {
+  var YAHOO = Y.YUI2;
 var TurningTech = function() {
  
   // shortcuts for YUI libs 
@@ -49,12 +50,12 @@ var TurningTech = function() {
     this.event.addListener(
       this.dom.getElementsByClassName('responsecard-form-link','a',l[0]),
       'click',
-      function() { TurnTech.showResponseCard(); }
+      function() { TurnTech.toggleResponseCard(); }
     );
     this.event.addListener(
       this.dom.getElementsByClassName('responseware-form-link','a',l[0]),
       'click',
-      function() { TurnTech.showResponseWare(); }
+      function() { TurnTech.toggleResponseWare(); }
     );
     
     // set links at the bottom to toggle
@@ -86,6 +87,7 @@ var TurningTech = function() {
   // helper function for showing elements
   this.showElements = function(node) {
     var list = this.dom.getElementsByClassName('collapsed',null,node);
+    alert(list);
     if(list.length > 0) {
       this.dom.replaceClass(list, 'collapsed', 'uncollapsed');
     }
@@ -95,16 +97,17 @@ var TurningTech = function() {
   this.toggleResponseCard = function() {
     this.toggleElements(this.dom.get('responsecard-collapse-group'));
   };
-  
+
   // toggles responseware form
   this.toggleResponseWare = function() {
+
     this.toggleElements(this.dom.get('responseware-collapse-group'));
   };
   
   // helper function for toggling elements
   this.toggleElements = function(node) {
     var list = this.dom.getElementsByClassName('uncollapsed',null,node);
-    if(list.length > 0) {
+          if(list.length > 0) {
       this.dom.replaceClass(list, 'uncollapsed','collapsed');
     }
     else {
@@ -121,3 +124,5 @@ if(YAHOO.util.Event)
 {
     YAHOO.util.Event.onDOMReady(function() { TurnTech.setup(); });
 }
+
+});

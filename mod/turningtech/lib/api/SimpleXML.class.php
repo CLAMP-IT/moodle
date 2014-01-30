@@ -1,13 +1,46 @@
 <?php
-/*  SimpleXML for PHP4  */
-
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+/**
+ * Simple XML for PHP
+ *
+ * @package   mod_turningtech
+ * @copyright 2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
+/**
+ * Simple XML for PHP
+ * @copyright 2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class SimpleXMLObject {
-    function attributes() {
+    /**
+     * Finds and returns attributes
+     * @return object
+     */
+    public function attributes() {
         $container = get_object_vars($this);
         return (object) $container["@attributes"];
     }
-
-    function content() {
+    /**
+     * Finds and returns content
+     * @return object
+     * 
+     */
+    public function content() {
         $container = get_object_vars($this);
         return (object) $container["@content"];
     }
@@ -15,32 +48,50 @@ class SimpleXMLObject {
 
 /**
  * The Main XML Parser Class
+ * @copyright 2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  */
 class SimpleXML {
-    var $result = array();
-    var $ignore_level = 0;
-    var $skip_empty_values = false;
-    var $php_errormsg;
-    var $evalCode = "";
-
-    function curl_get_file_contents($URL) {
-        if (ini_get('allow_url_fopen') != 1) {
-            @ini_set('allow_url_fopen', '1');
-        }
+    /**
+     * @var array
+     */
+    public $result = array();
+    /**
+     * @var unknown_type
+     */
+    public $ignore_level = 0;
+    /**
+     * @var unknown_type
+     */
+    public $skip_empty_values = false;
+    /**
+     * @var unknown_type
+     */
+    public $php_errormsg;
+    /**
+     * @var unknown_type
+     */
+    public $evalcode = "";
+    /**
+     * Get File Contents using curl
+     * @param string $url
+     * @return mixed
+     */
+    public function curl_get_file_contents($url) {
         if (ini_get('allow_url_fopen') != 1) {
             $c = curl_init();
             curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($c, CURLOPT_URL, $URL);
+            curl_setopt($c, CURLOPT_URL, $url);
             $contents = curl_exec($c);
             curl_close($c);
         } else {
-            $contents = file_get_contents($URL);
+            $contents = file_get_contents($url);
         }
         if ($contents) {
             return $contents;
         } else {
-            return FALSE;
+            return false;
         }
     }
 
@@ -49,10 +100,10 @@ class SimpleXML {
      *
      * @param int $level
      * @param array $tags
-     * @param $value
+     * @param mixed $value
      * @param string $type
      */
-    function array_insert($level, $tags, $value, $type) {
+    public function array_insert($level, $tags, $value, $type) {
         $temp = '';
         for ($c = $this->ignore_level + 1; $c < $level + 1; $c++) {
             if (isset($tags[$c]) && (is_numeric(trim($tags[$c])) || trim($tags[$c]))) {
@@ -63,9 +114,8 @@ class SimpleXML {
                 }
             }
         }
-        //Fix for getting PHP variable like string in XML node values (Contributor:Saulius Okunevicius)
-        $this->evalCode .= '$this->result' . $temp . "= '" . addslashes($value) . "';//(" . $type . ")\n";
-        #echo $code. "\n";
+        // Fix for getting PHP variable like string in XML node values (Contributor:Saulius Okunevicius).
+        $this->evalcode .= '$this->result' . $temp . "= '" . addslashes($value) . "';//(" . $type . ")\n";
     }
 
     /**
@@ -74,7 +124,7 @@ class SimpleXML {
      * @param array $array
      * @return array
      */
-    function xml_tags($array) {
+    public function xml_tags($array) {
         $repeats_temp  = array();
         $repeats_count = array();
         $repeats       = array();
@@ -108,11 +158,12 @@ class SimpleXML {
      * @param array $arg_array
      * @return $tmp
      */
-    function array2object($arg_array) {
+    public function array2object($arg_array) {
         if (is_array($arg_array)) {
             $keys = array_keys($arg_array);
-            if (!is_numeric($keys[0]))
+            if (!is_numeric($keys[0])) {
                 $tmp = new SimpleXMLObject;
+            }
             foreach ($keys as $key) {
                 if (is_numeric($key)) {
                     $has_number = true;
@@ -143,7 +194,7 @@ class SimpleXML {
         } else {
             $tmp = $arg_array;
         }
-        return $tmp; //return the object
+        return $tmp; // Return the object.
     }
 
     /**
@@ -152,7 +203,7 @@ class SimpleXML {
      * @param array $array
      * @return array
      */
-    function array_reindex($array) {
+    public function array_reindex($array) {
         if (is_array($array)) {
             if (count($array) == 1 && array_key_exists(0, $array)) {
                 return $this->array_reindex($array[0]);
@@ -178,7 +229,7 @@ class SimpleXML {
      * @param array $array
      * @return array
      */
-    function xml_reorganize($array) {
+    public function xml_reorganize($array) {
         $count       = count($array);
         $repeat      = $this->xml_tags($array);
         $repeatedone = false;
@@ -270,7 +321,7 @@ class SimpleXML {
                     break;
             }
         }
-        eval($this->evalCode);
+        eval($this->evalcode);
         $last = $this->array_reindex($this->result);
         return $last;
     }
@@ -283,10 +334,10 @@ class SimpleXML {
      * @param string $encoding
      * @return array/object
      */
-    function xml_load_file($file, $resulttype = 'object', $encoding = 'UTF-8') {
+    public function xml_load_file($file, $resulttype = 'object', $encoding = 'UTF-8') {
         $php_errormsg   = "";
         $this->result   = "";
-        $this->evalCode = "";
+        $this->evalcode = "";
         $values         = "";
 
         $data = $this->curl_get_file_contents($file);
@@ -300,7 +351,10 @@ class SimpleXML {
         xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
         $ok = xml_parse_into_struct($parser, $data, $values);
         if (!$ok) {
-            $errmsg = sprintf("XML parse error %d '%s' at line %d, column %d (byte index %d)", xml_get_error_code($parser), xml_error_string(xml_get_error_code($parser)), xml_get_current_line_number($parser), xml_get_current_column_number($parser), xml_get_current_byte_index($parser));
+            $errmsg = sprintf("XML parse error %d '%s' at line %d, column %d (byte index %d)",
+                             xml_get_error_code($parser), xml_error_string(xml_get_error_code($parser)),
+                             xml_get_current_line_number($parser), xml_get_current_column_number($parser),
+                             xml_get_current_byte_index($parser));
         }
         xml_parser_free($parser);
         if (!$ok) {
@@ -309,22 +363,22 @@ class SimpleXML {
         if ($resulttype == 'array') {
             return $this->xml_reorganize($values);
         }
-        // default $resulttype is 'object'
+        // Default $resulttype is 'object'.
         return $this->array2object($this->xml_reorganize($values));
     }
 
     /**
      * Get the XML contents and parse like SimpleXML
      *
-     * @param string $string
+     * @param string $data
      * @param string $resulttype
      * @param string $encoding
-     * @return array/object
+     * @return array|object
      */
-    function xml_load_string($data, $resulttype = 'object', $encoding = 'UTF-8') {
+    public function xml_load_string($data, $resulttype = 'object', $encoding = 'UTF-8') {
         $php_errormsg   = "";
         $this->result   = "";
-        $this->evalCode = "";
+        $this->evalcode = "";
         $values         = "";
 
         if (!$data) {
@@ -336,24 +390,29 @@ class SimpleXML {
         xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
         $ok = xml_parse_into_struct($parser, $data, $values);
         if (!$ok) {
-            $errmsg = sprintf("XML parse error %d '%s' at line %d, column %d (byte index %d)", xml_get_error_code($parser), xml_error_string(xml_get_error_code($parser)), xml_get_current_line_number($parser), xml_get_current_column_number($parser), xml_get_current_byte_index($parser));
+            $errmsg = sprintf("XML parse error %d '%s' at line %d, column %d (byte index %d)",
+                             xml_get_error_code($parser), xml_error_string(xml_get_error_code($parser)),
+                             xml_get_current_line_number($parser), xml_get_current_column_number($parser),
+                             xml_get_current_byte_index($parser));
         }
         xml_parser_free($parser);
         if (!$ok) {
             return $errmsg;
-		}
+        }
         if ($resulttype == 'array') {
             return $this->xml_reorganize($values);
         }
-        // default $resulttype is 'object'
+        // Default $resulttype is 'object'.
         return $this->array2object($this->xml_reorganize($values));
     }
 }
-
-function simplexml_load_string($string) {
+/**
+ * Finds and returns attributes
+ * @param string $string
+ * @return mixed
+ */
+function turningtech_simplexml_load_string($string) {
     $sx = new SimpleXML();
 
     return $sx->xml_load_string($string);
 }
-
-?>

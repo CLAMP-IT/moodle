@@ -69,11 +69,23 @@
   <message name="postScoresResponse">
     <part name="parameters" element="tns:postScoresResponse"/>
   </message>
+  <message name="postScoresExt">
+    <part name="parameters" element="tns:postScoresExt"/>
+  </message>
+  <message name="postScoresResponseExt">
+    <part name="parameters" element="tns:postScoresResponseExt"/>
+  </message>
   <message name="postScoresOverrideAll">
     <part name="parameters" element="tns:postScoresOverrideAll"/>
   </message>
   <message name="postScoresOverrideAllResponse">
     <part name="parameters" element="tns:postScoresOverrideAllResponse"/>
+  </message>
+  <message name="postScoresOverrideAllExt">
+    <part name="parameters" element="tns:postScoresOverrideAllExt"/>
+  </message>
+  <message name="postScoresOverrideAllResponseExt">
+    <part name="parameters" element="tns:postScoresOverrideAllResponseExt"/>
   </message>
   <message name="exportSessionData">
     <part name="parameters" element="tns:exportSessionData"/>
@@ -137,9 +149,21 @@
       <fault message="tns:AuthenticationException" name="AuthenticationException"/>
       <fault message="tns:SiteConnectException" name="SiteConnectException"/>
     </operation>
+    <operation name="postScoresExt">
+      <input message="tns:postScoresExt"/>
+      <output message="tns:postScoresResponseExt"/>
+      <fault message="tns:AuthenticationException" name="AuthenticationException"/>
+      <fault message="tns:SiteConnectException" name="SiteConnectException"/>
+    </operation>
     <operation name="postScoresOverrideAll">
       <input message="tns:postScoresOverrideAll"/>
       <output message="tns:postScoresOverrideAllResponse"/>
+      <fault message="tns:AuthenticationException" name="AuthenticationException"/>
+      <fault message="tns:SiteConnectException" name="SiteConnectException"/>
+    </operation>
+    <operation name="postScoresOverrideAllExt">
+      <input message="tns:postScoresOverrideAllExt"/>
+      <output message="tns:postScoresOverrideAllResponseExt"/>
       <fault message="tns:AuthenticationException" name="AuthenticationException"/>
       <fault message="tns:SiteConnectException" name="SiteConnectException"/>
     </operation>
@@ -289,7 +313,37 @@
         <soap:fault name="SiteConnectException" use="literal"/>
       </fault>
     </operation>
+    <operation name="postScoresExt">
+      <soap:operation soapAction=""/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+      <fault name="AuthenticationException">
+        <soap:fault name="AuthenticationException" use="literal"/>
+      </fault>
+      <fault name="SiteConnectException">
+        <soap:fault name="SiteConnectException" use="literal"/>
+      </fault>
+    </operation>
     <operation name="postScoresOverrideAll">
+      <soap:operation soapAction=""/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+      <fault name="AuthenticationException">
+        <soap:fault name="AuthenticationException" use="literal"/>
+      </fault>
+      <fault name="SiteConnectException">
+        <soap:fault name="SiteConnectException" use="literal"/>
+      </fault>
+    </operation>
+    <operation name="postScoresOverrideAllExt">
       <soap:operation soapAction=""/>
       <input>
         <soap:body use="literal"/>

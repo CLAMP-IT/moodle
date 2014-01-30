@@ -1,10 +1,20 @@
 <?php
+/**
+ * File for creating/editing DeviceMaps
+ * @author jacob
+ * @package    mod_turningtech
+ * @copyright  2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
 global $CFG;
 require_once($CFG->dirroot . '/lib/formslib.php');
 
 /**
  * form class for creating/editing DeviceMaps
  * @author jacob
+ * @copyright  2012 Turning Technologies
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  */
 class turningtech_admin_device_form extends moodleform {
@@ -47,6 +57,9 @@ class turningtech_admin_device_form extends moodleform {
 
     /**
      * (non-PHPdoc)
+     * @param mixed $data
+     * @param mixed $files
+     * @return unknown_type
      * @see docroot/lib/moodleform#validation($data, $files)
      */
     function validation($data, $files) {
@@ -56,9 +69,9 @@ class turningtech_admin_device_form extends moodleform {
             return $errors; // return here because continuing validation is pointless and causes errors
         }
         if (!empty($data['deviceid'])) {
-            if (!TurningTechTurningHelper::isDeviceIdValid($data['deviceid'])) {
+            if (!TurningTechTurningHelper::isdeviceidvalid($data['deviceid'])) {
                 $errors['deviceid'] = get_string('deviceidinwrongformat', 'turningtech');
-            } else if (TurningTechDeviceMap::isAlreadyInUse($data)) {
+            } else if (TurningTechDeviceMap::isalreadyinuse($data)) {
                 $errors['deviceid'] = get_string('deviceidalreadyinuse', 'turningtech');
             }
         }
