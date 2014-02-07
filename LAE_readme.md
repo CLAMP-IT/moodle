@@ -1,4 +1,4 @@
-# [Moodle Liberal Arts Edition v2.4.7-LAE4.1.1]
+# [Moodle Liberal Arts Edition v2.4.8-LAE4.1.2]
 
 Welcome to the Moodle Liberal Arts Edition. The goal of the LAE is to provide a coherent package for modules, patches, and code developed (or improved) by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
@@ -16,13 +16,14 @@ Questions about the LAE can be sent to Ken Newquist at <newquisk@lafayette.edu> 
 
 ## Contents
 
-Moodle 2.4.7+LAE4.1.1 consists of the core Moodle 2.4.7 release plus a number of CLAMP-developed features and bug fixes.
+Moodle 2.4.8+LAE4.1.2 consists of the core Moodle 2.4.8 release plus a number of CLAMP-developed features and bug fixes.
 
 The following core features are included:
 
 * Anonymous Forums
 * Auto-creation of groupings for groups
 * Configurable grade recovery during enrollment
+* Improved metacouse UI
 * Per-course resource display options
 
 ### Anonymous Forums
@@ -36,6 +37,10 @@ This feature creates a grouping for each group in a course. This feature is disa
 ### Configurable grade recovery during enrollment
 
 This is a backport of the core patch in <https://tracker.moodle.org/browse/MDL-36024>; you may choose to have a user's grades (if any) automatically recovered when re-enrolling in a course.
+
+### Improved metacouse UI
+
+This is an implementation of <https://tracker.moodle.org/browse/MDL-27628>. There is a new interface for adding and removing multiple course meta link enrollment methods (metacourses), with an AJAX search interface.
 
 ### Per-course resource display options
 
@@ -72,10 +77,10 @@ You can get the LAE in two ways:
 * Download the tar and zip packages from the CLAMP web site: <http://www.clamp-it.org/code/>
 * Download the current release branch from the CLAMP code repository:
 
-    git clone https://github.com/CLAMP-IT/moodle v2.4.7-LAE4.1.1
-    git checkout -b v2.4.7-LAE4.1.1
+    git clone https://github.com/CLAMP-IT/moodle v2.4.8-LAE4.1.2
+    git checkout -b v2.4.8-LAE4.1.2
 
-By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v2.4.7-LAE4.1.1-base tag instead.
+By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v2.4.8-LAE4.1.2-base tag instead.
 
 CLAMP maintains two branches for each major version:
 

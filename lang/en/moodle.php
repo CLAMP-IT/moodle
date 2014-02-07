@@ -642,6 +642,7 @@ The new password was automatically generated - you might like to
 $string['enable'] = 'Enable';
 $string['encryptedcode'] = 'Encrypted code';
 $string['english'] = 'English';
+$string['enrolmentmethods'] = 'Enrolment methods';
 $string['entercourse'] = 'Click to enter this course';
 $string['enteremail'] = 'Enter your email address';
 $string['enteremailaddress'] = 'Enter in your email address to reset your

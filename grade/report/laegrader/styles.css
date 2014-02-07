@@ -167,6 +167,7 @@ text-align: center;
 padding-bottom: 4px;
 padding-top: 4px;
 vertical-align:bottom;
+overflow: hidden;
 }
 
 .catblue {

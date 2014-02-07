@@ -49,7 +49,8 @@ if (!$course = $DB->get_record_select('course', $sql)) {
     print_error('nocourseid');
 }
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
+
 
 require_capability('gradereport/laegrader:view', $context);
 require_capability('moodle/grade:viewall', $context);

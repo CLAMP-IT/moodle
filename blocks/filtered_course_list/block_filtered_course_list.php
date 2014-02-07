@@ -35,6 +35,7 @@ class block_filtered_course_list extends block_base {
         $this->content         = new stdClass;
         $this->content->text   = '';
         $this->content->footer = '';
+        $context = get_context_instance(CONTEXT_SYSTEM);
 
         // Obtain values from our config settings.
         $filter_type = 'term';
@@ -66,7 +67,7 @@ class block_filtered_course_list extends block_base {
 
         if (empty($CFG->disablemycourses) and
             !empty($USER->id) and
-            !(has_capability('moodle/course:view', get_context_instance(CONTEXT_SYSTEM))) and
+            !(has_capability('moodle/course:view', $context)) and
             !isguestuser()) {
             // If user can't view all courses, just print My Courses.
             $all_courses = enrol_get_my_courses(null, 'visible DESC, fullname ASC');
@@ -107,7 +108,7 @@ class block_filtered_course_list extends block_base {
                     $this->content->text .= '</ul>';
                     // If we can update any course of the view all isn't hidden.
                     // Show the view all courses link.
-                    if (has_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM)) ||
+                    if (has_capability('moodle/course:update', $context) ||
                         empty($CFG->block_filtered_course_list_hideallcourseslink)) {
                         $this->content->footer = "<a href=\"$CFG->wwwroot/course/index.php\">" .
                                                  get_string("fulllistofcourses") .
@@ -140,7 +141,7 @@ class block_filtered_course_list extends block_base {
 
                     // If we can update any course of the view all isn't hidden.
                     // Show the view all courses link.
-                    if (has_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM)) ||
+                    if (has_capability('moodle/course:update', $context) ||
                         empty($CFG->block_filtered_course_list_hideallcourseslink)) {
                         $this->content->footer .= "<a href=\"$CFG->wwwroot/course/index.php\">" .
                                                   get_string('fulllistofcourses') .
@@ -162,7 +163,7 @@ class block_filtered_course_list extends block_base {
 
                         // If we can update any course of the view all isn't hidden.
                         // Show the view all courses link.
-                        if (has_capability('moodle/course:update', get_context_instance(CONTEXT_SYSTEM)) ||
+                        if (has_capability('moodle/course:update', $context) ||
                             empty($CFG->block_filtered_course_list_hideallcourseslink)) {
                             $this->content->footer .= "<a href=\"$CFG->wwwroot/course/index.php\">" .
                                                       get_string('fulllistofcourses') .

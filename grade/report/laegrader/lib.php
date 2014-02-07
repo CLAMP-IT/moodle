@@ -113,7 +113,7 @@ class grade_report_laegrader extends grade_report_grader {
         global $CFG;
         parent::__construct($courseid, $gpr, $context, $page);
 
-        $this->canviewhidden = has_capability('moodle/grade:viewhidden', get_context_instance(CONTEXT_COURSE, $this->course->id));
+        $this->canviewhidden = has_capability('moodle/grade:viewhidden', context_course::instance($this->course->id));
         $this->accuratetotals		= ($temp = grade_get_setting($this->courseid, 'report_laegrader_accuratetotals', $CFG->grade_report_laegrader_accuratetotals)) ? $temp : 0;
         $this->showtotalsifcontainhidden = array($this->courseid => grade_get_setting($this->courseid, 'report_user_showtotalsifcontainhidden', $CFG->grade_report_user_showtotalsifcontainhidden));
         $showtotalsifcontainhidden = $this->showtotalsifcontainhidden[$this->courseid];
@@ -1405,7 +1405,9 @@ class grade_report_laegrader extends grade_report_grader {
         $strsortdesc  = $this->get_lang_string('sortdesc', 'grades');
         $strfirstname = $this->get_lang_string('firstname');
         $strlastname  = $this->get_lang_string('lastname');
-
+        $iconasc = $OUTPUT->pix_icon('t/sort_asc', $strsortasc, '', array('class' => 'iconsmall sorticon'));
+        $icondesc = $OUTPUT->pix_icon('t/sort_desc', $strsortdesc, '', array('class' => 'iconsmall sorticon'));
+        
         $firstlink = html_writer::link(new moodle_url($this->baseurl, array('sortitemid'=>'firstname')), $strfirstname);
         $lastlink = html_writer::link(new moodle_url($this->baseurl, array('sortitemid'=>'lastname')), $strlastname);
 
@@ -1413,22 +1415,22 @@ class grade_report_laegrader extends grade_report_grader {
 
         if ($this->sortitemid === 'lastname') {
             if ($this->sortorder == 'ASC') {
-                $arrows['studentname'] .= print_arrow('up', $strsortasc, true);
+                $arrows['studentname'] .= $iconasc;
             } else {
-                $arrows['studentname'] .= print_arrow('down', $strsortdesc, true);
+                $arrows['studentname'] .= $icondesc;
             }
         }
-
+        
         $arrows['studentname'] .= ' ' . $firstlink;
 
         if ($this->sortitemid === 'firstname') {
             if ($this->sortorder == 'ASC') {
-                $arrows['studentname'] .= print_arrow('up', $strsortasc, true);
+                $arrows['studentname'] .= $iconasc;
             } else {
-                $arrows['studentname'] .= print_arrow('down', $strsortdesc, true);
+                $arrows['studentname'] .= $icondesc;
             }
         }
-
+        
         foreach ($extrafields as $field) {
             $fieldlink = html_writer::link(new moodle_url($this->baseurl,
                     array('sortitemid'=>$field)), get_user_field_name($field));
@@ -1436,9 +1438,9 @@ class grade_report_laegrader extends grade_report_grader {
 
             if ($field == $this->sortitemid) {
                 if ($this->sortorder == 'ASC') {
-                    $arrows[$field] .= print_arrow('up', $strsortasc, true);
+                    $arrows[$field] .= $iconasc;
                 } else {
-                    $arrows[$field] .= print_arrow('down', $strsortdesc, true);
+                    $arrows[$field] .= $icondesc;
                 }
             }
         }
@@ -1460,26 +1462,38 @@ class grade_report_laegrader extends grade_report_grader {
         $items = $this->gtree->items;
         $course = $this->course;
         $accuratetotals = $this->accuratetotals;
+        
         foreach ($items as $grade_item) {
         	$colcounter++;
-        	if (is_null($grade_item->itemmodule)) {
-        		$col[] = strtoupper($grade_item->itemtype);
+        	if ($grade_item->itemtype == 'category' || $grade_item->itemtype == 'course') {
+           		$col[] = strtoupper($grade_item->itemtype);
         		$col[] = '';
         	} else {
-        		$col[] = $grade_item->itemmodule;
+        		$col[] = $grade_item->itemtype;
         	}
         }
-		$rows[] = $col;
 
+        /// feedback columns
+		foreach ($items as $grade_item) {
+        	$colcounter++;
+       		$col[] = 'Feedback';
+        }
+		$rows[] = $col;
+		
 		/// Print names of all the fields
 		unset($col);
 		$col[] = get_string('email');
         $col[] = get_string("firstname") . ' ' . get_string("lastname");
         foreach ($items as $grade_item) {
         	$col[] = $grade_item->itemname;
-        	if (is_null($grade_item->itemmodule)) {
+        	if ($grade_item->itemtype == 'category' || $grade_item->itemtype == 'course') {
 	        	$col[] = '';
         	}
+        }
+
+		/// Print names of all the fields for feedback columns
+        foreach ($items as $grade_item) {
+        	$col[] = $grade_item->itemname;
         }
         $rows[] = $col;
 
@@ -1488,7 +1502,10 @@ class grade_report_laegrader extends grade_report_grader {
         $col[] = '';
         $col[] = 'Maximum points->';
         foreach ($items as $itemid => $grade_item) { // TODO: fix for cat andcourse maxpoints, also no decimals
-            if (isset($grade_item->max_earnable)) {
+        	if ($grade_item->itemtype == 'category' && !isset($grade_item->max_earnable)) {
+    	    	$col[] = '';
+            	$col[] = '';
+        	} else if (isset($grade_item->max_earnable)) {
                	$gradestr = grade_format_gradevalue_real($grade_item->max_earnable, $items[$itemid], 2, true);
     	    	$col[] = $gradestr;
             	$col[] = '';
@@ -1524,7 +1541,14 @@ class grade_report_laegrader extends grade_report_grader {
         $userdata->grades = $this->grades;
         foreach ($this->users as $userid => $user) {
         	unset($col);
-
+            // clear values in the parents
+        	foreach ($this->gtree->parents as $parent) {
+				unset($parent->pctg);
+				unset($parent->cat_max);
+				unset($parent->cat_item);
+				$parent->excredit = 0;
+			} // end hack
+        	
 			// email
 			$col[] = $user->email;
 
@@ -1532,35 +1556,35 @@ class grade_report_laegrader extends grade_report_grader {
             $col[] = $user->firstname . ' ' . $user->lastname;
             foreach ($items as $itemid => $item) {
                 $grade = $this->grades[$userid][$itemid];
-            	if (in_array($items[$itemid]->itemtype, array('course','category'))) {// categories and course items get their actual points from the accumulation in cat_item
+                $type = $item->itemtype;
+                if ($accuratetotals) {
+					$this->gtree->accuratepointsprelimcalculation($itemid, $type, $grade);
+                } 
+                if (in_array($items[$itemid]->itemtype, array('course','category'))) {// categories and course items get their actual points from the accumulation in cat_item
                     // set the parent_id differently for the course item
             	    $gradestr = '';
-            		$parent_id = $items[$itemid]->itemtype == 'category' ? $this->grades[$userid][$this->gtree->parents[$itemid]->parent_id] : $itemid;
-            		if (isset($this->grades[$userid][$itemid]->cat_max)) {
-	            	    $tempmax = $items[$itemid]->grademax;
-            			$items[$itemid]->grademax = array_sum($this->grades[$userid][$itemid]->cat_max);
-            			$gradestr = grade_format_gradevalue_real(array_sum($this->grades[$userid][$itemid]->cat_item), $items[$itemid], 2, true);
-            			$items[$itemid]->grademax = $tempmax;
-	                   	if (!$grade->is_hidden() && $grade->finalgrade !== null && $accuratetotals && isset($parent_id) && $items[$itemid]->itemtype !== 'course') {
-	               			$this->grades[$userid][$this->gtree->parents[$itemid]->parent_id]->cat_item[$itemid] = $grade->finalgrade;
-	               			// can't use rawgrademax from grade_grades because it never gets updated
-							$this->grades[$userid][$this->gtree->parents[$itemid]->parent_id]->cat_max[$itemid] = $items[$itemid]->grademax;
-				   		}
+            	    
+            	    $parent_id = $items[$itemid]->itemtype == 'category' ? $this->gtree->parents[$itemid]->parent_id : $itemid;
+            		if (isset($this->gtree->parents[$itemid]->cat_max)) { // if cat_max is set THIS IS A CATEGORY OR COURSE and we are using accurate totals
+						$gradeval = $this->gtree->accuratepointsfinalvalues($itemid, $item, $type, $parent_id, 0, GRADE_DISPLAY_TYPE_REAL);
+            			$gradestr = grade_format_gradevalue_real($gradeval, $items[$itemid], 2, true);
             		}
 			   		$col[] = $gradestr;
 			   		$col[] = '';
             	} else {
-            	    $parent_id = $this->grades[$userid][$this->gtree->parents[$itemid]->parent_id];
+            	    $parent_id = $this->gtree->parents[$itemid]->parent_id;
             	    $gradestr = grade_format_gradevalue_real($grade->finalgrade, $items[$itemid], 2, true);
-                   	if (! $grade->is_hidden() && $grade->finalgrade !== null && $accuratetotals && isset($parent_id)) {
-               			$this->grades[$userid][$this->gtree->parents[$itemid]->parent_id]->cat_item[$itemid] = $grade->finalgrade;
-               			// can't use rawgrademax from grade_grades because it never gets updated
-						$this->grades[$userid][$this->gtree->parents[$itemid]->parent_id]->cat_max[$itemid] = $items[$itemid]->grademax;
-			   		}
     	        	$col[] = $gradestr;
             	}
             }
-			$rows[] = $col;
+            // feedback columns
+            foreach ($items as $itemid => $item) {
+                $grade = $this->grades[$userid][$itemid];
+                $type = $item->itemtype;
+       			$gradestr = $grade->feedback;
+		   		$col[] = $gradestr;
+            }
+            $rows[] = $col;
         }
 
 	    // Calculate file name

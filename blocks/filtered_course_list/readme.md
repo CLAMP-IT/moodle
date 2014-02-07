@@ -1,4 +1,4 @@
-# [Filtered Course List v2.2]
+# [Filtered Course List v2.3]
 
 This is a block which displays a configurable list of courses. It is intended as a replacement for the My Courses block, although both may be used. It is maintained by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
@@ -25,6 +25,10 @@ You may also choose to suppress "Other Courses" altogether.
 Please report any bugs or feature requests to the public repository page: <https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list>.
 
 ## Changelog ##
+
+### [v2.3] ###
+* Separate release for Moodle versions earlier than v2.5.0
+* Minor code cleanup
 
 ### [v2.2] ###
 * Rewrote the block to use block_base instead of block_list

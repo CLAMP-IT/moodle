@@ -1,5 +1,5 @@
 YUI.add('moodle-report_roster-roster', function(Y) {
-    M.report_roster={
+    M.report_roster = {
         init : function() {
             //Y.all("ul.roster-report li span").setStyle("display", "none");
             var toggle = Y.one('button#report-roster-toggle');

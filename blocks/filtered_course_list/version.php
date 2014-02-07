@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-$plugin->version = 2013091200;
-$plugin->requires = 2010112400;
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.2.0';
+$plugin->version   = 2014010600;
+$plugin->requires  = 2010112400;
+$plugin->maturity  = MATURITY_STABLE;
+$plugin->release   = '2.3.0';
+$plugin->component = 'block_filtered_course_list';

@@ -32,7 +32,7 @@ $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 require_login($course);
 
 // Setup page.
-$PAGE->set_url('/report/roster/index.php', array('id'=>$id));
+$PAGE->set_url('/report/roster/index.php', array('id' => $id));
 if ($mode === ROSTER_MODE_PRINT) {
     $PAGE->set_pagelayout('print');
 } else {
@@ -48,7 +48,7 @@ require_capability('report/roster:view', $coursecontext);
 $userlist = get_enrolled_users($coursecontext, '', 0, 'u.id, u.firstname, u.lastname, u.picture, u.imagealt, u.email');
 $data = array();
 foreach ($userlist as $user) {
-    $item = $OUTPUT->user_picture($user, array('size' => 100, 'courseid'=>$course->id));
+    $item = $OUTPUT->user_picture($user, array('size' => 100, 'courseid' => $course->id));
     $item .= html_writer::tag('span', fullname($user));
     $data[] = $item;
 }

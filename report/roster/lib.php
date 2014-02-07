@@ -24,7 +24,7 @@
 
 function report_roster_extend_navigation_course($navigation, $course, $context) {
     if (has_capability('report/roster:view', $context)) {
-        $url = new moodle_url('/report/roster/index.php', array('id'=>$course->id));
+        $url = new moodle_url('/report/roster/index.php', array('id' => $course->id));
         $navigation->add(get_string('pluginname', 'report_roster'), $url,
                 navigation_node::TYPE_SETTING, null, null, new pix_icon('i/report', ''));
     }
