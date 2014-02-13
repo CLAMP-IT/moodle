@@ -134,6 +134,12 @@ class block_navigation extends block_base {
      * @return object $this->content
      */
     function get_content() {
+        global $CFG, $OUTPUT, $COURSE;
+        // Test whether user can view blocks in course
+        $context = context_course::instance($COURSE->id);
+        if (!has_capability('moodle/block:view', $context)) {
+            return '';
+        }
         // First check if we have already generated, don't waste cycles
         if ($this->contentgenerated === true) {
             return $this->content;
