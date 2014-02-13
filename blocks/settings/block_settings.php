@@ -104,7 +104,12 @@ class block_settings extends block_base {
      * Gets the content for this block by grabbing it from $this->page
      */
     function get_content() {
-        global $CFG, $OUTPUT;
+        global $CFG, $OUTPUT, $COURSE;
+        // Test whether user can view blocks in course
+        $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        if (!has_capability('moodle/block:view', $context)) {
+            return '';
+        }
         // First check if we have already generated, don't waste cycles
         if ($this->contentgenerated === true) {
             return true;
