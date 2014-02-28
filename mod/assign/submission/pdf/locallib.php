@@ -140,7 +140,7 @@ class assign_submission_pdf extends assign_submission_plugin {
         $mform->addElement('filemanager', 'assignsubmission_pdf_coversheet', get_string('coversheet', 'assignsubmission_pdf'), null,
                            array(
                                 'subdirs' => 0, 'maxbytes' => $COURSE->maxbytes,
-                                'maxfiles' => 1, 'accepted_types' => array('*.pdf')
+                                'maxfiles' => 1, 'accepted_types' => array('.pdf')
                            ));
 
         // Templates.
@@ -436,7 +436,7 @@ class assign_submission_pdf extends assign_submission_plugin {
      * @param stdClass $submission optional details of the submission to process
      * @return void
      */
-    public function submit_for_grading(stdClass $submission = null) {
+    public function submit_for_grading($submission = null) {
         global $DB, $USER;
         if (is_null($submission)) {
             if (!empty($this->assignment->get_instance()->teamsubmission)) {
@@ -764,5 +764,38 @@ class assign_submission_pdf extends assign_submission_plugin {
 
     protected function get_subfolder() {
         return '/1/';
+    }
+
+    /**
+     * Copy the student's submission from a previous submission. Used when a student opts to base their resubmission
+     * on the last submission.
+     * @param stdClass $sourcesubmission
+     * @param stdClass $destsubmission
+     * @return bool
+     */
+    public function copy_submission(stdClass $sourcesubmission, stdClass $destsubmission) {
+        global $DB;
+
+        // Copy the files across.
+        $contextid = $this->assignment->get_context()->id;
+        $fs = get_file_storage();
+        $files = $fs->get_area_files($contextid,
+                                     'assignsubmission_pdf',
+                                     ASSIGNSUBMISSION_PDF_FA_DRAFT,
+                                     $sourcesubmission->id,
+                                     'id',
+                                     false);
+        foreach ($files as $file) {
+            $fieldupdates = array('itemid' => $destsubmission->id);
+            $fs->create_file_from_storedfile($fieldupdates, $file);
+        }
+
+        // Copy the assignsubmission_file record.
+        if ($filesubmission = $this->get_pdf_submission($sourcesubmission->id)) {
+            unset($filesubmission->id);
+            $filesubmission->submission = $destsubmission->id;
+            $DB->insert_record('assignsubmission_file', $filesubmission);
+        }
+        return true;
     }
 }
