@@ -120,7 +120,7 @@ if ($mform->is_cancelled()) {
                     // Check if its mod date settings.
                     if ($cmsettings['1'] == 'mod') {
                         // Module context.
-                        $modcontext = get_context_instance(CONTEXT_MODULE, $cmsettings['2']);
+                        $modcontext = context_module::instance($cmsettings['2']);
                         // User should be capable of updating individual module.
                         if (has_capability('moodle/course:manageactivities', $modcontext)) {
                             // Check if config date settings are forced
@@ -199,8 +199,8 @@ if ($mform->is_cancelled()) {
 
 // Prepare activity type menu.
 $select = new single_select($baseurl, 'activitytype', $activitytypes, $activitytype, null, 'activitytypeform');
-$select->set_label(get_string('activitytypefilter', 'report_editidnumber'));
-$select->set_help_icon('activitytypefilter', 'report_editidnumber');
+$select->set_label(get_string('activitytypefilter', 'report_editdates'));
+$select->set_help_icon('activitytypefilter', 'report_editdates');
 
 // Making log entry.
 add_to_log($course->id, 'course', 'report edit dates',
@@ -214,7 +214,7 @@ $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($course->fullname));
 
-echo $OUTPUT->heading(get_string('activityfilter', 'report_editidnumber'));
+echo $OUTPUT->heading(get_string('activityfilter', 'report_editdates'));
 echo $OUTPUT->render($select);
 
 $mform->display();
