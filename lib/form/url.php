@@ -79,7 +79,7 @@ class MoodleQuickForm_url extends HTML_QuickForm_text{
      * @return string
      */
     function toHtml(){
-        global $CFG, $COURSE, $USER, $PAGE, $OUTPUT;
+        global $PAGE, $OUTPUT;
 
         $id     = $this->_attributes['id'];
         $elname = $this->_attributes['name'];
@@ -94,20 +94,9 @@ class MoodleQuickForm_url extends HTML_QuickForm_text{
         if (empty($this->_options['usefilepicker'])) {
             return $str;
         }
-        $strsaved = get_string('filesaved', 'repository');
-        $straddlink = get_string('choosealink', 'repository');
-        if ($COURSE->id == SITEID) {
-            $context = context_system::instance();
-        } else {
-            $context = context_course::instance($COURSE->id);
-        }
+
         $client_id = uniqid();
 
-        $str .= <<<EOD
-<button id="filepicker-button-{$client_id}" style="display:none">
-$straddlink
-</button>
-EOD;
         $args = new stdClass();
         $args->accepted_types = '*';
         $args->return_types = FILE_EXTERNAL;
@@ -117,12 +106,20 @@ EOD;
         $fp = new file_picker($args);
         $options = $fp->options;
 
+        if (count($options->repositories) > 0) {
+            $straddlink = get_string('choosealink', 'repository');
+            $str .= <<<EOD
+<button id="filepicker-button-{$client_id}" class="visibleifjs">
+$straddlink
+</button>
+EOD;
+        }
+
         // print out file picker
         $str .= $OUTPUT->render($fp);
 
         $module = array('name'=>'form_url', 'fullpath'=>'/lib/form/url.js', 'requires'=>array('core_filepicker'));
         $PAGE->requires->js_init_call('M.form_url.init', array($options), true, $module);
-        $PAGE->requires->js_function_call('show_item', array('filepicker-button-'.$client_id));
 
         return $str;
     }

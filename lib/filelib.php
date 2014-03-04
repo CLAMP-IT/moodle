@@ -81,6 +81,31 @@ function file_encode_url($urlbase, $path, $forcedownload=false, $https=false) {
 }
 
 /**
+ * Detects if area contains subdirs,
+ * this is intended for file areas that are attached to content
+ * migrated from 1.x where subdirs were allowed everywhere.
+ *
+ * @param context $context
+ * @param string $component
+ * @param string $filearea
+ * @param string $itemid
+ * @return bool
+ */
+function file_area_contains_subdirs(context $context, $component, $filearea, $itemid) {
+    global $DB;
+
+    if (!isset($itemid)) {
+        // Not initialised yet.
+        return false;
+    }
+
+    // Detect if any directories are already present, this is necessary for content upgraded from 1.x.
+    $select = "contextid = :contextid AND component = :component AND filearea = :filearea AND itemid = :itemid AND filepath <> '/' AND filename = '.'";
+    $params = array('contextid'=>$context->id, 'component'=>$component, 'filearea'=>$filearea, 'itemid'=>$itemid);
+    return $DB->record_exists_select('files', $select, $params);
+}
+
+/**
  * Prepares 'editor' formslib element from data in database
  *
  * The passed $data record must contain field foobar, foobarformat and optionally foobartrust. This
@@ -807,7 +832,7 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
         $newhashes = array();
         $filecount = 0;
         foreach ($draftfiles as $file) {
-            if (!$options['subdirs'] && ($file->get_filepath() !== '/' or $file->is_directory())) {
+            if (!$options['subdirs'] && $file->get_filepath() !== '/') {
                 continue;
             }
             if (!$allowreferences && $file->is_external_file()) {
@@ -903,8 +928,6 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
                     $oldfile->get_referencefileid() != $newfile->get_referencefileid() ||
                     $oldfile->get_userid() != $newfile->get_userid())) {
                 $oldfile->replace_file_with($newfile);
-                // push changes to all local files that are referencing this file
-                $fs->update_references_to_storedfile($oldfile);
             }
 
             // unchanged file or directory - we keep it as is
@@ -1428,6 +1451,7 @@ function &get_mimetypes_array() {
         'jcw'  => array ('type'=>'text/xml', 'icon'=>'markup'),
         'jmt'  => array ('type'=>'text/xml', 'icon'=>'markup'),
         'jmx'  => array ('type'=>'text/xml', 'icon'=>'markup'),
+        'jnlp' => array ('type'=>'application/x-java-jnlp-file', 'icon'=>'markup'),
         'jpe'  => array ('type'=>'image/jpeg', 'icon'=>'jpeg', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
         'jpeg' => array ('type'=>'image/jpeg', 'icon'=>'jpeg', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
         'jpg'  => array ('type'=>'image/jpeg', 'icon'=>'jpeg', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
@@ -1935,6 +1959,43 @@ function send_header_404() {
 }
 
 /**
+ * The readfile function can fail when files are larger than 2GB (even on 64-bit
+ * platforms). This wrapper uses readfile for small files and custom code for
+ * large ones.
+ *
+ * @param string $path Path to file
+ * @param int $filesize Size of file (if left out, will get it automatically)
+ * @return int|bool Size read (will always be $filesize) or false if failed
+ */
+function readfile_allow_large($path, $filesize = -1) {
+    // Automatically get size if not specified.
+    if ($filesize === -1) {
+        $filesize = filesize($path);
+    }
+    if ($filesize <= 2147483647) {
+        // If the file is up to 2^31 - 1, send it normally using readfile.
+        return readfile($path);
+    } else {
+        // For large files, read and output in 64KB chunks.
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            return false;
+        }
+        $left = $filesize;
+        while ($left > 0) {
+            $size = min($left, 65536);
+            $buffer = fread($handle, $size);
+            if ($buffer === false) {
+                return false;
+            }
+            echo $buffer;
+            $left -= $size;
+        }
+        return $filesize;
+    }
+}
+
+/**
  * Enhanced readfile() with optional acceleration.
  * @param string|stored_file $file
  * @param string $mimetype
@@ -1956,7 +2017,7 @@ function readfile_accel($file, $mimetype, $accelerate) {
 
     if (is_object($file)) {
         header('Etag: "' . $file->get_contenthash() . '"');
-        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) and $_SERVER['HTTP_IF_NONE_MATCH'] === $file->get_contenthash()) {
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) and trim($_SERVER['HTTP_IF_NONE_MATCH'], '"') === $file->get_contenthash()) {
             header('HTTP/1.1 304 Not Modified');
             return;
         }
@@ -2056,7 +2117,7 @@ function readfile_accel($file, $mimetype, $accelerate) {
     if (is_object($file)) {
         $file->readfile();
     } else {
-        readfile($file);
+        readfile_allow_large($file, $filesize);
     }
 }
 
@@ -2101,7 +2162,7 @@ function readstring_accel($string, $mimetype, $accelerate) {
 function send_temp_file($path, $filename, $pathisstring=false) {
     global $CFG;
 
-    if (core_useragent::check_firefox_version('1.5')) {
+    if (core_useragent::is_firefox()) {
         // only FF is known to correctly save to disk before opening...
         $mimetype = mimeinfo('type', $filename);
     } else {
@@ -2109,7 +2170,7 @@ function send_temp_file($path, $filename, $pathisstring=false) {
     }
 
     // close session - not needed anymore
-    session_get_instance()->write_close();
+    \core\session\manager::write_close();
 
     if (!$pathisstring) {
         if (!file_exists($path)) {
@@ -2117,21 +2178,21 @@ function send_temp_file($path, $filename, $pathisstring=false) {
             print_error('filenotfound', 'error', $CFG->wwwroot.'/');
         }
         // executed after normal finish or abort
-        @register_shutdown_function('send_temp_file_finished', $path);
+        core_shutdown_manager::register_function('send_temp_file_finished', array($path));
     }
 
     // if user is using IE, urlencode the filename so that multibyte file name will show up correctly on popup
-    if (core_useragent::check_ie_version()) {
+    if (core_useragent::is_ie()) {
         $filename = urlencode($filename);
     }
 
     header('Content-Disposition: attachment; filename="'.$filename.'"');
     if (strpos($CFG->wwwroot, 'https://') === 0) { //https sites - watch out for IE! KB812935 and KB316431
-        header('Cache-Control: max-age=10');
+        header('Cache-Control: private, max-age=10, no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
         header('Pragma: ');
     } else { //normal http - prevent caching at all cost
-        header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0');
+        header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0, no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
         header('Pragma: no-cache');
     }
@@ -2165,7 +2226,7 @@ function send_temp_file_finished($path) {
  * @category files
  * @param string $path Path of file on disk (including real filename), or actual content of file as string
  * @param string $filename Filename to send
- * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+ * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
  * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
  * @param bool $pathisstring If true (default false), $path is the content to send and not the pathname
  * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
@@ -2176,33 +2237,28 @@ function send_temp_file_finished($path) {
  *                        and should not be reopened.
  * @return null script execution stopped unless $dontdie is true
  */
-function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathisstring=false, $forcedownload=false, $mimetype='', $dontdie=false) {
+function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring=false, $forcedownload=false, $mimetype='', $dontdie=false) {
     global $CFG, $COURSE;
 
     if ($dontdie) {
         ignore_user_abort(true);
     }
 
-    // MDL-11789, apply $CFG->filelifetime here
-    if ($lifetime === 'default') {
-        if (!empty($CFG->filelifetime)) {
-            $lifetime = $CFG->filelifetime;
-        } else {
-            $lifetime = 86400;
-        }
+    if ($lifetime === 'default' or is_null($lifetime)) {
+        $lifetime = $CFG->filelifetime;
     }
 
-    session_get_instance()->write_close(); // unlock session during fileserving
+    \core\session\manager::write_close(); // Unlock session during file serving.
 
     // Use given MIME type if specified, otherwise guess it using mimeinfo.
     // IE, Konqueror and Opera open html file directly in browser from web even when directed to save it to disk :-O
     // only Firefox saves all files locally before opening when content-disposition: attachment stated
-    $isFF         = core_useragent::check_firefox_version('1.5'); // only FF > 1.5 properly tested
+    $isFF         = core_useragent::is_firefox(); // only FF properly tested
     $mimetype     = ($forcedownload and !$isFF) ? 'application/x-forcedownload' :
                          ($mimetype ? $mimetype : mimeinfo('type', $filename));
 
     // if user is using IE, urlencode the filename so that multibyte file name will show up correctly on popup
-    if (core_useragent::check_ie_version()) {
+    if (core_useragent::is_ie()) {
         $filename = rawurlencode($filename);
     }
 
@@ -2213,19 +2269,23 @@ function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathiss
     }
 
     if ($lifetime > 0) {
+        $private = '';
+        if (isloggedin() and !isguestuser()) {
+            $private = ' private,';
+        }
         $nobyteserving = false;
-        header('Cache-Control: max-age='.$lifetime);
+        header('Cache-Control:'.$private.' max-age='.$lifetime.', no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
         header('Pragma: ');
 
     } else { // Do not cache files in proxies and browsers
         $nobyteserving = true;
         if (strpos($CFG->wwwroot, 'https://') === 0) { //https sites - watch out for IE! KB812935 and KB316431
-            header('Cache-Control: max-age=10');
+            header('Cache-Control: private, max-age=10, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: ');
         } else { //normal http - prevent caching at all cost
-            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0');
+            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: no-cache');
         }
@@ -2291,13 +2351,13 @@ function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathiss
  *
  * @category files
  * @param stored_file $stored_file local file object
- * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+ * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
  * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
  * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
  * @param array $options additional options affecting the file serving
  * @return null script execution stopped unless $options['dontdie'] is true
  */
-function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownload=false, array $options=array()) {
+function send_stored_file($stored_file, $lifetime=null, $filter=0, $forcedownload=false, array $options=array()) {
     global $CFG, $COURSE;
 
     if (empty($options['filename'])) {
@@ -2310,6 +2370,10 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
         $dontdie = false;
     } else {
         $dontdie = true;
+    }
+
+    if ($lifetime === 'default' or is_null($lifetime)) {
+        $lifetime = $CFG->filelifetime;
     }
 
     if (!empty($options['preview'])) {
@@ -2355,18 +2419,18 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
         ignore_user_abort(true);
     }
 
-    session_get_instance()->write_close(); // unlock session during fileserving
+    \core\session\manager::write_close(); // Unlock session during file serving.
 
     // Use given MIME type if specified, otherwise guess it using mimeinfo.
     // IE, Konqueror and Opera open html file directly in browser from web even when directed to save it to disk :-O
     // only Firefox saves all files locally before opening when content-disposition: attachment stated
     $filename     = is_null($filename) ? $stored_file->get_filename() : $filename;
-    $isFF         = core_useragent::check_firefox_version('1.5'); // only FF > 1.5 properly tested
+    $isFF         = core_useragent::is_firefox(); // only FF properly tested
     $mimetype     = ($forcedownload and !$isFF) ? 'application/x-forcedownload' :
                          ($stored_file->get_mimetype() ? $stored_file->get_mimetype() : mimeinfo('type', $filename));
 
     // if user is using IE, urlencode the filename so that multibyte file name will show up correctly on popup
-    if (core_useragent::check_ie_version()) {
+    if (core_useragent::is_ie()) {
         $filename = rawurlencode($filename);
     }
 
@@ -2377,17 +2441,21 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
     }
 
     if ($lifetime > 0) {
-        header('Cache-Control: max-age='.$lifetime);
+        $private = '';
+        if (isloggedin() and !isguestuser()) {
+            $private = ' private,';
+        }
+        header('Cache-Control:'.$private.' max-age='.$lifetime.', no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
         header('Pragma: ');
 
     } else { // Do not cache files in proxies and browsers
         if (strpos($CFG->wwwroot, 'https://') === 0) { //https sites - watch out for IE! KB812935 and KB316431
-            header('Cache-Control: max-age=10');
+            header('Cache-Control: private, max-age=10, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: ');
         } else { //normal http - prevent caching at all cost
-            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0');
+            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: no-cache');
         }
@@ -2604,7 +2672,7 @@ function fulldelete($location) {
  */
 function byteserving_send_file($handle, $mimetype, $ranges, $filesize) {
     // better turn off any kind of compression and buffering
-    @ini_set('zlib.output_compression', 'Off');
+    ini_set('zlib.output_compression', 'Off');
 
     $chunksize = 1*(1024*1024); // 1MB chunks - must be less than 2MB!
     if ($handle === false) {
@@ -2625,7 +2693,7 @@ function byteserving_send_file($handle, $mimetype, $ranges, $filesize) {
 
         fseek($handle, $ranges[0][1]);
         while (!feof($handle) && $length > 0) {
-            @set_time_limit(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
+            core_php_time_limit::raise(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
             $buffer = fread($handle, ($chunksize < $length ? $chunksize : $length));
             echo $buffer;
             flush();
@@ -2654,7 +2722,7 @@ function byteserving_send_file($handle, $mimetype, $ranges, $filesize) {
             echo $range[0];
             fseek($handle, $range[1]);
             while (!feof($handle) && $length > 0) {
-                @set_time_limit(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
+                core_php_time_limit::raise(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
                 $buffer = fread($handle, ($chunksize < $length ? $chunksize : $length));
                 echo $buffer;
                 flush();
@@ -2856,7 +2924,7 @@ class curl {
         }
 
         if (!isset($this->emulateredirects)) {
-            $this->emulateredirects = (ini_get('open_basedir') or ini_get('safe_mode'));
+            $this->emulateredirects = ini_get('open_basedir');
         }
     }
 
@@ -3014,6 +3082,10 @@ class curl {
      * private callback function
      * Formatting HTTP Response Header
      *
+     * We only keep the last headers returned. For example during a redirect the
+     * redirect headers will not appear in {@link self::getResponse()}, if you need
+     * to use those headers, refer to {@link self::get_raw_response()}.
+     *
      * @param resource $ch Apparently not used
      * @param string $header
      * @return int The strlen of the header
@@ -3022,15 +3094,17 @@ class curl {
         $this->rawresponse[] = $header;
 
         if (trim($header, "\r\n") === '') {
-            if ($this->responsefinished) {
-                // Multiple headers means redirect, keep just the latest one.
-                $this->response = array();
-                return strlen($header);
-            }
+            // This must be the last header.
             $this->responsefinished = true;
         }
 
         if (strlen($header) > 2) {
+            if ($this->responsefinished) {
+                // We still have headers after the supposedly last header, we must be
+                // in a redirect so let's empty the response to keep the last headers.
+                $this->responsefinished = false;
+                $this->response = array();
+            }
             list($key, $value) = explode(" ", rtrim($header, "\r\n"), 2);
             $key = rtrim($key, ':');
             if (!empty($this->response[$key])) {
@@ -3246,9 +3320,11 @@ class curl {
      * @return bool
      */
     protected function request($url, $options = array()) {
-        // create curl instance
-        $curl = curl_init($url);
-        $options['url'] = $url;
+        // Set the URL as a curl option.
+        $this->setopt(array('CURLOPT_URL' => $url));
+
+        // Create curl instance.
+        $curl = curl_init();
 
         // Reset here so that the data is valid when result returned from cache.
         $this->info             = array();
@@ -3331,9 +3407,6 @@ class curl {
                         }
                     }
                 }
-
-                $this->responsefinished = false;
-                $this->response = array();
 
                 curl_setopt($curl, CURLOPT_URL, $redirecturl);
                 $ret = curl_exec($curl);
@@ -3856,7 +3929,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'feedback' and $context->contextlevel == CONTEXT_COURSE) {
@@ -3873,7 +3946,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
         } else {
             send_file_not_found();
@@ -3894,7 +3967,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, true, array('preview' => $preview));
 
         } else {
@@ -3916,14 +3989,14 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close();
+            \core\session\manager::write_close();
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
         } else if ($filearea === 'userbadge'  and $context->contextlevel == CONTEXT_USER) {
             if (!$file = $fs->get_file($context->id, 'badges', 'userbadge', $badge->id, '/', $filename.'.png')) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close();
+            \core\session\manager::write_close();
             send_stored_file($file, 60*60, 0, true, array('preview' => $preview));
         }
     // ========================================================================================================================
@@ -3950,7 +4023,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'event_description' and $context->contextlevel == CONTEXT_USER) {
@@ -3978,7 +4051,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'event_description' and $context->contextlevel == CONTEXT_COURSE) {
@@ -4025,7 +4098,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -4099,7 +4172,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else if ($filearea === 'profile' and $context->contextlevel == CONTEXT_USER) {
@@ -4146,7 +4219,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else if ($filearea === 'profile' and $context->contextlevel == CONTEXT_COURSE) {
@@ -4184,7 +4257,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else if ($filearea === 'backup' and $context->contextlevel == CONTEXT_USER) {
@@ -4205,7 +4278,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else {
@@ -4230,7 +4303,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
         } else {
             send_file_not_found();
@@ -4253,7 +4326,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'section') {
@@ -4275,7 +4348,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -4307,7 +4380,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'icon') {
@@ -4322,7 +4395,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 }
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, false, array('preview' => $preview));
 
         } else {
@@ -4347,7 +4420,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -4366,7 +4439,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'section' and $context->contextlevel == CONTEXT_COURSE) {
@@ -4381,7 +4454,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close();
+            \core\session\manager::write_close();
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'activity' and $context->contextlevel == CONTEXT_MODULE) {
@@ -4394,7 +4467,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close();
+            \core\session\manager::write_close();
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'automated' and $context->contextlevel == CONTEXT_COURSE) {
@@ -4409,7 +4482,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -4455,7 +4528,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
         }
 
@@ -4487,10 +4560,8 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            $lifetime = isset($CFG->filelifetime) ? $CFG->filelifetime : 86400;
-
             // finally send the file
-            send_stored_file($file, $lifetime, 0, false, array('preview' => $preview));
+            send_stored_file($file, null, 0, false, array('preview' => $preview));
         }
 
         $filefunction = $component.'_pluginfile';

@@ -421,6 +421,10 @@ abstract class question_bank {
         // Delete any old question preview that got left in the database.
         require_once($CFG->dirroot . '/question/previewlib.php');
         question_preview_cron();
+
+        // Clear older calculated stats from cache.
+        require_once($CFG->dirroot . '/question/engine/statisticslib.php');
+        question_usage_statistics_cron();
     }
 }
 
@@ -434,9 +438,6 @@ abstract class question_bank {
 class question_finder implements cache_data_source {
     /** @var question_finder the singleton instance of this class. */
     protected static $questionfinder = null;
-
-    /** @var cache the question definition cache. */
-    protected $cache = null;
 
     /**
      * @return question_finder a question finder.
@@ -457,10 +458,8 @@ class question_finder implements cache_data_source {
      * @return get the question definition cache we are using.
      */
     protected function get_data_cache() {
-        if ($this->cache == null) {
-            $this->cache = cache::make('core', 'questiondata');
-        }
-        return $this->cache;
+        // Do not double cache here because it may break cache resetting.
+        return cache::make('core', 'questiondata');
     }
 
     /**

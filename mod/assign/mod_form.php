@@ -159,6 +159,10 @@ class mod_assign_mod_form extends moodleform_mod {
         $mform->addHelpButton('sendlatenotifications', 'sendlatenotifications', 'assign');
         $mform->disabledIf('sendlatenotifications', 'sendnotifications', 'eq', 1);
 
+        $name = get_string('sendstudentnotificationsdefault', 'assign');
+        $mform->addElement('selectyesno', 'sendstudentnotifications', $name);
+        $mform->addHelpButton('sendstudentnotifications', 'sendstudentnotificationsdefault', 'assign');
+
         // Plagiarism enabling form.
         if (!empty($CFG->enableplagiarism)) {
             require_once($CFG->libdir . '/plagiarismlib.php');
@@ -265,6 +269,11 @@ class mod_assign_mod_form extends moodleform_mod {
         $assignment->plugin_data_preprocessing($defaultvalues);
     }
 
+    /**
+     * Add any custom completion rules to the form.
+     *
+     * @return array Contains the names of the added form elements
+     */
     public function add_completion_rules() {
         $mform =& $this->_form;
 
@@ -272,6 +281,12 @@ class mod_assign_mod_form extends moodleform_mod {
         return array('completionsubmit');
     }
 
+    /**
+     * Determines if completion is enabled for this module.
+     *
+     * @param array $data
+     * @return bool
+     */
     public function completion_rule_enabled($data) {
         return !empty($data['completionsubmit']);
     }

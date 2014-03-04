@@ -36,7 +36,7 @@ require_once('user_form.php');
 $iid         = optional_param('iid', '', PARAM_INT);
 $previewrows = optional_param('previewrows', 10, PARAM_INT);
 
-@set_time_limit(60*60); // 1 hour should be enough
+core_php_time_limit::raise(60*60); // 1 hour should be enough
 raise_memory_limit(MEMORY_HUGE);
 
 require_login();
@@ -85,7 +85,7 @@ $today = time();
 $today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), 0, 0, 0);
 
 // array of all valid fields for validation
-$STD_FIELDS = array('id', 'firstname', 'lastname', 'username', 'email',
+$STD_FIELDS = array('id', 'username', 'email',
         'city', 'country', 'lang', 'timezone', 'mailformat',
         'maildisplay', 'maildigest', 'htmleditor', 'autosubscribe',
         'institution', 'department', 'idnumber', 'skype',
@@ -97,15 +97,21 @@ $STD_FIELDS = array('id', 'firstname', 'lastname', 'username', 'email',
         'deleted',     // 1 means delete user
         'mnethostid',  // Can not be used for adding, updating or deleting of users - only for enrolments, groups, cohorts and suspending.
     );
+// Include all name fields.
+$STD_FIELDS = array_merge($STD_FIELDS, get_all_user_name_fields());
 
 $PRF_FIELDS = array();
 
-if ($prof_fields = $DB->get_records('user_info_field')) {
-    foreach ($prof_fields as $prof_field) {
-        $PRF_FIELDS[] = 'profile_field_'.$prof_field->shortname;
+if ($proffields = $DB->get_records('user_info_field')) {
+    foreach ($proffields as $key => $proffield) {
+        $profilefieldname = 'profile_field_'.$proffield->shortname;
+        $PRF_FIELDS[] = $profilefieldname;
+        // Re-index $proffields with key as shortname. This will be
+        // used while checking if profile data is key and needs to be converted (eg. menu profile field)
+        $proffields[$profilefieldname] = $proffield;
+        unset($proffields[$key]);
     }
 }
-unset($prof_fields);
 
 if (empty($iid)) {
     $mform1 = new admin_uploaduser_form1();
@@ -117,12 +123,11 @@ if (empty($iid)) {
         $content = $mform1->get_file_content('userfile');
 
         $readcount = $cir->load_csv_content($content, $formdata->encoding, $formdata->delimiter_name);
+        $csvloaderror = $cir->get_error();
         unset($content);
 
-        if ($readcount === false) {
-            print_error('csvloaderror', '', $returnurl);
-        } else if ($readcount == 0) {
-            print_error('csvemptyfile', 'error', $returnurl);
+        if (!is_null($csvloaderror)) {
+            print_error('csvloaderror', '', $returnurl, $csvloaderror);
         }
         // test if columns ok
         $filecolumns = uu_validate_user_upload_columns($cir, $STD_FIELDS, $PRF_FIELDS, $returnurl);
@@ -229,10 +234,10 @@ if ($formdata = $mform2->is_cancelled()) {
                     $user->$key['text']   = $value;
                     $user->$key['format'] = FORMAT_MOODLE;
                 } else {
-                    $user->$key = $value;
+                    $user->$key = trim($value);
                 }
             } else {
-                $user->$key = $value;
+                $user->$key = trim($value);
             }
 
             if (in_array($key, $upt->columns)) {
@@ -372,6 +377,16 @@ if ($formdata = $mform2->is_cancelled()) {
             if (isset($formdata->$field)) {
                 // process templates
                 $user->$field = uu_process_template($formdata->$field, $user);
+
+                // Form contains key and later code expects value.
+                // Convert key to value for required profile fields.
+                require_once($CFG->dirroot.'/user/profile/field/'.$proffields[$field]->datatype.'/field.class.php');
+                $profilefieldclass = 'profile_field_'.$proffields[$field]->datatype;
+                $profilefield = new $profilefieldclass($proffields[$field]->id);
+                if (method_exists($profilefield, 'convert_external_data')) {
+                    $user->$field = $profilefield->edit_save_data_preprocess($user->$field, null);
+                }
+
                 $formdefaults[$field] = true;
             }
         }
@@ -534,8 +549,6 @@ if ($formdata = $mform2->is_cancelled()) {
                         continue;
                     }
                     if (!property_exists($user, $column) or !property_exists($existinguser, $column)) {
-                        // this should never happen
-                        debugging("Could not find $column on the user objects", DEBUG_DEVELOPER);
                         continue;
                     }
                     if ($updatetype == UU_UPDATE_MISSING) {
@@ -687,7 +700,7 @@ if ($formdata = $mform2->is_cancelled()) {
             }
 
             if ($dologout) {
-                session_kill_user($existinguser->id);
+                \core\session\manager::kill_user_sessions($existinguser->id);
             }
 
         } else {
@@ -945,8 +958,23 @@ if ($formdata = $mform2->is_cancelled()) {
                 }
 
                 if ($rid) {
-                    // find duration
-                    $timeend   = 0;
+                    // Find duration and/or enrol status.
+                    $timeend = 0;
+                    $status = null;
+
+                    if (isset($user->{'enrolstatus'.$i})) {
+                        $enrolstatus = $user->{'enrolstatus'.$i};
+                        if ($enrolstatus == '') {
+                            $status = null;
+                        } else if ($enrolstatus === (string)ENROL_USER_ACTIVE) {
+                            $status = ENROL_USER_ACTIVE;
+                        } else if ($enrolstatus === (string)ENROL_USER_SUSPENDED) {
+                            $status = ENROL_USER_SUSPENDED;
+                        } else {
+                            debugging('Unknown enrolment status.');
+                        }
+                    }
+
                     if (!empty($user->{'enrolperiod'.$i})) {
                         $duration = (int)$user->{'enrolperiod'.$i} * 60*60*24; // convert days to seconds
                         if ($duration > 0) { // sanity check
@@ -956,7 +984,7 @@ if ($formdata = $mform2->is_cancelled()) {
                         $timeend = $today + $manualcache[$courseid]->enrolperiod;
                     }
 
-                    $manual->enrol_user($manualcache[$courseid], $user->id, $rid, $today, $timeend);
+                    $manual->enrol_user($manualcache[$courseid], $user->id, $rid, $today, $timeend, $status);
 
                     $a = new stdClass();
                     $a->course = $shortname;
@@ -1078,7 +1106,7 @@ while ($linenum <= $previewrows and $fields = $cir->next()) {
     $rowcols = array();
     $rowcols['line'] = $linenum;
     foreach($fields as $key => $field) {
-        $rowcols[$filecolumns[$key]] = s($field);
+        $rowcols[$filecolumns[$key]] = s(trim($field));
     }
     $rowcols['status'] = array();
 
@@ -1104,7 +1132,7 @@ while ($linenum <= $previewrows and $fields = $cir->next()) {
     }
 
     if (isset($rowcols['city'])) {
-        $rowcols['city'] = trim($rowcols['city']);
+        $rowcols['city'] = $rowcols['city'];
     }
     // Check if rowcols have custom profile field with correct data and update error state.
     $noerror = uu_check_custom_profile_data($rowcols) && $noerror;

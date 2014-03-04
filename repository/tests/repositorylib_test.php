@@ -246,10 +246,10 @@ class core_repositorylib_testcase extends advanced_testcase {
         $forumdata = new stdClass();
         $forumdata->course = $course1->id;
         $forumc1 = $this->getDataGenerator()->create_module('forum', $forumdata);
-        $forumc1context = context_module::instance($forumc1->id);
+        $forumc1context = context_module::instance($forumc1->cmid);
         $forumdata->course = $course2->id;
         $forumc2 = $this->getDataGenerator()->create_module('forum', $forumdata);
-        $forumc2context = context_module::instance($forumc2->id);
+        $forumc2context = context_module::instance($forumc2->cmid);
 
         $blockdata = new stdClass();
         $blockdata->parentcontextid = $course1context->id;
@@ -436,7 +436,7 @@ class core_repositorylib_testcase extends advanced_testcase {
         $userrepo = repository::get_repository_by_id($user1repoid, $syscontext);
 
         $this->setAdminUser();
-        session_loginas($user1->id, $syscontext);
+        \core\session\manager::loginas($user1->id, $syscontext);
 
         // Logged in as, I cannot view a user instance.
         $caughtexception = false;

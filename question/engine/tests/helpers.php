@@ -43,6 +43,9 @@ class testable_question_attempt extends question_attempt {
     public function set_min_fraction($fraction) {
         $this->minfraction = $fraction;
     }
+    public function set_max_fraction($fraction) {
+        $this->maxfraction = $fraction;
+    }
     public function set_behaviour(question_behaviour $behaviour) {
         $this->behaviour = $behaviour;
     }
@@ -113,7 +116,6 @@ abstract class question_test_helper {
         $dataforformconstructor->formoptions = new stdClass();
         $dataforformconstructor->formoptions->canmove = true;
         $dataforformconstructor->formoptions->cansaveasnew = true;
-        $dataforformconstructor->formoptions->movecontext = false;
         $dataforformconstructor->formoptions->canedit = true;
         $dataforformconstructor->formoptions->repeatelements = true;
         $qtype = question_bank::get_qtype($questiondata->qtype);
@@ -248,7 +250,7 @@ class test_question_maker {
             array($qtype,    $which), $methodtemplate);
 
         if (!method_exists($helper, $method)) {
-            throw new coding_exception('Method ' . $method . ' does not exist on the' .
+            throw new coding_exception('Method ' . $method . ' does not exist on the ' .
                 $qtype . ' question type test helper class.');
         }
 
@@ -401,8 +403,12 @@ class test_question_maker {
         $essay->qtype = question_bank::get_qtype('essay');
 
         $essay->responseformat = 'editor';
+        $essay->responserequired = 1;
         $essay->responsefieldlines = 15;
         $essay->attachments = 0;
+        $essay->attachmentsrequired = 0;
+        $essay->responsetemplate = '';
+        $essay->responsetemplateformat = FORMAT_MOODLE;
         $essay->graderinfo = '';
         $essay->graderinfoformat = FORMAT_MOODLE;
 
@@ -848,11 +854,20 @@ abstract class qbehaviour_walkthrough_test_base extends question_testcase {
                 'Looking for a hidden input with attributes ' . html_writer::attributes($attributes) . ' in ' . $this->currentoutput);
     }
 
-    protected function check_output_contains_lang_string($identifier, $component = '', $a = null) {
+    protected function check_output_contains($string) {
         $this->render();
-        $string = get_string($identifier, $component, $a);
         $this->assertContains($string, $this->currentoutput,
                 'Expected string ' . $string . ' not found in ' . $this->currentoutput);
+    }
+
+    protected function check_output_does_not_contain($string) {
+        $this->render();
+        $this->assertNotContains($string, $this->currentoutput,
+                'String ' . $string . ' unexpectedly found in ' . $this->currentoutput);
+    }
+
+    protected function check_output_contains_lang_string($identifier, $component = '', $a = null) {
+        $this->check_output_contains(get_string($identifier, $component, $a));
     }
 
     protected function get_tag_matcher($tag, $attributes) {
@@ -1200,70 +1215,5 @@ class question_test_recordset extends moodle_recordset {
 
     public function close() {
         $this->records = null;
-    }
-}
-
-/**
- * A {@link question_variant_selection_strategy} designed for testing.
- * For selected. questions it wil return a specific variants. In for the other
- * slots it will use a fallback strategy.
- *
- * @copyright  2013 The Open University
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class question_variant_forced_choices_selection_strategy
-    implements question_variant_selection_strategy {
-
-    /** @var array seed => variant to select. */
-    protected $forcedchoices;
-
-    /** @var question_variant_selection_strategy strategy used to make the non-forced choices. */
-    protected $basestrategy;
-
-    /**
-     * Constructor.
-     * @param array $forcedchoice array seed => variant to select.
-     * @param question_variant_selection_strategy $basestrategy strategy used
-     *      to make the non-forced choices.
-     */
-    public function __construct(array $forcedchoices, question_variant_selection_strategy $basestrategy) {
-        $this->forcedchoices = $forcedchoices;
-        $this->basestrategy  = $basestrategy;
-    }
-
-    public function choose_variant($maxvariants, $seed) {
-        if (array_key_exists($seed, $this->forcedchoices)) {
-            if ($this->forcedchoices[$seed] > $maxvariants) {
-                throw new coding_exception('Forced variant out of range.');
-            }
-            return $this->forcedchoices[$seed];
-        } else {
-            return $this->basestrategy->choose_variant($maxvariants, $seed);
-        }
-    }
-
-    /**
-     * Helper method for preparing the $forcedchoices array.
-     * @param array $variantsbyslot slot number => variant to select.
-     * @param question_usage_by_activity $quba the question usage we need a strategy for.
-     * @return array that can be passed to the constructor as $forcedchoices.
-     */
-    public static function prepare_forced_choices_array(array $variantsbyslot,
-                                                        question_usage_by_activity $quba) {
-
-        $forcedchoices = array();
-
-        foreach ($variantsbyslot as $slot => $varianttochoose) {
-            $question = $quba->get_question($slot);
-            $seed = $question->get_variants_selection_seed();
-            if (array_key_exists($seed, $forcedchoices) && $forcedchoices[$seed] != $varianttochoose) {
-                throw new coding_exception('Inconsistent forced variant detected at slot ' . $slot);
-            }
-            if ($varianttochoose > $question->get_num_variants()) {
-                throw new coding_exception('Forced variant out of range at slot ' . $slot);
-            }
-            $forcedchoices[$seed] = $varianttochoose;
-        }
-        return $forcedchoices;
     }
 }

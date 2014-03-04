@@ -19,7 +19,7 @@
  *
  * @author Andreas Grabs
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package feedback
+ * @package mod_feedback
  */
 
 //It must be included from a Moodle page
@@ -37,7 +37,7 @@ class mod_feedback_delete_completed_form extends moodleform {
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
         $mform->addElement('hidden', 'completedid');
-        $mform->setType('completeid', PARAM_INT);
+        $mform->setType('completedid', PARAM_INT);
         $mform->addElement('hidden', 'do_show');
         $mform->setType('do_show', PARAM_INT);
         $mform->addElement('hidden', 'confirmdelete');

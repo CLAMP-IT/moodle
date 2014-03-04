@@ -482,12 +482,15 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertSame('forum', clean_param('forum', PARAM_COMPONENT));
         $this->assertSame('user', clean_param('user', PARAM_COMPONENT));
         $this->assertSame('rating', clean_param('rating', PARAM_COMPONENT));
+        $this->assertSame('feedback360', clean_param('feedback360', PARAM_COMPONENT));
+        $this->assertSame('mod_feedback360', clean_param('mod_feedback360', PARAM_COMPONENT));
         $this->assertSame('', clean_param('mod_2something', PARAM_COMPONENT));
         $this->assertSame('', clean_param('2mod_something', PARAM_COMPONENT));
         $this->assertSame('', clean_param('mod_something_xx', PARAM_COMPONENT));
         $this->assertSame('', clean_param('auth_something__xx', PARAM_COMPONENT));
         $this->assertSame('', clean_param('mod_Something', PARAM_COMPONENT));
         $this->assertSame('', clean_param('mod_somethíng', PARAM_COMPONENT));
+        $this->assertSame('', clean_param('mod__something', PARAM_COMPONENT));
         $this->assertSame('', clean_param('auth_xx-yy', PARAM_COMPONENT));
         $this->assertSame('', clean_param('_auth_xx', PARAM_COMPONENT));
         $this->assertSame('', clean_param('a2uth_xx', PARAM_COMPONENT));
@@ -501,6 +504,7 @@ class core_moodlelib_testcase extends advanced_testcase {
     public function test_is_valid_plugin_name() {
         $this->assertTrue(is_valid_plugin_name('forum'));
         $this->assertTrue(is_valid_plugin_name('forum2'));
+        $this->assertTrue(is_valid_plugin_name('feedback360'));
         $this->assertTrue(is_valid_plugin_name('online_users'));
         $this->assertTrue(is_valid_plugin_name('blond_online_users'));
         $this->assertFalse(is_valid_plugin_name('online__users'));
@@ -517,6 +521,7 @@ class core_moodlelib_testcase extends advanced_testcase {
         // Please note the cleaning of plugin names is very strict, no guessing here.
         $this->assertSame('forum', clean_param('forum', PARAM_PLUGIN));
         $this->assertSame('forum2', clean_param('forum2', PARAM_PLUGIN));
+        $this->assertSame('feedback360', clean_param('feedback360', PARAM_PLUGIN));
         $this->assertSame('online_users', clean_param('online_users', PARAM_PLUGIN));
         $this->assertSame('blond_online_users', clean_param('blond_online_users', PARAM_PLUGIN));
         $this->assertSame('', clean_param('online__users', PARAM_PLUGIN));
@@ -535,6 +540,7 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertSame('something2', clean_param('something2', PARAM_AREA));
         $this->assertSame('some_thing', clean_param('some_thing', PARAM_AREA));
         $this->assertSame('some_thing_xx', clean_param('some_thing_xx', PARAM_AREA));
+        $this->assertSame('feedback360', clean_param('feedback360', PARAM_AREA));
         $this->assertSame('', clean_param('_something', PARAM_AREA));
         $this->assertSame('', clean_param('something_', PARAM_AREA));
         $this->assertSame('', clean_param('2something', PARAM_AREA));
@@ -1876,6 +1882,14 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertEventLegacyData($user, $event);
         $expectedlogdata = array(SITEID, 'user', 'delete', "view.php?id=$user->id", $user->firstname.' '.$user->lastname);
         $this->assertEventLegacyLogData($expectedlogdata, $event);
+        $eventdata = $event->get_data();
+        $this->assertSame($eventdata['other']['username'], $user->username);
+        $this->assertSame($eventdata['other']['email'], $user->email);
+        $this->assertSame($eventdata['other']['idnumber'], $user->idnumber);
+        $this->assertSame($eventdata['other']['picture'], $user->picture);
+        $this->assertSame($eventdata['other']['mnethostid'], $user->mnethostid);
+        $this->assertEquals($user, $event->get_record_snapshot('user', $event->objectid));
+        $this->assertEventContextNotUsed($event);
 
         // Try invalid params.
         $record = new stdClass();
@@ -2168,24 +2182,13 @@ class core_moodlelib_testcase extends advanced_testcase {
      * Test function validate_internal_user_password().
      */
     public function test_validate_internal_user_password() {
-        if (password_compat_not_supported()) {
-            // If bcrypt is not properly supported test legacy md5 hashes instead.
-            // Can't hardcode these as we don't know the site's password salt.
-            $validhashes = array(
-                'pw' => hash_internal_user_password('pw'),
-                'abc' => hash_internal_user_password('abc'),
-                'C0mP1eX_&}<?@*&%` |\"' => hash_internal_user_password('C0mP1eX_&}<?@*&%` |\"'),
-                'ĩńťėŕňăţĩōŋāĹ' => hash_internal_user_password('ĩńťėŕňăţĩōŋāĹ')
-            );
-        } else {
-            // Otherwise test bcrypt hashes.
-            $validhashes = array(
-                'pw' => '$2y$10$LOSDi5eaQJhutSRun.OVJ.ZSxQZabCMay7TO1KmzMkDMPvU40zGXK',
-                'abc' => '$2y$10$VWTOhVdsBbWwtdWNDRHSpewjd3aXBQlBQf5rBY/hVhw8hciarFhXa',
-                'C0mP1eX_&}<?@*&%` |\"' => '$2y$10$3PJf.q.9ywNJlsInPbqc8.IFeSsvXrGvQLKRFBIhVu1h1I3vpIry6',
-                'ĩńťėŕňăţĩōŋāĹ' => '$2y$10$3A2Y8WpfRAnP3czJiSv6N.6Xp0T8hW3QZz2hUCYhzyWr1kGP1yUve'
-            );
-        }
+        // Test bcrypt hashes.
+        $validhashes = array(
+            'pw' => '$2y$10$LOSDi5eaQJhutSRun.OVJ.ZSxQZabCMay7TO1KmzMkDMPvU40zGXK',
+            'abc' => '$2y$10$VWTOhVdsBbWwtdWNDRHSpewjd3aXBQlBQf5rBY/hVhw8hciarFhXa',
+            'C0mP1eX_&}<?@*&%` |\"' => '$2y$10$3PJf.q.9ywNJlsInPbqc8.IFeSsvXrGvQLKRFBIhVu1h1I3vpIry6',
+            'ĩńťėŕňăţĩōŋāĹ' => '$2y$10$3A2Y8WpfRAnP3czJiSv6N.6Xp0T8hW3QZz2hUCYhzyWr1kGP1yUve'
+        );
 
         foreach ($validhashes as $password => $hash) {
             $user = new stdClass();
@@ -2214,17 +2217,12 @@ class core_moodlelib_testcase extends advanced_testcase {
             $user->password = $hash;
             $this->assertTrue(validate_internal_user_password($user, $password));
 
-            if (password_compat_not_supported()) {
-                // If bcrypt is not properly supported make sure the passwords are in md5 format.
-                $this->assertTrue(password_is_legacy_hash($hash));
-            } else {
-                // Otherwise they should not be in md5 format.
-                $this->assertFalse(password_is_legacy_hash($hash));
+            // They should not be in md5 format.
+            $this->assertFalse(password_is_legacy_hash($hash));
 
-                // Check that cost factor in hash is correctly set.
-                $this->assertRegExp('/\$10\$/', $hash);
-                $this->assertRegExp('/\$04\$/', $fasthash);
-            }
+            // Check that cost factor in hash is correctly set.
+            $this->assertRegExp('/\$10\$/', $hash);
+            $this->assertRegExp('/\$04\$/', $fasthash);
         }
     }
 
@@ -2252,15 +2250,8 @@ class core_moodlelib_testcase extends advanced_testcase {
         // Update the password.
         update_internal_user_password($user, 'password');
 
-        if (password_compat_not_supported()) {
-            // If bcrypt not properly supported the password should remain as an md5 hash.
-            $expected_hash = hash_internal_user_password('password', true);
-            $this->assertSame($user->password, $expected_hash);
-            $this->assertTrue(password_is_legacy_hash($user->password));
-        } else {
-            // Otherwise password should have been updated to a bcrypt hash.
-            $this->assertFalse(password_is_legacy_hash($user->password));
-        }
+        // Password should have been updated to a bcrypt hash.
+        $this->assertFalse(password_is_legacy_hash($user->password));
     }
 
     public function test_fullname() {
@@ -2375,6 +2366,16 @@ class core_moodlelib_testcase extends advanced_testcase {
             $this->assertSame($expectedname, $testname);
         }
 
+        // Test debugging message displays when
+        // fullnamedisplay setting is "normal".
+        $CFG->fullnamedisplay = 'firstname lastname';
+        unset($user);
+        $user = new stdClass();
+        $user->firstname = 'Stan';
+        $user->lastname = 'Lee';
+        $namedisplay = fullname($user);
+        $this->assertDebuggingCalled();
+
         // Tidy up after we finish testing.
         $CFG->fullnamedisplay = $originalcfg->fullnamedisplay;
     }
@@ -2383,12 +2384,12 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->resetAfterTest();
 
         // Additional names in an array.
-        $testarray = array('firstnamephonetic',
-                           'lastnamephonetic',
-                           'middlename',
-                           'alternatename',
-                           'firstname',
-                           'lastname');
+        $testarray = array('firstnamephonetic' => 'firstnamephonetic',
+                'lastnamephonetic' => 'lastnamephonetic',
+                'middlename' => 'middlename',
+                'alternatename' => 'alternatename',
+                'firstname' => 'firstname',
+                'lastname' => 'lastname');
         $this->assertEquals($testarray, get_all_user_name_fields());
 
         // Additional names as a string.
@@ -2398,6 +2399,19 @@ class core_moodlelib_testcase extends advanced_testcase {
         // Additional names as a string with an alias.
         $teststring = 't.firstnamephonetic,t.lastnamephonetic,t.middlename,t.alternatename,t.firstname,t.lastname';
         $this->assertEquals($teststring, get_all_user_name_fields(true, 't'));
+
+        // Additional name fields with a prefix - object.
+        $testarray = array('firstnamephonetic' => 'authorfirstnamephonetic',
+                'lastnamephonetic' => 'authorlastnamephonetic',
+                'middlename' => 'authormiddlename',
+                'alternatename' => 'authoralternatename',
+                'firstname' => 'authorfirstname',
+                'lastname' => 'authorlastname');
+        $this->assertEquals($testarray, get_all_user_name_fields(false, null, 'author'));
+
+        // Additional name fields with an alias and a title - string.
+        $teststring = 'u.firstnamephonetic AS authorfirstnamephonetic,u.lastnamephonetic AS authorlastnamephonetic,u.middlename AS authormiddlename,u.alternatename AS authoralternatename,u.firstname AS authorfirstname,u.lastname AS authorlastname';
+        $this->assertEquals($teststring, get_all_user_name_fields(true, 'u', null, 'author'));
     }
 
     public function test_order_in_string() {
@@ -2422,6 +2436,45 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertEquals($expectedarray, order_in_string($valuearray, $formatstring));
     }
 
+    public function test_complete_user_login() {
+        global $USER, $DB;
+
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser(0);
+
+        $sink = $this->redirectEvents();
+        $loginuser = clone($user);
+        $this->setCurrentTimeStart();
+        @complete_user_login($loginuser); // Hide session header errors.
+        $this->assertSame($loginuser, $USER);
+        $this->assertEquals($user->id, $USER->id);
+        $events = $sink->get_events();
+        $sink->close();
+
+        $this->assertCount(1, $events);
+        $event = reset($events);
+        $this->assertInstanceOf('\core\event\user_loggedin', $event);
+        $this->assertEquals('user', $event->objecttable);
+        $this->assertEquals($user->id, $event->objectid);
+        $this->assertEquals(context_system::instance()->id, $event->contextid);
+        $this->assertEventContextNotUsed($event);
+
+        $user = $DB->get_record('user', array('id'=>$user->id));
+
+        $this->assertTimeCurrent($user->firstaccess);
+        $this->assertTimeCurrent($user->lastaccess);
+        $this->assertTimeCurrent($user->timemodified);
+
+        $this->assertTimeCurrent($USER->firstaccess);
+        $this->assertTimeCurrent($USER->lastaccess);
+        $this->assertTimeCurrent($USER->currentlogin);
+        $this->assertSame(sesskey(), $USER->sesskey);
+        $this->assertTimeCurrent($USER->preference['_lastloaded']);
+        $this->assertObjectNotHasAttribute('password', $USER);
+        $this->assertObjectNotHasAttribute('description', $USER);
+    }
+
     /**
      * Test require_logout.
      */
@@ -2429,7 +2482,6 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
-        $course = $this->getDataGenerator()->create_course();
 
         $this->assertTrue(isloggedin());
 
@@ -2451,5 +2503,189 @@ class core_moodlelib_testcase extends advanced_testcase {
         $expectedlogdata = array(SITEID, 'user', 'logout', 'view.php?id='.$event->objectid.'&course='.SITEID, $event->objectid, 0,
             $event->objectid);
         $this->assertEventLegacyLogData($expectedlogdata, $event);
+        $this->assertEventContextNotUsed($event);
+    }
+
+    public function test_email_to_user() {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $user1 = $this->getDataGenerator()->create_user();
+        $user2 = $this->getDataGenerator()->create_user();
+
+        $subject = 'subject';
+        $messagetext = 'message text';
+        $subject2 = 'subject 2';
+        $messagetext2 = 'message text 2';
+
+        $this->assertNotEmpty($CFG->noemailever);
+        email_to_user($user1, $user2, $subject, $messagetext);
+        $this->assertDebuggingCalled('Not sending email due to $CFG->noemailever config setting');
+
+        unset_config('noemailever');
+
+        email_to_user($user1, $user2, $subject, $messagetext);
+        $this->assertDebuggingCalled('Unit tests must not send real emails! Use $this->redirectEmails()');
+
+        $sink = $this->redirectEmails();
+        email_to_user($user1, $user2, $subject, $messagetext);
+        email_to_user($user2, $user1, $subject2, $messagetext2);
+        $this->assertSame(2, $sink->count());
+        $result = $sink->get_messages();
+        $this->assertCount(2, $result);
+        $sink->close();
+
+        $this->assertSame($subject, $result[0]->subject);
+        $this->assertSame($messagetext, trim($result[0]->body));
+        $this->assertSame($user1->email, $result[0]->to);
+        $this->assertSame($user2->email, $result[0]->from);
+
+        $this->assertSame($subject2, $result[1]->subject);
+        $this->assertSame($messagetext2, trim($result[1]->body));
+        $this->assertSame($user2->email, $result[1]->to);
+        $this->assertSame($user1->email, $result[1]->from);
+
+        email_to_user($user1, $user2, $subject, $messagetext);
+        $this->assertDebuggingCalled('Unit tests must not send real emails! Use $this->redirectEmails()');
+    }
+
+    /**
+     * Test user_updated event trigger by various apis.
+     */
+    public function test_user_updated_event() {
+        global $DB, $CFG;
+
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+
+        // Set config to allow email_to_user() to be called.
+        $CFG->noemailever = false;
+
+        // Update user password.
+        $sink = $this->redirectEvents();
+        $sink2 = $this->redirectEmails(); // Make sure we are redirecting emails.
+        setnew_password_and_mail($user);
+        update_internal_user_password($user, 'randompass');
+        $events = $sink->get_events();
+        $sink->close();
+        $sink2->close();
+
+        // Test updated value.
+        $dbuser = $DB->get_record('user', array('id' => $user->id));
+        $this->assertSame($user->firstname, $dbuser->firstname);
+        $this->assertNotSame('M00dLe@T', $dbuser->password);
+
+        // Test event.
+        foreach ($events as $event) {
+            $this->assertInstanceOf('\core\event\user_updated', $event);
+            $this->assertSame($user->id, $event->objectid);
+            $this->assertSame('user_updated', $event->get_legacy_eventname());
+            $this->assertEventLegacyData($user, $event);
+            $this->assertEquals(context_user::instance($user->id), $event->get_context());
+            $expectedlogdata = array(SITEID, 'user', 'update', 'view.php?id='.$user->id, '');
+            $this->assertEventLegacyLogData($expectedlogdata, $event);
+            $this->assertEventContextNotUsed($event);
+        }
+    }
+
+    /**
+     * Test remove_course_content deletes course contents
+     * TODO Add asserts to verify other data related to course is deleted as well.
+     */
+    public function test_remove_course_contents() {
+
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $gen = $this->getDataGenerator()->get_plugin_generator('core_notes');
+        $note = $gen->create_instance(array('courseid' => $course->id, 'userid' => $user->id));
+
+        $this->assertNotEquals(false, note_load($note->id));
+        remove_course_contents($course->id, false);
+        $this->assertFalse(note_load($note->id));
+    }
+
+    /**
+     * Test function username_load_fields_from_object().
+     */
+    public function test_username_load_fields_from_object() {
+        $this->resetAfterTest();
+
+        // This object represents the information returned from an sql query.
+        $userinfo = new stdClass();
+        $userinfo->userid = 1;
+        $userinfo->username = 'loosebruce';
+        $userinfo->firstname = 'Bruce';
+        $userinfo->lastname = 'Campbell';
+        $userinfo->firstnamephonetic = 'ブルース';
+        $userinfo->lastnamephonetic = 'カンベッル';
+        $userinfo->middlename = '';
+        $userinfo->alternatename = '';
+        $userinfo->email = '';
+        $userinfo->picture = 23;
+        $userinfo->imagealt = 'Michael Jordan draining another basket.';
+        $userinfo->idnumber = 3982;
+
+        // Just user name fields.
+        $user = new stdClass();
+        $user = username_load_fields_from_object($user, $userinfo);
+        $expectedarray = new stdClass();
+        $expectedarray->firstname = 'Bruce';
+        $expectedarray->lastname = 'Campbell';
+        $expectedarray->firstnamephonetic = 'ブルース';
+        $expectedarray->lastnamephonetic = 'カンベッル';
+        $expectedarray->middlename = '';
+        $expectedarray->alternatename = '';
+        $this->assertEquals($user, $expectedarray);
+
+        // User information for showing a picture.
+        $user = new stdClass();
+        $additionalfields = explode(',', user_picture::fields());
+        $user = username_load_fields_from_object($user, $userinfo, null, $additionalfields);
+        $user->id = $userinfo->userid;
+        $expectedarray = new stdClass();
+        $expectedarray->id = 1;
+        $expectedarray->firstname = 'Bruce';
+        $expectedarray->lastname = 'Campbell';
+        $expectedarray->firstnamephonetic = 'ブルース';
+        $expectedarray->lastnamephonetic = 'カンベッル';
+        $expectedarray->middlename = '';
+        $expectedarray->alternatename = '';
+        $expectedarray->email = '';
+        $expectedarray->picture = 23;
+        $expectedarray->imagealt = 'Michael Jordan draining another basket.';
+        $this->assertEquals($user, $expectedarray);
+
+        // Alter the userinfo object to have a prefix.
+        $userinfo->authorfirstname = 'Bruce';
+        $userinfo->authorlastname = 'Campbell';
+        $userinfo->authorfirstnamephonetic = 'ブルース';
+        $userinfo->authorlastnamephonetic = 'カンベッル';
+        $userinfo->authormiddlename = '';
+        $userinfo->authorpicture = 23;
+        $userinfo->authorimagealt = 'Michael Jordan draining another basket.';
+        $userinfo->authoremail = 'test@testing.net';
+
+
+        // Return an object with user picture information.
+        $user = new stdClass();
+        $additionalfields = explode(',', user_picture::fields());
+        $user = username_load_fields_from_object($user, $userinfo, 'author', $additionalfields);
+        $user->id = $userinfo->userid;
+        $expectedarray = new stdClass();
+        $expectedarray->id = 1;
+        $expectedarray->firstname = 'Bruce';
+        $expectedarray->lastname = 'Campbell';
+        $expectedarray->firstnamephonetic = 'ブルース';
+        $expectedarray->lastnamephonetic = 'カンベッル';
+        $expectedarray->middlename = '';
+        $expectedarray->alternatename = '';
+        $expectedarray->email = 'test@testing.net';
+        $expectedarray->picture = 23;
+        $expectedarray->imagealt = 'Michael Jordan draining another basket.';
+        $this->assertEquals($user, $expectedarray);
     }
 }

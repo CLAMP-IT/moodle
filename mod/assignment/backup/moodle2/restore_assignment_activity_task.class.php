@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package moodlecore
+ * @package    mod_assignment
  * @subpackage backup-moodle2
  * @copyright 2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -108,5 +108,14 @@ class restore_assignment_activity_task extends restore_activity_task {
         $rules[] = new restore_log_rule('assignment', 'view all', 'index.php?id={course}', null);
 
         return $rules;
+    }
+
+    /**
+     * Expose the restore mode so we can skip automatic upgrade for MODE_IMPORT (e.g. duplicate).
+     *
+     * @return int
+     */
+    public function get_mode() {
+        return $this->plan->get_mode();
     }
 }

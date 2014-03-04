@@ -46,26 +46,36 @@ require_once($CFG->dirroot.'/calendar/lib.php');
 
 $courseid = optional_param('course', SITEID, PARAM_INT);
 $view = optional_param('view', 'upcoming', PARAM_ALPHA);
-$day  = optional_param('cal_d', 0, PARAM_INT);
-$mon  = optional_param('cal_m', 0, PARAM_INT);
-$yr   = optional_param('cal_y', 0, PARAM_INT);
+$day = optional_param('cal_d', 0, PARAM_INT);
+$mon = optional_param('cal_m', 0, PARAM_INT);
+$year = optional_param('cal_y', 0, PARAM_INT);
+$time = optional_param('time', 0, PARAM_INT);
 
 $url = new moodle_url('/calendar/view.php');
+
 if ($courseid != SITEID) {
     $url->param('course', $courseid);
 }
+
 if ($view !== 'upcoming') {
     $url->param('view', $view);
 }
-if ($day !== 0) {
-    $url->param('cal_d', $day);
+
+// If a day, month and year were passed then convert it to a timestamp. If these were passed
+// then we can assume the day, month and year are passed as Gregorian, as no where in core
+// should we be passing these values rather than the time. This is done for BC.
+if (!empty($day) && !empty($mon) && !empty($year)) {
+    if (checkdate($mon, $day, $year)) {
+        $time = make_timestamp($year, $mon, $day);
+    } else {
+        $time = time();
+    }
+} else if (empty($time)) {
+    $time = time();
 }
-if ($mon !== 0) {
-    $url->param('cal_m', $mon);
-}
-if ($yr !== 0) {
-    $url->param('cal_y', $yr);
-}
+
+$url->param('time', $time);
+
 $PAGE->set_url($url);
 
 if ($courseid != SITEID && !empty($courseid)) {
@@ -78,22 +88,15 @@ if ($courseid != SITEID && !empty($courseid)) {
     $courses = calendar_get_default_courses();
     $issite = true;
 }
+
 require_course_login($course);
 
-$calendar = new calendar_information($day, $mon, $yr);
+$calendar = new calendar_information(0, 0, 0, $time);
 $calendar->prepare_for_view($course, $courses);
 
-$now = usergetdate(time());
 $pagetitle = '';
 
 $strcalendar = get_string('calendar', 'calendar');
-
-if (!checkdate($mon, $day, $yr)) {
-    $day = intval($now['mday']);
-    $mon = intval($now['mon']);
-    $yr = intval($now['year']);
-}
-$time = make_timestamp($yr, $mon, $day);
 
 switch($view) {
     case 'day':
@@ -153,7 +156,7 @@ if (!empty($CFG->enablecalendarexport)) {
         echo $OUTPUT->single_button(new moodle_url('/calendar/managesubscriptions.php', array('course'=>$courseid)), get_string('managesubscriptions', 'calendar'));
     }
     if (isloggedin()) {
-        $authtoken = sha1($USER->id . $USER->password . $CFG->calendar_exportsalt);
+        $authtoken = sha1($USER->id . $DB->get_field('user', 'password', array('id'=>$USER->id)) . $CFG->calendar_exportsalt);
         $link = new moodle_url('/calendar/export_execute.php', array('preset_what'=>'all', 'preset_time'=>'recentupcoming', 'userid' => $USER->id, 'authtoken'=>$authtoken));
         $icon = html_writer::empty_tag('img', array('src'=>$OUTPUT->pix_url('i/ical'), 'height'=>'14', 'width'=>'36', 'alt'=>get_string('ical', 'calendar'), 'title'=>get_string('quickdownloadcalendar', 'calendar')));
         echo html_writer::tag('a', $icon, array('href'=>$link));

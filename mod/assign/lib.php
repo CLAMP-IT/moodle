@@ -16,6 +16,7 @@
 
 /**
  * This file contains the moodle hooks for the assign module.
+ *
  * It delegates most functions to the assignment class.
  *
  * @package   mod_assign
@@ -59,8 +60,9 @@ function assign_delete_instance($id) {
  * This function is used by the reset_course_userdata function in moodlelib.
  * This function will remove all assignment submissions and feedbacks in the database
  * and clean up any related data.
- * @param $data the data submitted from the reset course.
- * @return array status array
+ *
+ * @param stdClass $data the data submitted from the reset course.
+ * @return array
  */
 function assign_reset_userdata($data) {
     global $CFG, $DB;
@@ -109,7 +111,7 @@ function assign_reset_gradebook($courseid, $type='') {
 /**
  * Implementation of the function for printing the form elements that control
  * whether the course reset functionality affects the assignment.
- * @param $mform form passed by reference
+ * @param moodleform $mform form passed by reference
  */
 function assign_reset_course_form_definition(&$mform) {
     $mform->addElement('header', 'assignheader', get_string('modulenameplural', 'assign'));
@@ -131,7 +133,7 @@ function assign_reset_course_form_defaults($course) {
  *
  * This is done by calling the update_instance() method of the assignment type class
  * @param stdClass $data
- * @param $form
+ * @param stdClass $form - unused
  * @return object
  */
 function assign_update_instance(stdClass $data, $form) {
@@ -221,7 +223,7 @@ function assign_extend_settings_navigation(settings_navigation $settings, naviga
     }
 
     // Link to download all submissions.
-    if (has_capability('mod/assign:grade', $context)) {
+    if (has_any_capability(array('mod/assign:grade', 'mod/assign:viewgrades'), $context)) {
         $link = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action'=>'grading'));
         $node = $navref->add(get_string('viewgrading', 'assign'), $link, navigation_node::TYPE_SETTING);
 
@@ -280,11 +282,11 @@ function assign_get_coursemodule_info($coursemodule) {
  * @param stdClass $currentcontext Current context of block
  */
 function assign_page_type_list($pagetype, $parentcontext, $currentcontext) {
-    $module_pagetype = array(
+    $modulepagetype = array(
         'mod-assign-*' => get_string('page-mod-assign-x', 'assign'),
         'mod-assign-view' => get_string('page-mod-assign-view', 'assign'),
     );
-    return $module_pagetype;
+    return $modulepagetype;
 }
 
 /**
@@ -488,6 +490,7 @@ function assign_print_overview($courses, &$htmlarray) {
  * @param mixed $course the course to print activity for
  * @param bool $viewfullnames boolean to determine whether to show full names or not
  * @param int $timestart the time the rendering started
+ * @return bool true if activity was printed, false otherwise.
  */
 function assign_print_recent_activity($course, $viewfullnames, $timestart) {
     global $CFG, $USER, $DB, $OUTPUT;
@@ -495,8 +498,9 @@ function assign_print_recent_activity($course, $viewfullnames, $timestart) {
     // Do not use log table if possible, it may be huge.
 
     $dbparams = array($timestart, $course->id, 'assign');
-    if (!$submissions = $DB->get_records_sql('SELECT asb.id, asb.timemodified, cm.id AS cmid, asb.userid,
-                                                     u.firstname, u.lastname, u.email, u.picture
+    $namefields = user_picture::fields('u', null, 'userid');
+    if (!$submissions = $DB->get_records_sql("SELECT asb.id, asb.timemodified, cm.id AS cmid,
+                                                     $namefields
                                                 FROM {assign_submission} asb
                                                      JOIN {assign} a      ON a.id = asb.assignment
                                                      JOIN {course_modules} cm ON cm.instance = a.id
@@ -505,7 +509,7 @@ function assign_print_recent_activity($course, $viewfullnames, $timestart) {
                                                WHERE asb.timemodified > ? AND
                                                      a.course = ? AND
                                                      md.name = ?
-                                            ORDER BY asb.timemodified ASC', $dbparams)) {
+                                            ORDER BY asb.timemodified ASC", $dbparams)) {
          return false;
     }
 
@@ -656,10 +660,10 @@ function assign_get_recent_mod_activity(&$activities,
     }
 
     $groupmode       = groups_get_activity_groupmode($cm, $course);
-    $cm_context      = context_module::instance($cm->id);
-    $grader          = has_capability('moodle/grade:viewall', $cm_context);
-    $accessallgroups = has_capability('moodle/site:accessallgroups', $cm_context);
-    $viewfullnames   = has_capability('moodle/site:viewfullnames', $cm_context);
+    $cmcontext      = context_module::instance($cm->id);
+    $grader          = has_capability('moodle/grade:viewall', $cmcontext);
+    $accessallgroups = has_capability('moodle/site:accessallgroups', $cmcontext);
+    $viewfullnames   = has_capability('moodle/site:viewfullnames', $cmcontext);
 
     if (is_null($modinfo->get_groups())) {
         // Load all my groups and cache it in modinfo.
@@ -908,6 +912,19 @@ function assign_grade_item_update($assign, $grades=null) {
 
     $params = array('itemname'=>$assign->name, 'idnumber'=>$assign->cmidnumber);
 
+    // Check if feedback plugin for gradebook is enabled, if yes then
+    // gradetype = GRADE_TYPE_TEXT else GRADE_TYPE_NONE.
+    $gradefeedbackenabled = false;
+
+    if (isset($assign->gradefeedbackenabled)) {
+        $gradefeedbackenabled = $assign->gradefeedbackenabled;
+    } else if ($assign->grade == 0) { // Grade feedback is needed only when grade == 0.
+        $mod = get_coursemodule_from_instance('assign', $assign->id, $assign->courseid);
+        $cm = context_module::instance($mod->id);
+        $assignment = new assign($cm, null, null);
+        $gradefeedbackenabled = $assignment->is_gradebook_feedback_enabled();
+    }
+
     if ($assign->grade > 0) {
         $params['gradetype'] = GRADE_TYPE_VALUE;
         $params['grademax']  = $assign->grade;
@@ -917,9 +934,12 @@ function assign_grade_item_update($assign, $grades=null) {
         $params['gradetype'] = GRADE_TYPE_SCALE;
         $params['scaleid']   = -$assign->grade;
 
-    } else {
-        // Allow text comments only.
+    } else if ($gradefeedbackenabled) {
+        // $assign->grade == 0 and feedback enabled.
         $params['gradetype'] = GRADE_TYPE_TEXT;
+    } else {
+        // $assign->grade == 0 and no feedback enabled.
+        $params['gradetype'] = GRADE_TYPE_NONE;
     }
 
     if ($grades  === 'reset') {

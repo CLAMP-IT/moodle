@@ -17,7 +17,7 @@
 /**
  * Steps definitions related with blocks.
  *
- * @package   core
+ * @package   core_block
  * @category  test
  * @copyright 2012 David Monllaó
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -32,7 +32,7 @@ use Behat\Behat\Context\Step\Given as Given;
 /**
  * Blocks management steps definitions.
  *
- * @package    core
+ * @package    core_block
  * @category   test
  * @copyright  2012 David Monllaó
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -56,6 +56,59 @@ class behat_blocks extends behat_base {
             );
         }
         return $steps;
+    }
+
+    /**
+     * Docks a block. Editing mode should be previously enabled.
+     *
+     * @Given /^I dock "(?P<block_name_string>(?:[^"]|\\")*)" block$/
+     * @param string $blockname
+     * @return Given
+     */
+    public function i_dock_block($blockname) {
+
+        // Looking for both title and alt.
+        $xpath = "//input[@type='image'][@title='" . get_string('dockblock', 'block', $blockname) . "' or @alt='" . get_string('addtodock', 'block') . "']";
+        return new Given('I click on " ' . $xpath . '" "xpath_element" in the "' . $this->escape($blockname) . '" "block"');
+    }
+
+    /**
+     * Opens a block's actions menu if it is not already opened.
+     *
+     * @Given /^I open the "(?P<block_name_string>(?:[^"]|\\")*)" blocks action menu$/
+     * @throws DriverException The step is not available when Javascript is disabled
+     * @param string $blockname
+     * @return Given
+     */
+    public function i_open_the_blocks_action_menu($blockname) {
+
+        if (!$this->running_javascript()) {
+            throw new DriverException('Blocks action menu not available when Javascript is disabled');
+        }
+
+        // If it is already opened we do nothing.
+        $blocknode = $this->get_block_node($blockname);
+        $classes = array_flip(explode(' ', $blocknode->getAttribute('class')));
+        if (!empty($classes['action-menu-shown'])) {
+            return;
+        }
+
+        return new Given('I click on "a[role=\'menuitem\']" "css_element" in the "' . $this->escape($blockname) . '" "block"');
+    }
+
+    /**
+     * Returns the DOM node of the block from <div>.
+     *
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $blockname The block name
+     * @return NodeElement
+     */
+    protected function get_block_node($blockname) {
+
+        $blockname = $this->getSession()->getSelectorsHandler()->xpathLiteral($blockname);
+        $xpath = "//div[contains(concat(' ', normalize-space(@class), ' '), ' block ')][contains(., $blockname)]";
+
+        return $this->find('xpath', $xpath);
     }
 
 }

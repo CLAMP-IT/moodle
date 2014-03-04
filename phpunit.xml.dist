@@ -20,6 +20,10 @@
 
     <php>
         <!--<const name="PHPUNIT_LONGTEST" value="1"/> uncomment to execute also slow or otherwise expensive tests-->
+
+        <!--Following constants instruct tests to fetch external test files from alternative location or skip tests if empty, clone https://github.com/moodlehq/moodle-exttests to local web server-->
+        <!--<const name="TEST_EXTERNAL_FILES_HTTP_URL" value="http://download.moodle.org/unittest"/> uncomment and alter to fetch external test files from alternative location-->
+        <!--<const name="TEST_EXTERNAL_FILES_HTTPS_URL" value="https://download.moodle.org/unittest"/> uncomment and alter to fetch external test files from alternative location-->
     </php>
 
 <!--All core suites need to be manually added here-->
@@ -115,6 +119,9 @@
         </testsuite>
         <testsuite name="core_webservice">
             <directory suffix="_test.php">webservice/tests</directory>
+        </testsuite>
+        <testsuite name="core_mnet">
+            <directory suffix="_test.php">mnet/tests</directory>
         </testsuite>
 
         <!--Plugin suites: use admin/tool/phpunit/cli/util.php to build phpunit.xml from phpunit.xml.dist with up-to-date list of plugins in current install-->

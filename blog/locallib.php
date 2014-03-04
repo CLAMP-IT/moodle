@@ -263,10 +263,10 @@ class blog_entry implements renderable {
         tag_set('post', $this->id, $this->tags);
 
         // Trigger an event for the new entry.
-        $event = \core\event\blog_entry_created::create(array('objectid' => $this->id,
-                                                            'userid'   => $this->userid,
-                                                            'other'    => array ("subject" => $this->subject)
-                                                      ));
+        $event = \core\event\blog_entry_created::create(array(
+            'objectid'      => $this->id,
+            'relateduserid' => $this->userid
+        ));
         $event->set_custom_data($this);
         $event->trigger();
     }
@@ -274,11 +274,15 @@ class blog_entry implements renderable {
     /**
      * Updates this entry in the database. Access control checks must be done by calling code.
      *
-     * @param mform $form Used for attachments
+     * @param array       $params            Entry parameters.
+     * @param moodleform  $form              Used for attachments.
+     * @param array       $summaryoptions    Summary options.
+     * @param array       $attachmentoptions Attachment options.
+     *
      * @return void
      */
     public function edit($params=array(), $form=null, $summaryoptions=array(), $attachmentoptions=array()) {
-        global $CFG, $USER, $DB, $PAGE;
+        global $CFG, $DB;
 
         $sitecontext = context_system::instance();
         $entry = $this;
@@ -297,12 +301,16 @@ class blog_entry implements renderable {
 
         $entry->lastmodified = time();
 
-        // Update record
+        // Update record.
         $DB->update_record('post', $entry);
         tag_set('post', $entry->id, $entry->tags);
 
-        add_to_log(SITEID, 'blog', 'update', 'index.php?userid='.$USER->id.'&entryid='.$entry->id, $entry->subject);
-        events_trigger('blog_entry_edited', $entry);
+        $event = \core\event\blog_entry_updated::create(array(
+            'objectid'      => $entry->id,
+            'relateduserid' => $entry->userid
+        ));
+        $event->set_custom_data($entry);
+        $event->trigger();
     }
 
     /**
@@ -321,56 +329,72 @@ class blog_entry implements renderable {
         $DB->delete_records('post', array('id' => $this->id));
         tag_set('post', $this->id, array());
 
-        $event = \core\event\blog_entry_deleted::create(array('objectid' => $this->id,
-                                                            'userid'   => $this->userid,
-                                                            'other'   => array("record" => (array)$record)
-                                                      ));
+        $event = \core\event\blog_entry_deleted::create(array(
+            'objectid'      => $this->id,
+            'relateduserid' => $this->userid
+            ));
         $event->add_record_snapshot("post", $record);
         $event->set_custom_data($this);
         $event->trigger();
     }
 
     /**
-     * function to add all context associations to an entry
-     * @param int entry - data object processed to include all 'entry' fields and extra data from the edit_form object
+     * Function to add all context associations to an entry.
+     * TODO : Remove $action in 2.9 (MDL-41330)
+     *
+     * @param string $action - This does nothing, do not use it. This is present only for Backward compatibility.
      */
-    public function add_associations($action='add') {
-        global $DB, $USER;
+    public function add_associations($action = null) {
+
+        if (!empty($action)) {
+            debugging('blog_entry->add_associations() does not accept any argument', DEBUG_DEVELOPER);
+        }
 
         $this->remove_associations();
 
         if (!empty($this->courseassoc)) {
-            $this->add_association($this->courseassoc, $action);
+            $this->add_association($this->courseassoc);
         }
 
         if (!empty($this->modassoc)) {
-            $this->add_association($this->modassoc, $action);
+            $this->add_association($this->modassoc);
         }
     }
 
     /**
-     * add a single association for a blog entry
-     * @param int contextid - id of context to associate with the blog entry
+     * Add a single association for a blog entry
+     * TODO : Remove $action in 2.9 (MDL-41330)
+     *
+     * @param int $contextid - id of context to associate with the blog entry.
+     * @param string $action - This does nothing, do not use it. This is present only for Backward compatibility.
      */
-    public function add_association($contextid, $action='add') {
-        global $DB, $USER;
+    public function add_association($contextid, $action = null) {
+        global $DB;
+
+        if (!empty($action)) {
+            debugging('blog_entry->add_association() accepts only one argument', DEBUG_DEVELOPER);
+        }
 
         $assocobject = new StdClass;
         $assocobject->contextid = $contextid;
         $assocobject->blogid = $this->id;
-        $DB->insert_record('blog_association', $assocobject);
+        $id = $DB->insert_record('blog_association', $assocobject);
 
+        // Trigger an association created event.
         $context = context::instance_by_id($contextid);
-        $courseid = null;
-
+        $eventparam = array(
+            'objectid' => $id,
+            'other' => array('associateid' => $context->instanceid, 'subject' => $this->subject, 'blogid' => $this->id),
+            'relateduserid' => $this->userid
+        );
         if ($context->contextlevel == CONTEXT_COURSE) {
-            $courseid = $context->instanceid;
-            add_to_log($courseid, 'blog', $action, 'index.php?userid='.$this->userid.'&entryid='.$this->id, $this->subject);
+            $eventparam['other']['associatetype'] = 'course';
+
         } else if ($context->contextlevel == CONTEXT_MODULE) {
-            $cm = $DB->get_record('course_modules', array('id' => $context->instanceid));
-            $modulename = $DB->get_field('modules', 'name', array('id' => $cm->module));
-            add_to_log($cm->course, 'blog', $action, 'index.php?userid='.$this->userid.'&entryid='.$this->id, $this->subject, $cm->id, $this->userid);
+            $eventparam['other']['associatetype'] = 'coursemodule';
         }
+        $event = \core\event\blog_association_created::create($eventparam);
+        $event->trigger();
     }
 
     /**

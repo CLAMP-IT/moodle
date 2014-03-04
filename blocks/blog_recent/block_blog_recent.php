@@ -17,10 +17,9 @@
 /**
  * Recent Blog Entries Block page.
  *
- * @package    block
- * @subpackage blog_recent
- * @copyright  2009 Nicolas Connault
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_blog_recent
+ * @copyright 2009 Nicolas Connault
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -83,6 +82,7 @@ class block_blog_recent extends block_base {
 
         $this->content = new stdClass();
         $this->content->footer = '';
+        $this->content->text = '';
 
         $context = $this->page->context;
 

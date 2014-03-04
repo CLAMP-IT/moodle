@@ -18,9 +18,9 @@
 /**
  * This file contains all necessary code to view a wiki page
  *
- * @package mod-wiki-2.0
- * @copyrigth 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
- * @copyrigth 2009 Universitat Politecnica de Catalunya http://www.upc.edu
+ * @package mod_wiki
+ * @copyright 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
+ * @copyright 2009 Universitat Politecnica de Catalunya http://www.upc.edu
  *
  * @author Jordi Piguillem
  * @author Marc Alier
@@ -289,11 +289,39 @@ $wikipage->set_gid($currentgroup);
 $wikipage->set_page($page);
 
 if($pageid) {
-    add_to_log($course->id, 'wiki', 'view', "view.php?pageid=".$pageid, $pageid, $cm->id);
+    $event = \mod_wiki\event\page_viewed::create(
+            array(
+                'context' => $context,
+                'objectid' => $pageid
+                )
+            );
+    $event->add_record_snapshot('wiki_pages', $page);
+    $event->trigger();
 } else if($id) {
-    add_to_log($course->id, 'wiki', 'view', "view.php?id=".$id, $id, $cm->id);
+    $event = \mod_wiki\event\course_module_viewed::create(
+            array(
+                'context' => $context,
+                'objectid' => $wiki->id
+                )
+            );
+    $event->add_record_snapshot('wiki', $wiki);
+    $event->trigger();
 } else if($wid && $title) {
-    add_to_log($course->id, 'wiki', 'view', "view.php?wid=".$wid."&title=".$title, $wid, $cm->id);
+    $event = \mod_wiki\event\page_viewed::create(
+            array(
+                'context' => $context,
+                'objectid' => $page->id,
+                'relateduserid' => $uid,
+                'other' => array(
+                    'title' => $title,
+                    'wid' => $wid,
+                    'group' => $gid,
+                    'groupanduser' => $groupanduser)
+                )
+            );
+    $event->add_record_snapshot('wiki_pages', $page);
+    $event->add_record_snapshot('wiki', $wiki);
+    $event->trigger();
 }
 
 $wikipage->print_header();

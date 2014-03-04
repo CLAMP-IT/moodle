@@ -159,6 +159,8 @@ class auth_plugin_base {
      *
      * This method is used if can_change_password() returns true.
      * This method is called only when user is logged in, it may use global $USER.
+     * If you are using a plugin config variable in this method, please make sure it is set before using it,
+     * as this method can be called even if the plugin is disabled, in which case the config values won't be set.
      *
      * @return moodle_url url of the profile page or null if standard used
      */
@@ -618,9 +620,7 @@ function login_is_lockedout($user) {
 function login_attempt_valid($user) {
     global $CFG;
 
-    $event = \core\event\user_loggedin::create(array('objectid' => $user->id, 'other' => array('username' => $user->username)));
-    $event->add_record_snapshot('user', $user);
-    $event->trigger();
+    // Note: user_loggedin event is triggered in complete_user_login().
 
     if ($user->mnethostid != $CFG->mnet_localhost_id) {
         return;
@@ -707,7 +707,7 @@ function login_lock_account($user) {
         }
 
         $site = get_site();
-        $supportuser = generate_email_supportuser();
+        $supportuser = core_user::get_support_user();
 
         $data = new stdClass();
         $data->firstname = $user->firstname;

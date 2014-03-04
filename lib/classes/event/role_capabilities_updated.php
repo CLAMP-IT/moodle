@@ -16,6 +16,8 @@
 
 namespace core\event;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Role updated event.
  *
@@ -34,7 +36,7 @@ class role_capabilities_updated extends base {
     protected function init() {
         $this->data['objecttable'] = 'role';
         $this->data['crud'] = 'u';
-        $this->data['level'] = self::LEVEL_OTHER;
+        $this->data['edulevel'] = self::LEVEL_OTHER;
     }
 
     /**
@@ -64,7 +66,8 @@ class role_capabilities_updated extends base {
         if ($this->contextlevel === CONTEXT_SYSTEM) {
             return new \moodle_url('admin/roles/define.php', array('action' => 'view', 'roleid' => $this->objectid));
         } else {
-            return new \moodle_url('/admin/roles/override.php', array('contextid' => $this->contextid, 'roleid' => $this->objectid));
+            return new \moodle_url('/admin/roles/override.php', array('contextid' => $this->contextid,
+                'roleid' => $this->objectid));
         }
     }
 

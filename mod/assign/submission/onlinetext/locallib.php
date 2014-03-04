@@ -95,8 +95,7 @@ class assign_submission_onlinetext extends assign_submission_plugin {
                                              'assignsubmission_onlinetext',
                                              ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
                                              $submissionid);
-        $mform->addElement('editor', 'onlinetext_editor', html_writer::tag('span', $this->get_name(),
-            array('class' => 'accesshide')), null, $editoroptions);
+        $mform->addElement('editor', 'onlinetext_editor', $this->get_name(), null, $editoroptions);
 
         return true;
     }
@@ -140,10 +139,6 @@ class assign_submission_onlinetext extends assign_submission_plugin {
 
         $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
 
-        $text = format_text($data->onlinetext,
-                            $data->onlinetext_editor['format'],
-                            array('context'=>$this->assignment->get_context()));
-
         $fs = get_file_storage();
 
         $files = $fs->get_area_files($this->assignment->get_context()->id,
@@ -155,21 +150,50 @@ class assign_submission_onlinetext extends assign_submission_plugin {
 
         $params = array(
             'context' => context_module::instance($this->assignment->get_course_module()->id),
+            'courseid' => $this->assignment->get_course()->id,
             'objectid' => $submission->id,
             'other' => array(
                 'pathnamehashes' => array_keys($files),
-                'content' => trim($text)
+                'content' => trim($data->onlinetext),
+                'format' => $data->onlinetext_editor['format']
             )
         );
         $event = \assignsubmission_onlinetext\event\assessable_uploaded::create($params);
         $event->trigger();
 
+        $groupname = null;
+        $groupid = 0;
+        // Get the group name as other fields are not transcribed in the logs and this information is important.
+        if (empty($submission->userid) && !empty($submission->groupid)) {
+            $groupname = $DB->get_field('groups', 'name', array('id' => $submission->groupid), '*', MUST_EXIST);
+            $groupid = $submission->groupid;
+        } else {
+            $params['relateduserid'] = $submission->userid;
+        }
+
+        $count = count_words($data->onlinetext);
+
+        // Unset the objectid and other field from params for use in submission events.
+        unset($params['objectid']);
+        unset($params['other']);
+        $params['other'] = array(
+            'submissionid' => $submission->id,
+            'submissionattempt' => $submission->attemptnumber,
+            'submissionstatus' => $submission->status,
+            'onlinetextwordcount' => $count,
+            'groupid' => $groupid,
+            'groupname' => $groupname
+        );
+
         if ($onlinetextsubmission) {
 
             $onlinetextsubmission->onlinetext = $data->onlinetext;
             $onlinetextsubmission->onlineformat = $data->onlinetext_editor['format'];
-
-            return $DB->update_record('assignsubmission_onlinetext', $onlinetextsubmission);
+            $params['objectid'] = $onlinetextsubmission->id;
+            $updatestatus = $DB->update_record('assignsubmission_onlinetext', $onlinetextsubmission);
+            $event = \assignsubmission_onlinetext\event\submission_updated::create($params);
+            $event->trigger();
+            return $updatestatus;
         } else {
 
             $onlinetextsubmission = new stdClass();
@@ -178,7 +202,11 @@ class assign_submission_onlinetext extends assign_submission_plugin {
 
             $onlinetextsubmission->submission = $submission->id;
             $onlinetextsubmission->assignment = $this->assignment->get_instance()->id;
-            return $DB->insert_record('assignsubmission_onlinetext', $onlinetextsubmission) > 0;
+            $onlinetextsubmission->id = $DB->insert_record('assignsubmission_onlinetext', $onlinetextsubmission);
+            $params['objectid'] = $onlinetextsubmission->id;
+            $event = \assignsubmission_onlinetext\event\submission_created::create($params);
+            $event->trigger();
+            return $onlinetextsubmission->id > 0;
         }
     }
 
@@ -424,12 +452,9 @@ class assign_submission_onlinetext extends assign_submission_plugin {
         // Format the info for each submission plugin (will be logged).
         $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
         $onlinetextloginfo = '';
-        $text = format_text($onlinetextsubmission->onlinetext,
-                            $onlinetextsubmission->onlineformat,
-                            array('context'=>$this->assignment->get_context()));
         $onlinetextloginfo .= get_string('numwordsforlog',
                                          'assignsubmission_onlinetext',
-                                         count_words($text));
+                                         count_words($onlinetextsubmission->onlinetext));
 
         return $onlinetextloginfo;
     }
@@ -495,6 +520,20 @@ class assign_submission_onlinetext extends assign_submission_plugin {
         }
         return true;
     }
+
+    /**
+     * Return a description of external params suitable for uploading an onlinetext submission from a webservice.
+     *
+     * @return external_description|null
+     */
+    public function get_external_parameters() {
+        $editorparams = array('text' => new external_value(PARAM_TEXT, 'The text for this submission.'),
+                              'format' => new external_value(PARAM_INT, 'The format for this submission'),
+                              'itemid' => new external_value(PARAM_INT, 'The draft area id for files attached to the submission'));
+        $editorstructure = new external_single_structure($editorparams);
+        return array('onlinetext_editor' => $editorstructure);
+    }
+
 }
 
 

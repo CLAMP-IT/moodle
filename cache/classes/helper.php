@@ -143,7 +143,7 @@ class cache_helper {
      *
      * @param array $stores
      * @param cache_definition $definition
-     * @return array
+     * @return cache_store[]
      */
     protected static function initialise_cachestore_instances(array $stores, cache_definition $definition) {
         $return = array();
@@ -238,19 +238,24 @@ class cache_helper {
         $instance = cache_config::instance();
         $invalidationeventset = false;
         $factory = cache_factory::instance();
+        $inuse = $factory->get_caches_in_use();
         foreach ($instance->get_definitions() as $name => $definitionarr) {
             $definition = cache_definition::load($name, $definitionarr);
             if ($definition->invalidates_on_event($event)) {
-                // OK at this point we know that the definition has information to invalidate on the event.
-                // There are two routes, either its an application cache in which case we can invalidate it now.
-                // or it is a persistent cache that also needs to be invalidated now.
-                if ($definition->get_mode() === cache_store::MODE_APPLICATION || $definition->should_be_persistent()) {
-                    $cache = $factory->create_cache_from_definition($definition->get_component(), $definition->get_area());
-                    $cache->delete_many($keys);
+                // First up check if there is a cache loader for this definition already.
+                // If there is we need to invalidate the keys from there.
+                $definitionkey = $definition->get_component().'/'.$definition->get_area();
+                if (isset($inuse[$definitionkey])) {
+                    $inuse[$definitionkey]->delete_many($keys);
                 }
 
-                // We need to flag the event in the "Event invalidation" cache if it hasn't already happened.
-                if ($invalidationeventset === false) {
+                // We should only log events for application and session caches.
+                // Request caches shouldn't have events as all data is lost at the end of the request.
+                // Events should only be logged once of course and likely several definitions are watching so we
+                // track its logging with $invalidationeventset.
+                $logevent = ($invalidationeventset === false && $definition->get_mode() !== cache_store::MODE_REQUEST);
+
+                if ($logevent) {
                     // Get the event invalidation cache.
                     $cache = cache::make('core', 'eventinvalidation');
                     // Get any existing invalidated keys for this cache.
@@ -312,23 +317,25 @@ class cache_helper {
         $instance = cache_config::instance();
         $invalidationeventset = false;
         $factory = cache_factory::instance();
+        $inuse = $factory->get_caches_in_use();
         foreach ($instance->get_definitions() as $name => $definitionarr) {
             $definition = cache_definition::load($name, $definitionarr);
             if ($definition->invalidates_on_event($event)) {
-                // Check if this definition would result in a persistent loader being in use.
-                if ($definition->should_be_persistent()) {
-                    // There may be a persistent cache loader. Lets purge that first so that any persistent data is removed.
-                    $cache = $factory->create_cache_from_definition($definition->get_component(), $definition->get_area());
-                    $cache->purge();
+                // First up check if there is a cache loader for this definition already.
+                // If there is we need to invalidate the keys from there.
+                $definitionkey = $definition->get_component().'/'.$definition->get_area();
+                if (isset($inuse[$definitionkey])) {
+                    $inuse[$definitionkey]->purge();
                 }
-                // Get all of the store instances that are in use for this store.
-                $stores = $factory->get_store_instances_in_use($definition);
-                foreach ($stores as $store) {
-                    // Purge each store individually.
-                    $store->purge();
-                }
+
+                // We should only log events for application and session caches.
+                // Request caches shouldn't have events as all data is lost at the end of the request.
+                // Events should only be logged once of course and likely several definitions are watching so we
+                // track its logging with $invalidationeventset.
+                $logevent = ($invalidationeventset === false && $definition->get_mode() !== cache_store::MODE_REQUEST);
+
                 // We need to flag the event in the "Event invalidation" cache if it hasn't already happened.
-                if ($invalidationeventset === false) {
+                if ($logevent && $invalidationeventset === false) {
                     // Get the event invalidation cache.
                     $cache = cache::make('core', 'eventinvalidation');
                     // Create a key to invalidate all.
@@ -375,34 +382,40 @@ class cache_helper {
     /**
      * Record a cache hit in the stats for the given store and definition.
      *
+     * @internal
      * @param string $store
      * @param string $definition
+     * @param int $hits The number of hits to record (by default 1)
      */
-    public static function record_cache_hit($store, $definition) {
+    public static function record_cache_hit($store, $definition, $hits = 1) {
         self::ensure_ready_for_stats($store, $definition);
-        self::$stats[$definition][$store]['hits']++;
+        self::$stats[$definition][$store]['hits'] += $hits;
     }
 
     /**
      * Record a cache miss in the stats for the given store and definition.
      *
+     * @internal
      * @param string $store
      * @param string $definition
+     * @param int $misses The number of misses to record (by default 1)
      */
-    public static function record_cache_miss($store, $definition) {
+    public static function record_cache_miss($store, $definition, $misses = 1) {
         self::ensure_ready_for_stats($store, $definition);
-        self::$stats[$definition][$store]['misses']++;
+        self::$stats[$definition][$store]['misses'] += $misses;
     }
 
     /**
      * Record a cache set in the stats for the given store and definition.
      *
+     * @internal
      * @param string $store
      * @param string $definition
+     * @param int $sets The number of sets to record (by default 1)
      */
-    public static function record_cache_set($store, $definition) {
+    public static function record_cache_set($store, $definition, $sets = 1) {
         self::ensure_ready_for_stats($store, $definition);
-        self::$stats[$definition][$store]['sets']++;
+        self::$stats[$definition][$store]['sets'] += $sets;
     }
 
     /**
@@ -455,8 +468,10 @@ class cache_helper {
         $class = $store['class'];
 
         // Found the store: is it ready?
+        /* @var cache_store $instance */
         $instance = new $class($store['name'], $store['configuration']);
-        if (!$instance->is_ready()) {
+        // We check are_requirements_met although we expect is_ready is going to check as well.
+        if (!$instance::are_requirements_met() || !$instance->is_ready()) {
             unset($instance);
             return false;
         }
@@ -664,5 +679,60 @@ class cache_helper {
                 }
             }
         }
+    }
+
+    /**
+     * Returns an array of stores that would meet the requirements for every definition.
+     *
+     * These stores would be 100% suitable to map as defaults for cache modes.
+     *
+     * @return array[] An array of stores, keys are the store names.
+     */
+    public static function get_stores_suitable_for_mode_default() {
+        $factory = cache_factory::instance();
+        $config = $factory->create_config_instance();
+        $requirements = 0;
+        foreach ($config->get_definitions() as $definition) {
+            $definition = cache_definition::load($definition['component'].'/'.$definition['area'], $definition);
+            $requirements = $requirements | $definition->get_requirements_bin();
+        }
+        $stores = array();
+        foreach ($config->get_all_stores() as $name => $store) {
+            if (!empty($store['features']) && ($store['features'] & $requirements)) {
+                $stores[$name] = $store;
+            }
+        }
+        return $stores;
+    }
+
+    /**
+     * Returns stores suitable for use with a given definition.
+     *
+     * @param cache_definition $definition
+     * @return cache_store[]
+     */
+    public static function get_stores_suitable_for_definition(cache_definition $definition) {
+        $factory = cache_factory::instance();
+        $stores = array();
+        if ($factory->is_initialising() || $factory->stores_disabled()) {
+            // No suitable stores here.
+            return $stores;
+        } else {
+            $stores = self::get_cache_stores($definition);
+            if (count($stores) === 0) {
+                // No suitable stores we found for the definition. We need to come up with a sensible default.
+                // If this has happened we can be sure that the user has mapped custom stores to either the
+                // mode of the definition. The first alternative to try is the system default for the mode.
+                // e.g. the default file store instance for application definitions.
+                $config = $factory->create_config_instance();
+                foreach ($config->get_stores($definition->get_mode()) as $name => $details) {
+                    if (!empty($details['default'])) {
+                        $stores[] = $factory->create_store_from_config($name, $details, $definition);
+                        break;
+                    }
+                }
+            }
+        }
+        return $stores;
     }
 }

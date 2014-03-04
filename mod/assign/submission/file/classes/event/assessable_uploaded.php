@@ -29,6 +29,13 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * assignsubmission_file assessable uploaded event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type array pathnamehashes uploaded files path name hash.
+ *      @type string content empty string.
+ * }
+ *
  * @package    assignsubmission_file
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -59,7 +66,7 @@ class assessable_uploaded extends \core\event\assessable_uploaded {
     protected function get_legacy_eventdata() {
         $eventdata = new \stdClass();
         $eventdata->modulename = 'assign';
-        $eventdata->cmid = $this->context->instanceid;
+        $eventdata->cmid = $this->contextinstanceid;
         $eventdata->itemid = $this->objectid;
         $eventdata->courseid = $this->courseid;
         $eventdata->userid = $this->userid;
@@ -95,7 +102,7 @@ class assessable_uploaded extends \core\event\assessable_uploaded {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/assign/view.php', array('id' => $this->context->instanceid));
+        return new \moodle_url('/mod/assign/view.php', array('id' => $this->contextinstanceid));
     }
 
     /**

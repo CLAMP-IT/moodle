@@ -129,7 +129,7 @@ class question_type {
      * method, and the question_definition class must implement the
      * classify_response method.
      *
-     * @return bool whether this report can analyse all the student reponses
+     * @return bool whether this report can analyse all the student responses
      * for things like the quiz statistics report.
      */
     public function can_analyse_responses() {
@@ -259,7 +259,7 @@ class question_type {
                 $permissionstrs[] = get_string('permissionsaveasnew', 'question');
             }
         }
-        if (!$question->formoptions->movecontext  && count($permissionstrs)) {
+        if (count($permissionstrs)) {
             echo $OUTPUT->heading(get_string('permissionto', 'question'), 3);
             $html = '<ul>';
             foreach ($permissionstrs as $permissionstr) {
@@ -858,6 +858,16 @@ class question_type {
      */
     public function get_random_guess_score($questiondata) {
         return 0;
+    }
+
+    /**
+     * Whether or not to break down question stats and response analysis, for a question defined by $questiondata.
+     *
+     * @param object $questiondata The full question definition data.
+     * @return bool
+     */
+    public function break_down_stats_and_response_analysis_by_variant($questiondata) {
+        return true;
     }
 
     /**

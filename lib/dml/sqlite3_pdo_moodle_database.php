@@ -150,7 +150,7 @@ class sqlite3_pdo_moodle_database extends pdo_moodle_database {
         foreach ($rstables as $table) {
             $table = $table['name'];
             $table = strtolower($table);
-            if ($this->prefix !== '') {
+            if ($this->prefix !== false && $this->prefix !== '') {
                 if (strpos($table, $this->prefix) !== 0) {
                     continue;
                 }
@@ -300,7 +300,7 @@ class sqlite3_pdo_moodle_database extends pdo_moodle_database {
         }
 
         if ($usecache) {
-            $result = $cache->set($table, $structure);
+            $cache->set($table, $structure);
         }
 
         return $structure;

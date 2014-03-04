@@ -23,6 +23,8 @@
 
 namespace core\event;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Class content_viewed.
  *
@@ -36,6 +38,12 @@ namespace core\event;
  *          "report/participation/index.php?id=$course->id", $course->id));
  *  $event->trigger();
  * where \report_participation\event\content_viewed extends \core\event\content_viewed
+ *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type string content viewed content identifier.
+ * }
  *
  * @package    core
  * @copyright  2013 Ankit Agarwal
@@ -53,7 +61,7 @@ abstract class content_viewed extends base {
         global $PAGE;
 
         $this->data['crud'] = 'r';
-        $this->data['level'] = self::LEVEL_OTHER;
+        $this->data['edulevel'] = self::LEVEL_OTHER;
         $this->context = $PAGE->context;
     }
 
@@ -85,7 +93,7 @@ abstract class content_viewed extends base {
      * @return string
      */
     public function get_description() {
-        return 'User with id ' . $this->userid . ' viewed content ' . $this->get_url();
+        return 'User with id ' . $this->userid . ' viewed content';
     }
 
     /**

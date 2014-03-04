@@ -18,18 +18,20 @@ Feature: Add and configure blocks throughout the site
     And I log in as "manager1"
     And I follow "Turn editing on"
     And I add the "Comments" block
+    And I open the "Comments" blocks action menu
     And I follow "Configure Comments block"
     And I fill the moodle form with:
       | Page contexts | Display throughout the entire site |
     And I press "Save changes"
     When I follow "Course 1"
-    Then I should see "Comments"
-    And I should see "Save comment"
+    Then I should see "Comments" in the "Comments" "block"
+    And I should see "Save comment" in the "Comments" "block"
     And I am on homepage
+    And I open the "Comments" blocks action menu
     And I follow "Configure Comments block"
     And I fill the moodle form with:
       | Default weight | -10 (first) |
     And I press "Save changes"
     And I follow "Course 1"
     # The first block matching the pattern should be top-left block
-    And I should see "Comments" in the "//*[@id='region-pre']/descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' block ')]" "xpath_element"
+    And I should see "Comments" in the "//*[@id='region-pre' or @id='block-region-side-pre']/descendant::div[contains(concat(' ', normalize-space(@class), ' '), ' block ')]" "xpath_element"

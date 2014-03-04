@@ -93,19 +93,11 @@ if (!empty($refresh) and data_submitted()) {
 } else if (empty($refresh) and data_submitted() and confirm_sesskey()) {
 
     if ($message!='') {
-        $newmessage = new stdClass();
-        $newmessage->chatid = $chat->id;
-        $newmessage->userid = $USER->id;
-        $newmessage->groupid = $groupid;
-        $newmessage->systrem = 0;
-        $newmessage->message = $message;
-        $newmessage->timestamp = time();
-        $DB->insert_record('chat_messages', $newmessage);
-        $DB->insert_record('chat_messages_current', $newmessage);
+
+        $chatuser = $DB->get_record('chat_users', array('sid' => $chat_sid));
+        chat_send_chatmessage($chatuser, $message, 0, $cm);
 
         $DB->set_field('chat_users', 'lastmessageping', time(), array('sid'=>$chat_sid));
-
-        add_to_log($course->id, 'chat', 'talk', "view.php?id=$cm->id", $chat->id, $cm->id);
     }
 
     chat_delete_old_users();
@@ -117,7 +109,11 @@ if (!empty($refresh) and data_submitted()) {
 $PAGE->set_title("$strchat: $course->shortname: ".format_string($chat->name,true)."$groupname");
 echo $OUTPUT->header();
 echo $OUTPUT->container_start(null, 'page-mod-chat-gui_basic');
-echo $OUTPUT->heading(get_string('participants'), 2, 'mdl-left');
+
+echo $OUTPUT->heading(format_string($course->shortname), 1);
+echo $OUTPUT->heading(format_string($chat->name), 2);
+
+echo $OUTPUT->heading(get_string('participants'), 3);
 
 echo $OUTPUT->box_start('generalbox', 'participants');
 echo '<ul>';
@@ -155,7 +151,7 @@ echo '</form>';
 echo '</div>';
 
 echo '<div id="messages">';
-echo $OUTPUT->heading(get_string('messages', 'chat'), 2, 'mdl-left');
+echo $OUTPUT->heading(get_string('messages', 'chat'), 3);
 
 $allmessages = array();
 $options = new stdClass();

@@ -1,4 +1,7 @@
-.headingblock {
+#site-news-forum h2,
+#frontpage-course-list h2,
+#frontpage-category-names h2,
+#frontpage-category-combo h2 {
     font-size:130%;
 }
 
@@ -45,12 +48,6 @@ textarea {
     width: 40%;
     margin: 0 auto;
     text-align: right;
-}
-
-#page-admin-index .adminwarning.maturityinfo.maturity50,
-#page-admin-index .adminwarning.maturityinfo.maturity100,
-#page-admin-index .adminwarning.maturityinfo.maturity150 {
-    background-color: #C2E3C2;
 }
 
 .dir-rtl .loginbox .loginform .form-label {
@@ -133,7 +130,6 @@ textarea {
 
 /* Forms
 -----------------------*/
-
 .form-description {
     font-size:95%;
 }
@@ -146,8 +142,8 @@ textarea {
 
 /* needed to vertically align label of mform groups containing, for instance, select and text */
 .mform .fitem {
-    line-height:2.0em;
-    margin-top:0;
+    line-height: 1.4;
+    font-size: 108%;
 }
 
 .mform .btn-cancel {

@@ -459,11 +459,11 @@ div#jcontrols_button span.arrow.sep {
 
 /** inner block style for decent display of recent news, etc **/
 
-.block_recent_activity.block_docked div.content h2.main,
-.block_recent_activity.block_docked div.content h3.main,
-.side-pre .block div.content h2.main,
-.side-post .block div.content h2.main,
-.block div.content h3.main,
+.block_recent_activity.block_docked div.content h2,
+.block_recent_activity.block_docked div.content h3,
+.side-pre .block div.content h2,
+.side-post .block div.content h2,
+.block div.content h3,
 .block div.content h2 {
     font-size: 13px;
     color: #333;
@@ -696,8 +696,8 @@ html>
 }
 
 /** main headings **/
-
-.generalbox h2,h3.sectionname, h2.headingblock,h2.main,h3.main, h2.main a, h3.main a, div.loginpanel h2, div.signuppanel h2 {
+.generalbox h2,h3.sectionname, div.loginpanel h2, div.signuppanel h2,
+#site-news-forum h2, #frontpage-course-list h2, #frontpage-category-names h2, #frontpage-category-combo h2 {
     font-size: 30px;
     padding-bottom: 2px;
     margin: 3px 0 2px;
@@ -708,9 +708,13 @@ html>
     letter-spacing: -1px;
     line-height: 1em;
     background: url([[pix:theme|hr_grid]]) repeat-x 0% 89%
-    }
+}
 
-.generalbox h2, h3.sectionname, h2.main a, h3.main a, div.loginpanel h2, div.signuppanel h2, div.hd h3.main {
+.course_category_tree .info > .categoryname {
+    display: inline;
+}
+
+.generalbox h2, h3.sectionname, div.loginpanel h2, div.signuppanel h2, div.hd h3 {
     font-size: 22px;
     background: none;
 }
@@ -793,10 +797,6 @@ td.author {
     font-weight: 800;
 }
 
-.info .name a {
-    font-weight: bold;
-}
-
 .indent {
     margin-left: 30px;
 }
@@ -872,7 +872,7 @@ table#categoryquestions th a {
     padding: 0;
 }
 
-tr.r1 td {
+> tbody > tr:nth-of-type(even) td {
     background-color: #f9f9f9;
 }
 
@@ -901,11 +901,11 @@ div.coursebox.collapsed {
     margin-bottom: 0;
 }
 
-div.coursebox > .info > .name a {
+div.coursebox > .info > .coursename {
     font-weight: inherit;
 }
 
-div.coursebox > .info > h3.name a {
+div.coursebox > .info > h3.coursename a {
     font-size: 16px;
     font-weight: 400;
 }
@@ -937,20 +937,8 @@ div.course_category_tree div.coursebox.odd {
     background: #eee;
 }
 
-div.course_category_tree div.coursebox > .info > .name > a {
+div.course_category_tree div.coursebox > .info > .categoryname > a {
     font-size: 14px;
-}
-
-div.course_category_tree div.controls {
-    font-size: 10px;
-    color: #666;
-    text-transform: uppercase;
-}
-
-div.course_category_tree div.controls div {
-    margin-top: 3px;
-    margin-right: 10px;
-    border-bottom: 1px solid #dadada;
 }
 
 /** inside  of course **/
@@ -1029,7 +1017,7 @@ div.assignment.overview div {
 
 /** glossary activity **/
 
-table.glossarycategoryheader h2.main {
+table.glossarycategoryheader h2 {
     text-align: center;
     margin-bottom: 0;
     margin-top: 0;
@@ -1108,7 +1096,7 @@ div.generalbox.sitetopic, div.generalbox.authsui,#page-admin-roles-assign div.ge
     border: none;
 }
 
-div.generalbox.firstpageoptions h3.main {
+div.generalbox.firstpageoptions h3 {
     font-size: 16px;
 }
 

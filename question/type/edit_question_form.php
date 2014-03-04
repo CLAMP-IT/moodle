@@ -146,12 +146,6 @@ abstract class question_edit_form extends question_wizard_form {
             // Editing question with no permission to move from category.
             $mform->addElement('questioncategory', 'category', get_string('category', 'question'),
                     array('contexts' => array($this->categorycontext)));
-        } else if ($this->question->formoptions->movecontext) {
-            // Moving question to another context.
-            $mform->addElement('questioncategory', 'categorymoveto',
-                    get_string('category', 'question'),
-                    array('contexts' => $this->contexts->having_cap('moodle/question:add')));
-
         } else {
             // Editing question with permission to move from category or save as new q.
             $currentgrp = array();
@@ -181,13 +175,14 @@ abstract class question_edit_form extends question_wizard_form {
         }
 
         $mform->addElement('text', 'name', get_string('questionname', 'question'),
-                array('size' => 50));
+                array('size' => 50, 'maxlength' => 255));
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
 
         $mform->addElement('editor', 'questiontext', get_string('questiontext', 'question'),
                 array('rows' => 15), $this->editoroptions);
         $mform->setType('questiontext', PARAM_RAW);
+        $mform->addRule('questiontext', null, 'required', null, 'client');
 
         $mform->addElement('text', 'defaultmark', get_string('defaultmark', 'question'),
                 array('size' => 7));
@@ -234,25 +229,18 @@ abstract class question_edit_form extends question_wizard_form {
 
         $this->add_hidden_fields();
 
-        $mform->addElement('hidden', 'movecontext');
-        $mform->setType('movecontext', PARAM_BOOL);
-
         $mform->addElement('hidden', 'qtype');
         $mform->setType('qtype', PARAM_ALPHA);
 
+        $mform->addElement('hidden', 'makecopy');
+        $mform->setType('makecopy', PARAM_INT);
+
         $buttonarray = array();
         if (!empty($this->question->id)) {
-            // Editing / moving question.
-            if ($this->question->formoptions->movecontext) {
-                $buttonarray[] = $mform->createElement('submit', 'submitbutton',
-                        get_string('moveq', 'question'));
-            } else if ($this->question->formoptions->canedit) {
+            // Editing question.
+            if ($this->question->formoptions->canedit) {
                 $buttonarray[] = $mform->createElement('submit', 'submitbutton',
                         get_string('savechanges'));
-            }
-            if ($this->question->formoptions->cansaveasnew) {
-                $buttonarray[] = $mform->createElement('submit', 'makecopy',
-                        get_string('makecopy', 'question'));
             }
             $buttonarray[] = $mform->createElement('cancel');
         } else {
@@ -264,9 +252,7 @@ abstract class question_edit_form extends question_wizard_form {
         $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
         $mform->closeHeaderBefore('buttonar');
 
-        if ($this->question->formoptions->movecontext) {
-            $mform->hardFreezeAllVisibleExcept(array('categorymoveto', 'buttonar'));
-        } else if ((!empty($this->question->id)) && (!($this->question->formoptions->canedit ||
+        if ((!empty($this->question->id)) && (!($this->question->formoptions->canedit ||
                 $this->question->formoptions->cansaveasnew))) {
             $mform->hardFreezeAllVisibleExcept(array('categorymoveto', 'buttonar', 'currentgrp'));
         }
@@ -360,7 +346,7 @@ abstract class question_edit_form extends question_wizard_form {
                                 array('rows' => 5), $this->editoroptions);
             $mform->setType($feedbackname, PARAM_RAW);
             // Using setValue() as setDefault() does not work for the editor class.
-            $element->setValue(array('text'=>get_string($feedbackname.'default', 'question')));
+            $element->setValue(array('text' => get_string($feedbackname.'default', 'question')));
 
             if ($withshownumpartscorrect && $feedbackname == 'partiallycorrectfeedback') {
                 $mform->addElement('advcheckbox', 'shownumcorrect',

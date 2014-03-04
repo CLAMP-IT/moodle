@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once $CFG->libdir.'/formslib.php';
-
+require_once($CFG->dirroot . '/user/editlib.php');
 
 /**
  * Upload a file CVS file with user information.
@@ -237,20 +237,7 @@ class admin_uploaduser_form2 extends moodleform {
         $mform->addElement('select', 'autosubscribe', get_string('autosubscribe'), $choices);
         $mform->setDefault('autosubscribe', 1);
 
-        $editors = editors_get_enabled();
-        if (count($editors) > 1) {
-            $choices = array();
-            $choices['0'] = get_string('texteditor');
-            $choices['1'] = get_string('htmleditor');
-            $mform->addElement('select', 'htmleditor', get_string('textediting'), $choices);
-            $mform->setDefault('htmleditor', 1);
-        } else {
-            $mform->addElement('hidden', 'htmleditor');
-            $mform->setDefault('htmleditor', 1);
-            $mform->setType('htmleditor', PARAM_INT);
-        }
-
-        $mform->addElement('text', 'city', get_string('city'), 'maxlength="100" size="25"');
+        $mform->addElement('text', 'city', get_string('city'), 'maxlength="120" size="25"');
         $mform->setType('city', PARAM_TEXT);
         if (empty($CFG->defaultcity)) {
             $mform->setDefault('city', $templateuser->city);
@@ -288,14 +275,14 @@ class admin_uploaduser_form2 extends moodleform {
         $mform->setType('url', PARAM_URL);
         $mform->setAdvanced('url');
 
-        $mform->addElement('text', 'idnumber', get_string('idnumber'), 'maxlength="64" size="25"');
+        $mform->addElement('text', 'idnumber', get_string('idnumber'), 'maxlength="255" size="25"');
         $mform->setType('idnumber', PARAM_NOTAGS);
 
-        $mform->addElement('text', 'institution', get_string('institution'), 'maxlength="40" size="25"');
+        $mform->addElement('text', 'institution', get_string('institution'), 'maxlength="255" size="25"');
         $mform->setType('institution', PARAM_TEXT);
         $mform->setDefault('institution', $templateuser->institution);
 
-        $mform->addElement('text', 'department', get_string('department'), 'maxlength="30" size="25"');
+        $mform->addElement('text', 'department', get_string('department'), 'maxlength="255" size="25"');
         $mform->setType('department', PARAM_TEXT);
         $mform->setDefault('department', $templateuser->department);
 
@@ -307,7 +294,7 @@ class admin_uploaduser_form2 extends moodleform {
         $mform->setType('phone2', PARAM_NOTAGS);
         $mform->setAdvanced('phone2');
 
-        $mform->addElement('text', 'address', get_string('address'), 'maxlength="70" size="25"');
+        $mform->addElement('text', 'address', get_string('address'), 'maxlength="255" size="25"');
         $mform->setType('address', PARAM_TEXT);
         $mform->setAdvanced('address');
 
@@ -388,24 +375,20 @@ class admin_uploaduser_form2 extends moodleform {
 
         // look for other required data
         if ($optype != UU_USER_UPDATE) {
-            if (!in_array('firstname', $columns)) {
-                $errors['uutype'] = get_string('missingfield', 'error', 'firstname');
-            }
-
-            if (!in_array('lastname', $columns)) {
-                if (isset($errors['uutype'])) {
-                    $errors['uutype'] = '';
-                } else {
-                    $errors['uutype'] = ' ';
+            $requiredusernames = useredit_get_required_name_fields();
+            $missing = array();
+            foreach ($requiredusernames as $requiredusername) {
+                if (!in_array($requiredusername, $columns)) {
+                    $missing[] = get_string('missingfield', 'error', $requiredusername);;
                 }
-                $errors['uutype'] .= get_string('missingfield', 'error', 'lastname');
             }
-
+            if ($missing) {
+                $errors['uutype'] = implode('<br />',  $missing);
+            }
             if (!in_array('email', $columns) and empty($data['email'])) {
                 $errors['email'] = get_string('requiredtemplate', 'tool_uploaduser');
             }
         }
-
         return $errors;
     }
 

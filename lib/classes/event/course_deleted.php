@@ -16,8 +16,18 @@
 
 namespace core\event;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Course deleted event.
+ *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type string shortname shortname of course.
+ *      @type string fullname fullname of course.
+ *      @type string idnumber id number of course.
+ * }
  *
  * @package    core
  * @copyright  2013 Mark Nelson <markn@moodle.com>
@@ -31,7 +41,7 @@ class course_deleted extends base {
     protected function init() {
         $this->data['objecttable'] = 'course';
         $this->data['crud'] = 'd';
-        $this->data['level'] = self::LEVEL_TEACHING;
+        $this->data['edulevel'] = self::LEVEL_TEACHING;
     }
 
     /**
@@ -69,7 +79,7 @@ class course_deleted extends base {
     protected function get_legacy_eventdata() {
         $course = $this->get_record_snapshot('course', $this->objectid);
         $course->context = $this->context;
-
+        $course->timemodified = $this->data['timecreated'];
         return $course;
     }
 

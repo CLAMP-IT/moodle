@@ -90,6 +90,7 @@
 #page-admin-report-backups-index .backup-skipped,
 #page-admin-report-backups-index .backup-ok {color: #006400;}
 #page-admin-report-backups-index .backup-warning {color: #ff9900;}
+#page-admin-report-backups-index .backup-notyetrun {color: #006400;}
 
 #page-admin-qbehaviours .disabled {color: gray;}
 #page-admin-qbehaviours th {white-space: normal;}
@@ -133,13 +134,10 @@
 #page-admin-roles-override .overridenotice,
 #page-admin-roles-define .definenotice {margin: 1em 10% 2em 10%;text-align: left;}
 
+#page-admin-index .adminerror {background-color:#ffd3d9 }
 #page-admin-index .adminerror .singlebutton,
 #page-admin-index .adminwarning .singlebutton,
 #page-admin-index #layout-table .singlebutton {margin:20px;}
-
-#page-admin-index .adminwarning.maturityinfo.maturity50 {background-color:#ffd3d9;}
-#page-admin-index .adminwarning.maturityinfo.maturity100,
-#page-admin-index .adminwarning.maturityinfo.maturity150 {background-color:#f3f2aa;}
 
 #page-admin-index .adminwarning.availableupdatesinfo .moodleupdateinfo {line-height:1.8;margin:20px auto;width:60%;text-align:left;}
 #page-admin-index .adminwarning.availableupdatesinfo .moodleupdateinfo .info.release {margin-right:10px;padding:5px 10px;-moz-border-radius: 10px;-webkit-border-radius: 10px;border-radius: 10px;}
@@ -335,7 +333,7 @@
 /** MNet networking */
 #page-admin-mnet-peers .box.deletedhosts {margin-bottom:1em;font-size:80%;}
 #page-admin-mnet-peers .mform .certdetails {background-color:white;}
-#page-admin-mnet-peers .mform .deletedhostinfo {background-color:#ffd3d9;border 2px solid #eeaaaa;padding:4px;margin-bottom:5px;}
+#page-admin-mnet-peers .mform .deletedhostinfo {background-color:#ffd3d9;border: 2px solid #eeaaaa;padding:4px;margin-bottom:5px;}
 
 #core-cache-plugin-summaries table,
 #core-cache-store-summaries table {width:100%;}
@@ -349,3 +347,6 @@
 #core-cache-store-summaries .store-requires-attention {background-color:#ffd3d9;}
 
 .tinymcesubplugins img.icon { padding-top: 0; padding-bottom: 0; }
+.maintenancewarning {padding:3px 1em;text-align:center;position:fixed;bottom:0;right:0;overflow:hidden;z-index:1;}
+.maintenancewarning.error {background-color:#F2DEDE;border:2px solid #EED3D7;font-weight:bold;}
+.maintenancewarning.warning {background-color:#ffd3d9;border:2px solid #EED3D7;}

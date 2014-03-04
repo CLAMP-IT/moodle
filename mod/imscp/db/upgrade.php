@@ -18,8 +18,7 @@
 /**
  * IMS CP module upgrade code
  *
- * @package    mod
- * @subpackage imscp
+ * @package mod_imscp
  * @copyright  2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -46,6 +45,9 @@ function xmldb_imscp_upgrade($oldversion) {
     // Moodle v2.5.0 release upgrade line.
     // Put any upgrade step following this.
 
+
+    // Moodle v2.6.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

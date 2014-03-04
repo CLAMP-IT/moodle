@@ -28,6 +28,13 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * core_group member added event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type string component name of component
+ *      @type int itemid id of item.
+ * }
+ *
  * @package    core_group
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -91,7 +98,7 @@ class group_member_added extends \core\event\base {
      */
     protected function init() {
         $this->data['crud'] = 'c';
-        $this->data['level'] = self::LEVEL_OTHER;
+        $this->data['edulevel'] = self::LEVEL_OTHER;
         $this->data['objecttable'] = 'groups';
     }
 

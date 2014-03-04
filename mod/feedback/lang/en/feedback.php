@@ -17,7 +17,7 @@
 /**
  * Strings for component 'feedback', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package   feedback
+ * @package mod_feedback
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -47,7 +47,7 @@ $string['completed'] = 'completed';
 $string['completed_feedbacks'] = 'Submitted answers';
 $string['complete_the_form'] = 'Answer the questions...';
 $string['completionsubmit'] = 'View as completed if the feedback is submitted';
-$string['configallowfullanonymous'] = 'If this option is set yes so the feedback can be completed without any preceding logon. It only affects feedbacks on the homepage.';
+$string['configallowfullanonymous'] = 'If set to \'yes\', users can complete a feedback activity on the front page without being required to log in.';
 $string['confirmdeleteentry'] = 'Are you sure you want to delete this entry?';
 $string['confirmdeleteitem'] = 'Are you sure you want to delete this element?';
 $string['confirmdeletetemplate'] = 'Are you sure you want to delete this template?';
@@ -97,11 +97,13 @@ $string['emailteachermail'] = '{$a->username} has completed feedback activity : 
 You can view it here:
 
 {$a->url}';
-$string['emailteachermailhtml'] = '{$a->username} has completed feedback activity : <i>\'{$a->feedback}\'</i><br /><br />
-You can view it <a href="{$a->url}">here</a>.';
+$string['emailteachermailhtml'] = '<p>{$a->username} has completed feedback activity : <i>\'{$a->feedback}\'</i>.</p>
+<p>It is <a href="{$a->url}">available on the site</a>.</p>';
 $string['entries_saved'] = 'Your answers have been saved. Thank you.';
 $string['export_questions'] = 'Export questions';
 $string['export_to_excel'] = 'Export to Excel';
+$string['eventresponsedeleted'] = 'Response deleted';
+$string['eventresponsesubmitted'] = 'Response submitted';
 $string['feedback:addinstance'] = 'Add a new feedback';
 $string['feedbackclose'] = 'Allow answers to';
 $string['feedback:complete'] = 'Complete a feedback';

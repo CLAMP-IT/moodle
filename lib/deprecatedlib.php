@@ -31,6 +31,208 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Adds a file upload to the log table so that clam can resolve the filename to the user later if necessary
+ *
+ * @deprecated since 2.7 - use new file picker instead
+ *
+ * @param string $newfilepath
+ * @param stdClass $course
+ * @param bool $nourl
+ */
+function clam_log_upload($newfilepath, $course=null, $nourl=false) {
+    debugging('clam_log_upload() is not supposed to be used any more, use new file picker instead', DEBUG_DEVELOPER);
+}
+
+/**
+ * This function logs to error_log and to the log table that an infected file has been found and what's happened to it.
+ *
+ * @deprecated since 2.7 - use new file picker instead
+ *
+ * @param string $oldfilepath
+ * @param string $newfilepath
+ * @param int $userid The user
+ */
+function clam_log_infected($oldfilepath='', $newfilepath='', $userid=0) {
+    debugging('clam_log_infected() is not supposed to be used any more, use new file picker instead', DEBUG_DEVELOPER);
+}
+
+/**
+ * Some of the modules allow moving attachments (glossary), in which case we need to hunt down an original log and change the path.
+ *
+ * @deprecated since 2.7 - use new file picker instead
+ *
+ * @param string $oldpath
+ * @param string $newpath
+ * @param boolean $update
+ */
+function clam_change_log($oldpath, $newpath, $update=true) {
+    debugging('clam_change_log() is not supposed to be used any more, use new file picker instead', DEBUG_DEVELOPER);
+}
+
+/**
+ * Replaces the given file with a string.
+ *
+ * @deprecated since 2.7 - infected files are now deleted in file picker
+ *
+ * @param string $file
+ * @return boolean
+ */
+function clam_replace_infected_file($file) {
+    debugging('clam_change_log() is not supposed to be used any more', DEBUG_DEVELOPER);
+    return false;
+}
+
+/**
+ * Checks whether the password compatibility library will work with the current
+ * version of PHP. This cannot be done using PHP version numbers since the fix
+ * has been backported to earlier versions in some distributions.
+ *
+ * See https://github.com/ircmaxell/password_compat/issues/10 for more details.
+ *
+ * @deprecated since 2.7 PHP 5.4.x should be always compatible.
+ *
+ * @return bool always returns false
+ */
+function password_compat_not_supported() {
+    debugging('Do not use password_compat_not_supported() - bcrypt is now always available', DEBUG_DEVELOPER);
+    return false;
+}
+
+/**
+ * Factory method that was returning moodle_session object.
+ *
+ * @deprecated since 2.6
+ * @return \core\session\manager
+ */
+function session_get_instance() {
+    // Note: the new session manager includes all methods from the original session class.
+    static $deprecatedinstance = null;
+
+    debugging('session_get_instance() is deprecated, use \core\session\manager instead', DEBUG_DEVELOPER);
+
+    if (!$deprecatedinstance) {
+        $deprecatedinstance = new \core\session\manager();
+    }
+
+    return $deprecatedinstance;
+}
+
+/**
+ * Returns true if legacy session used.
+ *
+ * @deprecated since 2.6
+ * @return bool
+ */
+function session_is_legacy() {
+    debugging('session_is_legacy() is deprecated, do not use any more', DEBUG_DEVELOPER);
+    return false;
+}
+
+/**
+ * Terminates all sessions, auth hooks are not executed.
+ * Useful in upgrade scripts.
+ *
+ * @deprecated since 2.6
+ */
+function session_kill_all() {
+    debugging('session_kill_all() is deprecated, use \core\session\manager::kill_all_sessions() instead', DEBUG_DEVELOPER);
+    \core\session\manager::kill_all_sessions();
+}
+
+/**
+ * Mark session as accessed, prevents timeouts.
+ *
+ * @deprecated since 2.6
+ * @param string $sid
+ */
+function session_touch($sid) {
+    debugging('session_touch() is deprecated, use \core\session\manager::touch_session() instead', DEBUG_DEVELOPER);
+    \core\session\manager::touch_session($sid);
+}
+
+/**
+ * Terminates one sessions, auth hooks are not executed.
+ *
+ * @deprecated since 2.6
+ * @param string $sid session id
+ */
+function session_kill($sid) {
+    debugging('session_kill() is deprecated, use \core\session\manager::kill_session() instead', DEBUG_DEVELOPER);
+    \core\session\manager::kill_session($sid);
+}
+
+/**
+ * Terminates all sessions of one user, auth hooks are not executed.
+ * NOTE: This can not work for file based sessions!
+ *
+ * @deprecated since 2.6
+ * @param int $userid user id
+ */
+function session_kill_user($userid) {
+    debugging('session_kill_user() is deprecated, use \core\session\manager::kill_user_sessions() instead', DEBUG_DEVELOPER);
+    \core\session\manager::kill_user_sessions($userid);
+}
+
+/**
+ * Session garbage collection
+ * - verify timeout for all users
+ * - kill sessions of all deleted users
+ * - kill sessions of users with disabled plugins or 'nologin' plugin
+ *
+ * @deprecated since 2.6
+ */
+function session_gc() {
+    debugging('session_gc() is deprecated, use \core\session\manager::gc() instead', DEBUG_DEVELOPER);
+    \core\session\manager::gc();
+}
+
+/**
+ * Setup $USER object - called during login, loginas, etc.
+ *
+ * Call sync_user_enrolments() manually after log-in, or log-in-as.
+ *
+ * @deprecated since 2.6
+ * @param stdClass $user full user record object
+ * @return void
+ */
+function session_set_user($user) {
+    debugging('session_set_user() is deprecated, use \core\session\manager::set_user() instead', DEBUG_DEVELOPER);
+    \core\session\manager::set_user($user);
+}
+
+/**
+ * Is current $USER logged-in-as somebody else?
+ * @deprecated since 2.6
+ * @return bool
+ */
+function session_is_loggedinas() {
+    debugging('session_is_loggedinas() is deprecated, use \core\session\manager::is_loggedinas() instead', DEBUG_DEVELOPER);
+    return \core\session\manager::is_loggedinas();
+}
+
+/**
+ * Returns the $USER object ignoring current login-as session
+ * @deprecated since 2.6
+ * @return stdClass user object
+ */
+function session_get_realuser() {
+    debugging('session_get_realuser() is deprecated, use \core\session\manager::get_realuser() instead', DEBUG_DEVELOPER);
+    return \core\session\manager::get_realuser();
+}
+
+/**
+ * Login as another user - no security checks here.
+ * @deprecated since 2.6
+ * @param int $userid
+ * @param stdClass $context
+ * @return void
+ */
+function session_loginas($userid, $context) {
+    debugging('session_loginas() is deprecated, use \core\session\manager::loginas() instead', DEBUG_DEVELOPER);
+    \core\session\manager::loginas($userid, $context);
+}
+
+/**
  * Minify JavaScript files.
  *
  * @deprecated since 2.6
@@ -425,46 +627,6 @@ function get_file_url($path, $options=null, $type='coursefile') {
 }
 
 /**
- * @deprecated use get_string("pluginname", "auth_[PLUINNAME]") instead.
- * @todo remove completely in MDL-40517
- */
-function auth_get_plugin_title($authtype) {
-    throw new coding_exception('Function auth_get_plugin_title() is deprecated, please use standard get_string("pluginname", "auth_'.$authtype.'")!');
-}
-
-/**
- * @deprecated use indivividual enrol plugin settings instead
- * @todo remove completely in MDL-40517
- */
-function get_default_course_role($course) {
-    throw new coding_exception('get_default_course_role() can not be used any more, please use enrol plugin settings instead!');
-}
-
-/**
- * @deprecated use get_string_manager()->get_list_of_translations() instead.
- * @todo remove completely in MDL-40517
- */
-function get_list_of_languages($refreshcache=false, $returnall=false) {
-    throw new coding_exception('get_list_of_languages() can not be used any more, please use get_string_manager()->get_list_of_translations() instead.');
-}
-
-/**
- * @deprecated use get_string_manager()->get_list_of_currencies() instead.
- * @todo remove completely in MDL-40517
- */
-function get_list_of_currencies() {
-    throw new coding_exception('get_list_of_currencies() can not be used any more, please use get_string_manager()->get_list_of_currencies() instead.');
-}
-
-/**
- * @deprecated use get_string_manager()->get_list_of_countries() instead.
- * @todo remove completely in MDL-40517
- */
-function get_list_of_countries() {
-    throw new coding_exception('get_list_of_countries() can not be used any more, please use get_string_manager()->get_list_of_countries() instead.');
-}
-
-/**
  * Return all course participant for a given course
  *
  * @deprecated use get_enrolled_users($context) instead.
@@ -519,56 +681,6 @@ function get_recent_enrolments($courseid, $timestart) {
           ORDER BY MAX(l.time) ASC";
     $params = array($timestart, $courseid);
     return $DB->get_records_sql($sql, $params);
-}
-
-########### FROM weblib.php ##########################################################################
-
-/**
- * @deprecated use $OUTPUT->box() instead.
- * @todo remove completely in MDL-40517
- */
-function print_simple_box($message, $align='', $width='', $color='', $padding=5, $class='generalbox', $id='', $return=false) {
-    throw new coding_exception('print_simple_box can not be used any more. Please use $OUTPUT->box() instead');
-}
-
-/**
- * @deprecated use $OUTPUT->box_start instead.
- * @todo remove completely in MDL-40517
- */
-function print_simple_box_start($align='', $width='', $color='', $padding=5, $class='generalbox', $id='', $return=false) {
-    throw new coding_exception('print_simple_box_start can not be used any more. Please use $OUTPUT->box_start instead');
-}
-
-/**
- * @deprecated use $OUTPUT->box_end instead.
- * @todo remove completely in MDL-40517
- */
-function print_simple_box_end($return=false) {
-    throw new coding_exception('print_simple_box_end can not be used any more. Please use $OUTPUT->box_end instead');
-}
-
-/**
- * @deprecated the urltolink filter now does this job.
- * @todo remove completely in MDL-40517
- */
-function convert_urls_into_links($text) {
-    throw new coding_exception('convert_urls_into_links() can not be used any more and replaced by the urltolink filter');
-}
-
-/**
- * @deprecated use the emoticon_manager class instead.
- * @todo remove completely in MDL-40517
- */
-function get_emoticons_list_for_help_file() {
-    throw new coding_exception('get_emoticons_list_for_help_file() can not be used any more, use the new emoticon_manager API instead');
-}
-
-/**
- * @deprecated use emoticon filter now does this job.
- * @todo remove completely in MDL-40517
- */
-function replace_smilies(&$text) {
-    throw new coding_exception('replace_smilies() can not be used any more and replaced with the emoticon filter.');
 }
 
 /**
@@ -851,13 +963,6 @@ function error($message, $link='') {
 
 
 /**
- * @deprecated use $PAGE->requires->js_module() instead.
- */
-function require_js($lib) {
-    throw new coding_exception('require_js() was removed, use new JS api');
-}
-
-/**
  * @deprecated use $PAGE->theme->name instead.
  * @todo final deprecation of this function in MDL-40607
  * @return string the name of the current theme.
@@ -896,54 +1001,6 @@ function skip_main_destination() {
 
     debugging('skip_main_destination() is deprecated, please use $OUTPUT->skip_link_target() instead.', DEBUG_DEVELOPER);
     return $OUTPUT->skip_link_target();
-}
-
-/**
- * @deprecated use $OUTPUT->heading() instead.
- * @todo remove completely in MDL-40517
- */
-function print_headline($text, $size=2, $return=false) {
-    throw new coding_exception('print_headline() can not be used any more. Please use $OUTPUT->heading() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->heading() instead.
- * @todo remove completely in MDL-40517
- */
-function print_heading($text, $deprecated = '', $size = 2, $class = 'main', $return = false, $id = '') {
-    throw new coding_exception('print_heading() can not be used any more. Please use $OUTPUT->heading() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->heading() instead.
- * @todo remove completely in MDL-40517
- */
-function print_heading_block($heading, $class='', $return=false) {
-    throw new coding_exception('print_heading_with_block() can not be used any more. Please use $OUTPUT->heading() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->box() instead.
- * @todo remove completely in MDL-40517
- */
-function print_box($message, $classes='generalbox', $ids='', $return=false) {
-    throw new coding_exception('print_box() can not be used any more. Please use $OUTPUT->box() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->box_start() instead.
- * @todo remove completely in MDL-40517
- */
-function print_box_start($classes='generalbox', $ids='', $return=false) {
-    throw new coding_exception('print_box_start() can not be used any more. Please use $OUTPUT->box_start() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->box_end() instead.
- * @todo remove completely in MDL-40517
- */
-function print_box_end($return=false) {
-    throw new coding_exception('print_box_end() can not be used any more. Please use $OUTPUT->box_end() instead.');
 }
 
 /**
@@ -998,14 +1055,6 @@ function print_container_start($clearfix=false, $classes='', $idbase='', $return
     } else {
         echo $output;
     }
-}
-
-/**
- * @deprecated do not use any more, is not automatic
- * @todo remove completely in MDL-40517
- */
-function check_theme_arrows() {
-    throw new coding_exception('check_theme_arrows() has been deprecated, do not use it anymore, it is now automatic.');
 }
 
 /**
@@ -1194,22 +1243,6 @@ function print_header_simple($title='', $heading='', $navigation='', $focus='', 
 }
 
 /**
- * @deprecated use $OUTPUT->footer() instead.
- * @todo remove completely in MDL-40517
- */
-function print_footer($course = NULL, $usercourse = NULL, $return = false) {
-    throw new coding_exception('print_footer() cant be used anymore. Please use $OUTPUT->footer() instead.');
-}
-
-/**
- * @deprecated use theme layouts instead.
- * @todo remove completely in MDL-40517
- */
-function user_login_string($course='ignored', $user='ignored') {
-    throw new coding_exception('user_login_info() cant be used anymore. User login info is now handled via themes layouts.');
-}
-
-/**
  * Prints a nice side block with an optional header.  The content can either
  * be a block of HTML or a list of text with optional icons.
  *
@@ -1258,90 +1291,6 @@ function print_side_block($heading='', $content='', $list=NULL, $icons=NULL, $fo
 }
 
 /**
- * @deprecated blocks are now printed by theme.
- * @todo remove completely in MDL-40517
- */
-function blocks_have_content(&$blockmanager, $region) {
-    throw new coding_exception('blocks_have_content() can no longer be used. Blocks are now printed by the theme.');
-}
-
-/**
- * @deprecated blocks are now printed by the theme.
- * @todo remove completely in MDL-40517
- */
-function blocks_print_group($page, $blockmanager, $region) {
-    throw new coding_exception('function blocks_print_group() can no longer be used. Blocks are now printed by the theme.');
-}
-
-/**
- * @deprecated blocks are now printed by the theme.
- * @todo remove completely in MDL-40517
- */
-function blocks_setup(&$page, $pinned = BLOCKS_PINNED_FALSE) {
-    throw new coding_exception('blocks_print_group() can no longer be used. Blocks are now printed by the theme.');
-}
-
-/**
- * @deprecated Layout is now controlled by the theme.
- * @todo remove completely in MDL-40517
- */
-function blocks_preferred_width($instances) {
-    throw new coding_exception('blocks_print_group() can no longer be used. Blocks are now printed by the theme.');
-}
-
-/**
- * @deprecated use html_writer::table() instead.
- * @todo remove completely in MDL-40517
- */
-function print_table($table, $return=false) {
-    throw new coding_exception('print_table() can no longer be used. Use html_writer::table() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->action_link() instead (note: popups are discouraged for accesibility reasons)
- * @todo remove completely in MDL-40517
- */
-function link_to_popup_window ($url, $name=null, $linkname=null, $height=400, $width=500, $title=null, $options=null, $return=false) {
-    throw new coding_exception('link_to_popup_window() can no longer be used. Please to use $OUTPUT->action_link() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->single_button() instead.
- * @todo remove completely in MDL-40517
- */
-function button_to_popup_window ($url, $name=null, $linkname=null,
-                                 $height=400, $width=500, $title=null, $options=null, $return=false,
-                                 $id=null, $class=null) {
-    throw new coding_exception('button_to_popup_window() can no longer be used. Please use $OUTPUT->single_button() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->single_button() instead.
- * @todo remove completely in MDL-40517
- */
-function print_single_button($link, $options, $label='OK', $method='get', $notusedanymore='',
-        $return=false, $tooltip='', $disabled = false, $jsconfirmmessage='', $formid = '') {
-
-    throw new coding_exception('print_single_button() can no longer be used. Please use $OUTPUT->single_button() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->spacer() instead.
- * @todo remove completely in MDL-40517
- */
-function print_spacer($height=1, $width=1, $br=true, $return=false) {
-    throw new coding_exception('print_spacer() can no longer be used. Please use $OUTPUT->spacer() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->user_picture() instead.
- * @todo remove completely in MDL-40517
- */
-function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=false, $link=true, $target='', $alttext=true) {
-    throw new coding_exception('print_user_picture() can no longer be used. Please use $OUTPUT->user_picture($user, array(\'courseid\'=>$courseid) instead.');
-}
-
-/**
  * Prints a basic textarea field.
  *
  * @deprecated since Moodle 2.0
@@ -1349,7 +1298,7 @@ function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=fa
  * When using this function, you should
  *
  * @global object
- * @param bool $usehtmleditor Enables the use of the htmleditor for this field.
+ * @param bool $unused No longer used.
  * @param int $rows Number of rows to display  (minimum of 10 when $height is non-null)
  * @param int $cols Number of columns to display (minimum of 65 when $width is non-null)
  * @param null $width (Deprecated) Width of the element; if a value is passed, the minimum value for $cols will be 65. Value is otherwise ignored.
@@ -1361,7 +1310,7 @@ function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=fa
  * @param string $id CSS ID to add to the textarea element.
  * @return string|void depending on the value of $return
  */
-function print_textarea($usehtmleditor, $rows, $cols, $width, $height, $name, $value='', $obsolete=0, $return=false, $id='') {
+function print_textarea($unused, $rows, $cols, $width, $height, $name, $value='', $obsolete=0, $return=false, $id='') {
     /// $width and height are legacy fields and no longer used as pixels like they used to be.
     /// However, you can set them to zero to override the mincols and minrows values below.
 
@@ -1378,53 +1327,25 @@ function print_textarea($usehtmleditor, $rows, $cols, $width, $height, $name, $v
         $id = 'edit-'.$name;
     }
 
-    if ($usehtmleditor) {
-        if ($height && ($rows < $minrows)) {
-            $rows = $minrows;
-        }
-        if ($width && ($cols < $mincols)) {
-            $cols = $mincols;
-        }
+    if ($height && ($rows < $minrows)) {
+        $rows = $minrows;
+    }
+    if ($width && ($cols < $mincols)) {
+        $cols = $mincols;
     }
 
-    if ($usehtmleditor) {
-        editors_head_setup();
-        $editor = editors_get_preferred_editor(FORMAT_HTML);
-        $editor->use_editor($id, array('legacy'=>true));
-    } else {
-        $editorclass = '';
-    }
+    editors_head_setup();
+    $editor = editors_get_preferred_editor(FORMAT_HTML);
+    $editor->use_editor($id, array('legacy'=>true));
 
     $str .= "\n".'<textarea class="form-textarea" id="'. $id .'" name="'. $name .'" rows="'. $rows .'" cols="'. $cols .'" spellcheck="true">'."\n";
-    if ($usehtmleditor) {
-        $str .= htmlspecialchars($value); // needed for editing of cleaned text!
-    } else {
-        $str .= s($value);
-    }
+    $str .= htmlspecialchars($value); // needed for editing of cleaned text!
     $str .= '</textarea>'."\n";
 
     if ($return) {
         return $str;
     }
     echo $str;
-}
-
-
-/**
- * Print a help button.
- *
- * @deprecated since Moodle 2.0
- */
-function helpbutton($page, $title, $module='moodle', $image=true, $linktext=false, $text='', $return=false, $imagetext='') {
-    throw new coding_exception('helpbutton() can not be used any more, please see $OUTPUT->help_icon().');
-}
-
-/**
- * @deprecated this is now handled by text editors
- * @todo remove completely in MDL-40517
- */
-function emoticonhelpbutton($form, $field, $return = false) {
-    throw new coding_exception('emoticonhelpbutton() was removed, new text editors will implement this feature');
 }
 
 /**
@@ -1519,32 +1440,6 @@ function print_arrow($direction='up', $strsort=null, $return=false) {
 }
 
 /**
- * Returns a string containing a link to the user documentation.
- * Also contains an icon by default. Shown to teachers and admin only.
- *
- * @deprecated since Moodle 2.0
- */
-function doc_link($path='', $text='', $iconpath='ignored') {
-    throw new coding_exception('doc_link() can not be used any more, please see $OUTPUT->doc_link().');
-}
-
-/**
- * @deprecated use $OUTPUT->render($pagingbar) instead.
- * @todo remove completely in MDL-40517
- */
-function print_paging_bar($totalcount, $page, $perpage, $baseurl, $pagevar='page',$nocurr=false, $return=false) {
-    throw new coding_exception('print_paging_bar() can not be used any more. Please use $OUTPUT->render($pagingbar) instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->confirm($message, $buttoncontinue, $buttoncancel) instead.
- * @todo remove completely in MDL-40517
- */
-function notice_yesno($message, $linkyes, $linkno, $optionsyes=NULL, $optionsno=NULL, $methodyes='post', $methodno='post') {
-    throw new coding_exception('notice_yesno() can not be used any more. Please use $OUTPUT->confirm($message, $buttoncontinue, $buttoncancel) instead.');
-}
-
-/**
  * Given an array of values, output the HTML for a select element with those options.
  *
  * @deprecated since Moodle 2.0
@@ -1601,24 +1496,6 @@ function choose_from_menu ($options, $name, $selected='', $nothing='choose', $sc
 }
 
 /**
- * @deprecated use html_writer::select_yes_no() instead.
- * @todo remove completely in MDL-40517
- */
-function choose_from_menu_yesno($name, $selected, $script = '', $return = false, $disabled = false, $tabindex = 0) {
-    throw new coding_exception('choose_from_menu_yesno() can not be used anymore. Please use html_writerselect_yes_no() instead.');
-}
-
-/**
- * @deprecated use html_writer::select() instead.
- * @todo remove completely in MDL-40517
- */
-function choose_from_menu_nested($options,$name,$selected='',$nothing='choose',$script = '',
-                                 $nothingvalue=0,$return=false,$disabled=false,$tabindex=0) {
-
-    throw new coding_exception('choose_from_menu_nested() can not be used any more. Please use html_writer::select() instead.');
-}
-
-/**
  * Prints a help button about a scale
  *
  * @deprecated use $OUTPUT->help_icon_scale($courseid, $scale) instead.
@@ -1642,48 +1519,6 @@ function print_scale_menu_helpbutton($courseid, $scale, $return=false) {
     } else {
         echo $output;
     }
-}
-
-/**
- * @deprecated use html_writer::select_time() instead
- * @todo remove completely in MDL-40517
- */
-function print_time_selector($hour, $minute, $currenttime=0, $step=5, $return=false) {
-    throw new moodle_exception('print_time_selector() can not be used any more . Please use html_writer::select_time() instead.');
-}
-
-/**
- * @deprecated please use html_writer::select_time instead
- * @todo remove completely in MDL-40517
- */
-function print_date_selector($day, $month, $year, $currenttime=0, $return=false) {
-    throw new coding_exception('print_date_selector() can not be used any more. Please use html_writer::select_time() instead.');
-}
-
-/**
- * Implements a complete little form with a dropdown menu.
- *
- * @deprecated since Moodle 2.0
- */
-function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose', $help='', $helptext='', $return=false,
-    $targetwindow='self', $selectlabel='', $optionsextra=NULL, $submitvalue='', $disabled=false, $showbutton=false) {
-        throw new coding_exception('popup_form() can not be used any more, please see $OUTPUT->single_select or $OUTPUT->url_select().');
-}
-
-/**
- * @deprecated use $OUTPUT->close_window_button() instead.
- * @todo remove completely in MDL-40517
- */
-function close_window_button($name='closewindow', $return=false, $reloadopener = false) {
-    throw new coding_exception('close_window_button() can not be used any more. Use $OUTPUT->close_window_button() instead.');
-}
-
-/**
- * @deprecated use html_writer instead.
- * @todo remove completely in MDL-40517
- */
-function choose_from_radio ($options, $name, $checked='', $return=false) {
-    throw new coding_exception('choose_from_radio() can not be used any more. Please use html_writer instead.');
 }
 
 /**
@@ -1724,32 +1559,6 @@ function print_checkbox($name, $value, $checked = true, $label = '', $alt = '', 
 }
 
 /**
- * @deprecated use mforms or html_writer instead.
- * @todo remove completely in MDL-40517
- */
-function print_textfield($name, $value, $alt = '', $size=50, $maxlength=0, $return=false) {
-    throw new coding_exception('print_textfield() can not be used anymore. Please use mforms or html_writer instead.');
-}
-
-
-/**
- * @deprecated use $OUTPUT->heading_with_help() instead
- * @todo remove completely in MDL-40517
- */
-function print_heading_with_help($text, $helppage, $module='moodle', $icon=false, $return=false) {
-    throw new coding_exception('print_heading_with_help() can not be used anymore. Please use $OUTPUT->heading_with_help() instead.');
-}
-
-/**
- * @deprecated use $OUTPUT->edit_button() instead.
- * @todo remove completely in MDL-40517
- */
-function update_tag_button($tagid) {
-    throw new coding_exception('update_tag_button() can not be used any more. Please $OUTPUT->edit_button(moodle_url) instead.');
-}
-
-
-/**
  * Prints the 'update this xxx' button that appears on module pages.
  *
  * @deprecated since Moodle 2.0
@@ -1774,14 +1583,6 @@ function update_module_button($cmid, $ignored, $string) {
     } else {
         return '';
     }
-}
-
-/**
- * @deprecated use $OUTPUT->edit_button() instead.
- * @todo remove completely in MDL-40517
- */
-function update_course_icon($courseid) {
-    throw new coding_exception('update_course_button() can not be used anymore. Please use $OUTPUT->edit_button(moodle_url) instead.');
 }
 
 /**
@@ -1880,7 +1681,7 @@ function build_navigation($extranavlinks, $cm = null) {
 
 /**
  * @deprecated not relevant with global navigation in Moodle 2.x+
- * @todo remove completely in MDL-40517
+ * @todo remove completely in MDL-40607
  */
 function navmenu($course, $cm=NULL, $targetwindow='self') {
     // This function has been deprecated with the creation of the global nav in
@@ -1888,30 +1689,6 @@ function navmenu($course, $cm=NULL, $targetwindow='self') {
     debugging('navmenu() is deprecated, it is no longer relevant with global navigation.', DEBUG_DEVELOPER);
 
     return '';
-}
-
-/**
- * @deprecated use the settings block instead.
- * @todo remove completely in MDL-40517
- */
-function switchroles_form($courseid) {
-    throw new coding_exception('switchroles_form() can not be used any more. The global settings block does this job.');
-}
-
-/**
- * @deprecated Please use normal $OUTPUT->header() instead
- * @todo remove completely in MDL-40517
- */
-function admin_externalpage_print_header($focus='') {
-    throw new coding_exception('admin_externalpage_print_header can not be used any more. Please $OUTPUT->header() instead.');
-}
-
-/**
- * @deprecated Please use normal $OUTPUT->footer() instead
- * @todo remove completely in MDL-40517
- */
-function admin_externalpage_print_footer() {
-    throw new coding_exception('admin_externalpage_print_footer can not be used anymore Please $OUTPUT->footer() instead.');
 }
 
 /// CALENDAR MANAGEMENT  ////////////////////////////////////////////////////////////////
@@ -2025,13 +1802,6 @@ function show_event($event) {
 
     $event = new calendar_event($event);
     return $event->toggle_visibility(true);
-}
-
-/**
- * @deprecated Use core_text::strtolower($text) instead.
- */
-function moodle_strtolower($string, $encoding='') {
-    throw new coding_exception('moodle_strtolower() cannot be used any more. Please use core_text::strtolower() instead.');
 }
 
 /**
@@ -3023,21 +2793,29 @@ function get_child_categories($parentid) {
  *
  * coursecat::get($categoryid)->get_children()
  * - returns all children of the specified category as instances of class
- * coursecat, which means on each of them method get_children() can be called again
+ * coursecat, which means on each of them method get_children() can be called again.
+ * Only categories visible to the current user are returned.
  *
- * coursecat::get($categoryid)->get_children(array('recursive' => true))
- * - returns all children of the specified category and all subcategories
- *
- * coursecat::get(0)->get_children(array('recursive' => true))
- * - returns all categories defined in the system
+ * coursecat::get(0)->get_children()
+ * - returns all top-level categories visible to the current user.
  *
  * Sort fields can be specified, see phpdocs to {@link coursecat::get_children()}
+ *
+ * coursecat::make_categories_list()
+ * - returns an array of all categories id/names in the system.
+ * Also only returns categories visible to current user and can additionally be
+ * filetered by capability, see phpdocs to {@link coursecat::make_categories_list()}
+ *
+ * make_categories_options()
+ * - Returns full course categories tree to be used in html_writer::select()
  *
  * Also see functions {@link coursecat::get_children_count()}, {@link coursecat::count_all()},
  * {@link coursecat::get_default()}
  *
  * The code of this deprecated function is left as it is because coursecat::get_children()
- * returns categories as instances of coursecat and not stdClass
+ * returns categories as instances of coursecat and not stdClass. Also there is no
+ * substitute for retrieving the category with all it's subcategories. Plugin developers
+ * may re-use the code/queries from this function in their plugins if really necessary.
  *
  * @param string $parent The parent category if any
  * @param string $sort the sortorder
@@ -3047,7 +2825,7 @@ function get_child_categories($parentid) {
 function get_categories($parent='none', $sort=NULL, $shallow=true) {
     global $DB;
 
-    debugging('Function get_categories() is deprecated. Please use coursecat::get_children(). See phpdocs for more details',
+    debugging('Function get_categories() is deprecated. Please use coursecat::get_children() or see phpdocs for other alternatives',
             DEBUG_DEVELOPER);
 
     if ($sort === NULL) {
@@ -3854,12 +3632,6 @@ function convert_tabrows_to_tree($tabrows, $selected, $inactive, $activated) {
 }
 
 /**
- * @deprecated since Moodle 2.3
- */
-function move_section($course, $section, $move) {
-    throw new coding_exception('move_section() can not be used any more, please see move_section_to().');
-}
-/**
  * Can handle rotated text. Whether it is safe to use the trickery in textrotate.js.
  *
  * @deprecated since 2.5 - do not use, the textrotate.js will work it out automatically
@@ -3918,22 +3690,6 @@ function get_context_instance($contextlevel, $instance = 0, $strictness = IGNORE
 function get_context_instance_by_id($id, $strictness = IGNORE_MISSING) {
     debugging('get_context_instance_by_id() is deprecated, please use context::instance_by_id($id) instead.', DEBUG_DEVELOPER);
     return context::instance_by_id($id, $strictness);
-}
-
-/**
- * @deprecated since Moodle 2.2
- * @see load_temp_course_role()
- */
-function load_temp_role($context, $roleid, array $accessdata) {
-    throw new coding_exception('load_temp_role() can not be used any more, please use load_temp_course_role()');
-}
-
-/**
- * @deprecated since Moodle 2.2
- * @see remove_temp_course_roles()
- */
-function remove_temp_roles($context, array $accessdata) {
-    throw new coding_exception('remove_temp_roles() can not be used any more, please use remove_temp_course_roles()');
 }
 
 /**
@@ -4395,14 +4151,6 @@ function get_related_contexts_string(context $context) {
 }
 
 /**
- * @deprecated since Moodle 2.0 - use $PAGE->user_is_editing() instead.
- * @see moodle_page->user_is_editing()
- */
-function isediting() {
-    throw new coding_exception('isediting() can not be used any more, please use $PAGE->user_is_editing() instead.');
-}
-
-/**
  * Get a list of all the plugins of a given type that contain a particular file.
  *
  * @param string $plugintype the type of plugin, e.g. 'mod' or 'report'.
@@ -4532,4 +4280,55 @@ function get_user_device_type() {
 function get_browser_version_classes() {
     debugging('get_browser_version_classes has been deprecated, please update your code to use core_useragent instead.', DEBUG_DEVELOPER);
     return core_useragent::get_browser_version_classes();
+}
+
+/**
+ * Generate a fake user for emails based on support settings
+ *
+ * @deprecated since Moodle 2.6
+ * @see core_user::get_support_user()
+ * @return stdClass user info
+ */
+function generate_email_supportuser() {
+    debugging('generate_email_supportuser is deprecated, please use core_user::get_support_user');
+    return core_user::get_support_user();
+}
+
+/**
+ * Get issued badge details for assertion URL
+ *
+ * @deprecated since Moodle 2.6
+ * @param string $hash Unique hash of a badge
+ * @return array Information about issued badge.
+ */
+function badges_get_issued_badge_info($hash) {
+    debugging('Function badges_get_issued_badge_info() is deprecated. Please use core_badges_assertion class and methods to generate badge assertion.', DEBUG_DEVELOPER);
+    $assertion = new core_badges_assertion($hash);
+    return $assertion->get_badge_assertion();
+}
+
+/**
+ * Does the user want and can edit using rich text html editor?
+ * This function does not make sense anymore because a user can directly choose their preferred editor.
+ *
+ * @deprecated since 2.6
+ * @return bool
+ */
+function can_use_html_editor() {
+    debugging('can_use_html_editor has been deprecated please update your code to assume it returns true.', DEBUG_DEVELOPER);
+    return true;
+}
+
+/**
+ * Returns whether ajax is enabled/allowed or not.
+ * This function is deprecated and always returns true.
+ *
+ * @param array $unused - not used any more.
+ * @return bool
+ * @deprecated since 2.7 MDL-33099 - please do not use this function any more.
+ * @todo MDL-44088 This will be removed in Moodle 2.9.
+ */
+function ajaxenabled(array $browsers = null) {
+    debugging('ajaxenabled() is deprecated - please update your code to assume it returns true.', DEBUG_DEVELOPER);
+    return true;
 }

@@ -5,7 +5,9 @@
  *
  * Helps an admin to clean up spam in Moodle
  *
- * @authors Dongsheng Cai, Martin Dougiamas, Amr Hourani
+ * @author Dongsheng Cai
+ * @author Martin Dougiamas
+ * @author Amr Hourani
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
  */
 
@@ -178,13 +180,47 @@ function search_spammers($keywords) {
     $conditions6 = '( '.implode(' OR ', $keywordfull6).' )';
     $conditions7 = '( '.implode(' OR ', $keywordfull7).' )';
 
-    $sql  = "SELECT * FROM {user} WHERE deleted = 0 AND id <> :userid AND $conditions";  // Exclude oneself
-    $sql2 = "SELECT u.*, p.summary FROM {user} AS u, {post} AS p WHERE $conditions2 AND u.deleted = 0 AND u.id=p.userid AND u.id <> :userid";
-    $sql3 = "SELECT u.*, p.subject as postsubject FROM {user} AS u, {post} AS p WHERE $conditions3 AND u.deleted = 0 AND u.id=p.userid AND u.id <> :userid";
-    $sql4 = "SELECT u.*, c.content FROM {user} AS u, {comments} AS c WHERE $conditions4 AND u.deleted = 0 AND u.id=c.userid AND u.id <> :userid";
-    $sql5 = "SELECT u.*, m.fullmessage FROM {user} AS u, {message} AS m WHERE $conditions5 AND u.deleted = 0 AND u.id=m.useridfrom AND u.id <> :userid";
-    $sql6 = "SELECT u.*, fp.message FROM {user} AS u, {forum_posts} AS fp WHERE $conditions6 AND u.deleted = 0 AND u.id=fp.userid AND u.id <> :userid";
-    $sql7 = "SELECT u.*, fp.subject FROM {user} AS u, {forum_posts} AS fp WHERE $conditions7 AND u.deleted = 0 AND u.id=fp.userid AND u.id <> :userid";
+    $sql  = "SELECT *
+               FROM {user}
+              WHERE deleted = 0
+                    AND id <> :userid
+                    AND $conditions";  // Exclude oneself
+    $sql2 = "SELECT u.*, p.summary
+               FROM {user} u, {post} p
+              WHERE $conditions2
+                    AND u.deleted = 0
+                    AND u.id=p.userid
+                    AND u.id <> :userid";
+    $sql3 = "SELECT u.*, p.subject AS postsubject
+               FROM {user} u, {post} p
+              WHERE $conditions3
+                    AND u.deleted = 0
+                    AND u.id=p.userid
+                    AND u.id <> :userid";
+    $sql4 = "SELECT u.*, c.content
+               FROM {user} u, {comments} c
+               WHERE $conditions4
+                    AND u.deleted = 0
+                    AND u.id=c.userid
+                    AND u.id <> :userid";
+    $sql5 = "SELECT u.*, m.fullmessage
+               FROM {user} u, {message} m
+              WHERE $conditions5
+                    AND u.deleted = 0
+                    AND u.id=m.useridfrom
+                    AND u.id <> :userid";
+    $sql6 = "SELECT u.*, fp.message
+               FROM {user} u, {forum_posts} fp
+              WHERE $conditions6
+                    AND u.deleted = 0
+                    AND u.id=fp.userid
+                    AND u.id <> :userid";
+    $sql7 = "SELECT u.*, fp.subject
+               FROM {user} u, {forum_posts} fp
+              WHERE $conditions7
+                    AND u.deleted = 0
+                    AND u.id=fp.userid
+                    AND u.id <> :userid";
 
     $spamusers_desc = $DB->get_recordset_sql($sql, $params);
     $spamusers_blog = $DB->get_recordset_sql($sql2, $params);

@@ -817,7 +817,7 @@ class core_media_player_qt extends core_media_player {
         <param name="pluginspage" value="http://www.apple.com/quicktime/download/" />
         <param name="src" value="$url" />
         <param name="controller" value="true" />
-        <param name="loop" value="true" />
+        <param name="loop" value="false" />
         <param name="autoplay" value="false" />
         <param name="autostart" value="false" />
         <param name="scale" value="aspect" />
@@ -826,7 +826,7 @@ class core_media_player_qt extends core_media_player {
             <param name="src" value="$url" />
             <param name="pluginurl" value="http://www.apple.com/quicktime/download/" />
             <param name="controller" value="true" />
-            <param name="loop" value="true" />
+            <param name="loop" value="false" />
             <param name="autoplay" value="false" />
             <param name="autostart" value="false" />
             <param name="scale" value="aspect" />
@@ -930,7 +930,7 @@ class core_media_player_swf extends core_media_player {
   <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="$width" height="$height">
     <param name="movie" value="$url" />
     <param name="autoplay" value="true" />
-    <param name="loop" value="true" />
+    <param name="loop" value="false" />
     <param name="controller" value="true" />
     <param name="scale" value="aspect" />
     <param name="base" value="." />
@@ -939,7 +939,7 @@ class core_media_player_swf extends core_media_player {
     <object type="application/x-shockwave-flash" data="$url" width="$width" height="$height">
       <param name="controller" value="true" />
       <param name="autoplay" value="true" />
-      <param name="loop" value="true" />
+      <param name="loop" value="false" />
       <param name="scale" value="aspect" />
       <param name="base" value="." />
       <param name="allowscriptaccess" value="never" />
@@ -983,7 +983,7 @@ class core_media_player_html5video extends core_media_player {
     public function embed($urls, $name, $width, $height, $options) {
         // Special handling to make videos play on Android devices pre 2.3.
         // Note: I tested and 2.3.3 (in emulator) works without, is 533.1 webkit.
-        $oldandroid = core_useragent::check_webkit_android_version() &&
+        $oldandroid = core_useragent::is_webkit_android() &&
                 !core_useragent::check_webkit_android_version('533.1');
 
         // Build array of source tags.
@@ -1067,12 +1067,12 @@ OET;
                 // versions or manual plugins.
                 if ($ext === 'ogv' || $ext === 'webm') {
                     // Formats .ogv and .webm are not supported in IE or Safari.
-                    if (core_useragent::check_ie_version() || core_useragent::check_safari_version()) {
+                    if (core_useragent::is_ie() || core_useragent::is_safari()) {
                         continue;
                     }
                 } else {
                     // Formats .m4v and .mp4 are not supported in Firefox or Opera.
-                    if (core_useragent::check_firefox_version() || core_useragent::check_opera_version()) {
+                    if (core_useragent::is_firefox() || core_useragent::is_opera()) {
                         continue;
                     }
                 }
@@ -1136,18 +1136,18 @@ OET;
             if (in_array($ext, $extensions)) {
                 if ($ext === 'ogg' || $ext === 'oga') {
                     // Formats .ogg and .oga are not supported in IE or Safari.
-                    if (core_useragent::check_ie_version() || core_useragent::check_safari_version()) {
+                    if (core_useragent::is_ie() || core_useragent::is_safari()) {
                         continue;
                     }
                 } else {
                     // Formats .aac, .mp3, and .m4a are not supported in Firefox or Opera.
-                    if (core_useragent::check_firefox_version() || core_useragent::check_opera_version()) {
+                    if (core_useragent::is_firefox() || core_useragent::is_opera()) {
                         continue;
                     }
                 }
                 // Old Android versions (pre 2.3.3) 'support' audio tag but no codecs.
-                if (core_useragent::check_webkit_android_version() &&
-                        !core_useragent::check_webkit_android_version('533.1')) {
+                if (core_useragent::is_webkit_android() &&
+                        !core_useragent::is_webkit_android('533.1')) {
                     continue;
                 }
 

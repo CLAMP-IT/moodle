@@ -61,9 +61,6 @@ if (!empty($action)) {
     require_sesskey();
 }
 
-// Purge all caches related to repositories administration.
-cache::make('core', 'plugininfo_repository')->purge();
-
 /**
  * Helper function that generates a moodle_url object
  * relevant to the repository
@@ -151,6 +148,7 @@ if (($action == 'edit') || ($action == 'new')) {
         }
         if ($success) {
             // configs saved
+            core_plugin_manager::reset_caches();
             redirect($baseurl);
         } else {
             print_error('instancenotsaved', 'repository', $baseurl);
@@ -191,6 +189,7 @@ if (($action == 'edit') || ($action == 'new')) {
         print_error('invalidplugin', 'repository', '', $repository);
     }
     $repositorytype->update_visibility(true);
+    core_plugin_manager::reset_caches();
     $return = true;
 } else if ($action == 'hide') {
     if (!confirm_sesskey()) {
@@ -201,6 +200,7 @@ if (($action == 'edit') || ($action == 'new')) {
         print_error('invalidplugin', 'repository', '', $repository);
     }
     $repositorytype->update_visibility(false);
+    core_plugin_manager::reset_caches();
     $return = true;
 } else if ($action == 'delete') {
     $repositorytype = repository::get_type_by_typename($repository);
@@ -211,6 +211,7 @@ if (($action == 'edit') || ($action == 'new')) {
         }
 
         if ($repositorytype->delete($downloadcontents)) {
+            core_plugin_manager::reset_caches();
             redirect($baseurl);
         } else {
             print_error('instancenotdeleted', 'repository', $baseurl);
@@ -294,9 +295,9 @@ if (($action == 'edit') || ($action == 'new')) {
 
     // Get list of used plug-ins
     $repositorytypes = repository::get_types();
+    // Array to store plugins being used
+    $alreadyplugins = array();
     if (!empty($repositorytypes)) {
-        // Array to store plugins being used
-        $alreadyplugins = array();
         $totalrepositorytypes = count($repositorytypes);
         $updowncount = 1;
         foreach ($repositorytypes as $i) {

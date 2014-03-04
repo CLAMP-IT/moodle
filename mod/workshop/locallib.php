@@ -23,8 +23,7 @@
  * workshop_something() taking the workshop instance as the first
  * parameter, we use a class workshop that provides all methods.
  *
- * @package    mod
- * @subpackage workshop
+ * @package    mod_workshop
  * @copyright  2009 David Mudrak <david.mudrak@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -2451,8 +2450,22 @@ class workshop {
         if ($count > 0) {
             $finalgrade = grade_floatval($sumgrades / $count);
         }
+
+        // Event information.
+        $params = array(
+            'context' => $this->context,
+            'courseid' => $this->course->id,
+            'relateduserid' => $reviewerid
+        );
+
         // check if the new final grade differs from the one stored in the database
         if (grade_floats_different($finalgrade, $current)) {
+            $params['other'] = array(
+                'currentgrade' => $current,
+                'finalgrade' => $finalgrade
+            );
+
+
             // we need to save new calculation into the database
             if (is_null($agid)) {
                 // no aggregation record yet
@@ -2461,13 +2474,19 @@ class workshop {
                 $record->userid = $reviewerid;
                 $record->gradinggrade = $finalgrade;
                 $record->timegraded = $timegraded;
-                $DB->insert_record('workshop_aggregations', $record);
+                $record->id = $DB->insert_record('workshop_aggregations', $record);
+                $params['objectid'] = $record->id;
+                $event = \mod_workshop\event\assessment_evaluated::create($params);
+                $event->trigger();
             } else {
                 $record = new stdclass();
                 $record->id = $agid;
                 $record->gradinggrade = $finalgrade;
                 $record->timegraded = $timegraded;
                 $DB->update_record('workshop_aggregations', $record);
+                $params['objectid'] = $agid;
+                $event = \mod_workshop\event\assessment_reevaluated::create($params);
+                $event->trigger();
             }
         }
     }
@@ -3075,9 +3094,10 @@ abstract class workshop_submission_base {
      * Usually this is called by the contructor but can be called explicitely, too.
      */
     public function anonymize() {
-        foreach (array('authorid', 'authorfirstname', 'authorlastname',
-               'authorpicture', 'authorimagealt', 'authoremail') as $field) {
-            unset($this->{$field});
+        $authorfields = explode(',', user_picture::fields());
+        foreach ($authorfields as $field) {
+            $prefixedusernamefield = 'author' . $field;
+            unset($this->{$prefixedusernamefield});
         }
         $this->anonymous = true;
     }
@@ -3115,6 +3135,14 @@ class workshop_submission_summary extends workshop_submission_base implements re
     public $authorfirstname;
     /** @var string */
     public $authorlastname;
+    /** @var string */
+    public $authorfirstnamephonetic;
+    /** @var string */
+    public $authorlastnamephonetic;
+    /** @var string */
+    public $authormiddlename;
+    /** @var string */
+    public $authoralternatename;
     /** @var int */
     public $authorpicture;
     /** @var string */
@@ -3130,7 +3158,8 @@ class workshop_submission_summary extends workshop_submission_base implements re
      */
     protected $fields = array(
         'id', 'title', 'timecreated', 'timemodified',
-        'authorid', 'authorfirstname', 'authorlastname', 'authorpicture',
+        'authorid', 'authorfirstname', 'authorlastname', 'authorfirstnamephonetic', 'authorlastnamephonetic',
+        'authormiddlename', 'authoralternatename', 'authorpicture',
         'authorimagealt', 'authoremail');
 }
 
@@ -3156,8 +3185,8 @@ class workshop_submission extends workshop_submission_summary implements rendera
      */
     protected $fields = array(
         'id', 'title', 'timecreated', 'timemodified', 'content', 'contentformat', 'contenttrust',
-        'attachment', 'authorid', 'authorfirstname', 'authorlastname', 'authorpicture',
-        'authorimagealt', 'authoremail');
+        'attachment', 'authorid', 'authorfirstname', 'authorlastname', 'authorfirstnamephonetic', 'authorlastnamephonetic',
+        'authormiddlename', 'authoralternatename', 'authorpicture', 'authorimagealt', 'authoremail');
 }
 
 /**

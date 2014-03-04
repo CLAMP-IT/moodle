@@ -83,7 +83,6 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'timemodified' => '1306425746',
             'layout' => '28,19,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '28',
@@ -205,6 +204,7 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'variant' => 1,
             'maxmark' => 1.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'An answer _____.',
             'rightanswer' => 'part 1: frog',
@@ -287,7 +287,6 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'timemodified' => '1306425762',
             'layout' => '28,19,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '28',
@@ -397,6 +396,7 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'variant' => 1,
             'maxmark' => 1.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'An answer _____.',
             'rightanswer' => 'part 1: frog',
@@ -470,7 +470,6 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'timemodified' => '1306425931',
             'layout' => '28,19,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '28',
@@ -604,6 +603,7 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'variant' => 1,
             'maxmark' => 1.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'An answer _____.',
             'rightanswer' => 'part 1: frog',
@@ -695,7 +695,6 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'timemodified' => '1306425746',
             'layout' => '28,19,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '19',
@@ -1273,6 +1272,7 @@ class qtype_multianswer_attempt_upgrader_test extends question_attempt_upgrader_
             'variant' => 1,
             'maxmark' => '13.0000000',
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'This question consists of some text with an answer embedded right here {Wrong answer; Another wrong answer; Correct answer; Answer that gives half the credit}
 
@@ -1381,7 +1381,6 @@ b) What grade would you give it? _____',
             'timemodified' => '1306425762',
             'layout' => '28,19,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '19',
@@ -1947,6 +1946,7 @@ b) What grade would you give it? _____',
             'variant' => 1,
             'maxmark' => 13.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'This question consists of some text with an answer embedded right here {Wrong answer; Another wrong answer; Correct answer; Answer that gives half the credit}
 
@@ -2039,7 +2039,6 @@ b) What grade would you give it? _____',
             'timemodified' => '1306425931',
             'layout' => '28,19,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '19',
@@ -2641,6 +2640,7 @@ b) What grade would you give it? _____',
             'variant' => 1,
             'maxmark' => '13.0000000',
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'This question consists of some text with an answer embedded right here {Wrong answer; Another wrong answer; Correct answer; Answer that gives half the credit}
 

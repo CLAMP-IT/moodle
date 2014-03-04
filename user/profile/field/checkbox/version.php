@@ -15,14 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    profilefield
- * @subpackage checkbox
+ * Version information for the checkbox profile field type.
+ *
+ * @package    profilefield_checkbox
  * @copyright  2008 onwards Shane Elliot {@link http://pukunui.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2013050100;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2013050100;        // Requires this Moodle version
+$plugin->version   = 2013110500;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->requires  = 2013110500;        // Requires this Moodle version
 $plugin->component = 'profilefield_checkbox'; // Full name of the plugin (used for diagnostics)

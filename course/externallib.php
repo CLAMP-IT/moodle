@@ -148,15 +148,15 @@ class core_course_external extends external_api {
                         $modcontext = context_module::instance($cm->id);
 
                         if (!empty($cm->showdescription) or $cm->modname == 'label') {
-                            // We want to use the external format. However from reading get_formatted_content(), get_content() format is always FORMAT_HTML.
-                            list($module['description'], $descriptionformat) = external_format_text($cm->get_content(),
+                            // We want to use the external format. However from reading get_formatted_content(), $cm->content format is always FORMAT_HTML.
+                            list($module['description'], $descriptionformat) = external_format_text($cm->content,
                                 FORMAT_HTML, $modcontext->id, $cm->modname, 'intro', $cm->id);
                         }
 
                         //url of the module
-                        $url = $cm->get_url();
+                        $url = $cm->url;
                         if ($url) { //labels don't have url
-                            $module['url'] = $cm->get_url()->out(false);
+                            $module['url'] = $url->out(false);
                         }
 
                         $canviewhidden = has_capability('moodle/course:viewhiddenactivities',
@@ -717,20 +717,14 @@ class core_course_external extends external_api {
                     require_capability('moodle/course:changefullname', $context);
                 }
 
-                // Check if the shortname already exist and user have capability.
+                // Check if the user can change shortname.
                 if (array_key_exists('shortname', $course) && ($oldcourse->shortname != $course['shortname'])) {
                     require_capability('moodle/course:changeshortname', $context);
-                    if ($DB->record_exists('course', array('shortname' => $course['shortname']))) {
-                        throw new moodle_exception('shortnametaken', '', '', $course['shortname']);
-                    }
                 }
 
-                // Check if the id number already exist and user have capability.
+                // Check if the user can change the idnumber.
                 if (array_key_exists('idnumber', $course) && ($oldcourse->idnumber != $course['idnumber'])) {
                     require_capability('moodle/course:changeidnumber', $context);
-                    if ($DB->record_exists('course', array('idnumber' => $course['idnumber']))) {
-                        throw new moodle_exception('courseidnumbertaken', '', '', $course['idnumber']);
-                    }
                 }
 
                 // Check if user can change summary.

@@ -114,10 +114,22 @@ class behat_form_field {
         // Textareas are considered text based elements.
         $tagname = strtolower($this->field->getTagName());
         if ($tagname == 'textarea') {
-            return false;
-        }
 
-        if ($tagname == 'input') {
+            if (!$this->running_javascript()) {
+                return false;
+            }
+
+            // If there is an iframe with $id + _ifr there a TinyMCE editor loaded.
+            $xpath = '//iframe[@id="' . $this->field->getAttribute('id') . '_ifr"]';
+            if (!$this->session->getPage()->find('xpath', $xpath)) {
+
+                // Generic one if it is a normal textarea.
+                return false;
+            }
+
+            $classname = 'behat_form_editor';
+
+        } else if ($tagname == 'input') {
             $type = $this->field->getAttribute('type');
             switch ($type) {
                 case 'text':
@@ -137,6 +149,7 @@ class behat_form_field {
             $classname = 'behat_form_select';
 
         } else {
+            // We can not provide a closer field type.
             return false;
         }
 
@@ -154,4 +167,24 @@ class behat_form_field {
         return get_class($this->session->getDriver()) !== 'Behat\Mink\Driver\GoutteDriver';
     }
 
+    /**
+     * Gets the field internal id used by selenium wire protocol.
+     *
+     * Only available when running_javascript().
+     *
+     * @throws coding_exception
+     * @return int
+     */
+    protected function get_internal_field_id() {
+
+        if (!$this->running_javascript()) {
+            throw new coding_exception('You can only get an internal ID using the selenium driver.');
+        }
+
+        return $this->session->
+            getDriver()->
+            getWebDriverSession()->
+            element('xpath', $this->field->getXPath())->
+            getID();
+    }
 }

@@ -36,7 +36,7 @@ define('ASSIGNFEEDBACK_FILE_MAXFILEUNZIPTIME', 120);
 /**
  * Library class for file feedback plugin extending feedback plugin base class.
  *
- * @package   asignfeedback_file
+ * @package   assignfeedback_file
  * @copyright 2012 NetSpot {@link http://www.netspot.com.au}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -143,8 +143,7 @@ class assign_feedback_file extends assign_feedback_plugin {
                                                   'assignfeedback_file',
                                                   ASSIGNFEEDBACK_FILE_FILEAREA,
                                                   $gradeid);
-        $mform->addElement('filemanager', $elementname . '_filemanager', html_writer::tag('span', $this->get_name(),
-            array('class' => 'accesshide')), null, $fileoptions);
+        $mform->addElement('filemanager', $elementname . '_filemanager', $this->get_name(), null, $fileoptions);
 
         return true;
     }
@@ -609,4 +608,19 @@ class assign_feedback_file extends assign_feedback_plugin {
     public function get_grading_actions() {
         return array('uploadzip'=>get_string('uploadzip', 'assignfeedback_file'));
     }
+
+    /**
+     * Return a description of external params suitable for uploading a feedback file from a webservice.
+     *
+     * @return external_description|null
+     */
+    public function get_external_parameters() {
+        return array(
+            'files_filemanager' => new external_value(
+                PARAM_INT,
+                'The id of a draft area containing files for this feedback.'
+            )
+        );
+    }
+
 }

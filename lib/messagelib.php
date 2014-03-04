@@ -57,17 +57,33 @@ function message_send($eventdata) {
     //new message ID to return
     $messageid = false;
 
+    // Fetch default (site) preferences
+    $defaultpreferences = get_message_output_default_preferences();
+    $preferencebase = $eventdata->component.'_'.$eventdata->name;
+    // If message provider is disabled then don't do any processing.
+    if (!empty($defaultpreferences->{$preferencebase.'_disable'})) {
+        return $messageid;
+    }
+
     //TODO: we need to solve problems with database transactions here somehow, for now we just prevent transactions - sorry
     $DB->transactions_forbidden();
 
     if (is_number($eventdata->userto)) {
-        $eventdata->userto = $DB->get_record('user', array('id' => $eventdata->userto));
+        $eventdata->userto = core_user::get_user($eventdata->userto);
     }
     if (is_int($eventdata->userfrom)) {
-        $eventdata->userfrom = $DB->get_record('user', array('id' => $eventdata->userfrom));
+        $eventdata->userfrom = core_user::get_user($eventdata->userfrom);
     }
+
+    $usertoisrealuser = (core_user::is_real_user($eventdata->userto->id) != false);
+    // If recipient is internal user (noreply user), and emailstop is set then don't send any msg.
+    if (!$usertoisrealuser && !empty($eventdata->userto->emailstop)) {
+        debugging('Attempt to send msg to internal (noreply) user', DEBUG_NORMAL);
+        return false;
+    }
+
     if (!isset($eventdata->userto->auth) or !isset($eventdata->userto->suspended) or !isset($eventdata->userto->deleted)) {
-        $eventdata->userto = $DB->get_record('user', array('id' => $eventdata->userto->id));
+        $eventdata->userto = core_user::get_user($eventdata->userto->id);
     }
 
     //after how long inactive should the user be considered logged off?
@@ -142,14 +158,16 @@ function message_send($eventdata) {
 
     // Fetch enabled processors
     $processors = get_message_processors(true);
-    // Fetch default (site) preferences
-    $defaultpreferences = get_message_output_default_preferences();
 
     // Preset variables
     $processorlist = array();
-    $preferencebase = $eventdata->component.'_'.$eventdata->name;
     // Fill in the array of processors to be used based on default and user preferences
     foreach ($processors as $processor) {
+        // Skip adding processors for internal user, if processor doesn't support sending message to internal user.
+        if (!$usertoisrealuser && !$processor->object->can_send_to_any_users()) {
+            continue;
+        }
+
         // First find out permissions
         $defaultpreference = $processor->name.'_provider_'.$preferencebase.'_permitted';
         if (isset($defaultpreferences->{$defaultpreference})) {

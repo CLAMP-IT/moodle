@@ -75,7 +75,7 @@ function quiz_remove_question($quiz, $questionid) {
     $quiz->questions = implode(',', $questionids);
     $DB->set_field('quiz', 'questions', $quiz->questions, array('id' => $quiz->id));
     $DB->delete_records('quiz_question_instances',
-            array('quiz' => $quiz->instance, 'question' => $questionid));
+            array('quizid' => $quiz->instance, 'questionid' => $questionid));
 }
 
 /**
@@ -168,9 +168,9 @@ function quiz_add_quiz_question($id, $quiz, $page = 0) {
 
     // Add the new question instance.
     $instance = new stdClass();
-    $instance->quiz = $quiz->id;
-    $instance->question = $id;
-    $instance->grade = $DB->get_field('question', 'defaultmark', array('id' => $id));
+    $instance->quizid = $quiz->id;
+    $instance->questionid = $id;
+    $instance->maxmark = $DB->get_field('question', 'defaultmark', array('id' => $id));
     $DB->insert_record('quiz_question_instances', $instance);
 }
 
@@ -196,7 +196,7 @@ function quiz_add_random_questions($quiz, $addonpage, $categoryid, $number,
                 AND NOT EXISTS (
                         SELECT *
                           FROM {quiz_question_instances}
-                         WHERE question = q.id)
+                         WHERE questionid = q.id)
             ORDER BY id", array($category->id, $includesubcategories))) {
         // Take as many of these as needed.
         while (($existingquestion = array_shift($existingquestions)) && $number > 0) {
@@ -280,29 +280,29 @@ function quiz_save_new_layout($quiz) {
  * Saves changes to the question grades in the quiz_question_instances table.
  * It does not update 'sumgrades' in the quiz table.
  *
- * @param int grade    The maximal grade for the question
- * @param int $questionid  The id of the question
- * @param int $quizid  The id of the quiz to update / add the instances for.
+ * @param float    $maxmark    the maximal grade for the question.
+ * @param int      $questionid the question id.
+ * @param stdClass $quiz       the quiz settings.
  */
-function quiz_update_question_instance($grade, $questionid, $quiz) {
+function quiz_update_question_instance($maxmark, $questionid, $quiz) {
     global $DB;
-    $instance = $DB->get_record('quiz_question_instances', array('quiz' => $quiz->id,
-            'question' => $questionid));
+    $instance = $DB->get_record('quiz_question_instances', array('quizid' => $quiz->id,
+            'questionid' => $questionid));
     $slot = quiz_get_slot_for_question($quiz, $questionid);
 
     if (!$instance || !$slot) {
-        throw new coding_exception('Attempt to change the grade of a quesion not in the quiz.');
+        throw new coding_exception('Attempt to change the max mark of a quesion not in the quiz.');
     }
 
-    if (abs($grade - $instance->grade) < 1e-7) {
+    if (abs($maxmark - $instance->maxmark) < 1e-7) {
         // Grade has not changed. Nothing to do.
         return;
     }
 
-    $instance->grade = $grade;
+    $instance->maxmark = $maxmark;
     $DB->update_record('quiz_question_instances', $instance);
     question_engine::set_max_mark_in_attempts(new qubaids_for_quiz($quiz->id),
-            $slot, $grade);
+            $slot, $maxmark);
 }
 
 // Private function used by the following two.
@@ -392,11 +392,11 @@ function quiz_print_question_list($quiz, $pageurl, $allowdelete, $reordertool,
     if ($quiz->questions) {
         list($usql, $params) = $DB->get_in_or_equal(explode(',', $quiz->questions));
         $params[] = $quiz->id;
-        $questions = $DB->get_records_sql("SELECT q.*, qc.contextid, qqi.grade as maxmark
+        $questions = $DB->get_records_sql("SELECT q.*, qc.contextid, qqi.maxmark
                               FROM {question} q
                               JOIN {question_categories} qc ON qc.id = q.category
-                              JOIN {quiz_question_instances} qqi ON qqi.question = q.id
-                             WHERE q.id $usql AND qqi.quiz = ?", $params);
+                              JOIN {quiz_question_instances} qqi ON qqi.questionid = q.id
+                             WHERE q.id $usql AND qqi.quizid = ?", $params);
     } else {
         $questions = array();
     }
@@ -1018,7 +1018,7 @@ function quiz_question_tostring($question, $showicon = false,
         $questiontext = shorten_text($questiontext, 200);
         $result .= '<span class="questiontext">';
         if (!empty($questiontext)) {
-            $result .= $questiontext;
+            $result .= s($questiontext);
         } else {
             $result .= '<span class="error">';
             $result .= get_string('questiontextisempty', 'quiz');
@@ -1111,6 +1111,8 @@ class quiz_question_bank_view extends question_bank_view {
     protected $quizhasattempts = false;
     /** @var object the quiz settings. */
     protected $quiz = false;
+    /** @var int The maximum displayed length of the category info. */
+    const MAX_TEXT_LENGTH = 200;
 
     /**
      * Constructor
@@ -1134,7 +1136,7 @@ class quiz_question_bank_view extends question_bank_view {
 
     protected function wanted_columns() {
         return array('addtoquizaction', 'checkbox', 'qtype', 'questionnametext',
-                'editaction', 'previewaction');
+                'editaction', 'copyaction', 'previewaction');
     }
 
     /**
@@ -1184,16 +1186,15 @@ class quiz_question_bank_view extends question_bank_view {
             return;
         }
 
-        // Display the current category.
-        if (!$category = $this->get_current_category($cat)) {
-            return;
-        }
-        $this->print_category_info($category);
+        $editcontexts = $this->contexts->having_one_edit_tab_cap($tabname);
+        array_unshift($this->searchconditions,
+                new \core_question\bank\search\hidden_condition(!$showhidden));
+        array_unshift($this->searchconditions,
+                new \core_question\bank\search\category_condition($cat, $recurse,
+                        $editcontexts, $this->baseurl, $this->course, self::MAX_TEXT_LENGTH));
 
         echo $OUTPUT->box_start('generalbox questionbank');
-
-        $this->display_category_form($this->contexts->having_one_edit_tab_cap($tabname),
-                $this->baseurl, $cat);
+        $this->display_options_form($showquestiontext);
 
         // Continues with list of questions.
         $this->display_question_list($this->contexts->having_one_edit_tab_cap($tabname),
@@ -1201,12 +1202,20 @@ class quiz_question_bank_view extends question_bank_view {
                 $perpage, $showhidden, $showquestiontext,
                 $this->contexts->having_cap('moodle/question:add'));
 
-        $this->display_options($recurse, $showhidden, $showquestiontext);
         echo $OUTPUT->box_end();
     }
 
+    /**
+     * prints a form to choose categories
+     * @param string $categoryandcontext 'categoryID,contextID'.
+     * @deprecated since Moodle 2.6 MDL-40313.
+     * @see \core_question\bank\search\category_condition
+     * @todo MDL-41978 This will be deleted in Moodle 2.8
+     */
     protected function print_choose_category_message($categoryandcontext) {
         global $OUTPUT;
+        debugging('print_choose_category_message() is deprecated, ' .
+                'please use \core_question\bank\search\category_condition instead.', DEBUG_DEVELOPER);
         echo $OUTPUT->box_start('generalbox questionbank');
         $this->display_category_form($this->contexts->having_one_edit_tab_cap('edit'),
                 $this->baseurl, $categoryandcontext);
@@ -1214,6 +1223,27 @@ class quiz_question_bank_view extends question_bank_view {
         print_string('selectcategoryabove', 'question');
         echo "</b></p>";
         echo $OUTPUT->box_end();
+    }
+
+    /**
+     * Display the form with options for which questions are displayed and how they are displayed.
+     * This differs from parent display_options_form only in that it does not have the checkbox to show the question text.
+     * @param bool $showquestiontext Display the text of the question within the list. (Currently ignored)
+     */
+    protected function display_options_form($showquestiontext) {
+        global $PAGE;
+        echo html_writer::start_tag('form', array('method' => 'get',
+                'action' => new moodle_url('/mod/quiz/edit.php'), 'id' => 'displayoptions'));
+        echo html_writer::start_div();
+        foreach ($this->searchconditions as $searchcondition) {
+            echo $searchcondition->display_options($this);
+        }
+        $this->display_advanced_search_form();
+        $go = html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('go')));
+        echo html_writer::tag('noscript', html_writer::tag('div', $go), array('class' => 'inline'));
+        echo html_writer::end_div();
+        echo html_writer::end_tag('form');
+        $PAGE->requires->yui_module('moodle-question-searchform', 'M.question.searchform.init');
     }
 
     protected function print_category_info($category) {
@@ -1232,6 +1262,7 @@ class quiz_question_bank_view extends question_bank_view {
     }
 
     protected function display_options($recurse, $showhidden, $showquestiontext) {
+        debugging('display_options() is deprecated, see display_options_form() instead.', DEBUG_DEVELOPER);
         echo '<form method="get" action="edit.php" id="displayoptions">';
         echo "<fieldset class='invisiblefieldset'>";
         echo html_writer::input_hidden_params($this->baseurl,

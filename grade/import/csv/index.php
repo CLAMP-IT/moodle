@@ -63,7 +63,8 @@ if ($id) {
 
             $displaystring = null;
             if (!empty($grade_item->itemmodule)) {
-                $displaystring = get_string('modulename', $grade_item->itemmodule).': '.$grade_item->get_name();
+                $displaystring = get_string('modulename', $grade_item->itemmodule).get_string('labelsep', 'langconfig')
+                        .$grade_item->get_name();
             } else {
                 $displaystring = $grade_item->get_name();
             }
@@ -84,7 +85,7 @@ if (!$iid) {
         // Large files are likely to take their time and memory. Let PHP know
         // that we'll take longer, and that the process should be recycled soon
         // to free up memory.
-        @set_time_limit(0);
+        core_php_time_limit::raise();
         raise_memory_limit(MEMORY_EXTRA);
 
         // Use current (non-conflicting) time stamp.
@@ -182,7 +183,7 @@ if ($formdata = $mform2->get_data()) {
     // Large files are likely to take their time and memory. Let PHP know
     // that we'll take longer, and that the process should be recycled soon
     // to free up memory.
-    @set_time_limit(0);
+    core_php_time_limit::raise();
     raise_memory_limit(MEMORY_EXTRA);
 
     $csvimport->init();
@@ -234,7 +235,7 @@ if ($formdata = $mform2->get_data()) {
                     $studentid = $value;
                 break;
                 case 'useridnumber':
-                    if (!$user = $DB->get_record('user', array('idnumber' => $value))) {
+                    if (empty($value) || !$user = $DB->get_record('user', array('idnumber' => $value))) {
                          // user not found, abort whole import
                         import_cleanup($importcode);
                         echo $OUTPUT->notification("user mapping error, could not find user with idnumber \"$value\"");

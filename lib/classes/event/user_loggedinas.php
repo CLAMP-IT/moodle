@@ -29,6 +29,13 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * User loggedinas event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type string originalusername original username.
+ *      @type string loggedinasusername username of logged in as user.
+ * }
+ *
  * @package    core
  * @copyright  2013 Rajesh Taneja <rajesh@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -42,7 +49,7 @@ class user_loggedinas extends base {
      */
     protected function init() {
         $this->data['crud'] = 'r';
-        $this->data['level'] = self::LEVEL_OTHER;
+        $this->data['edulevel'] = self::LEVEL_OTHER;
         $this->data['objecttable'] = 'user';
     }
 

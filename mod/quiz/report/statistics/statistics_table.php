@@ -22,15 +22,15 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir.'/tablelib.php');
 
-
 /**
  * This table has one row for each question in the quiz, with sub-rows when
- * random questions appear. There are columns for the various statistics.
+ * random questions and variants appear.
+ *
+ * There are columns for the various item and position statistics.
  *
  * @copyright 2008 Jamie Pratt
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -134,70 +134,120 @@ class quiz_statistics_table extends flexible_table {
 
     /**
      * The question number.
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_number($question) {
-        if ($question->_stats->subquestion) {
+    protected function col_number($questionstat) {
+        if (!isset($questionstat->question->number)) {
             return '';
         }
+        $number = $questionstat->question->number;
 
-        return $question->number;
+        if (isset($questionstat->subqdisplayorder)) {
+            $number = $number . '.'.$questionstat->subqdisplayorder;
+        }
+
+        if ($questionstat->question->qtype != 'random' && !is_null($questionstat->variant)) {
+            $number = $number . '.'.$questionstat->variant;
+        }
+
+        return $number;
     }
 
     /**
      * The question type icon.
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_icon($question) {
-        return print_question_icon($question, true);
+    protected function col_icon($questionstat) {
+        return print_question_icon($questionstat->question, true);
     }
 
     /**
      * Actions that can be performed on the question by this user (e.g. edit or preview).
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_actions($question) {
-        return quiz_question_action_icons($this->quiz, $this->cmid, $question, $this->baseurl);
+    protected function col_actions($questionstat) {
+        return quiz_question_action_icons($this->quiz, $this->cmid, $questionstat->question, $this->baseurl);
     }
 
     /**
      * The question type name.
-     * @param object $question containst the data to display.
+     *
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_qtype($question) {
-        return question_bank::get_qtype_name($question->qtype);
+    protected function col_qtype($questionstat) {
+        return question_bank::get_qtype_name($questionstat->question->qtype);
     }
 
     /**
      * The question name.
-     * @param object $question containst the data to display.
+     *
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_name($question) {
-        $name = $question->name;
+    protected function col_name($questionstat) {
+        $name = $questionstat->question->name;
+
+        if (!is_null($questionstat->variant)) {
+            $a = new stdClass();
+            $a->name = $name;
+            $a->variant = $questionstat->variant;
+            $name = get_string('nameforvariant', 'quiz_statistics', $a);
+        }
 
         if ($this->is_downloading()) {
             return $name;
         }
 
-        $url = null;
-        if ($question->_stats->subquestion) {
-            $url = new moodle_url($this->baseurl, array('qid' => $question->id));
-        } else if ($question->_stats->slot && $question->qtype != 'random') {
-            $url = new moodle_url($this->baseurl, array('slot' => $question->_stats->slot));
+        $baseurl = new moodle_url($this->baseurl);
+        if (!is_null($questionstat->variant)) {
+            if ($questionstat->subquestion) {
+                // Variant of a sub-question.
+                $url = new moodle_url($baseurl, array('qid' => $questionstat->questionid, 'variant' => $questionstat->variant));
+                $name = html_writer::link($url, $name, array('title' => get_string('detailedanalysisforvariant',
+                                                                                   'quiz_statistics',
+                                                                                   $questionstat->variant)));
+            } else if ($questionstat->slot) {
+                // Variant of a question in a slot.
+                $url = new moodle_url($baseurl, array('slot' => $questionstat->slot, 'variant' => $questionstat->variant));
+                $name = html_writer::link($url, $name, array('title' => get_string('detailedanalysisforvariant',
+                                                                                   'quiz_statistics',
+                                                                                   $questionstat->variant)));
+            }
+        } else {
+            if ($questionstat->subquestion && !$questionstat->get_variants()) {
+                // Sub question without variants.
+                $url = new moodle_url($baseurl, array('qid' => $questionstat->questionid));
+                $name = html_writer::link($url, $name, array('title' => get_string('detailedanalysis', 'quiz_statistics')));
+            } else if ($baseurl->param('slot') === null && $questionstat->slot) {
+                // Question in a slot, we are not on a page showing structural analysis of one slot,
+                // we don't want linking on those pages.
+                $number = $questionstat->question->number;
+                $url = new moodle_url($baseurl, array('slot' => $questionstat->slot));
+                if ($questionstat->get_variants() || $questionstat->get_sub_question_ids()) {
+                    // Question can be broken down into sub-questions or variants. Link will show structural analysis page.
+                    $name = html_writer::link($url,
+                                              $name,
+                                              array('title' => get_string('slotstructureanalysis', 'quiz_statistics', $number)));
+                } else {
+                    // Question cannot be broken down into sub-questions or variants. Link will show response analysis page.
+                    $name = html_writer::link($url,
+                                              $name,
+                                              array('title' => get_string('detailedanalysis', 'quiz_statistics')));
+                }
+            }
         }
 
-        if ($url) {
-            $name = html_writer::link($url, $name,
-                    array('title' => get_string('detailedanalysis', 'quiz_statistics')));
-        }
 
-        if ($this->is_dubious_question($question)) {
+        if ($this->is_dubious_question($questionstat)) {
             $name = html_writer::tag('div', $name, array('class' => 'dubious'));
+        }
+
+        if (!empty($questionstat->minmedianmaxnotice)) {
+            $name = get_string($questionstat->minmedianmaxnotice, 'quiz_statistics') . '<br />' . $name;
         }
 
         return $name;
@@ -205,82 +255,82 @@ class quiz_statistics_table extends flexible_table {
 
     /**
      * The number of attempts at this question.
-     * @param object $question containst the data to display.
+     *
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_s($question) {
-        if (!isset($question->_stats->s)) {
+    protected function col_s($questionstat) {
+        if (!isset($questionstat->s)) {
             return 0;
         }
 
-        return $question->_stats->s;
+        return $questionstat->s;
     }
 
     /**
      * The facility index (average fraction).
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_facility($question) {
-        if (is_null($question->_stats->facility)) {
+    protected function col_facility($questionstat) {
+        if (is_null($questionstat->facility)) {
             return '';
         }
 
-        return number_format($question->_stats->facility*100, 2) . '%';
+        return number_format($questionstat->facility*100, 2) . '%';
     }
 
     /**
      * The standard deviation of the fractions.
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_sd($question) {
-        if (is_null($question->_stats->sd) || $question->_stats->maxmark == 0) {
+    protected function col_sd($questionstat) {
+        if (is_null($questionstat->sd) || $questionstat->maxmark == 0) {
             return '';
         }
 
-        return number_format($question->_stats->sd*100 / $question->_stats->maxmark, 2) . '%';
+        return number_format($questionstat->sd*100 / $questionstat->maxmark, 2) . '%';
     }
 
     /**
      * An estimate of the fraction a student would get by guessing randomly.
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_random_guess_score($question) {
-        if (is_null($question->_stats->randomguessscore)) {
+    protected function col_random_guess_score($questionstat) {
+        if (is_null($questionstat->randomguessscore)) {
             return '';
         }
 
-        return number_format($question->_stats->randomguessscore * 100, 2).'%';
+        return number_format($questionstat->randomguessscore * 100, 2).'%';
     }
 
     /**
      * The intended question weight. Maximum mark for the question as a percentage
      * of maximum mark for the quiz. That is, the indended influence this question
      * on the student's overall mark.
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_intended_weight($question) {
-        return quiz_report_scale_summarks_as_percentage(
-                $question->_stats->maxmark, $this->quiz);
+    protected function col_intended_weight($questionstat) {
+        return quiz_report_scale_summarks_as_percentage($questionstat->maxmark, $this->quiz);
     }
 
     /**
      * The effective question weight. That is, an estimate of the actual
      * influence this question has on the student's overall mark.
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_effective_weight($question) {
+    protected function col_effective_weight($questionstat) {
         global $OUTPUT;
 
-        if ($question->_stats->subquestion) {
+        if (is_null($questionstat->effectiveweight)) {
             return '';
         }
 
-        if ($question->_stats->negcovar) {
+        if ($questionstat->negcovar) {
             $negcovar = get_string('negcovar', 'quiz_statistics');
 
             if (!$this->is_downloading()) {
@@ -292,49 +342,49 @@ class quiz_statistics_table extends flexible_table {
             return $negcovar;
         }
 
-        return number_format($question->_stats->effectiveweight, 2) . '%';
+        return number_format($questionstat->effectiveweight, 2) . '%';
     }
 
     /**
      * Discrimination index. This is the product moment correlation coefficient
-     * between the fraction for this qestion, and the average fraction for the
+     * between the fraction for this question, and the average fraction for the
      * other questions in this quiz.
-     * @param object $question containst the data to display.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_discrimination_index($question) {
-        if (!is_numeric($question->_stats->discriminationindex)) {
-            return $question->_stats->discriminationindex;
+    protected function col_discrimination_index($questionstat) {
+        if (!is_numeric($questionstat->discriminationindex)) {
+            return $questionstat->discriminationindex;
         }
 
-        return number_format($question->_stats->discriminationindex, 2) . '%';
+        return number_format($questionstat->discriminationindex, 2) . '%';
     }
 
     /**
      * Discrimination efficiency, similar to, but different from, the Discrimination index.
-     * @param object $question containst the data to display.
+     *
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return string contents of this table cell.
      */
-    protected function col_discriminative_efficiency($question) {
-        if (!is_numeric($question->_stats->discriminativeefficiency)) {
+    protected function col_discriminative_efficiency($questionstat) {
+        if (!is_numeric($questionstat->discriminativeefficiency)) {
             return '';
         }
 
-        return number_format($question->_stats->discriminativeefficiency, 2) . '%';
+        return number_format($questionstat->discriminativeefficiency, 2) . '%';
     }
 
     /**
      * This method encapsulates the test for wheter a question should be considered dubious.
-     * @param object question the question object with a property _stats which
-     * includes all the stats for the question.
+     * @param \core_question\statistics\questions\calculated $questionstat stats for the question.
      * @return bool is this question possibly not pulling it's weight?
      */
-    protected function is_dubious_question($question) {
-        if (!is_numeric($question->_stats->discriminativeefficiency)) {
+    protected function is_dubious_question($questionstat) {
+        if (!is_numeric($questionstat->discriminativeefficiency)) {
             return false;
         }
 
-        return $question->_stats->discriminativeefficiency < 15;
+        return $questionstat->discriminativeefficiency < 15;
     }
 
     public function  wrap_html_start() {

@@ -43,7 +43,6 @@ class scorm_basic_report extends scorm_default_report {
 
         if ($action == 'delete' && has_capability('mod/scorm:deleteresponses', $contextmodule) && confirm_sesskey()) {
             if (scorm_delete_responses($attemptids, $scorm)) { //delete responses.
-                add_to_log($course->id, 'scorm', 'delete attempts', 'report.php?id=' . $cm->id, implode(",", $attemptids), $cm->id);
                 echo $OUTPUT->notification(get_string('scormresponsedeleted', 'scorm'), 'notifysuccess');
             }
         }
@@ -137,7 +136,7 @@ class scorm_basic_report extends scorm_default_report {
             $headers[]= get_string('last', 'scorm');
             $columns[]= 'score';
             $headers[]= get_string('score', 'scorm');
-            if ($detailedrep && $scoes = $DB->get_records('scorm_scoes', array("scorm"=>$scorm->id), 'id')) {
+            if ($detailedrep && $scoes = $DB->get_records('scorm_scoes', array("scorm"=>$scorm->id), 'sortorder, id')) {
                 foreach ($scoes as $sco) {
                     if ($sco->launch!='') {
                         $columns[]= 'scograde'.$sco->id;
@@ -380,14 +379,10 @@ class scorm_basic_report extends scorm_default_report {
                         }
                     }
                     if (in_array('picture', $columns)) {
-                        $user = (object)array(
-                                    'id'=>$scouser->userid,
-                                    'picture'=>$scouser->picture,
-                                    'imagealt'=>$scouser->imagealt,
-                                    'email'=>$scouser->email);
-                        foreach (get_all_user_name_fields() as $addname) {
-                            $user->$addname = $scouser->$addname;
-                        }
+                        $user = new stdClass();
+                        $additionalfields = explode(',', user_picture::fields());
+                        $user = username_load_fields_from_object($user, $scouser, null, $additionalfields);
+                        $user->id = $scouser->userid;
                         $row[] = $OUTPUT->user_picture($user, array('courseid'=>$course->id));
                     }
                     if (!$download) {
@@ -405,7 +400,7 @@ class scorm_basic_report extends scorm_default_report {
                         $row[] = '-';
                     } else {
                         if (!$download) {
-                            $row[] = '<a href="userreport.php?a='.$scorm->id.'&amp;user='.$scouser->userid.'&amp;attempt='.$scouser->attempt.'">'.$scouser->attempt.'</a>';
+                            $row[] = '<a href="'.$CFG->wwwroot.'/mod/scorm/report/userreport.php?id='.$cm->id.'&amp;user='.$scouser->userid.'&amp;attempt='.$scouser->attempt.'">'.$scouser->attempt.'</a>';
                         } else {
                             $row[] = $scouser->attempt;
                         }
@@ -448,8 +443,8 @@ class scorm_basic_report extends scorm_default_report {
                                     }
                                     if (!$download) {
                                         $row[] = '<img src="'.$OUTPUT->pix_url($trackdata->status, 'scorm').'" alt="'.$strstatus.'" title="'.$strstatus.'" /><br/>
-                                                <a href="userreport.php?b='.$sco->id.'&amp;user='.$scouser->userid.'&amp;attempt='.$scouser->attempt.
-                                                '" title="'.get_string('details', 'scorm').'">'.$score.'</a>';
+                                                <a href="'.$CFG->wwwroot.'/mod/scorm/report/userreporttracks.php?id='.$cm->id.'&amp;scoid='.$sco->id.'&amp;user='.$scouser->userid.
+                                                '&amp;attempt='.$scouser->attempt.'" title="'.get_string('details', 'scorm').'">'.$score.'</a>';
                                     } else {
                                         $row[] = $score;
                                     }

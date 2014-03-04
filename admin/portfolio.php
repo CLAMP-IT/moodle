@@ -43,9 +43,6 @@ $configstr  = get_string('manageportfolios', 'portfolio');
 
 $return = true; // direct back to the main page
 
-// Purge all caches related to portfolio administration.
-cache::make('core', 'plugininfo_portfolio')->purge();
-
 /**
  * Helper function that generates a moodle_url object
  * relevant to the portfolio
@@ -91,6 +88,7 @@ if (($action == 'edit') || ($action == 'new')) {
         } else {
             portfolio_static_function($plugin, 'create_instance', $plugin, $fromform->name, $fromform);
         }
+        core_plugin_manager::reset_caches();
         $savedstr = get_string('instancesaved', 'portfolio');
         redirect($baseurl, $savedstr, 1);
         exit;
@@ -119,6 +117,7 @@ if (($action == 'edit') || ($action == 'new')) {
 
     $instance->set('visible', $visible);
     $instance->save();
+    core_plugin_manager::reset_caches();
     $return = true;
 } else if ($action == 'delete') {
     $instance = portfolio_instance($portfolio);

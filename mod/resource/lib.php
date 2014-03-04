@@ -16,8 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    mod
- * @subpackage resource
+ * @package    mod_resource
  * @copyright  2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -136,7 +135,6 @@ function resource_set_display_options($data) {
         $displayoptions['popupheight'] = $data->popupheight;
     }
     if (in_array($data->display, array(RESOURCELIB_DISPLAY_AUTO, RESOURCELIB_DISPLAY_EMBED, RESOURCELIB_DISPLAY_FRAME))) {
-        $displayoptions['printheading'] = (int)!empty($data->printheading);
         $displayoptions['printintro']   = (int)!empty($data->printintro);
     }
     if (!empty($data->showsize)) {
@@ -289,7 +287,7 @@ function resource_get_coursemodule_info($coursemodule) {
  * @param cm_info $cm Course module information
  */
 function resource_cm_info_view(cm_info $cm) {
-    $details = $cm->get_custom_data();
+    $details = $cm->customdata;
     if ($details) {
         $cm->set_after_link(' ' . html_writer::tag('span', $details,
                 array('class' => 'resourcelinkdetails')));
@@ -433,7 +431,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
     }
 
     // finally send the file
-    send_stored_file($file, 86400, $filter, $forcedownload, $options);
+    send_stored_file($file, null, $filter, $forcedownload, $options);
 }
 
 /**
@@ -510,7 +508,6 @@ function resource_dndupload_handle($uploadinfo) {
     $data->display = $config->display;
     $data->popupheight = $config->popupheight;
     $data->popupwidth = $config->popupwidth;
-    $data->printheading = $config->printheading;
     $data->printintro = $config->printintro;
     $data->showsize = (isset($config->showsize)) ? $config->showsize : 0;
     $data->showtype = (isset($config->showtype)) ? $config->showtype : 0;

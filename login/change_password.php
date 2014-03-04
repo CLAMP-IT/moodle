@@ -31,12 +31,14 @@ require_once($CFG->libdir.'/authlib.php');
 $id     = optional_param('id', SITEID, PARAM_INT); // current course
 $return = optional_param('return', 0, PARAM_BOOL); // redirect after password change
 
+$systemcontext = context_system::instance();
+
 //HTTPS is required in this page when $CFG->loginhttps enabled
 $PAGE->https_required();
 
 $PAGE->set_url('/login/change_password.php', array('id'=>$id));
 
-$PAGE->set_context(context_system::instance());
+$PAGE->set_context($systemcontext);
 
 if ($return) {
     // this redirect prevents security warning because https can not POST to http pages
@@ -53,8 +55,6 @@ if ($return) {
 
 $strparticipants = get_string('participants');
 
-$systemcontext = context_system::instance();
-
 if (!$course = $DB->get_record('course', array('id'=>$id))) {
     print_error('invalidcourseid');
 }
@@ -67,13 +67,17 @@ if (!isloggedin() or isguestuser()) {
     redirect(get_login_url());
 }
 
+$PAGE->set_context(context_user::instance($USER->id));
+$PAGE->set_pagelayout('admin');
+$PAGE->set_course($course);
+
 // do not require change own password cap if change forced
 if (!get_user_preferences('auth_forcepasswordchange', false)) {
     require_capability('moodle/user:changeownpassword', $systemcontext);
 }
 
 // do not allow "Logged in as" users to change any passwords
-if (session_is_loggedinas()) {
+if (\core\session\manager::is_loggedinas()) {
     print_error('cannotcallscript');
 }
 
@@ -120,12 +124,8 @@ if ($mform->is_cancelled()) {
 
     $strpasswordchanged = get_string('passwordchanged');
 
-    add_to_log($course->id, 'user', 'change password', "view.php?id=$USER->id&amp;course=$course->id", "$USER->id");
-
     $fullname = fullname($USER, true);
 
-    $PAGE->navbar->add($fullname, new moodle_url('/user/view.php', array('id'=>$USER->id, 'course'=>$course->id)));
-    $PAGE->navbar->add($strpasswordchanged);
     $PAGE->set_title($strpasswordchanged);
     $PAGE->set_heading($COURSE->fullname);
     echo $OUTPUT->header();
@@ -143,8 +143,6 @@ $strchangepassword = get_string('changepassword');
 
 $fullname = fullname($USER, true);
 
-$PAGE->navbar->add($fullname, new moodle_url('/user/view.php', array('id'=>$USER->id, 'course'=>$course->id)));
-$PAGE->navbar->add($strchangepassword);
 $PAGE->set_title($strchangepassword);
 $PAGE->set_heading($COURSE->fullname);
 echo $OUTPUT->header();

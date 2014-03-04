@@ -19,8 +19,7 @@
  * Provides support for the conversion of moodle1 backup to the moodle2 format
  * Based off of a template @ http://docs.moodle.org/dev/Backup_1.9_conversion_for_developers
  *
- * @package    mod
- * @subpackage assignment
+ * @package    mod_assignment
  * @copyright  2011 Aparup Banerjee <aparup@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -78,6 +77,8 @@ class moodle1_mod_assignment_handler extends moodle1_mod_handler {
      * data available
      */
     public function process_assignment($data) {
+        global $CFG;
+
         // get the course module id and context id
         $instanceid     = $data['id'];
         $cminfo         = $this->get_cminfo($instanceid);
@@ -94,6 +95,12 @@ class moodle1_mod_assignment_handler extends moodle1_mod_handler {
         $this->fileman->filearea = 'intro';
         $this->fileman->itemid   = 0;
         $data['intro'] = moodle1_converter::migrate_referenced_files($data['intro'], $this->fileman);
+
+        // convert the introformat if necessary
+        if ($CFG->texteditors !== 'textarea') {
+            $data['intro'] = text_to_html($data['intro'], false, false, true);
+            $data['introformat'] = FORMAT_HTML;
+        }
 
         // start writing assignment.xml
         $this->open_xml_writer("activities/assignment_{$this->moduleid}/assignment.xml");

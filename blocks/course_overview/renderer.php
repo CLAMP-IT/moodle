@@ -48,10 +48,7 @@ class block_course_overview_renderer extends plugin_renderer_base {
         // Intialise string/icon etc if user is editing and courses > 1
         if ($this->page->user_is_editing() && (count($courses) > 1)) {
             $userediting = true;
-            // If ajaxenabled then include DND JS and replace link with move image.
-            if (ajaxenabled()) {
-                $this->page->requires->js_init_call('M.block_course_overview.add_handles');
-            }
+            $this->page->requires->js_init_call('M.block_course_overview.add_handles');
 
             // Check if course is moving
             $ismovingcourse = optional_param('movecourse', FALSE, PARAM_BOOL);
@@ -108,7 +105,7 @@ class block_course_overview_renderer extends plugin_renderer_base {
                     $attributes['class'] = 'dimmed';
                 }
                 $courseurl = new moodle_url('/course/view.php', array('id' => $course->id));
-                $coursefullname = format_string($course->fullname, true, $course->id);
+                $coursefullname = format_string(get_course_display_name_for_list($course), true, $course->id);
                 $link = html_writer::link($courseurl, $coursefullname, $attributes);
                 $html .= $this->output->heading($link, 2, 'title');
             } else {
@@ -215,7 +212,18 @@ class block_course_overview_renderer extends plugin_renderer_base {
         }
         $output = $this->output->box_start('notice');
         $plural = $total > 1 ? 'plural' : '';
-        $output .= get_string('hiddencoursecount'.$plural, 'block_course_overview', $total);
+        $config = get_config('block_course_overview');
+        // Show view all course link to user if forcedefaultmaxcourses is not empty.
+        if (!empty($config->forcedefaultmaxcourses)) {
+            $output .= get_string('hiddencoursecount'.$plural, 'block_course_overview', $total);
+        } else {
+            $a = new stdClass();
+            $a->coursecount = $total;
+            $a->showalllink = html_writer::link(new moodle_url('/my/index.php', array('mynumber' => block_course_overview::SHOW_ALL_COURSES)),
+                    get_string('showallcourses'));
+            $output .= get_string('hiddencoursecountwithshowall'.$plural, 'block_course_overview', $a);
+        }
+
         $output .= $this->output->box_end();
         return $output;
     }

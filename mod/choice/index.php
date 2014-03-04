@@ -14,11 +14,12 @@
     require_course_login($course);
     $PAGE->set_pagelayout('incourse');
 
-    add_to_log($course->id, "choice", "view all", "index.php?id=$course->id", "");
+    $eventdata = array('context' => context_course::instance($id));
+    $event = \mod_choice\event\course_module_instance_list_viewed::create($eventdata);
+    $event->trigger();
 
     $strchoice = get_string("modulename", "choice");
     $strchoices = get_string("modulenameplural", "choice");
-    $strsectionname  = get_string('sectionname', 'format_'.$course->format);
     $PAGE->set_title($strchoices);
     $PAGE->set_heading($course->fullname);
     $PAGE->navbar->add($strchoices);
@@ -49,6 +50,7 @@
     $table = new html_table();
 
     if ($usesections) {
+        $strsectionname = get_string('sectionname', 'format_'.$course->format);
         $table->head  = array ($strsectionname, get_string("question"), get_string("answer"));
         $table->align = array ("center", "left", "left");
     } else {

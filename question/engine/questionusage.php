@@ -327,6 +327,27 @@ class question_usage_by_activity {
     }
 
     /**
+     * Get summary information about this usage.
+     *
+     * Some behaviours may be able to provide interesting summary information
+     * about the attempt as a whole, and this method provides access to that data.
+     * To see how this works, try setting a quiz to one of the CBM behaviours,
+     * and then look at the extra information displayed at the top of the quiz
+     * review page once you have sumitted an attempt.
+     *
+     * In the return value, the array keys are identifiers of the form
+     * qbehaviour_behaviourname_meaningfullkey. For qbehaviour_deferredcbm_highsummary.
+     * The values are arrays with two items, title and content. Each of these
+     * will be either a string, or a renderable.
+     *
+     * @return array as described above.
+     */
+    public function get_summary_information(question_display_options $options) {
+        return question_engine::get_behaviour_type($this->preferredbehaviour)
+                ->summarise_usage($this, $options);
+    }
+
+    /**
      * @return string a simple textual summary of the question that was asked.
      */
     public function get_question_summary($slot) {
@@ -598,9 +619,31 @@ class question_usage_by_activity {
         $simulatedpostdata = array();
         $simulatedpostdata['slots'] = implode(',', array_keys($simulatedresponses));
         foreach ($simulatedresponses as $slot => $responsedata) {
+            $slotresponse = array();
+
+            // Behaviour vars should not be processed by question type, just add prefix.
+            $behaviourvars = $this->get_question_attempt($slot)->get_behaviour()->get_expected_data();
+            foreach (array_keys($responsedata) as $responsedatakey) {
+                if ($responsedatakey{0} === '-') {
+                    $behaviourvarname = substr($responsedatakey, 1);
+                    if (isset($behaviourvars[$behaviourvarname])) {
+                        // Expected behaviour var found.
+                        if ($responsedata[$responsedatakey]) {
+                            // Only set the behaviour var if the column value from the cvs file is non zero.
+                            // The behaviours only look at whether the var is set or not they don't look at the value.
+                            $slotresponse[$responsedatakey] = $responsedata[$responsedatakey];
+                        }
+                    }
+                    // Remove both expected and unexpected vars from data passed to question type.
+                    unset($responsedata[$responsedatakey]);
+                }
+            }
+
+            $slotresponse += $this->get_question($slot)->prepare_simulated_post_data($responsedata);
+            $slotresponse[':sequencecheck'] = $this->get_question_attempt($slot)->get_sequence_check_count();
+
+            // Add this slot's prefix to slot data.
             $prefix = $this->get_field_prefix($slot);
-            $slotresponse = $this->get_question($slot)->prepare_simulated_post_data($responsedata);
-            $slotresponse[':sequencecheck'] =  $this->get_question_attempt($slot)->get_sequence_check_count();
             foreach ($slotresponse as $key => $value) {
                 $simulatedpostdata[$prefix.$key] = $value;
             }

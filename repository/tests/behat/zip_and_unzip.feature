@@ -4,7 +4,7 @@ Feature: Zip folders and unzip compressed files
   As a user
   I need to zip and unzip folders and files
 
-  @javascript
+  @javascript @_bug_phantomjs
   Scenario: Zip and unzip folders and files
     Given the following "courses" exists:
       | fullname | shortname | category |
@@ -16,15 +16,15 @@ Feature: Zip folders and unzip compressed files
     And I fill the moodle form with:
       | Name | Folder resource |
       | Description | The description |
-    And I create "Folder 1" folder in "Files" filepicker
-    And I open "Folder 1" folder from "Files" filepicker
-    And I create "SubFolder 1" folder in "Files" filepicker
-    And I open "Files" folder from "Files" filepicker
-    And I zip "Folder 1" folder from "Files" filepicker
-    And I delete "Folder 1" from "Files" filepicker
-    When I unzip "Folder 1.zip" file from "Files" filepicker
-    And I delete "Folder 1.zip" from "Files" filepicker
+    And I create "Folder 1" folder in "Files" filemanager
+    And I open "Folder 1" folder from "Files" filemanager
+    And I create "SubFolder 1" folder in "Files" filemanager
+    And I open "Files" folder from "Files" filemanager
+    And I zip "Folder 1" folder from "Files" filemanager
+    And I delete "Folder 1" from "Files" filemanager
+    When I unzip "Folder 1.zip" file from "Files" filemanager
+    And I delete "Folder 1.zip" from "Files" filemanager
     Then I should see "Folder 1"
-    And I open "Folder 1" folder from "Files" filepicker
+    And I open "Folder 1" folder from "Files" filemanager
     And I should see "SubFolder 1"
     And I press "Save and return to course"

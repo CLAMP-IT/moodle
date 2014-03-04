@@ -199,6 +199,12 @@ class plugin_renderer_base extends renderer_base {
      * @param string $target one of rendering target constants
      */
     public function __construct(moodle_page $page, $target) {
+        if (empty($target) && $page->pagelayout === 'maintenance') {
+            // If the page is using the maintenance layout then we're going to force the target to maintenance.
+            // This way we'll get a special maintenance renderer that is designed to block access to API's that are likely
+            // unavailable for this page layout.
+            $target = RENDERER_TARGET_MAINTENANCE;
+        }
         $this->output = $page->get_renderer('core', null, $target);
         parent::__construct($page, $target);
     }
@@ -462,9 +468,20 @@ class core_renderer extends renderer_base {
 
         $output = '';
         if (isset($CFG->maintenance_later) and $CFG->maintenance_later > time()) {
-            $output .= $this->box_start('errorbox maintenancewarning');
-            $output .= get_string('maintenancemodeisscheduled', 'admin', (int)(($CFG->maintenance_later-time())/60));
+            $timeleft = $CFG->maintenance_later - time();
+            // If timeleft less than 30 sec, set the class on block to error to highlight.
+            $errorclass = ($timeleft < 30) ? 'error' : 'warning';
+            $output .= $this->box_start($errorclass . ' moodle-has-zindex maintenancewarning');
+            $a = new stdClass();
+            $a->min = (int)($timeleft/60);
+            $a->sec = (int)($timeleft % 60);
+            $output .= get_string('maintenancemodeisscheduled', 'admin', $a) ;
             $output .= $this->box_end();
+            $this->page->requires->yui_module('moodle-core-maintenancemodetimer', 'M.core.maintenancemodetimer',
+                    array(array('timeleftinsec' => $timeleft)));
+            $this->page->requires->strings_for_js(
+                    array('maintenancemodeisscheduled', 'sitemaintenance'),
+                    'admin');
         }
         return $output;
     }
@@ -522,9 +539,6 @@ class core_renderer extends renderer_base {
               <li><a href="http://www.contentquality.com/mynewtester/cynthia.exe?rptmode=0&amp;warnp2n3e=1&amp;url1=' . urlencode(qualified_me()) . '">WCAG 1 (2,3) Check</a></li>
             </ul></div>';
         }
-        if (!empty($CFG->additionalhtmlfooter)) {
-            $output .= "\n".$CFG->additionalhtmlfooter;
-        }
         return $output;
     }
 
@@ -546,15 +560,22 @@ class core_renderer extends renderer_base {
 
     /**
      * The standard tags (typically script tags that are not needed earlier) that
-     * should be output after everything else, . Designed to be called in theme layout.php files.
+     * should be output after everything else. Designed to be called in theme layout.php files.
      *
      * @return string HTML fragment.
      */
     public function standard_end_of_body_html() {
+        global $CFG;
+
         // This function is normally called from a layout.php file in {@link core_renderer::header()}
         // but some of the content won't be known until later, so we return a placeholder
         // for now. This will be replaced with the real content in {@link core_renderer::footer()}.
-        return $this->unique_end_html_token;
+        $output = '';
+        if (!empty($CFG->additionalhtmlfooter)) {
+            $output .= "\n".$CFG->additionalhtmlfooter;
+        }
+        $output .= $this->unique_end_html_token;
+        return $output;
     }
 
     /**
@@ -578,8 +599,8 @@ class core_renderer extends renderer_base {
 
         $loginpage = ((string)$this->page->url === get_login_url());
         $course = $this->page->course;
-        if (session_is_loggedinas()) {
-            $realuser = session_get_realuser();
+        if (\core\session\manager::is_loggedinas()) {
+            $realuser = \core\session\manager::get_realuser();
             $fullname = fullname($realuser, true);
             if ($withlinks) {
                 $loginastitle = get_string('loginas');
@@ -775,7 +796,7 @@ class core_renderer extends renderer_base {
     public function header() {
         global $USER, $CFG;
 
-        if (session_is_loggedinas()) {
+        if (\core\session\manager::is_loggedinas()) {
             $this->page->add_body_class('userloggedinas');
         }
 
@@ -883,12 +904,14 @@ class core_renderer extends renderer_base {
         $performanceinfo = '';
         if (defined('MDL_PERF') || (!empty($CFG->perfdebug) and $CFG->perfdebug > 7)) {
             $perf = get_performance_info();
-            if (defined('MDL_PERFTOLOG') && !function_exists('register_shutdown_function')) {
-                error_log("PERF: " . $perf['txt']);
-            }
             if (defined('MDL_PERFTOFOOT') || debugging() || $CFG->perfdebug > 7) {
                 $performanceinfo = $perf['html'];
             }
+        }
+
+        // We always want performance data when running a performance test, even if the user is redirected to another page.
+        if (MDL_PERF_TEST && strpos($footer, $this->unique_performance_info_token) === false) {
+            $footer = $this->unique_performance_info_token . $footer;
         }
         $footer = str_replace($this->unique_performance_info_token, $performanceinfo, $footer);
 
@@ -1054,6 +1077,7 @@ class core_renderer extends renderer_base {
         if ($blockid !== null) {
             $menu->set_owner_selector('#'.$blockid);
         }
+        $menu->set_constraint('.block-region');
         $menu->attributes['class'] .= ' block-control-actions commands';
         if (isset($CFG->blockeditingmenu) && !$CFG->blockeditingmenu) {
             $menu->do_not_enhance();
@@ -1079,24 +1103,20 @@ class core_renderer extends renderer_base {
         foreach ($menu->get_primary_actions($this) as $action) {
             if ($action instanceof renderable) {
                 $content = $this->render($action);
-                $role = 'presentation';
             } else {
                 $content = $action;
-                $role = 'menuitem';
             }
-            $output .= html_writer::tag('li', $content, array('role' => $role));
+            $output .= html_writer::tag('li', $content, array('role' => 'presentation'));
         }
         $output .= html_writer::end_tag('ul');
         $output .= html_writer::start_tag('ul', $menu->attributessecondary);
         foreach ($menu->get_secondary_actions() as $action) {
             if ($action instanceof renderable) {
                 $content = $this->render($action);
-                $role = 'presentation';
             } else {
                 $content = $action;
-                $role = 'menuitem';
             }
-            $output .= html_writer::tag('li', $content, array('role' => $role));
+            $output .= html_writer::tag('li', $content, array('role' => 'presentation'));
         }
         $output .= html_writer::end_tag('ul');
         $output .= html_writer::end_tag('div');
@@ -1110,16 +1130,18 @@ class core_renderer extends renderer_base {
      * @return string HTML fragment
      */
     protected function render_action_menu_link(action_menu_link $action) {
+        static $actioncount = 0;
+        $actioncount++;
 
         $comparetoalt = '';
         $text = '';
         if (!$action->icon || $action->primary === false) {
-            $text .= html_writer::start_tag('span', array('class'=>'menu-action-text'));
+            $text .= html_writer::start_tag('span', array('class'=>'menu-action-text', 'id' => 'actionmenuaction-'.$actioncount));
             if ($action->text instanceof renderable) {
                 $text .= $this->render($action->text);
             } else {
                 $text .= $action->text;
-                $comparetoalt = $action->text;
+                $comparetoalt = (string)$action->text;
             }
             $text .= html_writer::end_tag('span');
         }
@@ -1130,8 +1152,13 @@ class core_renderer extends renderer_base {
             if ($action->primary || !$action->actionmenu->will_be_enhanced()) {
                 $action->attributes['title'] = $action->text;
             }
-            if ($icon->attributes['alt'] === $comparetoalt && $action->actionmenu->will_be_enhanced()) {
-                $icon->attributes['alt'] = ' ';
+            if (!$action->primary && $action->actionmenu->will_be_enhanced()) {
+                if ((string)$icon->attributes['alt'] === $comparetoalt) {
+                    $icon->attributes['alt'] = '';
+                }
+                if (isset($icon->attributes['title']) && (string)$icon->attributes['title'] === $comparetoalt) {
+                    unset($icon->attributes['title']);
+                }
             }
             $icon = $this->render($icon);
         }
@@ -1145,8 +1172,21 @@ class core_renderer extends renderer_base {
         $attributes = $action->attributes;
         unset($action->attributes['disabled']);
         $attributes['href'] = $action->url;
+        if ($text !== '') {
+            $attributes['aria-labelledby'] = 'actionmenuaction-'.$actioncount;
+        }
 
         return html_writer::tag('a', $icon.$text, $attributes);
+    }
+
+    /**
+     * Renders a primary action_menu_filler item.
+     *
+     * @param action_menu_link_filler $action
+     * @return string HTML fragment
+     */
+    protected function render_action_menu_filler(action_menu_filler $action) {
+        return html_writer::span('&nbsp;', 'filler');
     }
 
     /**
@@ -1363,7 +1403,6 @@ class core_renderer extends renderer_base {
      * @return string the HTML to be output.
      */
     public function blocks_for_region($region) {
-        $region = $this->page->apply_theme_region_manipulations($region);
         $blockcontents = $this->page->blocks->get_content_for_region($region, $this);
         $blocks = $this->page->blocks->get_blocks_for_region($region);
         $lastblock = null;
@@ -1378,7 +1417,7 @@ class core_renderer extends renderer_base {
                 $output .= $this->block($bc, $region);
                 $lastblock = $bc->title;
             } else if ($bc instanceof block_move_target) {
-                $output .= $this->block_move_target($bc, $zones, $lastblock);
+                $output .= $this->block_move_target($bc, $zones, $lastblock, $region);
             } else {
                 throw new coding_exception('Unexpected type of thing (' . get_class($bc) . ') found in list of block contents.');
             }
@@ -1392,11 +1431,18 @@ class core_renderer extends renderer_base {
      * @param block_move_target $target with the necessary details.
      * @param array $zones array of areas where the block can be moved to
      * @param string $previous the block located before the area currently being rendered.
+     * @param string $region the name of the region
      * @return string the HTML to be output.
      */
-    public function block_move_target($target, $zones, $previous) {
+    public function block_move_target($target, $zones, $previous, $region) {
         if ($previous == null) {
-            $position = get_string('moveblockbefore', 'block', $zones[0]);
+            if (empty($zones)) {
+                // There are no zones, probably because there are no blocks.
+                $regions = $this->page->theme->get_all_block_regions();
+                $position = get_string('moveblockinregion', 'block', $regions[$region]);
+            } else {
+                $position = get_string('moveblockbefore', 'block', $zones[0]);
+            }
         } else {
             $position = get_string('moveblockafter', 'block', $previous);
         }
@@ -2045,12 +2091,14 @@ class core_renderer extends renderer_base {
      * @param string $component component name
      * @param string|moodle_url $icon
      * @param string $iconalt icon alt text
+     * @param int $level The level of importance of the heading. Defaulting to 2
+     * @param string $classnames A space-separated list of CSS classes. Defaulting to null
      * @return string HTML fragment
      */
-    public function heading_with_help($text, $helpidentifier, $component = 'moodle', $icon = '', $iconalt = '') {
+    public function heading_with_help($text, $helpidentifier, $component = 'moodle', $icon = '', $iconalt = '', $level = 2, $classnames = null) {
         $image = '';
         if ($icon) {
-            $image = $this->pix_icon($icon, $iconalt, $component, array('class'=>'icon'));
+            $image = $this->pix_icon($icon, $iconalt, $component, array('class'=>'icon iconlarge'));
         }
 
         $help = '';
@@ -2058,7 +2106,7 @@ class core_renderer extends renderer_base {
             $help = $this->help_icon($helpidentifier, $component);
         }
 
-        return $this->heading($image.$text.$help, 2, 'main help');
+        return $this->heading($image.$text.$help, $level, $classnames);
     }
 
     /**
@@ -2669,11 +2717,11 @@ EOD;
      *
      * @param string $text The text of the heading
      * @param int $level The level of importance of the heading. Defaulting to 2
-     * @param string $classes A space-separated list of CSS classes
+     * @param string $classes A space-separated list of CSS classes. Defaulting to null
      * @param string $id An optional ID
      * @return string the HTML to output.
      */
-    public function heading($text, $level = 2, $classes = 'main', $id = null) {
+    public function heading($text, $level = 2, $classes = null, $id = null) {
         $level = (integer) $level;
         if ($level < 1 or $level > 6) {
             throw new coding_exception('Heading level must be an integer between 1 and 6.');
@@ -3129,7 +3177,7 @@ EOD;
             // No name for tabtree root.
         } else if ($tabobject->inactive || $tabobject->activated || ($tabobject->selected && !$tabobject->linkedwhenselected)) {
             // Tab name without a link. The <a> tag is used for styling.
-            $str .= html_writer::tag('a', html_writer::span($tabobject->text), array('class' => 'nolink'));
+            $str .= html_writer::tag('a', html_writer::span($tabobject->text), array('class' => 'nolink moodle-has-zindex'));
         } else {
             // Tab name with a link.
             if (!($tabobject->link instanceof moodle_url)) {
@@ -3194,7 +3242,12 @@ EOD;
             'data-blockregion' => $displayregion,
             'data-droptarget' => '1'
         );
-        return html_writer::tag($tag, $this->blocks_for_region($region), $attributes);
+        if ($this->page->blocks->region_has_content($displayregion, $this)) {
+            $content = $this->blocks_for_region($displayregion);
+        } else {
+            $content = '';
+        }
+        return html_writer::tag($tag, $content, $attributes);
     }
 
     /**
@@ -3213,6 +3266,9 @@ EOD;
                 $additionalclasses[] = 'used-region-'.$region;
             } else {
                 $additionalclasses[] = 'empty-region-'.$region;
+            }
+            if ($this->page->blocks->region_completely_docked($region, $this)) {
+                $additionalclasses[] = 'docked-region-'.$region;
             }
         }
         foreach ($this->page->layout_options as $option => $value) {
@@ -3372,6 +3428,8 @@ class core_renderer_cli extends core_renderer {
      * @return string A template fragment for a fatal error
      */
     public function fatal_error($message, $moreinfourl, $link, $backtrace, $debuginfo = null) {
+        global $CFG;
+
         $output = "!!! $message !!!\n";
 
         if ($CFG->debugdeveloper) {
@@ -3478,6 +3536,12 @@ class core_renderer_ajax extends core_renderer {
         // unfortunately YUI iframe upload does not support application/json
         if (!empty($_FILES)) {
             @header('Content-type: text/plain; charset=utf-8');
+            if (!core_useragent::supports_json_contenttype()) {
+                @header('X-Content-Type-Options: nosniff');
+            }
+        } else if (!core_useragent::supports_json_contenttype()) {
+            @header('Content-type: text/plain; charset=utf-8');
+            @header('X-Content-Type-Options: nosniff');
         } else {
             @header('Content-type: application/json; charset=utf-8');
         }
@@ -3758,5 +3822,203 @@ class core_media_renderer extends plugin_renderer_base {
             $this->embeddablemarkers = $markers;
         }
         return $this->embeddablemarkers;
+    }
+}
+
+/**
+ * The maintenance renderer.
+ *
+ * The purpose of this renderer is to block out the core renderer methods that are not usable when the site
+ * is running a maintenance related task.
+ * It must always extend the core_renderer as we switch from the core_renderer to this renderer in a couple of places.
+ *
+ * @since 2.6
+ * @package core
+ * @category output
+ * @copyright 2013 Sam Hemelryk
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class core_renderer_maintenance extends core_renderer {
+
+    /**
+     * Initialises the renderer instance.
+     * @param moodle_page $page
+     * @param string $target
+     * @throws coding_exception
+     */
+    public function __construct(moodle_page $page, $target) {
+        if ($target !== RENDERER_TARGET_MAINTENANCE || $page->pagelayout !== 'maintenance') {
+            throw new coding_exception('Invalid request for the maintenance renderer.');
+        }
+        parent::__construct($page, $target);
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce blocks.
+     *
+     * @param block_contents $bc
+     * @param string $region
+     * @return string
+     */
+    public function block(block_contents $bc, $region) {
+        // Computer says no blocks.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce blocks.
+     *
+     * @param string $region
+     * @param array $classes
+     * @param string $tag
+     * @return string
+     */
+    public function blocks($region, $classes = array(), $tag = 'aside') {
+        // Computer says no blocks.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce blocks.
+     *
+     * @param string $region
+     * @return string
+     */
+    public function blocks_for_region($region) {
+        // Computer says no blocks for region.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce a course content header.
+     *
+     * @param bool $onlyifnotcalledbefore
+     * @return string
+     */
+    public function course_content_header($onlyifnotcalledbefore = false) {
+        // Computer says no course content header.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce a course content footer.
+     *
+     * @param bool $onlyifnotcalledbefore
+     * @return string
+     */
+    public function course_content_footer($onlyifnotcalledbefore = false) {
+        // Computer says no course content footer.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce a course header.
+     *
+     * @return string
+     */
+    public function course_header() {
+        // Computer says no course header.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce a course footer.
+     *
+     * @return string
+     */
+    public function course_footer() {
+        // Computer says no course footer.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce a custom menu.
+     *
+     * @param string $custommenuitems
+     * @return string
+     */
+    public function custom_menu($custommenuitems = '') {
+        // Computer says no custom menu.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce a file picker.
+     *
+     * @param array $options
+     * @return string
+     */
+    public function file_picker($options) {
+        // Computer says no file picker.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce and HTML file tree.
+     *
+     * @param array $dir
+     * @return string
+     */
+    public function htmllize_file_tree($dir) {
+        // Hell no we don't want no htmllized file tree.
+        // Also why on earth is this function on the core renderer???
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+
+    }
+
+    /**
+     * Does nothing. The maintenance renderer does not support JS.
+     *
+     * @param block_contents $bc
+     */
+    public function init_block_hider_js(block_contents $bc) {
+        // Computer says no JavaScript.
+        // Do nothing, ridiculous method.
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce language menus.
+     *
+     * @return string
+     */
+    public function lang_menu() {
+        // Computer says no lang menu.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer has no need for login information.
+     *
+     * @param null $withlinks
+     * @return string
+     */
+    public function login_info($withlinks = null) {
+        // Computer says no login info.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
+    }
+
+    /**
+     * Does nothing. The maintenance renderer cannot produce user pictures.
+     *
+     * @param stdClass $user
+     * @param array $options
+     * @return string
+     */
+    public function user_picture(stdClass $user, array $options = null) {
+        // Computer says no user pictures.
+        // debugging('Please do not use $OUTPUT->'.__FUNCTION__.'() when performing maintenance tasks.', DEBUG_DEVELOPER);
+        return '';
     }
 }

@@ -16,6 +16,8 @@
 
 namespace core\event;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Event when course completed.
  *
@@ -31,7 +33,7 @@ class course_completed extends base {
     protected function init() {
         $this->data['objecttable'] = 'course_completions';
         $this->data['crud'] = 'u';
-        $this->data['level'] = self::LEVEL_PARTICIPATING;
+        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
     }
 
     /**
@@ -58,7 +60,7 @@ class course_completed extends base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new moodle_url('/report/completion/index.php', array('course' => $this->courseid));
+        return new \moodle_url('/report/completion/index.php', array('course' => $this->courseid));
     }
 
     /**

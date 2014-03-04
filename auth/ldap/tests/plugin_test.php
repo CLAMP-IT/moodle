@@ -236,6 +236,49 @@ class auth_ldap_plugin_testcase extends advanced_testcase {
         ldap_close($connection);
     }
 
+    /**
+     * Test logging in via LDAP calls a user_loggedin event.
+     */
+    public function test_ldap_user_loggedin_event() {
+        global $CFG, $DB, $USER;
+
+        require_once($CFG->dirroot . '/auth/ldap/auth.php');
+
+        $this->resetAfterTest();
+
+        $this->assertFalse(isloggedin());
+        $user = $DB->get_record('user', array('username'=>'admin'));
+
+        // Note: we are just going to trigger the function that calls the event,
+        // not actually perform a LDAP login, for the sake of sanity.
+        $ldap = new auth_plugin_ldap();
+
+        // Set the key for the cache flag we want to set which is used by LDAP.
+        set_cache_flag($ldap->pluginconfig . '/ntlmsess', sesskey(), $user->username, AUTH_NTLMTIMEOUT);
+
+        // We are going to need to set the sesskey as the user's password in order for the LDAP log in to work.
+        update_internal_user_password($user, sesskey());
+
+        // The function ntlmsso_finish is responsible for triggering the event, so call it directly and catch the event.
+        $sink = $this->redirectEvents();
+        // We need to supress this function call, or else we will get the message "session_regenerate_id(): Cannot
+        // regenerate session id - headers already sent" as the ntlmsso_finish function calls complete_user_login
+        @$ldap->ntlmsso_finish();
+        $events = $sink->get_events();
+        $sink->close();
+
+        // Check that the event is valid.
+        $this->assertCount(1, $events);
+        $event = reset($events);
+        $this->assertInstanceOf('\core\event\user_loggedin', $event);
+        $this->assertEquals('user', $event->objecttable);
+        $this->assertEquals('2', $event->objectid);
+        $this->assertEquals(context_system::instance()->id, $event->contextid);
+        $expectedlog = array(SITEID, 'user', 'login', 'view.php?id=' . $USER->id . '&course=' . SITEID, $user->id,
+            0, $user->id);
+        $this->assertEventLegacyLogData($expectedlog, $event);
+    }
+
     protected function create_ldap_user($connection, $topdn, $i) {
         $o = array();
         $o['objectClass']   = array('inetOrgPerson', 'organizationalPerson', 'person', 'posixAccount');

@@ -16,6 +16,8 @@
 
 namespace core\event;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Event when course module completion is updated.
  *
@@ -31,7 +33,7 @@ class course_module_completion_updated extends base {
     protected function init() {
         $this->data['objecttable'] = 'course_modules_completion';
         $this->data['crud'] = 'u';
-        $this->data['level'] = self::LEVEL_PARTICIPATING;
+        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
     }
 
     /**
@@ -58,7 +60,7 @@ class course_module_completion_updated extends base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new moodle_url('/report/completion/index.php', array('course' => $this->courseid));
+        return new \moodle_url('/report/completion/index.php', array('course' => $this->courseid));
     }
 
     /**

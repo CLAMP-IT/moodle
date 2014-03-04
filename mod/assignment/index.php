@@ -18,7 +18,6 @@ add_to_log($course->id, "assignment", "view all", "index.php?id=$course->id", ""
 $strassignments = get_string("modulenameplural", "assignment");
 $strassignment = get_string("modulename", "assignment");
 $strassignmenttype = get_string("assignmenttype", "assignment");
-$strsectionname  = get_string('sectionname', 'format_'.$course->format);
 $strname = get_string("name");
 $strduedate = get_string("duedate", "assignment");
 $strsubmitted = get_string("submitted", "assignment");
@@ -43,6 +42,7 @@ $timenow = time();
 $table = new html_table();
 
 if ($usesections) {
+    $strsectionname = get_string('sectionname', 'format_'.$course->format);
     $table->head  = array ($strsectionname, $strname, $strassignmenttype, $strduedate, $strsubmitted, $strgrade);
 } else {
     $table->head  = array ($strname, $strassignmenttype, $strduedate, $strsubmitted, $strgrade);
@@ -58,9 +58,7 @@ foreach ($modinfo->instances['assignment'] as $cm) {
         continue;
     }
 
-    $cm->timedue        = $cms[$cm->id]->timedue;
-    $cm->assignmenttype = $cms[$cm->id]->assignmenttype;
-    $cm->idnumber       = $cms[$cm->id]->idnumber;
+    $assignmenttype = $cms[$cm->id]->assignmenttype;
 
     //Show dimmed if the mod is hidden
     $class = $cm->visible ? '' : 'class="dimmed"';
@@ -80,12 +78,12 @@ foreach ($modinfo->instances['assignment'] as $cm) {
         }
     }
 
-    if (!file_exists($CFG->dirroot.'/mod/assignment/type/'.$cm->assignmenttype.'/assignment.class.php')) {
+    if (!file_exists($CFG->dirroot.'/mod/assignment/type/'.$assignmenttype.'/assignment.class.php')) {
         continue;
     }
 
-    require_once ($CFG->dirroot.'/mod/assignment/type/'.$cm->assignmenttype.'/assignment.class.php');
-    $assignmentclass = 'assignment_'.$cm->assignmenttype;
+    require_once ($CFG->dirroot.'/mod/assignment/type/'.$assignmenttype.'/assignment.class.php');
+    $assignmentclass = 'assignment_'.$assignmenttype;
     $assignmentinstance = new $assignmentclass($cm->id, NULL, $cm, $course);
 
     $submitted = $assignmentinstance->submittedlink(true);
@@ -98,16 +96,16 @@ foreach ($modinfo->instances['assignment'] as $cm) {
         $grade = '-';
     }
 
-    $type = $types[$cm->assignmenttype];
+    $type = $types[$assignmenttype];
 
     // if type has an 'all.php' defined, make this a link
-    $pathtoall = "{$CFG->dirroot}/mod/assignment/type/{$cm->assignmenttype}/all.php";
+    $pathtoall = "{$CFG->dirroot}/mod/assignment/type/{$assignmenttype}/all.php";
     if (file_exists($pathtoall)) {
-        $type = "<a href=\"{$CFG->wwwroot}/mod/assignment/type/{$cm->assignmenttype}/".
+        $type = "<a href=\"{$CFG->wwwroot}/mod/assignment/type/{$assignmenttype}/".
             "all.php?id={$course->id}\">$type</a>";
     }
 
-    $due = $cm->timedue ? userdate($cm->timedue) : '-';
+    $due = !empty($cms[$cm->id]->timedue) ? userdate($cms[$cm->id]->timedue) : '-';
 
     if ($usesections) {
         $table->data[] = array ($printsection, $link, $type, $due, $submitted, $grade);

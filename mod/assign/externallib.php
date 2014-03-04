@@ -29,8 +29,42 @@ require_once("$CFG->libdir/externallib.php");
 
 /**
  * Assign functions
+ * @copyright 2012 Paul Charsley
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_assign_external extends external_api {
+
+    /**
+     * Generate a warning in a standard structure for a known failure.
+     *
+     * @param int $assignmentid - The assignment
+     * @param string $warningcode - The key for the warning message
+     * @param string $detail - A description of the error
+     * @return array - Warning structure containing item, itemid, warningcode, message
+     */
+    private static function generate_warning($assignmentid, $warningcode, $detail) {
+        $warningmessages = array(
+            'couldnotlock'=>'Could not lock the submission for this user.',
+            'couldnotunlock'=>'Could not unlock the submission for this user.',
+            'couldnotsubmitforgrading'=>'Could not submit assignment for grading.',
+            'couldnotrevealidentities'=>'Could not reveal identities.',
+            'couldnotgrantextensions'=>'Could not grant submission date extensions.',
+            'couldnotrevert'=>'Could not revert submission to draft.',
+            'invalidparameters'=>'Invalid parameters.',
+            'couldnotsavesubmission'=>'Could not save submission.',
+            'couldnotsavegrade'=>'Could not save grade.'
+        );
+
+        $message = $warningmessages[$warningcode];
+        if (empty($message)) {
+            $message = 'Unknown warning type.';
+        }
+
+        return array('item'=>$detail,
+                     'itemid'=>$assignmentid,
+                     'warningcode'=>$warningcode,
+                     'message'=>$message);
+    }
 
     /**
      * Describes the parameters for get_grades
@@ -53,7 +87,7 @@ class mod_assign_external extends external_api {
 
     /**
      * Returns grade information from assign_grades for the requested assignment ids
-     * @param array of ints $assignmentids
+     * @param int[] $assignmentids
      * @param int $since only return records with timemodified >= since
      * @return array of grade records for each requested assignment
      * @since  Moodle 2.4
@@ -102,7 +136,7 @@ class mod_assign_external extends external_api {
                                 WHERE mxg.assignment ' . $inorequalsql2 . ' GROUP BY mxg.userid';
 
             $sql = "SELECT ag.id,ag.assignment,ag.userid,ag.timecreated,ag.timemodified,".
-                   "ag.grader,ag.grade ".
+                   "ag.grader,ag.grade,ag.attemptnumber ".
                    "FROM {assign_grades} ag ".
                    "JOIN ( " . $grademaxattempt . " ) gmx ON ag.userid = gmx.userid".
                    " WHERE ag.assignment ".$inorequalsql.
@@ -122,6 +156,7 @@ class mod_assign_external extends external_api {
                 $grade['timecreated'] = $rd->timecreated;
                 $grade['timemodified'] = $rd->timemodified;
                 $grade['grader'] = $rd->grader;
+                $grade['attemptnumber'] = $rd->attemptnumber;
                 $grade['grade'] = (string)$rd->grade;
 
                 if (is_null($currentassignmentid) || ($rd->assignment != $currentassignmentid )) {
@@ -170,6 +205,7 @@ class mod_assign_external extends external_api {
                         array(
                             'id'            => new external_value(PARAM_INT, 'grade id'),
                             'userid'        => new external_value(PARAM_INT, 'student id'),
+                            'attemptnumber' => new external_value(PARAM_INT, 'attempt number'),
                             'timecreated'   => new external_value(PARAM_INT, 'grade creation time'),
                             'timemodified'  => new external_value(PARAM_INT, 'grade last modified time'),
                             'grader'        => new external_value(PARAM_INT, 'grader'),
@@ -276,11 +312,29 @@ class mod_assign_external extends external_api {
                 unset($courses[$id]);
             }
         }
-        $extrafields='m.id as assignmentid, m.course, m.nosubmissions, m.submissiondrafts, m.sendnotifications, '.
-                     'm.sendlatenotifications, m.duedate, m.allowsubmissionsfromdate, m.grade, m.timemodified, '.
-                     'm.completionsubmit, m.cutoffdate, m.teamsubmission, m.requireallteammemberssubmit, '.
-                     'm.teamsubmissiongroupingid, m.blindmarking, m.revealidentities, m.attemptreopenmethod, '.
-                     'm.maxattempts, m.markingworkflow, m.markingallocation, m.requiresubmissionstatement';
+        $extrafields='m.id as assignmentid, ' .
+                     'm.course, ' .
+                     'm.nosubmissions, ' .
+                     'm.submissiondrafts, ' .
+                     'm.sendnotifications, '.
+                     'm.sendlatenotifications, ' .
+                     'm.sendstudentnotifications, ' .
+                     'm.duedate, ' .
+                     'm.allowsubmissionsfromdate, '.
+                     'm.grade, ' .
+                     'm.timemodified, '.
+                     'm.completionsubmit, ' .
+                     'm.cutoffdate, ' .
+                     'm.teamsubmission, ' .
+                     'm.requireallteammemberssubmit, '.
+                     'm.teamsubmissiongroupingid, ' .
+                     'm.blindmarking, ' .
+                     'm.revealidentities, ' .
+                     'm.attemptreopenmethod, '.
+                     'm.maxattempts, ' .
+                     'm.markingworkflow, ' .
+                     'm.markingallocation, ' .
+                     'm.requiresubmissionstatement';
         $coursearray = array();
         foreach ($courses as $id => $course) {
             $assignmentarray = array();
@@ -323,6 +377,7 @@ class mod_assign_external extends external_api {
                         'submissiondrafts' => $module->submissiondrafts,
                         'sendnotifications' => $module->sendnotifications,
                         'sendlatenotifications' => $module->sendlatenotifications,
+                        'sendstudentnotifications' => $module->sendstudentnotifications,
                         'duedate' => $module->duedate,
                         'allowsubmissionsfromdate' => $module->allowsubmissionsfromdate,
                         'grade' => $module->grade,
@@ -376,6 +431,7 @@ class mod_assign_external extends external_api {
                 'submissiondrafts' => new external_value(PARAM_INT, 'submissions drafts'),
                 'sendnotifications' => new external_value(PARAM_INT, 'send notifications'),
                 'sendlatenotifications' => new external_value(PARAM_INT, 'send notifications'),
+                'sendstudentnotifications' => new external_value(PARAM_INT, 'send student notifications (default)'),
                 'duedate' => new external_value(PARAM_INT, 'assignment due date'),
                 'allowsubmissionsfromdate' => new external_value(PARAM_INT, 'allow submissions from date'),
                 'grade' => new external_value(PARAM_INT, 'grade type'),
@@ -473,7 +529,7 @@ class mod_assign_external extends external_api {
     /**
      * Returns submissions for the requested assignment ids
      *
-     * @param array of ints $assignmentids
+     * @param int[] $assignmentids
      * @param string $status only return submissions with this status
      * @param int $since only return submissions with timemodified >= since
      * @param int $before only return submissions with timemodified <= before
@@ -528,7 +584,7 @@ class mod_assign_external extends external_api {
                                      WHERE mxs.assignment = :assignid1 GROUP BY mxs.userid';
 
             $sql = "SELECT mas.id, mas.assignment,mas.userid,".
-                   "mas.timecreated,mas.timemodified,mas.status,mas.groupid ".
+                   "mas.timecreated,mas.timemodified,mas.status,mas.groupid,mas.attemptnumber ".
                    "FROM {assign_submission} mas ".
                    "JOIN ( " . $submissionmaxattempt . " ) smx ON mas.userid = smx.userid ".
                    "WHERE mas.assignment = :assignid2 AND mas.attemptnumber = smx.maxattempt";
@@ -557,6 +613,7 @@ class mod_assign_external extends external_api {
                         'timecreated' => $submissionrecord->timecreated,
                         'timemodified' => $submissionrecord->timemodified,
                         'status' => $submissionrecord->status,
+                        'attemptnumber' => $submissionrecord->attemptnumber,
                         'groupid' => $submissionrecord->groupid
                     );
                     foreach ($submissionplugins as $submissionplugin) {
@@ -638,6 +695,7 @@ class mod_assign_external extends external_api {
                         array(
                             'id' => new external_value(PARAM_INT, 'submission id'),
                             'userid' => new external_value(PARAM_INT, 'student id'),
+                            'attemptnumber' => new external_value(PARAM_INT, 'attempt number'),
                             'timecreated' => new external_value(PARAM_INT, 'submission creation time'),
                             'timemodified' => new external_value(PARAM_INT, 'submission last modified time'),
                             'status' => new external_value(PARAM_TEXT, 'submission status'),
@@ -699,6 +757,149 @@ class mod_assign_external extends external_api {
     }
 
     /**
+     * Describes the parameters for set_user_flags
+     * @return external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function set_user_flags_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid'    => new external_value(PARAM_INT, 'assignment id'),
+                'userflags' => new external_multiple_structure(
+                    new external_single_structure(
+                        array(
+                            'userid'           => new external_value(PARAM_INT, 'student id'),
+                            'locked'           => new external_value(PARAM_INT, 'locked', VALUE_OPTIONAL),
+                            'mailed'           => new external_value(PARAM_INT, 'mailed', VALUE_OPTIONAL),
+                            'extensionduedate' => new external_value(PARAM_INT, 'extension due date', VALUE_OPTIONAL),
+                            'workflowstate'    => new external_value(PARAM_TEXT, 'marking workflow state', VALUE_OPTIONAL),
+                            'allocatedmarker'  => new external_value(PARAM_INT, 'allocated marker', VALUE_OPTIONAL)
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * Create or update user_flags records
+     *
+     * @param int $assignmentid the assignment for which the userflags are created or updated
+     * @param array $userflags  An array of userflags to create or update
+     * @return array containing success or failure information for each record
+     * @since Moodle 2.6
+     */
+    public static function set_user_flags($assignmentid, $userflags = array()) {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . "/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::set_user_flags_parameters(),
+                                            array('assignmentid' => $assignmentid,
+                                                  'userflags' => $userflags));
+
+        // Load assignment if it exists and if the user has the capability.
+        $cm = get_coursemodule_from_instance('assign', $params['assignmentid'], 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+        require_capability('mod/assign:grade', $context);
+        $assign = new assign($context, null, null);
+
+        $results = array();
+        foreach ($params['userflags'] as $userflag) {
+            $success = true;
+            $result = array();
+
+            $record = $assign->get_user_flags($userflag['userid'], false);
+            if ($record) {
+                if (isset($userflag['locked'])) {
+                    $record->locked = $userflag['locked'];
+                }
+                if (isset($userflag['mailed'])) {
+                    $record->mailed = $userflag['mailed'];
+                }
+                if (isset($userflag['extensionduedate'])) {
+                    $record->extensionduedate = $userflag['extensionduedate'];
+                }
+                if (isset($userflag['workflowstate'])) {
+                    $record->workflowstate = $userflag['workflowstate'];
+                }
+                if (isset($userflag['allocatedmarker'])) {
+                    $record->allocatedmarker = $userflag['allocatedmarker'];
+                }
+                if ($assign->update_user_flags($record)) {
+                    $result['id'] = $record->id;
+                    $result['userid'] = $userflag['userid'];
+                } else {
+                    $result['id'] = $record->id;
+                    $result['userid'] = $userflag['userid'];
+                    $result['errormessage'] = 'Record created but values could not be set';
+                }
+            } else {
+                $record = $assign->get_user_flags($userflag['userid'], true);
+                $setfields = isset($userflag['locked'])
+                             || isset($userflag['mailed'])
+                             || isset($userflag['extensionduedate'])
+                             || isset($userflag['workflowstate'])
+                             || isset($userflag['allocatedmarker']);
+                if ($record) {
+                    if ($setfields) {
+                        if (isset($userflag['locked'])) {
+                            $record->locked = $userflag['locked'];
+                        }
+                        if (isset($userflag['mailed'])) {
+                            $record->mailed = $userflag['mailed'];
+                        }
+                        if (isset($userflag['extensionduedate'])) {
+                            $record->extensionduedate = $userflag['extensionduedate'];
+                        }
+                        if (isset($userflag['workflowstate'])) {
+                            $record->workflowstate = $userflag['workflowstate'];
+                        }
+                        if (isset($userflag['allocatedmarker'])) {
+                            $record->allocatedmarker = $userflag['allocatedmarker'];
+                        }
+                        if ($assign->update_user_flags($record)) {
+                            $result['id'] = $record->id;
+                            $result['userid'] = $userflag['userid'];
+                        } else {
+                            $result['id'] = $record->id;
+                            $result['userid'] = $userflag['userid'];
+                            $result['errormessage'] = 'Record created but values could not be set';
+                        }
+                    } else {
+                        $result['id'] = $record->id;
+                        $result['userid'] = $userflag['userid'];
+                    }
+                } else {
+                    $result['id'] = -1;
+                    $result['userid'] = $userflag['userid'];
+                    $result['errormessage'] = 'Record could not be created';
+                }
+            }
+
+            $results[] = $result;
+        }
+        return $results;
+    }
+
+    /**
+     * Describes the set_user_flags return value
+     * @return external_multiple_structure
+     * @since  Moodle 2.6
+     */
+    public static function set_user_flags_returns() {
+        return new external_multiple_structure(
+            new external_single_structure(
+                array(
+                    'id' => new external_value(PARAM_INT, 'id of record if successful, -1 for failure'),
+                    'userid' => new external_value(PARAM_INT, 'userid of record'),
+                    'errormessage' => new external_value(PARAM_TEXT, 'Failure error message', VALUE_OPTIONAL)
+                )
+            )
+        );
+    }
+
+    /**
      * Describes the parameters for get_user_flags
      * @return external_function_parameters
      * @since  Moodle 2.6
@@ -716,7 +917,7 @@ class mod_assign_external extends external_api {
 
     /**
      * Returns user flag information from assign_user_flags for the requested assignment ids
-     * @param array of ints $assignmentids
+     * @param int[] $assignmentids
      * @return array of user flag records for each requested assignment
      * @since  Moodle 2.6
      */
@@ -870,7 +1071,7 @@ class mod_assign_external extends external_api {
 
     /**
      * Returns user mapping information from assign_user_mapping for the requested assignment ids
-     * @param array of ints $assignmentids
+     * @param int[] $assignmentids
      * @return array of user mapping records for each requested assignment
      * @since  Moodle 2.6
      */
@@ -995,4 +1196,812 @@ class mod_assign_external extends external_api {
         );
     }
 
+    /**
+     * Describes the parameters for lock_submissions
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function lock_submissions_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'userids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'user id'),
+                    '1 or more user ids',
+                    VALUE_REQUIRED),
+            )
+        );
+    }
+
+    /**
+     * Locks (prevent updates to) submissions in this assignment.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @param array $userids Array of user ids to lock
+     * @return array of warnings for each submission that could not be locked.
+     * @since Moodle 2.6
+     */
+    public static function lock_submissions($assignmentid, $userids) {
+        global $CFG;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::lock_submissions_parameters(),
+                        array('assignmentid' => $assignmentid,
+                              'userids' => $userids));
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $warnings = array();
+        foreach ($userids as $userid) {
+            if (!$assignment->lock_submission($userid)) {
+                $detail = 'User id: ' . $userid . ', Assignment id: ' . $assignmentid;
+                $warnings[] = self::generate_warning($assignmentid,
+                                                     'couldnotlock',
+                                                     $detail);
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for lock_submissions
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function lock_submissions_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
+
+    /**
+     * Describes the parameters for revert_submissions_to_draft
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function revert_submissions_to_draft_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'userids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'user id'),
+                    '1 or more user ids',
+                    VALUE_REQUIRED),
+            )
+        );
+    }
+
+    /**
+     * Reverts a list of user submissions to draft for a single assignment.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @param array $userids Array of user ids to revert
+     * @return array of warnings for each submission that could not be reverted.
+     * @since Moodle 2.6
+     */
+    public static function revert_submissions_to_draft($assignmentid, $userids) {
+        global $CFG;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::revert_submissions_to_draft_parameters(),
+                        array('assignmentid' => $assignmentid,
+                              'userids' => $userids));
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $warnings = array();
+        foreach ($userids as $userid) {
+            if (!$assignment->revert_to_draft($userid)) {
+                $detail = 'User id: ' . $userid . ', Assignment id: ' . $assignmentid;
+                $warnings[] = self::generate_warning($assignmentid,
+                                                     'couldnotrevert',
+                                                     $detail);
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for revert_submissions_to_draft
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function revert_submissions_to_draft_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
+
+    /**
+     * Describes the parameters for unlock_submissions
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function unlock_submissions_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'userids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'user id'),
+                    '1 or more user ids',
+                    VALUE_REQUIRED),
+            )
+        );
+    }
+
+    /**
+     * Locks (prevent updates to) submissions in this assignment.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @param array $userids Array of user ids to lock
+     * @return array of warnings for each submission that could not be locked.
+     * @since Moodle 2.6
+     */
+    public static function unlock_submissions($assignmentid, $userids) {
+        global $CFG;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::unlock_submissions_parameters(),
+                        array('assignmentid' => $assignmentid,
+                              'userids' => $userids));
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $warnings = array();
+        foreach ($userids as $userid) {
+            if (!$assignment->unlock_submission($userid)) {
+                $detail = 'User id: ' . $userid . ', Assignment id: ' . $assignmentid;
+                $warnings[] = self::generate_warning($assignmentid,
+                                                     'couldnotunlock',
+                                                     $detail);
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for unlock_submissions
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function unlock_submissions_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
+
+    /**
+     * Describes the parameters for submit_for_grading
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function submit_for_grading_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'acceptsubmissionstatement' => new external_value(PARAM_BOOL, 'Accept the assignment submission statement')
+            )
+        );
+    }
+
+    /**
+     * Submit the logged in users assignment for grading.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @return array of warnings to indicate any errors.
+     * @since Moodle 2.6
+     */
+    public static function submit_for_grading($assignmentid, $acceptsubmissionstatement) {
+        global $CFG, $USER;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::submit_for_grading_parameters(),
+                                            array('assignmentid' => $assignmentid,
+                                                  'acceptsubmissionstatement' => $acceptsubmissionstatement));
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $warnings = array();
+        $data = new stdClass();
+        $data->submissionstatement = $acceptsubmissionstatement;
+        $notices = array();
+
+        if (!$assignment->submit_for_grading($data, $notices)) {
+            $detail = 'User id: ' . $USER->id . ', Assignment id: ' . $assignmentid . ' Notices:' . implode(', ', $notices);
+            $warnings[] = self::generate_warning($assignmentid,
+                                                 'couldnotsubmitforgrading',
+                                                 $detail);
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for submit_for_grading
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function submit_for_grading_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
+
+    /**
+     * Describes the parameters for save_user_extensions
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function save_user_extensions_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'userids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'user id'),
+                    '1 or more user ids',
+                    VALUE_REQUIRED),
+                'dates' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'dates'),
+                    '1 or more extension dates (timestamp)',
+                    VALUE_REQUIRED),
+            )
+        );
+    }
+
+    /**
+     * Grant extension dates to students for an assignment.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @param array $userids Array of user ids to grant extensions to
+     * @param array $dates Array of extension dates
+     * @return array of warnings for each extension date that could not be granted
+     * @since Moodle 2.6
+     */
+    public static function save_user_extensions($assignmentid, $userids, $dates) {
+        global $CFG;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::save_user_extensions_parameters(),
+                        array('assignmentid' => $assignmentid,
+                              'userids' => $userids,
+                              'dates' => $dates));
+
+        if (count($userids) != count($dates)) {
+            $detail = 'Length of userids and dates parameters differ.';
+            $warnings[] = self::generate_warning($assignmentid,
+                                                 'invalidparameters',
+                                                 $detail);
+
+            return $warnings;
+        }
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $warnings = array();
+        foreach ($userids as $idx => $userid) {
+            $duedate = $dates[$idx];
+            if (!$assignment->save_user_extension($userid, $duedate)) {
+                $detail = 'User id: ' . $userid . ', Assignment id: ' . $assignmentid . ', Extension date: ' . $duedate;
+                $warnings[] = self::generate_warning($assignmentid,
+                                                     'couldnotgrantextensions',
+                                                     $detail);
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for save_user_extensions
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function save_user_extensions_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
+
+    /**
+     * Describes the parameters for reveal_identities
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function reveal_identities_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on')
+            )
+        );
+    }
+
+    /**
+     * Reveal the identities of anonymous students to markers for a single assignment.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @return array of warnings to indicate any errors.
+     * @since Moodle 2.6
+     */
+    public static function reveal_identities($assignmentid) {
+        global $CFG, $USER;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::reveal_identities_parameters(),
+                                            array('assignmentid' => $assignmentid));
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $warnings = array();
+        if (!$assignment->reveal_identities()) {
+            $detail = 'User id: ' . $USER->id . ', Assignment id: ' . $assignmentid;
+            $warnings[] = self::generate_warning($assignmentid,
+                                                 'couldnotrevealidentities',
+                                                 $detail);
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for reveal_identities
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function reveal_identities_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
+
+    /**
+     * Describes the parameters for save_submission
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function save_submission_parameters() {
+        global $CFG;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+        $instance = new assign(null, null, null);
+        $pluginsubmissionparams = array();
+
+        foreach ($instance->get_submission_plugins() as $plugin) {
+            $pluginparams = $plugin->get_external_parameters();
+            if (!empty($pluginparams)) {
+                $pluginsubmissionparams = array_merge($pluginsubmissionparams, $pluginparams);
+            }
+        }
+
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'plugindata' => new external_single_structure(
+                    $pluginsubmissionparams
+                )
+            )
+        );
+    }
+
+    /**
+     * Save a student submission for a single assignment
+     *
+     * @param int $assignmentid The id of the assignment
+     * @param array $plugindata - The submitted data for plugins
+     * @return array of warnings to indicate any errors
+     * @since Moodle 2.6
+     */
+    public static function save_submission($assignmentid, $plugindata) {
+        global $CFG, $USER;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::save_submission_parameters(),
+                                            array('assignmentid' => $assignmentid,
+                                                  'plugindata' => $plugindata));
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $notices = array();
+
+        $submissiondata = (object)$plugindata;
+
+        $assignment->save_submission($submissiondata, $notices);
+
+        $warnings = array();
+        foreach ($notices as $notice) {
+            $warnings[] = self::generate_warning($assignmentid,
+                                                 'couldnotsavesubmission',
+                                                 $notice);
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for save_submission
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function save_submission_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
+
+    /**
+     * Describes the parameters for save_grade
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function save_grade_parameters() {
+        global $CFG;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+        require_once("$CFG->dirroot/grade/grading/lib.php");
+        $instance = new assign(null, null, null);
+        $pluginfeedbackparams = array();
+
+        foreach ($instance->get_feedback_plugins() as $plugin) {
+            $pluginparams = $plugin->get_external_parameters();
+            if (!empty($pluginparams)) {
+                $pluginfeedbackparams = array_merge($pluginfeedbackparams, $pluginparams);
+            }
+        }
+
+        $advancedgradingdata = array();
+        $methods = array_keys(grading_manager::available_methods(false));
+        foreach ($methods as $method) {
+            require_once($CFG->dirroot.'/grade/grading/form/'.$method.'/lib.php');
+            $details  = call_user_func('gradingform_'.$method.'_controller::get_external_instance_filling_details');
+            if (!empty($details)) {
+                $items = array();
+                foreach ($details as $key => $value) {
+                    $value->required = VALUE_OPTIONAL;
+                    unset($value->content->keys['id']);
+                    $items[$key] = new external_multiple_structure (new external_single_structure(
+                        array(
+                            'criterionid' => new external_value(PARAM_INT, 'criterion id'),
+                            'fillings' => $value
+                        )
+                    ));
+                }
+                $advancedgradingdata[$method] = new external_single_structure($items, 'items', VALUE_OPTIONAL);
+            }
+        }
+
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'userid' => new external_value(PARAM_INT, 'The student id to operate on'),
+                'grade' => new external_value(PARAM_FLOAT, 'The new grade for this user. Ignored if advanced grading used'),
+                'attemptnumber' => new external_value(PARAM_INT, 'The attempt number (-1 means latest attempt)'),
+                'addattempt' => new external_value(PARAM_BOOL, 'Allow another attempt if the attempt reopen method is manual'),
+                'workflowstate' => new external_value(PARAM_ALPHA, 'The next marking workflow state'),
+                'applytoall' => new external_value(PARAM_BOOL, 'If true, this grade will be applied ' .
+                                                               'to all members ' .
+                                                               'of the group (for group assignments).'),
+                'plugindata' => new external_single_structure($pluginfeedbackparams, 'plugin data', VALUE_DEFAULT, array()),
+                'advancedgradingdata' => new external_single_structure($advancedgradingdata, 'advanced grading data',
+                                                                       VALUE_DEFAULT, array())
+            )
+        );
+    }
+
+    /**
+     * Save a student grade for a single assignment.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @param int $userid The id of the user
+     * @param float $grade The grade (ignored if the assignment uses advanced grading)
+     * @param int $attemptnumber The attempt number
+     * @param bool $addattempt Allow another attempt
+     * @param string $workflowstate New workflow state
+     * @param bool $applytoall Apply the grade to all members of the group
+     * @param array $plugindata Custom data used by plugins
+     * @param array $advancedgradingdata Advanced grading data
+     * @return null
+     * @since Moodle 2.6
+     */
+    public static function save_grade($assignmentid,
+                                      $userid,
+                                      $grade,
+                                      $attemptnumber,
+                                      $addattempt,
+                                      $workflowstate,
+                                      $applytoall,
+                                      $plugindata = array(),
+                                      $advancedgradingdata = array()) {
+        global $CFG, $USER;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::save_grade_parameters(),
+                                            array('assignmentid' => $assignmentid,
+                                                  'userid' => $userid,
+                                                  'grade' => $grade,
+                                                  'attemptnumber' => $attemptnumber,
+                                                  'workflowstate' => $workflowstate,
+                                                  'addattempt' => $addattempt,
+                                                  'applytoall' => $applytoall,
+                                                  'plugindata' => $plugindata,
+                                                  'advancedgradingdata' => $advancedgradingdata));
+
+        $cm = get_coursemodule_from_instance('assign', $params['assignmentid'], 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+        $assignment = new assign($context, $cm, null);
+
+        $gradedata = (object)$params['plugindata'];
+
+        $gradedata->addattempt = $params['addattempt'];
+        $gradedata->attemptnumber = $params['attemptnumber'];
+        $gradedata->workflowstate = $params['workflowstate'];
+        $gradedata->applytoall = $params['applytoall'];
+        $gradedata->grade = $params['grade'];
+
+        if (!empty($params['advancedgradingdata'])) {
+            $advancedgrading = array();
+            $criteria = reset($params['advancedgradingdata']);
+            foreach ($criteria as $key => $criterion) {
+                $details = array();
+                foreach ($criterion as $value) {
+                    foreach ($value['fillings'] as $filling) {
+                        $details[$value['criterionid']] = $filling;
+                    }
+                }
+                $advancedgrading[$key] = $details;
+            }
+            $gradedata->advancedgrading = $advancedgrading;
+        }
+
+        $assignment->save_grade($params['userid'], $gradedata);
+
+        return null;
+    }
+
+    /**
+     * Describes the return value for save_grade
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function save_grade_returns() {
+        return null;
+    }
+
+    /**
+     * Describes the parameters for save_grades
+     * @return external_external_function_parameters
+     * @since  Moodle 2.7
+     */
+    public static function save_grades_parameters() {
+        global $CFG;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+        require_once("$CFG->dirroot/grade/grading/lib.php");
+        $instance = new assign(null, null, null);
+        $pluginfeedbackparams = array();
+
+        foreach ($instance->get_feedback_plugins() as $plugin) {
+            $pluginparams = $plugin->get_external_parameters();
+            if (!empty($pluginparams)) {
+                $pluginfeedbackparams = array_merge($pluginfeedbackparams, $pluginparams);
+            }
+        }
+
+        $advancedgradingdata = array();
+        $methods = array_keys(grading_manager::available_methods(false));
+        foreach ($methods as $method) {
+            require_once($CFG->dirroot.'/grade/grading/form/'.$method.'/lib.php');
+            $details  = call_user_func('gradingform_'.$method.'_controller::get_external_instance_filling_details');
+            if (!empty($details)) {
+                $items = array();
+                foreach ($details as $key => $value) {
+                    $value->required = VALUE_OPTIONAL;
+                    unset($value->content->keys['id']);
+                    $items[$key] = new external_multiple_structure (new external_single_structure(
+                        array(
+                            'criterionid' => new external_value(PARAM_INT, 'criterion id'),
+                            'fillings' => $value
+                        )
+                    ));
+                }
+                $advancedgradingdata[$method] = new external_single_structure($items, 'items', VALUE_OPTIONAL);
+            }
+        }
+
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+                'applytoall' => new external_value(PARAM_BOOL, 'If true, this grade will be applied ' .
+                                                               'to all members ' .
+                                                               'of the group (for group assignments).'),
+                'grades' => new external_multiple_structure(
+                    new external_single_structure(
+                        array (
+                            'userid' => new external_value(PARAM_INT, 'The student id to operate on'),
+                            'grade' => new external_value(PARAM_FLOAT, 'The new grade for this user. '.
+                                                                       'Ignored if advanced grading used'),
+                            'attemptnumber' => new external_value(PARAM_INT, 'The attempt number (-1 means latest attempt)'),
+                            'addattempt' => new external_value(PARAM_BOOL, 'Allow another attempt if manual attempt reopen method'),
+                            'workflowstate' => new external_value(PARAM_ALPHA, 'The next marking workflow state'),
+                            'plugindata' => new external_single_structure($pluginfeedbackparams, 'plugin data',
+                                                                          VALUE_DEFAULT, array()),
+                            'advancedgradingdata' => new external_single_structure($advancedgradingdata, 'advanced grading data',
+                                                                                   VALUE_DEFAULT, array())
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * Save multiple student grades for a single assignment.
+     *
+     * @param int $assignmentid The id of the assignment
+     * @param boolean $applytoall If set to true and this is a team assignment,
+     * apply the grade to all members of the group
+     * @param array $grades grade data for one or more students that includes
+     *                  userid - The id of the student being graded
+     *                  grade - The grade (ignored if the assignment uses advanced grading)
+     *                  attemptnumber - The attempt number
+     *                  addattempt - Allow another attempt
+     *                  workflowstate - New workflow state
+     *                  plugindata - Custom data used by plugins
+     *                  advancedgradingdata - Optional Advanced grading data
+     * @throws invalid_parameter_exception if multiple grades are supplied for
+     * a team assignment that has $applytoall set to true
+     * @return null
+     * @since Moodle 2.7
+     */
+    public static function save_grades($assignmentid, $applytoall = false, $grades) {
+        global $CFG, $USER;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::save_grades_parameters(),
+                                            array('assignmentid' => $assignmentid,
+                                                  'applytoall' => $applytoall,
+                                                  'grades' => $grades));
+
+        $cm = get_coursemodule_from_instance('assign', $params['assignmentid'], 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+        $assignment = new assign($context, $cm, null);
+
+        if ($assignment->get_instance()->teamsubmission && $params['applytoall']) {
+            // Check that only 1 user per submission group is provided.
+            $groupids = array();
+            foreach ($params['grades'] as $gradeinfo) {
+                $group = $assignment->get_submission_group($gradeinfo['userid']);
+                if (in_array($group->id, $groupids)) {
+                    throw new invalid_parameter_exception('Multiple grades for the same team have been supplied '
+                                                          .' this is not permitted when the applytoall flag is set');
+                } else {
+                    $groupids[] = $group->id;
+                }
+            }
+        }
+
+        foreach ($params['grades'] as $gradeinfo) {
+            $gradedata = (object)$gradeinfo['plugindata'];
+            $gradedata->addattempt = $gradeinfo['addattempt'];
+            $gradedata->attemptnumber = $gradeinfo['attemptnumber'];
+            $gradedata->workflowstate = $gradeinfo['workflowstate'];
+            $gradedata->applytoall = $params['applytoall'];
+            $gradedata->grade = $gradeinfo['grade'];
+
+            if (!empty($gradeinfo['advancedgradingdata'])) {
+                $advancedgrading = array();
+                $criteria = reset($gradeinfo['advancedgradingdata']);
+                foreach ($criteria as $key => $criterion) {
+                    $details = array();
+                    foreach ($criterion as $value) {
+                        foreach ($value['fillings'] as $filling) {
+                            $details[$value['criterionid']] = $filling;
+                        }
+                    }
+                    $advancedgrading[$key] = $details;
+                }
+                $gradedata->advancedgrading = $advancedgrading;
+            }
+            $assignment->save_grade($gradeinfo['userid'], $gradedata);
+        }
+
+        return null;
+    }
+
+    /**
+     * Describes the return value for save_grades
+     *
+     * @return external_single_structure
+     * @since Moodle 2.7
+     */
+    public static function save_grades_returns() {
+        return null;
+    }
+
+    /**
+     * Describes the parameters for copy_previous_attempt
+     * @return external_external_function_parameters
+     * @since  Moodle 2.6
+     */
+    public static function copy_previous_attempt_parameters() {
+        return new external_function_parameters(
+            array(
+                'assignmentid' => new external_value(PARAM_INT, 'The assignment id to operate on'),
+            )
+        );
+    }
+
+    /**
+     * Copy a students previous attempt to a new attempt.
+     *
+     * @param int $assignmentid
+     * @return array of warnings to indicate any errors.
+     * @since Moodle 2.6
+     */
+    public static function copy_previous_attempt($assignmentid) {
+        global $CFG, $USER;
+        require_once("$CFG->dirroot/mod/assign/locallib.php");
+
+        $params = self::validate_parameters(self::copy_previous_attempt_parameters(),
+                                            array('assignmentid' => $assignmentid));
+
+        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $context = context_module::instance($cm->id);
+
+        $assignment = new assign($context, $cm, null);
+
+        $notices = array();
+
+        $assignment->copy_previous_attempt($submissiondata, $notices);
+
+        $warnings = array();
+        foreach ($notices as $notice) {
+            $warnings[] = self::generate_warning($assignmentid,
+                                                 'couldnotcopyprevioussubmission',
+                                                 $notice);
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Describes the return value for save_submission
+     *
+     * @return external_single_structure
+     * @since Moodle 2.6
+     */
+    public static function copy_previous_attempt_returns() {
+        return new external_multiple_structure(
+           new external_warnings()
+        );
+    }
 }

@@ -264,7 +264,8 @@ abstract class moodleform {
                 $submission = $_POST;
             }
         } else {
-            $submission = array_merge_recursive($_GET, $_POST); // emulate handling of parameters in xxxx_param()
+            $submission = $_GET;
+            merge_query_params($submission, $_POST); // Emulate handling of parameters in xxxx_param().
         }
 
         // following trick is needed to enable proper sesskey checks when using GET forms
@@ -281,6 +282,15 @@ abstract class moodleform {
         $this->detectMissingSetType();
 
         $this->_form->updateSubmission($submission, $files);
+    }
+
+    /**
+     * Internal method - should not be used anywhere.
+     * @deprecated since 2.6
+     * @return array $_POST.
+     */
+    protected function _get_post_params() {
+        return $_POST;
     }
 
     /**
@@ -335,16 +345,8 @@ abstract class moodleform {
                 continue;
             }
 
-/*
-  // TODO: rethink the file scanning MDL-19380
-            if ($CFG->runclamonupload) {
-                if (!clam_scan_moodle_file($_FILES[$elname], $COURSE)) {
-                    $errors[$elname] = $_FILES[$elname]['uploadlog'];
-                    unset($_FILES[$elname]);
-                    continue;
-                }
-            }
-*/
+            // NOTE: the viruses are scanned in file picker, no need to deal with them here.
+
             $filename = clean_param($_FILES[$elname]['name'], PARAM_FILE);
             if ($filename === '') {
                 // TODO: improve error message - wrong chars
@@ -997,13 +999,16 @@ abstract class moodleform {
      *
      * @param array $elementobjs Array of elements or groups of elements that are to be repeated
      * @param int $repeats no of times to repeat elements initially
-     * @param array $options Array of options to apply to elements. Array keys are element names.
-     *     This is an array of arrays. The second sets of keys are the option types for the elements :
-     *         'default' - default value is value
-     *         'type' - PARAM_* constant is value
-     *         'helpbutton' - helpbutton params array is value
-     *         'disabledif' - last three moodleform::disabledIf()
-     *         params are value as an array
+     * @param array $options a nested array. The first array key is the element name.
+     *    the second array key is the type of option to set, and depend on that option,
+     *    the value takes different forms.
+     *         'default'    - default value to set. Can include '{no}' which is replaced by the repeat number.
+     *         'type'       - PARAM_* type.
+     *         'helpbutton' - array containing the helpbutton params.
+     *         'disabledif' - array containing the disabledIf() arguments after the element name.
+     *         'rule'       - array containing the addRule arguments after the element name.
+     *         'expanded'   - whether this section of the form should be expanded by default. (Name be a header element.)
+     *         'advanced'   - whether this element is hidden by 'Show more ...'.
      * @param string $repeathiddenname name for hidden element storing no of repeats in this form
      * @param string $addfieldsname name for button to add more fields
      * @param int $addfieldsno how many fields to add at a time
@@ -2104,8 +2109,9 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
                         }
                     }
                     //for editor element, [text] is appended to the name.
+                    $fullelementname = $elementName;
                     if ($element->getType() == 'editor') {
-                        $elementName .= '[text]';
+                        $fullelementname .= '[text]';
                         //Add format to rule as moodleform check which format is supported by browser
                         //it is not set anywhere... So small hack to make sure we pass it down to quickform
                         if (is_null($rule['format'])) {
@@ -2113,8 +2119,8 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
                         }
                     }
                     // Fix for bug displaying errors for elements in a group
-                    $test[$elementName][0][] = $registry->getValidationScript($element, $elementName, $rule);
-                    $test[$elementName][1]=$element;
+                    $test[$fullelementname][0][] = $registry->getValidationScript($element, $fullelementname, $rule);
+                    $test[$fullelementname][1]=$element;
                     //end of fix
                 }
             }
@@ -2535,7 +2541,7 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
        "\n\t\t<legend class=\"ftoggler\">{header}</legend>\n\t\t<div class=\"fcontainer clearfix\">\n\t\t";
 
     /** @var string Template used when opening a fieldset */
-    var $_openFieldsetTemplate = "\n\t<fieldset class=\"{classes}\" {id} {aria-live}>";
+    var $_openFieldsetTemplate = "\n\t<fieldset class=\"{classes}\" {id}>";
 
     /** @var string Template used when closing a fieldset */
     var $_closeFieldsetTemplate = "\n\t\t</div></fieldset>";
@@ -2581,15 +2587,15 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
         // switch next two lines for ol li containers for form items.
         //        $this->_elementTemplates=array('default'=>"\n\t\t".'<li class="fitem"><label>{label}{help}<!-- BEGIN required -->{req}<!-- END required --></label><div class="qfelement<!-- BEGIN error --> error<!-- END error --> {type}"><!-- BEGIN error --><span class="error">{error}</span><br /><!-- END error -->{element}</div></li>');
         $this->_elementTemplates = array(
-        'default'=>"\n\t\t".'<div id="{id}" class="fitem {advanced}<!-- BEGIN required --> required<!-- END required --> fitem_{type}" {aria-live}><div class="fitemtitle"><label>{label}<!-- BEGIN required -->{req}<!-- END required -->{advancedimg} </label>{help}</div><div class="felement {type}<!-- BEGIN error --> error<!-- END error -->"><!-- BEGIN error --><span class="error">{error}</span><br /><!-- END error -->{element}</div></div>',
+        'default'=>"\n\t\t".'<div id="{id}" class="fitem {advanced}<!-- BEGIN required --> required<!-- END required --> fitem_{type} {emptylabel}" {aria-live}><div class="fitemtitle"><label>{label}<!-- BEGIN required -->{req}<!-- END required -->{advancedimg} </label>{help}</div><div class="felement {type}<!-- BEGIN error --> error<!-- END error -->"><!-- BEGIN error --><span class="error">{error}</span><br /><!-- END error -->{element}</div></div>',
 
         'actionbuttons'=>"\n\t\t".'<div id="{id}" class="fitem fitem_actionbuttons fitem_{type}"><div class="felement {type}">{element}</div></div>',
 
-        'fieldset'=>"\n\t\t".'<div id="{id}" class="fitem {advanced}<!-- BEGIN required --> required<!-- END required --> fitem_{type}"><div class="fitemtitle"><div class="fgrouplabel"><label>{label}<!-- BEGIN required -->{req}<!-- END required -->{advancedimg} </label>{help}</div></div><fieldset class="felement {type}<!-- BEGIN error --> error<!-- END error -->"><!-- BEGIN error --><span class="error">{error}</span><br /><!-- END error -->{element}</fieldset></div>',
+        'fieldset'=>"\n\t\t".'<div id="{id}" class="fitem {advanced}<!-- BEGIN required --> required<!-- END required --> fitem_{type} {emptylabel}"><div class="fitemtitle"><div class="fgrouplabel"><label>{label}<!-- BEGIN required -->{req}<!-- END required -->{advancedimg} </label>{help}</div></div><fieldset class="felement {type}<!-- BEGIN error --> error<!-- END error -->"><!-- BEGIN error --><span class="error">{error}</span><br /><!-- END error -->{element}</fieldset></div>',
 
-        'static'=>"\n\t\t".'<div class="fitem {advanced}"><div class="fitemtitle"><div class="fstaticlabel"><label>{label}<!-- BEGIN required -->{req}<!-- END required -->{advancedimg} </label>{help}</div></div><div class="felement fstatic <!-- BEGIN error --> error<!-- END error -->"><!-- BEGIN error --><span class="error">{error}</span><br /><!-- END error -->{element}&nbsp;</div></div>',
+        'static'=>"\n\t\t".'<div class="fitem {advanced} {emptylabel}"><div class="fitemtitle"><div class="fstaticlabel"><label>{label}<!-- BEGIN required -->{req}<!-- END required -->{advancedimg} </label>{help}</div></div><div class="felement fstatic <!-- BEGIN error --> error<!-- END error -->"><!-- BEGIN error --><span class="error">{error}</span><br /><!-- END error -->{element}</div></div>',
 
-        'warning'=>"\n\t\t".'<div class="fitem {advanced}">{element}</div>',
+        'warning'=>"\n\t\t".'<div class="fitem {advanced} {emptylabel}">{element}</div>',
 
         'nodisplay'=>'');
 
@@ -2690,6 +2696,11 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
         $html =str_replace('{id}', 'fgroup_' . $group->getAttribute('id'), $html);
         $html =str_replace('{name}', $group->getName(), $html);
         $html =str_replace('{type}', 'fgroup', $html);
+        $emptylabel = '';
+        if ($group->getLabel() == '') {
+            $emptylabel = 'femptylabel';
+        }
+        $html = str_replace('{emptylabel}', $emptylabel, $html);
 
         $this->_templates[$group->getName()]=$html;
         // Fix for bug in tableless quickforms that didn't allow you to stop a
@@ -2741,6 +2752,11 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
         $html =str_replace('{id}', 'fitem_' . $element->getAttribute('id'), $html);
         $html =str_replace('{type}', 'f'.$element->getType(), $html);
         $html =str_replace('{name}', $element->getName(), $html);
+        $emptylabel = '';
+        if ($element->getLabel() == '') {
+            $emptylabel = 'femptylabel';
+        }
+        $html = str_replace('{emptylabel}', $emptylabel, $html);
         if (method_exists($element, 'getHelpButton')){
             $html = str_replace('{help}', $element->getHelpButton(), $html);
         }else{
@@ -2809,7 +2825,6 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
         $fieldsetclasses = array('clearfix');
         if (isset($this->_collapsibleElements[$header->getName()])) {
             $fieldsetclasses[] = 'collapsible';
-            $arialive = 'aria-live="polite"';
             if ($this->_collapsibleElements[$header->getName()]) {
                 $fieldsetclasses[] = 'collapsed';
             }
@@ -2821,7 +2836,6 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
 
         $openFieldsetTemplate = str_replace('{id}', $id, $this->_openFieldsetTemplate);
         $openFieldsetTemplate = str_replace('{classes}', join(' ', $fieldsetclasses), $openFieldsetTemplate);
-        $openFieldsetTemplate = str_replace('{aria-live}', $arialive, $openFieldsetTemplate);
 
         $this->_html .= $openFieldsetTemplate . $header_html;
         $this->_fieldsetsOpen++;

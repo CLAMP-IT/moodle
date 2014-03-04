@@ -16,8 +16,10 @@ body {
 .sitetopic {
     border: none;
 }
-
-.headingblock {
+#site-news-forum h2,
+#frontpage-course-list h2,
+#frontpage-category-names h2,
+#frontpage-category-combo h2 {
     border-bottom: 1px solid #ddd;
     font-size: 1.3em;
     color: #333;
@@ -35,8 +37,7 @@ body {
 .errorbox,
 .continuebutton,
 .singlebutton,
-.buttons,
-.singleselect {
+.buttons {
     text-align: center;
     margin: 1em 0;
 }
@@ -273,6 +274,7 @@ body {
 
 .userprofile dl {
     margin-top: 10px;
+    display: inline-block;
 }
 
 .userprofile dl dt, .userprofile dl dd {
@@ -439,7 +441,7 @@ body {
     text-align: right;
 }
 
-#page-tag-index .headingblock {
+#page-tag-index h2 {
     text-align: center;
     margin-bottom: 0;
 }
@@ -532,8 +534,13 @@ body {
     background: #ddd;
 }
 
-.gradestable .lastrow td.cell {
-    background: #eee !important;
+table#user-grades tr.avg td.cell,
+table#user-grades tr.avg th.cell {
+    background: #eee;
+}
+
+table#user-grades tr.avg td.vmarked {
+    background-color: #fc3;
 }
 
 .user-grade td.b1t,
@@ -589,10 +596,10 @@ body {
     font-size:90%;
     border:1px solid #999;
 }
-.userenrolment tr.r0 {
+.userenrolment > tbody > tr:nth-of-type(odd) {
     background-color: #F9F9F9;
 }
-.userenrolment tr.r1 {
+.userenrolment > tbody > tr:nth-of-type(even) {
     background-color: #F3F3F3;
 }
 .userenrolment td {

@@ -15,13 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * These tests rely on the rsstest.xml file on download.moodle.org,
- * from eloys listing:
- *   rsstest.xml: One valid rss feed.
- *   md5:  8fd047914863bf9b3a4b1514ec51c32c
- *   size: 32188
- *
- * If networking/proxy configuration is wrong these tests will fail..
+ * Weblib tests.
  *
  * @package    core
  * @category   phpunit
@@ -320,6 +314,36 @@ class core_weblib_testcase extends advanced_testcase {
         $url4->out_as_local_url();
     }
 
+    public function test_moodle_url_get_scheme() {
+        // Should return the scheme only.
+        $url = new moodle_url('http://www.example.org:447/my/file/is/here.txt?really=1');
+        $this->assertSame('http', $url->get_scheme());
+
+        // Should work for secure URLs.
+        $url = new moodle_url('https://www.example.org:447/my/file/is/here.txt?really=1');
+        $this->assertSame('https', $url->get_scheme());
+
+        // Should return an empty string if no scheme is specified.
+        $url = new moodle_url('www.example.org:447/my/file/is/here.txt?really=1');
+        $this->assertSame('', $url->get_scheme());
+    }
+
+    public function test_moodle_url_get_host() {
+        // Should return the host part only.
+        $url = new moodle_url('http://www.example.org:447/my/file/is/here.txt?really=1');
+        $this->assertSame('www.example.org', $url->get_host());
+    }
+
+    public function test_moodle_url_get_port() {
+        // Should return the port if one provided.
+        $url = new moodle_url('http://www.example.org:447/my/file/is/here.txt?really=1');
+        $this->assertSame(447, $url->get_port());
+
+        // Should return an empty string if port not specified.
+        $url = new moodle_url('http://www.example.org/some/path/here.php');
+        $this->assertSame('', $url->get_port());
+    }
+
     public function test_clean_text() {
         $text = "lala <applet>xx</applet>";
         $this->assertSame($text, clean_text($text, FORMAT_PLAIN));
@@ -468,4 +492,43 @@ class core_weblib_testcase extends advanced_testcase {
         $this->assertEquals(DEBUG_NONE, $CFG->debug);
         $this->assertFalse($CFG->debugdeveloper);
     }
+
+    public function test_strip_pluginfile_content() {
+        $source = <<<SOURCE
+Hello!
+
+I'm writing to you from the Moodle Majlis in Muscat, Oman, where we just had several days of Moodle community goodness.
+
+URL outside a tag: https://moodle.org/logo/logo-240x60.gif
+Plugin url outside a tag: @@PLUGINFILE@@/logo-240x60.gif
+
+External link 1:<img src='https://moodle.org/logo/logo-240x60.gif' alt='Moodle'/>
+External link 2:<img alt="Moodle" src="https://moodle.org/logo/logo-240x60.gif"/>
+Internal link 1:<img src='@@PLUGINFILE@@/logo-240x60.gif' alt='Moodle'/>
+Internal link 2:<img alt="Moodle" src="@@PLUGINFILE@@logo-240x60.gif"/>
+Anchor link 1:<a href="@@PLUGINFILE@@logo-240x60.gif" alt="bananas">Link text</a>
+Anchor link 2:<a title="bananas" href="../logo-240x60.gif">Link text</a>
+Anchor + ext. img:<a title="bananas" href="../logo-240x60.gif"><img alt="Moodle" src="@@PLUGINFILE@@logo-240x60.gif"/></a>
+Ext. anchor + img:<a href="@@PLUGINFILE@@logo-240x60.gif"><img alt="Moodle" src="https://moodle.org/logo/logo-240x60.gif"/></a>
+SOURCE;
+        $expected = <<<EXPECTED
+Hello!
+
+I'm writing to you from the Moodle Majlis in Muscat, Oman, where we just had several days of Moodle community goodness.
+
+URL outside a tag: https://moodle.org/logo/logo-240x60.gif
+Plugin url outside a tag: @@PLUGINFILE@@/logo-240x60.gif
+
+External link 1:<img src="https://moodle.org/logo/logo-240x60.gif" alt="Moodle" />
+External link 2:<img alt="Moodle" src="https://moodle.org/logo/logo-240x60.gif" />
+Internal link 1:
+Internal link 2:
+Anchor link 1:Link text
+Anchor link 2:<a title="bananas" href="../logo-240x60.gif">Link text</a>
+Anchor + ext. img:<a title="bananas" href="../logo-240x60.gif"></a>
+Ext. anchor + img:<img alt="Moodle" src="https://moodle.org/logo/logo-240x60.gif" />
+EXPECTED;
+        $this->assertSame($expected, strip_pluginfile_content($source));
+    }
+
 }

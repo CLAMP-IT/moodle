@@ -43,7 +43,6 @@ require_once($CFG->libdir.'/adminlib.php');       // various admin-only function
 require_once($CFG->libdir.'/upgradelib.php');     // general upgrade/install related functions
 require_once($CFG->libdir.'/clilib.php');         // cli only functions
 require_once($CFG->libdir.'/environmentlib.php');
-require_once($CFG->libdir.'/pluginlib.php');
 
 // now get cli options
 list($options, $unrecognized) = cli_get_params(
@@ -117,7 +116,7 @@ if (!$envstatus) {
 
 // Test plugin dependencies.
 $failed = array();
-if (!plugin_manager::instance()->all_plugins_ok($version, $failed)) {
+if (!core_plugin_manager::instance()->all_plugins_ok($version, $failed)) {
     cli_problem(get_string('pluginscheckfailed', 'admin', array('pluginslist' => implode(', ', array_unique($failed)))));
     cli_error(get_string('pluginschecktodo', 'admin'));
 }
@@ -172,7 +171,7 @@ set_config('branch', $branch);
 upgrade_noncore(true);
 
 // log in as admin - we need doanything permission when applying defaults
-session_set_user(get_admin());
+\core\session\manager::set_user(get_admin());
 
 // apply all default settings, just in case do it twice to fill all defaults
 admin_apply_default_settings(NULL, false);

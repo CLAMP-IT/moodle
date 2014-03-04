@@ -201,7 +201,7 @@ $CFG->admin = 'admin';
 //
 // Seconds for files to remain in caches. Decrease this if you are worried
 // about students being served outdated versions of uploaded files.
-//     $CFG->filelifetime = 86400;
+//     $CFG->filelifetime = 60*60*6;
 //
 // Some web servers can offload the file serving from PHP process,
 // comment out one the following options to enable it in Moodle:
@@ -224,10 +224,24 @@ $CFG->admin = 'admin';
 // RewriteRule (^.*/theme/yui_combo\.php)(/.*) $1?file=$2
 //
 //
-// By default all user sessions should be using locking, uncomment
-// the following setting to prevent locking for guests and not-logged-in
-// accounts. This may improve performance significantly.
-//     $CFG->sessionlockloggedinonly = 1;
+// Following settings may be used to select session driver, uncomment only one of the handlers.
+//   Database session handler (not compatible with MyISAM):
+//      $CFG->session_handler_class = '\core\session\database';
+//      $CFG->session_database_acquire_lock_timeout = 120;
+//
+//   File session handler (file system locking required):
+//      $CFG->session_handler_class = '\core\session\file';
+//      $CFG->session_file_save_path = $CFG->dataroot.'/sessions';
+//
+//   Memcached session handler (requires memcached server and extension):
+//      $CFG->session_handler_class = '\core\session\memcached';
+//      $CFG->session_memcached_save_path = '127.0.0.1:11211';
+//      $CFG->session_memcached_prefix = 'memc.sess.key.';
+//      $CFG->session_memcached_acquire_lock_timeout = 120;
+//      $CFG->session_memcached_lock_expire = 7200;       // Ignored if memcached extension <= 2.1.0
+//
+// Following setting allows you to alter how frequently is timemodified updated in sessions table.
+//      $CFG->session_update_timemodified_frequency = 20; // In seconds.
 //
 // If this setting is set to true, then Moodle will track the IP of the
 // current user to make sure it hasn't changed during a session.  This
@@ -448,6 +462,41 @@ $CFG->admin = 'admin';
 // config.php file
 //      $CFG->preventexecpath = true;
 //
+// Use the following flag to set userid for noreply user. If not set then moodle will
+// create dummy user and use -ve value as user id.
+//      $CFG->noreplyuserid = -10;
+//
+// As of version 2.6 Moodle supports admin to set support user. If not set, all mails
+// will be sent to supportemail.
+//      $CFG->supportuserid = -20;
+//
+// Moodle 2.7 introduces a locking api for critical tasks (e.g. cron).
+// The default locking system to use is DB locking for MySQL and Postgres, and File
+// locking for Oracle and SQLServer. If $CFG->preventfilelocking is set, then the default
+// will always be DB locking. It can be manually set to one of the lock
+// factory classes listed below, or one of your own custom classes implementing the
+// \core\lock\lock_factory interface.
+//
+//      $CFG->lock_factory = "auto";
+//
+// The list of available lock factories is:
+//
+// "\\core\\lock\\file_lock_factory" - File locking
+//      Uses lock files stored by default in the dataroot. Whether this
+//      works on clusters depends on the file system used for the dataroot.
+//
+// "\\core\\lock\\db_row_lock_factory" - DB locking based on table rows.
+//
+// "\\core\\lock\\postgres_lock_factory" - DB locking based on postgres advisory locks.
+//
+// "\\core\\lock\\mysql_lock_factory" - DB locking based on mysql lock functions.
+//
+// Settings used by the lock factories
+//
+// Location for lock files used by the File locking factory. This must exist
+// on a shared file system that supports locking.
+//      $CFG->lock_file_root = $CFG->dataroot . '/lock';
+//
 //=========================================================================
 // 7. SETTINGS FOR DEVELOPMENT SERVERS - not intended for production use!!!
 //=========================================================================
@@ -468,6 +517,24 @@ $CFG->admin = 'admin';
 //
 // Prevent JS caching
 // $CFG->cachejs = false; // NOT FOR PRODUCTION SERVERS!
+//
+// Restrict which YUI logging statements are shown in the browser console.
+// For details see the upstream documentation:
+//   http://yuilibrary.com/yui/docs/api/classes/config.html#property_logInclude
+//   http://yuilibrary.com/yui/docs/api/classes/config.html#property_logExclude
+// $CFG->yuiloginclude = array(
+//     'moodle-core-dock-loader' => true,
+//     'moodle-course-categoryexpander' => true,
+// );
+// $CFG->yuilogexclude = array(
+//     'moodle-core-dock' => true,
+//     'moodle-core-notification' => true,
+// );
+//
+// Set the minimum log level for YUI logging statements.
+// For details see the upstream documentation:
+//   http://yuilibrary.com/yui/docs/api/classes/config.html#property_logLevel
+// $CFG->yuiloglevel = 'debug';
 //
 // Prevent core_string_manager application caching
 // $CFG->langstringcache = false; // NOT FOR PRODUCTION SERVERS!
@@ -522,11 +589,8 @@ $CFG->admin = 'admin';
 //=========================================================================
 // 10. SECRET PASSWORD SALT
 //=========================================================================
-// A single site-wide password salt is no longer required *unless* you are
-// upgrading an older version of Moodle (prior to 2.5), or if you are using
-// a PHP version below 5.3.7. If upgrading, keep any values from your old
-// config.php file. If you are using PHP < 5.3.7 set to a long random string
-// below:
+// A site-wide password salt is no longer used in new installations.
+// If upgrading from 2.6 or older, keep all existing salts in config.php file.
 //
 // $CFG->passwordsaltmain = 'a_very_long_random_string_of_characters#@6&*1';
 //
@@ -544,15 +608,11 @@ $CFG->admin = 'admin';
 //=========================================================================
 // 11. BEHAT SUPPORT
 //=========================================================================
-// Behat needs a separate data directory and unique database prefix:
+// Behat test site needs a unique www root, data directory and database prefix:
 //
+// $CFG->behat_wwwroot = 'http://127.0.0.1/moodle';
 // $CFG->behat_prefix = 'bht_';
 // $CFG->behat_dataroot = '/home/example/bht_moodledata';
-//
-// Behat uses http://localhost:8000 as default URL to run
-// the acceptance tests, you can override this value.
-// Example:
-//   $CFG->behat_wwwroot = 'http://192.168.1.250:8000';
 //
 // You can override default Moodle configuration for Behat and add your own
 // params; here you can add more profiles, use different Mink drivers than Selenium...
@@ -598,16 +658,6 @@ $CFG->admin = 'admin';
 //       )
 //   );
 //
-// You can completely switch to test environment when "php admin/tool/behat/cli/util --enable",
-// this means that all the site accesses will be routed to the test environment instead of
-// the regular one, so NEVER USE THIS SETTING IN PRODUCTION SITES. This setting is useful
-// when working with cloud CI (continous integration) servers which requires public sites to run the
-// tests, or in testing/development installations when you are developing in a pre-PHP 5.4 server.
-// Note that with this setting enabled $CFG->behat_wwwroot is ignored and $CFG->behat_wwwroot
-// value will be the regular $CFG->wwwroot value.
-// Example:
-//   $CFG->behat_switchcompletely = true;
-//
 // You can force the browser session (not user's sessions) to restart after N seconds. This could
 // be useful if you are using a cloud-based service with time restrictions in the browser side.
 // Setting this value the browser session that Behat is using will be restarted. Set the time in
@@ -620,6 +670,36 @@ $CFG->admin = 'admin';
 // used to expand the default white list with an array of extra settings.
 // Example:
 //   $CFG->behat_extraallowedsettings = array('logsql', 'dblogerror');
+//
+// You should explicitly allow the usage of the deprecated behat steps, otherwise an exception will
+// be thrown when using them. The setting is disabled by default.
+// Example:
+//   $CFG->behat_usedeprecated = true;
+//
+// Including feature files from directories outside the dirroot is possible if required. The setting
+// requires that the running user has executable permissions on all parent directories in the paths.
+// Example:
+//   $CFG->behat_additionalfeatures = array('/home/developer/code/wipfeatures');
+//
+// You can make behat save several dumps when a scenario fails. The dumps currently saved are:
+// * a dump of the DOM in it's state at the time of failure; and
+// * a screenshot (JavaScript is required for the screenshot functionality, so not all browsers support this option)
+// Example:
+//   $CFG->behat_faildump_path = '/my/path/to/save/failure/dumps';
+//
+//=========================================================================
+// 12. DEVELOPER DATA GENERATOR
+//=========================================================================
+//
+// The developer data generator tool is intended to be used only in development or testing sites and
+// it's usage in production environments is not recommended; if it is used to create JMeter test plans
+// is even less recommended as JMeter needs to log in as site course users. JMeter needs to know the
+// users passwords but would be dangerous to have a default password as everybody would know it, which would
+// be specially dangerouse if somebody uses this tool in a production site, so in order to prevent unintended
+// uses of the tool and undesired accesses as well, is compulsory to set a password for the users
+// generated by this tool, but only in case you want to generate a JMeter test. The value should be a string.
+// Example:
+//   $CFG->tool_generator_users_password = 'examplepassword';
 
 //=========================================================================
 // ALL DONE!  To continue installation, visit your main page with a browser

@@ -366,6 +366,80 @@ class core_coursecatlib_testcase extends advanced_testcase {
         $this->assertEquals(4, $category1->get_children_count());
     }
 
+    /**
+     * Test the countall function
+     */
+    public function test_count_all() {
+        global $DB;
+        // Dont assume there is just one. An add-on might create a category as part of the install.
+        $numcategories = $DB->count_records('course_categories');
+        $this->assertEquals($numcategories, coursecat::count_all());
+        $category1 = coursecat::create(array('name' => 'Cat1'));
+        $category2 = coursecat::create(array('name' => 'Cat2', 'parent' => $category1->id));
+        $category3 = coursecat::create(array('name' => 'Cat3', 'parent' => $category2->id, 'visible' => 0));
+        // Now we've got three more.
+        $this->assertEquals($numcategories + 3, coursecat::count_all());
+        cache_helper::purge_by_event('changesincoursecat');
+        // We should still have 4.
+        $this->assertEquals($numcategories + 3, coursecat::count_all());
+    }
+
+    /**
+     * Test a categories ability to resort courses.
+     */
+    public function test_resort_courses() {
+        $this->resetAfterTest(true);
+        $generator = $this->getDataGenerator();
+        $category = $generator->create_category();
+        $course1 = $generator->create_course(array(
+            'category' => $category->id,
+            'idnumber' => '006-01',
+            'shortname' => 'Biome Study',
+            'fullname' => '<span lang="ar" class="multilang">'.'دراسة منطقة إحيائية'.'</span><span lang="en" class="multilang">Biome Study</span>'
+        ));
+        $course2 = $generator->create_course(array(
+            'category' => $category->id,
+            'idnumber' => '007-02',
+            'shortname' => 'Chemistry Revision',
+            'fullname' => 'Chemistry Revision'
+        ));
+        $course3 = $generator->create_course(array(
+            'category' => $category->id,
+            'idnumber' => '007-03',
+            'shortname' => 'Swiss Rolls and Sunflowers',
+            'fullname' => 'Aarkvarks guide to Swiss Rolls and Sunflowers'
+        ));
+        $course4 = $generator->create_course(array(
+            'category' => $category->id,
+            'idnumber' => '006-04',
+            'shortname' => 'Scratch',
+            'fullname' => '<a href="test.php">Basic Scratch</a>'
+        ));
+        $c1 = (int)$course1->id;
+        $c2 = (int)$course2->id;
+        $c3 = (int)$course3->id;
+        $c4 = (int)$course4->id;
+
+        $coursecat = coursecat::get($category->id);
+        $this->assertTrue($coursecat->resort_courses('idnumber'));
+        $this->assertSame(array($c1, $c4, $c2, $c3), array_keys($coursecat->get_courses()));
+
+        $this->assertTrue($coursecat->resort_courses('shortname'));
+        $this->assertSame(array($c1, $c2, $c4, $c3), array_keys($coursecat->get_courses()));
+
+
+        try {
+            // Enable the multilang filter and set it to apply to headings and content.
+            filter_set_global_state('multilang', TEXTFILTER_ON);
+            filter_set_applies_to_strings('multilang', true);
+            $expected = array($c3, $c4, $c1, $c2);
+        } catch (coding_exception $ex) {
+            $expected = array($c3, $c4, $c2, $c1);
+        }
+        $this->assertTrue($coursecat->resort_courses('fullname'));
+        $this->assertSame($expected, array_keys($coursecat->get_courses()));
+    }
+
     public function test_get_search_courses() {
         $cat1 = coursecat::create(array('name' => 'Cat1'));
         $cat2 = coursecat::create(array('name' => 'Cat2', 'parent' => $cat1->id));
@@ -537,5 +611,117 @@ class core_coursecatlib_testcase extends advanced_testcase {
         $this->assertSame('', $contacts[1][2]);
 
         $CFG->coursecontact = $oldcoursecontact;
+    }
+
+    public function test_overview_files() {
+        global $CFG;
+        $this->setAdminUser();
+        $cat1 = coursecat::create(array('name' => 'Cat1'));
+
+        // Create course c1 with one image file.
+        $dratid1 = $this->fill_draft_area(array('filename.jpg' => 'Test file contents1'));
+        $c1 = $this->getDataGenerator()->create_course(array('category' => $cat1->id,
+            'fullname' => 'Test 1', 'overviewfiles_filemanager' => $dratid1));
+        // Create course c2 with two image files (only one file will be added because of settings).
+        $dratid2 = $this->fill_draft_area(array('filename21.jpg' => 'Test file contents21', 'filename22.jpg' => 'Test file contents22'));
+        $c2 = $this->getDataGenerator()->create_course(array('category' => $cat1->id,
+            'fullname' => 'Test 2', 'overviewfiles_filemanager' => $dratid2));
+        // Create course c3 without files.
+        $c3 = $this->getDataGenerator()->create_course(array('category' => $cat1->id, 'fullname' => 'Test 3'));
+
+        // Change the settings to allow multiple files of any types.
+        $CFG->courseoverviewfileslimit = 3;
+        $CFG->courseoverviewfilesext = '*';
+        // Create course c5 with two image files.
+        $dratid4 = $this->fill_draft_area(array('filename41.jpg' => 'Test file contents41', 'filename42.jpg' => 'Test file contents42'));
+        $c4 = $this->getDataGenerator()->create_course(array('category' => $cat1->id,
+            'fullname' => 'Test 4', 'overviewfiles_filemanager' => $dratid4));
+        // Create course c6 with non-image file.
+        $dratid5 = $this->fill_draft_area(array('filename51.zip' => 'Test file contents51'));
+        $c5 = $this->getDataGenerator()->create_course(array('category' => $cat1->id,
+            'fullname' => 'Test 5', 'overviewfiles_filemanager' => $dratid5));
+
+        // Reset default settings.
+        $CFG->courseoverviewfileslimit = 1;
+        $CFG->courseoverviewfilesext = '.jpg,.gif,.png';
+
+        $courses = $cat1->get_courses();
+        $this->assertTrue($courses[$c1->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c2->id]->has_course_overviewfiles());
+        $this->assertFalse($courses[$c3->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c4->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c5->id]->has_course_overviewfiles()); // Does not validate the filetypes.
+
+        $this->assertEquals(1, count($courses[$c1->id]->get_course_overviewfiles()));
+        $this->assertEquals(1, count($courses[$c2->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c3->id]->get_course_overviewfiles()));
+        $this->assertEquals(1, count($courses[$c4->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c5->id]->get_course_overviewfiles())); // Validate the filetypes.
+
+        // Overview files are not allowed, all functions return empty values.
+        $CFG->courseoverviewfileslimit = 0;
+
+        $this->assertFalse($courses[$c1->id]->has_course_overviewfiles());
+        $this->assertFalse($courses[$c2->id]->has_course_overviewfiles());
+        $this->assertFalse($courses[$c3->id]->has_course_overviewfiles());
+        $this->assertFalse($courses[$c4->id]->has_course_overviewfiles());
+        $this->assertFalse($courses[$c5->id]->has_course_overviewfiles());
+
+        $this->assertEquals(0, count($courses[$c1->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c2->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c3->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c4->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c5->id]->get_course_overviewfiles()));
+
+        // Multiple overview files are allowed but still limited to images.
+        $CFG->courseoverviewfileslimit = 3;
+
+        $this->assertTrue($courses[$c1->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c2->id]->has_course_overviewfiles());
+        $this->assertFalse($courses[$c3->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c4->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c5->id]->has_course_overviewfiles()); // Still does not validate the filetypes.
+
+        $this->assertEquals(1, count($courses[$c1->id]->get_course_overviewfiles()));
+        $this->assertEquals(1, count($courses[$c2->id]->get_course_overviewfiles())); // Only 1 file was actually added.
+        $this->assertEquals(0, count($courses[$c3->id]->get_course_overviewfiles()));
+        $this->assertEquals(2, count($courses[$c4->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c5->id]->get_course_overviewfiles()));
+
+        // Multiple overview files of any type are allowed.
+        $CFG->courseoverviewfilesext = '*';
+
+        $this->assertTrue($courses[$c1->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c2->id]->has_course_overviewfiles());
+        $this->assertFalse($courses[$c3->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c4->id]->has_course_overviewfiles());
+        $this->assertTrue($courses[$c5->id]->has_course_overviewfiles());
+
+        $this->assertEquals(1, count($courses[$c1->id]->get_course_overviewfiles()));
+        $this->assertEquals(1, count($courses[$c2->id]->get_course_overviewfiles()));
+        $this->assertEquals(0, count($courses[$c3->id]->get_course_overviewfiles()));
+        $this->assertEquals(2, count($courses[$c4->id]->get_course_overviewfiles()));
+        $this->assertEquals(1, count($courses[$c5->id]->get_course_overviewfiles()));
+    }
+
+    /**
+     * Creates a draft area for current user and fills it with fake files
+     *
+     * @param array $files array of files that need to be added to filearea, filename => filecontents
+     * @return int draftid for the filearea
+     */
+    protected function fill_draft_area(array $files) {
+        global $USER;
+        $usercontext = context_user::instance($USER->id);
+        $draftid = file_get_unused_draft_itemid();
+        foreach ($files as $filename => $filecontents) {
+            // Add actual file there.
+            $filerecord = array('component' => 'user', 'filearea' => 'draft',
+                    'contextid' => $usercontext->id, 'itemid' => $draftid,
+                    'filename' => $filename, 'filepath' => '/');
+            $fs = get_file_storage();
+            $fs->create_file_from_string($filerecord, $filecontents);
+        }
+        return $draftid;
     }
 }

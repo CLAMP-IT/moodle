@@ -341,6 +341,16 @@ class core_user_externallib_testcase extends externallib_advanced_testcase {
 
         // Only the own $USER username should be returned
         $this->assertEquals(1, count($returnedusers));
+
+        // And finally test as one of the enrolled users.
+        $this->setUser($user1);
+
+        // Call the external function.
+        $returnedusers = core_user_external::get_users_by_field('username',
+            array($USER->username, $user1->username, $user2->username));
+
+        // Only the own $USER username should be returned still.
+        $this->assertEquals(1, count($returnedusers));
     }
 
     /**
@@ -712,4 +722,33 @@ class core_user_externallib_testcase extends externallib_advanced_testcase {
         $file = $browser->get_file_info($context, $component, 'private', 0, $filepath, $filename);
         $this->assertNotEmpty($file);
     }
+
+    /**
+     * Test add user device
+     */
+    public function test_add_user_device() {
+        global $USER, $CFG, $DB;
+
+        $this->resetAfterTest(true);
+
+        $device = array(
+                'appid' => 'com.moodle.moodlemobile',
+                'name' => 'occam',
+                'model' => 'Nexus 4',
+                'platform' => 'Android',
+                'version' => '4.2.2',
+                'pushid' => 'apushdkasdfj4835',
+                'uuid' => 'asdnfl348qlksfaasef859'
+                );
+
+        // Call the external function.
+        core_user_external::add_user_device($device['appid'], $device['name'], $device['model'], $device['platform'],
+                                            $device['version'], $device['pushid'], $device['uuid']);
+
+        $created = $DB->get_record('user_devices', array('pushid' => $device['pushid']));
+        $created = (array) $created;
+
+        $this->assertEquals($device, array_intersect_key((array)$created, $device));
+    }
+
 }

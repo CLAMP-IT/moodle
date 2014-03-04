@@ -160,10 +160,11 @@ class award_criteria_courseset extends award_criteria {
         // In courseset, print out only the ones that were already selected.
         foreach ($this->params as $p) {
             if ($course = $DB->get_record('course', array('id' => $p['course']))) {
+                $coursecontext = context_course::instance($course->id);
                 $param = array(
                         'id' => $course->id,
                         'checked' => true,
-                        'name' => ucfirst($course->fullname),
+                        'name' => ucfirst(format_string($course->fullname, true, array('context' => $coursecontext))),
                         'error' => false
                 );
 
@@ -201,12 +202,17 @@ class award_criteria_courseset extends award_criteria {
     /**
      * Review this criteria and decide if it has been completed
      *
+     * @param int $userid User whose criteria completion needs to be reviewed.
+     * @param bool $filtered An additional parameter indicating that user list
+     *        has been reduced and some expensive checks can be skipped.
+     *
      * @return bool Whether criteria is complete
      */
-    public function review($userid) {
-        global $DB;
+    public function review($userid, $filtered = false) {
         foreach ($this->params as $param) {
-            $course = $DB->get_record('course', array('id' => $param['course']));
+            $course =  new stdClass();
+            $course->id = $param['course'];
+
             $info = new completion_info($course);
             $check_grade = true;
             $check_date = true;
@@ -216,7 +222,7 @@ class award_criteria_courseset extends award_criteria {
                 $check_grade = ($grade->grade >= $param['grade']);
             }
 
-            if (isset($param['bydate'])) {
+            if (!$filtered && isset($param['bydate'])) {
                 $cparams = array(
                         'userid' => $userid,
                         'course' => $course->id,
@@ -234,7 +240,7 @@ class award_criteria_courseset extends award_criteria {
                 } else {
                     return false;
                 }
-            } else if ($this->method == BADGE_CRITERIA_AGGREGATION_ANY) {
+            } else {
                 if ($info->is_course_complete($userid) && $check_grade && $check_date) {
                     return true;
                 } else {
@@ -245,5 +251,40 @@ class award_criteria_courseset extends award_criteria {
         }
 
         return $overall;
+    }
+
+    /**
+     * Returns array with sql code and parameters returning all ids
+     * of users who meet this particular criterion.
+     *
+     * @return array list($join, $where, $params)
+     */
+    public function get_completed_criteria_sql() {
+        $join = '';
+        $where = '';
+        $params = array();
+
+        if ($this->method == BADGE_CRITERIA_AGGREGATION_ANY) {
+            foreach ($this->params as $param) {
+                $coursedata[] = " cc.course = :completedcourse{$param['course']} ";
+                $params["completedcourse{$param['course']}"] = $param['course'];
+            }
+            if (!empty($coursedata)) {
+                $extraon = implode(' OR ', $coursedata);
+                $join = " JOIN {course_completions} cc ON cc.userid = u.id AND
+                          cc.timecompleted > 0 AND ({$extraon})";
+            }
+            return array($join, $where, $params);
+        } else {
+            foreach ($this->params as $param) {
+                $join .= " LEFT JOIN {course_completions} cc{$param['course']} ON
+                          cc{$param['course']}.userid = u.id AND
+                          cc{$param['course']}.course = :completedcourse{$param['course']} AND
+                          cc{$param['course']}.timecompleted > 0 ";
+                $where .= " AND cc{$param['course']}.course IS NOT NULL ";
+                $params["completedcourse{$param['course']}"] = $param['course'];
+            }
+            return array($join, $where, $params);
+        }
     }
 }

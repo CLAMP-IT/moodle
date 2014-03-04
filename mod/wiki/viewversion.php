@@ -18,9 +18,9 @@
 /**
  * This file contains all necessary code to view an old version of a page
  *
- * @package mod-wiki-2.0
- * @copyrigth 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
- * @copyrigth 2009 Universitat Politecnica de Catalunya http://www.upc.edu
+ * @package mod_wiki
+ * @copyright 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
+ * @copyright 2009 Universitat Politecnica de Catalunya http://www.upc.edu
  *
  * @author Jordi Piguillem
  * @author Marc Alier
@@ -65,7 +65,18 @@ $wikipage = new page_wiki_viewversion($wiki, $subwiki, $cm);
 $wikipage->set_page($page);
 $wikipage->set_versionid($versionid);
 
-add_to_log($course->id, "wiki", "history", "viewversion.php?pageid=".$pageid."&versionid=".$versionid, $pageid, $cm->id);
+$event = \mod_wiki\event\page_version_viewed::create(
+        array(
+            'context' => context_module::instance($cm->id),
+            'objectid' => $pageid,
+            'other' => array(
+                'versionid' => $versionid
+                )
+            ));
+$event->add_record_snapshot('wiki_pages', $page);
+$event->add_record_snapshot('wiki', $wiki);
+$event->add_record_snapshot('wiki_subwikis', $subwiki);
+$event->trigger();
 
 // Print the page header
 $wikipage->print_header();

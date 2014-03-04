@@ -180,7 +180,7 @@ class enrol_self_plugin extends enrol_plugin {
      * @return bool|array true if enroled else eddor code and messege
      */
     public function enrol_self(stdClass $instance, $data = null) {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
 
         // Don't enrol user if password is not passed when required.
         if ($instance->password && !isset($data->enrolpassword)) {
@@ -195,7 +195,6 @@ class enrol_self_plugin extends enrol_plugin {
         }
 
         $this->enrol_user($instance, $USER->id, $instance->roleid, $timestart, $timeend);
-        add_to_log($instance->courseid, 'course', 'enrol', '../enrol/users.php?id='.$instance->courseid, $instance->courseid); //TODO: There should be userid somewhere!
 
         if ($instance->password and $instance->customint1 and $data->enrolpassword !== $instance->password) {
             // It must be a group enrolment, let's assign group too.
@@ -205,6 +204,8 @@ class enrol_self_plugin extends enrol_plugin {
                     continue;
                 }
                 if ($group->enrolmentkey === $data->enrolpassword) {
+                    // Add user to group.
+                    require_once($CFG->dirroot.'/group/lib.php');
                     groups_add_member($group->id, $USER->id);
                     break;
                 }
@@ -433,7 +434,7 @@ class enrol_self_plugin extends enrol_plugin {
         if ($rusers) {
             $contact = reset($rusers);
         } else {
-            $contact = generate_email_supportuser();
+            $contact = core_user::get_support_user();
         }
 
         // Directly emailing welcome message rather than using messaging.
@@ -466,7 +467,7 @@ class enrol_self_plugin extends enrol_plugin {
         }
 
         // Unfortunately this may take a long time, execution can be interrupted safely here.
-        @set_time_limit(0);
+        core_php_time_limit::raise();
         raise_memory_limit(MEMORY_HUGE);
 
         $trace->output('Verifying self-enrolments...');

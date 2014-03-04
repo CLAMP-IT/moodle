@@ -35,8 +35,7 @@
 /**
  * This file contains all necessary code to view a lti activity instance
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -92,7 +91,17 @@ if ($launchcontainer == LTI_LAUNCH_CONTAINER_EMBED_NO_BLOCKS) {
 
 require_login($course);
 
-add_to_log($course->id, "lti", "view", "view.php?id=$cm->id", "$lti->id");
+// Mark viewed by user (if required).
+$completion = new completion_info($course);
+$completion->set_module_viewed($cm);
+
+$params = array(
+    'context' => $context,
+    'objectid' => $lti->id
+);
+$event = \mod_lti\event\course_module_viewed::create($params);
+$event->add_record_snapshot('lti', $lti);
+$event->trigger();
 
 $pagetitle = strip_tags($course->shortname.': '.format_string($lti->name));
 $PAGE->set_title($pagetitle);
@@ -103,7 +112,7 @@ echo $OUTPUT->header();
 
 if ($lti->showtitlelaunch) {
     // Print the main part of the page
-    echo $OUTPUT->heading(format_string($lti->name));
+    echo $OUTPUT->heading(format_string($lti->name, true, array('context' => $context)));
 }
 
 if ($lti->showdescriptionlaunch && $lti->intro) {

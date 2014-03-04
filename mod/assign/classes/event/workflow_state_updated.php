@@ -29,6 +29,12 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * mod_assign workflow state updated event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type string newstatus status of submission.
+ * }
+ *
  * @package    mod_assign
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -75,7 +81,7 @@ class workflow_state_updated extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/assign/view.php', array('id' => $this->context->instanceid));
+        return new \moodle_url('/mod/assign/view.php', array('id' => $this->contextinstanceid));
     }
 
     /**
@@ -85,7 +91,7 @@ class workflow_state_updated extends \core\event\base {
      */
     protected function init() {
         $this->data['crud'] = 'u';
-        $this->data['level'] = self::LEVEL_TEACHING;
+        $this->data['edulevel'] = self::LEVEL_TEACHING;
         $this->data['objecttable'] = 'assign';
     }
 

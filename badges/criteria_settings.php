@@ -58,21 +58,26 @@ if ($badge->is_active() || $badge->is_locked()) {
 if ($badge->type == BADGE_TYPE_COURSE) {
     require_login($badge->courseid);
     $navurl = new moodle_url('/badges/index.php', array('type' => $badge->type, 'id' => $badge->courseid));
+    $PAGE->set_pagelayout('standard');
+    navigation_node::override_active_url($navurl);
+} else {
+    $PAGE->set_pagelayout('admin');
+    navigation_node::override_active_url($navurl, true);
 }
 
 $PAGE->set_context($context);
 $PAGE->set_url('/badges/criteria_settings.php');
-$PAGE->set_pagelayout('standard');
 $PAGE->set_heading($badge->name);
 $PAGE->set_title($badge->name);
-navigation_node::override_active_url($navurl);
 $PAGE->navbar->add($badge->name, new moodle_url('overview.php', array('id' => $badge->id)))->add(get_string('criteria_' . $type, 'badges'));
 
 $cparams = array('criteriatype' => $type, 'badgeid' => $badge->id);
 if ($edit) {
     $criteria = $badge->criteria[$type];
+    $msg = 'criteriaupdated';
 } else {
     $criteria = award_criteria::build($cparams);
+    $msg = 'criteriacreated';
 }
 
 $mform = new edit_criteria_form($FULLME, array('criteria' => $criteria, 'addcourse' => $addcourse, 'course' => $badge->courseid));
@@ -96,7 +101,7 @@ if (!empty($addcourse)) {
         $criteria_overall->save(array('agg' => BADGE_CRITERIA_AGGREGATION_ALL));
     }
     $criteria->save($data);
-    $return->param('msg', get_string('changessaved'));
+    $return->param('msg', $msg);
     redirect($return);
 }
 

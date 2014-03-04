@@ -19,7 +19,7 @@
  *
  * @author Andreas Grabs
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package feedback
+ * @package mod_feedback
  */
 
 require_once('../../config.php');
@@ -155,12 +155,12 @@ $strfeedbacks = get_string('modulenameplural', 'feedback');
 $strfeedback  = get_string('modulename', 'feedback');
 
 $PAGE->set_url('/mod/feedback/edit.php', array('id'=>$cm->id, 'do_show'=>$do_show));
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_title(format_string($feedback->name));
+$PAGE->set_heading($course->fullname);
+$PAGE->set_title($feedback->name);
 
 //Adding the javascript module for the items dragdrop.
 if (count($feedbackitems) > 1) {
-    if ($do_show == 'edit' and $CFG->enableajax) {
+    if ($do_show == 'edit') {
         $PAGE->requires->strings_for_js(array(
                'pluginname',
                'move_item',
@@ -172,6 +172,7 @@ if (count($feedbackitems) > 1) {
 }
 
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($feedback->name));
 
 /// print the tabs
 require('tabs.php');
@@ -245,7 +246,7 @@ if ($do_show == 'edit') {
 
         $helpbutton = $OUTPUT->help_icon('preview', 'feedback');
 
-        echo $OUTPUT->heading($helpbutton . get_string('preview', 'feedback'));
+        echo $OUTPUT->heading(get_string('preview', 'feedback').$helpbutton, 3);
         if (isset($SESSION->feedback->moving) AND $SESSION->feedback->moving->shouldmoving == 1) {
             $anker = '<a href="edit.php?id='.$id.'">';
             $anker .= get_string('cancel_moving', 'feedback');

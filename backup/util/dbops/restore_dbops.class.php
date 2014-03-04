@@ -109,18 +109,34 @@ abstract class restore_dbops {
 
     /**
      * Load one inforef.xml file to backup_ids table for future reference
+     *
+     * @param string $restoreid Restore id
+     * @param string $inforeffile File path
+     * @param \core\progress\base $progress Progress tracker
      */
-    public static function load_inforef_to_tempids($restoreid, $inforeffile) {
+    public static function load_inforef_to_tempids($restoreid, $inforeffile,
+            \core\progress\base $progress = null) {
 
         if (!file_exists($inforeffile)) { // Shouldn't happen ever, but...
             throw new backup_helper_exception('missing_inforef_xml_file', $inforeffile);
         }
+
+        // Set up progress tracking (indeterminate).
+        if (!$progress) {
+            $progress = new \core\progress\null();
+        }
+        $progress->start_progress('Loading inforef.xml file');
+
         // Let's parse, custom processor will do its work, sending info to DB
         $xmlparser = new progressive_parser();
         $xmlparser->set_file($inforeffile);
         $xmlprocessor = new restore_inforef_parser_processor($restoreid);
         $xmlparser->set_processor($xmlprocessor);
+        $xmlparser->set_progress($progress);
         $xmlparser->process();
+
+        // Finish progress
+        $progress->end_progress();
     }
 
     /**
@@ -400,18 +416,34 @@ abstract class restore_dbops {
 
     /**
      * Load the needed users.xml file to backup_ids table for future reference
+     *
+     * @param string $restoreid Restore id
+     * @param string $usersfile File path
+     * @param \core\progress\base $progress Progress tracker
      */
-    public static function load_users_to_tempids($restoreid, $usersfile) {
+    public static function load_users_to_tempids($restoreid, $usersfile,
+            \core\progress\base $progress = null) {
 
         if (!file_exists($usersfile)) { // Shouldn't happen ever, but...
             throw new backup_helper_exception('missing_users_xml_file', $usersfile);
         }
+
+        // Set up progress tracking (indeterminate).
+        if (!$progress) {
+            $progress = new \core\progress\null();
+        }
+        $progress->start_progress('Loading users into temporary table');
+
         // Let's parse, custom processor will do its work, sending info to DB
         $xmlparser = new progressive_parser();
         $xmlparser->set_file($usersfile);
         $xmlprocessor = new restore_users_parser_processor($restoreid);
         $xmlparser->set_processor($xmlprocessor);
+        $xmlparser->set_progress($progress);
         $xmlparser->process();
+
+        // Finish progress.
+        $progress->end_progress();
     }
 
     /**
@@ -816,6 +848,9 @@ abstract class restore_dbops {
      * optionally one source itemname to match itemids
      * put the corresponding files in the pool
      *
+     * If you specify a progress reporter, it will get called once per file with
+     * indeterminate progress.
+     *
      * @param string $basepath the full path to the root of unzipped backup file
      * @param string $restoreid the restore job's identification
      * @param string $component
@@ -826,9 +861,13 @@ abstract class restore_dbops {
      * @param int|null $olditemid
      * @param int|null $forcenewcontextid explicit value for the new contextid (skip mapping)
      * @param bool $skipparentitemidctxmatch
+     * @param \core\progress\base $progress Optional progress reporter
      * @return array of result object
      */
-    public static function send_files_to_pool($basepath, $restoreid, $component, $filearea, $oldcontextid, $dfltuserid, $itemname = null, $olditemid = null, $forcenewcontextid = null, $skipparentitemidctxmatch = false) {
+    public static function send_files_to_pool($basepath, $restoreid, $component, $filearea,
+            $oldcontextid, $dfltuserid, $itemname = null, $olditemid = null,
+            $forcenewcontextid = null, $skipparentitemidctxmatch = false,
+            \core\progress\base $progress = null) {
         global $DB, $CFG;
 
         $backupinfo = backup_general_helper::get_backup_information(basename($basepath));
@@ -843,9 +882,11 @@ abstract class restore_dbops {
             $newcontextid = $forcenewcontextid;
         } else {
             // Get new context, must exist or this will fail
-            if (!$newcontextid = self::get_backup_ids_record($restoreid, 'context', $oldcontextid)->newitemid) {
+            $newcontextrecord = self::get_backup_ids_record($restoreid, 'context', $oldcontextid);
+            if (!$newcontextrecord || !$newcontextrecord->newitemid) {
                 throw new restore_dbops_exception('unknown_context_mapping', $oldcontextid);
             }
+            $newcontextid = $newcontextrecord->newitemid;
         }
 
         // Sometimes it's possible to have not the oldcontextids stored into backup_ids_temp->parentitemid
@@ -892,8 +933,17 @@ abstract class restore_dbops {
 
         $fs = get_file_storage();         // Get moodle file storage
         $basepath = $basepath . '/files/';// Get backup file pool base
+        // Report progress before query.
+        if ($progress) {
+            $progress->progress();
+        }
         $rs = $DB->get_recordset_sql($sql, $params);
         foreach ($rs as $rec) {
+            // Report progress each time around loop.
+            if ($progress) {
+                $progress->progress();
+            }
+
             $file = (object)backup_controller_dbops::decode_backup_temp_info($rec->info);
 
             // ignore root dirs (they are created automatically)
@@ -928,6 +978,15 @@ abstract class restore_dbops {
             );
 
             if (empty($file->repositoryid)) {
+                // If contenthash is empty then gracefully skip adding file.
+                if (empty($file->contenthash)) {
+                    $result = new stdClass();
+                    $result->code = 'file_missing_in_backup';
+                    $result->message = sprintf('missing file (%s) contenthash in backup for component %s', $file->filename, $component);
+                    $result->level = backup::LOG_WARNING;
+                    $results[] = $result;
+                    continue;
+                }
                 // this is a regular file, it must be present in the backup pool
                 $backuppath = $basepath . backup_file_manager::get_backup_content_file_location($file->contenthash);
 
@@ -936,11 +995,7 @@ abstract class restore_dbops {
                 if ($includesfiles) {
                     // The file is not found in the backup.
                     if (!file_exists($backuppath)) {
-                        $result = new stdClass();
-                        $result->code = 'file_missing_in_backup';
-                        $result->message = sprintf('missing file %s%s in backup', $file->filepath, $file->filename);
-                        $result->level = backup::LOG_WARNING;
-                        $results[] = $result;
+                        $results[] = self::get_missing_file_result($file);
                         continue;
                     }
 
@@ -969,11 +1024,7 @@ abstract class restore_dbops {
                             $fs->create_file_from_storedfile($file_record, $foundfile->id);
                         } else {
                             // A matching existing file record was not found in the database.
-                            $result = new stdClass();
-                            $result->code = 'file_missing_in_backup';
-                            $result->message = sprintf('missing file %s%s in backup', $file->filepath, $file->filename);
-                            $result->level = backup::LOG_WARNING;
-                            $results[] = $result;
+                            $results[] = self::get_missing_file_result($file);
                             continue;
                         }
                     }
@@ -1005,14 +1056,40 @@ abstract class restore_dbops {
     }
 
     /**
+     * Returns suitable entry to include in log when there is a missing file.
+     *
+     * @param stdClass $file File definition
+     * @return stdClass Log entry
+     */
+    protected static function get_missing_file_result($file) {
+        $result = new stdClass();
+        $result->code = 'file_missing_in_backup';
+        $result->message = 'Missing file in backup: ' . $file->filepath  . $file->filename .
+                ' (old context ' . $file->contextid . ', component ' . $file->component .
+                ', filearea ' . $file->filearea . ', old itemid ' . $file->itemid . ')';
+        $result->level = backup::LOG_WARNING;
+        return $result;
+    }
+
+    /**
      * Given one restoreid, create in DB all the users present
      * in backup_ids having newitemid = 0, as far as
      * precheck_included_users() have left them there
      * ready to be created. Also, annotate their newids
-     * once created for later reference
+     * once created for later reference.
+     *
+     * This function will start and end a new progress section in the progress
+     * object.
+     *
+     * @param string $basepath Base path of unzipped backup
+     * @param string $restoreid Restore ID
+     * @param int $userid Default userid for files
+     * @param \core\progress\base $progress Object used for progress tracking
      */
-    public static function create_included_users($basepath, $restoreid, $userid) {
+    public static function create_included_users($basepath, $restoreid, $userid,
+            \core\progress\base $progress) {
         global $CFG, $DB;
+        $progress->start_progress('Creating included users');
 
         $authcache = array(); // Cache to get some bits from authentication plugins
         $languages = get_string_manager()->get_list_of_translations(); // Get languages for quick search later
@@ -1021,6 +1098,7 @@ abstract class restore_dbops {
         // Iterate over all the included users with newitemid = 0, have to create them
         $rs = $DB->get_recordset('backup_ids_temp', array('backupid' => $restoreid, 'itemname' => 'user', 'newitemid' => 0), '', 'itemid, parentitemid, info');
         foreach ($rs as $recuser) {
+            $progress->progress();
             $user = (object)backup_controller_dbops::decode_backup_temp_info($recuser->info);
 
             // if user lang doesn't exist here, use site default
@@ -1148,13 +1226,26 @@ abstract class restore_dbops {
                         $status = $DB->insert_record('user_preferences', $preference);
                     }
                 }
+                // Special handling for htmleditor which was converted to a preference.
+                if (isset($user->htmleditor)) {
+                    if ($user->htmleditor == 0) {
+                        $preference = new stdClass();
+                        $preference->userid = $newuserid;
+                        $preference->name = 'htmleditor';
+                        $preference->value = 'textarea';
+                        $status = $DB->insert_record('user_preferences', $preference);
+                    }
+                }
 
                 // Create user files in pool (profile, icon, private) by context
-                restore_dbops::send_files_to_pool($basepath, $restoreid, 'user', 'icon', $recuser->parentitemid, $userid);
-                restore_dbops::send_files_to_pool($basepath, $restoreid, 'user', 'profile', $recuser->parentitemid, $userid);
+                restore_dbops::send_files_to_pool($basepath, $restoreid, 'user', 'icon',
+                        $recuser->parentitemid, $userid, null, null, null, false, $progress);
+                restore_dbops::send_files_to_pool($basepath, $restoreid, 'user', 'profile',
+                        $recuser->parentitemid, $userid, null, null, null, false, $progress);
             }
         }
         $rs->close();
+        $progress->end_progress();
     }
 
     /**
@@ -1385,8 +1476,15 @@ abstract class restore_dbops {
      * for each one (mapping / creation) and returning one array
      * of problems in case something is wrong (lack of permissions,
      * conficts)
+     *
+     * @param string $restoreid Restore id
+     * @param int $courseid Course id
+     * @param int $userid User id
+     * @param bool $samesite True if restore is to same site
+     * @param \core\progress\base $progress Progress reporter
      */
-    public static function precheck_included_users($restoreid, $courseid, $userid, $samesite) {
+    public static function precheck_included_users($restoreid, $courseid, $userid, $samesite,
+            \core\progress\base $progress) {
         global $CFG, $DB;
 
         // To return any problem found
@@ -1409,8 +1507,14 @@ abstract class restore_dbops {
             $cancreateuser = true;
         }
 
+        // Prepare for reporting progress.
+        $conditions = array('backupid' => $restoreid, 'itemname' => 'user');
+        $max = $DB->count_records('backup_ids_temp', $conditions);
+        $done = 0;
+        $progress->start_progress('Checking users', $max);
+
         // Iterate over all the included users
-        $rs = $DB->get_recordset('backup_ids_temp', array('backupid' => $restoreid, 'itemname' => 'user'), '', 'itemid, info');
+        $rs = $DB->get_recordset('backup_ids_temp', $conditions, '', 'itemid, info');
         foreach ($rs as $recuser) {
             $user = (object)backup_controller_dbops::decode_backup_temp_info($recuser->info);
 
@@ -1447,8 +1551,11 @@ abstract class restore_dbops {
             } else { // Shouldn't arrive here ever, something is for sure wrong. Exception
                 throw new restore_dbops_exception('restore_error_processing_user', $user->username);
             }
+            $done++;
+            $progress->progress($done);
         }
         $rs->close();
+        $progress->end_progress();
         return $problems;
     }
 
@@ -1458,12 +1565,19 @@ abstract class restore_dbops {
      *
      * Just wrap over precheck_included_users(), returning
      * exception if any problem is found
+     *
+     * @param string $restoreid Restore id
+     * @param int $courseid Course id
+     * @param int $userid User id
+     * @param bool $samesite True if restore is to same site
+     * @param \core\progress\base $progress Optional progress tracker
      */
-    public static function process_included_users($restoreid, $courseid, $userid, $samesite) {
+    public static function process_included_users($restoreid, $courseid, $userid, $samesite,
+            \core\progress\base $progress = null) {
         global $DB;
 
         // Just let precheck_included_users() to do all the hard work
-        $problems = self::precheck_included_users($restoreid, $courseid, $userid, $samesite);
+        $problems = self::precheck_included_users($restoreid, $courseid, $userid, $samesite, $progress);
 
         // With problems, throw exception, shouldn't happen if prechecks were originally
         // executed, so be radical here.

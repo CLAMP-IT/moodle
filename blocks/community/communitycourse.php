@@ -15,16 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/*
- * @package    blocks
- * @subpackage community
- * @author     Jerome Mouneyrac <jerome@mouneyrac.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
- * @copyright  (C) 1999 onwards Martin Dougiamas  http://dougiamas.com
+/**
+ * Controller for various actions of the block.
  *
  * This page display the community course search form.
  * It also handles adding a course to the community block.
  * It also handles downloading a course template.
+ *
+ * @package    block_community
+ * @author     Jerome Mouneyrac <jerome@mouneyrac.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
+ * @copyright  (C) 1999 onwards Martin Dougiamas  http://dougiamas.com
  */
 
 require('../../config.php');
@@ -130,7 +131,7 @@ $communityid = optional_param('communityid', '', PARAM_INT);
 if ($remove != -1 and !empty($communityid) and confirm_sesskey()) {
     $communitymanager->block_community_remove_course($communityid, $USER->id);
     echo $OUTPUT->header();
-    echo $renderer->remove_success(new moodle_url(get_referer(false)));
+    echo $renderer->remove_success(new moodle_url('/course/view.php', array('id' => $courseid)));
     echo $OUTPUT->footer();
     die();
 }
@@ -142,7 +143,7 @@ $fromformdata['subject'] = optional_param('subject', 'all', PARAM_ALPHANUMEXT);
 $fromformdata['audience'] = optional_param('audience', 'all', PARAM_ALPHANUMEXT);
 $fromformdata['language'] = optional_param('language', current_language(), PARAM_ALPHANUMEXT);
 $fromformdata['educationallevel'] = optional_param('educationallevel', 'all', PARAM_ALPHANUMEXT);
-$fromformdata['downloadable'] = optional_param('downloadable', 1, PARAM_ALPHANUM);
+$fromformdata['downloadable'] = optional_param('downloadable', $usercandownload, PARAM_ALPHANUM);
 $fromformdata['orderby'] = optional_param('orderby', 'newest', PARAM_ALPHA);
 $fromformdata['huburl'] = optional_param('huburl', HUB_MOODLEORGHUBURL, PARAM_URL);
 $fromformdata['search'] = $search;

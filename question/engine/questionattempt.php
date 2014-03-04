@@ -66,6 +66,21 @@ class question_attempt {
      */
     const PARAM_RAW_FILES = 'paramrawfiles';
 
+    /**
+     * @var string means first try at a question during an attempt by a user.
+     */
+    const FIRST_TRY = 'firsttry';
+
+    /**
+     * @var string means last try at a question during an attempt by a user.
+     */
+    const LAST_TRY = 'lasttry';
+
+    /**
+     * @var string means all tries at a question during an attempt by a user.
+     */
+    const ALL_TRIES = 'alltries';
+
     /** @var integer if this attempts is stored in the question_attempts table, the id of that row. */
     protected $id = null;
 
@@ -87,14 +102,24 @@ class question_attempt {
     /** @var int which variant of the question to use. */
     protected $variant;
 
-    /** @var number the maximum mark that can be scored at this question. */
+    /**
+     * @var float the maximum mark that can be scored at this question.
+     * Actually, this is only really a nominal maximum. It might be better thought
+     * of as the question weight.
+     */
     protected $maxmark;
 
     /**
-     * @var number the minimum fraction that can be scored at this question, so
+     * @var float the minimum fraction that can be scored at this question, so
      * the minimum mark is $this->minfraction * $this->maxmark.
      */
     protected $minfraction = null;
+
+    /**
+     * @var float the maximum fraction that can be scored at this question, so
+     * the maximum mark is $this->maxfraction * $this->maxmark.
+     */
+    protected $maxfraction = null;
 
     /**
      * @var string plain text summary of the variant of the question the
@@ -336,7 +361,7 @@ class question_attempt {
 
     /**
      * Get one of the steps in this attempt.
-     * For internal/test code use only.
+     *
      * @param int $i the step number.
      * @return question_attempt_step
      */
@@ -649,17 +674,30 @@ class question_attempt {
         return $fraction * $this->maxmark;
     }
 
-    /** @return number the maximum mark possible for this question attempt. */
+    /**
+     * @return float the maximum mark possible for this question attempt.
+     * In fact, this is not strictly the maximum, becuase get_max_fraction may
+     * return a number greater than 1. It might be better to think of this as a
+     * question weight.
+     */
     public function get_max_mark() {
         return $this->maxmark;
     }
 
-    /** @return number the maximum mark possible for this question attempt. */
+    /** @return float the maximum mark possible for this question attempt. */
     public function get_min_fraction() {
         if (is_null($this->minfraction)) {
-            throw new coding_exception('This question_attempt has not been started yet, the min fraction is not yet konwn.');
+            throw new coding_exception('This question_attempt has not been started yet, the min fraction is not yet known.');
         }
         return $this->minfraction;
+    }
+
+    /** @return float the maximum mark possible for this question attempt. */
+    public function get_max_fraction() {
+        if (is_null($this->maxfraction)) {
+            throw new coding_exception('This question_attempt has not been started yet, the max fraction is not yet known.');
+        }
+        return $this->maxfraction;
     }
 
     /**
@@ -847,6 +885,24 @@ class question_attempt {
     }
 
     /**
+     * If there is an autosaved step, convert it into a real save, so that it
+     * is preserved.
+     */
+    protected function convert_autosaved_step_to_real_step() {
+        if ($this->autosavedstep === null) {
+            return;
+        }
+
+        $laststep = end($this->steps);
+        if ($laststep !== $this->autosavedstep) {
+            throw new coding_exception('Cannot convert autosaved step to real step, since other steps have been added.');
+        }
+
+        $this->observer->notify_step_modified($this->autosavedstep, $this, key($this->steps));
+        $this->autosavedstep = null;
+    }
+
+    /**
      * Use a strategy to pick a variant.
      * @param question_variant_selection_strategy $variantstrategy a strategy.
      * @return int the selected variant.
@@ -885,8 +941,9 @@ class question_attempt {
             $this->behaviour = new $class($this, $preferredbehaviour);
         }
 
-        // Record the minimum fraction.
+        // Record the minimum and maximum fractions.
         $this->minfraction = $this->behaviour->get_min_fraction();
+        $this->maxfraction = $this->behaviour->get_max_fraction();
 
         // Initialise the first step.
         $firststep = new question_attempt_step($submitteddata, $timestamp, $userid, $existingstepid);
@@ -1150,6 +1207,7 @@ class question_attempt {
      * @param int $userid the user to attribute the aciton to. (If not given, use the current user.)
      */
     public function finish($timestamp = null, $userid = null) {
+        $this->convert_autosaved_step_to_real_step();
         $this->process_action(array('-finish' => 1), $timestamp, $userid);
     }
 
@@ -1242,11 +1300,32 @@ class question_attempt {
     }
 
     /**
-     * @return array subpartid => object with fields
-     *      ->responseclassid matches one of the values returned from quetion_type::get_possible_responses.
-     *      ->response the actual response the student gave to this part, as a string.
-     *      ->fraction the credit awarded for this subpart, may be null.
-     *      returns an empty array if no analysis is possible.
+     * This is used by the manual grading code, particularly in association with
+     * validation. If there is a comment submitted in the request, then use that,
+     * otherwise use the latest comment for this question.
+     * @return number the current mark for this question.
+     * {@link get_fraction()} * {@link get_max_mark()}.
+     */
+    public function get_current_manual_comment() {
+        $comment = $this->get_submitted_var($this->get_behaviour_field_name('comment'), PARAM_RAW);
+        if (is_null($comment)) {
+            return $this->get_manual_comment();
+        } else {
+            $commentformat = $this->get_submitted_var(
+                    $this->get_behaviour_field_name('commentformat'), PARAM_INT);
+            if ($commentformat === null) {
+                $commentformat = FORMAT_HTML;
+            }
+            return array($comment, $commentformat);
+        }
+    }
+
+    /**
+     * Break down a student response by sub part and classification.
+     * See also {@link question_type::get_possible_responses()}
+     * Used for response analysis.
+     *
+     * @return question_possible_response[] where keys are subpartid.
      */
     public function classify_response() {
         return $this->behaviour->classify_response();
@@ -1287,6 +1366,7 @@ class question_attempt {
         $qa->set_slot($record->slot);
         $qa->variant = $record->variant + 0;
         $qa->minfraction = $record->minfraction + 0;
+        $qa->maxfraction = $record->maxfraction + 0;
         $qa->set_flagged($record->flagged);
         $qa->questionsummary = $record->questionsummary;
         $qa->rightanswer = $record->rightanswer;
@@ -1347,6 +1427,16 @@ class question_attempt {
 
         return $qa;
     }
+
+    /**
+     * Allow access to steps with responses submitted by students for grading in a question attempt.
+     *
+     * @return question_attempt_steps_with_submitted_response_iterator to access all steps with submitted data for questions that
+     *                                                      allow multiple submissions that count towards grade, per attempt.
+     */
+    public function get_steps_with_submitted_response_iterator() {
+        return new question_attempt_steps_with_submitted_response_iterator($this);
+    }
 }
 
 
@@ -1389,6 +1479,7 @@ class question_attempt_with_restricted_history extends question_attempt {
         $this->question = $this->baseqa->question;
         $this->maxmark = $this->baseqa->maxmark;
         $this->minfraction = $this->baseqa->minfraction;
+        $this->maxfraction = $this->baseqa->maxfraction;
         $this->questionsummary = $this->baseqa->questionsummary;
         $this->responsesummary = $this->baseqa->responsesummary;
         $this->rightanswer = $this->baseqa->rightanswer;
@@ -1511,4 +1602,142 @@ class question_attempt_reverse_step_iterator extends question_attempt_step_itera
     public function rewind() {
         $this->i = $this->qa->get_num_steps() - 1;
     }
+}
+
+/**
+ * A variant of {@link question_attempt_step_iterator} that iterates through the
+ * steps with submitted tries.
+ *
+ * @copyright  2014 The Open University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class question_attempt_steps_with_submitted_response_iterator extends question_attempt_step_iterator implements Countable {
+
+    /** @var question_attempt the question_attempt being iterated over. */
+    protected $qa;
+
+    /** @var integer records the current position in the iteration. */
+    protected $submittedresponseno;
+
+    /**
+     * Index is the submitted response number and value is the step no.
+     *
+     * @var int[]
+     */
+    protected $stepswithsubmittedresponses;
+
+    /**
+     * Do not call this constructor directly.
+     * Use {@link question_attempt::get_submission_step_iterator()}.
+     * @param question_attempt $qa the attempt to iterate over.
+     */
+    public function __construct(question_attempt $qa) {
+        $this->qa = $qa;
+        $this->find_steps_with_submitted_response();
+        $this->rewind();
+    }
+
+    /**
+     * Find the step nos  in which a student has submitted a response. Including any step with a response that is saved before
+     * the question attempt finishes.
+     *
+     * Called from constructor, should not be called from elsewhere.
+     *
+     */
+    protected function find_steps_with_submitted_response() {
+        $stepnos = array();
+        $lastsavedstep = null;
+        foreach ($this->qa->get_step_iterator() as $stepno => $step) {
+            if ($this->qa->get_behaviour()->step_has_a_submitted_response($step)) {
+                $stepnos[] = $stepno;
+                $lastsavedstep = null;
+            } else {
+                $qtdata = $step->get_qt_data();
+                if (count($qtdata)) {
+                    $lastsavedstep = $stepno;
+                }
+            }
+        }
+
+        if (!is_null($lastsavedstep)) {
+            $stepnos[] = $lastsavedstep;
+        }
+        if (empty($stepnos)) {
+            $this->stepswithsubmittedresponses = array();
+        } else {
+            // Re-index array so index starts with 1.
+            $this->stepswithsubmittedresponses = array_combine(range(1, count($stepnos)), $stepnos);
+        }
+    }
+
+    /** @return question_attempt_step */
+    public function current() {
+        return $this->offsetGet($this->submittedresponseno);
+    }
+    /** @return int */
+    public function key() {
+        return $this->submittedresponseno;
+    }
+    public function next() {
+        ++$this->submittedresponseno;
+    }
+    public function rewind() {
+        $this->submittedresponseno = 1;
+    }
+    /** @return bool */
+    public function valid() {
+        return $this->offsetExists($this->submittedresponseno);
+    }
+
+    /**
+     * @param int $submittedresponseno
+     * @return bool
+     */
+    public function offsetExists($submittedresponseno) {
+        return $submittedresponseno >= 1;
+    }
+
+    /**
+     * @param int $submittedresponseno
+     * @return question_attempt_step
+     */
+    public function offsetGet($submittedresponseno) {
+        if ($submittedresponseno > count($this->stepswithsubmittedresponses)) {
+            return null;
+        } else {
+            return $this->qa->get_step($this->step_no_for_try($submittedresponseno));
+        }
+    }
+
+    /**
+     * @return int the count of steps with tries.
+     */
+    public function count() {
+        return count($this->stepswithsubmittedresponses);
+    }
+
+    /**
+     * @param int $submittedresponseno
+     * @throws coding_exception
+     * @return int|null the step number or null if there is no such submitted response.
+     */
+    public function step_no_for_try($submittedresponseno) {
+        if (isset($this->stepswithsubmittedresponses[$submittedresponseno])) {
+            return $this->stepswithsubmittedresponses[$submittedresponseno];
+        } else if ($submittedresponseno > count($this->stepswithsubmittedresponses)) {
+            return null;
+        } else {
+            throw new coding_exception('Try number not found. It should be 1 or more.');
+        }
+    }
+
+    public function offsetSet($offset, $value) {
+        throw new coding_exception('You are only allowed read-only access to question_attempt::states '.
+                                   'through a question_attempt_step_iterator. Cannot set.');
+    }
+    public function offsetUnset($offset) {
+        throw new coding_exception('You are only allowed read-only access to question_attempt::states '.
+                                   'through a question_attempt_step_iterator. Cannot unset.');
+    }
+
 }

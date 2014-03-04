@@ -1,5 +1,33 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * This file contains renderers overridden by the Anomaly theme.
+ *
+ * @package    theme_anomaly
+ * @copyright  2010 Patrick Malley (http://newschoollearning.com/)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/**
+ * Class theme_anomaly_core_renderer
+ *
+ * @copyright  2010 Patrick Malley (http://newschoollearning.com/)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class theme_anomaly_core_renderer extends core_renderer {
 
     /**
@@ -18,6 +46,18 @@ class theme_anomaly_core_renderer extends core_renderer {
         if (empty($bc->blockinstanceid) || !strip_tags($bc->title)) {
             $bc->collapsible = block_contents::NOT_HIDEABLE;
         }
+        if (!empty($bc->blockinstanceid)) {
+            $bc->attributes['data-instanceid'] = $bc->blockinstanceid;
+        }
+        $skiptitle = strip_tags($bc->title);
+        if ($bc->blockinstanceid && !empty($skiptitle)) {
+            $bc->attributes['aria-labelledby'] = 'instance-'.$bc->blockinstanceid.'-header';
+        } else if (!empty($bc->arialabel)) {
+            $bc->attributes['aria-label'] = $bc->arialabel;
+        }
+        if ($bc->dockable) {
+            $bc->attributes['data-dockable'] = 1;
+        }
         if ($bc->collapsible == block_contents::HIDDEN) {
             $bc->add_class('hidden');
         }
@@ -25,7 +65,6 @@ class theme_anomaly_core_renderer extends core_renderer {
             $bc->add_class('block_with_controls');
         }
 
-        $skiptitle = strip_tags($bc->title);
         if (empty($skiptitle)) {
             $output = '';
             $skipdest = '';

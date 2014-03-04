@@ -158,8 +158,7 @@ class assign_submission_file extends assign_submission_plugin {
                                                   'assignsubmission_file',
                                                   ASSIGNSUBMISSION_FILE_FILEAREA,
                                                   $submissionid);
-        $mform->addElement('filemanager', 'files_filemanager', html_writer::tag('span', $this->get_name(),
-            array('class' => 'accesshide')), null, $fileoptions);
+        $mform->addElement('filemanager', 'files_filemanager', $this->get_name(), null, $fileoptions);
 
         return true;
     }
@@ -221,6 +220,7 @@ class assign_submission_file extends assign_submission_plugin {
 
         $params = array(
             'context' => context_module::instance($this->assignment->get_course_module()->id),
+            'courseid' => $this->assignment->get_course()->id,
             'objectid' => $submission->id,
             'other' => array(
                 'content' => '',
@@ -231,17 +231,49 @@ class assign_submission_file extends assign_submission_plugin {
         $event->set_legacy_files($files);
         $event->trigger();
 
+        $groupname = null;
+        $groupid = 0;
+        // Get the group name as other fields are not transcribed in the logs and this information is important.
+        if (empty($submission->userid) && !empty($submission->groupid)) {
+            $groupname = $DB->get_field('groups', 'name', array('id' => $submission->groupid), '*', MUST_EXIST);
+            $groupid = $submission->groupid;
+        } else {
+            $params['relateduserid'] = $submission->userid;
+        }
+
+        // Unset the objectid and other field from params for use in submission events.
+        unset($params['objectid']);
+        unset($params['other']);
+        $params['other'] = array(
+            'submissionid' => $submission->id,
+            'submissionattempt' => $submission->attemptnumber,
+            'submissionstatus' => $submission->status,
+            'filesubmissioncount' => $count,
+            'groupid' => $groupid,
+            'groupname' => $groupname
+        );
+
         if ($filesubmission) {
             $filesubmission->numfiles = $this->count_files($submission->id,
                                                            ASSIGNSUBMISSION_FILE_FILEAREA);
-            return $DB->update_record('assignsubmission_file', $filesubmission);
+            $updatestatus = $DB->update_record('assignsubmission_file', $filesubmission);
+            $params['objectid'] = $filesubmission->id;
+
+            $event = \assignsubmission_file\event\submission_updated::create($params);
+            $event->trigger();
+            return $updatestatus;
         } else {
             $filesubmission = new stdClass();
             $filesubmission->numfiles = $this->count_files($submission->id,
                                                            ASSIGNSUBMISSION_FILE_FILEAREA);
             $filesubmission->submission = $submission->id;
             $filesubmission->assignment = $this->assignment->get_instance()->id;
-            return $DB->insert_record('assignsubmission_file', $filesubmission) > 0;
+            $filesubmission->id = $DB->insert_record('assignsubmission_file', $filesubmission);
+            $params['objectid'] = $filesubmission->id;
+
+            $event = \assignsubmission_file\event\submission_created::create($params);
+            $event->trigger();
+            return $filesubmission->id > 0;
         }
     }
 
@@ -249,6 +281,7 @@ class assign_submission_file extends assign_submission_plugin {
      * Produce a list of files suitable for export that represent this feedback or submission
      *
      * @param stdClass $submission The submission
+     * @param stdClass $user The user record - unused
      * @return array - return an array of files indexed by filename
      */
     public function get_files(stdClass $submission, stdClass $user) {
@@ -476,5 +509,19 @@ class assign_submission_file extends assign_submission_plugin {
             $DB->insert_record('assignsubmission_file', $filesubmission);
         }
         return true;
+    }
+
+    /**
+     * Return a description of external params suitable for uploading a file submission from a webservice.
+     *
+     * @return external_description|null
+     */
+    public function get_external_parameters() {
+        return array(
+            'files_filemanager' => new external_value(
+                PARAM_INT,
+                'The id of a draft area containing files for this submission.'
+            )
+        );
     }
 }

@@ -19,7 +19,7 @@
  * Library of functions and constants for module glossary
  * (replace glossary with the name of your module and delete this line)
  *
- * @package   mod-glossary
+ * @package   mod_glossary
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -364,7 +364,7 @@ function glossary_get_recent_mod_activity(&$activities, &$index, $timestart, $co
     $params['timestart'] = $timestart;
     $params['glossaryid'] = $cm->instance;
 
-    $ufields = user_picture::fields('u', array('lastaccess', 'firstname', 'lastname', 'email', 'picture', 'imagealt'));
+    $ufields = user_picture::fields('u');
     $entries = $DB->get_records_sql("
               SELECT ge.id AS entryid, ge.*, $ufields
                 FROM {glossary_entries} ge
@@ -399,6 +399,9 @@ function glossary_get_recent_mod_activity(&$activities, &$index, $timestart, $co
         }
 
         $tmpactivity                       = new stdClass();
+        $tmpactivity->user = username_load_fields_from_object(new stdClass(), $entry, null,
+                explode(',', user_picture::fields()));
+        $tmpactivity->user->fullname       = fullname($tmpactivity->user, $viewfullnames);
         $tmpactivity->type                 = 'glossary';
         $tmpactivity->cmid                 = $cm->id;
         $tmpactivity->glossaryid           = $entry->glossaryid;
@@ -409,14 +412,6 @@ function glossary_get_recent_mod_activity(&$activities, &$index, $timestart, $co
         $tmpactivity->content->entryid     = $entry->entryid;
         $tmpactivity->content->concept     = $entry->concept;
         $tmpactivity->content->definition  = $entry->definition;
-        $tmpactivity->user                 = new stdClass();
-        $tmpactivity->user->id             = $entry->userid;
-        $tmpactivity->user->firstname      = $entry->firstname;
-        $tmpactivity->user->lastname       = $entry->lastname;
-        $tmpactivity->user->fullname       = fullname($entry, $viewfullnames);
-        $tmpactivity->user->picture        = $entry->picture;
-        $tmpactivity->user->imagealt       = $entry->imagealt;
-        $tmpactivity->user->email          = $entry->email;
 
         $activities[$index++] = $tmpactivity;
     }
@@ -1085,7 +1080,7 @@ function glossary_print_entry_default ($entry, $glossary, $cm) {
 
     require_once($CFG->libdir . '/filelib.php');
 
-    echo '<h3>'. strip_tags($entry->concept) . ': </h3>';
+    echo $OUTPUT->heading(strip_tags($entry->concept), 4);
 
     $definition = $entry->definition;
 
@@ -1105,13 +1100,13 @@ function glossary_print_entry_default ($entry, $glossary, $cm) {
 }
 
 /**
- * Print glossary concept/term as a heading &lt;h3>
+ * Print glossary concept/term as a heading &lt;h4>
  * @param object $entry
  */
 function  glossary_print_entry_concept($entry, $return=false) {
     global $OUTPUT;
 
-    $text = html_writer::tag('h3', format_string($entry->concept));
+    $text = $OUTPUT->heading(format_string($entry->concept), 4);
     if (!empty($entry->highlight)) {
         $text = highlight($entry->highlight, $text);
     }
@@ -1236,6 +1231,15 @@ function glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode='',$h
         $output = true;
         $return .= html_writer::tag('span', get_string('entryishidden','glossary'),
             array('class' => 'glossary-hidden-note'));
+    }
+
+    if (has_capability('mod/glossary:approve', $context) && !$glossary->defaultapproval && $entry->approved) {
+        $output = true;
+        $return .= '<a class="action-icon" title="' . get_string('disapprove', 'glossary').
+                   '" href="approve.php?newstate=0&amp;eid='.$entry->id.'&amp;mode='.$mode.
+                   '&amp;hook='.urlencode($hook).'&amp;sesskey='.sesskey().
+                   '"><img src="'.$OUTPUT->pix_url('t/block').'" class="smallicon" alt="'.
+                   get_string('disapprove','glossary').$altsuffix.'" /></a>';
     }
 
     $iscurrentuser = ($entry->userid == $USER->id);

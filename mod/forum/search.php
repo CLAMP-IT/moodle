@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package mod-forum
+ * @package   mod_forum
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -112,7 +112,13 @@ if (!$course = $DB->get_record('course', array('id'=>$id))) {
 
 require_course_login($course);
 
-add_to_log($course->id, "forum", "search", "search.php?id=$course->id&amp;search=".urlencode($search), $search);
+$params = array(
+    'context' => $PAGE->context,
+    'other' => array('searchterm' => $search)
+);
+
+$event = \mod_forum\event\course_searched::create($params);
+$event->trigger();
 
 $strforums = get_string("modulenameplural", "forum");
 $strsearch = get_string("search", "forum");
@@ -146,7 +152,9 @@ if (!$posts = forum_search_posts($searchterms, $course->id, $page*$perpage, $per
     $PAGE->set_title($strsearchresults);
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string("noposts", "forum"));
+    echo $OUTPUT->heading($strforums, 2);
+    echo $OUTPUT->heading($strsearchresults, 3);
+    echo $OUTPUT->heading(get_string("noposts", "forum"), 4);
 
     if (!$individualparams) {
         $words = $search;
@@ -189,7 +197,8 @@ echo '<a href="search.php?id='.$course->id.
                          '">'.get_string('advancedsearch','forum').'...</a>';
 echo '</div>';
 
-echo $OUTPUT->heading("$strsearchresults: $totalcount");
+echo $OUTPUT->heading($strforums, 2);
+echo $OUTPUT->heading("$strsearchresults: $totalcount", 3);
 
 $url = new moodle_url('search.php', array('search' => $search, 'id' => $course->id, 'perpage' => $perpage));
 echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
@@ -422,7 +431,7 @@ function forum_print_big_search_form($course) {
  *
  * @param string $words String containing space-separated strings to search for
  * @param string $prefix String to prepend to the each token taken out of $words
- * @returns array
+ * @return array
  * @todo Take the hardcoded limit out of this function and put it into a user-specified parameter
  */
 function forum_clean_search_terms($words, $prefix='') {

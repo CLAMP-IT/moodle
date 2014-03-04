@@ -142,15 +142,16 @@ define('PHPUNIT_TEST', false);
 define('IGNORE_COMPONENT_CACHE', true);
 
 // Check that PHP is of a sufficient version
-if (version_compare(phpversion(), "5.3.3") < 0) {
+if (version_compare(phpversion(), "5.4.4") < 0) {
     $phpversion = phpversion();
     // do NOT localise - lang strings would not work here and we CAN NOT move it after installib
-    fwrite(STDERR, "Moodle 2.5 or later requires at least PHP 5.3.3 (currently using version $phpversion).\n");
+    fwrite(STDERR, "Moodle 2.7 or later requires at least PHP 5.4.4 (currently using version $phpversion).\n");
     fwrite(STDERR, "Please upgrade your server software or install older Moodle version.\n");
     exit(1);
 }
 
 // set up configuration
+global $CFG;
 $CFG = new stdClass();
 $CFG->lang                 = 'en';
 $CFG->dirroot              = dirname(dirname(dirname(__FILE__)));
@@ -189,8 +190,36 @@ require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/componentlib.class.php');
 require_once($CFG->dirroot.'/cache/lib.php');
 
+// Register our classloader, in theory somebody might want to replace it to load other hacked core classes.
+// Required because the database checks below lead to session interaction which is going to lead us to requiring autoloaded classes.
+if (defined('COMPONENT_CLASSLOADER')) {
+    spl_autoload_register(COMPONENT_CLASSLOADER);
+} else {
+    spl_autoload_register('core_component::classloader');
+}
+
 require($CFG->dirroot.'/version.php');
 $CFG->target_release = $release;
+
+$_SESSION = array();
+$_SESSION['SESSION'] = new stdClass();
+$_SESSION['SESSION']->lang = $CFG->lang;
+$_SESSION['USER'] = new stdClass();
+$_SESSION['USER']->id = 0;
+$_SESSION['USER']->mnethostid = 1;
+
+global $SESSION;
+global $USER;
+$SESSION = &$_SESSION['SESSION'];
+$USER    = &$_SESSION['USER'];
+
+global $COURSE;
+$COURSE = new stdClass();
+$COURSE->id = 1;
+
+global $SITE;
+$SITE = $COURSE;
+define('SITEID', 1);
 
 //Database types
 $databases = array('mysqli' => moodle_database::get_driver_instance('mysqli', 'native'),
@@ -724,9 +753,8 @@ if (!$envstatus) {
 }
 
 // Test plugin dependencies.
-require_once($CFG->libdir . '/pluginlib.php');
 $failed = array();
-if (!plugin_manager::instance()->all_plugins_ok($version, $failed)) {
+if (!core_plugin_manager::instance()->all_plugins_ok($version, $failed)) {
     cli_problem(get_string('pluginscheckfailed', 'admin', array('pluginslist' => implode(', ', array_unique($failed)))));
     cli_error(get_string('pluginschecktodo', 'admin'));
 }

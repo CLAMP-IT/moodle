@@ -20,7 +20,7 @@
  *
  * @copyright 2005 Martin Dougiamas  http://dougiamas.com
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package mod-data
+ * @package mod_data
  */
 
 require_once('../../config.php');
@@ -84,10 +84,11 @@ if($mform->is_cancelled()) {
     $PAGE->set_title($data->name);
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
+    echo $OUTPUT->heading(format_string($data->name), 2);
+    echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
+
     $url = new moodle_url('/mod/data/export.php', array('d' => $d));
     groups_print_activity_menu($cm, $url);
-    echo $OUTPUT->heading(format_string($data->name));
-    echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
 
     // these are for the tab display
     $currentgroup = groups_get_activity_group($cm);

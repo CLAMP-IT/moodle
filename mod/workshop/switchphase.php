@@ -18,8 +18,7 @@
 /**
  * Change the current phase of the workshop
  *
- * @package    mod
- * @subpackage workshop
+ * @package    mod_workshop
  * @copyright  2009 David Mudrak <david.mudrak@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -60,6 +59,7 @@ $PAGE->navbar->add(get_string('switchingphase', 'workshop'));
 // Output starts here
 //
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($workshop->name));
 echo $OUTPUT->confirm(get_string('switchphase' . $phase . 'info', 'workshop'),
                         new moodle_url($PAGE->url, array('confirm' => 1)), $workshop->view_url());
 echo $OUTPUT->footer();

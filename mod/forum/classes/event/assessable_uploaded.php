@@ -29,6 +29,15 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * mod_forum assessable uploaded event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type array pathnamehashes uploaded files path name hashes.
+ *      @type string content post discussion message.
+ *      @type int discussionid id of discussion.
+ *      @type string triggeredfrom name of the function from where event is triggred.
+ * }
+ *
  * @package    mod_forum
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -53,7 +62,7 @@ class assessable_uploaded extends \core\event\assessable_uploaded {
         $eventdata = new \stdClass();
         $eventdata->modulename   = 'forum';
         $eventdata->name         = $this->other['triggeredfrom'];
-        $eventdata->cmid         = $this->context->instanceid;
+        $eventdata->cmid         = $this->contextinstanceid;
         $eventdata->itemid       = $this->objectid;
         $eventdata->courseid     = $this->courseid;
         $eventdata->userid       = $this->userid;

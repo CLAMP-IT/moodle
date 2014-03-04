@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package mod-forum
+ * @package   mod_forum
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -51,7 +51,11 @@ $coursecontext = context_course::instance($course->id);
 
 unset($SESSION->fromdiscussion);
 
-add_to_log($course->id, 'forum', 'view forums', "index.php?id=$course->id");
+$params = array(
+    'context' => context_course::instance($course->id)
+);
+$event = \mod_forum\event\course_module_instance_list_viewed::create($params);
+$event->trigger();
 
 $strforums       = get_string('forums', 'forum');
 $strforum        = get_string('forum', 'forum');
@@ -138,11 +142,7 @@ $generalforums  = array();
 $learningforums = array();
 $modinfo = get_fast_modinfo($course);
 
-if (!isset($modinfo->instances['forum'])) {
-    $modinfo->instances['forum'] = array();
-}
-
-foreach ($modinfo->instances['forum'] as $forumid=>$cm) {
+foreach ($modinfo->get_instances_of('forum') as $forumid=>$cm) {
     if (!$cm->uservisible or !isset($forums[$forumid])) {
         continue;
     }
@@ -176,7 +176,7 @@ if (!is_null($subscribe)) {
         redirect(new moodle_url('/mod/forum/index.php', array('id' => $id)), get_string('subscribeenrolledonly', 'forum'));
     }
     // Can proceed now, the user is not guest and is enrolled
-    foreach ($modinfo->instances['forum'] as $forumid=>$cm) {
+    foreach ($modinfo->get_instances_of('forum') as $forumid=>$cm) {
         $forum = $forums[$forumid];
         $modcontext = context_module::instance($cm->id);
         $cansub = false;
@@ -201,10 +201,8 @@ if (!is_null($subscribe)) {
     $returnto = forum_go_back_to("index.php?id=$course->id");
     $shortname = format_string($course->shortname, true, array('context' => context_course::instance($course->id)));
     if ($subscribe) {
-        add_to_log($course->id, 'forum', 'subscribeall', "index.php?id=$course->id", $course->id);
         redirect($returnto, get_string('nowallsubscribed', 'forum', $shortname), 1);
     } else {
-        add_to_log($course->id, 'forum', 'unsubscribeall', "index.php?id=$course->id", $course->id);
         redirect($returnto, get_string('nowallunsubscribed', 'forum', $shortname), 1);
     }
 }
@@ -234,9 +232,10 @@ if ($generalforums) {
                     $unreadlink = '<span class="read">0</span>';
                 }
 
-                if ($forum->trackingtype == FORUM_TRACKING_ON) {
+                if (($forum->trackingtype == FORUM_TRACKING_FORCED) && ($CFG->forum_allowforcedreadtracking)) {
                     $trackedlink = $stryes;
-
+                } else if ($forum->trackingtype === FORUM_TRACKING_OFF || ($USER->trackforums == 0)) {
+                    $trackedlink = '-';
                 } else {
                     $aurl = new moodle_url('/mod/forum/settracking.php', array('id'=>$forum->id));
                     if (!isset($untracked[$forum->id])) {
@@ -372,9 +371,10 @@ if ($course->id != SITEID) {    // Only real courses have learning forums
                         $unreadlink = '<span class="read">0</span>';
                     }
 
-                    if ($forum->trackingtype == FORUM_TRACKING_ON) {
+                    if (($forum->trackingtype == FORUM_TRACKING_FORCED) && ($CFG->forum_allowforcedreadtracking)) {
                         $trackedlink = $stryes;
-
+                    } else if ($forum->trackingtype === FORUM_TRACKING_OFF || ($USER->trackforums == 0)) {
+                        $trackedlink = '-';
                     } else {
                         $aurl = new moodle_url('/mod/forum/settracking.php', array('id'=>$forum->id));
                         if (!isset($untracked[$forum->id])) {
@@ -477,12 +477,12 @@ if (!isguestuser() && isloggedin() && $can_subscribe) {
 }
 
 if ($generalforums) {
-    echo $OUTPUT->heading(get_string('generalforums', 'forum'));
+    echo $OUTPUT->heading(get_string('generalforums', 'forum'), 2);
     echo html_writer::table($generaltable);
 }
 
 if ($learningforums) {
-    echo $OUTPUT->heading(get_string('learningforums', 'forum'));
+    echo $OUTPUT->heading(get_string('learningforums', 'forum'), 2);
     echo html_writer::table($learningtable);
 }
 

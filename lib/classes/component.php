@@ -24,6 +24,20 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// Constants used in version.php files, these must exist when core_component executes.
+
+/** Software maturity level - internals can be tested using white box techniques. */
+define('MATURITY_ALPHA',    50);
+/** Software maturity level - feature complete, ready for preview and testing. */
+define('MATURITY_BETA',     100);
+/** Software maturity level - tested, will be released unless there are fatal bugs. */
+define('MATURITY_RC',       150);
+/** Software maturity level - ready for production deployment. */
+define('MATURITY_STABLE',   200);
+/** Any version - special value that can be used in $plugin->dependencies in version.php files. */
+define('ANY_VERSION', 'any');
+
+
 /**
  * Collection of components related methods.
  */
@@ -39,10 +53,16 @@ class core_component {
     protected static $plugins = null;
     /** @var null cache of core subsystems */
     protected static $subsystems = null;
+    /** @var null subplugin type parents */
+    protected static $parents = null;
+    /** @var null subplugins */
+    protected static $subplugins = null;
     /** @var null list of all known classes that can be autoloaded */
     protected static $classmap = null;
     /** @var null list of some known files that can be included. */
     protected static $filemap = null;
+    /** @var int|float core version. */
+    protected static $version = null;
     /** @var array list of the files to map. */
     protected static $filestomap = array('lib.php', 'settings.php');
 
@@ -108,6 +128,8 @@ class core_component {
                 self::$plugintypes = $cache['plugintypes'];
                 self::$plugins     = $cache['plugins'];
                 self::$subsystems  = $cache['subsystems'];
+                self::$parents     = $cache['parents'];
+                self::$subplugins  = $cache['subplugins'];
                 self::$classmap    = $cache['classmap'];
                 self::$filemap     = $cache['filemap'];
                 return;
@@ -133,8 +155,11 @@ class core_component {
                 include($cachefile);
                 if (!is_array($cache)) {
                     // Something is very wrong.
-                } else if (!isset($cache['plugintypes']) or !isset($cache['plugins']) or !isset($cache['subsystems']) or !isset($cache['classmap'])) {
+                } else if (!isset($cache['version'])) {
                     // Something is very wrong.
+                } else if ((float) $cache['version'] !== (float) self::fetch_core_version()) {
+                    // Outdated cache. We trigger an error log to track an eventual repetitive failure of float comparison.
+                    error_log('Resetting core_component cache after core upgrade to version ' . self::fetch_core_version());
                 } else if ($cache['plugintypes']['mod'] !== "$CFG->dirroot/mod") {
                     // $CFG->dirroot was changed.
                 } else {
@@ -142,6 +167,8 @@ class core_component {
                     self::$plugintypes = $cache['plugintypes'];
                     self::$plugins     = $cache['plugins'];
                     self::$subsystems  = $cache['subsystems'];
+                    self::$parents     = $cache['parents'];
+                    self::$subplugins  = $cache['subplugins'];
                     self::$classmap    = $cache['classmap'];
                     self::$filemap     = $cache['filemap'];
                     return;
@@ -225,8 +252,11 @@ class core_component {
             'subsystems'  => self::$subsystems,
             'plugintypes' => self::$plugintypes,
             'plugins'     => self::$plugins,
+            'parents'     => self::$parents,
+            'subplugins'  => self::$subplugins,
             'classmap'    => self::$classmap,
             'filemap'     => self::$filemap,
+            'version'     => self::$version,
         );
 
         return '<?php
@@ -240,7 +270,7 @@ $cache = '.var_export($cache, true).';
     protected static function fill_all_caches() {
         self::$subsystems = self::fetch_subsystems();
 
-        self::$plugintypes = self::fetch_plugintypes();
+        list(self::$plugintypes, self::$parents, self::$subplugins) = self::fetch_plugintypes();
 
         self::$plugins = array();
         foreach (self::$plugintypes as $type => $fulldir) {
@@ -249,6 +279,24 @@ $cache = '.var_export($cache, true).';
 
         self::fill_classmap_cache();
         self::fill_filemap_cache();
+        self::fetch_core_version();
+    }
+
+    /**
+     * Get the core version.
+     *
+     * In order for this to work properly, opcache should be reset beforehand.
+     *
+     * @return float core version.
+     */
+    protected static function fetch_core_version() {
+        global $CFG;
+        if (self::$version === null) {
+            $version = null; // Prevent IDE complaints.
+            require($CFG->dirroot . '/version.php');
+            self::$version = $version;
+        }
+        return self::$version;
     }
 
     /**
@@ -341,6 +389,7 @@ $cache = '.var_export($cache, true).';
             'qtype'         => $CFG->dirroot.'/question/type',
             'mod'           => $CFG->dirroot.'/mod',
             'auth'          => $CFG->dirroot.'/auth',
+            'calendartype'  => $CFG->dirroot.'/calendar/type',
             'enrol'         => $CFG->dirroot.'/enrol',
             'message'       => $CFG->dirroot.'/message/output',
             'block'         => $CFG->dirroot.'/blocks',
@@ -364,8 +413,9 @@ $cache = '.var_export($cache, true).';
             'tool'          => $CFG->dirroot.'/'.$CFG->admin.'/tool',
             'cachestore'    => $CFG->dirroot.'/cache/stores',
             'cachelock'     => $CFG->dirroot.'/cache/locks',
-
         );
+        $parents = array();
+        $subplugins = array();
 
         if (!empty($CFG->themedir) and is_dir($CFG->themedir) ) {
             $types['theme'] = $CFG->themedir;
@@ -378,66 +428,80 @@ $cache = '.var_export($cache, true).';
                 // Local subplugins must be after local plugins.
                 continue;
             }
-            $subplugins = self::fetch_subplugins($type, $types[$type]);
-            foreach($subplugins as $subtype => $subplugin) {
-                if (isset($types[$subtype])) {
-                    error_log("Invalid subtype '$subtype', duplicate detected.");
+            $plugins = self::fetch_plugins($type, $types[$type]);
+            foreach ($plugins as $plugin => $fulldir) {
+                $subtypes = self::fetch_subtypes($fulldir);
+                if (!$subtypes) {
                     continue;
                 }
-                $types[$subtype] = $subplugin;
+                $subplugins[$type.'_'.$plugin] = array();
+                foreach($subtypes as $subtype => $subdir) {
+                    if (isset($types[$subtype])) {
+                        error_log("Invalid subtype '$subtype', duplicate detected.");
+                        continue;
+                    }
+                    $types[$subtype] = $subdir;
+                    $parents[$subtype] = $type.'_'.$plugin;
+                    $subplugins[$type.'_'.$plugin][$subtype] = array_keys(self::fetch_plugins($subtype, $subdir));
+                }
             }
         }
-
         // Local is always last!
         $types['local'] = $CFG->dirroot.'/local';
 
         if (in_array('local', self::$supportsubplugins)) {
-            $subplugins = self::fetch_subplugins('local', $types['local']);
-            foreach($subplugins as $subtype => $subplugin) {
-                if (isset($types[$subtype])) {
-                    error_log("Invalid subtype '$subtype', duplicate detected.");
+            $type = 'local';
+            $plugins = self::fetch_plugins($type, $types[$type]);
+            foreach ($plugins as $plugin => $fulldir) {
+                $subtypes = self::fetch_subtypes($fulldir);
+                if (!$subtypes) {
                     continue;
                 }
-                $types[$subtype] = $subplugin;
+                $subplugins[$type.'_'.$plugin] = array();
+                foreach($subtypes as $subtype => $subdir) {
+                    if (isset($types[$subtype])) {
+                        error_log("Invalid subtype '$subtype', duplicate detected.");
+                        continue;
+                    }
+                    $types[$subtype] = $subdir;
+                    $parents[$subtype] = $type.'_'.$plugin;
+                    $subplugins[$type.'_'.$plugin][$subtype] = array_keys(self::fetch_plugins($subtype, $subdir));
+                }
             }
         }
 
-        return $types;
+        return array($types, $parents, $subplugins);
     }
 
     /**
-     * Returns list of subtypes defined in given plugin type.
-     * @param string $type
-     * @param string $fulldir
+     * Returns list of subtypes.
+     * @param string $ownerdir
      * @return array
      */
-    protected static function fetch_subplugins($type, $fulldir) {
+    protected static function fetch_subtypes($ownerdir) {
         global $CFG;
 
         $types = array();
-        $subpluginowners = self::fetch_plugins($type, $fulldir);
-        foreach ($subpluginowners as $ownerdir) {
-            if (file_exists("$ownerdir/db/subplugins.php")) {
-                $subplugins = array();
-                include("$ownerdir/db/subplugins.php");
-                foreach ($subplugins as $subtype => $dir) {
-                    if (!preg_match('/^[a-z][a-z0-9]*$/', $subtype)) {
-                        error_log("Invalid subtype '$subtype'' detected in '$ownerdir', invalid characters present.");
-                        continue;
-                    }
-                    if (isset(self::$subsystems[$subtype])) {
-                        error_log("Invalid subtype '$subtype'' detected in '$ownerdir', duplicates core subsystem.");
-                        continue;
-                    }
-                    if ($CFG->admin !== 'admin' and strpos($dir, 'admin/') === 0) {
-                        $dir = preg_replace('|^admin/|', "$CFG->admin/", $dir);
-                    }
-                    if (!is_dir("$CFG->dirroot/$dir")) {
-                        error_log("Invalid subtype directory '$dir' detected in '$ownerdir'.");
-                        continue;
-                    }
-                    $types[$subtype] = "$CFG->dirroot/$dir";
+        if (file_exists("$ownerdir/db/subplugins.php")) {
+            $subplugins = array();
+            include("$ownerdir/db/subplugins.php");
+            foreach ($subplugins as $subtype => $dir) {
+                if (!preg_match('/^[a-z][a-z0-9]*$/', $subtype)) {
+                    error_log("Invalid subtype '$subtype'' detected in '$ownerdir', invalid characters present.");
+                    continue;
                 }
+                if (isset(self::$subsystems[$subtype])) {
+                    error_log("Invalid subtype '$subtype'' detected in '$ownerdir', duplicates core subsystem.");
+                    continue;
+                }
+                if ($CFG->admin !== 'admin' and strpos($dir, 'admin/') === 0) {
+                    $dir = preg_replace('|^admin/|', "$CFG->admin/", $dir);
+                }
+                if (!is_dir("$CFG->dirroot/$dir")) {
+                    error_log("Invalid subtype directory '$dir' detected in '$ownerdir'.");
+                    continue;
+                }
+                $types[$subtype] = "$CFG->dirroot/$dir";
             }
         }
         return $types;
@@ -502,6 +566,9 @@ $cache = '.var_export($cache, true).';
         self::load_classes('core', "$CFG->dirroot/lib/classes");
 
         foreach (self::$subsystems as $subsystem => $fulldir) {
+            if (!$fulldir) {
+                continue;
+            }
             self::load_classes('core_'.$subsystem, "$fulldir/classes");
         }
 
@@ -781,7 +848,7 @@ $cache = '.var_export($cache, true).';
             return (bool)preg_match('/^[a-z][a-z0-9]*$/', $pluginname);
 
         } else {
-            return (bool)preg_match('/^[a-z](?:[a-z0-9_](?!__))*[a-z0-9]$/', $pluginname);
+            return (bool)preg_match('/^[a-z](?:[a-z0-9_](?!__))*[a-z0-9]+$/', $pluginname);
         }
     }
 
@@ -856,6 +923,37 @@ $cache = '.var_export($cache, true).';
     }
 
     /**
+     * Returns parent of this subplugin type.
+     *
+     * @param string $type
+     * @return string parent component or null
+     */
+    public static function get_subtype_parent($type) {
+        self::init();
+
+        if (isset(self::$parents[$type])) {
+            return self::$parents[$type];
+        }
+
+        return null;
+    }
+
+    /**
+     * Return all subplugins of this component.
+     * @param string $component.
+     * @return array $subtype=>array($component, ..), null if no subtypes defined
+     */
+    public static function get_subplugins($component) {
+        self::init();
+
+        if (isset(self::$subplugins[$component])) {
+            return self::$subplugins[$component];
+        }
+
+        return null;
+    }
+
+    /**
      * Returns hash of all versions including core and all plugins.
      *
      * This is relatively slow and not fully cached, use with care!
@@ -870,9 +968,7 @@ $cache = '.var_export($cache, true).';
         $versions = array();
 
         // Main version first.
-        $version = null;
-        include($CFG->dirroot.'/version.php');
-        $versions['core'] = $version;
+        $versions['core'] = self::fetch_core_version();
 
         // The problem here is tha the component cache might be stable,
         // we want this to work also on frontpage without resetting the component cache.
@@ -890,17 +986,11 @@ $cache = '.var_export($cache, true).';
                 $plugs = self::fetch_plugins($type, $typedir);
             }
             foreach ($plugs as $plug => $fullplug) {
-                if ($type === 'mod') {
-                    $module = new stdClass();
-                    $module->version = null;
-                    include($fullplug.'/version.php');
-                    $versions[$plug] = $module->version;
-                } else {
-                    $plugin = new stdClass();
-                    $plugin->version = null;
-                    @include($fullplug.'/version.php');
-                    $versions[$plug] = $plugin->version;
-                }
+                $plugin = new stdClass();
+                $plugin->version = null;
+                $module = $plugin;
+                @include($fullplug.'/version.php');
+                $versions[$type.'_'.$plug] = $plugin->version;
             }
         }
 
@@ -922,5 +1012,15 @@ $cache = '.var_export($cache, true).';
             }
             opcache_invalidate($file, true);
         }
+    }
+
+    /**
+     * Return true if subsystemname is core subsystem.
+     *
+     * @param string $subsystemname name of the subsystem.
+     * @return bool true if core subsystem.
+     */
+    public static function is_core_subsystem($subsystemname) {
+        return isset(self::$subsystems[$subsystemname]);
     }
 }

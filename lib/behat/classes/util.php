@@ -43,6 +43,11 @@ require_once(__DIR__ . '/../../filelib.php');
 class behat_util extends testing_util {
 
     /**
+     * The behat test site fullname and shortname.
+     */
+    const BEHATSITENAME = "Acceptance test site";
+
+    /**
      * @var array Files to skip when resetting dataroot folder
      */
     protected static $datarootskiponreset = array('.', '..', 'behat', 'behattestdir.txt');
@@ -64,16 +69,24 @@ class behat_util extends testing_util {
             throw new coding_exception('This method can be only used by Behat CLI tool');
         }
 
+        $tables = $DB->get_tables(false);
+        if (!empty($tables)) {
+            behat_error(BEHAT_EXITCODE_INSTALLED);
+        }
+
         // New dataroot.
         self::reset_dataroot();
 
         $options = array();
         $options['adminuser'] = 'admin';
         $options['adminpass'] = 'admin';
-        $options['fullname'] = 'Acceptance test site';
-        $options['shortname'] = 'Acceptance test site';
+        $options['fullname'] = self::BEHATSITENAME;
+        $options['shortname'] = self::BEHATSITENAME;
 
         install_cli_database($options, false);
+
+        $frontpagesummary = new admin_setting_special_frontpagedesc();
+        $frontpagesummary->write_setting(self::BEHATSITENAME);
 
         // Update admin user info.
         $user = $DB->get_record('user', array('username' => 'admin'));
@@ -89,7 +102,10 @@ class behat_util extends testing_util {
 
         // Sets maximum debug level.
         set_config('debug', DEBUG_DEVELOPER);
-        set_config('debugdisplay', true);
+        set_config('debugdisplay', 1);
+
+        // Disable some settings that are not wanted on test sites.
+        set_config('noemailever', 1);
 
         // Keeps the current version of database and dataroot.
         self::store_versions_hash();
@@ -168,7 +184,7 @@ class behat_util extends testing_util {
      * features and steps definitions.
      *
      * Stores a file in dataroot/behat to allow Moodle to switch
-     * to the test environment when using cli-server (or $CFG->behat_switchcompletely)
+     * to the test environment when using cli-server.
      * @throws coding_exception
      * @return void
      */
@@ -180,7 +196,7 @@ class behat_util extends testing_util {
         }
 
         // Checks the behat set up and the PHP version.
-        if ($errorcode = behat_command::behat_setup_problem(true)) {
+        if ($errorcode = behat_command::behat_setup_problem()) {
             exit($errorcode);
         }
 
@@ -214,7 +230,7 @@ class behat_util extends testing_util {
         }
 
         // Checks the behat set up and the PHP version, returning an error code if something went wrong.
-        if ($errorcode = behat_command::behat_setup_problem(true)) {
+        if ($errorcode = behat_command::behat_setup_problem()) {
             return $errorcode;
         }
 

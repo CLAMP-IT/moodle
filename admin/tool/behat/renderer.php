@@ -45,6 +45,90 @@ class tool_behat_renderer extends plugin_renderer_base {
      */
     public function render_stepsdefinitions($stepsdefinitions, $form) {
 
+        $html = $this->generic_info();
+
+        // Form.
+        ob_start();
+        $form->display();
+        $html .= ob_get_contents();
+        ob_end_clean();
+
+        if (empty($stepsdefinitions)) {
+            $stepsdefinitions = get_string('nostepsdefinitions', 'tool_behat');
+        } else {
+
+            $stepsdefinitions = implode('', $stepsdefinitions);
+
+            // Replace text selector type arguments with a user-friendly select.
+            $stepsdefinitions = preg_replace_callback('/(TEXT_SELECTOR\d?_STRING)/',
+                function ($matches) {
+                    return html_writer::select(behat_selectors::get_allowed_text_selectors(), uniqid());
+                },
+                $stepsdefinitions
+            );
+
+            // Replace selector type arguments with a user-friendly select.
+            $stepsdefinitions = preg_replace_callback('/(SELECTOR\d?_STRING)/',
+                function ($matches) {
+                    return html_writer::select(behat_selectors::get_allowed_selectors(), uniqid());
+                },
+                $stepsdefinitions
+            );
+
+            // Replace simple OR options.
+            $regex = '#\(\?P<[^>]+>([^\)|]+\|[^\)]+)\)#';
+            $stepsdefinitions = preg_replace_callback($regex,
+                function($matches){
+                    return html_writer::select(explode('|', $matches[1]), uniqid());
+                },
+                $stepsdefinitions
+            );
+
+        }
+
+        // Steps definitions.
+        $html .= html_writer::tag('div', $stepsdefinitions, array('class' => 'steps-definitions'));
+
+        $html .= $this->output->footer();
+
+        return $html;
+    }
+
+    /**
+     * Renders an error message adding the generic info about the tool purpose and setup.
+     *
+     * @param string $msg The error message
+     * @return string HTML
+     */
+    public function render_error($msg) {
+
+        $html = $this->generic_info();
+
+        $a = new stdClass();
+        $a->errormsg = $msg;
+        $a->behatcommand = behat_command::get_behat_command();
+        $a->behatinit = 'php admin' . DIRECTORY_SEPARATOR . 'tool' . DIRECTORY_SEPARATOR .
+            'behat' . DIRECTORY_SEPARATOR . 'cli' . DIRECTORY_SEPARATOR . 'init.php';
+
+        $msg = get_string('wrongbehatsetup', 'tool_behat', $a);
+
+        // Error box including generic error string + specific error msg.
+        $html .= $this->output->box_start('box errorbox');
+        $html .= html_writer::tag('div', $msg);
+        $html .= $this->output->box_end();
+
+        $html .= $this->output->footer();
+
+        return $html;
+    }
+
+    /**
+     * Generic info about the tool.
+     *
+     * @return string
+     */
+    protected function generic_info() {
+
         $title = get_string('pluginname', 'tool_behat');
 
         // Header.
@@ -77,41 +161,7 @@ class tool_behat_renderer extends plugin_renderer_base {
         $html .= html_writer::end_tag('div');
         $html .= $this->output->box_end();
 
-        // Form.
-        ob_start();
-        $form->display();
-        $html .= ob_get_contents();
-        ob_end_clean();
-
-        if (empty($stepsdefinitions)) {
-            $stepsdefinitions = get_string('nostepsdefinitions', 'tool_behat');
-        } else {
-
-            $stepsdefinitions = implode('', $stepsdefinitions);
-
-            // Replace text selector type arguments with a user-friendly select.
-            $stepsdefinitions = preg_replace_callback('/(TEXT_SELECTOR\d?_STRING)/',
-                function ($matches) {
-                    return html_writer::select(behat_selectors::get_allowed_text_selectors(), uniqid());
-                },
-                $stepsdefinitions
-            );
-
-            // Replace selector type arguments with a user-friendly select.
-            $stepsdefinitions = preg_replace_callback('/(SELECTOR\d?_STRING)/',
-                function ($matches) {
-                    return html_writer::select(behat_selectors::get_allowed_selectors(), uniqid());
-                },
-                $stepsdefinitions
-            );
-
-        }
-
-        // Steps definitions.
-        $html .= html_writer::tag('div', $stepsdefinitions, array('class' => 'steps-definitions'));
-
-        $html .= $this->output->footer();
-
         return $html;
     }
+
 }

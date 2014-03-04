@@ -93,6 +93,7 @@ if (empty($active_editors)) {
 }
 
 set_config('texteditors', implode(',', $active_editors));
+core_plugin_manager::reset_caches();
 
 if ($return) {
     redirect ($returnurl);

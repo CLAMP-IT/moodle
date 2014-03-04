@@ -17,8 +17,7 @@
 /**
  * Current user info block.
  *
- * @package    block
- * @subpackage myprofile
+ * @package    block_myprofile
  * @copyright  2010 Remote-Learner.net
  * @author     Olav Jordan <olav.jordan@remote-learner.ca>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,6 +25,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2013050100;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2013050100;        // Requires this Moodle version
+$plugin->version   = 2013110500;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->requires  = 2013110500;        // Requires this Moodle version
 $plugin->component = 'block_myprofile'; // Full name of the plugin (used for diagnostics)

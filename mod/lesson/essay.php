@@ -18,8 +18,7 @@
 /**
  * Provides the interface for grading essay questions
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -34,7 +33,8 @@ $mode = optional_param('mode', 'display', PARAM_ALPHA);
 
 $cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
-$lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
+$dblesson = $DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST);
+$lesson = new lesson($dblesson);
 
 require_login($course, false, $cm);
 $context = context_module::instance($cm->id);
@@ -129,8 +129,20 @@ switch ($mode) {
             $updategrade->id = $grade->id;
             $updategrade->grade = $gradeinfo->grade;
             $DB->update_record('lesson_grades', $updategrade);
-            // Log it
-            add_to_log($course->id, 'lesson', 'update grade', "essay.php?id=$cm->id", $lesson->name, $cm->id);
+
+            $params = array(
+                'context' => $context,
+                'objectid' => $grade->id,
+                'courseid' => $course->id,
+                'relateduserid' => $attempt->userid,
+                'other' => array(
+                    'lessonid' => $lesson->id,
+                    'attemptid' => $attemptid
+                )
+            );
+            $event = \mod_lesson\event\essay_assessed::create($params);
+            $event->add_record_snapshot('lesson', $dblesson);
+            $event->trigger();
 
             $lesson->add_message(get_string('changessaved'), 'notifysuccess');
 
@@ -243,8 +255,6 @@ switch ($mode) {
                 $essayinfo->sent = 1;
                 $attempt->useranswer = serialize($essayinfo);
                 $DB->update_record('lesson_attempts', $attempt);
-                // Log it
-                add_to_log($course->id, 'lesson', 'update email essay grade', "essay.php?id=$cm->id", format_string($pages[$attempt->pageid]->title,true).': '.fullname($users[$attempt->userid]), $cm->id);
             }
         }
         $lesson->add_message(get_string('emailsuccess', 'lesson'), 'notifysuccess');
@@ -268,23 +278,12 @@ switch ($mode) {
                 $ufields = user_picture::fields('u');
                 list($sort, $sortparams) = users_order_by_sql('u');
                 $params = array_merge($params, $sortparams);
-                if (!empty($cm->groupingid)) {
-                    $params["groupingid"] = $cm->groupingid;
-                    $sql = "SELECT DISTINCT $ufields
-                            FROM {lesson_attempts} a
-                                INNER JOIN {user} u ON u.id = a.userid
-                                INNER JOIN {groups_members} gm ON gm.userid = u.id
-                                INNER JOIN {groupings_groups} gg ON gm.groupid = gg.groupid AND gg.groupingid = :groupingid
-                            WHERE a.lessonid = :lessonid
-                            ORDER BY $sort";
-                } else {
-                    $sql = "SELECT DISTINCT $ufields
-                            FROM {user} u,
-                                 {lesson_attempts} a
-                            WHERE a.lessonid = :lessonid and
-                                  u.id = a.userid
-                            ORDER BY $sort";
-                }
+                $sql = "SELECT DISTINCT $ufields
+                        FROM {user} u,
+                             {lesson_attempts} a
+                        WHERE a.lessonid = :lessonid and
+                              u.id = a.userid
+                        ORDER BY $sort";
                 if (!$users = $DB->get_records_sql($sql, $params)) {
                     $mode = 'none'; // not displaying anything
                     $lesson->add_message(get_string('noonehasanswered', 'lesson'));
@@ -299,8 +298,6 @@ switch ($mode) {
         }
         break;
 }
-// Log it
-add_to_log($course->id, 'lesson', 'view grade', "essay.php?id=$cm->id", get_string('manualgrading', 'lesson'), $cm->id);
 
 $lessonoutput = $PAGE->get_renderer('mod_lesson');
 echo $lessonoutput->header($lesson, $cm, 'essay', false, null, get_string('manualgrading', 'lesson'));
@@ -384,6 +381,16 @@ switch ($mode) {
         echo html_writer::table($table);
         break;
     case 'grade':
+        // Trigger the essay grade viewed event.
+        $event = \mod_lesson\event\essay_attempt_viewed::create(array(
+            'objectid' => $attempt->id,
+            'relateduserid' => $attempt->userid,
+            'context' => $context,
+            'courseid' => $course->id,
+        ));
+        $event->add_record_snapshot('lesson_attempts', $attempt);
+        $event->trigger();
+
         // Grading form
         // Expects the following to be set: $attemptid, $answer, $user, $page, $attempt
         $essayinfo = unserialize($attempt->useranswer);

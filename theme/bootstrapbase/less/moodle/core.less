@@ -9,37 +9,43 @@
     display:none;
 }
 
-.empty-region-side-pre #block-region-side-pre,
-.empty-region-side-post #block-region-side-post {
+.empty-region-side-pre #block-region-side-pre, // Pre region is empty.
+.empty-region-side-post #block-region-side-post, // Post region is empty.
+.jsenabled.docked-region-side-post #block-region-side-post, // All post blocks are docked.
+.jsenabled.docked-region-side-pre #block-region-side-pre { // All pre blocks are docked.
     display:none;
 }
 
-.empty-region-side-post #region-bs-main-and-pre.span9 {
-    width:100%;
+.empty-region-side-post #region-bs-main-and-pre.span9, // LTR with no post area.
+.empty-region-side-pre #region-bs-main-and-post.span9, // RTL with no pre area.
+.empty-region-side-post #region-bs-main-and-post.span9 #region-main.span8, // RTL with no post area.
+.jsenabled.docked-region-side-post #region-bs-main-and-pre.span9, // LTR with all post blocks docked.
+.jsenabled.docked-region-side-post #region-bs-main-and-post.span9 #region-main.span8,
+.jsenabled.docked-region-side-pre #region-bs-main-and-post.span9 { // RTL with all pre blocks docked.
+    width: 100%;
 }
 
-.empty-region-side-pre #region-main {
+.empty-region-side-pre #region-bs-main-and-pre.span9 #region-main, // LTR with no pre area.
+.jsenabled.docked-region-side-pre #region-bs-main-and-pre.span9 #region-main { // LTR with all pre blocks docked.
     float:none;
     width:100%;
 }
 
-.fluid-span (@columns) {
-    width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1));
-    *width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%);
+.empty-region-side-post.used-region-side-pre, // Post region is empty and pre region is in use.
+.jsenabled.docked-region-side-post.used-region-side-pre { // All post blocks docked and pre region is in use.
+    #region-main.span8 {
+        /** Increase the span size by 1 **/
+        .fluid-span(9);
+    }
+    #block-region-side-pre.span4 {
+        /** Decrease the span size by 1 **/
+        .fluid-span(3);
+    }
 }
 
-.empty-region-side-post.used-region-side-pre #region-main.span8 {
-    /** increase the span size by 1 **/
-    .fluid-span(9);
-}
-.empty-region-side-post.used-region-side-pre #block-region-side-pre.span4 {
-    /** decrease the span size by 1 **/
-    .fluid-span(3);
-}
-
-.empty-region-side-post #region-bs-main-and-post.span9 #region-main.span8 {
-    /** RTL with no post area. **/
-    width:100%;
+.empty-region-side-pre #region-bs-main-and-post.span9 #region-main.span8, // RTL with no pre area.
+.jsenabled.docked-region-side-pre #region-bs-main-and-post.span9 #region-main.span8 { // RTL with all pre blocks docked.
+    float: right;
 }
 
 /** Page layout CSS ends **/
@@ -113,6 +119,9 @@ a.dimmed_text:visited,
 .notifysuccess {
     color: @successText;
 }
+.highlight {
+    background: @infoBackground;
+}
 .reportlink {
     text-align: right;
 }
@@ -141,6 +150,29 @@ a.autolink.glossary:hover {
 .jsenabled .collapsed .collapsibleregioninner {
     visibility: hidden;
 }
+.collapsible-actions {
+    display: none;
+    text-align: right;
+}
+.dir-rtl .collapsible-actions {
+    text-align: left;
+}
+.jsenabled .collapsible-actions {
+    display: block;
+}
+.collapsible-actions .collapseexpand {
+    padding-left: 20px;
+    background: url([[pix:t/collapsed]]) 2px center no-repeat;
+}
+.dir-rtl .collapsible-actions .collapseexpand {
+    padding-right: 20px;
+    padding-left: 0;
+    background: url([[pix:t/collapsed_rtl]]) right center no-repeat;
+}
+.collapsible-actions .collapse-all,
+.dir-rtl .collapsible-actions .collapse-all {
+    background-image: url([[pix:t/expanded]]);
+}
 .yui-overlay .yui-widget-bd {
     background-color: #FFEE69;
     border: 1px solid #A6982B;
@@ -165,8 +197,7 @@ a.autolink.glossary:hover {
 .warning,
 .errorbox .title,
 .pagingbar .title,
-.pagingbar .thispage,
-.headingblock {
+.pagingbar .thispage {
     font-weight: bold;
 }
 img.resize {
@@ -200,6 +231,15 @@ img.iconhelp, .helplink img {
     padding-left: 3px;
     vertical-align: text-bottom;
     width: 16px;
+}
+h1 img.iconhelp, h1 img.icon,
+h2 img.iconhelp, h2 img.icon,
+h3 img.iconhelp, h3 img.icon,
+h4 img.iconhelp, h4 img.icon,
+h5 img.iconhelp, h5 img.icon,
+h6 img.iconhelp, h6 img.icon {
+  vertical-align: middle;
+  padding: 4px;
 }
 .dir-rtl img.iconhelp, .dir-rtl .helplink img {
     padding-right: 3px;
@@ -294,9 +334,7 @@ form.popupform div {
     vertical-align: text-bottom;
     margin: 0 0.3em;
 }
-.main img {
-    vertical-align: middle;
-}
+
 /** The 1-pixel padding is there to avoid phantom scroll bars on OS X (FF, Safari and Chrome)**/
 .no-overflow {
     overflow: auto;
@@ -410,8 +448,11 @@ a.skip:active {
 .groupselector {
     margin-top: 3px;
     margin-bottom: 3px;
+    display: inline-block;
 }
-
+.groupselector label {
+    display: inline-block;
+}
 // Login
 .loginbox {
     margin: 15px;
@@ -496,6 +537,13 @@ a.skip:active {
     margin-bottom: -2000px;
     padding-bottom: 2000px;
 }
+.dir-rtl {
+    .loginbox.twocolumns .loginpanel,
+    .loginbox.twocolumns .signuppanel {
+        float:right;
+    }
+}
+
 .loginbox .potentialidp .smallicon {
     vertical-align: text-bottom;
     margin: 0 .3em;
@@ -988,6 +1036,9 @@ body.tag .managelink {
     width: 100%;
     border-collapse: collapse;
 }
+.userenrolment tr {
+    vertical-align:top;
+}
 .userenrolment td {
     padding: 0;
     height: 41px;
@@ -1004,59 +1055,44 @@ body.tag .managelink {
 .userenrolment .col_role {
     width: 262px;
 }
-.userenrolment .col_role .roles {
-    margin-right: 30px;
-}
-.userenrolment .col_role .role {
-    float: left;
-    padding: 3px;
-    margin: 3px;
-}
-.dir-rtl .userenrolment .col_role .role {
-    float: right;
-}
-.userenrolment .col_role .role a {
-    margin-left: 3px;
-    cursor: pointer;
-}
-.userenrolment .col_role .addrole {
-    float: right;
-    width: 18px;
-    height: 18px;
-    margin: 3px;
-    text-align: center;
-    background-color: @successBackground;
-    border: 1px solid @successBorder;
-}
-.userenrolment .col_role .addrole img {
-    vertical-align: baseline;
-}
-.userenrolment .hasAllRoles .col_role .addrole {
-    display: none;
-}
+.userenrolment .col_role .roles,
 .userenrolment .col_group .groups {
     margin-right: 30px;
 }
+.userenrolment .col_role .role,
 .userenrolment .col_group .group {
     float: left;
     padding: 3px;
     margin: 3px;
     white-space: nowrap;
 }
+.userenrolment .col_role .role a,
 .userenrolment .col_group .group a {
     margin-left: 3px;
     cursor: pointer;
 }
+.userenrolment .col_role .addrole,
 .userenrolment .col_group .addgroup {
     float: right;
-    width: 18px;
+    padding: 3px;
     margin: 3px;
-    height: 18px;
-    text-align: center;
+    > *:hover {
+        border-bottom:1px solid #666;
+    }
 }
-.userenrolment .col_group .addgroup a img {
-    vertical-align: bottom;
+.userenrolment .col_role .addrole img,
+.userenrolment .col_group .addgroup img {
+    vertical-align: baseline;
 }
+
+.dir-rtl .userenrolment .col_role .role {
+    float: right;
+}
+
+.userenrolment .hasAllRoles .col_role .addrole {
+    display: none;
+}
+
 .userenrolment .col_enrol .enrolment {
     float: left;
     padding: 3px;
@@ -1066,30 +1102,88 @@ body.tag .managelink {
     float: right;
     margin-left: 3px;
 }
-#page-enrol-users .enrol_user_buttons {
-    float: right;
+#page-enrol-users {
+    .enrol_user_buttons {
+        float: right;
+        .enrolusersbutton {
+            display: inline;
+            div,
+            form {
+                display: inline;
+                margin-right: 0;
+            }
+        }
+    }
+    #filterform {
+        .well;
+        .well-small;
+        display: inline-block;
+        .fitem {
+            display: inline-block;
+            line-height: @baseLineHeight * 2;
+            margin-right: .3em;
+            white-space: nowrap;
+            label {
+                display: inline;
+                line-height: @baseLineHeight;
+                padding-right: .3em;
+            }
+            :before,
+            :after {
+                display: inline;
+            }
+        }
+        div,
+        fieldset {
+            display: inline;
+            float: none;
+            clear: none;
+            width: auto;
+            margin: 0;
+        }
+        select,
+        .ftext input {
+            width: 7em;
+        }
+        input,
+        select {
+            margin-bottom: 0;
+        }
+    }
+    .user-enroller-panel .uep-search-results .user .details {
+       width: 237px;
+    }
 }
-#page-enrol-users.dir-rtl .enrol_user_buttons {
-    float: left;
+.dir-rtl {
+    &#page-enrol-users {
+        .col_userdetails {
+            .subfield_picture {
+                float: right;
+            }
+        }
+        .enrol_user_buttons {
+            float: left;
+            .enrolusersbutton {
+                margin-left: 0;
+                margin-right: 1em;
+                div {
+                    margin-left: 0;
+                }
+            }
+        }
+        #filterform {
+            .fitem {
+                margin-right: 0;
+                margin-left: .3em;
+                label {
+                    padding-right: 0;
+                    padding-left: .3em;
+                }
+            }
+        }
+    }
 }
-#page-enrol-users .enrol_user_buttons .enrolusersbutton {
-    margin-left: 1em;
-    display: inline;
-}
-#page-enrol-users .enrol_user_buttons .enrolusersbutton div,
-#page-enrol-users .enrol_user_buttons .enrolusersbutton form {
-    display: inline;
-}
-#page-enrol-users .enrol_user_buttons .enrolusersbutton input {
-    padding-left: 6px;
-    padding-right: 6px;
-}
-#page-enrol-users.dir-rtl .col_userdetails .subfield_picture {
-    float: right;
-}
-#page-enrol-users .user-enroller-panel .uep-search-results .user .details {
-    width: 237px;
-}
+
 /**
 * Overide for RTL layout
 **/
@@ -1129,113 +1223,64 @@ body.tag .managelink {
     top: 50%;
     left: 50%;
 }
+
+.mod-indent-outer {
+    display: table;
+}
+.mod-indent {
+    display: table-cell;
+}
+.label .mod-indent {
+  float:left;
+  padding-top:20px
+}
 .mod-indent-1 {
-    margin-left: 30px;
+    width: 30px;
 }
 .mod-indent-2 {
-    margin-left: 60px;
+    width: 60px;
 }
 .mod-indent-3 {
-    margin-left: 90px;
+    width: 90px;
 }
 .mod-indent-4 {
-    margin-left: 120px;
+    width: 120px;
 }
 .mod-indent-5 {
-    margin-left: 150px;
+    width: 150px;
 }
 .mod-indent-6 {
-    margin-left: 180px;
+    width: 180px;
 }
 .mod-indent-7 {
-    margin-left: 210px;
+    width: 210px;
 }
 .mod-indent-8 {
-    margin-left: 240px;
+    width: 240px;
 }
 .mod-indent-9 {
-    margin-left: 270px;
+    width: 270px;
 }
 .mod-indent-10 {
-    margin-left: 300px;
+    width: 300px;
 }
 .mod-indent-11 {
-    margin-left: 330px;
+    width: 330px;
 }
 .mod-indent-12 {
-    margin-left: 360px;
+    width: 360px;
 }
 .mod-indent-13 {
-    margin-left: 390px;
+    width: 390px;
 }
 .mod-indent-14 {
-    margin-left: 420px;
+    width: 420px;
 }
 .mod-indent-15,
 .mod-indent-huge {
-    margin-left: 420px;
+    width: 420px;
 }
-.dir-rtl .mod-indent-1 {
-    margin-right: 30px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-2 {
-    margin-right: 60px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-3 {
-    margin-right: 90px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-4 {
-    margin-right: 120px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-5 {
-    margin-right: 150px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-6 {
-    margin-right: 180px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-7 {
-    margin-right: 210px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-8 {
-    margin-right: 240px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-9 {
-    margin-right: 270px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-10 {
-    margin-right: 300px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-11 {
-    margin-right: 330px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-12 {
-    margin-right: 360px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-13 {
-    margin-right: 390px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-14 {
-    margin-right: 420px;
-    margin-left: 0;
-}
-.dir-rtl .mod-indent-15,
-.dir-rtl .mod-indent-huge {
-    margin-right: 420px;
-    margin-left: 0;
-}
+
 /* Audio player size in 'block' mode (can only change width, height is hardcoded in JS) */
 .resourcecontent .mediaplugin_mp3 object {
     height: 25px;
@@ -1263,8 +1308,11 @@ audio.mediaplugin_html5audio {
 .core_media_preview.pagelayout-embedded #maincontent {
     height: 0;
 }
-.core_media_preview.pagelayout-embedded .mediaplugin {
+body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
+    padding: 0;
     margin: 0;
+    min-width: 0;
+    background: none;
 }
 /** Fix YUI 2 Treeview for Right to left languages **/
 .dir-rtl .ygtvtn,
@@ -1377,8 +1425,11 @@ audio.mediaplugin_html5audio {
     white-space: nowrap;
     text-align: center;
 }
-.initialbar a {
-    padding-right: 2px;
+.initialbar {
+    a, strong {
+        padding-left: 3px;
+        padding-right: 3px;
+    }
 }
 /* Moodle Dialogue Settings (moodle-core-dialogue)  */
 .moodle-dialogue-base .moodle-dialogue-lightbox {
@@ -1391,12 +1442,20 @@ audio.mediaplugin_html5audio {
 .no-scrolling {
     overflow: hidden;
 }
-.moodle-dialogue-fullscreen {
+.moodle-dialogue-base .moodle-dialogue-fullscreen {
     left: 0px;
     top: 0px;
-    width: 100%;
-    height: 100%;
+    right: 0px;
+    bottom: -50px;
+    position: fixed;
+}
+.moodle-dialogue-base .moodle-dialogue-fullscreen .moodle-dialogue-content {
     overflow: auto;
+}
+.moodle-dialogue-base .moodle-dialogue-fullscreen .closebutton {
+    width: 28px;
+    height: 16px;
+    background-size: 100%;
 }
 .moodle-dialogue-base .moodle-dialogue {
     padding: 0;
@@ -1414,7 +1473,8 @@ audio.mediaplugin_html5audio {
     .border-radius(10px);
     .box-shadow(5px 5px 20px 0 #666);
 }
-.moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd {
+.moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd,
+.moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd.yui3-widget-hd {
     margin: 0;
     padding: 5px;
     font-size: 12px;
@@ -1427,7 +1487,7 @@ audio.mediaplugin_html5audio {
     border-bottom: 1px solid #bbb;
     background: #ccc;
     #gradient > .vertical(#fff, #ccc);
-    filter: dropshadow(color=#FFFFFF, offx=1, offy=1);
+    filter: 0;
 }
 .moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd h1 {
     margin: 0;
@@ -1456,7 +1516,6 @@ audio.mediaplugin_html5audio {
     right: auto;
 }
 .moodle-dialogue-base .moodle-dialogue .moodle-dialogue-bd {
-    overflow: auto;
     padding: 1em;
     line-height: 2em;
     color: #555;
@@ -1472,10 +1531,13 @@ audio.mediaplugin_html5audio {
     font-size: 16px;
 }
 
-.moodle-dialogue-base .moodle-dialogue-fullscreen,
-.moodle-dialogue-fullscreen .moodle-dialogue-content {
-    width: 100%;
-    height: 100%;
+.moodle-dialogue-base .moodle-dialogue-fullscreen .moodle-dialogue-content {
+    overflow: auto;
+    position: absolute;
+    top: 0px;
+    bottom: 50px;
+    left: 0px;
+    right: 0px;
     margin: 0px;
     border: 0px;
 }
@@ -1580,6 +1642,10 @@ audio.mediaplugin_html5audio {
 
 .moodle-dialogue-base .moodle-dialogue.moodle-dialogue-tooltip {
     z-index: 3001;
+
+    .moodle-dialogue-bd {
+        overflow: auto;
+    }
 }
 
 /* Question Bank - Question Chooser "Close" button */
@@ -1608,8 +1674,14 @@ audio.mediaplugin_html5audio {
 }
 /* Center the submit buttons within the area */
 .choosercontainer #chooseform .submitbuttons {
-    margin: 0.7em 0;
+    padding: 0.7em 0;
     text-align: center;
+}
+/* Fixed for safari browser on iPhone4S with ios7.*/
+@media (max-height: 639px) {
+    .ios.safari .choosercontainer #chooseform .submitbuttons {
+        padding: 45px 0;
+    }
 }
 .choosercontainer #chooseform .submitbuttons input {
     min-width: 100px;
@@ -1844,6 +1916,12 @@ table.badgeissuedinfo .bfield {
     text-align: left;
     font-style: italic;
 }
+.dir-rtl {
+    table.badgeissuedinfo .bvalue,
+    table.badgeissuedinfo .bfield {
+        text-align: right;
+    }
+}
 ul.badges {
     margin: 0;
     list-style: none;
@@ -1900,6 +1978,9 @@ div.badge .expireimage {
 .notconnected {
     color: @errorText;
 }
+.connecting {
+    color: @warningText;
+}
 #page-badges-award .recipienttable tr td {
     vertical-align: top;
 }
@@ -1926,6 +2007,12 @@ div.badge .expireimage {
     margin: 0px;
     text-align: left;
     vertical-align: middle;
+}
+.dir-rtl .activatebadge {
+    text-align: right;
+}
+img#persona_signin {
+    cursor: pointer;
 }
 .addcourse {
     float: right;
@@ -1978,6 +2065,28 @@ div.badge .expireimage {
             display: inline; /** JS is enabled, we'll be using it so return display to normal **/
             .opacity(50);
         }
+        .toggle-display.textmenu {
+            display: block;
+            margin-left: 4px;
+            padding-left: 4px;
+            padding-right: 4px;
+
+            .iconsmall {
+                margin: 4px 4px 4px 0px;
+                padding: 8px 4px 0px 2px;
+                vertical-align: text-bottom;
+            }
+
+            .caret {
+                margin-top: 8px;
+                margin-left: 2px;
+                border-top-color: @navbarLinkColor;
+                &:hover,
+                &:active {
+                    border-top-color: @navbarLinkColorActive;
+                }
+            }
+        }
     }
     .moodle-actionmenu[data-enhanced] {
         .toggle-display {
@@ -1985,6 +2094,20 @@ div.badge .expireimage {
         }
         .menu-action-text  {
             display:inline;
+        }
+    }
+
+    &.dir-rtl {
+        .moodle-actionmenu[data-enhance] {
+            .toggle-display.textmenu {
+                margin-left: initial;
+                margin-right: 4px;
+
+                .caret {
+                    margin-left: initial;
+                    margin-right: 2px;
+                }
+            }
         }
     }
 }
@@ -2007,9 +2130,8 @@ div.badge .expireimage {
         a {
             display: block;
             color: @dropdownLinkColor;
-            padding:2px 1em 2px 0.5em;
-            &:hover,
-            &:focus {
+            padding:2px 1em 2px 28px;
+            &:hover {
                 color: @dropdownLinkColorHover;
                 background-color: @dropdownLinkBackgroundHover;
             }
@@ -2027,7 +2149,7 @@ div.badge .expireimage {
             vertical-align: middle;
         }
         .iconsmall {
-            margin-right:8px;
+            margin: 4px 4px 4px -24px;
         }
         > li {
             display:block;
@@ -2054,10 +2176,6 @@ div.badge .expireimage {
         &.align-bl-tr {bottom: 100%;left:100%;}
         &.align-br-tr {bottom: 100%;right: 0;margin-bottom: 4px;}
     }
-}
-
-.action-menu-shown .moodle-actionmenu[data-enhanced] .toggle-display {
-    background-color: #FFF;
 }
 
 .block .moodle-actionmenu {
@@ -2109,4 +2227,16 @@ ul.dragdrop-keyboard-drag li {
 .block-control-actions .moodle-core-dragdrop-draghandle img {
     width: 12px;
     height: 12px;
+}
+
+a.disabled:hover,
+a.disabled {
+    text-decoration: none;
+    cursor: default;
+    font-style: italic;
+    color: #808080;
+}
+body.lockscroll {
+  height: 100%;
+  overflow: hidden;
 }

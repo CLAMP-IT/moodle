@@ -35,8 +35,7 @@
 /**
  * This file contains a library of functions and constants for the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -170,6 +169,50 @@ function lti_delete_instance($id) {
     lti_grade_item_delete($basiclti);
 
     return $DB->delete_records("lti", array("id" => $basiclti->id));
+}
+
+function lti_get_types() {
+    global $OUTPUT;
+
+    $subtypes = array();
+    foreach (get_plugin_list('ltisource') as $name => $dir) {
+        if ($moretypes = component_callback("ltisource_$name", 'get_types')) {
+            $subtypes = array_merge($subtypes, $moretypes);
+        }
+    }
+    if (empty($subtypes)) {
+        return MOD_SUBTYPE_NO_CHILDREN;
+    }
+
+    $types = array();
+
+    $type           = new stdClass();
+    $type->modclass = MOD_CLASS_ACTIVITY;
+    $type->type     = 'lti_group_start';
+    $type->typestr  = '--'.get_string('modulenameplural', 'mod_lti');
+    $types[]        = $type;
+
+    $link     = get_string('modulename_link', 'mod_lti');
+    $linktext = get_string('morehelp');
+    $help     = get_string('modulename_help', 'mod_lti');
+    $help    .= html_writer::tag('div', $OUTPUT->doc_link($link, $linktext, true), array('class' => 'helpdoclink'));
+
+    $type           = new stdClass();
+    $type->modclass = MOD_CLASS_ACTIVITY;
+    $type->type     = 'lti';
+    $type->typestr  = get_string('generaltool', 'mod_lti');
+    $type->help     = $help;
+    $types[]        = $type;
+
+    $types = array_merge($types, $subtypes);
+
+    $type           = new stdClass();
+    $type->modclass = MOD_CLASS_ACTIVITY;
+    $type->type     = 'lti_group_end';
+    $type->typestr  = '--';
+    $types[]        = $type;
+
+    return $types;
 }
 
 /**

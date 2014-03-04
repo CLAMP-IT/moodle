@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -81,8 +80,10 @@ function block_html_pluginfile($course, $birecord_or_cm, $context, $filearea, $a
         $forcedownload = true;
     }
 
-    session_get_instance()->write_close();
-    send_stored_file($file, 60*60, 0, $forcedownload, $options);
+    // NOTE: it woudl be nice to have file revisions here, for now rely on standard file lifetime,
+    //       do not lower it because the files are dispalyed very often.
+    \core\session\manager::write_close();
+    send_stored_file($file, null, 0, $forcedownload, $options);
 }
 
 /**

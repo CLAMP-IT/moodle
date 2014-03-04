@@ -19,8 +19,7 @@
  * Local library file for Lesson.  These are non-standard functions that are used
  * only by Lesson.
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  **/
@@ -951,6 +950,9 @@ class lesson extends lesson_base {
         require_once($CFG->libdir.'/gradelib.php');
         require_once($CFG->dirroot.'/calendar/lib.php');
 
+        $cm = get_coursemodule_from_instance('lesson', $this->properties->id, $this->properties->course);
+        $context = context_module::instance($cm->id);
+
         $DB->delete_records("lesson", array("id"=>$this->properties->id));
         $DB->delete_records("lesson_pages", array("lessonid"=>$this->properties->id));
         $DB->delete_records("lesson_answers", array("lessonid"=>$this->properties->id));
@@ -965,6 +967,10 @@ class lesson extends lesson_base {
                 $event->delete();
             }
         }
+
+        // Delete files associated with this module.
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id);
 
         grade_update('mod/lesson', $this->properties->course, 'mod', 'lesson', $this->properties->id, 0, null, array('deleted'=>1));
         return true;
@@ -1191,6 +1197,18 @@ class lesson extends lesson_base {
      */
     public function start_timer() {
         global $USER, $DB;
+
+        $cm = get_coursemodule_from_instance('lesson', $this->properties()->id, $this->properties()->course,
+            false, MUST_EXIST);
+
+        // Trigger lesson started event.
+        $event = \mod_lesson\event\lesson_started::create(array(
+            'objectid' => $this->properties()->id,
+            'context' => context_module::instance($cm->id),
+            'courseid' => $this->properties()->course
+        ));
+        $event->trigger();
+
         $USER->startlesson[$this->properties->id] = true;
         $startlesson = new stdClass;
         $startlesson->lessonid = $this->properties->id;
@@ -1243,6 +1261,18 @@ class lesson extends lesson_base {
     public function stop_timer() {
         global $USER, $DB;
         unset($USER->startlesson[$this->properties->id]);
+
+        $cm = get_coursemodule_from_instance('lesson', $this->properties()->id, $this->properties()->course,
+            false, MUST_EXIST);
+
+        // Trigger lesson ended event.
+        $event = \mod_lesson\event\lesson_ended::create(array(
+            'objectid' => $this->properties()->id,
+            'context' => context_module::instance($cm->id),
+            'courseid' => $this->properties()->course
+        ));
+        $event->trigger();
+
         return $this->update_timer(false, false);
     }
 
@@ -1820,6 +1850,12 @@ abstract class lesson_page extends lesson_base {
         // ..and the page itself
         $DB->delete_records("lesson_pages", array("id" => $this->properties->id));
 
+        // Delete files associated with this page.
+        $cm = get_coursemodule_from_instance('lesson', $this->lesson->id, $this->lesson->course);
+        $context = context_module::instance($cm->id);
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id, 'mod_lesson', 'page_contents', $this->properties->id);
+
         // repair the hole in the linkage
         if (!$this->properties->prevpageid && !$this->properties->nextpageid) {
             //This is the only page, no repair needed
@@ -2383,8 +2419,11 @@ abstract class lesson_page extends lesson_base {
                 $this->properties->contentsformat = FORMAT_HTML;
             }
             $context = context_module::instance($PAGE->cm->id);
-            $contents = file_rewrite_pluginfile_urls($this->properties->contents, 'pluginfile.php', $context->id, 'mod_lesson', 'page_contents', $this->properties->id); // must do this BEFORE format_text()!!!!!!
-            return format_text($contents, $this->properties->contentsformat, array('context'=>$context, 'noclean'=>true)); // page edit is marked with XSS, we want all content here
+            $contents = file_rewrite_pluginfile_urls($this->properties->contents, 'pluginfile.php', $context->id, 'mod_lesson',
+                                                     'page_contents', $this->properties->id);  // Must do this BEFORE format_text()!
+            return format_text($contents, $this->properties->contentsformat,
+                               array('context' => $context, 'noclean' => true,
+                                     'overflowdiv' => true));  // Page edit is marked with XSS, we want all content here.
         } else {
             return '';
         }

@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package mod-forum
+ * @package   mod_forum
  * @copyright Jamie Pratt <me@jamiep.org>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -86,9 +86,16 @@ class mod_forum_mod_form extends moodleform_mod {
         $options = array();
         $options[FORUM_TRACKING_OPTIONAL] = get_string('trackingoptional', 'forum');
         $options[FORUM_TRACKING_OFF] = get_string('trackingoff', 'forum');
-        $options[FORUM_TRACKING_ON] = get_string('trackingon', 'forum');
+        if ($CFG->forum_allowforcedreadtracking) {
+            $options[FORUM_TRACKING_FORCED] = get_string('trackingon', 'forum');
+        }
         $mform->addElement('select', 'trackingtype', get_string('trackingtype', 'forum'), $options);
         $mform->addHelpButton('trackingtype', 'trackingtype', 'forum');
+        $default = $CFG->forum_trackingtype;
+        if ((!$CFG->forum_allowforcedreadtracking) && ($default == FORUM_TRACKING_FORCED)) {
+            $default = FORUM_TRACKING_OPTIONAL;
+        }
+        $mform->setDefault('trackingtype', $default);
 
         if ($CFG->enablerssfeeds && isset($CFG->forum_enablerssfeeds) && $CFG->forum_enablerssfeeds) {
 //-------------------------------------------------------------------------------

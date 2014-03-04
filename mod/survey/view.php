@@ -18,7 +18,7 @@
 /**
  * This file is responsible for displaying the survey
  *
- * @package   mod-survey
+ * @package   mod_survey
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -63,9 +63,10 @@ $completion->set_module_viewed($cm);
     $showscales = ($template->name != 'ciqname');
 
     $strsurvey = get_string("modulename", "survey");
-    $PAGE->set_title(format_string($survey->name));
+    $PAGE->set_title($survey->name);
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
+    echo $OUTPUT->heading($survey->name);
 
 /// Check to see if groups are being used in this survey
     if ($groupmode = groups_get_activity_groupmode($cm)) {   // Groups are being used
@@ -95,13 +96,19 @@ $completion->set_module_viewed($cm);
 //  Check the survey hasn't already been filled out.
 
     if (survey_already_done($survey->id, $USER->id)) {
-
-        add_to_log($course->id, "survey", "view graph", "view.php?id=$cm->id", $survey->id, $cm->id);
+        $params = array(
+            'objectid' => $survey->id,
+            'context' => $context,
+            'courseid' => $course->id,
+            'other' => array('viewed' => 'graph')
+        );
+        $event = \mod_survey\event\course_module_viewed::create($params);
+        $event->trigger();
         $numusers = survey_count_responses($survey->id, $currentgroup, $groupingid);
 
         if ($showscales) {
-            echo $OUTPUT->heading(get_string("surveycompleted", "survey"));
-            echo $OUTPUT->heading(get_string("peoplecompleted", "survey", $numusers));
+            echo $OUTPUT->box(get_string("surveycompleted", "survey"));
+            echo $OUTPUT->box(get_string("peoplecompleted", "survey", $numusers));
             echo '<div class="resultgraph">';
             survey_print_graph("id=$cm->id&amp;sid=$USER->id&amp;group=$currentgroup&amp;type=student.png");
             echo '</div>';
@@ -133,7 +140,14 @@ $completion->set_module_viewed($cm);
     }
 
 //  Start the survey form
-    add_to_log($course->id, "survey", "view form", "view.php?id=$cm->id", $survey->id, $cm->id);
+    $params = array(
+        'objectid' => $survey->id,
+        'context' => $context,
+        'courseid' => $course->id,
+        'other' => array('viewed' => 'form')
+    );
+    $event = \mod_survey\event\course_module_viewed::create($params);
+    $event->trigger();
 
     echo "<form method=\"post\" action=\"save.php\" id=\"surveyform\">";
     echo '<div>';

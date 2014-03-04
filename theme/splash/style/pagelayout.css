@@ -266,17 +266,20 @@ a:hover,
     line-height:1em;
     padding:10px 0;
 }
-h2.main,h3.main,h4.main,h5.main,h6.main{
+h2,h3,h4,h5,h6{
     text-align:left;
 }
-#region-main h2.main{
+#region-main h2{
     font-size:1.6em;
     font-weight:400;
     line-height:1.6em;
     margin:0 0 10px;
     padding:3px;
 }
-#region-main h2.headingblock{
+#site-news-forum h2,
+#frontpage-course-list h2,
+#frontpage-category-names h2,
+#frontpage-category-combo h2 {
     font-size:1.6em;
     font-weight:400;
     line-height:1.6em;
@@ -424,6 +427,7 @@ input[type=text],textarea,select,input[type=password]{
     clear:both;
     margin:0;
     padding:5px 0 0 10px;
+    margin: 0 10px;
 }
 .block-region .block .content .commands{
     border:0 none;
@@ -742,7 +746,7 @@ table.quizreviewsummary {
     margin:0 auto;
     width:960px;
 }
-.pagelayout-report #page-content #report-main-content .region-content h2.main{
+.pagelayout-report #page-content #report-main-content .region-content h2{
     margin:5px 0;
 }
 .jsenabled .collapsed .collapsibleregioninner{
@@ -775,4 +779,16 @@ table.quizreviewsummary {
 .side-post-only #page-content #region-main-box{
     left:0;
     padding-top:10px;
+}
+
+body#page-lib-editor-tinymce-plugins-moodlemedia-preview #page {
+    width: 100%;
+}
+body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
+    min-height: 100%;
+    margin-bottom: 0;
+}
+
+body#page-lib-editor-tinymce-plugins-moodlemedia-preview .mediaplugin {
+    padding-top: 10px;
 }

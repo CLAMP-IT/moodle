@@ -16,8 +16,18 @@
 
 namespace core\event;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Role unassigned event.
+ *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type int id role assigned id.
+ *      @type string component name of component.
+ *      @type int itemid id of item.
+ * }
  *
  * @package    core
  * @copyright  2013 Petr Skoda {@link http://skodak.org}
@@ -28,7 +38,7 @@ class role_unassigned extends base {
     protected function init() {
         $this->data['objecttable'] = 'role';
         $this->data['crud'] = 'd';
-        $this->data['level'] = self::LEVEL_OTHER;
+        $this->data['edulevel'] = self::LEVEL_OTHER;
     }
 
     /**
@@ -54,7 +64,7 @@ class role_unassigned extends base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new moodle_url('/admin/roles/assign.php', array('contextid'=>$this->contextid, 'roleid'=>$this->objectid));
+        return new \moodle_url('/admin/roles/assign.php', array('contextid' => $this->contextid, 'roleid' => $this->objectid));
     }
 
     /**

@@ -17,15 +17,14 @@
 /**
  * Version details
  *
- * @package    block
- * @subpackage rss_client
+ * @package    block_rss_client
  * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2013050100;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2013050100;        // Requires this Moodle version
+$plugin->version   = 2013110500;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->requires  = 2013110500;        // Requires this Moodle version
 $plugin->component = 'block_rss_client'; // Full name of the plugin (used for diagnostics)
 $plugin->cron      = 300;               // Set min time between cron executions to 300 secs (5 mins)

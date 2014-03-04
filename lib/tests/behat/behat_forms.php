@@ -107,18 +107,23 @@ class behat_forms extends behat_base {
      */
     protected function expand_all_fields() {
 
-        // behat_base::find() throws an exception if there are no elements, we should not fail a test because of this.
+        // We ensure that all the editors are loaded and we can interact with them.
+        $this->ensure_editors_are_loaded();
+
+        // We already know that we waited for the DOM and the JS to be loaded, even the editor
+        // so, we will use the reduced timeout as it is a common task and we should save time.
         try {
 
             // Expand fieldsets link.
-            $collapseexpandlink = $this->find('xpath', "//div[@class='collapsible-actions']" .
+            $xpath = "//div[@class='collapsible-actions']" .
                 "/descendant::a[contains(concat(' ', @class, ' '), ' collapseexpand ')]" .
-                "[not(contains(concat(' ', @class, ' '), ' collapse-all '))]"
-            );
+                "[not(contains(concat(' ', @class, ' '), ' collapse-all '))]";
+            $collapseexpandlink = $this->find('xpath', $xpath, false, false, self::REDUCED_TIMEOUT);
             $collapseexpandlink->click();
 
         } catch (ElementNotFoundException $e) {
-            // We continue if there are not expandable fields.
+            // The behat_base::find() method throws an exception if there are no elements,
+            // we should not fail a test because of this. We continue if there are not expandable fields.
         }
 
         // Different try & catch as we can have expanded fieldsets with advanced fields on them.
@@ -129,7 +134,9 @@ class behat_forms extends behat_base {
                 "[contains(concat(' ', normalize-space(@class), ' '), ' moreless-toggler')]";
 
             // We don't wait here as we already waited when getting the expand fieldsets links.
-            $showmores = $this->getSession()->getPage()->findAll('xpath', $showmorexpath);
+            if (!$showmores = $this->getSession()->getPage()->findAll('xpath', $showmorexpath)) {
+                return;
+            }
 
             // Funny thing about this, with findAll() we specify a pattern and each element matching the pattern is added to the array
             // with of xpaths with a [0], [1]... sufix, but when we click on an element it does not matches the specified xpath
@@ -171,31 +178,11 @@ class behat_forms extends behat_base {
     public function select_option($option, $select) {
 
         $selectnode = $this->find_field($select);
-        $selectnode->selectOption($option);
 
-        // Adding a click as Selenium requires it to fire some JS events.
-        if ($this->running_javascript()) {
-
-            // In some browsers the selectOption actions can perform a page reload
-            // so we need to ensure the element is still available to continue interacting
-            // with it. We don't wait here.
-            if (!$this->getSession()->getDriver()->find($selectnode->getXpath())) {
-                return;
-            }
-
-            // Single select needs an extra click in the option.
-            if (!$selectnode->hasAttribute('multiple')) {
-
-                // Avoid quotes problems.
-                $option = $this->getSession()->getSelectorsHandler()->xpathLiteral($option);
-                $xpath = "//option[(./@value=$option or normalize-space(.)=$option)]";
-                $optionnode = $this->find('xpath', $xpath, false, $selectnode);
-                $optionnode->click();
-            } else {
-                // Multiple ones needs the click in the select.
-                $selectnode->click();
-            }
-        }
+        // We delegate to behat_form_field class, it will
+        // guess the type properly as it is a select tag.
+        $selectformfield = behat_field_manager::get_form_field($selectnode, $this->getSession());
+        $selectformfield->set_value($option);
     }
 
     /**
@@ -225,6 +212,8 @@ class behat_forms extends behat_base {
      */
     public function check_option($option) {
 
+        // We don't delegate to behat_form_checkbox as the
+        // step is explicitly saying I check.
         $checkboxnode = $this->find_field($option);
         $checkboxnode->check();
     }
@@ -238,6 +227,8 @@ class behat_forms extends behat_base {
      */
     public function uncheck_option($option) {
 
+        // We don't delegate to behat_form_checkbox as the
+        // step is explicitly saying I uncheck.
         $checkboxnode = $this->find_field($option);
         $checkboxnode->uncheck();
     }

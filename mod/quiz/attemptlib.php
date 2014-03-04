@@ -136,8 +136,8 @@ class quiz {
             throw new moodle_quiz_exception($this, 'noquestions', $this->edit_url());
         }
         $this->questions = question_preload_questions($this->questionids,
-                'qqi.grade AS maxmark, qqi.id AS instance',
-                '{quiz_question_instances} qqi ON qqi.quiz = :quizid AND q.id = qqi.question',
+                'qqi.maxmark, qqi.id AS instance',
+                '{quiz_question_instances} qqi ON qqi.quizid = :quizid AND q.id = qqi.questionid',
                 array('quizid' => $this->quiz->id));
     }
 
@@ -743,6 +743,26 @@ class quiz_attempt {
                 $cm->course, $this->attempt->userid, $cm->groupingid);
         return $teachersgroups && $studentsgroups &&
                 array_intersect(array_keys($teachersgroups), array_keys($studentsgroups));
+    }
+
+    /**
+     * Get extra summary information about this attempt.
+     *
+     * Some behaviours may be able to provide interesting summary information
+     * about the attempt as a whole, and this method provides access to that data.
+     * To see how this works, try setting a quiz to one of the CBM behaviours,
+     * and then look at the extra information displayed at the top of the quiz
+     * review page once you have sumitted an attempt.
+     *
+     * In the return value, the array keys are identifiers of the form
+     * qbehaviour_behaviourname_meaningfullkey. For qbehaviour_deferredcbm_highsummary.
+     * The values are arrays with two items, title and content. Each of these
+     * will be either a string, or a renderable.
+     *
+     * @return array as described above.
+     */
+    public function get_additional_summary_data(question_display_options $options) {
+        return $this->quba->get_summary_information($options);
     }
 
     /**
@@ -1422,7 +1442,7 @@ class quiz_attempt {
             quiz_save_best_grade($this->get_quiz(), $this->attempt->userid);
 
             // Trigger event.
-            $this->fire_state_transition_event('quiz_attempt_submitted', $timestamp);
+            $this->fire_state_transition_event('\mod_quiz\event\attempt_submitted', $timestamp);
 
             // Tell any access rules that care that the attempt is over.
             $this->get_access_manager($timestamp)->current_attempt_finished();
@@ -1459,7 +1479,7 @@ class quiz_attempt {
         $this->attempt->timecheckstate = $timestamp;
         $DB->update_record('quiz_attempts', $this->attempt);
 
-        $this->fire_state_transition_event('quiz_attempt_overdue', $timestamp);
+        $this->fire_state_transition_event('\mod_quiz\event\attempt_becameoverdue', $timestamp);
 
         $transaction->allow_commit();
     }
@@ -1478,45 +1498,36 @@ class quiz_attempt {
         $this->attempt->timecheckstate = null;
         $DB->update_record('quiz_attempts', $this->attempt);
 
-        $this->fire_state_transition_event('quiz_attempt_abandoned', $timestamp);
+        $this->fire_state_transition_event('\mod_quiz\event\attempt_abandoned', $timestamp);
 
         $transaction->allow_commit();
     }
 
     /**
      * Fire a state transition event.
-     * @param string $event the type of event. Should be listed in db/events.php.
+     * the same event information.
+     * @param string $eventclass the event class name.
      * @param int $timestamp the timestamp to include in the event.
+     * @return void
      */
-    protected function fire_state_transition_event($event, $timestamp) {
+    protected function fire_state_transition_event($eventclass, $timestamp) {
         global $USER;
+        $quizrecord = $this->get_quiz();
+        $params = array(
+            'context' => $this->get_quizobj()->get_context(),
+            'courseid' => $this->get_courseid(),
+            'objectid' => $this->attempt->id,
+            'relateduserid' => $this->attempt->userid,
+            'other' => array(
+                'submitterid' => CLI_SCRIPT ? null : $USER->id,
+                'quizid' => $quizrecord->id
+            )
+        );
 
-        // Trigger event.
-        $eventdata = new stdClass();
-        $eventdata->component   = 'mod_quiz';
-        $eventdata->attemptid   = $this->attempt->id;
-        $eventdata->timestamp   = $timestamp;
-        $eventdata->userid      = $this->attempt->userid;
-        $eventdata->quizid      = $this->get_quizid();
-        $eventdata->cmid        = $this->get_cmid();
-        $eventdata->courseid    = $this->get_courseid();
-
-        // I don't think if (CLI_SCRIPT) is really the right logic here. The
-        // question is really 'is $USER currently set to a real user', but I cannot
-        // see standard Moodle function to answer that question. For example,
-        // cron fakes $USER.
-        if (CLI_SCRIPT) {
-            $eventdata->submitterid = null;
-        } else {
-            $eventdata->submitterid = $USER->id;
-        }
-
-        if ($event == 'quiz_attempt_submitted') {
-            // Backwards compatibility for this event type. $eventdata->timestamp is now preferred.
-            $eventdata->timefinish = $timestamp;
-        }
-
-        events_trigger($event, $eventdata);
+        $event = $eventclass::create($params);
+        $event->add_record_snapshot('quiz', $this->get_quiz());
+        $event->add_record_snapshot('quiz_attempts', $this->get_attempt());
+        $event->trigger();
     }
 
     /**
@@ -1654,7 +1665,7 @@ abstract class quiz_nav_panel_base {
                 $button->stateclass = 'complete';
             }
             $button->statestring = $this->get_state_string($qa, $showcorrectness);
-            $button->currentpage = $this->attemptobj->get_question_page($slot) == $this->page;
+            $button->currentpage = $this->showall || $this->attemptobj->get_question_page($slot) == $this->page;
             $button->flagged     = $qa->is_flagged();
             $button->url         = $this->get_question_url($slot);
             $buttons[] = $button;
@@ -1704,6 +1715,20 @@ abstract class quiz_nav_panel_base {
             $userpicture->size = true;
         }
         return $userpicture;
+    }
+
+    /**
+     * Return 'allquestionsononepage' as CSS class name when $showall is set,
+     * otherwise, return 'multipages' as CSS class name.
+     * @return string, CSS class name
+     */
+    public function get_button_container_class() {
+        // Quiz navigation is set on 'Show all questions on one page'.
+        if ($this->showall) {
+            return 'allquestionsononepage';
+        }
+        // Quiz navigation is set on 'Show one page at a time'.
+        return 'multipages';
     }
 }
 

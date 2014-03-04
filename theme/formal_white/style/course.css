@@ -1,6 +1,6 @@
 /** Course formats **/
 .course-content .section li.activity {margin:7px 0;}
-.course-content .header {background-image:url([[pix:theme|trend/__setting_trendcolor__/gradient_h]]);background-color:[[setting:blockheaderbackground]];background-repeat:repeat-x;border-top:1px solid #C6BDA8;}
+.course-content .navigationtitle {background-image:url([[pix:theme|trend/__setting_trendcolor__/gradient_h]]);background-color:[[setting:blockheaderbackground]];background-repeat:repeat-x;border-top:1px solid #C6BDA8;}
 .course-content h2.header {padding-left:1em;}
 .course-content ul.weeks li.section {border:1px solid #DDD;}
 .course-content ul.weeks li.section .content {background-color:#FAFAFA;padding:5px 10px;}
@@ -25,7 +25,7 @@
 .coursebox > .info:after {clear:both;content:".";display:block;height:0;min-width:0;visibility:hidden;}
 .coursebox .enrolmenticons img, .coursebox .moreinfo img {margin: 0.3em 0.2em -0.2em 0;}
 
-#page-course-recent h2.main {font-size:110%;}
+#page-course-recent h2 {font-size:110%;}
 #page-course-recent .user {font-size:75%;}
 #page-course-recent .grade {font-style:italic;font-size:90%;}
 #page-course-recent .forum-recent .reply .title {font-style:italic;font-size:90%;}
@@ -99,15 +99,14 @@
 .courses .coursebox.odd:hover, .course_category_tree .courses > .paging:hover {background-color:[[setting:hovercolor]];}
 
 /* Category listings */
-.course_category_tree .controls {margin-bottom:5px;text-align:right;float:right;}
-.course_category_tree .controls div {padding-right:2em;font-size:75%;}
 .course_category_tree .category > .info {background-image:url([[pix:theme|trend/__setting_trendcolor__/hgradient]]);background-repeat:repeat-x;border:1px solid #ddd;}
 .course_category_tree.frontpage-category-names .category > .info {background:none;border:none;}
 .course_category_tree .category > .info {margin: 5px 0;}
-.course_category_tree .category > .info .name {margin:5px;padding-left:16px;}
+.course_category_tree .category > .info .name {margin:5px 5px 4px 5px;padding-left:16px;}
 .dir-rtl .course_category_tree .category > .info .name {padding-left:0;padding-right:16px;}
 .course_category_tree .courses > .paging,
 .course_category_tree .subcategories > .paging {padding:5px;}
+.course_category_tree .subcategories .name {line-height: 1em;}
 
 /* Publication */
 #page-course-publish-metadata .metadatatext {width:400px;}

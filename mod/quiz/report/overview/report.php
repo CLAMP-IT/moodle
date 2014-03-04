@@ -310,7 +310,7 @@ class quiz_overview_report extends quiz_attempts_report {
      */
     protected function finish_regrade($nexturl) {
         global $OUTPUT, $PAGE;
-        echo $OUTPUT->heading(get_string('regradecomplete', 'quiz_overview'));
+        echo $OUTPUT->heading(get_string('regradecomplete', 'quiz_overview'), 3);
         echo $OUTPUT->continue_button($nexturl);
         echo $OUTPUT->footer();
         die();
@@ -320,7 +320,7 @@ class quiz_overview_report extends quiz_attempts_report {
      * Unlock the session and allow the regrading process to run in the background.
      */
     protected function unlock_session() {
-        session_get_instance()->write_close();
+        \core\session\manager::write_close();
         ignore_user_abort(true);
     }
 
@@ -340,7 +340,7 @@ class quiz_overview_report extends quiz_attempts_report {
     protected function regrade_attempt($attempt, $dryrun = false, $slots = null) {
         global $DB;
         // Need more time for a quiz with many questions.
-        set_time_limit(300);
+        core_php_time_limit::raise(300);
 
         $transaction = $DB->start_delegated_transaction();
 

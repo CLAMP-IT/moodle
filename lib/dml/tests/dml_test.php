@@ -2253,6 +2253,122 @@ class core_dml_testcase extends database_driver_testcase {
         } catch (moodle_exception $e) {
             $this->assertInstanceOf('dml_exception', $e);
         }
+
+        // Try to insert a record into a non-existent table. dml_exception expected.
+        try {
+            $DB->insert_record('nonexistenttable', $record, true);
+            $this->fail("Expecting an exception, none occurred");
+        } catch (exception $e) {
+            $this->assertTrue($e instanceof dml_exception);
+        }
+    }
+
+    public function test_insert_records() {
+        $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('course', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('oneint', XMLDB_TYPE_INTEGER, '10', null, null, null, 100);
+        $table->add_field('onenum', XMLDB_TYPE_NUMBER, '10,2', null, null, null, 200);
+        $table->add_field('onechar', XMLDB_TYPE_CHAR, '100', null, null, null, 'onestring');
+        $table->add_field('onetext', XMLDB_TYPE_TEXT, 'big', null, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+
+        $this->assertCount(0, $DB->get_records($tablename));
+
+        $record = new stdClass();
+        $record->id = '1';
+        $record->course = '1';
+        $record->oneint = null;
+        $record->onenum = '1.00';
+        $record->onechar = 'a';
+        $record->onetext = 'aaa';
+
+        $expected = array();
+        $records = array();
+        for ($i = 1; $i <= 2000; $i++) { // This may take a while, it should be higher than defaults in DML drivers.
+            $rec = clone($record);
+            $rec->id = (string)$i;
+            $rec->oneint = (string)$i;
+            $expected[$i] = $rec;
+            $rec = clone($rec);
+            unset($rec->id);
+            $records[$i] = $rec;
+        }
+
+        $DB->insert_records($tablename, $records);
+        $stored = $DB->get_records($tablename, array(), 'id ASC');
+        $this->assertEquals($expected, $stored);
+
+        // Test there can be some extra properties including id.
+        $count = $DB->count_records($tablename);
+        $rec1 = (array)$record;
+        $rec1['xxx'] = 1;
+        $rec2 = (array)$record;
+        $rec2['xxx'] = 2;
+
+        $records = array($rec1, $rec2);
+        $DB->insert_records($tablename, $records);
+        $this->assertEquals($count + 2, $DB->count_records($tablename));
+
+        // Test not all properties are necessary.
+        $rec1 = (array)$record;
+        unset($rec1['course']);
+        $rec2 = (array)$record;
+        unset($rec2['course']);
+
+        $records = array($rec1, $rec2);
+        $DB->insert_records($tablename, $records);
+
+        // Make sure no changes in data object structure are tolerated.
+        $rec1 = (array)$record;
+        unset($rec1['id']);
+        $rec2 = (array)$record;
+        unset($rec2['id']);
+
+        $records = array($rec1, $rec2);
+        $DB->insert_records($tablename, $records);
+
+        $rec2['xx'] = '1';
+        $records = array($rec1, $rec2);
+        try {
+            $DB->insert_records($tablename, $records);
+            $this->fail('coding_exception expected when insert_records receives different object data structures');
+        } catch (moodle_exception $e) {
+            $this->assertInstanceOf('coding_exception', $e);
+        }
+
+        unset($rec2['xx']);
+        unset($rec2['course']);
+        $rec2['course'] = '1';
+        $records = array($rec1, $rec2);
+        try {
+            $DB->insert_records($tablename, $records);
+            $this->fail('coding_exception expected when insert_records receives different object data structures');
+        } catch (moodle_exception $e) {
+            $this->assertInstanceOf('coding_exception', $e);
+        }
+
+        $records = 1;
+        try {
+            $DB->insert_records($tablename, $records);
+            $this->fail('coding_exception expected when insert_records receives non-traversable data');
+        } catch (moodle_exception $e) {
+            $this->assertInstanceOf('coding_exception', $e);
+        }
+
+        $records = array(1);
+        try {
+            $DB->insert_records($tablename, $records);
+            $this->fail('coding_exception expected when insert_records receives non-objet record');
+        } catch (moodle_exception $e) {
+            $this->assertInstanceOf('coding_exception', $e);
+        }
     }
 
     public function test_import_record() {
@@ -3781,8 +3897,6 @@ class core_dml_testcase extends database_driver_testcase {
         $this->assertNull($DB->get_field_sql($sql, array('paramvalue' => null)));
 
         // Check there are not problems with whitespace strings.
-        $sql = "SELECT COALESCE(null, '', null) AS test" . $DB->sql_null_from_clause();
-        $this->assertSame('', $DB->get_field_sql($sql, array()));
         $sql = "SELECT COALESCE(null, :paramvalue, null) AS test" . $DB->sql_null_from_clause();
         $this->assertSame('', $DB->get_field_sql($sql, array('paramvalue' => '')));
     }
@@ -4234,6 +4348,64 @@ class core_dml_testcase extends database_driver_testcase {
                  WHERE id $insql";
         $results = $DB->get_records_sql($sql, $inparams);
         $this->assertCount($currentcount, $results);
+    }
+
+    public function test_replace_all_text() {
+        $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        if (!$DB->replace_all_text_supported()) {
+            $this->markTestSkipped($DB->get_name().' does not support replacing of texts');
+        }
+
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '20', null, null);
+        $table->add_field('intro', XMLDB_TYPE_TEXT, 'big', null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+
+        $id1 = (string)$DB->insert_record($tablename, array('name' => null, 'intro' => null));
+        $id2 = (string)$DB->insert_record($tablename, array('name' => '', 'intro' => ''));
+        $id3 = (string)$DB->insert_record($tablename, array('name' => 'xxyy', 'intro' => 'vvzz'));
+        $id4 = (string)$DB->insert_record($tablename, array('name' => 'aa bb aa bb', 'intro' => 'cc dd cc aa'));
+        $id5 = (string)$DB->insert_record($tablename, array('name' => 'kkllll', 'intro' => 'kkllll'));
+
+        $expected = $DB->get_records($tablename, array(), 'id ASC');
+
+        $columns = $DB->get_columns($tablename);
+
+        $DB->replace_all_text($tablename, $columns['name'], 'aa', 'o');
+        $result = $DB->get_records($tablename, array(), 'id ASC');
+        $expected[$id4]->name = 'o bb o bb';
+        $this->assertEquals($expected, $result);
+
+        $DB->replace_all_text($tablename, $columns['intro'], 'aa', 'o');
+        $result = $DB->get_records($tablename, array(), 'id ASC');
+        $expected[$id4]->intro = 'cc dd cc o';
+        $this->assertEquals($expected, $result);
+
+        $DB->replace_all_text($tablename, $columns['name'], '_', '*');
+        $DB->replace_all_text($tablename, $columns['name'], '?', '*');
+        $DB->replace_all_text($tablename, $columns['name'], '%', '*');
+        $DB->replace_all_text($tablename, $columns['intro'], '_', '*');
+        $DB->replace_all_text($tablename, $columns['intro'], '?', '*');
+        $DB->replace_all_text($tablename, $columns['intro'], '%', '*');
+        $result = $DB->get_records($tablename, array(), 'id ASC');
+        $this->assertEquals($expected, $result);
+
+        $long = '1234567890123456789';
+        $DB->replace_all_text($tablename, $columns['name'], 'kk', $long);
+        $result = $DB->get_records($tablename, array(), 'id ASC');
+        $expected[$id5]->name = core_text::substr($long.'llll', 0, 20);
+        $this->assertEquals($expected, $result);
+
+        $DB->replace_all_text($tablename, $columns['intro'], 'kk', $long);
+        $result = $DB->get_records($tablename, array(), 'id ASC');
+        $expected[$id5]->intro = $long.'llll';
+        $this->assertEquals($expected, $result);
     }
 
     public function test_onelevel_commit() {
@@ -4932,6 +5104,153 @@ class core_dml_testcase extends database_driver_testcase {
         $this->assertCount(2, $records);
         $this->assertEquals(2, reset($records)->count);
         $this->assertEquals(2, end($records)->count);
+    }
+
+    /**
+     * Test debugging messages about invalid limit number values.
+     */
+    public function test_invalid_limits_debugging() {
+        $DB = $this->tdb;
+        $dbman = $DB->get_manager();
+
+        // Setup test data.
+        $table = $this->get_test_table();
+        $tablename = $table->getName();
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('course', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $dbman->create_table($table);
+        $DB->insert_record($tablename, array('course' => '1'));
+
+        // Verify that get_records_sql throws debug notices with invalid limit params.
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 'invalid');
+        $this->assertDebuggingCalled("Non-numeric limitfrom parameter detected: 'invalid', did you pass the correct arguments?");
+
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 1, 'invalid');
+        $this->assertDebuggingCalled("Non-numeric limitnum parameter detected: 'invalid', did you pass the correct arguments?");
+
+        // Verify that get_recordset_sql throws debug notices with invalid limit params.
+        $rs = $DB->get_recordset_sql("SELECT * FROM {{$tablename}}", null, 'invalid');
+        $this->assertDebuggingCalled("Non-numeric limitfrom parameter detected: 'invalid', did you pass the correct arguments?");
+        $rs->close();
+
+        $rs = $DB->get_recordset_sql("SELECT * FROM {{$tablename}}", null, 1, 'invalid');
+        $this->assertDebuggingCalled("Non-numeric limitnum parameter detected: 'invalid', did you pass the correct arguments?");
+        $rs->close();
+
+        // Verify that some edge cases do no create debugging messages.
+        // String form of integer values.
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, '1');
+        $this->assertDebuggingNotCalled();
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 1, '2');
+        $this->assertDebuggingNotCalled();
+        // Empty strings.
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, '');
+        $this->assertDebuggingNotCalled();
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 1, '');
+        $this->assertDebuggingNotCalled();
+        // Null values.
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, null);
+        $this->assertDebuggingNotCalled();
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 1, null);
+        $this->assertDebuggingNotCalled();
+
+        // Verify that empty arrays DO create debugging mesages.
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, array());
+        $this->assertDebuggingCalled("Non-numeric limitfrom parameter detected: array (\n), did you pass the correct arguments?");
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 1, array());
+        $this->assertDebuggingCalled("Non-numeric limitnum parameter detected: array (\n), did you pass the correct arguments?");
+
+        // Verify Negative number handling:
+        // -1 is explicitly treated as 0 for historical reasons.
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, -1);
+        $this->assertDebuggingNotCalled();
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 1, -1);
+        $this->assertDebuggingNotCalled();
+        // Any other negative values should throw debugging messages.
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, -2);
+        $this->assertDebuggingCalled("Negative limitfrom parameter detected: -2, did you pass the correct arguments?");
+        $DB->get_records_sql("SELECT * FROM {{$tablename}}", null, 1, -2);
+        $this->assertDebuggingCalled("Negative limitnum parameter detected: -2, did you pass the correct arguments?");
+    }
+
+    public function test_queries_counter() {
+
+        $DB = $this->tdb;
+        $dbman = $this->tdb->get_manager();
+
+        // Test database.
+        $table = $this->get_test_table();
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('fieldvalue', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+        $dbman->create_table($table);
+        $tablename = $table->getName();
+
+        // Initial counters values.
+        $initreads = $DB->perf_get_reads();
+        $initwrites = $DB->perf_get_writes();
+        $previousqueriestime = $DB->perf_get_queries_time();
+
+        // Selects counts as reads.
+
+        // The get_records_sql() method generates only 1 db query.
+        $whatever = $DB->get_records_sql("SELECT * FROM {{$tablename}}");
+        $this->assertEquals($initreads + 1, $DB->perf_get_reads());
+
+        // The get_records() method generates 2 queries the first time is called
+        // as it is fetching the table structure.
+        $whatever = $DB->get_records($tablename);
+        $this->assertEquals($initreads + 3, $DB->perf_get_reads());
+        $this->assertEquals($initwrites, $DB->perf_get_writes());
+
+        // The elapsed time is counted.
+        $lastqueriestime = $DB->perf_get_queries_time();
+        $this->assertGreaterThan($previousqueriestime, $lastqueriestime);
+        $previousqueriestime = $lastqueriestime;
+
+        // Only 1 now, it already fetched the table columns.
+        $whatever = $DB->get_records($tablename);
+        $this->assertEquals($initreads + 4, $DB->perf_get_reads());
+
+        // And only 1 more from now.
+        $whatever = $DB->get_records($tablename);
+        $this->assertEquals($initreads + 5, $DB->perf_get_reads());
+
+        // Inserts counts as writes.
+
+        $rec1 = new stdClass();
+        $rec1->fieldvalue = 11;
+        $rec1->id = $DB->insert_record($tablename, $rec1);
+        $this->assertEquals($initwrites + 1, $DB->perf_get_writes());
+        $this->assertEquals($initreads + 5, $DB->perf_get_reads());
+
+        // The elapsed time is counted.
+        $lastqueriestime = $DB->perf_get_queries_time();
+        $this->assertGreaterThan($previousqueriestime, $lastqueriestime);
+        $previousqueriestime = $lastqueriestime;
+
+        $rec2 = new stdClass();
+        $rec2->fieldvalue = 22;
+        $rec2->id = $DB->insert_record($tablename, $rec2);
+        $this->assertEquals($initwrites + 2, $DB->perf_get_writes());
+
+        // Updates counts as writes.
+
+        $rec1->fieldvalue = 111;
+        $DB->update_record($tablename, $rec1);
+        $this->assertEquals($initwrites + 3, $DB->perf_get_writes());
+        $this->assertEquals($initreads + 5, $DB->perf_get_reads());
+
+        // The elapsed time is counted.
+        $lastqueriestime = $DB->perf_get_queries_time();
+        $this->assertGreaterThan($previousqueriestime, $lastqueriestime);
+        $previousqueriestime = $lastqueriestime;
+
+        // Sum of them.
+        $totaldbqueries = $DB->perf_get_reads() + $DB->perf_get_writes();
+        $this->assertEquals($totaldbqueries, $DB->perf_get_queries());
     }
 }
 

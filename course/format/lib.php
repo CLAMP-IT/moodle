@@ -237,17 +237,42 @@ abstract class format_base {
         if ($this->course === false) {
             $this->course = get_course($this->courseid);
             $options = $this->get_format_options();
+            $dbcoursecolumns = null;
             foreach ($options as $optionname => $optionvalue) {
-                if (!isset($this->course->$optionname)) {
-                    $this->course->$optionname = $optionvalue;
-                } else {
-                    debugging('The option name '.$optionname.' in course format '.$this->format.
-                        ' is invalid because the field with the same name exists in {course} table',
-                        DEBUG_DEVELOPER);
+                if (isset($this->course->$optionname)) {
+                    // Course format options must not have the same names as existing columns in db table "course".
+                    if (!isset($dbcoursecolumns)) {
+                        $dbcoursecolumns = $DB->get_columns('course');
+                    }
+                    if (isset($dbcoursecolumns[$optionname])) {
+                        debugging('The option name '.$optionname.' in course format '.$this->format.
+                            ' is invalid because the field with the same name exists in {course} table',
+                            DEBUG_DEVELOPER);
+                        continue;
+                    }
                 }
+                $this->course->$optionname = $optionvalue;
             }
         }
         return $this->course;
+    }
+
+    /**
+     * Returns true if the course has a front page.
+     *
+     * This function is called to determine if the course has a view page, whether or not
+     * it contains a listing of activities. It can be useful to set this to false when the course
+     * format has only one activity and ignores the course page. Or if there are multiple
+     * activities but no page to see the centralised information.
+     *
+     * Initially this was created to know if forms should add a button to return to the course page.
+     * So if 'Return to course' does not make sense in your format your should probably return false.
+     *
+     * @return boolean
+     * @since 2.6
+     */
+    public function has_view_page() {
+        return true;
     }
 
     /**
@@ -328,7 +353,6 @@ abstract class format_base {
      *
      * The returned object's property (boolean)capable indicates that
      * the course format supports Moodle course ajax features.
-     * The property (array)testedbrowsers can be used as a parameter for {@link ajaxenabled()}.
      *
      * @return stdClass
      */
@@ -336,7 +360,6 @@ abstract class format_base {
         // no support by default
         $ajaxsupport = new stdClass();
         $ajaxsupport->capable = false;
-        $ajaxsupport->testedbrowsers = array();
         return $ajaxsupport;
     }
 
@@ -554,7 +577,7 @@ abstract class format_base {
             $sectionid = $section->id;
         } else if ($this->courseid && is_int($section) &&
                 ($sectionobj = $DB->get_record('course_sections',
-                        array('section' => $section, 'courseid' => $this->courseid), 'id'))) {
+                        array('section' => $section, 'course' => $this->courseid), 'id'))) {
             // course section format options will be returned
             $sectionid = $sectionobj->id;
         } else {

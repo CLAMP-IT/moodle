@@ -21,7 +21,7 @@ Feature: Toggle activities groups mode from the course page
     And I add a "Forum" to section "1" and I fill the form with:
       | Forum name | Test forum name |
       | Description | Test forum description |
-    And I follow "Edit settings"
+    And I click on "Edit settings" "link" in the "Administration" "block"
     And I fill the moodle form with:
       | Group mode | No groups |
       | Force group mode | No |
@@ -29,14 +29,12 @@ Feature: Toggle activities groups mode from the course page
     Then "No groups (Click to change)" "link" should exists
     And "//a/child::img[contains(@src, 'groupn')]" "xpath_element" should exists
     And I click on "No groups (Click to change)" "link" in the "Test forum name" activity
-    And I wait "3" seconds
     And "Separate groups (Click to change)" "link" should exists
     And "//a/child::img[contains(@src, 'groups')]" "xpath_element" should exists
     And I reload the page
     And "Separate groups (Click to change)" "link" should exists
     And "//a/child::img[contains(@src, 'groups')]" "xpath_element" should exists
     And I click on "Separate groups (Click to change)" "link" in the "Test forum name" activity
-    And I wait "3" seconds
     And "Visible groups (Click to change)" "link" should exists
     And "//a/child::img[contains(@src, 'groupv')]" "xpath_element" should exists
     And I reload the page

@@ -19,7 +19,7 @@
  * Displays a post, and all the posts below it.
  * If no post is given, displays all posts in a discussion
  *
- * @package mod-forum
+ * @package   mod_forum
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -85,26 +85,45 @@
             print_error('cannotmovenotvisible', 'forum', $return);
         }
 
-        require_capability('mod/forum:startdiscussion', context_module::instance($cmto->id));
+        $destinationctx = context_module::instance($cmto->id);
+        require_capability('mod/forum:startdiscussion', $destinationctx);
 
         if (!forum_move_attachments($discussion, $forum->id, $forumto->id)) {
             echo $OUTPUT->notification("Errors occurred while moving attachment directories - check your file permissions");
         }
         $DB->set_field('forum_discussions', 'forum', $forumto->id, array('id' => $discussion->id));
         $DB->set_field('forum_read', 'forumid', $forumto->id, array('discussionid' => $discussion->id));
-        add_to_log($course->id, 'forum', 'move discussion', "discuss.php?d=$discussion->id", $discussion->id, $cmto->id);
 
-        require_once($CFG->libdir.'/rsslib.php');
-        require_once($CFG->dirroot.'/mod/forum/rsslib.php');
+        $params = array(
+            'context' => $destinationctx,
+            'objectid' => $discussion->id,
+            'other' => array(
+                'fromforumid' => $forum->id,
+                'toforumid' => $forumto->id,
+            )
+        );
+        $event = \mod_forum\event\discussion_moved::create($params);
+        $event->add_record_snapshot('forum_discussions', $discussion);
+        $event->add_record_snapshot('forum', $forum);
+        $event->add_record_snapshot('forum', $forumto);
+        $event->trigger();
 
         // Delete the RSS files for the 2 forums to force regeneration of the feeds
+        require_once($CFG->dirroot.'/mod/forum/rsslib.php');
         forum_rss_delete_file($forum);
         forum_rss_delete_file($forumto);
 
         redirect($return.'&moved=-1&sesskey='.sesskey());
     }
 
-    add_to_log($course->id, 'forum', 'view discussion', "discuss.php?d=$discussion->id", $discussion->id, $cm->id);
+    $params = array(
+        'context' => $modcontext,
+        'objectid' => $discussion->id,
+    );
+    $event = \mod_forum\event\discussion_viewed::create($params);
+    $event->add_record_snapshot('forum_discussions', $discussion);
+    $event->add_record_snapshot('forum', $forum);
+    $event->trigger();
 
     unset($SESSION->fromdiscussion);
 
@@ -160,6 +179,7 @@
     $PAGE->set_heading($course->fullname);
     $PAGE->set_button($searchform);
     echo $OUTPUT->header();
+    echo $OUTPUT->heading(format_string($forum->name), 2);
 
 /// Check to see if groups are being used in this forum
 /// If so, make sure the current person is allowed to see this discussion

@@ -247,15 +247,17 @@ function ldap_find_userdn($ldapconnection, $username, $contexts, $objectclass, $
         }
 
         if ($search_sub) {
-            if (!$ldap_result = @ldap_search($ldapconnection, $context,
-                                           '(&'.$objectclass.'('.$search_attrib.'='.ldap_filter_addslashes($username).'))',
-                                           array($search_attrib))) {
-                break; // Not found in this context.
-            }
+            $ldap_result = @ldap_search($ldapconnection, $context,
+                                        '(&'.$objectclass.'('.$search_attrib.'='.ldap_filter_addslashes($username).'))',
+                                        array($search_attrib));
         } else {
-            $ldap_result = ldap_list($ldapconnection, $context,
-                                     '(&'.$objectclass.'('.$search_attrib.'='.ldap_filter_addslashes($username).'))',
-                                     array($search_attrib));
+            $ldap_result = @ldap_list($ldapconnection, $context,
+                                      '(&'.$objectclass.'('.$search_attrib.'='.ldap_filter_addslashes($username).'))',
+                                      array($search_attrib));
+        }
+
+        if (!$ldap_result) {
+            continue; // Not found in this context.
         }
 
         $entry = ldap_first_entry($ldapconnection, $ldap_result);
@@ -380,19 +382,14 @@ function ldap_stripslashes($text) {
 
 
 /**
- * Check if PHP supports LDAP paged results and we can use them (we have to use LDAP
- * version 3, otherwise the server doesn't use them).
+ * Check if we use LDAP version 3, otherwise the server cannot use them.
  *
  * @param ldapversion integer The LDAP protocol version we use.
  *
  * @return boolean true is paged results can be used, false otherwise.
  */
 function ldap_paged_results_supported($ldapversion) {
-
-    if (((int)$ldapversion === 3) &&
-        function_exists('ldap_control_paged_result') &&
-        function_exists('ldap_control_paged_result_response')) {
-
+    if ((int)$ldapversion === 3) {
         return true;
     }
 

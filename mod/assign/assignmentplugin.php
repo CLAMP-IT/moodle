@@ -627,5 +627,23 @@ abstract class assign_plugin {
         return true;
     }
 
+    /**
+     * If this plugin can participate in a webservice (save_submission or save_grade),
+     * return a list of external_params to be included in the definition of that webservice.
+     *
+     * @return external_description|null
+     */
+    public function get_external_parameters() {
+        return null;
+    }
 
+    /**
+     * If true, the plugin will appear on the module settings page and can be
+     * enabled/disabled per assignment instance.
+     *
+     * @return bool
+     */
+    public function is_configurable() {
+        return true;
+    }
 }

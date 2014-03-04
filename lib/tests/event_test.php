@@ -52,7 +52,7 @@ class core_event_testcase extends advanced_testcase {
         $this->assertSame('unittest', $event->target);
         $this->assertSame(5, $event->objectid);
         $this->assertSame('u', $event->crud);
-        $this->assertSame(\core\event\base::LEVEL_PARTICIPATING, $event->level);
+        $this->assertSame(\core\event\base::LEVEL_PARTICIPATING, $event->edulevel);
 
         $this->assertEquals($system, $event->get_context());
         $this->assertSame($system->id, $event->contextid);
@@ -123,6 +123,7 @@ class core_event_testcase extends advanced_testcase {
     }
 
     public function test_observers_parsing() {
+        global $CFG;
 
         $observers = array(
             array(
@@ -168,7 +169,7 @@ class core_event_testcase extends advanced_testcase {
         $observer->callable = '\core_tests\event\unittest_observer::observe_one';
         $observer->priority = 0;
         $observer->internal = true;
-        $observer->includefile = 'lib/tests/fixtures/event_fixtures.php';
+        $observer->includefile = $CFG->dirroot.'/lib/tests/fixtures/event_fixtures.php';
         $expected[1] = $observer;
 
         $this->assertEquals($expected, $result['\core_tests\event\unittest_executed']);
@@ -216,7 +217,7 @@ class core_event_testcase extends advanced_testcase {
         $observer->callable = '\core_tests\event\unittest_observer::observe_one';
         $observer->priority = 0;
         $observer->internal = true;
-        $observer->includefile = 'lib/tests/fixtures/event_fixtures.php';
+        $observer->includefile = $CFG->dirroot.'/lib/tests/fixtures/event_fixtures.php';
         $expected[0] = $observer;
         $this->assertEquals($expected, $result['\core_tests\event\unittest_executed']);
 
@@ -450,6 +451,23 @@ class core_event_testcase extends advanced_testcase {
             \core_tests\event\unittest_observer::$info);
     }
 
+    public function test_deprecated() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $event = \core_tests\event\deprecated_event1::create();
+        $this->assertDebuggingCalled('level property is deprecated, use edulevel property instead');
+
+        $this->assertSame($event::LEVEL_TEACHING, $event->level);
+        $this->assertDebuggingCalled('level property is deprecated, use edulevel property instead');
+
+        $this->assertTrue(isset($event->level));
+        $this->assertDebuggingCalled('level property is deprecated, use edulevel property instead');
+
+        $this->assertSame($event::LEVEL_TEACHING, $event->edulevel);
+    }
+
     public function test_legacy() {
         global $DB;
 
@@ -618,17 +636,21 @@ class core_event_testcase extends advanced_testcase {
         @$event->trigger();
         $this->assertDebuggingCalled();
 
-        $event = \core_tests\event\bad_event6::create(array('context'=>\context_system::instance()));
+        $event = \core_tests\event\bad_event6::create(array('objectid'=>1, 'context'=>\context_system::instance()));
         $event->trigger();
-        $this->assertDebuggingCalled();
+        $this->assertDebuggingCalled('Unknown table specified in objecttable field');
 
         $event = \core_tests\event\bad_event7::create(array('objectid'=>1, 'context'=>\context_system::instance()));
         try {
             $event->trigger();
-            $this->fail('Exception expected when $data contains objectid by objecttable not specified');
+            $this->fail('Exception expected when $data contains objectid but objecttable not specified');
         } catch (\moodle_exception $e) {
             $this->assertInstanceOf('\coding_exception', $e);
         }
+
+        $event = \core_tests\event\bad_event8::create(array('context'=>\context_system::instance()));
+        $event->trigger();
+        $this->assertDebuggingCalled('Event property objectid must be set when objecttable is defined');
     }
 
     public function test_problematic_events() {
@@ -660,6 +682,12 @@ class core_event_testcase extends advanced_testcase {
         $this->assertDebuggingNotCalled();
         $event6->trigger();
         $this->assertDebuggingCalled();
+
+        // Check that whole float numbers do not trigger debugging messages.
+        $event7 = \core_tests\event\unittest_executed::create(array('courseid'=>1, 'context'=>\context_system::instance(),
+            'other' => array('wholenumber' => 90.0000, 'numberwithdecimals' => 54.7656, 'sample' => 1)));
+        $event7->trigger();
+        $this->assertDebuggingNotCalled();
 
         $event = \core_tests\event\problematic_event2::create(array());
         $this->assertDebuggingNotCalled();
@@ -720,5 +748,17 @@ class core_event_testcase extends advanced_testcase {
         }
 
         $this->assertSame($event->get_data(), $data);
+    }
+
+    /**
+     * @expectedException PHPUnit_Framework_Error_Notice
+     */
+    public function test_context_not_used() {
+        $event = \core_tests\event\context_used_in_event::create(array('courseid' => 1, 'other' => array('sample' => 1, 'xx' => 10)));
+        $this->assertEventContextNotUsed($event);
+
+        $eventcontext = phpunit_event_mock::testable_get_event_context($event);
+        phpunit_event_mock::testable_set_event_context($event, null);
+        $this->assertEventContextNotUsed($event);
     }
 }

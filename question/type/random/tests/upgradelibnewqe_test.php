@@ -86,7 +86,6 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'timemodified' => '1238182560',
             'layout' => '28698,0,34245,0,34248,0,35005,0,35009,0,35013,0',
             'preview' => '0',
-            'needsupgradetonewqe' => '1',
         );
         $question = (object) array(
             'id' => '34248',
@@ -232,6 +231,7 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'variant' => 1,
             'maxmark' => 1,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => "(Notice in the panel at the left that the question you have just done is now greyed out. Remember that you can REVISIT ANY QUESTIONS by clicking on the NUMBERED BOXES. Click Q1 now to try this out and then click Q2 to return here.) \n\n[Table 1 showing Number of households receiving home care (England)] \n\n(LINK TO RESIZABLE TABLE 1)  \n\nWhich was the first year when more than a quarter of a million households received care from independent agencies?",
             'rightanswer' => '2005',
@@ -314,7 +314,6 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'timemodified' => '1274178763',
             'layout' => '101989,101985,101994,0,101988,101986,101992,0,101997,101990,101991,0,101984,101995,101987,0,101983,101993,101996,0',
             'preview' => '0',
-            'needsupgradetonewqe' => '1',
         );
         $question = (object) array(
             'id' => '101984',
@@ -473,6 +472,7 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'variant' => 1,
             'maxmark' => 1,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'En France, le covoiturage est une pratique qui a été au départ préconisé par « les écolos et les verts », mais depuis, elle :',
             'rightanswer' => 'n’est plus uniquement un positionnement écologiste.',
@@ -563,7 +563,6 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'timemodified' => '1269508052',
             'layout' => '68646,0,81245,0,81246,0,81247,0,81248,0,81249,0,81250,0,82795,0,82797,0,82798,0,82799,0,82800,0,82801,0,82802,0,82803,0,82804,0,82805,0,82806,0,82807,0',
             'preview' => '0',
-            'needsupgradetonewqe' => '1',
         );
         $question = (object) array(
             'id' => '81247',
@@ -751,6 +750,7 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'variant' => 1,
             'maxmark' => 1,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => "The figure below shows a graph for converting between miles and kilometres. \n\n[ The graph has a horizontal axis, labelled miles, with a scale marked from 0 to 50 in steps of 5, and a vertical axis, labelled kilometres, with a scale from 0 to 80 in steps of 10. The straight line of the graph starts at the origin and slopes up to the right, and appears to pass through the point corresponding to 25 miles and 40 kilometres, and through the point corresponding to 50 miles and 80 kilometres. ] \n\nBy taking a reading from the graph, estimate how many kilometres are equivalent to 40 miles. \n\nRound your answer to the nearest kilometre and type it in the box below. \n\n(Your answer should be a single number, without units.)",
             'rightanswer' => '64 km',
@@ -832,7 +832,6 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'timemodified' => '1305273672',
             'layout' => '6,12,13,15,14,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '14',
@@ -948,6 +947,7 @@ class qtype_random_attempt_upgrader_test extends question_attempt_upgrader_test_
             'variant' => 1,
             'maxmark' => 1.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'What is twice 1.5 m?',
             'rightanswer' => '3 m',

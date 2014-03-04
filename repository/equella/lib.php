@@ -134,7 +134,7 @@ class repository_equella extends repository {
      * If we received the connection timeout more than 3 times in a row, we don't attemt to
      * connect to the server any more during this request.
      *
-     * This function is used by {@link repository_equella::get_file_by_reference()} that
+     * This function is used by {@link repository_equella::sync_reference()} that
      * synchronises the file size of referenced files.
      *
      * @param int $errno omit if we just want to know the return value, the last curl_errno otherwise
@@ -160,18 +160,6 @@ class repository_equella extends repository {
     }
 
     /**
-     * Decide whether or not the file should be synced
-     *
-     * @param stored_file $storedfile
-     * @return bool
-     */
-    public function sync_individual_file(stored_file $storedfile) {
-        // if we had several unsuccessfull attempts to connect to server - do not try any more
-        return $this->connection_result();
-    }
-
-
-    /**
      * Download a file, this function can be overridden by subclass. {@link curl}
      *
      * @param string $reference the source of the file
@@ -182,7 +170,7 @@ class repository_equella extends repository {
      *   url: URL to the source (from parameters)
      */
     public function get_file($reference, $filename = '') {
-        global $USER;
+        global $USER, $CFG;
         $ref = @unserialize(base64_decode($reference));
         if (!isset($ref->url) || !($url = $this->appendtoken($ref->url))) {
             // Occurs when the user isn't known..
@@ -191,7 +179,7 @@ class repository_equella extends repository {
         $path = $this->prepare_file($filename);
         $cookiepathname = $this->prepare_file($USER->id. '_'. uniqid('', true). '.cookie');
         $c = new curl(array('cookie'=>$cookiepathname));
-        $result = $c->download_one($url, null, array('filepath' => $path, 'followlocation' => true, 'timeout' => self::GETFILE_TIMEOUT));
+        $result = $c->download_one($url, null, array('filepath' => $path, 'followlocation' => true, 'timeout' => $CFG->repositorygetfiletimeout));
         // Delete cookie jar.
         if (file_exists($cookiepathname)) {
             unlink($cookiepathname);
@@ -202,37 +190,33 @@ class repository_equella extends repository {
         return array('path'=>$path, 'url'=>$url);
     }
 
-    /**
-     * Returns information about file in this repository by reference
-     *
-     * If the file is an image we download the contents and save it in our filesystem
-     * so we can generate thumbnails. Otherwise we just request the file size.
-     * Returns null if file not found or can not be accessed
-     *
-     * @param stdClass $reference file reference db record
-     * @return stdClass|null contains one of the following:
-     *   - 'filesize' (for non-image files or files we failed to retrieve fully because of timeout)
-     *   - 'filepath' (for image files that we retrieived and saved)
-     */
-    public function get_file_by_reference($reference) {
+    public function sync_reference(stored_file $file) {
         global $USER;
-        $ref = @unserialize(base64_decode($reference->reference));
+        if ($file->get_referencelastsync() + DAYSECS > time() || !$this->connection_result()) {
+            // Synchronise not more often than once a day.
+            // if we had several unsuccessfull attempts to connect to server - do not try any more.
+            return false;
+        }
+        $ref = @unserialize(base64_decode($file->get_reference()));
         if (!isset($ref->url) || !($url = $this->appendtoken($ref->url))) {
             // Occurs when the user isn't known..
-            return null;
+            $file->set_missingsource();
+            return true;
         }
 
-        $return = null;
         $cookiepathname = $this->prepare_file($USER->id. '_'. uniqid('', true). '.cookie');
         $c = new curl(array('cookie' => $cookiepathname));
         if (file_extension_in_typegroup($ref->filename, 'web_image')) {
             $path = $this->prepare_file('');
-            $result = $c->download_one($url, null, array('filepath' => $path, 'followlocation' => true, 'timeout' => self::SYNCIMAGE_TIMEOUT));
+            $result = $c->download_one($url, null, array('filepath' => $path, 'followlocation' => true, 'timeout' => $CFG->repositorysyncimagetimeout));
             if ($result === true) {
-                $return = (object)array('filepath' => $path);
+                $fs = get_file_storage();
+                list($contenthash, $filesize, $newfile) = $fs->add_file_to_pool($path);
+                $file->set_synchronized($contenthash, $filesize);
+                return true;
             }
         } else {
-            $result = $c->head($url, array('followlocation' => true, 'timeout' => self::SYNCFILE_TIMEOUT));
+            $result = $c->head($url, array('followlocation' => true, 'timeout' => $CFG->repositorysyncfiletimeout));
         }
         // Delete cookie jar.
         if (file_exists($cookiepathname)) {
@@ -241,25 +225,27 @@ class repository_equella extends repository {
 
         $this->connection_result($c->get_errno());
         $curlinfo = $c->get_info();
-        if ($return === null && isset($curlinfo['http_code']) && $curlinfo['http_code'] == 200
+        if (isset($curlinfo['http_code']) && $curlinfo['http_code'] == 200
                 && array_key_exists('download_content_length', $curlinfo)
                 && $curlinfo['download_content_length'] >= 0) {
             // we received a correct header and at least can tell the file size
-            $return = (object)array('filesize' => $curlinfo['download_content_length']);
+            $file->set_synchronized(null, $curlinfo['download_content_length']);
+            return true;
         }
-        return $return;
+        $file->set_missingsource();
+        return true;
     }
 
     /**
      * Repository method to serve the referenced file
      *
      * @param stored_file $storedfile the file that contains the reference
-     * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+     * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
      * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
      * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
      * @param array $options additional options affecting the file serving
      */
-    public function send_file($stored_file, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
+    public function send_file($stored_file, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
         $reference  = unserialize(base64_decode($stored_file->get_reference()));
         $url = $this->appendtoken($reference->url);
         if ($url) {

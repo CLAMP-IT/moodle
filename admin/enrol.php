@@ -50,6 +50,7 @@ switch ($action) {
     case 'disable':
         unset($enabled[$enrol]);
         set_config('enrol_plugins_enabled', implode(',', array_keys($enabled)));
+        core_plugin_manager::reset_caches();
         $syscontext->mark_dirty(); // resets all enrol caches
         break;
 
@@ -60,6 +61,7 @@ switch ($action) {
         $enabled = array_keys($enabled);
         $enabled[] = $enrol;
         set_config('enrol_plugins_enabled', implode(',', $enabled));
+        core_plugin_manager::reset_caches();
         $syscontext->mark_dirty(); // resets all enrol caches
         break;
 
@@ -106,7 +108,7 @@ switch ($action) {
         echo $OUTPUT->header();
 
         // This may take a long time.
-        set_time_limit(0);
+        core_php_time_limit::raise();
 
         // Disable plugin to prevent concurrent cron execution.
         unset($enabled[$enrol]);
@@ -119,7 +121,7 @@ switch ($action) {
 
         echo $OUTPUT->notification(get_string('success'), 'notifysuccess');
 
-        if (!$return = plugin_manager::instance()->get_uninstall_url('enrol_'.$enrol)) {
+        if (!$return = core_plugin_manager::instance()->get_uninstall_url('enrol_'.$enrol, 'manage')) {
             $return = new moodle_url('/admin/plugins.php');
         }
         echo $OUTPUT->continue_button($return);

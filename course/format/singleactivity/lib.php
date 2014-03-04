@@ -100,7 +100,7 @@ class format_singleactivity extends format_base {
         if (!$cm->uservisible) {
             return null;
         }
-        $action = $cm->get_url();
+        $action = $cm->url;
         if (!$action) {
             // Do not add to navigation activity without url (i.e. labels).
             return null;
@@ -154,7 +154,7 @@ class format_singleactivity extends format_base {
             );
         }
         if ($foreditform && !isset($courseformatoptions['activitytype']['label'])) {
-            $availabletypes = get_module_types_names();
+            $availabletypes = $this->get_supported_activities();
             $courseformatoptionsedit = array(
                 'activitytype' => array(
                     'label' => new lang_string('activitytype', 'format_singleactivity'),
@@ -270,7 +270,7 @@ class format_singleactivity extends format_base {
      */
     protected function get_activitytype() {
         $options = $this->get_format_options();
-        $availabletypes = get_module_types_names();
+        $availabletypes = $this->get_supported_activities();
         if (!empty($options['activitytype']) &&
                 array_key_exists($options['activitytype'], $availabletypes)) {
             return $options['activitytype'];
@@ -289,6 +289,23 @@ class format_singleactivity extends format_base {
             $this->activity = $this->reorder_activities();
         }
         return $this->activity;
+    }
+
+    /**
+     * Get the activities supported by the format.
+     *
+     * Here we ignore the modules that do not have a page of their own, like the label.
+     *
+     * @return array array($module => $name of the module).
+     */
+    public static function get_supported_activities() {
+        $availabletypes = get_module_types_names();
+        foreach ($availabletypes as $module => $name) {
+            if (plugin_supports('mod', $module, FEATURE_NO_VIEW_LINK, false)) {
+                unset($availabletypes[$module]);
+            }
+        }
+        return $availabletypes;
     }
 
     /**
@@ -395,13 +412,13 @@ class format_singleactivity extends format_base {
                     // Student views an empty course page.
                     return;
                 }
-            } else if (!$cm->uservisible || !$cm->get_url()) {
+            } else if (!$cm->uservisible || !$cm->url) {
                 // Activity is set but not visible to current user or does not have url.
                 // Display course page (either empty or with availability restriction info).
                 return;
             } else {
                 // Everything is set up and accessible, redirect to the activity page!
-                redirect($cm->get_url());
+                redirect($cm->url);
             }
         }
     }
@@ -440,4 +457,14 @@ class format_singleactivity extends format_base {
             $activitynode->remove();
         }
     }
+
+    /**
+     * Returns true if the course has a front page.
+     *
+     * @return boolean false
+     */
+    public function has_view_page() {
+        return false;
+    }
+
 }

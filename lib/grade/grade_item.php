@@ -1210,6 +1210,42 @@ class grade_item extends grade_object {
     }
 
     /**
+     * Detect duplicate grade item's sortorder and re-sort them.
+     * Note: Duplicate sortorder will be introduced while duplicating activities or
+     * merging two courses.
+     *
+     * @param int $courseid id of the course for which grade_items sortorder need to be fixed.
+     */
+    public static function fix_duplicate_sortorder($courseid) {
+        global $DB;
+
+        $transaction = $DB->start_delegated_transaction();
+
+        $sql = "SELECT DISTINCT g1.id, g1.courseid, g1.sortorder
+                    FROM {grade_items} g1
+                    JOIN {grade_items} g2 ON g1.courseid = g2.courseid
+                WHERE g1.sortorder = g2.sortorder AND g1.id != g2.id AND g1.courseid = :courseid
+                ORDER BY g1.sortorder DESC, g1.id DESC";
+
+        // Get all duplicates in course highest sort order, and higest id first so that we can make space at the
+        // bottom higher end of the sort orders and work down by id.
+        $rs = $DB->get_recordset_sql($sql, array('courseid' => $courseid));
+
+        foreach($rs as $duplicate) {
+            $DB->execute("UPDATE {grade_items}
+                            SET sortorder = sortorder + 1
+                          WHERE courseid = :courseid AND
+                          (sortorder > :sortorder OR (sortorder = :sortorder2 AND id > :id))",
+                array('courseid' => $duplicate->courseid,
+                    'sortorder' => $duplicate->sortorder,
+                    'sortorder2' => $duplicate->sortorder,
+                    'id' => $duplicate->id));
+        }
+        $rs->close();
+        $transaction->allow_commit();
+    }
+
+    /**
      * Returns the most descriptive field for this object.
      *
      * Determines what type of grade item it is then returns the appropriate string
@@ -1372,18 +1408,20 @@ class grade_item extends grade_object {
 
             if ($grade_category->aggregatesubcats) {
                 // return all children excluding category items
+                $params[] = $this->courseid;
                 $params[] = '%/' . $grade_category->id . '/%';
                 $sql = "SELECT gi.id
                           FROM {grade_items} gi
+                          JOIN {grade_categories} gc ON gi.categoryid = gc.id
                          WHERE $gtypes
                                $outcomes_sql
-                               AND gi.categoryid IN (
-                                  SELECT gc.id
-                                    FROM {grade_categories} gc
-                                   WHERE gc.path LIKE ?)";
+                               AND gi.courseid = ?
+                               AND gc.path LIKE ?";
             } else {
                 $params[] = $grade_category->id;
+                $params[] = $this->courseid;
                 $params[] = $grade_category->id;
+                $params[] = $this->courseid;
                 if (empty($CFG->grade_includescalesinaggregation)) {
                     $params[] = GRADE_TYPE_VALUE;
                 } else {
@@ -1394,6 +1432,7 @@ class grade_item extends grade_object {
                           FROM {grade_items} gi
                          WHERE $gtypes
                                AND gi.categoryid = ?
+                               AND gi.courseid = ?
                                $outcomes_sql
                         UNION
 
@@ -1401,6 +1440,7 @@ class grade_item extends grade_object {
                           FROM {grade_items} gi, {grade_categories} gc
                          WHERE (gi.itemtype = 'category' OR gi.itemtype = 'course') AND gi.iteminstance=gc.id
                                AND gc.parent = ?
+                               AND gi.courseid = ?
                                AND $gtypes
                                $outcomes_sql";
             }

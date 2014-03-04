@@ -42,8 +42,13 @@ define('MAX_COURSE_CATEGORIES', 10000);
 
 /**
  * Number of seconds to wait before updating lastaccess information in DB.
+ *
+ * We allow overwrites from config.php, useful to ensure coherence in performance
+ * tests results.
  */
-define('LASTACCESS_UPDATE_SECS', 60);
+if (!defined('LASTACCESS_UPDATE_SECS')) {
+    define('LASTACCESS_UPDATE_SECS', 60);
+}
 
 /**
  * Returns $user object of the main admin user
@@ -810,8 +815,7 @@ function get_courses_search($searchterms, $sort, $page, $recordsperpage, &$total
     $ccjoin = "LEFT JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)";
     $params['contextlevel'] = CONTEXT_COURSE;
 
-    $fields = array_diff(array_keys($DB->get_columns('course')), array('modinfo', 'sectioncache'));
-    $sql = "SELECT c.".join(',c.',$fields)." $ccselect
+    $sql = "SELECT c.* $ccselect
               FROM {course} c
            $ccjoin
              WHERE $searchcond AND c.id <> ".SITEID."
@@ -1232,6 +1236,36 @@ function update_timezone_records($timezones) {
     }
 }
 
+/**
+ * Increment standard revision field.
+ *
+ * The revision are based on current time and are incrementing.
+ * There is a protection for runaway revisions, it may not go further than
+ * one hour into future.
+ *
+ * The field has to be XMLDB_TYPE_INTEGER with size 10.
+ *
+ * @param string $table
+ * @param string $field name of the field containing revision
+ * @param string $select use empty string when updating all records
+ * @param array $params optional select parameters
+ */
+function increment_revision_number($table, $field, $select, array $params = null) {
+    global $DB;
+
+    $now = time();
+    $sql = "UPDATE {{$table}}
+                   SET $field = (CASE
+                       WHEN $field IS NULL THEN $now
+                       WHEN $field < $now THEN $now
+                       WHEN $field > $now + 3600 THEN $now
+                       ELSE $field + 1 END)";
+    if ($select) {
+        $sql = $sql . " WHERE $select";
+    }
+    $DB->execute($sql, $params);
+}
+
 
 /// MODULE FUNCTIONS /////////////////////////////////////////////////
 
@@ -1616,7 +1650,7 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
     if ($user) {
         $userid = $user;
     } else {
-        if (session_is_loggedinas()) {  // Don't log
+        if (\core\session\manager::is_loggedinas()) {  // Don't log
             return;
         }
         $userid = empty($USER->id) ? '0' : $USER->id;
@@ -1698,7 +1732,7 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
 function user_accesstime_log($courseid=0) {
     global $USER, $CFG, $DB;
 
-    if (!isloggedin() or session_is_loggedinas()) {
+    if (!isloggedin() or \core\session\manager::is_loggedinas()) {
         // no access tracking
         return;
     }

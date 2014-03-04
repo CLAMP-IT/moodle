@@ -18,8 +18,7 @@
 /**
  * Moodle renderer used to display special elements of the lesson module
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  2009 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -301,7 +300,9 @@ class mod_lesson_renderer extends plugin_renderer_base {
 
             $pagetable = $page->display_answers($pagetable);
 
+            $content .= html_writer::start_tag('div', array('class' => 'no-overflow'));
             $content .= html_writer::table($pagetable);
+            $content .= html_writer::end_tag('div');
 
             if ($canedit) {
                 $content .= $this->add_page_links($lesson, $pageid);

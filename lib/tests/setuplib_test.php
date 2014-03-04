@@ -152,22 +152,21 @@ class core_setuplib_testcase extends advanced_testcase {
         // Test default location - can not be modified in phpunit tests because we override everything in config.php.
         $this->assertSame("$CFG->dataroot/localcache", $CFG->localcachedir);
 
-        $now = time();
+        $this->setCurrentTimeStart();
         $timestampfile = "$CFG->localcachedir/.lastpurged";
 
         $dir = make_localcache_directory('', false);
         $this->assertSame($CFG->localcachedir, $dir);
         $this->assertFileNotExists("$CFG->localcachedir/.htaccess");
         $this->assertFileExists($timestampfile);
-        $this->assertGreaterThanOrEqual($now, filemtime($timestampfile));
-        $this->assertLessThanOrEqual(time(), filemtime($timestampfile));
+        $this->assertTimeCurrent(filemtime($timestampfile));
 
         $dir = make_localcache_directory('test/test', false);
         $this->assertSame("$CFG->localcachedir/test/test", $dir);
 
         // Test custom location.
         $CFG->localcachedir = "$CFG->dataroot/testlocalcache";
-        $now = time();
+        $this->setCurrentTimeStart();
         $timestampfile = "$CFG->localcachedir/.lastpurged";
         $this->assertFileNotExists($timestampfile);
 
@@ -175,8 +174,7 @@ class core_setuplib_testcase extends advanced_testcase {
         $this->assertSame($CFG->localcachedir, $dir);
         $this->assertFileExists("$CFG->localcachedir/.htaccess");
         $this->assertFileExists($timestampfile);
-        $this->assertGreaterThanOrEqual($now, filemtime($timestampfile));
-        $this->assertLessThanOrEqual(time(), filemtime($timestampfile));
+        $this->assertTimeCurrent(filemtime($timestampfile));
 
         $dir = make_localcache_directory('test', false);
         $this->assertSame("$CFG->localcachedir/test", $dir);
@@ -190,16 +188,14 @@ class core_setuplib_testcase extends advanced_testcase {
         $testfile = "$CFG->localcachedir/test/test.txt";
         $this->assertTrue(touch($testfile));
 
-        $now = time();
+        $now = $this->setCurrentTimeStart();
         set_config('localcachedirpurged', $now - 2);
         purge_all_caches();
         $this->assertFileNotExists($testfile);
         $this->assertFileNotExists(dirname($testfile));
         $this->assertFileExists($timestampfile);
-        $this->assertGreaterThanOrEqual($now, filemtime($timestampfile));
-        $this->assertLessThanOrEqual(time(), filemtime($timestampfile));
-        $this->assertGreaterThanOrEqual($now, $CFG->localcachedirpurged);
-        $this->assertLessThanOrEqual(time(), $CFG->localcachedirpurged);
+        $this->assertTimeCurrent(filemtime($timestampfile));
+        $this->assertTimeCurrent($CFG->localcachedirpurged);
 
         // Simulates purge_all_caches() on another server node.
         make_localcache_directory('test', false);
@@ -209,13 +205,90 @@ class core_setuplib_testcase extends advanced_testcase {
         clearstatcache();
         $this->assertSame($now - 2, filemtime($timestampfile));
 
-        $now = time();
+        $this->setCurrentTimeStart();
         $dir = make_localcache_directory('', false);
         $this->assertSame("$CFG->localcachedir", $dir);
         $this->assertFileNotExists($testfile);
         $this->assertFileNotExists(dirname($testfile));
         $this->assertFileExists($timestampfile);
-        $this->assertGreaterThanOrEqual($now, filemtime($timestampfile));
-        $this->assertLessThanOrEqual(time(), filemtime($timestampfile));
+        $this->assertTimeCurrent(filemtime($timestampfile));
+    }
+
+    public function test_merge_query_params() {
+        $original = array(
+            'id' => '1',
+            'course' => '2',
+            'action' => 'delete',
+            'grade' => array(
+                0 => 'a',
+                1 => 'b',
+                2 => 'c',
+            ),
+            'items' => array(
+                'a' => 'aa',
+                'b' => 'bb',
+            ),
+            'mix' => array(
+                0 => '2',
+            ),
+            'numerical' => array(
+                '2' => array('a' => 'b'),
+                '1' => '2',
+            ),
+        );
+
+        $chunk = array(
+            'numerical' => array(
+                '0' => 'z',
+                '2' => array('d' => 'e'),
+            ),
+            'action' => 'create',
+            'next' => '2',
+            'grade' => array(
+                0 => 'e',
+                1 => 'f',
+                2 => 'g',
+            ),
+            'mix' => 'mix',
+        );
+
+        $expected = array(
+            'id' => '1',
+            'course' => '2',
+            'action' => 'create',
+            'grade' => array(
+                0 => 'a',
+                1 => 'b',
+                2 => 'c',
+                3 => 'e',
+                4 => 'f',
+                5 => 'g',
+            ),
+            'items' => array(
+                'a' => 'aa',
+                'b' => 'bb',
+            ),
+            'mix' => 'mix',
+            'numerical' => array(
+                '2' => array('a' => 'b', 'd' => 'e'),
+                '1' => '2',
+                '0' => 'z',
+            ),
+            'next' => '2',
+        );
+
+        $array = $original;
+        merge_query_params($array, $chunk);
+
+        $this->assertSame($expected, $array);
+        $this->assertNotSame($original, $array);
+
+        $query = "id=1&course=2&action=create&grade%5B%5D=a&grade%5B%5D=b&grade%5B%5D=c&grade%5B%5D=e&grade%5B%5D=f&grade%5B%5D=g&items%5Ba%5D=aa&items%5Bb%5D=bb&mix=mix&numerical%5B2%5D%5Ba%5D=b&numerical%5B2%5D%5Bd%5D=e&numerical%5B1%5D=2&numerical%5B0%5D=z&next=2";
+        $decoded = array();
+        parse_str($query, $decoded);
+        $this->assertSame($expected, $decoded);
+
+        // Prove that we cannot use array_merge_recursive() instead.
+        $this->assertNotSame($expected, array_merge_recursive($original, $chunk));
     }
 }

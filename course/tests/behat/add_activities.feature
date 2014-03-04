@@ -30,7 +30,7 @@ Feature: Add activities to courses
     And I turn editing mode off
     Then I should not see "Adding a new"
     And I follow "Test name"
-    And I follow "Edit settings"
+    And I click on "Edit settings" "link" in the "Administration" "block"
     And I expand all fieldsets
     And the "Name" field should match "Test name" value
     And the "Entries required for completion" field should match "9" value
@@ -40,8 +40,10 @@ Feature: Add activities to courses
   Scenario: Add an activity without the required fields
     When I add a "Database" to section "3" and I fill the form with:
       | Name | Test name |
+    And I press "Save and return to course"
     Then I should see "Adding a new"
     And I should see "Required"
+    And I press "Cancel"
 
   Scenario: Add an activity to a course with Javascript disabled
     Then I should see "Add a resource to section 'Topic 1'"

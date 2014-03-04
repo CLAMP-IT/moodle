@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * A block which displays Remote feeds
  *
- * @package    rss_client
+ * @package   block_rss_client
  * @copyright  Daryl Hawes
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  */
@@ -249,13 +248,13 @@
 
             if($this->config->display_description && !empty($description)){
 
-                $description = break_up_long_words($description, 30);
-
                 $formatoptions = new stdClass();
                 $formatoptions->para = false;
 
                 $r.= html_writer::start_tag('div',array('class'=>'description'));
-                    $r.= format_text($description, FORMAT_HTML, $formatoptions, $this->page->course->id);
+                    $description = format_text($description, FORMAT_HTML, $formatoptions, $this->page->course->id);
+                    $description = break_up_long_words($description, 30);
+                    $r.= $description;
                 $r.= html_writer::end_tag('div');
             }
         $r.= html_writer::end_tag('li');
@@ -304,7 +303,7 @@
             mtrace('    ' . $rec->url . ' ', '');
             // Fetch the rss feed, using standard simplepie caching
             // so feeds will be renewed only if cache has expired
-            @set_time_limit(60);
+            core_php_time_limit::raise(60);
 
             $feed =  new moodle_simplepie();
             // set timeout for longer than normal to be agressive at

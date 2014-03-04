@@ -40,6 +40,9 @@ if ($slashargument = min_get_slash_argument()) {
 $etag = sha1($path);
 $parts = explode('/', $path);
 $version = array_shift($parts);
+if ($version === 'm') {
+    $version = 'moodle';
+}
 if ($version == 'moodle' && count($parts) >= 3) {
     $frankenstyle = array_shift($parts);
     $module = array_shift($parts);
@@ -57,18 +60,24 @@ if ($version == 'moodle' && count($parts) >= 3) {
     if (!file_exists($imagepath) or !is_file($imagepath)) {
         $imagepath = $dir . '/yui/' . $module . '/assets/skins/sam/' . $image;
     }
-} else if ($version == 'gallery' && count($parts)==3) {
-    list($module, $version, $image) = $parts;
-    $imagepath = "$CFG->dirroot/lib/yui/gallery/$module/$version/assets/skins/sam/$image";
-} else if (count($parts) == 1 && ($version == $CFG->yui3version || $version == $CFG->yui2version)) {
-    list($image) = $parts;
-    if ($version == $CFG->yui3version) {
-        $imagepath = "$CFG->dirroot/lib/yuilib/$CFG->yui3version/build/assets/skins/sam/$image";
-    } else  {
-        $imagepath = "$CFG->dirroot/lib/yuilib/2in3/$CFG->yui2version/build/assets/skins/sam/$image";
-    }
+} else if ($version == 'gallery' && count($parts) >= 3) {
+    list($revision, $module, , , , $image) = $parts;
+    $imagepath = "$CFG->dirroot/lib/yuilib/gallery/$module/assets/skins/sam/$image";
 } else {
-    yui_image_not_found();
+    // Allow support for revisions on YUI between official releases.
+    // We can just discard the subrevision since it is only used to invalidate the browser cache.
+    $yuipatchedversion = explode('_', $version);
+    $yuiversion = $yuipatchedversion[0];
+    if (count($parts) == 1 && ($yuiversion == $CFG->yui3version || $yuiversion == $CFG->yui2version)) {
+        list($image) = $parts;
+        if ($yuiversion == $CFG->yui3version) {
+            $imagepath = "$CFG->dirroot/lib/yuilib/$CFG->yui3version/assets/skins/sam/$image";
+        } else  {
+            $imagepath = "$CFG->dirroot/lib/yuilib/2in3/$CFG->yui2version/build/assets/skins/sam/$image";
+        }
+    } else {
+        yui_image_not_found();
+    }
 }
 
 if (!file_exists($imagepath)) {
@@ -95,7 +104,7 @@ if (strpos($path, '/-1/') === false and (!empty($_SERVER['HTTP_IF_NONE_MATCH']) 
     header('HTTP/1.1 304 Not Modified');
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', filemtime($imagepath)) .' GMT');
     header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
-    header('Cache-Control: public, max-age='.$lifetime);
+    header('Cache-Control: public, max-age='.$lifetime.', no-transform');
     header('Content-Type: '.$mimetype);
     header('Etag: "'.$etag.'"');
     die;
@@ -114,7 +123,7 @@ function yui_image_cached($imagepath, $imagename, $mimetype, $etag) {
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', filemtime($imagepath)) .' GMT');
     header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
     header('Pragma: ');
-    header('Cache-Control: public, max-age=315360000');
+    header('Cache-Control: public, max-age=315360000, no-transform');
     header('Accept-Ranges: none');
     header('Content-Type: '.$mimetype);
     header('Content-Length: '.filesize($imagepath));

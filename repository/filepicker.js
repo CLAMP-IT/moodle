@@ -23,7 +23,7 @@
  * this.options.client_id, the instance id
  * this.options.contextid
  * this.options.itemid
- * this.options.repositories, stores all repositories displaied in file picker
+ * this.options.repositories, stores all repositories displayed in file picker
  * this.options.formcallback
  *
  * Active repository options
@@ -582,27 +582,23 @@ M.core_filepicker.init = function(Y, options) {
                 method: 'POST',
                 on: {
                     complete: function(id,o,p) {
-                        if (!o) {
-                            // TODO
-                            alert('IO FATAL');
-                            return;
-                        }
                         var data = null;
                         try {
                             data = Y.JSON.parse(o.responseText);
                         } catch(e) {
-                            scope.print_msg(M.str.repository.invalidjson, 'error');
-                            scope.display_error(M.str.repository.invalidjson+'<pre>'+stripHTML(o.responseText)+'</pre>', 'invalidjson')
-                            return;
+                            if (o && o.status && o.status > 0) {
+                                Y.use('moodle-core-notification-exception', function() {
+                                    return new M.core.exception(e);
+                                });
+                                return;
+                            }
                         }
                         // error checking
                         if (data && data.error) {
-                            scope.print_msg(data.error, 'error');
-                            if (args.onerror) {
-                                args.onerror(id,data,p);
-                            } else {
-                                this.fpnode.one('.fp-content').setContent('');
-                            }
+                            Y.use('moodle-core-notification-ajaxexception', function () {
+                                return new M.core.ajaxException(data);
+                            });
+                            this.fpnode.one('.fp-content').setContent('');
                             return;
                         } else {
                             if (data.msg) {
@@ -792,12 +788,6 @@ M.core_filepicker.init = function(Y, options) {
                 this.view_as_icons(appenditems);
             }
             this.fpnode.one('.fp-content').setAttribute('tabindex', '0');
-            // Temporary fix for IE8 until MDL-41229 is integrated.
-            // The role dialog is needed for screen reader to read
-            // the filepicker's content (MDL-41232).
-            this.fpnode.one('.fp-content').setAttribute('role', 'dialog');
-            this.fpnode.one('.fp-content').setAttribute('aria-live', 'assertive');
-            // End of temporary fix.
             this.fpnode.one('.fp-content').focus();
             // display/hide the link for requesting next page
             if (!appenditems && this.active_repo.hasmorepages) {
@@ -1111,8 +1101,7 @@ M.core_filepicker.init = function(Y, options) {
             for (var linktype in filelink) {
                 var el = selectnode.one('.fp-linktype-'+linktype);
                 el.addClassIf('uneditable', !(filelink[linktype] && filelinkcount>1));
-                el.one('input').set('disabled', (filelink[linktype] && filelinkcount>1) ? '' : 'disabled').
-                    set('checked', (firstfilelink == linktype) ? 'checked' : '').simulate('change')
+                el.one('input').set('checked', (firstfilelink == linktype) ? 'checked' : '').simulate('change');
             }
 
             // TODO MDL-32532: attributes 'hasauthor' and 'haslicense' need to be obsolete,
@@ -1855,10 +1844,6 @@ M.core_filepicker.init = function(Y, options) {
 
             // login button
             enable_tb_control(toolbar.one('.fp-tb-logout'), !r.nologin);
-            if (!r.nologin) {
-                var label = r.logouttext ? r.logouttext : M.str.repository.logout;
-                toolbar.one('.fp-tb-logout').one('a,button').setContent(label)
-            }
 
             // manage url
             enable_tb_control(toolbar.one('.fp-tb-manage'), r.manage);

@@ -18,8 +18,7 @@
 /**
  * Mandatory public API of url module
  *
- * @package    mod
- * @subpackage url
+ * @package    mod_url
  * @copyright  2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -109,7 +108,6 @@ function url_add_instance($data, $mform) {
         $displayoptions['popupheight'] = $data->popupheight;
     }
     if (in_array($data->display, array(RESOURCELIB_DISPLAY_AUTO, RESOURCELIB_DISPLAY_EMBED, RESOURCELIB_DISPLAY_FRAME))) {
-        $displayoptions['printheading'] = (int)!empty($data->printheading);
         $displayoptions['printintro']   = (int)!empty($data->printintro);
     }
     $data->displayoptions = serialize($displayoptions);
@@ -150,7 +148,6 @@ function url_update_instance($data, $mform) {
         $displayoptions['popupheight'] = $data->popupheight;
     }
     if (in_array($data->display, array(RESOURCELIB_DISPLAY_AUTO, RESOURCELIB_DISPLAY_EMBED, RESOURCELIB_DISPLAY_FRAME))) {
-        $displayoptions['printheading'] = (int)!empty($data->printheading);
         $displayoptions['printintro']   = (int)!empty($data->printintro);
     }
     $data->displayoptions = serialize($displayoptions);
@@ -362,7 +359,6 @@ function url_dndupload_handle($uploadinfo) {
     $data->display = $config->display;
     $data->popupwidth = $config->popupwidth;
     $data->popupheight = $config->popupheight;
-    $data->printheading = $config->printheading;
     $data->printintro = $config->printintro;
 
     return url_add_instance($data, null);

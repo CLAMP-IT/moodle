@@ -29,6 +29,13 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * mod_workshop assessable uploaded event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type array pathnamehashes uploaded files path name hashes.
+ *      @type string content string.
+ * }
+ *
  * @package    mod_workshop
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -59,7 +66,7 @@ class assessable_uploaded extends \core\event\assessable_uploaded {
     protected function get_legacy_eventdata() {
         $eventdata = new \stdClass();
         $eventdata->modulename   = 'workshop';
-        $eventdata->cmid         = $this->context->instanceid;
+        $eventdata->cmid         = $this->contextinstanceid;
         $eventdata->itemid       = $this->objectid;
         $eventdata->courseid     = $this->courseid;
         $eventdata->userid       = $this->userid;
@@ -94,7 +101,7 @@ class assessable_uploaded extends \core\event\assessable_uploaded {
      * @return string
      */
     public static function get_name() {
-        return get_string('event_assessable_uploaded', 'mod_workshop');
+        return get_string('eventassessableuploaded', 'mod_workshop');
     }
 
     /**
@@ -104,7 +111,7 @@ class assessable_uploaded extends \core\event\assessable_uploaded {
      */
     public function get_url() {
         return new \moodle_url('/mod/workshop/submission.php',
-            array('cmid' => $this->context->instanceid, 'id' => $this->objectid));
+            array('cmid' => $this->contextinstanceid, 'id' => $this->objectid));
     }
 
     /**

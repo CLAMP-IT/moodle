@@ -41,6 +41,7 @@ class testing_data_generator {
     protected $scalecount = 0;
     protected $groupcount = 0;
     protected $groupingcount = 0;
+    protected $rolecount = 0;
 
     /** @var array list of plugin generators */
     protected $generators = array();
@@ -657,6 +658,93 @@ EOD;
     }
 
     /**
+     * Creates a new role in the system.
+     *
+     * You can fill $record with the role 'name',
+     * 'shortname', 'description' and 'archetype'.
+     *
+     * If an archetype is specified it's capabilities,
+     * context where the role can be assigned and
+     * all other properties are copied from the archetype;
+     * if no archetype is specified it will create an
+     * empty role.
+     *
+     * @param array|stdClass $record
+     * @return int The new role id
+     */
+    public function create_role($record=null) {
+        global $DB;
+
+        $this->rolecount++;
+        $i = $this->rolecount;
+
+        $record = (array)$record;
+
+        if (empty($record['shortname'])) {
+            $record['shortname'] = 'role-' . $i;
+        }
+
+        if (empty($record['name'])) {
+            $record['name'] = 'Test role ' . $i;
+        }
+
+        if (empty($record['description'])) {
+            $record['description'] = 'Test role ' . $i . ' description';
+        }
+
+        if (empty($record['archetype'])) {
+            $record['archetype'] = '';
+        } else {
+            $archetypes = get_role_archetypes();
+            if (empty($archetypes[$record['archetype']])) {
+                throw new coding_exception('\'role\' requires the field \'archetype\' to specify a ' .
+                    'valid archetype shortname (editingteacher, student...)');
+            }
+        }
+
+        // Creates the role.
+        if (!$newroleid = create_role($record['name'], $record['shortname'], $record['description'], $record['archetype'])) {
+            throw new coding_exception('There was an error creating \'' . $record['shortname'] . '\' role');
+        }
+
+        // If no archetype was specified we allow it to be added to all contexts,
+        // otherwise we allow it in the archetype contexts.
+        if (!$record['archetype']) {
+            $contextlevels = array_keys(context_helper::get_all_levels());
+        } else {
+            // Copying from the archetype default rol.
+            $archetyperoleid = $DB->get_field(
+                'role',
+                'id',
+                array('shortname' => $record['archetype'], 'archetype' => $record['archetype'])
+            );
+            $contextlevels = get_role_contextlevels($archetyperoleid);
+        }
+        set_role_contextlevels($newroleid, $contextlevels);
+
+        if ($record['archetype']) {
+
+            // We copy all the roles the archetype can assign, override and switch to.
+            if ($record['archetype']) {
+                $types = array('assign', 'override', 'switch');
+                foreach ($types as $type) {
+                    $rolestocopy = get_default_role_archetype_allows($type, $record['archetype']);
+                    foreach ($rolestocopy as $tocopy) {
+                        $functionname = 'allow_' . $type;
+                        $functionname($newroleid, $tocopy);
+                    }
+                }
+            }
+
+            // Copying the archetype capabilities.
+            $sourcerole = $DB->get_record('role', array('id' => $archetyperoleid));
+            role_cap_duplicate($sourcerole, $newroleid);
+        }
+
+        return $newroleid;
+    }
+
+    /**
      * Helper method which combines $defaults with the values specified in $record.
      * If $record is an object, it is converted to an array.
      * Then, for each key that is in $defaults, but not in $record, the value
@@ -740,25 +828,4 @@ EOD;
         return role_assign($roleid, $userid, $contextid);
     }
 
-}
-
-/**
- * Deprecated in favour of testing_data_generator
- *
- * @deprecated since Moodle 2.5 MDL-37457 - please do not use this function any more.
- * @todo       MDL-37517 This will be deleted in Moodle 2.7
- * @see        testing_data_generator
- * @package    core
- * @category   test
- * @copyright  2012 David Monllaó
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class phpunit_data_generator extends testing_data_generator {
-
-    /**
-     * Dumb constructor to throw the deprecated notification
-     */
-    public function __construct() {
-        debugging('Class phpunit_data_generator is deprecated, please use class testing_module_generator instead', DEBUG_DEVELOPER);
-    }
 }

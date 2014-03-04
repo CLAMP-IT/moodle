@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package   mod-data
+ * @package   mod_data
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -311,9 +311,11 @@ class data_portfolio_caller extends portfolio_module_caller_base {
         $patterns[]='##moreurl##';
         $patterns[]='##user##';
         $patterns[]='##approve##';
+        $patterns[]='##disapprove##';
         $patterns[]='##comments##';
         $patterns[] = '##timeadded##';
         $patterns[] = '##timemodified##';
+        $replacement[] = '';
         $replacement[] = '';
         $replacement[] = '';
         $replacement[] = '';

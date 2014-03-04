@@ -35,8 +35,7 @@
 /**
  * This file contains submissions-specific code for the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -153,13 +152,14 @@ foreach ($submissions as $submission) {
 
 $table = str_replace('<!--table body-->', $rows, $html);
 
-$title = 'Submissions for ' . $lti->name;
+$title = get_string('submissionsfor', 'lti', $lti->name);
 
-$PAGE->set_title(format_string($title , true));
+$PAGE->set_title($title);
 $PAGE->set_heading($course->fullname);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading($title );
+echo $OUTPUT->heading(format_string($lti->name, true, array('context' => $context)));
+echo $OUTPUT->heading(get_string('submissions', 'lti'), 3);
 
 echo $table;
 

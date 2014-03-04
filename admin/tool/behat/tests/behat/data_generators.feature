@@ -37,9 +37,9 @@ Feature: Set up contextual data for tests
     And I follow "Cat 3"
     And I should see "Course 1"
     And I should see "Course 2"
-    And I select "Cat 1 / Cat 2" from "Course categories:"
+    And I follow "Cat 2"
     And I should see "No courses in this category"
-    And I select "Miscellaneous" from "Course categories:"
+    And I follow "Miscellaneous"
     And I should see "Course 3"
 
   @javascript
@@ -111,22 +111,32 @@ Feature: Set up contextual data for tests
     Then I should see "Topic 1"
 
   Scenario: Add role assigns
-    Given the following "users" exists:
+    Given the following "roles" exists:
+      | name                   | shortname | description      | archetype      |
+      | Custom editing teacher | custom1   | My custom role 1 | editingteacher |
+      | Custom student         | custom2   |                  |                |
+    And the following "users" exists:
       | username | firstname | lastname | email |
       | user1 | User | 1 | user1@moodlemoodle.com |
       | user2 | User | 2 | user2@moodlemoodle.com |
       | user3 | User | 3 | user3@moodlemoodle.com |
+      | user4 | User | 4 | user4@moodlemoodle.com |
+      | user5 | User | 5 | user5@moodlemoodle.com |
     And the following "categories" exists:
       | name | category | idnumber |
       | Cat 1 | 0 | CAT1 |
     And the following "courses" exists:
       | fullname | shortname | category |
       | Course 1 | C1 | CAT1 |
+    And the following "course enrolments" exists:
+      | user | course | role |
+      | user4 | C1 | custom1 |
     And the following "role assigns" exists:
       | user  | role           | contextlevel | reference |
       | user1 | manager        | System       |           |
       | user2 | editingteacher | Category     | CAT1      |
       | user3 | editingteacher | Course       | C1        |
+      | user5 | custom2        | System       |           |
     When I log in as "user1"
     Then I should see "Front page settings"
     And I log out
@@ -137,19 +147,72 @@ Feature: Set up contextual data for tests
     And I log in as "user3"
     And I follow "Course 1"
     And I should see "Turn editing on"
+    And I log out
+    And I log in as "user4"
+    And I follow "Course 1"
+    And I should see "Turn editing on"
+    And I log out
+    And I log in as "user5"
+    And I should see "You are logged in as"
+    And I follow "Course 1"
+    And I should see "You can not enrol yourself in this course."
+
 
   Scenario: Add modules
     Given the following "courses" exists:
       | fullname | shortname |
       | Course 1 | C1 |
     And the following "activities" exists:
-      | activity | name | intro | course | idnumber |
-      | assign   | Test assignment name | Test assignment description | C1 | assign1 |
-      | data     | Test database name | Test database description | C1 | data1 |
+      | activity   | name                   | intro                         | course | idnumber    |
+      | assign     | Test assignment name   | Test assignment description   | C1     | assign1     |
+      | assignment | Test assignment22 name | Test assignment22 description | C1     | assignment1 |
+      | book       | Test book name         | Test book description         | C1     | book1       |
+      | chat       | Test chat name         | Test chat description         | C1     | chat1       |
+      | choice     | Test choice name       | Test choice description       | C1     | choice1     |
+      | data       | Test database name     | Test database description     | C1     | data1       |
+      | feedback   | Test feedback name     | Test feedback description     | C1     | feedback1   |
+      | folder     | Test folder name       | Test folder description       | C1     | folder1     |
+      | forum      | Test forum name        | Test forum description        | C1     | forum1      |
+      | glossary   | Test glossary name     | Test glossary description     | C1     | glossary1   |
+      | imscp      | Test imscp name        | Test imscp description        | C1     | imscp1      |
+      | label      | Test label name        | Test label description        | C1     | label1      |
+      | lesson     | Test lesson name       | Test lesson description       | C1     | lesson1     |
+      | lti        | Test lti name          | Test lti description          | C1     | lti1        |
+      | page       | Test page name         | Test page description         | C1     | page1       |
+      | quiz       | Test quiz name         | Test quiz description         | C1     | quiz1       |
+      | resource   | Test resource name     | Test resource description     | C1     | resource1   |
+      | scorm      | Test scorm name        | Test scorm description        | C1     | scorm1      |
+      | survey     | Test survey name       | Test survey description       | C1     | survey1     |
+      | url        | Test url name          | Test url description          | C1     | url1        |
+      | wiki       | Test wiki name         | Test wiki description         | C1     | wiki1       |
+      | workshop   | Test workshop name     | Test workshop description     | C1     | workshop1   |
     When I log in as "admin"
     And I follow "Course 1"
     Then I should see "Test assignment name"
+    # Assignment 2.2 module type is disabled by default
+    # And I should see "Test assignment22 name"
+    And I should see "Test book name"
+    And I should see "Test chat name"
+    And I should see "Test choice name"
     And I should see "Test database name"
+    # Feedback module type is disabled by default
+    # And I should see "Test feedback name"
+    And I should see "Test folder name"
+    And I should see "Test forum name"
+    And I should see "Test glossary name"
+    And I should see "Test imscp name"
+    # We don't see label name, we see only description:
+    And I should see "Test label description"
+    And I should see "Test lesson name"
+    And I should see "Test lti name"
+    And I should see "Test page name"
+    And I should see "Test quiz name"
+    And I should see "Test resource name"
+    And I should see "Test scorm name"
+    And I should see "Test survey name"
+    And I should see "Test url name"
+    And I should see "Test wiki name"
+    And I should see "Test workshop name"
     And I follow "Test assignment name"
     And I should see "Test assignment description"
 
@@ -187,8 +250,6 @@ Feature: Set up contextual data for tests
     Then the "groups" select box should contain "Group 1 (1)"
     And the "groups" select box should contain "Group 2 (1)"
     And I select "Group 1 (1)" from "groups"
-    And I wait "5" seconds
     And the "members" select box should contain "Student 1"
     And I select "Group 2 (1)" from "groups"
-    And I wait "5" seconds
     And the "members" select box should contain "Student 2"

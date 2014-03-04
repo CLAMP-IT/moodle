@@ -269,12 +269,13 @@ class repository_dropbox extends repository {
      * @param string $string
      */
     public function send_thumbnail($source) {
+        global $CFG;
         $saveas = $this->prepare_file('');
         try {
             $access_key = get_user_preferences($this->setting.'_access_key', '');
             $access_secret = get_user_preferences($this->setting.'_access_secret', '');
             $this->dropbox->set_access_token($access_key, $access_secret);
-            $this->dropbox->get_thumbnail($source, $saveas, self::SYNCIMAGE_TIMEOUT);
+            $this->dropbox->get_thumbnail($source, $saveas, $CFG->repositorysyncimagetimeout);
             $content = file_get_contents($saveas);
             unlink($saveas);
             // set 30 days lifetime for the image. If the image is changed in dropbox it will have
@@ -346,10 +347,11 @@ class repository_dropbox extends repository {
      * @param string $reference contents of DB field files_reference.reference
      */
     public function fix_old_style_reference($reference) {
+        global $CFG;
         $ref = unserialize($reference);
         if (!isset($ref->url)) {
             $this->dropbox->set_access_token($ref->access_key, $ref->access_secret);
-            $ref->url = $this->dropbox->get_file_share_link($ref->path, self::GETFILE_TIMEOUT);
+            $ref->url = $this->dropbox->get_file_share_link($ref->path, $CFG->repositorygetfiletimeout);
             if (!$ref->url) {
                 // some error occurred, do not fix reference for now
                 return $reference;
@@ -419,15 +421,16 @@ class repository_dropbox extends repository {
      *   url: URL to the source (from parameters)
      */
     public function get_file($reference, $saveas = '') {
+        global $CFG;
         $ref = unserialize($reference);
         $saveas = $this->prepare_file($saveas);
         if (isset($ref->access_key) && isset($ref->access_secret) && isset($ref->path)) {
             $this->dropbox->set_access_token($ref->access_key, $ref->access_secret);
-            return $this->dropbox->get_file($ref->path, $saveas, self::GETFILE_TIMEOUT);
+            return $this->dropbox->get_file($ref->path, $saveas, $CFG->repositorygetfiletimeout);
         } else if (isset($ref->url)) {
             $c = new curl;
             $url = $this->get_file_download_link($ref->url);
-            $result = $c->download_one($url, null, array('filepath' => $saveas, 'timeout' => self::GETFILE_TIMEOUT, 'followlocation' => true));
+            $result = $c->download_one($url, null, array('filepath' => $saveas, 'timeout' => $CFG->repositorygetfiletimeout, 'followlocation' => true));
             $info = $c->get_info();
             if ($result !== true || !isset($info['http_code']) || $info['http_code'] != 200) {
                 throw new moodle_exception('errorwhiledownload', 'repository', '', $result);
@@ -507,10 +510,11 @@ class repository_dropbox extends repository {
      * @return string
      */
     public function get_link($reference) {
+        global $CFG;
         $ref = unserialize($reference);
         if (!isset($ref->url)) {
             $this->dropbox->set_access_token($ref->access_key, $ref->access_secret);
-            $ref->url = $this->dropbox->get_file_share_link($ref->path, self::GETFILE_TIMEOUT);
+            $ref->url = $this->dropbox->get_file_share_link($ref->path, $CFG->repositorygetfiletimeout);
         }
         return $this->get_file_download_link($ref->url);
     }
@@ -522,7 +526,7 @@ class repository_dropbox extends repository {
      * @return string file referece
      */
     public function get_file_reference($source) {
-        global $USER;
+        global $USER, $CFG;
         $reference = new stdClass;
         $reference->path = $source;
         $reference->userid = $USER->id;
@@ -536,7 +540,7 @@ class repository_dropbox extends repository {
         $usefilereference = optional_param('usefilereference', false, PARAM_BOOL);
         if ($usefilereference) {
             $this->dropbox->set_access_token($reference->access_key, $reference->access_secret);
-            $url = $this->dropbox->get_file_share_link($source, self::GETFILE_TIMEOUT);
+            $url = $this->dropbox->get_file_share_link($source, $CFG->repositorygetfiletimeout);
             if ($url) {
                 unset($reference->access_key);
                 unset($reference->access_secret);
@@ -546,46 +550,47 @@ class repository_dropbox extends repository {
         return serialize($reference);
     }
 
-    /**
-     * Returns information about file in this repository by reference
-     * {@link repository::get_file_reference()}
-     * {@link repository::get_file()}
-     *
-     * Returns null if file not found or is not readable
-     *
-     * @param stdClass $reference file reference db record
-     * @return null|stdClass that has 'filepath' property
-     */
-    public function get_file_by_reference($reference) {
-        global $USER;
-        $ref = unserialize($reference->reference);
+    public function sync_reference(stored_file $file) {
+        global $CFG;
+
+        if ($file->get_referencelastsync() + DAYSECS > time()) {
+            // Synchronise not more often than once a day.
+            return false;
+        }
+        $ref = unserialize($file->get_reference());
         if (!isset($ref->url)) {
             // this is an old-style reference in DB. We need to fix it
-            $ref = unserialize($this->fix_old_style_reference($reference->reference));
+            $ref = unserialize($this->fix_old_style_reference($file->get_reference()));
         }
         if (!isset($ref->url)) {
-            return null;
+            return false;
         }
         $c = new curl;
         $url = $this->get_file_download_link($ref->url);
         if (file_extension_in_typegroup($ref->path, 'web_image')) {
             $saveas = $this->prepare_file('');
             try {
-                $result = $c->download_one($url, array(), array('filepath' => $saveas, 'timeout' => self::SYNCIMAGE_TIMEOUT, 'followlocation' => true));
+                $result = $c->download_one($url, array(), array('filepath' => $saveas, 'timeout' => $CFG->repositorysyncimagetimeout, 'followlocation' => true));
                 $info = $c->get_info();
                 if ($result === true && isset($info['http_code']) && $info['http_code'] == 200) {
-                    return (object)array('filepath' => $saveas);
+                    $fs = get_file_storage();
+                    list($contenthash, $filesize, $newfile) = $fs->add_file_to_pool($saveas);
+                    $file->set_synchronized($contenthash, $filesize);
+                    return true;
                 }
             } catch (Exception $e) {}
         }
-        $c->get($url, null, array('timeout' => self::SYNCIMAGE_TIMEOUT, 'followlocation' => true, 'nobody' => true));
+        $c->get($url, null, array('timeout' => $CFG->repositorysyncimagetimeout, 'followlocation' => true, 'nobody' => true));
         $info = $c->get_info();
         if (isset($info['http_code']) && $info['http_code'] == 200 &&
                 array_key_exists('download_content_length', $info) &&
                 $info['download_content_length'] >= 0) {
-            return (object)array('filesize' => (int)$info['download_content_length']);
+            $filesize = (int)$info['download_content_length'];
+            $file->set_synchronized(null, $filesize);
+            return true;
         }
-        return null;
+        $file->set_missingsource();
+        return true;
     }
 
     /**
@@ -648,8 +653,7 @@ class repository_dropbox extends repository {
     /**
      * Returns the maximum size of the Dropbox files to cache in moodle
      *
-     * Note that {@link repository_dropbox::get_file_by_reference()} called by
-     * {@link repository::sync_external_file()} will try to cache images even
+     * Note that {@link repository_dropbox::sync_reference()} will try to cache images even
      * when they are bigger in order to generate thumbnails. However there is
      * a small timeout for downloading images for synchronisation and it will
      * probably fail if the image is too big.
@@ -671,12 +675,12 @@ class repository_dropbox extends repository {
      * serves from there.
      *
      * @param stored_file $storedfile the file that contains the reference
-     * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+     * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
      * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
      * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
      * @param array $options additional options affecting the file serving
      */
-    public function send_file($storedfile, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
+    public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
         $ref = unserialize($storedfile->get_reference());
         if ($storedfile->get_filesize() > $this->max_cache_bytes()) {
             header('Location: '.$this->get_file_download_link($ref->url));

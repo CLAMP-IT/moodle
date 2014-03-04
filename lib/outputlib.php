@@ -451,11 +451,6 @@ class theme_config {
                 include_once($renderersfile);
             }
             $this->parent_configs[$parent] = $parent_config;
-            $rendererfile = $parent_config->dir.'/renderers.php';
-            if (is_readable($rendererfile)) {
-                 // may contain core and plugin renderers and renderer factory
-                include_once($rendererfile);
-            }
         }
         $libfile = $this->dir.'/lib.php';
         if (is_readable($libfile)) {
@@ -656,7 +651,7 @@ class theme_config {
 
         if ($rev > -1) {
             $url = new moodle_url("$CFG->httpswwwroot/theme/styles.php");
-            $separate = (core_useragent::check_ie_version('5') && !core_useragent::check_ie_version('10'));
+            $separate = (core_useragent::is_ie() && !core_useragent::check_ie_version('10'));
             if (!empty($CFG->slasharguments)) {
                 $slashargs = '';
                 if (!$svg) {
@@ -734,7 +729,7 @@ class theme_config {
                 // We do this because all modern browsers support SVG and this param will one day be removed.
                 $baseurl->param('svg', '0');
             }
-            if (core_useragent::check_ie_version('5')) {
+            if (core_useragent::is_ie()) {
                 // lalala, IE does not allow more than 31 linked CSS files from main document
                 $urls[] = new moodle_url($baseurl, array('theme'=>$this->name, 'type'=>'ie', 'subtype'=>'plugins'));
                 foreach ($css['parents'] as $parent=>$sheets) {
@@ -779,22 +774,33 @@ class theme_config {
                 $plugins = core_component::get_plugin_list($type);
                 foreach ($plugins as $plugin=>$fulldir) {
                     if (!empty($excludes[$type]) and is_array($excludes[$type])
-                        and in_array($plugin, $excludes[$type])) {
+                            and in_array($plugin, $excludes[$type])) {
                         continue;
                     }
 
-                    $plugincontent = '';
+                    // Add main stylesheet.
                     $sheetfile = "$fulldir/styles.css";
                     if (is_readable($sheetfile)) {
                         $cssfiles['plugins'][$type.'_'.$plugin] = $sheetfile;
                     }
-                    $sheetthemefile = "$fulldir/styles_{$this->name}.css";
-                    if (is_readable($sheetthemefile)) {
-                        $cssfiles['plugins'][$type.'_'.$plugin.'_'.$this->name] = $sheetthemefile;
+
+                    // Create a list of candidate sheets from parents (direct parent last) and current theme.
+                    $candidates = array();
+                    foreach (array_reverse($this->parent_configs) as $parent_config) {
+                        $candidates[] = $parent_config->name;
                     }
+                    $candidates[] = $this->name;
+
+                    // Add the sheets found.
+                    foreach ($candidates as $candidate) {
+                        $sheetthemefile = "$fulldir/styles_{$candidate}.css";
+                        if (is_readable($sheetthemefile)) {
+                            $cssfiles['plugins'][$type.'_'.$plugin.'_'.$candidate] = $sheetthemefile;
+                        }
                     }
                 }
             }
+        }
 
         // find out wanted parent sheets
         $excludes = $this->resolve_excludes('parents_exclude_sheets');
@@ -1420,9 +1426,10 @@ class theme_config {
      *
      * @param string $themename
      * @param stdClass $settings from config_plugins table
+     * @param boolean $parentscheck true to also check the parents.    .
      * @return stdClass The theme configuration
      */
-    private static function find_theme_config($themename, $settings) {
+    private static function find_theme_config($themename, $settings, $parentscheck = true) {
         // We have to use the variable name $THEME (upper case) because that
         // is what is used in theme config.php files.
 
@@ -1442,6 +1449,17 @@ class theme_config {
         if (!is_array($THEME->parents)) {
             // parents option is mandatory now
             return null;
+        } else {
+            // We use $parentscheck to only check the direct parents (avoid infinite loop).
+            if ($parentscheck) {
+                // Find all parent theme configs.
+                foreach ($THEME->parents as $parent) {
+                    $parentconfig = theme_config::find_theme_config($parent, $settings, false);
+                    if (empty($parentconfig)) {
+                        return null;
+                    }
+                }
+            }
         }
 
         return $THEME;

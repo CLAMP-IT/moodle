@@ -82,10 +82,10 @@
             die;
         } else if (data_submitted() and !$user->deleted) {
             if (delete_user($user)) {
-                session_gc(); // remove stale sessions
+                \core\session\manager::gc(); // Remove stale sessions.
                 redirect($returnurl);
             } else {
-                session_gc(); // remove stale sessions
+                \core\session\manager::gc(); // Remove stale sessions.
                 echo $OUTPUT->header();
                 echo $OUTPUT->notification($returnurl, get_string('deletednot', '', fullname($user, true)));
             }
@@ -125,7 +125,7 @@
             if (!is_siteadmin($user) and $USER->id != $user->id and $user->suspended != 1) {
                 $user->suspended = 1;
                 // Force logout.
-                session_kill_user($user->id);
+                \core\session\manager::kill_user_sessions($user->id);
                 user_update_user($user, false);
             }
         }
@@ -373,7 +373,9 @@
         echo $OUTPUT->heading('<a href="'.$securewwwroot.'/user/editadvanced.php?id=-1">'.get_string('addnewuser').'</a>');
     }
     if (!empty($table)) {
+        echo html_writer::start_tag('div', array('class'=>'no-overflow'));
         echo html_writer::table($table);
+        echo html_writer::end_tag('div');
         echo $OUTPUT->paging_bar($usercount, $page, $perpage, $baseurl);
         if (has_capability('moodle/user:create', $sitecontext)) {
             echo $OUTPUT->heading('<a href="'.$securewwwroot.'/user/editadvanced.php?id=-1">'.get_string('addnewuser').'</a>');

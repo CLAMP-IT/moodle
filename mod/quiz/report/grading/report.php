@@ -89,9 +89,9 @@ class quiz_grading_report extends quiz_default_report {
         $showidnumbers = has_capability('quiz/grading:viewidnumber', $this->context);
 
         // Validate order.
-        if (!in_array($order, array('random', 'date', 'student', 'idnumber'))) {
+        if (!in_array($order, array('random', 'date', 'studentfirstname', 'studentlastname', 'idnumber'))) {
             $order = self::DEFAULT_ORDER;
-        } else if (!$shownames && $order == 'student') {
+        } else if (!$shownames && ($order == 'studentfirstname' || $order == 'studentlastname')) {
             $order = self::DEFAULT_ORDER;
         } else if (!$showidnumbers && $order == 'idnumber') {
             $order = self::DEFAULT_ORDER;
@@ -190,8 +190,10 @@ class quiz_grading_report extends quiz_default_report {
         $params[] = quiz_attempt::FINISHED;
         $params[] = $this->quiz->id;
 
+        $fields = 'quiza.*, u.idnumber, ';
+        $fields .= get_all_user_name_fields(true, 'u');
         $attemptsbyid = $DB->get_records_sql("
-                SELECT quiza.*, u.firstname, u.lastname, u.idnumber
+                SELECT $fields
                 FROM {quiz_attempts} quiza
                 JOIN {user} u ON u.id = quiza.userid
                 WHERE quiza.uniqueid $asql AND quiza.state = ? AND quiza.quiz = ?",
@@ -274,7 +276,7 @@ class quiz_grading_report extends quiz_default_report {
             groups_print_activity_menu($this->cm, $this->list_questions_url());
         }
 
-        echo $OUTPUT->heading(get_string('questionsthatneedgrading', 'quiz_grading'));
+        echo $OUTPUT->heading(get_string('questionsthatneedgrading', 'quiz_grading'), 3);
         if ($includeauto) {
             $linktext = get_string('hideautomaticallygraded', 'quiz_grading');
         } else {
@@ -314,7 +316,7 @@ class quiz_grading_report extends quiz_default_report {
         }
 
         if (empty($data)) {
-            echo $OUTPUT->heading(get_string('nothingfound', 'quiz_grading'));
+            echo $OUTPUT->notification(get_string('nothingfound', 'quiz_grading'));
             return;
         }
 
@@ -373,7 +375,7 @@ class quiz_grading_report extends quiz_default_report {
         $a = new stdClass();
         $a->number = $this->questions[$slot]->number;
         $a->questionname = format_string($counts->name);
-        echo $OUTPUT->heading(get_string('gradingquestionx', 'quiz_grading', $a));
+        echo $OUTPUT->heading(get_string('gradingquestionx', 'quiz_grading', $a), 3);
         echo html_writer::tag('p', html_writer::link($this->list_questions_url(),
                 get_string('backtothelistofquestions', 'quiz_grading')),
                 array('class' => 'mdl-align'));
@@ -393,7 +395,6 @@ class quiz_grading_report extends quiz_default_report {
         }
 
         // Display the form with one section for each attempt.
-        $usehtmleditor = can_use_html_editor();
         $sesskey = sesskey();
         $qubaidlist = implode(',', $qubaids);
         echo html_writer::start_tag('form', array('method' => 'post',
@@ -461,7 +462,7 @@ class quiz_grading_report extends quiz_default_report {
 
         foreach ($qubaids as $qubaid) {
             foreach ($slots as $slot) {
-                if (!question_behaviour::is_manual_grade_in_range($qubaid, $slot)) {
+                if (!question_engine::is_manual_grade_in_range($qubaid, $slot)) {
                     return false;
                 }
             }
@@ -547,10 +548,17 @@ class quiz_grading_report extends quiz_default_report {
                     WHERE sortqas.questionattemptid = qa.id
                         AND sortqas.state $statetest
                     )";
-        } else if ($orderby == 'student' || $orderby == 'idnumber') {
+        } else if ($orderby == 'studentfirstname' || $orderby == 'studentlastname' || $orderby == 'idnumber') {
             $qubaids->from .= " JOIN {user} u ON quiza.userid = u.id ";
-            if ($orderby == 'student') {
-                $orderby = $DB->sql_fullname('u.firstname', 'u.lastname');
+            // For name sorting, map orderby form value to
+            // actual column names; 'idnumber' maps naturally
+            switch ($orderby) {
+                case "studentlastname":
+                    $orderby = "u.lastname, u.firstname";
+                    break;
+                case "studentfirstname":
+                    $orderby = "u.firstname, u.lastname";
+                    break;
             }
         }
 

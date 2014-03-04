@@ -1,6 +1,44 @@
 This files describes API changes in core libraries and APIs,
 information provided here is intended especially for developers.
 
+=== 2.7 ===
+
+* $core_renderer->block_move_target() changed to support more verbose move-block-here descriptions.
+
+DEPRECATIONS:
+* $module uses in mod/xxx/version.php files is now deprecated. Please use $plugin instead. It will be removed in Moodle 2.10.
+* Update init methods in all event classes - "level" property was renamed to "edulevel", the level property is now deprecated.
+* Abstract class \core\event\course_module_instances_list_viewed is deprecated now, use \core\event\instances_list_viewed instead.
+* mod_book\event\instances_list_viewed has been deprecated. Please use mod_book\event\course_module_instance_list_viewed instead.
+* mod_chat\event\instances_list_viewed has been deprecated. Please use mod_chat\event\course_module_instance_list_viewed instead.
+* mod_choice\event\instances_list_viewed has been deprecated. Please use mod_choice\event\course_module_instance_list_viewed instead.
+* mod_feedback\event\instances_list_viewed has been deprecated. Please use mod_feedback\event\course_module_instance_list_viewed instead.
+* mod_page\event\instances_list_viewed has been deprecated. Please use mod_page\event\course_module_instance_list_viewed instead.
+* The constants FRONTPAGECOURSELIST, FRONTPAGETOPICONLY & FRONTPAGECOURSELIMIT have been removed.
+* Various cm_info methods have been deprecated in favour of their read-only properties (get_url(), get_content(), get_extra_classes(),
+  get_on_click(), get_custom_data(), get_after_link, get_after_edit_icons)
+* The ajaxenabled function has been deprecated and always returns true. All code should be fully functional in Javascript.
+
+YUI:
+  * The lightbox attribute for moodle-core-notification-dialogue has been
+    deprecated and replaced by the modal attribute. This was actually
+    changed in Moodle 2.2, but has only been marked as deprecated now. It
+    will be removed in Moodle 2.9.
+  * When destroying any type of dialogue based on moodle-core-notification, the relevant content is also removed from
+    the DOM. Previously it was left orphaned.
+
+JavaSript:
+    * The findChildNodes global function has been deprecated. Y.all should
+      be used instead.
+    * The callback argument to confirm_action and M.util.show_confirm_dialog has been deprecated. If you need to write a
+      confirmation which includes a callback, please use moodle-core-notification-confirmation and attach callbacks to the
+      events provided.
+
+* New locking api and admin settings to configure the system locking type.
+* New "Time spent waiting for the database" performance metric displayed along with the
+  other MDL_PERF vars; the change affects both the error logs and the vars displayed in
+  the page footer.
+
 === 2.6 ===
 
 * Use new methods from core_component class instead of get_core_subsystems(), get_plugin_types(),
@@ -22,6 +60,48 @@ information provided here is intended especially for developers.
 * Use behat_selectors::get_allowed_text_selectors() and behat_selectors::get_allowed_selectors() instead of
   behat_command::$allowedtextselectors and behat_command::$allowedselectors
 * Subplugins are supported in admin tools and local plugins.
+* file_packer/zip_packer API has been modified so that key functions support a new file_progress interface
+  to report progress during long operations. Related to this, zip_archive now supports an estimated_count()
+  function that returns an approximate number of entries in the zip faster than the count() function.
+* Class cm_info no longer extends stdClass. All properties are read-only and calculated on first request only.
+* Class course_modinfo no longer extends stdClass. All properties are read-only.
+* Database fields modinfo and sectioncache in table course are removed. Application cache core/coursemodinfo
+  is used instead. Course cache is still reset, rebuilt and retrieved using function rebuild_course_cache() and
+  get_fast_modinfo(). Purging all caches and every core upgrade purges course modinfo cache as well.
+  If function get_fast_modinfo() is called for multiple courses make sure to include field cacherev in course
+  object.
+* Internal (noreply and support) user support has been added for sending/receiving message.
+  Use core_user::get_noreply_user() and core_user::get_support_user() to get noreply and support user's respectively.
+  Real users can be used as noreply/support users by setting $CFG->noreplyuserid and $CFG->supportuserid
+* New function readfile_allow_large() in filelib.php for use when very large files may need sending to user.
+* Use core_plugin_manager::reset_caches() when changing visibility of plugins.
+* Implement new method get_enabled_plugins() method in subplugin info classes.
+* Each plugin should include version information in version.php.
+* Module and block tables do not contain version column any more, use get_config('xx_yy', 'version') instead.
+* $USER->password field is intentionally unset so that session data does not contain password hashes.
+* Use core_shutdown_manager::register_function() instead of register_shutdown_function().
+* New file packer for .tar.gz files; obtain by calling get_file_packer('application/x-gzip'). Intended initially
+  for use in backup/restore only, as there are limitations on supported filenames. Also new packer for
+  backups which supports both compression formats; get_file_packer('application/vnd.moodle.backup').
+* New optional parameter to stored_file::get_content_file_handle to open file handle with 'gzopen' instead
+  of 'fopen' to read gzip-compressed files if required.
+* update_internal_user_password() and setnew_password_and_mail() now trigger user_updated event.
+* Add thirdpartylibs.xml file to plugins that bundle any 3rd party libraries.
+* New class introduced to help auto generate zIndex values for modal dialogues. Class "moodle-has-zindex"
+  should set on any element which uses a non-default zindex and needs to ensure it doesn't show above a
+  dialogue.
+* $CFG->filelifetime is now used consistently for most file serving operations, the default was lowered
+  to 6 hours from 24 hours because etags and x-sendfile support should make file serving less expensive.
+* Date format locale charset for windows server will come from calendar type and for gregorian it will use
+  lang file.
+* The library to interact with Box.net (class boxclient) is only compatible with their APIv1 which
+  reaches its end of life on the 14th of Dec. You should migrate your scripts to make usage of the
+  new class boxnet_client(). Note that the method names and return values have changed.
+* Settings pages are now possible for Calendar type plugins. Calendar type plugins that require a settings page to
+  work properly will need to set their requires version to a number that is equal to or grater than the 2.6.1 release version.
+* The admin/tool/generator tool was overhauled to use testing data generators and the previous interface to create
+  test data was removed (it was not working correctly anyway). If you were using this tool you will probably need to
+  update your code.
 
 DEPRECATIONS:
 Various previously deprecated functions have now been altered to throw DEBUG_DEVELOPER debugging notices
@@ -78,6 +158,19 @@ Navigation:
     * print_navigation()                    -> $OUTPUT->navbar()
     * build_navigation()                    -> $PAGE->navbar methods
     * navmenu()                             -> (no replacement)
+    * settings_navigation::
+          get_course_modules()              -> (no replacement)
+
+Files and repositories:
+    * stored_file::replace_content_with()   -> stored_file::replace_file_with()
+    * stored_file::set_filesize()           -> stored_file::replace_file_with()
+    * stored_file::get_referencelifetime()  -> (no replacement)
+    * repository::sync_external_file()      -> see repository::sync_reference()
+    * repository::get_file_by_reference()   -> repository::sync_reference()
+    * repository::
+          get_reference_file_lifetime()     -> (no replacement)
+    * repository::sync_individual_file()    -> (no replacement)
+    * repository::reset_caches()            -> (no replacement)
 
 Calendar:
     * add_event()                           -> calendar_event::create()
@@ -93,6 +186,20 @@ Misc:
     * mygroupid()                           -> groups_get_all_groups()
     * js_minify()                           -> core_minify::js_files()
     * css_minify_css()                      -> core_minify::css_files()
+    * course_modinfo::build_section_cache() -> (no replacement)
+    * generate_email_supportuser()          -> core_user::get_support_user()
+
+Sessions:
+    * session_get_instance()->xxx()         -> \core\session\manager::xxx()
+    * session_kill_all()                    -> \core\session\manager::kill_all_sessions()
+    * session_touch()                       -> \core\session\manager::touch_session()
+    * session_kill()                        -> \core\session\manager::kill_session()
+    * session_kill_user()                   -> \core\session\manager::kill_user_sessions()
+    * session_gc()                          -> \core\session\manager::gc()
+    * session_set_user()                    -> \core\session\manager::set_user()
+    * session_is_loggedinas()               -> \core\session\manager::is_loggedinas()
+    * session_get_realuser()                -> \core\session\manager::get_realuser()
+    * session_loginas()                     -> \core\session\manager::loginas()
 
 User-agent related functions:
     * check_browser_operating_system()      -> core_useragent::check_browser_operating_system()
@@ -125,6 +232,7 @@ Event triggering and event handlers:
       * groups_groupings_groups_removed -> (no replacement)
       * groups_groups_deleted           -> \core\event\group_deleted
       * groups_groupings_deleted        -> \core\event\grouping_deleted
+    * edit_module_post_actions() does not trigger events any more.
 
 === 2.5.1 ===
 
@@ -185,9 +293,9 @@ Event triggering and event handlers:
 * Additional (optional) param $onlyactive has been added to get_enrolled_users, count_enrolled_users
   functions to get information for only active (excluding suspended enrolments) users. Included two
   helper functions extract_suspended_users, get_suspended_userids to extract suspended user information.
-* The plugin_manager class now provides two new helper methods for getting information
+* The core_plugin_manager class now provides two new helper methods for getting information
   about known plugins: get_plugins_of_type() and get_subplugins_of_plugin().
-* The get_uninstall_url() method of all subclasses of plugininfo_base class is now expected
+* The get_uninstall_url() method of all subclasses of \core\plugininfo\base class is now expected
   to always return moodle_url. Subclasses can use the new method is_uninstall_allowed()
   to control the availability of the 'Uninstall' link at the Plugins overview page (previously
   they would do it by get_uninstall_url() returning null). By default, URL to a new general plugin

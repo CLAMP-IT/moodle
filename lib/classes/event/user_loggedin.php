@@ -29,6 +29,12 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * User login event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type string username name of user.
+ * }
+ *
  * @package    core
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -50,7 +56,7 @@ class user_loggedin extends \core\event\base {
      * @return array
      */
     protected function get_legacy_logdata() {
-        return array(SITEID, 'user', 'login', "view.php?id=" . $this->data['objectid'] . "&course=".SITEID,
+        return array(SITEID, 'user', 'login', 'view.php?id=' . $this->data['objectid'] . '&course=' . SITEID,
             $this->data['objectid'], 0, $this->data['objectid']);
     }
 
@@ -89,14 +95,14 @@ class user_loggedin extends \core\event\base {
     protected function init() {
         $this->context = \context_system::instance();
         $this->data['crud'] = 'r';
-        $this->data['level'] = self::LEVEL_OTHER;
+        $this->data['edulevel'] = self::LEVEL_OTHER;
         $this->data['objecttable'] = 'user';
     }
 
     /**
      * Custom validation.
      *
-     * @throws coding_exception when validation does not pass.
+     * @throws \coding_exception when validation does not pass.
      * @return void
      */
     protected function validate_data() {

@@ -1,16 +1,45 @@
 This files describes API changes in /theme/* themes,
 information provided here is intended especially for theme designer.
+
+=== 2.7 ===
+
+* Please update your css to use 'tr:nth-of-type(odd/even)' instead of '.ro/.r1' to apply tr specific css for various tables.
+  These classes are deprecated now and will be removed in Moodle 2.9. This has done to better support styling tables that will be altered by JavaScript.
+  Here is an example to update your css:
+  Old code:
+    table.generaltable .r0 {background-color: #F0F0F0;}
+    table.generaltable .r1 {background-color: #F0F0F0;}
+  New code:
+    table.generaltable > tbody > tr:nth-of-type(odd) {background-color: #F0F0F0;}
+    table.generaltable > tbody > tr:nth-of-type(even) {background-color: #F0F0F0;}
+
+
 === 2.6 ===
+
+Removed themes:
+* "My Mobile" theme has been removed (see MDL-40874).
+  During the upgrade process "My Mobile" theme will be uninstalled and all its settings will be deleted.
+  "My Mobile" theme and its extending themes will fallback to the mobile friendly "Clean" theme.
+  If you wish to keep "My Mobile" theme and its settings, BEFORE UPGRADING you can copy the files from the
+  unmaintained plugin into theme/mymobile.
+  The unmaintained plugin can be downloaded at https://moodle.org/plugins/pluginversion.php?id=4563
 Notes:
+* There have been several changes made to the classes used on headings throughout Moodle.
+  This was done as per the Moodle HTML guidelines. h1 and h2 elements should have no classes, h3 and lower headings
+  may have descriptive classes only (any classes must properly describe the relation between the header and its content).
+* The parameters value for the following functions have been modified: core_renderer::heading() and core_renderer::heading_with_help().
+  This means that headings using the default options will no longer have the class "main" which was the previous default.
 * The file picker and activity chooser have been converted to use M.core.dialogue. This means the styles
-for these elements have changed in the base and bootstrapbase themes and you will need to copy the new styles
-if you are not inheriting from either one of these themes.
-
-=== 2.6 ===
-
-Notes:
+  for these elements have changed in the base and bootstrapbase themes and you will need to copy the new styles
+  if you are not inheriting from either one of these themes.
+* For the themes based on bootstrapbase please also read theme/bootstrapbase/upgrade.txt
 * A new component action_menu is now used to display editing icons for courses and blocks within a drop down. If you have a theme that doesn't
   extend base, canvas, or clean then you will need to style for this new component within your theme.
+* The maintenance layout now has a special renderer that extends the core_renderer in order to prevent some methods from interacting
+  with the database. Please be aware that for the maintenance layout some methods now always return an empty string.
+  This has been done because it is important that during maintenance routines we don't show any links, interact with the database,
+  or interact with caches as doing so may lead to errors,
+  Please see the maintenance renderer notes below for details on the functions affected.
 
 Renderer changes:
 * core_course_renderer::course_section_cm_edit_actions has two new optional arguments and now uses and action_menu component.
@@ -18,6 +47,34 @@ Renderer changes:
 * core_renderer::block_controls has a new optional argument (the block id) and has been altered to use the new action_menu component.
 * core_renderer::block_header has been altered to give core_renderer::block_controls the new second argument, the block id.
 * core_renderer::action_link has a new argument, and optional icon that can be rendererd into the link.
+
+Selector changes:
+* Changes to the classes given to the header produced when rendering a single section within a course.
+  .section-navigation.header.headingblock => .section-navigation.navigationtitle
+* Changes to the classes used when producing the course information box that lists courses.
+  The name (h3|div} of both courses and categories used to have .name, for courses in the list this was changed to .coursename and for categories in the list this was changed to .categoryname.
+* Classes ".header and .headingblock" were removed from all front page content headings.
+* Classes ".headingblock .header .tag-header" were removed from the tag index page
+
+Maintenance renderer notes:
+When the maintenance layout is being used $OUTPUT will be an instance of core_renderer_maintenance.
+This renderer mimics the core_renderer except that the following functions always return an empty string.
+* core_maintenance_renderer::block
+* core_maintenance_renderer::blocks
+* core_maintenance_renderer::blocks_for_regions
+* core_maintenance_renderer::course_header
+* core_maintenance_renderer::course_footer
+* core_maintenance_renderer::course_content_header
+* core_maintenance_renderer::course_content_footer
+* core_maintenance_renderer::custom_menu
+* core_maintenance_renderer::file_picker
+* core_maintenance_renderer::htmllize_file_tree
+* core_maintenance_renderer::lang_menu
+* core_maintenance_renderer::login_info
+* core_maintenance_renderer::user_picture
+
+If you have overridden methods of the core_renderer in your theme and want those changes to be shown during times of maintenance you
+will also need to override the core_renderer_maintenance and copy your customisations from the core_renderer to that.
 
 === 2.5.1 ===
 

@@ -157,7 +157,8 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
         }
 
         $o.= html_writer::start_tag('li', array('id' => 'section-'.$section->section,
-            'class' => 'section main clearfix'.$sectionstyle));
+            'class' => 'section main clearfix'.$sectionstyle, 'role'=>'region',
+            'aria-label'=> get_section_name($course, $section)));
 
         $leftcontent = $this->section_left_content($section, $course, $onsectionpage);
         $o.= html_writer::tag('div', $leftcontent, array('class' => 'left side'));
@@ -185,7 +186,7 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
         if ($PAGE->user_is_editing() && has_capability('moodle/course:update', $context)) {
             $url = new moodle_url('/course/editsection.php', array('id'=>$section->id, 'sr'=>$sectionreturn));
             $o.= html_writer::link($url,
-                html_writer::empty_tag('img', array('src' => $this->output->pix_url('t/edit'),
+                html_writer::empty_tag('img', array('src' => $this->output->pix_url('i/settings'),
                     'class' => 'iconsmall edit', 'alt' => get_string('edit'))),
                 array('title' => get_string('editsummary')));
         }
@@ -303,14 +304,15 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
             $classattr .= ' current';
         }
 
+        $title = get_section_name($course, $section);
         $o = '';
-        $o .= html_writer::start_tag('li', array('id' => 'section-'.$section->section, 'class' => $classattr));
+        $o .= html_writer::start_tag('li', array('id' => 'section-'.$section->section,
+            'class' => $classattr, 'role'=>'region', 'aria-label'=> $title));
 
         $o .= html_writer::tag('div', '', array('class' => 'left side'));
         $o .= html_writer::tag('div', '', array('class' => 'right side'));
         $o .= html_writer::start_tag('div', array('class' => 'content'));
 
-        $title = get_section_name($course, $section);
         if ($section->uservisible) {
             $title = html_writer::tag('a', $title,
                     array('href' => course_get_url($course, $section->section), 'class' => $linkclasses));
@@ -371,7 +373,8 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
                 if ($cancomplete && $completioninfo->is_enabled($thismod) != COMPLETION_TRACKING_NONE) {
                     $total++;
                     $completiondata = $completioninfo->get_data($thismod, true);
-                    if ($completiondata->completionstate == COMPLETION_COMPLETE) {
+                    if ($completiondata->completionstate == COMPLETION_COMPLETE ||
+                            $completiondata->completionstate == COMPLETION_COMPLETE_PASS) {
                         $complete++;
                     }
                 }
@@ -531,7 +534,7 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
         $o.= html_writer::tag('div', '', array('class' => 'left side'));
         $o.= html_writer::tag('div', '', array('class' => 'right side'));
         $o.= html_writer::start_tag('div', array('class' => 'content'));
-        $o.= $this->output->heading(get_string('orphanedactivities'), 3, 'sectionname');
+        $o.= $this->output->heading(get_string('orphanedactivitiesinsectionno', '', $sectionno), 3, 'sectionname');
         return $o;
     }
 
@@ -651,15 +654,16 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
         // Title with section navigation links.
         $sectionnavlinks = $this->get_nav_links($course, $modinfo->get_section_info_all(), $displaysection);
         $sectiontitle = '';
-        $sectiontitle .= html_writer::start_tag('div', array('class' => 'section-navigation header headingblock'));
+        $sectiontitle .= html_writer::start_tag('div', array('class' => 'section-navigation navigationtitle'));
         $sectiontitle .= html_writer::tag('span', $sectionnavlinks['previous'], array('class' => 'mdl-left'));
         $sectiontitle .= html_writer::tag('span', $sectionnavlinks['next'], array('class' => 'mdl-right'));
         // Title attributes
-        $titleattr = 'mdl-align title';
+        $classes = 'sectionname';
         if (!$thissection->visible) {
-            $titleattr .= ' dimmed_text';
+            $classes .= ' dimmed_text';
         }
-        $sectiontitle .= html_writer::tag('div', get_section_name($course, $displaysection), array('class' => $titleattr));
+        $sectiontitle .= $this->output->heading(get_section_name($course, $displaysection), 3, $classes);
+
         $sectiontitle .= html_writer::end_tag('div');
         echo $sectiontitle;
 
@@ -818,21 +822,5 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
         $options->noclean = true;
         $options->overflowdiv = true;
         return format_text($summarytext, $section->summaryformat, $options);
-    }
-
-    /**
-     * Is the section passed in the current section?
-     *
-     * @deprecated since 2.4
-     * @see format_base::is_section_current()
-     *
-     * @param stdClass $course The course entry from DB
-     * @param stdClass $section The course_section entry from the DB
-     * @return bool true if the section is current
-     */
-    protected final function is_section_current($section, $course) {
-        debugging('Function format_section_renderer_base::is_section_current() is deprecated. '.
-                'Use course_get_format($course)->is_section_current($section) instead', DEBUG_DEVELOPER);
-        return course_get_format($course)->is_section_current($section);
     }
 }

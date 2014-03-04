@@ -73,6 +73,14 @@ abstract class base_moodleform extends moodleform {
      */
     function __construct(base_ui_stage $uistage, $action=null, $customdata=null, $method='post', $target='', $attributes=null, $editable=true) {
         $this->uistage = $uistage;
+        // Add a class to the attributes to prevent the default collapsible behaviour.
+        if (!$attributes) {
+            $attributes = array();
+        }
+        $attributes['class'] = 'unresponsive';
+        if (!isset($attributes['enctype'])) {
+            $attributes['enctype'] = 'application/x-www-form-urlencoded'; // Enforce compatibility with our max_input_vars hack.
+        }
         parent::__construct($action, $customdata, $method, $target, $attributes, $editable);
     }
     /**
@@ -330,7 +338,7 @@ abstract class base_moodleform extends moodleform {
      * Displays the form
      */
     public function display() {
-        global $PAGE;
+        global $PAGE, $COURSE;
 
         $this->require_definition_after_data();
 
@@ -340,10 +348,15 @@ abstract class base_moodleform extends moodleform {
         $config->yesLabel = get_string('confirmcancelyes', 'backup');
         $config->noLabel = get_string('confirmcancelno', 'backup');
         $config->closeButtonTitle = get_string('close', 'editor');
-        $PAGE->requires->yui_module('moodle-backup-confirmcancel', 'M.core_backup.watch_cancel_buttons', array($config));
+        $PAGE->requires->yui_module('moodle-backup-confirmcancel', 'M.core_backup.confirmcancel.watch_cancel_buttons', array($config));
 
-        $PAGE->requires->yui_module('moodle-backup-backupselectall', 'M.core_backup.select_all_init',
-                array(array('select' => get_string('select'), 'all' => get_string('all'), 'none' => get_string('none'))));
+        // Get list of module types on course.
+        $modinfo = get_fast_modinfo($COURSE);
+        $modnames = $modinfo->get_used_module_names(true);
+        $PAGE->requires->yui_module('moodle-backup-backupselectall', 'M.core_backup.backupselectall',
+                array($modnames));
+        $PAGE->requires->strings_for_js(array('select', 'all', 'none'), 'moodle');
+        $PAGE->requires->strings_for_js(array('showtypes', 'hidetypes'), 'backup');
 
         parent::display();
     }

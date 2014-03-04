@@ -18,8 +18,7 @@
 /**
  * Private url module utility functions
  *
- * @package    mod
- * @subpackage url
+ * @package    mod_url
  * @copyright  2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -164,17 +163,12 @@ function url_print_header($url, $cm, $course) {
  * @param object $url
  * @param object $cm
  * @param object $course
- * @param bool $ignoresettings print even if not specified in modedit
+ * @param bool $notused This variable is no longer used.
  * @return void
  */
-function url_print_heading($url, $cm, $course, $ignoresettings=false) {
+function url_print_heading($url, $cm, $course, $notused = false) {
     global $OUTPUT;
-
-    $options = empty($url->displayoptions) ? array() : unserialize($url->displayoptions);
-
-    if ($ignoresettings or !empty($options['printheading'])) {
-        echo $OUTPUT->heading(format_string($url->name), 2, 'main', 'urlheading');
-    }
+    echo $OUTPUT->heading(format_string($url->name), 2);
 }
 
 /**

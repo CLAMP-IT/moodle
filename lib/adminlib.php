@@ -126,7 +126,7 @@ function uninstall_plugin($type, $name) {
     global $CFG, $DB, $OUTPUT;
 
     // This may take a long time.
-    @set_time_limit(0);
+    core_php_time_limit::raise();
 
     // Recursively uninstall all subplugins first.
     $subplugintypes = core_component::get_plugin_types_with_subplugins();
@@ -166,121 +166,25 @@ function uninstall_plugin($type, $name) {
 
     echo $OUTPUT->heading($pluginname);
 
+    // Custom plugin uninstall.
     $plugindirectory = core_component::get_plugin_directory($type, $name);
     $uninstalllib = $plugindirectory . '/db/uninstall.php';
     if (file_exists($uninstalllib)) {
         require_once($uninstalllib);
         $uninstallfunction = 'xmldb_' . $pluginname . '_uninstall';    // eg. 'xmldb_workshop_uninstall()'
         if (function_exists($uninstallfunction)) {
-            if (!$uninstallfunction()) {
-                echo $OUTPUT->notification('Encountered a problem running uninstall function for '. $pluginname);
-            }
+            // Do not verify result, let plugin complain if necessary.
+            $uninstallfunction();
         }
     }
 
-    if ($type === 'mod') {
-        // perform cleanup tasks specific for activity modules
-
-        if (!$module = $DB->get_record('modules', array('name' => $name))) {
-            print_error('moduledoesnotexist', 'error');
-        }
-
-        // delete all the relevant instances from all course sections
-        if ($coursemods = $DB->get_records('course_modules', array('module' => $module->id))) {
-            foreach ($coursemods as $coursemod) {
-                if (!delete_mod_from_section($coursemod->id, $coursemod->section)) {
-                    echo $OUTPUT->notification("Could not delete the $strpluginname with id = $coursemod->id from section $coursemod->section");
-                }
-            }
-        }
-
-        // clear course.modinfo for courses that used this module
-        $sql = "UPDATE {course}
-                   SET modinfo=''
-                 WHERE id IN (SELECT DISTINCT course
-                                FROM {course_modules}
-                               WHERE module=?)";
-        $DB->execute($sql, array($module->id));
-
-        // delete all the course module records
-        $DB->delete_records('course_modules', array('module' => $module->id));
-
-        // delete module contexts
-        if ($coursemods) {
-            foreach ($coursemods as $coursemod) {
-                context_helper::delete_instance(CONTEXT_MODULE, $coursemod->id);
-            }
-        }
-
-        // delete the module entry itself
-        $DB->delete_records('modules', array('name' => $module->name));
-
-        // cleanup the gradebook
-        require_once($CFG->libdir.'/gradelib.php');
-        grade_uninstalled_module($module->name);
-
-        // Perform any custom uninstall tasks
-        if (file_exists($CFG->dirroot . '/mod/' . $module->name . '/lib.php')) {
-            require_once($CFG->dirroot . '/mod/' . $module->name . '/lib.php');
-            $uninstallfunction = $module->name . '_uninstall';
-            if (function_exists($uninstallfunction)) {
-                debugging("{$uninstallfunction}() has been deprecated. Use the plugin's db/uninstall.php instead", DEBUG_DEVELOPER);
-                if (!$uninstallfunction()) {
-                    echo $OUTPUT->notification('Encountered a problem running uninstall function for '. $module->name.'!');
-                }
-            }
-        }
-
-    } else if ($type === 'enrol') {
-        // NOTE: this is a bit brute force way - it will not trigger events and hooks properly
-        // nuke all role assignments
-        role_unassign_all(array('component'=>$component));
-        // purge participants
-        $DB->delete_records_select('user_enrolments', "enrolid IN (SELECT id FROM {enrol} WHERE enrol = ?)", array($name));
-        // purge enrol instances
-        $DB->delete_records('enrol', array('enrol'=>$name));
-        // tweak enrol settings
-        if (!empty($CFG->enrol_plugins_enabled)) {
-            $enabledenrols = explode(',', $CFG->enrol_plugins_enabled);
-            $enabledenrols = array_unique($enabledenrols);
-            $enabledenrols = array_flip($enabledenrols);
-            unset($enabledenrols[$name]);
-            $enabledenrols = array_flip($enabledenrols);
-            if (is_array($enabledenrols)) {
-                set_config('enrol_plugins_enabled', implode(',', $enabledenrols));
-            }
-        }
-
-    } else if ($type === 'block') {
-        if ($block = $DB->get_record('block', array('name'=>$name))) {
-            // Inform block it's about to be deleted
-            if (file_exists("$CFG->dirroot/blocks/$block->name/block_$block->name.php")) {
-                $blockobject = block_instance($block->name);
-                if ($blockobject) {
-                    $blockobject->before_delete();  //only if we can create instance, block might have been already removed
-                }
-            }
-
-            // First delete instances and related contexts
-            $instances = $DB->get_records('block_instances', array('blockname' => $block->name));
-            foreach($instances as $instance) {
-                blocks_delete_instance($instance);
-            }
-
-            // Delete block
-            $DB->delete_records('block', array('id'=>$block->id));
-        }
-    } else if ($type === 'format') {
-        if (($defaultformat = get_config('moodlecourse', 'format')) && $defaultformat !== $name) {
-            $courses = $DB->get_records('course', array('format' => $name), 'id');
-            $data = (object)array('id' => null, 'format' => $defaultformat);
-            foreach ($courses as $record) {
-                $data->id = $record->id;
-                update_course($data);
-            }
-        }
-        $DB->delete_records('course_format_options', array('format' => $name));
+    // Specific plugin type cleanup.
+    $plugininfo = core_plugin_manager::instance()->get_plugin_info($component);
+    if ($plugininfo) {
+        $plugininfo->uninstall_cleanup();
+        core_plugin_manager::reset_caches();
     }
+    $plugininfo = null;
 
     // perform clean-up task common for all the plugin/subplugin types
 
@@ -291,6 +195,9 @@ function uninstall_plugin($type, $name) {
     // delete calendar events
     $DB->delete_records('event', array('modulename' => $pluginname));
 
+    // Delete scheduled tasks.
+    $DB->delete_records('scheduled_task', array('component' => $pluginname));
+
     // delete all the logs
     $DB->delete_records('log', array('module' => $pluginname));
 
@@ -298,15 +205,13 @@ function uninstall_plugin($type, $name) {
     $DB->delete_records('log_display', array('component' => $component));
 
     // delete the module configuration records
-    unset_all_config_for_plugin($pluginname);
+    unset_all_config_for_plugin($component);
+    if ($type === 'mod') {
+        unset_all_config_for_plugin($pluginname);
+    }
 
     // delete message provider
     message_provider_uninstall($component);
-
-    // delete message processor
-    if ($type === 'message') {
-        message_processor_uninstall($name);
-    }
 
     // delete the plugin tables
     $xmldbfilepath = $plugindirectory . '/db/install.xml';
@@ -369,15 +274,22 @@ function get_component_version($component, $source='installed') {
     // activity module
     if ($type === 'mod') {
         if ($source === 'installed') {
-            return $DB->get_field('modules', 'version', array('name'=>$name));
+            if ($CFG->version < 2013092001.02) {
+                return $DB->get_field('modules', 'version', array('name'=>$name));
+            } else {
+                return get_config('mod_'.$name, 'version');
+            }
+
         } else {
             $mods = core_component::get_plugin_list('mod');
             if (empty($mods[$name]) or !is_readable($mods[$name].'/version.php')) {
                 return false;
             } else {
-                $module = new stdclass();
+                $plugin = new stdClass();
+                $plugin->version = null;
+                $module = $plugin;
                 include($mods[$name].'/version.php');
-                return $module->version;
+                return $plugin->version;
             }
         }
     }
@@ -385,7 +297,11 @@ function get_component_version($component, $source='installed') {
     // block
     if ($type === 'block') {
         if ($source === 'installed') {
-            return $DB->get_field('block', 'version', array('name'=>$name));
+            if ($CFG->version < 2013092001.02) {
+                return $DB->get_field('block', 'version', array('name'=>$name));
+            } else {
+                return get_config('block_'.$name, 'version');
+            }
         } else {
             $blocks = core_component::get_plugin_list('block');
             if (empty($blocks[$name]) or !is_readable($blocks[$name].'/version.php')) {
@@ -837,8 +753,8 @@ interface parentable_part_of_admin_tree extends part_of_admin_tree {
  */
 class admin_category implements parentable_part_of_admin_tree {
 
-    /** @var mixed An array of part_of_admin_tree objects that are this object's children */
-    public $children;
+    /** @var part_of_admin_tree[] An array of part_of_admin_tree objects that are this object's children */
+    protected $children;
     /** @var string An internal name for this category. Must be unique amongst ALL part_of_admin_tree objects */
     public $name;
     /** @var string The displayed name for this category. Usually obtained through get_string() */
@@ -852,6 +768,15 @@ class admin_category implements parentable_part_of_admin_tree {
 
     /** @var array fast lookup category cache, all categories of one tree point to one cache */
     protected $category_cache;
+
+    /** @var bool If set to true children will be sorted when calling {@link admin_category::get_children()} */
+    protected $sort = false;
+    /** @var bool If set to true children will be sorted in ascending order. */
+    protected $sortasc = true;
+    /** @var bool If set to true sub categories and pages will be split and then sorted.. */
+    protected $sortsplit = true;
+    /** @var bool $sorted True if the children have been sorted and don't need resorting */
+    protected $sorted = false;
 
     /**
      * Constructor for an empty admin category
@@ -917,7 +842,7 @@ class admin_category implements parentable_part_of_admin_tree {
      */
     public function search($query) {
         $result = array();
-        foreach ($this->children as $child) {
+        foreach ($this->get_children() as $child) {
             $subsearch = $child->search($query);
             if (!is_array($subsearch)) {
                 debugging('Incorrect search result from '.$child->name);
@@ -1077,6 +1002,104 @@ class admin_category implements parentable_part_of_admin_tree {
             }
         }
         return false;
+    }
+
+    /**
+     * Sets sorting on this category.
+     *
+     * Please note this function doesn't actually do the sorting.
+     * It can be called anytime.
+     * Sorting occurs when the user calls get_children.
+     * Code using the children array directly won't see the sorted results.
+     *
+     * @param bool $sort If set to true children will be sorted, if false they won't be.
+     * @param bool $asc If true sorting will be ascending, otherwise descending.
+     * @param bool $split If true we sort pages and sub categories separately.
+     */
+    public function set_sorting($sort, $asc = true, $split = true) {
+        $this->sort = (bool)$sort;
+        $this->sortasc = (bool)$asc;
+        $this->sortsplit = (bool)$split;
+    }
+
+    /**
+     * Returns the children associated with this category.
+     *
+     * @return part_of_admin_tree[]
+     */
+    public function get_children() {
+        // If we should sort and it hasn't already been sorted.
+        if ($this->sort && !$this->sorted) {
+            if ($this->sortsplit) {
+                $categories = array();
+                $pages = array();
+                foreach ($this->children as $child) {
+                    if ($child instanceof admin_category) {
+                        $categories[] = $child;
+                    } else {
+                        $pages[] = $child;
+                    }
+                }
+                core_collator::asort_objects_by_property($categories, 'visiblename');
+                core_collator::asort_objects_by_property($pages, 'visiblename');
+                if (!$this->sortasc) {
+                    $categories = array_reverse($categories);
+                    $pages = array_reverse($pages);
+                }
+                $this->children = array_merge($pages, $categories);
+            } else {
+                core_collator::asort_objects_by_property($this->children, 'visiblename');
+                if (!$this->sortasc) {
+                    $this->children = array_reverse($this->children);
+                }
+            }
+            $this->sorted = true;
+        }
+        return $this->children;
+    }
+
+    /**
+     * Magically gets a property from this object.
+     *
+     * @param $property
+     * @return part_of_admin_tree[]
+     * @throws coding_exception
+     */
+    public function __get($property) {
+        if ($property === 'children') {
+            return $this->get_children();
+        }
+        throw new coding_exception('Invalid property requested.');
+    }
+
+    /**
+     * Magically sets a property against this object.
+     *
+     * @param string $property
+     * @param mixed $value
+     * @throws coding_exception
+     */
+    public function __set($property, $value) {
+        if ($property === 'children') {
+            $this->sorted = false;
+            $this->children = $value;
+        } else {
+            throw new coding_exception('Invalid property requested.');
+        }
+    }
+
+    /**
+     * Checks if an inaccessible property is set.
+     *
+     * @param string $property
+     * @return bool
+     * @throws coding_exception
+     */
+    public function __isset($property) {
+        if ($property === 'children') {
+            return isset($this->children);
+        }
+        throw new coding_exception('Invalid property requested.');
     }
 }
 
@@ -1747,9 +1770,19 @@ abstract class admin_setting {
             rebuild_course_cache(0, true);
         }
 
-        add_to_config_log($name, $oldvalue, $value, $this->plugin);
+        $this->add_to_config_log($name, $oldvalue, $value);
 
         return true; // BC only
+    }
+
+    /**
+     * Log config changes if necessary.
+     * @param string $name
+     * @param string $oldvalue
+     * @param string $value
+     */
+    protected function add_to_config_log($name, $oldvalue, $value) {
+        add_to_config_log($name, $oldvalue, $value, $this->plugin);
     }
 
     /**
@@ -2246,6 +2279,22 @@ class admin_setting_configpasswordunmask extends admin_setting_configtext {
      */
     public function __construct($name, $visiblename, $description, $defaultsetting) {
         parent::__construct($name, $visiblename, $description, $defaultsetting, PARAM_RAW, 30);
+    }
+
+    /**
+     * Log config changes if necessary.
+     * @param string $name
+     * @param string $oldvalue
+     * @param string $value
+     */
+    protected function add_to_config_log($name, $oldvalue, $value) {
+        if ($value !== '') {
+            $value = '********';
+        }
+        if ($oldvalue !== '' and $oldvalue !== null) {
+            $oldvalue = '********';
+        }
+        parent::add_to_config_log($name, $oldvalue, $value);
     }
 
     /**
@@ -3419,8 +3468,8 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
                     'This is unexpected, and a problem because there is no way to pass these ' .
                     'parameters to get_users_by_capability. See MDL-34657.');
         }
-        $users = get_users_by_capability(context_system::instance(),
-                $this->capability, 'u.id,u.username,u.firstname,u.lastname', $sort);
+        $userfields = 'u.id, u.username, ' . get_all_user_name_fields(true, 'u');
+        $users = get_users_by_capability(context_system::instance(), $this->capability, $userfields, $sort);
         $this->choices = array(
             '$@NONE@$' => get_string('nobody'),
             '$@ALL@$' => get_string('everyonewhocan', 'admin', get_capability_string($this->capability)),
@@ -3932,8 +3981,7 @@ class admin_setting_special_frontpagedesc extends admin_setting {
     public function output_html($data, $query='') {
         global $CFG;
 
-        $CFG->adminusehtmleditor = can_use_html_editor();
-        $return = '<div class="form-htmlarea">'.print_textarea($CFG->adminusehtmleditor, 15, 60, 0, 0, $this->get_full_name(), $data, 0, true, 'summary') .'</div>';
+        $return = '<div class="form-htmlarea">'.print_textarea(true, 15, 60, 0, 0, $this->get_full_name(), $data, 0, true, 'summary') .'</div>';
 
         return format_admin_setting($this, $this->visiblename, $return, $this->description, false, '', NULL, $query);
     }
@@ -5137,8 +5185,9 @@ class admin_setting_manageenrols extends admin_setting {
         $struninstall = get_string('uninstallplugin', 'core_admin');
         $strusage     = get_string('enrolusage', 'enrol');
         $strversion   = get_string('version');
+        $strtest      = get_string('testsettings', 'core_enrol');
 
-        $pluginmanager = plugin_manager::instance();
+        $pluginmanager = core_plugin_manager::instance();
 
         $enrols_available = enrol_get_plugins(false);
         $active_enrols    = enrol_get_plugins(true);
@@ -5162,8 +5211,8 @@ class admin_setting_manageenrols extends admin_setting {
         $return .= $OUTPUT->box_start('generalbox enrolsui');
 
         $table = new html_table();
-        $table->head  = array(get_string('name'), $strusage, $strversion, $strenable, $strup.'/'.$strdown, $strsettings, $struninstall);
-        $table->colclasses = array('leftalign', 'centeralign', 'centeralign', 'centeralign', 'centeralign', 'centeralign', 'centeralign');
+        $table->head  = array(get_string('name'), $strusage, $strversion, $strenable, $strup.'/'.$strdown, $strsettings, $strtest, $struninstall);
+        $table->colclasses = array('leftalign', 'centeralign', 'centeralign', 'centeralign', 'centeralign', 'centeralign', 'centeralign', 'centeralign');
         $table->id = 'courseenrolmentplugins';
         $table->attributes['class'] = 'admintable generaltable';
         $table->data  = array();
@@ -5191,18 +5240,20 @@ class admin_setting_manageenrols extends admin_setting {
             $usage = "$ci / $cp";
 
             // Hide/show links.
+            $class = '';
             if (isset($active_enrols[$enrol])) {
                 $aurl = new moodle_url($url, array('action'=>'disable', 'enrol'=>$enrol));
                 $hideshow = "<a href=\"$aurl\">";
                 $hideshow .= "<img src=\"" . $OUTPUT->pix_url('t/hide') . "\" class=\"iconsmall\" alt=\"$strdisable\" /></a>";
                 $enabled = true;
-                $displayname = "<span>$name</span>";
+                $displayname = $name;
             } else if (isset($enrols_available[$enrol])) {
                 $aurl = new moodle_url($url, array('action'=>'enable', 'enrol'=>$enrol));
                 $hideshow = "<a href=\"$aurl\">";
                 $hideshow .= "<img src=\"" . $OUTPUT->pix_url('t/show') . "\" class=\"iconsmall\" alt=\"$strenable\" /></a>";
                 $enabled = false;
-                $displayname = "<span class=\"dimmed_text\">$name</span>";
+                $displayname = $name;
+                $class = 'dimmed_text';
             } else {
                 $hideshow = '';
                 $enabled = false;
@@ -5245,12 +5296,22 @@ class admin_setting_manageenrols extends admin_setting {
 
             // Add uninstall info.
             $uninstall = '';
-            if ($uninstallurl = plugin_manager::instance()->get_uninstall_url('enrol_'.$enrol)) {
+            if ($uninstallurl = core_plugin_manager::instance()->get_uninstall_url('enrol_'.$enrol, 'manage')) {
                 $uninstall = html_writer::link($uninstallurl, $struninstall);
             }
 
+            $test = '';
+            if (!empty($enrols_available[$enrol]) and method_exists($enrols_available[$enrol], 'test_settings')) {
+                $testsettingsurl = new moodle_url('/enrol/test_settings.php', array('enrol'=>$enrol, 'sesskey'=>sesskey()));
+                $test = html_writer::link($testsettingsurl, $strtest);
+            }
+
             // Add a row to the table.
-            $table->data[] = array($icon.$displayname, $usage, $version, $hideshow, $updown, $settings, $uninstall);
+            $row = new html_table_row(array($icon.$displayname, $usage, $version, $hideshow, $updown, $settings, $test, $uninstall));
+            if ($class) {
+                $row->attributes['class'] = $class;
+            }
+            $table->data[] = $row;
 
             $printed[$enrol] = true;
         }
@@ -5660,14 +5721,15 @@ class admin_setting_manageauths extends admin_setting {
      * @return string highlight
      */
     public function output_html($data, $query='') {
-        global $CFG, $OUTPUT;
-
+        global $CFG, $OUTPUT, $DB;
 
         // display strings
         $txt = get_strings(array('authenticationplugins', 'users', 'administration',
             'settings', 'edit', 'name', 'enable', 'disable',
-            'up', 'down', 'none'));
+            'up', 'down', 'none', 'users'));
         $txt->updown = "$txt->up/$txt->down";
+        $txt->uninstall = get_string('uninstallplugin', 'core_admin');
+        $txt->testsettings = get_string('testsettings', 'core_auth');
 
         $authsavailable = core_component::get_plugin_list('auth');
         get_enabled_auth_plugins(true); // fix the list of enabled auths
@@ -5681,8 +5743,10 @@ class admin_setting_manageauths extends admin_setting {
         $displayauths = array();
         $registrationauths = array();
         $registrationauths[''] = $txt->disable;
+        $authplugins = array();
         foreach ($authsenabled as $auth) {
             $authplugin = get_auth_plugin($auth);
+            $authplugins[$auth] = $authplugin;
             /// Get the auth title (from core or own auth lang files)
             $authtitle = $authplugin->get_title();
             /// Apply titles
@@ -5697,6 +5761,7 @@ class admin_setting_manageauths extends admin_setting {
                 continue; //already in the list
             }
             $authplugin = get_auth_plugin($auth);
+            $authplugins[$auth] = $authplugin;
             /// Get the auth title (from core or own auth lang files)
             $authtitle = $authplugin->get_title();
             /// Apply titles
@@ -5710,20 +5775,22 @@ class admin_setting_manageauths extends admin_setting {
         $return .= $OUTPUT->box_start('generalbox authsui');
 
         $table = new html_table();
-        $table->head  = array($txt->name, $txt->enable, $txt->updown, $txt->settings);
-        $table->colclasses = array('leftalign', 'centeralign', 'centeralign', 'centeralign');
+        $table->head  = array($txt->name, $txt->users, $txt->enable, $txt->updown, $txt->settings, $txt->testsettings, $txt->uninstall);
+        $table->colclasses = array('leftalign', 'centeralign', 'centeralign', 'centeralign', 'centeralign', 'centeralign', 'centeralign');
         $table->data  = array();
         $table->attributes['class'] = 'admintable generaltable';
         $table->id = 'manageauthtable';
 
         //add always enabled plugins first
-        $displayname = "<span>".$displayauths['manual']."</span>";
+        $displayname = $displayauths['manual'];
         $settings = "<a href=\"auth_config.php?auth=manual\">{$txt->settings}</a>";
         //$settings = "<a href=\"settings.php?section=authsettingmanual\">{$txt->settings}</a>";
-        $table->data[] = array($displayname, '', '', $settings);
-        $displayname = "<span>".$displayauths['nologin']."</span>";
+        $usercount = $DB->count_records('user', array('auth'=>'manual', 'deleted'=>0));
+        $table->data[] = array($displayname, $usercount, '', '', $settings, '', '');
+        $displayname = $displayauths['nologin'];
         $settings = "<a href=\"auth_config.php?auth=nologin\">{$txt->settings}</a>";
-        $table->data[] = array($displayname, '', '', $settings);
+        $usercount = $DB->count_records('user', array('auth'=>'nologin', 'deleted'=>0));
+        $table->data[] = array($displayname, $usercount, '', '', $settings, '', '');
 
 
         // iterate through auth plugins and add to the display table
@@ -5734,21 +5801,25 @@ class admin_setting_manageauths extends admin_setting {
             if ($auth == 'manual' or $auth == 'nologin') {
                 continue;
             }
+            $class = '';
             // hide/show link
             if (in_array($auth, $authsenabled)) {
                 $hideshow = "<a href=\"$url&amp;action=disable&amp;auth=$auth\">";
                 $hideshow .= "<img src=\"" . $OUTPUT->pix_url('t/hide') . "\" class=\"iconsmall\" alt=\"disable\" /></a>";
                 // $hideshow = "<a href=\"$url&amp;action=disable&amp;auth=$auth\"><input type=\"checkbox\" checked /></a>";
                 $enabled = true;
-                $displayname = "<span>$name</span>";
+                $displayname = $name;
             }
             else {
                 $hideshow = "<a href=\"$url&amp;action=enable&amp;auth=$auth\">";
                 $hideshow .= "<img src=\"" . $OUTPUT->pix_url('t/show') . "\" class=\"iconsmall\" alt=\"enable\" /></a>";
                 // $hideshow = "<a href=\"$url&amp;action=enable&amp;auth=$auth\"><input type=\"checkbox\" /></a>";
                 $enabled = false;
-                $displayname = "<span class=\"dimmed_text\">$name</span>";
+                $displayname = $name;
+                $class = 'dimmed_text';
             }
+
+            $usercount = $DB->count_records('user', array('auth'=>$auth, 'deleted'=>0));
 
             // up/down link (only if auth is enabled)
             $updown = '';
@@ -5777,8 +5848,24 @@ class admin_setting_manageauths extends admin_setting {
                 $settings = "<a href=\"auth_config.php?auth=$auth\">{$txt->settings}</a>";
             }
 
-            // add a row to the table
-            $table->data[] =array($displayname, $hideshow, $updown, $settings);
+            // Uninstall link.
+            $uninstall = '';
+            if ($uninstallurl = core_plugin_manager::instance()->get_uninstall_url('auth_'.$auth, 'manage')) {
+                $uninstall = html_writer::link($uninstallurl, $txt->uninstall);
+            }
+
+            $test = '';
+            if (!empty($authplugins[$auth]) and method_exists($authplugins[$auth], 'test_settings')) {
+                $testurl = new moodle_url('/auth/test_settings.php', array('auth'=>$auth, 'sesskey'=>sesskey()));
+                $test = html_writer::link($testurl, $txt->testsettings);
+            }
+
+            // Add a row to the table.
+            $row = new html_table_row(array($displayname, $usercount, $hideshow, $updown, $settings, $test, $uninstall));
+            if ($class) {
+                $row->attributes['class'] = $class;
+            }
+            $table->data[] = $row;
         }
         $return .= html_writer::table($table);
         $return .= get_string('configauthenticationplugins', 'admin').'<br />'.get_string('tablenosave', 'filters');
@@ -5892,7 +5979,7 @@ class admin_setting_manageeditors extends admin_setting {
 
         $table = new html_table();
         $table->head  = array($txt->name, $txt->enable, $txt->updown, $txt->settings, $struninstall);
-        $table->colclasses = array('leftalign', 'centeralign', 'centeralign', 'centeralign');
+        $table->colclasses = array('leftalign', 'centeralign', 'centeralign', 'centeralign', 'centeralign');
         $table->id = 'editormanagement';
         $table->attributes['class'] = 'admintable generaltable';
         $table->data  = array();
@@ -5903,19 +5990,21 @@ class admin_setting_manageeditors extends admin_setting {
         $url = "editors.php?sesskey=" . sesskey();
         foreach ($editors_available as $editor => $name) {
         // hide/show link
+            $class = '';
             if (in_array($editor, $active_editors)) {
                 $hideshow = "<a href=\"$url&amp;action=disable&amp;editor=$editor\">";
                 $hideshow .= "<img src=\"" . $OUTPUT->pix_url('t/hide') . "\" class=\"iconsmall\" alt=\"disable\" /></a>";
                 // $hideshow = "<a href=\"$url&amp;action=disable&amp;editor=$editor\"><input type=\"checkbox\" checked /></a>";
                 $enabled = true;
-                $displayname = "<span>$name</span>";
+                $displayname = $name;
             }
             else {
                 $hideshow = "<a href=\"$url&amp;action=enable&amp;editor=$editor\">";
                 $hideshow .= "<img src=\"" . $OUTPUT->pix_url('t/show') . "\" class=\"iconsmall\" alt=\"enable\" /></a>";
                 // $hideshow = "<a href=\"$url&amp;action=enable&amp;editor=$editor\"><input type=\"checkbox\" /></a>";
                 $enabled = false;
-                $displayname = "<span class=\"dimmed_text\">$name</span>";
+                $displayname = $name;
+                $class = 'dimmed_text';
             }
 
             // up/down link (only if auth is enabled)
@@ -5947,12 +6036,16 @@ class admin_setting_manageeditors extends admin_setting {
             }
 
             $uninstall = '';
-            if ($uninstallurl = plugin_manager::instance()->get_uninstall_url('editor_'.$editor)) {
+            if ($uninstallurl = core_plugin_manager::instance()->get_uninstall_url('editor_'.$editor, 'manage')) {
                 $uninstall = html_writer::link($uninstallurl, $struninstall);
             }
 
-            // add a row to the table
-            $table->data[] =array($displayname, $hideshow, $updown, $settings, $uninstall);
+            // Add a row to the table.
+            $row = new html_table_row(array($displayname, $hideshow, $updown, $settings, $uninstall));
+            if ($class) {
+                $row->attributes['class'] = $class;
+            }
+            $table->data[] = $row;
         }
         $return .= html_writer::table($table);
         $return .= get_string('configeditorplugins', 'editor').'<br />'.get_string('tablenosave', 'admin');
@@ -6109,7 +6202,7 @@ class admin_setting_manageformats extends admin_setting {
         if (parent::is_related($query)) {
             return true;
         }
-        $formats = plugin_manager::instance()->get_plugins_of_type('format');
+        $formats = core_plugin_manager::instance()->get_plugins_of_type('format');
         foreach ($formats as $format) {
             if (strpos($format->component, $query) !== false ||
                     strpos(core_text::strtolower($format->displayname), $query) !== false) {
@@ -6132,7 +6225,7 @@ class admin_setting_manageformats extends admin_setting {
         $return = $OUTPUT->heading(new lang_string('courseformats'), 3, 'main');
         $return .= $OUTPUT->box_start('generalbox formatsui');
 
-        $formats = plugin_manager::instance()->get_plugins_of_type('format');
+        $formats = core_plugin_manager::instance()->get_plugins_of_type('format');
 
         // display strings
         $txt = get_strings(array('settings', 'name', 'enable', 'disable', 'up', 'down', 'default'));
@@ -6142,8 +6235,7 @@ class admin_setting_manageformats extends admin_setting {
         $table = new html_table();
         $table->head  = array($txt->name, $txt->enable, $txt->updown, $txt->uninstall, $txt->settings);
         $table->align = array('left', 'center', 'center', 'center', 'center');
-        $table->width = '90%';
-        $table->attributes['class'] = 'manageformattable generaltable';
+        $table->attributes['class'] = 'manageformattable generaltable admintable';
         $table->data  = array();
 
         $cnt = 0;
@@ -6153,8 +6245,9 @@ class admin_setting_manageformats extends admin_setting {
             $url = new moodle_url('/admin/courseformats.php',
                     array('sesskey' => sesskey(), 'format' => $format->name));
             $isdefault = '';
+            $class = '';
             if ($format->is_enabled()) {
-                $strformatname = html_writer::tag('span', $format->displayname);
+                $strformatname = $format->displayname;
                 if ($defaultformat === $format->name) {
                     $hideshow = $txt->default;
                 } else {
@@ -6162,7 +6255,8 @@ class admin_setting_manageformats extends admin_setting {
                             $OUTPUT->pix_icon('t/hide', $txt->disable, 'moodle', array('class' => 'iconsmall')));
                 }
             } else {
-                $strformatname = html_writer::tag('span', $format->displayname, array('class' => 'dimmed_text'));
+                $strformatname = $format->displayname;
+                $class = 'dimmed_text';
                 $hideshow = html_writer::link($url->out(false, array('action' => 'enable')),
                     $OUTPUT->pix_icon('t/show', $txt->enable, 'moodle', array('class' => 'iconsmall')));
             }
@@ -6185,10 +6279,14 @@ class admin_setting_manageformats extends admin_setting {
                 $settings = html_writer::link($format->get_settings_url(), $txt->settings);
             }
             $uninstall = '';
-            if ($uninstallurl = plugin_manager::instance()->get_uninstall_url('format_'.$format->name)) {
+            if ($uninstallurl = core_plugin_manager::instance()->get_uninstall_url('format_'.$format->name, 'manage')) {
                 $uninstall = html_writer::link($uninstallurl, $txt->uninstall);
             }
-            $table->data[] =array($strformatname, $hideshow, $updown, $uninstall, $settings);
+            $row = new html_table_row(array($strformatname, $hideshow, $updown, $uninstall, $settings));
+            if ($class) {
+                $row->attributes['class'] = $class;
+            }
+            $table->data[] = $row;
         }
         $return .= html_writer::table($table);
         $link = html_writer::link(new moodle_url('/admin/settings.php', array('section' => 'coursesettings')), new lang_string('coursesettings'));
@@ -6304,6 +6402,8 @@ function admin_externalpage_setup($section, $extrabutton = '', array $extraurlpa
         die;
     }
 
+    navigation_node::require_admin_tree();
+
     // $PAGE->set_extra_button($extrabutton); TODO
 
     if (!$actualurl) {
@@ -6416,6 +6516,7 @@ function admin_apply_default_settings($node=NULL, $unconditional=true) {
     global $CFG;
 
     if (is_null($node)) {
+        core_plugin_manager::reset_caches();
         $node = admin_get_root(true, true);
     }
 
@@ -6440,6 +6541,8 @@ function admin_apply_default_settings($node=NULL, $unconditional=true) {
                 $setting->write_setting_flags(null);
             }
         }
+    // Just in case somebody modifies the list of active plugins directly.
+    core_plugin_manager::reset_caches();
 }
 
 /**
@@ -6761,7 +6864,7 @@ function db_replace($search, $replace) {
                         'block_instances', '');
 
     // Turn off time limits, sometimes upgrades can be slow.
-    @set_time_limit(0);
+    core_php_time_limit::raise();
 
     if (!$tables = $DB->get_tables() ) {    // No tables yet at all.
         return false;
@@ -6774,11 +6877,8 @@ function db_replace($search, $replace) {
 
         if ($columns = $DB->get_columns($table)) {
             $DB->set_debug(true);
-            foreach ($columns as $column => $data) {
-                if (in_array($data->meta_type, array('C', 'X'))) {  // Text stuff only
-                    //TODO: this should be definitively moved to DML driver to do the actual replace, this is not going to work for MSSQL and Oracle...
-                    $DB->execute("UPDATE {".$table."} SET $column = REPLACE($column, ?, ?)", array($search, $replace));
-                }
+            foreach ($columns as $column) {
+                $DB->replace_all_text($table, $column, $search, $replace);
             }
             $DB->set_debug(false);
         }
@@ -6808,6 +6908,8 @@ function db_replace($search, $replace) {
         $function($search, $replace);
         echo $OUTPUT->notification("...finished", 'notifysuccess');
     }
+
+    purge_all_caches();
 
     return true;
 }
@@ -8407,7 +8509,7 @@ class admin_setting_devicedetectregex extends admin_setting {
     public function output_html($data, $query='') {
         global $OUTPUT;
 
-        $out  = html_writer::start_tag('table', array('border' => 1, 'class' => 'generaltable'));
+        $out  = html_writer::start_tag('table', array('class' => 'generaltable'));
         $out .= html_writer::start_tag('thead');
         $out .= html_writer::start_tag('tr');
         $out .= html_writer::tag('th', get_string('devicedetectregexexpression', 'admin'));
@@ -8584,5 +8686,70 @@ class admin_setting_configmultiselect_modules extends admin_setting_configmultis
             }
         }
         return true;
+    }
+}
+
+/**
+ * Admin setting to show if a php extension is enabled or not.
+ *
+ * @copyright 2013 Damyon Wiese
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class admin_setting_php_extension_enabled extends admin_setting {
+
+    /** @var string The name of the extension to check for */
+    private $extension;
+
+    /**
+     * Calls parent::__construct with specific arguments
+     */
+    public function __construct($name, $visiblename, $description, $extension) {
+        $this->extension = $extension;
+        $this->nosave = true;
+        parent::__construct($name, $visiblename, $description, '');
+    }
+
+    /**
+     * Always returns true, does nothing
+     *
+     * @return true
+     */
+    public function get_setting() {
+        return true;
+    }
+
+    /**
+     * Always returns true, does nothing
+     *
+     * @return true
+     */
+    public function get_defaultsetting() {
+        return true;
+    }
+
+    /**
+     * Always returns '', does not write anything
+     *
+     * @return string Always returns ''
+     */
+    public function write_setting($data) {
+        // Do not write any setting.
+        return '';
+    }
+
+    /**
+     * Outputs the html for this setting.
+     * @return string Returns an XHTML string
+     */
+    public function output_html($data, $query='') {
+        global $OUTPUT;
+
+        $o = '';
+        if (!extension_loaded($this->extension)) {
+            $warning = $OUTPUT->pix_icon('i/warning', '', '', array('role' => 'presentation')) . ' ' . $this->description;
+
+            $o .= format_admin_setting($this, $this->visiblename, $warning);
+        }
+        return $o;
     }
 }

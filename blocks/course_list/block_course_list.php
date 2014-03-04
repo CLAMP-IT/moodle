@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Course list block.
+ *
+ * @package    block_course_list
+ * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 include_once($CFG->dirroot . '/course/lib.php');
 include_once($CFG->libdir . '/coursecatlib.php');
@@ -35,12 +57,19 @@ class block_course_list extends block_list {
 
         if (empty($CFG->disablemycourses) and isloggedin() and !isguestuser() and
           !(has_capability('moodle/course:update', context_system::instance()) and $adminseesall)) {    // Just print My Courses
-            if ($courses = enrol_get_my_courses(NULL, 'visible DESC, fullname ASC')) {
+            // As this is producing navigation sort order should default to $CFG->navsortmycoursessort instead
+            // of using the default.
+            if (!empty($CFG->navsortmycoursessort)) {
+                $sortorder = 'visible DESC, ' . $CFG->navsortmycoursessort . ' ASC';
+            } else {
+                $sortorder = 'visible DESC, sortorder ASC';
+            }
+            if ($courses = enrol_get_my_courses(NULL, $sortorder)) {
                 foreach ($courses as $course) {
                     $coursecontext = context_course::instance($course->id);
                     $linkcss = $course->visible ? "" : " class=\"dimmed\" ";
                     $this->content->items[]="<a $linkcss title=\"" . format_string($course->shortname, true, array('context' => $coursecontext)) . "\" ".
-                               "href=\"$CFG->wwwroot/course/view.php?id=$course->id\">".$icon.format_string($course->fullname). "</a>";
+                               "href=\"$CFG->wwwroot/course/view.php?id=$course->id\">".$icon.format_string(get_course_display_name_for_list($course)). "</a>";
                 }
                 $this->title = get_string('mycourses');
             /// If we can update any course of the view all isn't hidden, show the view all courses link
@@ -79,7 +108,7 @@ class block_course_list extends block_list {
                         $this->content->items[]="<a $linkcss title=\""
                                    . format_string($course->shortname, true, array('context' => $coursecontext))."\" ".
                                    "href=\"$CFG->wwwroot/course/view.php?id=$course->id\">"
-                                   .$icon. format_string($course->fullname, true, array('context' => context_course::instance($course->id))) . "</a>";
+                                   .$icon. format_string(get_course_display_name_for_list($course), true, array('context' => context_course::instance($course->id))) . "</a>";
                     }
                 /// If we can update any course of the view all isn't hidden, show the view all courses link
                     if (has_capability('moodle/course:update', context_system::instance()) || empty($CFG->block_course_list_hideallcourseslink)) {
@@ -121,10 +150,9 @@ class block_course_list extends block_list {
             $this->content->items[] = get_string('remotecourses','mnet');
             $this->content->icons[] = '';
             foreach ($courses as $course) {
-                $coursecontext = context_course::instance($course->id);
-                $this->content->items[]="<a title=\"" . format_string($course->shortname, true, array('context' => $coursecontext)) . "\" ".
+                $this->content->items[]="<a title=\"" . format_string($course->shortname, true) . "\" ".
                     "href=\"{$CFG->wwwroot}/auth/mnet/jump.php?hostid={$course->hostid}&amp;wantsurl=/course/view.php?id={$course->remoteid}\">"
-                    .$icon. format_string($course->fullname) . "</a>";
+                    .$icon. format_string(get_course_display_name_for_list($course)) . "</a>";
             }
             // if we listed courses, we are done
             return true;

@@ -29,6 +29,12 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Course section updated.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type int sectionnum section number.
+ * }
+ *
  * @package    core
  * @copyright  2013 Rajesh Taneja <rajesh@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -43,7 +49,7 @@ class course_section_updated extends base {
     protected function init() {
         $this->data['objecttable'] = 'course_sections';
         $this->data['crud'] = 'u';
-        $this->data['level'] = self::LEVEL_TEACHING;
+        $this->data['edulevel'] = self::LEVEL_TEACHING;
     }
 
     /**

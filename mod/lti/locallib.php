@@ -35,8 +35,7 @@
 /**
  * This file contains the library of functions and constants for the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -1168,7 +1167,7 @@ function lti_ensure_url_is_https($url) {
     } else {
         //If the URL starts with http, replace with https
         if (stripos($url, 'http://') === 0) {
-            $url = 'https://' . substr($url, 8);
+            $url = 'https://' . substr($url, 7);
         }
     }
 

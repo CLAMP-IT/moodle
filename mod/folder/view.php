@@ -18,10 +18,9 @@
 /**
  * Folder module main user interface
  *
- * @package    mod
- * @subpackage folder
- * @copyright  2009 Petr Skoda  {@link http://skodak.org}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_folder
+ * @copyright 2009 Petr Skoda  {@link http://skodak.org}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
@@ -50,7 +49,13 @@ if ($folder->display == FOLDER_DISPLAY_INLINE) {
     redirect(course_get_url($folder->course, $cm->sectionnum));
 }
 
-add_to_log($course->id, 'folder', 'view', 'view.php?id='.$cm->id, $folder->id, $cm->id);
+$params = array(
+    'context' => $context,
+    'objectid' => $folder->id
+);
+$event = \mod_folder\event\course_module_viewed::create($params);
+$event->add_record_snapshot('folder', $folder);
+$event->trigger();
 
 // Update 'viewed' state if required by completion system
 $completion = new completion_info($course);

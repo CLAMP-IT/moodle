@@ -32,8 +32,11 @@ require_once(__DIR__ . '/../../behat/behat_base.php');
 use Behat\Behat\Event\SuiteEvent as SuiteEvent,
     Behat\Behat\Event\ScenarioEvent as ScenarioEvent,
     Behat\Behat\Event\StepEvent as StepEvent,
+    Behat\Mink\Exception\DriverException as DriverException,
     WebDriver\Exception\NoSuchWindow as NoSuchWindow,
     WebDriver\Exception\UnexpectedAlertOpen as UnexpectedAlertOpen,
+    WebDriver\Exception\UnknownError as UnknownError,
+    WebDriver\Exception\CurlExec as CurlExec,
     WebDriver\Exception\NoAlertOpenError as NoAlertOpenError;
 
 /**
@@ -63,6 +66,23 @@ class behat_hooks extends behat_base {
      * @var For actions that should only run once.
      */
     protected static $initprocessesfinished = false;
+
+    /**
+     * Some exceptions can only be caught in a before or after step hook,
+     * they can not be thrown there as they will provoke a framework level
+     * failure, but we can store them here to fail the step in i_look_for_exceptions()
+     * which result will be parsed by the framework as the last step result.
+     *
+     * @var Null or the exception last step throw in the before or after hook.
+     */
+    protected static $currentstepexception = null;
+
+    /**
+     * If we are saving any kind of dump on failure we should use the same parent dir during a run.
+     *
+     * @var The parent dir name
+     */
+    protected static $faildumpdirname = false;
 
     /**
      * Gives access to moodle codebase, ensures all is ready and sets up the test lock.
@@ -103,7 +123,9 @@ class behat_hooks extends behat_base {
         }
 
         if (!behat_util::is_server_running()) {
-            throw new Exception($CFG->behat_wwwroot . ' is not available, ensure you started your PHP built-in server. More info in ' . behat_command::DOCS_URL . '#Running_tests');
+            throw new Exception($CFG->behat_wwwroot .
+                ' is not available, ensure you specified correct url and that the server is set up and started.' .
+                ' More info in ' . behat_command::DOCS_URL . '#Running_tests');
         }
 
         // Prevents using outdated data, upgrade script would start and tests would fail.
@@ -118,6 +140,10 @@ class behat_hooks extends behat_base {
         if (!empty($CFG->behat_restart_browser_after)) {
             // Store the initial browser session opening.
             self::$lastbrowsersessionstart = time();
+        }
+
+        if (!empty($CFG->behat_faildump_path) && !is_writable($CFG->behat_faildump_path)) {
+            throw new Exception('You set $CFG->behat_faildump_path to a non-writable directory');
         }
     }
 
@@ -139,13 +165,31 @@ class behat_hooks extends behat_base {
             throw new coding_exception('Behat only can modify the test database and the test dataroot!');
         }
 
-        // We need the Mink session to do it and we do it only before the first scenario.
-        if (self::is_first_scenario()) {
-            behat_selectors::register_moodle_selectors($this->getSession());
+        $moreinfo = 'More info in ' . behat_command::DOCS_URL . '#Running_tests';
+        $driverexceptionmsg = 'Selenium server is not running, you need to start it to run tests that involve Javascript. ' . $moreinfo;
+        try {
+            $session = $this->getSession();
+        } catch (CurlExec $e) {
+            // Exception thrown by WebDriver, so only @javascript tests will be caugth; in
+            // behat_util::is_server_running() we already checked that the server is running.
+            throw new Exception($driverexceptionmsg);
+        } catch (DriverException $e) {
+            throw new Exception($driverexceptionmsg);
+        } catch (UnknownError $e) {
+            // Generic 'I have no idea' Selenium error. Custom exception to provide more feedback about possible solutions.
+            $this->throw_unknown_exception($e);
         }
 
-        // Avoid some notices / warnings.
+
+        // We need the Mink session to do it and we do it only before the first scenario.
+        if (self::is_first_scenario()) {
+            behat_selectors::register_moodle_selectors($session);
+        }
+
+        // Reset $SESSION.
+        $_SESSION = array();
         $SESSION = new stdClass();
+        $_SESSION['SESSION'] =& $SESSION;
 
         behat_util::reset_database();
         behat_util::reset_dataroot();
@@ -156,97 +200,239 @@ class behat_hooks extends behat_base {
         // Reset the nasty strings list used during the last test.
         nasty_strings::reset_used_strings();
 
-        // Assing valid data to admin user (some generator-related code needs a valid user).
+        // Assign valid data to admin user (some generator-related code needs a valid user).
         $user = $DB->get_record('user', array('username' => 'admin'));
-        session_set_user($user);
+        \core\session\manager::set_user($user);
 
         // Reset the browser if specified in config.php.
         if (!empty($CFG->behat_restart_browser_after) && $this->running_javascript()) {
             $now = time();
             if (self::$lastbrowsersessionstart + $CFG->behat_restart_browser_after < $now) {
-                $this->getSession()->restart();
+                $session->restart();
                 self::$lastbrowsersessionstart = $now;
             }
         }
 
         // Start always in the the homepage.
-        $this->getSession()->visit($this->locate_path('/'));
+        try {
+            // Let's be conservative as we never know when new upstream issues will affect us.
+            $session->visit($this->locate_path('/'));
+        } catch (UnknownError $e) {
+            $this->throw_unknown_exception($e);
+        }
+
 
         // Checking that the root path is a Moodle test site.
         if (self::is_first_scenario()) {
             $notestsiteexception = new Exception('The base URL (' . $CFG->wwwroot . ') is not a behat test site, ' .
-                'ensure you started the built-in web server in the correct directory');
-            $this->find("xpath", "//head/child::title[normalize-space(.)='Acceptance test site']", $notestsiteexception);
+                'ensure you started the built-in web server in the correct directory or your web server is correctly started and set up');
+            $this->find("xpath", "//head/child::title[normalize-space(.)='" . behat_util::BEHATSITENAME . "']", $notestsiteexception);
 
             self::$initprocessesfinished = true;
         }
 
-        // Closing JS dialogs if present. Otherwise they would block this scenario execution.
-        if ($this->running_javascript()) {
-            try {
-                $this->getSession()->getDriver()->getWebDriverSession()->accept_alert();
-            } catch (NoAlertOpenError $e) {
-                // All ok, there should not be JS dialogs in theory.
-            }
-        }
-
     }
 
     /**
-     * Ensures selenium is running.
+     * Wait for JS to complete before beginning interacting with the DOM.
      *
-     * Is only executed in scenarios which requires Javascript to run,
-     * it returns a direct error message about what's going on.
+     * Executed only when running against a real browser. We wrap it
+     * all in a try & catch to forward the exception to i_look_for_exceptions
+     * so the exception will be at scenario level, which causes a failure, by
+     * default would be at framework level, which will stop the execution of
+     * the run.
      *
-     * @throws Exception
-     * @BeforeScenario @javascript
+     * @BeforeStep @javascript
      */
-    public function before_scenario_javascript($event) {
+    public function before_step_javascript($event) {
 
-        // Just trying if server responds.
         try {
-            $this->getSession()->wait(0, false);
+            $this->wait_for_pending_js();
+            self::$currentstepexception = null;
         } catch (Exception $e) {
-            $moreinfo = 'More info in ' . behat_command::DOCS_URL . '#Running_tests';
-            $msg = 'Selenium server is not running, you need to start it to run tests that involves Javascript. ' . $moreinfo;
-            throw new Exception($msg);
+            self::$currentstepexception = $e;
         }
     }
 
     /**
-     * Checks that all DOM is ready.
+     * Wait for JS to complete after finishing the step.
      *
-     * Executed only when running against a real browser.
+     * With this we ensure that there are not AJAX calls
+     * still in progress.
+     *
+     * Executed only when running against a real browser. We wrap it
+     * all in a try & catch to forward the exception to i_look_for_exceptions
+     * so the exception will be at scenario level, which causes a failure, by
+     * default would be at framework level, which will stop the execution of
+     * the run.
      *
      * @AfterStep @javascript
      */
     public function after_step_javascript($event) {
+        global $CFG;
 
-        // If it doesn't have definition or it fails there is no need to check it.
-        if ($event->getResult() != StepEvent::PASSED ||
-            !$event->hasDefinition()) {
-            return;
+        // Save a screenshot if the step failed.
+        if (!empty($CFG->behat_faildump_path) &&
+                $event->getResult() === StepEvent::FAILED) {
+            $this->take_screenshot($event);
         }
 
-       // Wait until the page is ready.
-       // We are already checking that we use a JS browser, this could
-       // change in case we use another JS driver.
-       try {
+        try {
+            $this->wait_for_pending_js();
+            self::$currentstepexception = null;
+        } catch (UnexpectedAlertOpen $e) {
+            self::$currentstepexception = $e;
 
-            // Safari and Internet Explorer requires time between steps,
-            // otherwise Selenium tries to click in the previous page's DOM.
-            if ($this->getSession()->getDriver()->getBrowserName() == 'safari' ||
-                    $this->getSession()->getDriver()->getBrowserName() == 'internet explorer') {
-                $this->getSession()->wait(self::TIMEOUT * 1000, false);
+            // Accepting the alert so the framework can continue properly running
+            // the following scenarios. Some browsers already closes the alert, so
+            // wrapping in a try & catch.
+            try {
+                $this->getSession()->getDriver()->getWebDriverSession()->accept_alert();
+            } catch (Exception $e) {
+                // Catching the generic one as we never know how drivers reacts here.
+            }
+        } catch (Exception $e) {
+            self::$currentstepexception = $e;
+        }
+    }
 
-            } else {
-                // With other browsers we just wait for the DOM ready.
-                $this->getSession()->wait(self::TIMEOUT * 1000, '(document.readyState === "complete")');
+    /**
+     * Execute any steps required after the step has finished.
+     *
+     * This includes creating an HTML dump of the content if there was a failure.
+     *
+     * @AfterStep
+     */
+    public function after_step($event) {
+        global $CFG;
+
+        // Save the page content if the step failed.
+        if (!empty($CFG->behat_faildump_path) &&
+                $event->getResult() === StepEvent::FAILED) {
+            $this->take_contentdump($event);
+        }
+    }
+
+    /**
+     * Getter for self::$faildumpdirname
+     *
+     * @return string
+     */
+    protected function get_run_faildump_dir() {
+        return self::$faildumpdirname;
+    }
+
+    /**
+     * Take screenshot when a step fails.
+     *
+     * @throws Exception
+     * @param StepEvent $event
+     */
+    protected function take_screenshot(StepEvent $event) {
+        // Goutte can't save screenshots.
+        if (!$this->running_javascript()) {
+            return false;
+        }
+
+        list ($dir, $filename) = $this->get_faildump_filename($event, 'png');
+        $this->saveScreenshot($filename, $dir);
+    }
+
+    /**
+     * Take a dump of the page content when a step fails.
+     *
+     * @throws Exception
+     * @param StepEvent $event
+     */
+    protected function take_contentdump(StepEvent $event) {
+        list ($dir, $filename) = $this->get_faildump_filename($event, 'html');
+
+        $fh = fopen($dir . DIRECTORY_SEPARATOR . $filename, 'w');
+        fwrite($fh, $this->getSession()->getPage()->getContent());
+        fclose($fh);
+    }
+
+    /**
+     * Determine the full pathname to store a failure-related dump.
+     *
+     * This is used for content such as the DOM, and screenshots.
+     *
+     * @param StepEvent $event
+     * @param String $filetype The file suffix to use. Limited to 4 chars.
+     */
+    protected function get_faildump_filename(StepEvent $event, $filetype) {
+        global $CFG;
+
+        // All the contentdumps should be in the same parent dir.
+        if (!$faildumpdir = self::get_run_faildump_dir()) {
+            $faildumpdir = self::$faildumpdirname = date('Ymd_His');
+
+            $dir = $CFG->behat_faildump_path . DIRECTORY_SEPARATOR . $faildumpdir;
+
+            if (!is_dir($dir) && !mkdir($dir, $CFG->directorypermissions, true)) {
+                // It shouldn't, we already checked that the directory is writable.
+                throw new Exception('No directories can be created inside $CFG->behat_faildump_path, check the directory permissions.');
+            }
+        } else {
+            // We will always need to know the full path.
+            $dir = $CFG->behat_faildump_path . DIRECTORY_SEPARATOR . $faildumpdir;
+        }
+
+        // The scenario title + the failed step text.
+        // We want a i-am-the-scenario-title_i-am-the-failed-step.$filetype format.
+        $filename = $event->getStep()->getParent()->getTitle() . '_' . $event->getStep()->getText();
+        $filename = preg_replace('/([^a-zA-Z0-9\_]+)/', '-', $filename);
+
+        // File name limited to 256 characters. Leaving 4 chars for the file
+        // extension as we allow .png for images and .html for DOM contents.
+        $filename = substr($filename, 0, 251) . '.' . $filetype;
+
+        return array($dir, $filename);
+    }
+
+    /**
+     * Waits for all the JS to be loaded.
+     *
+     * @throws \Exception
+     * @throws NoSuchWindow
+     * @throws UnknownError
+     * @return bool True or false depending whether all the JS is loaded or not.
+     */
+    protected function wait_for_pending_js() {
+
+        // We don't use behat_base::spin() here as we don't want to end up with an exception
+        // if the page & JSs don't finish loading properly.
+        for ($i = 0; $i < self::EXTENDED_TIMEOUT * 10; $i++) {
+            $pending = '';
+            try {
+                $jscode = 'return ' . self::PAGE_READY_JS . ' ? "" : M.util.pending_js.join(":");';
+                $pending = $this->getSession()->evaluateScript($jscode);
+            } catch (NoSuchWindow $nsw) {
+                // We catch an exception here, in case we just closed the window we were interacting with.
+                // No javascript is running if there is no window right?
+                $pending = '';
+            } catch (UnknownError $e) {
+                // M is not defined when the window or the frame don't exist anymore.
+                if (strstr($e->getMessage(), 'M is not defined') != false) {
+                    $pending = '';
+                }
             }
 
-        } catch (NoSuchWindow $e) {
-            // If we were interacting with a popup window it will not exists after closing it.
+            // If there are no pending JS we stop waiting.
+            if ($pending === '') {
+                return true;
+            }
+
+            // 0.1 seconds.
+            usleep(100000);
         }
+
+        // Timeout waiting for JS to complete. It will be catched and forwarded to behat_hooks::i_look_for_exceptions().
+        // It is unlikely that Javascript code of a page or an AJAX request needs more than self::EXTENDED_TIMEOUT seconds
+        // to be loaded, although when pages contains Javascript errors M.util.js_complete() can not be executed, so the
+        // number of JS pending code and JS completed code will not match and we will reach this point.
+        throw new \Exception('Javascript code and/or AJAX requests are not ready after ' . self::EXTENDED_TIMEOUT .
+            ' seconds. There is a Javascript error or the code is extremely slow.');
     }
 
     /**
@@ -256,9 +442,15 @@ class behat_hooks extends behat_base {
      * after each step so no features will splicitly use it.
      *
      * @Given /^I look for exceptions$/
+     * @throw Exception Unknown type, depending on what we caught in the hook or basic \Exception.
      * @see Moodle\BehatExtension\Tester\MoodleStepTester
      */
     public function i_look_for_exceptions() {
+
+        // If the step already failed in a hook throw the exception.
+        if (!is_null(self::$currentstepexception)) {
+            throw self::$currentstepexception;
+        }
 
         // Wrap in try in case we were interacting with a closed window.
         try {
@@ -331,13 +523,6 @@ class behat_hooks extends behat_base {
 
         } catch (NoSuchWindow $e) {
             // If we were interacting with a popup window it will not exists after closing it.
-        } catch (UnexpectedAlertOpen $e) {
-            // We fail the scenario if we find an opened JS alert/confirm, in most of the cases it
-            // will be there because we are leaving an edited form without submitting/cancelling
-            // it, but moodle is using JS confirms and we can not just cancel the JS dialog
-            // as in some cases (delete activity with JS enabled for example) the test writer should
-            // use extra steps to deal with moodle's behaviour.
-            throw new Exception('Modal window present. Ensure there are no edited forms pending to submit/cancel.');
         }
     }
 
@@ -362,4 +547,18 @@ class behat_hooks extends behat_base {
     protected static function is_first_scenario() {
         return !(self::$initprocessesfinished);
     }
+
+    /**
+     * Throws an exception after appending an extra info text.
+     *
+     * @throws Exception
+     * @param UnknownError $exception
+     * @return void
+     */
+    protected function throw_unknown_exception(UnknownError $exception) {
+        $text = get_string('unknownexceptioninfo', 'tool_behat');
+        throw new Exception($text . PHP_EOL . $exception->getMessage());
+    }
+
 }
+

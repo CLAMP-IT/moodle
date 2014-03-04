@@ -35,8 +35,7 @@
 /**
  * This file defines the main lti configuration form
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -56,6 +55,10 @@ class mod_lti_mod_form extends moodleform_mod {
 
     public function definition() {
         global $DB, $PAGE, $OUTPUT, $USER, $COURSE;
+
+        if ($type = optional_param('type', false, PARAM_ALPHA)) {
+            component_callback("ltisource_$type", 'add_instance_hook');
+        }
 
         $this->typeid = 0;
 
@@ -83,6 +86,7 @@ class mod_lti_mod_form extends moodleform_mod {
 
         $mform->addElement('checkbox', 'showtitlelaunch', '&nbsp;', ' ' . get_string('display_name', 'lti'));
         $mform->setAdvanced('showtitlelaunch');
+        $mform->setDefault('showtitlelaunch', true);
         $mform->addHelpButton('showtitlelaunch', 'display_name', 'lti');
 
         $mform->addElement('checkbox', 'showdescriptionlaunch', '&nbsp;', ' ' . get_string('display_description', 'lti'));

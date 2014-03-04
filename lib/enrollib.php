@@ -530,7 +530,7 @@ function enrol_get_my_courses($fields = NULL, $sort = 'visible DESC,sortorder AS
     $basefields = array('id', 'category', 'sortorder',
                         'shortname', 'fullname', 'idnumber',
                         'startdate', 'visible',
-                        'groupmode', 'groupmodeforce');
+                        'groupmode', 'groupmodeforce', 'cacherev');
 
     if (empty($fields)) {
         $fields = $basefields;
@@ -1039,6 +1039,29 @@ function enrol_get_enrolment_end($courseid, $userid) {
     }
 }
 
+/**
+ * Is current user accessing course via this enrolment method?
+ *
+ * This is intended for operations that are going to affect enrol instances.
+ *
+ * @param stdClass $instance enrol instance
+ * @return bool
+ */
+function enrol_accessing_via_instance(stdClass $instance) {
+    global $DB, $USER;
+
+    if (empty($instance->id)) {
+        return false;
+    }
+
+    if (is_siteadmin()) {
+        // Admins may go anywhere.
+        return false;
+    }
+
+    return $DB->record_exists('user_enrolments', array('userid'=>$USER->id, 'enrolid'=>$instance->id));
+}
+
 
 /**
  * All enrol plugins should be based on this class,
@@ -1462,6 +1485,7 @@ abstract class enrol_plugin {
                     'courseid' => $courseid,
                     'context' => $context,
                     'relateduserid' => $ue->userid,
+                    'objectid' => $ue->id,
                     'other' => array(
                         'userenrolment' => (array)$ue,
                         'enrol' => $name
@@ -2012,7 +2036,7 @@ abstract class enrol_plugin {
         // Unfortunately this may take a long time, it should not be interrupted,
         // otherwise users get duplicate notification.
 
-        @set_time_limit(0);
+        core_php_time_limit::raise();
         raise_memory_limit(MEMORY_HUGE);
 
 

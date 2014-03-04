@@ -103,18 +103,16 @@ unset($user1id);
 
 $user2 = null;
 if (!empty($user2id)) {
-    $user2 = $DB->get_record("user", array("id" => $user2id));
+    $user2 = core_user::get_user($user2id);
     if (!$user2) {
         print_error('invaliduserid');
     }
 }
 unset($user2id);
 
+$user2realuser = !empty($user2) && core_user::is_real_user($user2->id);
+$showactionlinks = $showactionlinks && $user2realuser;
 $systemcontext = context_system::instance();
-
-if (!empty($user2) && $user1->id == $user2->id) {
-    print_error('invaliduserid');
-}
 
 // Is the user involved in the conversation?
 // Do they have the ability to read other user's conversations?
@@ -134,7 +132,7 @@ if (substr($viewing, 0, 7) == MESSAGE_VIEW_COURSE) {
 if (!empty($user1->id) && $user1->id != $USER->id) {
     $PAGE->navigation->extend_for_user($user1);
 }
-if (!empty($user2->id) && $user2->id != $USER->id) {
+if (!empty($user2->id) && $user2realuser && ($user2->id != $USER->id)) {
     $PAGE->navigation->extend_for_user($user2);
 }
 
@@ -199,7 +197,7 @@ if ($currentuser && !empty($user2) && has_capability('moodle/site:sendmessage', 
 }
 
 $strmessages = get_string('messages', 'message');
-if (!empty($user2)) {
+if ($user2realuser) {
     $user2fullname = fullname($user2);
 
     $PAGE->set_title("$strmessages: $user2fullname");
@@ -304,7 +302,7 @@ echo html_writer::start_tag('div', array('class' => 'messagearea mdl-align'));
         echo html_writer::end_tag('div');
 
         //send message form
-        if ($currentuser && has_capability('moodle/site:sendmessage', $systemcontext)) {
+        if ($currentuser && has_capability('moodle/site:sendmessage', $systemcontext) && $user2realuser) {
             echo html_writer::start_tag('div', array('class' => 'mdl-align messagesend'));
                 if (!empty($messageerror)) {
                     echo html_writer::tag('span', $messageerror, array('id' => 'messagewarning'));

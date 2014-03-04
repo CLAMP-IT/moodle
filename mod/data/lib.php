@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package   mod-data
+ * @package   mod_data
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -42,7 +42,7 @@ define('DATA_PRESET_CONTEXT', SYSCONTEXTID);
 // In Moodle >= 2, new roles may be introduced and used instead.
 
 /**
- * @package   mod-data
+ * @package   mod_data
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -188,6 +188,18 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
         }
 
         $this->field->id = $DB->insert_record('data_fields',$this->field);
+
+        // Trigger an event for creating this field.
+        $event = \mod_data\event\field_created::create(array(
+            'objectid' => $this->field->id,
+            'context' => $this->context,
+            'other' => array(
+                'fieldname' => $this->field->name,
+                'dataid' => $this->data->id
+            )
+        ));
+        $event->trigger();
+
         return true;
     }
 
@@ -202,6 +214,18 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
         global $DB;
 
         $DB->update_record('data_fields', $this->field);
+
+        // Trigger an event for updating this field.
+        $event = \mod_data\event\field_updated::create(array(
+            'objectid' => $this->field->id,
+            'context' => $this->context,
+            'other' => array(
+                'fieldname' => $this->field->name,
+                'dataid' => $this->data->id
+            )
+        ));
+        $event->trigger();
+
         return true;
     }
 
@@ -215,9 +239,25 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
         global $DB;
 
         if (!empty($this->field->id)) {
+            // Get the field before we delete it.
+            $field = $DB->get_record('data_fields', array('id' => $this->field->id));
+
             $this->delete_content();
             $DB->delete_records('data_fields', array('id'=>$this->field->id));
+
+            // Trigger an event for deleting this field.
+            $event = \mod_data\event\field_deleted::create(array(
+                'objectid' => $this->field->id,
+                'context' => $this->context,
+                'other' => array(
+                    'fieldname' => $this->field->name,
+                    'dataid' => $this->data->id
+                 )
+            ));
+            $event->add_record_snapshot('data_fields', $field);
+            $event->trigger();
         }
+
         return true;
     }
 
@@ -279,7 +319,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
         echo '<input type="hidden" name="type" value="'.$this->type.'" />'."\n";
         echo '<input name="sesskey" value="'.sesskey().'" type="hidden" />'."\n";
 
-        echo $OUTPUT->heading($this->name());
+        echo $OUTPUT->heading($this->name(), 3);
 
         require_once($CFG->dirroot.'/mod/data/field/'.$this->type.'/mod.html');
 
@@ -518,12 +558,12 @@ function data_generate_default_template(&$data, $template, $recordid=0, $form=fa
             );
         }
         if ($template == 'listtemplate') {
-            $cell = new html_table_cell('##edit##  ##more##  ##delete##  ##approve##  ##export##');
+            $cell = new html_table_cell('##edit##  ##more##  ##delete##  ##approve##  ##disapprove##  ##export##');
             $cell->colspan = 2;
             $cell->attributes['class'] = 'controls';
             $table->data[] = new html_table_row(array($cell));
         } else if ($template == 'singletemplate') {
-            $cell = new html_table_cell('##edit##  ##delete##  ##approve##  ##export##');
+            $cell = new html_table_cell('##edit##  ##delete##  ##approve##  ##disapprove##  ##export##');
             $cell->colspan = 2;
             $cell->attributes['class'] = 'controls';
             $table->data[] = new html_table_row(array($cell));
@@ -802,7 +842,19 @@ function data_add_record($data, $groupid=0){
     } else {
         $record->approved = 0;
     }
-    return $DB->insert_record('data_records', $record);
+    $record->id = $DB->insert_record('data_records', $record);
+
+    // Trigger an event for creating this record.
+    $event = \mod_data\event\record_created::create(array(
+        'objectid' => $record->id,
+        'context' => $context,
+        'other' => array(
+            'dataid' => $data->id
+        )
+    ));
+    $event->trigger();
+
+    return $record->id;
 }
 
 /**
@@ -1270,9 +1322,20 @@ function data_print_template($template, $records, $data, $search='', $page=0, $r
         if (has_capability('mod/data:approve', $context) && ($data->approval) && (!$record->approved)) {
             $approveurl = new moodle_url('/mod/data/view.php',
                     array('d' => $data->id, 'approve' => $record->id, 'sesskey' => sesskey()));
-            $approveicon = new pix_icon('t/approve', get_string('approve'), '', array('class' => 'iconsmall'));
+            $approveicon = new pix_icon('t/approve', get_string('approve', 'data'), '', array('class' => 'iconsmall'));
             $replacement[] = html_writer::tag('span', $OUTPUT->action_icon($approveurl, $approveicon),
                     array('class' => 'approve'));
+        } else {
+            $replacement[] = '';
+        }
+
+        $patterns[]='##disapprove##';
+        if (has_capability('mod/data:approve', $context) && ($data->approval) && ($record->approved)) {
+            $disapproveurl = new moodle_url('/mod/data/view.php',
+                    array('d' => $data->id, 'disapprove' => $record->id, 'sesskey' => sesskey()));
+            $disapproveicon = new pix_icon('t/block', get_string('disapprove', 'data'), '', array('class' => 'iconsmall'));
+            $replacement[] = html_writer::tag('span', $OUTPUT->action_icon($disapproveurl, $disapproveicon),
+                    array('class' => 'disapprove'));
         } else {
             $replacement[] = '';
         }
@@ -1986,13 +2049,12 @@ function data_print_header($course, $cm, $data, $currenttab='') {
 
     $PAGE->set_title($data->name);
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(format_string($data->name));
+    echo $OUTPUT->heading(format_string($data->name), 2);
+    echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
 
-// Groups needed for Add entry tab
+    // Groups needed for Add entry tab
     $currentgroup = groups_get_activity_group($cm);
     $groupmode = groups_get_activity_groupmode($cm);
-
-    echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
 
     // Print the tabs
 
@@ -3674,7 +3736,18 @@ function data_delete_record($recordid, $data, $courseid, $cmid) {
                 $DB->delete_records('data_content', array('recordid'=>$deleterecord->id));
                 $DB->delete_records('data_records', array('id'=>$deleterecord->id));
 
-                add_to_log($courseid, 'data', 'record delete', "view.php?id=$cmid", $data->id, $cmid);
+                // Trigger an event for deleting this record.
+                $event = \mod_data\event\record_deleted::create(array(
+                    'objectid' => $deleterecord->id,
+                    'context' => context_module::instance($cmid),
+                    'courseid' => $courseid,
+                    'other' => array(
+                        'dataid' => $deleterecord->dataid
+                    )
+                ));
+                $event->add_record_snapshot('data_records', $deleterecord);
+                $event->trigger();
+
                 return true;
             }
         }

@@ -51,29 +51,6 @@ form {
 .jsenabled .mform .collapsed .fcontainer {
     display: none;
 }
-.mform .collapsible-actions {
-    display: none;
-    text-align: right;
-}
-.dir-rtl .mform .collapsible-actions {
-    text-align: left;
-}
-.jsenabled .mform .collapsible-actions {
-    display: block;
-}
-.mform .collapsible-actions .collapseexpand {
-    padding-left: 20px;
-    background: url([[pix:t/collapsed]]) 2px center no-repeat;
-}
-.dir-rtl .mform .collapsible-actions .collapseexpand {
-    padding-right: 20px;
-    padding-left: 0;
-    background: url([[pix:t/collapsed_rtl]]) right center no-repeat;
-}
-.mform .collapsible-actions .collapse-all,
-.dir-rtl .mform .collapsible-actions .collapse-all {
-    background-image: url([[pix:t/expanded]]);
-}
 
 .mform .fitem .fitemtitle div {
     display: inline;
@@ -249,7 +226,7 @@ div.backup-section + form,
     display: inline-block; // So above style sticks.
 }
 
-#adminsettings h3.main {
+#adminsettings h3 {
     // Copied from bootstrap/forms.less tag legend.
     display: block;
     width: 100%;
@@ -336,6 +313,14 @@ div.backup-section + form,
 #page-admin-grade-edit-scale-edit.dir-rtl .error input#id_name {
     margin-right: 170px;
 }
+#page-grade-edit-outcome-course .courseoutcomes {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+}
+#page-grade-edit-outcome-course .courseoutcomes td {
+    text-align:center;
+}
 /* Install Process' text fields Forms, should always be justified to the left */
 #installform #id_wwwroot,
 #installform #id_dirroot,
@@ -396,4 +381,77 @@ div#dateselector-calendar-panel {
 
 fieldset.coursesearchbox label {
     display: inline;
+}
+
+/**
+ * Show the labels above text editors and file managers except on wide screens.
+ */
+#region-main .mform:not(.unresponsive) .fitem .fitemtitle label {
+    font-weight: bold;
+}
+@media (max-width: 1199px) {
+    #region-main .mform:not(.unresponsive) {
+        .fitem {
+            .fitemtitle {
+                display: block;
+                margin-top: 4px;
+                margin-bottom: 4px;
+                text-align: left;
+                width: 100%;
+            }
+            .felement {
+                margin-left: 0;
+                width: 100%;
+                float: left;
+                padding-left: 0;
+                padding-right: 0;
+            }
+            .fstatic:empty {
+                display: none;
+            }
+        }
+        .femptylabel {
+            .fitemtitle {
+                display: inline-block;
+                width: auto;
+                margin-right: 8px;
+            }
+            .felement {
+                display: inline-block;
+                margin-top: 4px;
+                padding-top: 5px;
+                width: auto;
+            }
+        }
+        .fitem_fcheckbox{
+            .fitemtitle,
+            .felement {
+                display: inline-block;
+                width: auto;
+            }
+            .felement {
+                padding: 6px;
+            }
+        }
+    }
+    .dir-rtl #region-main .mform:not(.unresponsive) {
+        .femptylabel .fitemtitle {
+            margin-right: 0px;
+            margin-left: 8px;
+        }
+        .fitem {
+            .fitemtitle {
+                text-align: right;
+            }
+            .felement {
+                margin-right: 0;
+                float: right;
+                padding-right: 0;
+                padding-left: 0;
+            }
+        }
+        .fitem_fcheckbox .felement {
+            float: right;
+        }
+    }
 }

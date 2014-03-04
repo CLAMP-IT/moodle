@@ -29,7 +29,8 @@
 // NOTE: no MOODLE_INTERNAL test here, this file may be required by behat before including /config.php.
 
 use Behat\Mink\Exception\ExpectationException as ExpectationException,
-    Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException;
+    Behat\Mink\Exception\ElementNotFoundException as ElementNotFoundException,
+    Behat\Mink\Element\NodeElement as NodeElement;
 
 /**
  * Steps definitions base class.
@@ -39,6 +40,11 @@ use Behat\Mink\Exception\ExpectationException as ExpectationException,
  * It can not contain steps definitions to avoid duplicates, only utility
  * methods shared between steps.
  *
+ * @method NodeElement find_field(string $locator) Finds a form element
+ * @method NodeElement find_button(string $locator) Finds a form input submit element or a button
+ * @method NodeElement find_link(string $locator) Finds a link on a page
+ * @method NodeElement find_file(string $locator) Finds a forum input file element
+ *
  * @package   core
  * @category  test
  * @copyright 2012 David Monllaó
@@ -47,9 +53,28 @@ use Behat\Mink\Exception\ExpectationException as ExpectationException,
 class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
 
     /**
+     * Small timeout.
+     *
+     * A reduced timeout for cases where self::TIMEOUT is too much
+     * and a simple $this->getSession()->getPage()->find() could not
+     * be enough.
+     */
+    const REDUCED_TIMEOUT = 2;
+
+    /**
      * The timeout for each Behat step (load page, wait for an element to load...).
      */
     const TIMEOUT = 6;
+
+    /**
+     * And extended timeout for specific cases.
+     */
+    const EXTENDED_TIMEOUT = 10;
+
+    /**
+     * The JS code to check that the page is ready.
+     */
+    const PAGE_READY_JS = '(M && M.util && M.util.pending_js && !Boolean(M.util.pending_js.length)) && (document.readyState === "complete")';
 
     /**
      * Locates url, based on provided path.
@@ -72,12 +97,13 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @param mixed $locator It depends on the $selector, can be the xpath, a name, a css locator...
      * @param Exception $exception Otherwise we throw exception with generic info
      * @param NodeElement $node Spins around certain DOM node instead of the whole page
+     * @param int $timeout Forces a specific time out (in seconds).
      * @return NodeElement
      */
-    protected function find($selector, $locator, $exception = false, $node = false) {
+    protected function find($selector, $locator, $exception = false, $node = false, $timeout = false) {
 
         // Returns the first match.
-        $items = $this->find_all($selector, $locator, $exception, $node);
+        $items = $this->find_all($selector, $locator, $exception, $node, $timeout);
         return count($items) ? reset($items) : null;
     }
 
@@ -91,9 +117,10 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * @param mixed $locator It depends on the $selector, can be the xpath, a name, a css locator...
      * @param Exception $exception Otherwise we throw expcetion with generic info
      * @param NodeElement $node Spins around certain DOM node instead of the whole page
+     * @param int $timeout Forces a specific time out (in seconds). If 0 is provided the default timeout will be applied.
      * @return array NodeElements list
      */
-    protected function find_all($selector, $locator, $exception = false, $node = false) {
+    protected function find_all($selector, $locator, $exception = false, $node = false, $timeout = false) {
 
         // Generic info.
         if (!$exception) {
@@ -120,6 +147,17 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
         // Pushing $node if required.
         if ($node) {
             $params['node'] = $node;
+        }
+
+        // How much we will be waiting for the element to appear.
+        if (!$timeout) {
+            $timeout = self::TIMEOUT;
+            $microsleep = false;
+        } else {
+            // Spinning each 0.1 seconds if the timeout was forced as we understand
+            // that is a special case and is good to refine the performance as much
+            // as possible.
+            $microsleep = true;
         }
 
         // Waits for the node to appear if it exists, otherwise will timeout and throw the provided exception.
@@ -154,8 +192,9 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
                 return $context->getSession()->getDriver()->find(implode('|', $unions));
             },
             $params,
-            self::TIMEOUT,
-            $exception
+            $timeout,
+            $exception,
+            $microsleep
         );
     }
 
@@ -241,48 +280,56 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      * closure exception will be used, but you must provide an exception if the closure does not throws
      * an exception.
      *
-     * @throws Exception            If it timeouts without receiving something != false from the closure
-     * @param  Closure   $lambda    The function to execute.
-     * @param  mixed     $args      Arguments to pass to the closure
-     * @param  int       $timeout   Timeout
-     * @param  Exception $exception The exception to throw in case it time outs.
+     * @throws Exception If it timeouts without receiving something != false from the closure
+     * @param Function|array|string $lambda The function to execute or an array passed to call_user_func (maps to a class method)
+     * @param mixed $args Arguments to pass to the closure
+     * @param int $timeout Timeout in seconds
+     * @param Exception $exception The exception to throw in case it time outs.
+     * @param bool $microsleep If set to true it'll sleep micro seconds rather than seconds.
      * @return mixed The value returned by the closure
      */
-    protected function spin($lambda, $args = false, $timeout = false, $exception = false) {
+    protected function spin($lambda, $args = false, $timeout = false, $exception = false, $microsleep = false) {
 
         // Using default timeout which is pretty high.
         if (!$timeout) {
             $timeout = self::TIMEOUT;
         }
+        if ($microsleep) {
+            // Will sleep 1/10th of a second by default for self::TIMEOUT seconds.
+            $loops = $timeout * 10;
+        } else {
+            // Will sleep for self::TIMEOUT seconds.
+            $loops = $timeout;
+        }
 
-        for ($i = 0; $i < $timeout; $i++) {
-
+        for ($i = 0; $i < $loops; $i++) {
             // We catch the exception thrown by the step definition to execute it again.
             try {
-
                 // We don't check with !== because most of the time closures will return
                 // direct Behat methods returns and we are not sure it will be always (bool)false
                 // if it just runs the behat method without returning anything $return == null.
-                if ($return = $lambda($this, $args)) {
+                if ($return = call_user_func($lambda, $this, $args)) {
                     return $return;
                 }
             } catch (Exception $e) {
-
                 // We would use the first closure exception if no exception has been provided.
                 if (!$exception) {
                     $exception = $e;
                 }
-
                 // We wait until no exception is thrown or timeout expires.
                 continue;
             }
 
-            sleep(1);
+            if ($microsleep) {
+                usleep(100000);
+            } else {
+                sleep(1);
+            }
         }
 
         // Using coding_exception as is a development issue if no exception has been provided.
         if (!$exception) {
-            $exception = new coding_exception('spin method requires an exception if the closure doesn\'t throw an exception itself');
+            $exception = new coding_exception('spin method requires an exception if the callback does not throw an exception');
         }
 
         // Throwing exception to the user.
@@ -404,6 +451,196 @@ class behat_base extends Behat\MinkExtension\Context\RawMinkContext {
      */
     protected function running_javascript() {
         return get_class($this->getSession()->getDriver()) !== 'Behat\Mink\Driver\GoutteDriver';
+    }
+
+    /**
+     * Spins around an element until it exists
+     *
+     * @throws ExpectationException
+     * @param string $element
+     * @param string $selectortype
+     * @return void
+     */
+    protected function ensure_element_exists($element, $selectortype) {
+
+        // Getting the behat selector & locator.
+        list($selector, $locator) = $this->transform_selector($selectortype, $element);
+
+        // Exception if it timesout and the element is still there.
+        $msg = 'The "' . $element . '" element does not exist and should exist';
+        $exception = new ExpectationException($msg, $this->getSession());
+
+        // It will stop spinning once the find() method returns true.
+        $this->spin(
+            function($context, $args) {
+                // We don't use behat_base::find as it is already spinning.
+                if ($context->getSession()->getPage()->find($args['selector'], $args['locator'])) {
+                    return true;
+                }
+                return false;
+            },
+            array('selector' => $selector, 'locator' => $locator),
+            self::EXTENDED_TIMEOUT,
+            $exception,
+            true
+        );
+
+    }
+
+    /**
+     * Spins until the element does not exist
+     *
+     * @throws ExpectationException
+     * @param string $element
+     * @param string $selectortype
+     * @return void
+     */
+    protected function ensure_element_does_not_exist($element, $selectortype) {
+
+        // Getting the behat selector & locator.
+        list($selector, $locator) = $this->transform_selector($selectortype, $element);
+
+        // Exception if it timesout and the element is still there.
+        $msg = 'The "' . $element . '" element exists and should not exist';
+        $exception = new ExpectationException($msg, $this->getSession());
+
+        // It will stop spinning once the find() method returns false.
+        $this->spin(
+            function($context, $args) {
+                // We don't use behat_base::find() as we are already spinning.
+                if (!$context->getSession()->getPage()->find($args['selector'], $args['locator'])) {
+                    return true;
+                }
+                return false;
+            },
+            array('selector' => $selector, 'locator' => $locator),
+            self::EXTENDED_TIMEOUT,
+            $exception,
+            true
+        );
+    }
+
+    /**
+     * Ensures that the provided node is visible and we can interact with it.
+     *
+     * @throws ExpectationException
+     * @param NodeElement $node
+     * @return void Throws an exception if it times out without the element being visible
+     */
+    protected function ensure_node_is_visible($node) {
+
+        if (!$this->running_javascript()) {
+            return;
+        }
+
+        // Exception if it timesout and the element is still there.
+        $msg = 'The "' . $node->getXPath() . '" xpath node is not visible and it should be visible';
+        $exception = new ExpectationException($msg, $this->getSession());
+
+        // It will stop spinning once the isVisible() method returns true.
+        $this->spin(
+            function($context, $args) {
+                if ($args->isVisible()) {
+                    return true;
+                }
+                return false;
+            },
+            $node,
+            self::EXTENDED_TIMEOUT,
+            $exception,
+            true
+        );
+    }
+
+    /**
+     * Ensures that the provided element is visible and we can interact with it.
+     *
+     * Returns the node in case other actions are interested in using it.
+     *
+     * @throws ExpectationException
+     * @param string $element
+     * @param string $selectortype
+     * @return NodeElement Throws an exception if it times out without being visible
+     */
+    protected function ensure_element_is_visible($element, $selectortype) {
+
+        if (!$this->running_javascript()) {
+            return;
+        }
+
+        $node = $this->get_selected_node($selectortype, $element);
+        $this->ensure_node_is_visible($node);
+
+        return $node;
+    }
+
+    /**
+     * Ensures that all the page's editors are loaded.
+     *
+     * This method is expensive as it waits for .mceEditor CSS
+     * so use with caution and only where there will be editors.
+     *
+     * @throws ElementNotFoundException
+     * @throws ExpectationException
+     * @return void
+     */
+    protected function ensure_editors_are_loaded() {
+
+        if (!$this->running_javascript()) {
+            return;
+        }
+
+        // If there are no editors we don't need to wait.
+        try {
+            $this->find('css', '.mceEditor', false, false, self::REDUCED_TIMEOUT);
+        } catch (ElementNotFoundException $e) {
+            return;
+        }
+
+        // Exception if it timesout and the element is not appearing.
+        $msg = 'The editors are not completely loaded';
+        $exception = new ExpectationException($msg, $this->getSession());
+
+        // Here we know that there are .mceEditor editors in the page and we will
+        // probably need to interact with them, if we use tinyMCE JS var before
+        // it exists it will throw an exception and we want to catch it until all
+        // the page's editors are ready to interact with them.
+        $this->spin(
+            function($context) {
+
+                // It may return 0 if tinyMCE is loaded but not the instances, so we just loop again.
+                $neditors = $context->getSession()->evaluateScript('return tinyMCE.editors.length;');
+                if ($neditors == 0) {
+                    return false;
+                }
+
+                // It may be there but not ready.
+                $iframeready = $context->getSession()->evaluateScript('
+                    var readyeditors = new Array;
+                    for (editorid in tinyMCE.editors) {
+                        if (tinyMCE.editors[editorid].getDoc().readyState === "complete") {
+                            readyeditors[editorid] = editorid;
+                        }
+                    }
+                    if (tinyMCE.editors.length === readyeditors.length) {
+                        return "complete";
+                    }
+                    return "";
+                ');
+
+                // Now we know that the editors are there.
+                if ($iframeready) {
+                    return true;
+                }
+
+                // Loop again if it is not ready.
+                return false;
+            },
+            false,
+            self::EXTENDED_TIMEOUT,
+            $exception,
+            true
+        );
     }
 
 }

@@ -18,9 +18,9 @@
 /**
  * This file contains all necessary code to view the navigation tab
  *
- * @package mod-wiki-2.0
- * @copyrigth 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
- * @copyrigth 2009 Universitat Politecnica de Catalunya http://www.upc.edu
+ * @package mod_wiki
+ * @copyright 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
+ * @copyright 2009 Universitat Politecnica de Catalunya http://www.upc.edu
  *
  * @author Jordi Piguillem
  * @author Marc Alier
@@ -58,7 +58,19 @@ $context = context_module::instance($cm->id);
 require_capability('mod/wiki:viewpage', $context);
 
 $wikipage = new page_wiki_map($wiki, $subwiki, $cm);
-add_to_log($course->id, "wiki", "map", "map.php?pageid=".$pageid, $pageid, $cm->id);
+
+$event = \mod_wiki\event\page_map_viewed::create(
+        array(
+            'context' => $context,
+            'objectid' => $pageid,
+            'other' => array(
+                'option' => $option
+                )
+            ));
+$event->add_record_snapshot('wiki_pages', $page);
+$event->add_record_snapshot('wiki', $wiki);
+$event->add_record_snapshot('wiki_subwikis', $subwiki);
+$event->trigger();
 
 // Print page header
 $wikipage->set_view($option);

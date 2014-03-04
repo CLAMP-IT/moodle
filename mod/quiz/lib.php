@@ -170,7 +170,7 @@ function quiz_delete_instance($id) {
     quiz_delete_all_attempts($quiz);
     quiz_delete_all_overrides($quiz);
 
-    $DB->delete_records('quiz_question_instances', array('quiz' => $quiz->id));
+    $DB->delete_records('quiz_question_instances', array('quizid' => $quiz->id));
     $DB->delete_records('quiz_feedback', array('quizid' => $quiz->id));
 
     $events = $DB->get_records('event', array('modulename' => 'quiz', 'instance' => $quiz->id));
@@ -378,6 +378,16 @@ function quiz_get_best_grade($quiz, $userid) {
  */
 function quiz_has_grades($quiz) {
     return $quiz->grade >= 0.000005 && $quiz->sumgrades >= 0.000005;
+}
+
+/**
+ * Does this quiz allow multiple tries?
+ *
+ * @return bool
+ */
+function quiz_allows_multiple_tries($quiz) {
+    $bt = question_engine::get_behaviour_type($quiz->preferredbehaviour);
+    return $bt->allows_multiple_submitted_responses();
 }
 
 /**
@@ -722,8 +732,13 @@ function quiz_grade_item_update($quiz, $grades = null) {
     if (!$params['hidden']) {
         // If the grade item is not hidden by the quiz logic, then we need to
         // hide it if the quiz is hidden from students.
-        $cm = get_coursemodule_from_instance('quiz', $quiz->id);
-        $params['hidden'] = !$cm->visible;
+        if (property_exists($quiz, 'visible')) {
+            // Saving the quiz form, and cm not yet updated in the database.
+            $params['hidden'] = !$quiz->visible;
+        } else {
+            $cm = get_coursemodule_from_instance('quiz', $quiz->id);
+            $params['hidden'] = !$cm->visible;
+        }
     }
 
     if ($grades  === 'reset') {
@@ -842,9 +857,10 @@ function quiz_get_recent_mod_activity(&$activities, &$index, $timestart,
     $params['timestart'] = $timestart;
     $params['quizid'] = $quiz->id;
 
+    $ufields = user_picture::fields('u');
     if (!$attempts = $DB->get_records_sql("
               SELECT qa.*,
-                     u.firstname, u.lastname, u.email, u.picture, u.imagealt
+                     {$ufields}
                 FROM {quiz_attempts} qa
                      JOIN {user} u ON u.id = qa.userid
                      $groupjoin
@@ -914,14 +930,9 @@ function quiz_get_recent_mod_activity(&$activities, &$index, $timestart,
             $tmpactivity->content->maxgrade  = null;
         }
 
-        $tmpactivity->user = new stdClass();
-        $tmpactivity->user->id        = $attempt->userid;
-        $tmpactivity->user->firstname = $attempt->firstname;
-        $tmpactivity->user->lastname  = $attempt->lastname;
-        $tmpactivity->user->fullname  = fullname($attempt, $viewfullnames);
-        $tmpactivity->user->picture   = $attempt->picture;
-        $tmpactivity->user->imagealt  = $attempt->imagealt;
-        $tmpactivity->user->email     = $attempt->email;
+        $tmpactivity->user = username_load_fields_from_object(new stdClass(), $attempt, null,
+                explode(',', user_picture::fields()));
+        $tmpactivity->user->fullname  = fullname($tmpactivity->user, $viewfullnames);
 
         $activities[$index++] = $tmpactivity;
     }
@@ -1278,7 +1289,7 @@ function quiz_questions_in_use($questionids) {
     require_once($CFG->libdir . '/questionlib.php');
     list($test, $params) = $DB->get_in_or_equal($questionids);
     return $DB->record_exists_select('quiz_question_instances',
-            'question ' . $test, $params) || question_engine::questions_in_use(
+            'questionid ' . $test, $params) || question_engine::questions_in_use(
             $questionids, new qubaid_join('{quiz_attempts} quiza',
             'quiza.uniqueid', 'quiza.preview = 0'));
 }
@@ -1547,6 +1558,7 @@ function quiz_supports($feature) {
         case FEATURE_BACKUP_MOODLE2:            return true;
         case FEATURE_SHOW_DESCRIPTION:          return true;
         case FEATURE_CONTROLS_GRADE_VISIBILITY: return true;
+        case FEATURE_USES_QUESTIONS:            return true;
 
         default: return null;
     }

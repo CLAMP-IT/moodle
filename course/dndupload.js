@@ -102,31 +102,32 @@ M.course_dndupload = {
      * is available (or to explain why it is not available)
      */
     add_status_div: function() {
-        var coursecontents = document.getElementById(this.pagecontentid);
+        var Y = this.Y,
+            coursecontents = Y.one('#' + this.pagecontentid),
+            div,
+            handlefile = (this.handlers.filehandlers.length > 0),
+            handletext = false,
+            handlelink = false,
+            i = 0,
+            styletop,
+            styletopunit;
+
         if (!coursecontents) {
             return;
         }
 
-        var div = document.createElement('div');
-        div.id = 'dndupload-status';
-        div.style.opacity = 0.0;
-        coursecontents.insertBefore(div, coursecontents.firstChild);
+        div = Y.Node.create('<div id="dndupload-status"></div>').setStyle('opacity', '0.0');
+        coursecontents.insert(div, 0);
 
-        var Y = this.Y;
-        div = Y.one(div);
-        var handlefile = (this.handlers.filehandlers.length > 0);
-        var handletext = false;
-        var handlelink = false;
-        var i;
-        for (i=0; i<this.handlers.types.length; i++) {
+        for (i = 0; i < this.handlers.types.length; i++) {
             switch (this.handlers.types[i].identifier) {
-            case 'text':
-            case 'text/html':
-                handletext = true;
-                break;
-            case 'url':
-                handlelink = true;
-                break;
+                case 'text':
+                case 'text/html':
+                    handletext = true;
+                    break;
+                case 'url':
+                    handlelink = true;
+                    break;
             }
         }
         $msgident = 'dndworking';
@@ -141,16 +142,20 @@ M.course_dndupload = {
         }
         div.setContent(M.util.get_string($msgident, 'moodle'));
 
+        styletop = div.getStyle('top') || '0px';
+        styletopunit = styletop.replace(/^\d+/, '');
+        styletop = parseInt(styletop.replace(/\D*$/, ''), 10);
+
         var fadeanim = new Y.Anim({
             node: '#dndupload-status',
             from: {
                 opacity: 0.0,
-                top: '-30px'
+                top: (styletop - 30).toString() + styletopunit
             },
 
             to: {
                 opacity: 1.0,
-                top: '0px'
+                top: styletop.toString() + styletopunit
             },
             duration: 0.5
         });
@@ -736,38 +741,13 @@ M.course_dndupload = {
                     var result = JSON.parse(xhr.responseText);
                     if (result) {
                         if (result.error == 0) {
-                            // All OK - update the dummy element
-                            if (result.content) {
-                                // A label
-                                resel.indentdiv.innerHTML = '<div class="activityinstance" ></div>' + result.content + result.commands;
-                            } else {
-                                // Not a label
-                                resel.icon.src = result.icon;
-                                resel.a.href = result.link;
-                                resel.namespan.innerHTML = result.name;
-
-                                if (!parseInt(result.visible, 10)) {
-                                    resel.a.className = 'dimmed';
-                                }
-
-                                if (result.groupingname) {
-                                    resel.groupingspan.innerHTML = '(' + result.groupingname + ')';
-                                } else {
-                                    resel.div.removeChild(resel.groupingspan);
-                                }
-
-                                resel.div.removeChild(resel.progressouter);
-                                resel.indentdiv.innerHTML += result.commands;
-                                if (result.onclick) {
-                                    resel.a.onclick = result.onclick;
-                                }
-                                if (self.Y.UA.gecko > 0) {
-                                    // Fix a Firefox bug which makes sites with a '~' in their wwwroot
-                                    // log the user out when clicking on the link (before refreshing the page).
-                                    resel.div.innerHTML = unescape(resel.div.innerHTML);
-                                }
+                            // All OK - replace the dummy element.
+                            resel.li.outerHTML = result.fullcontent;
+                            if (self.Y.UA.gecko > 0) {
+                                // Fix a Firefox bug which makes sites with a '~' in their wwwroot
+                                // log the user out when clicking on the link (before refreshing the page).
+                                resel.li.outerHTML = unescape(resel.li.outerHTML);
                             }
-                            resel.li.id = result.elementid;
                             self.add_editing(result.elementid);
                         } else {
                             // Error - remove the dummy element
@@ -986,39 +966,14 @@ M.course_dndupload = {
                     var result = JSON.parse(xhr.responseText);
                     if (result) {
                         if (result.error == 0) {
-                            // All OK - update the dummy element
-                            if (result.content) {
-                                // A label
-                                resel.indentdiv.innerHTML = '<div class="activityinstance" ></div>' + result.content + result.commands;
-                            } else {
-                                // Not a label
-                                resel.icon.src = result.icon;
-                                resel.a.href = result.link;
-                                resel.namespan.innerHTML = result.name;
-
-                                if (!parseInt(result.visible, 10)) {
-                                    resel.a.className = 'dimmed';
-                                }
-
-                                if (result.groupingname) {
-                                    resel.groupingspan.innerHTML = '(' + result.groupingname + ')';
-                                } else {
-                                    resel.div.removeChild(resel.groupingspan);
-                                }
-
-                                resel.div.removeChild(resel.progressouter);
-                                resel.div.innerHTML += result.commands;
-                                if (result.onclick) {
-                                    resel.a.onclick = result.onclick;
-                                }
-                                if (self.Y.UA.gecko > 0) {
-                                    // Fix a Firefox bug which makes sites with a '~' in their wwwroot
-                                    // log the user out when clicking on the link (before refreshing the page).
-                                    resel.div.innerHTML = unescape(resel.div.innerHTML);
-                                }
+                            // All OK - replace the dummy element.
+                            resel.li.outerHTML = result.fullcontent;
+                            if (self.Y.UA.gecko > 0) {
+                                // Fix a Firefox bug which makes sites with a '~' in their wwwroot
+                                // log the user out when clicking on the link (before refreshing the page).
+                                resel.li.outerHTML = unescape(resel.li.outerHTML);
                             }
-                            resel.li.id = result.elementid;
-                            self.add_editing(result.elementid, sectionnumber);
+                            self.add_editing(result.elementid);
                         } else {
                             // Error - remove the dummy element
                             resel.parent.removeChild(resel.li);
@@ -1055,7 +1010,8 @@ M.course_dndupload = {
     add_editing: function(elementid) {
         var node = Y.one('#' + elementid);
         YUI().use('moodle-course-coursebase', function(Y) {
-            M.course.register_new_module(node);
+            Y.log("Invoking setup_for_resource", 'debug', 'coursedndupload');
+            M.course.coursebase.invoke_function('setup_for_resource', node);
         });
         if (M.core.actionmenu && M.core.actionmenu.newDOMNode) {
             M.core.actionmenu.newDOMNode(node);

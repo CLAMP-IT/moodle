@@ -29,6 +29,12 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * mod_assign assessable submitted event class.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type bool submission_editable is submission editable.
+ * }
+ *
  * @package    mod_assign
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -59,7 +65,7 @@ class assessable_submitted extends \core\event\assessable_submitted {
     protected function get_legacy_eventdata() {
         $eventdata = new \stdClass();
         $eventdata->modulename = 'assign';
-        $eventdata->cmid = $this->context->instanceid;
+        $eventdata->cmid = $this->contextinstanceid;
         $eventdata->itemid = $this->objectid;
         $eventdata->courseid = $this->courseid;
         $eventdata->userid = $this->userid;
@@ -100,7 +106,7 @@ class assessable_submitted extends \core\event\assessable_submitted {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/assign/view.php', array('id' => $this->context->instanceid));
+        return new \moodle_url('/mod/assign/view.php', array('id' => $this->contextinstanceid));
     }
 
     /**

@@ -46,7 +46,12 @@ class enrol_meta_plugin extends enrol_plugin {
         } else if (empty($instance->name)) {
             $enrol = $this->get_name();
             $course = $DB->get_record('course', array('id'=>$instance->customint1));
-            $coursename = format_string(get_course_display_name_for_list($course));
+            if ($course) {
+                $coursename = format_string(get_course_display_name_for_list($course));
+            } else {
+                // Use course id, if course is deleted.
+                $coursename = $instance->customint1;
+            }
             return get_string('pluginname', 'enrol_' . $enrol) . ' (' . $coursename . ')';
         } else {
             return format_string($instance->name);
@@ -113,15 +118,8 @@ class enrol_meta_plugin extends enrol_plugin {
      * @return void
      */
     public function course_updated($inserted, $course, $data) {
-        global $CFG;
-
-        if (!$inserted) {
-            // sync cohort enrols
-            require_once("$CFG->dirroot/enrol/meta/locallib.php");
-            enrol_meta_sync($course->id);
-        } else {
-            // cohorts are never inserted automatically
-        }
+        // Meta sync updates are slow, if enrolments get out of sync teacher will have to wait till next cron.
+        // We should probably add some sync button to the course enrol methods overview page.
     }
 
     /**

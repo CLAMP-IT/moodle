@@ -34,10 +34,14 @@ defined('MOODLE_INTERNAL') || die();
 class create_and_clean_temp_stuff extends backup_execution_step {
 
     protected function define_execution() {
+        $progress = $this->task->get_progress();
+        $progress->start_progress('Deleting backup directories');
         backup_helper::check_and_create_backup_dir($this->get_backupid());// Create backup temp dir
-        backup_helper::clear_backup_dir($this->get_backupid());           // Empty temp dir, just in case
-        backup_helper::delete_old_backup_dirs(time() - (4 * 60 * 60));    // Delete > 4 hours temp dirs
+        backup_helper::clear_backup_dir($this->get_backupid(), $progress);           // Empty temp dir, just in case
+        backup_helper::delete_old_backup_dirs(time() - (4 * 60 * 60), $progress);    // Delete > 4 hours temp dirs
+        backup_controller_dbops::drop_backup_ids_temp_table($this->get_backupid()); // Drop ids temp table
         backup_controller_dbops::create_backup_ids_temp_table($this->get_backupid()); // Create ids temp table
+        $progress->end_progress();
     }
 }
 
@@ -61,7 +65,10 @@ class drop_and_clean_temp_stuff extends backup_execution_step {
         // 1) If $CFG->keeptempdirectoriesonbackup is not enabled
         // 2) If backup temp dir deletion has been marked to be avoided
         if (empty($CFG->keeptempdirectoriesonbackup) && !$this->skipcleaningtempdir) {
-            backup_helper::delete_backup_dir($this->get_backupid()); // Empty backup dir
+            $progress = $this->task->get_progress();
+            $progress->start_progress('Deleting backup dir');
+            backup_helper::delete_backup_dir($this->get_backupid(), $progress); // Empty backup dir
+            $progress->end_progress();
         }
     }
 
@@ -209,7 +216,7 @@ abstract class backup_questions_activity_structure_step extends backup_activity_
 
         $qas = new backup_nested_element($nameprefix . 'question_attempts');
         $qa = new backup_nested_element($nameprefix . 'question_attempt', array('id'), array(
-                'slot', 'behaviour', 'questionid', 'maxmark', 'minfraction',
+                'slot', 'behaviour', 'questionid', 'variant', 'maxmark', 'minfraction', 'maxfraction',
                 'flagged', 'questionsummary', 'rightanswer', 'responsesummary',
                 'timemodified'));
 
@@ -307,6 +314,7 @@ abstract class backup_block_structure_step extends backup_structure_step {
 class backup_module_structure_step extends backup_structure_step {
 
     protected function define_structure() {
+        global $DB;
 
         // Define each element separated
 
@@ -339,12 +347,14 @@ class backup_module_structure_step extends backup_structure_step {
         $availinfo->add_child($availabilityfield);
 
         // Set the sources
-        $module->set_source_sql('
-            SELECT cm.*, m.version, m.name AS modulename, s.id AS sectionid, s.section AS sectionnumber
+        $concat = $DB->sql_concat("'mod_'", 'm.name');
+        $module->set_source_sql("
+            SELECT cm.*, cp.value AS version, m.name AS modulename, s.id AS sectionid, s.section AS sectionnumber
               FROM {course_modules} cm
               JOIN {modules} m ON m.id = cm.module
+              JOIN {config_plugins} cp ON cp.plugin = $concat AND cp.name = 'version'
               JOIN {course_sections} s ON s.id = cm.section
-             WHERE cm.id = ?', array(backup::VAR_MODID));
+             WHERE cm.id = ?", array(backup::VAR_MODID));
 
         $availability->set_source_table('course_modules_availability', array('coursemoduleid' => backup::VAR_MODID));
         $availabilityfield->set_source_sql('
@@ -1188,7 +1198,7 @@ class backup_users_structure_step extends backup_structure_step {
             'confirmed', 'policyagreed', 'deleted',
             'lang', 'theme', 'timezone', 'firstaccess',
             'lastaccess', 'lastlogin', 'currentlogin',
-            'mailformat', 'maildigest', 'maildisplay', 'htmleditor',
+            'mailformat', 'maildigest', 'maildisplay',
             'autosubscribe', 'trackforums', 'timecreated',
             'timemodified', 'trustbitmask');
 
@@ -1363,7 +1373,7 @@ class backup_block_instance_structure_step extends backup_structure_step {
         }
         $blockrec->contextid = $this->task->get_contextid();
         // Get the version of the block
-        $blockrec->version = $DB->get_field('block', 'version', array('name' => $this->task->get_blockname()));
+        $blockrec->version = get_config('block_'.$this->task->get_blockname(), 'version');
 
         // Define sources
 
@@ -1499,10 +1509,16 @@ class move_inforef_annotations_to_final extends backup_execution_step {
 
         // Items we want to include in the inforef file
         $items = backup_helper::get_inforef_itemnames();
+        $progress = $this->task->get_progress();
+        $progress->start_progress($this->get_name(), count($items));
+        $done = 1;
         foreach ($items as $itemname) {
             // Delegate to dbops
-            backup_structure_dbops::move_annotations_to_final($this->get_backupid(), $itemname);
+            backup_structure_dbops::move_annotations_to_final($this->get_backupid(),
+                    $itemname, $progress);
+            $progress->progress($done++);
         }
+        $progress->end_progress();
     }
 }
 
@@ -1580,7 +1596,8 @@ class backup_main_structure_step extends backup_structure_step {
         $info['original_system_contextid'] = context_system::instance()->id;
 
         // Get more information from controller
-        list($dinfo, $cinfo, $sinfo) = backup_controller_dbops::get_moodle_backup_information($this->get_backupid());
+        list($dinfo, $cinfo, $sinfo) = backup_controller_dbops::get_moodle_backup_information(
+                $this->get_backupid(), $this->get_task()->get_progress());
 
         // Define elements
 
@@ -1667,7 +1684,11 @@ class backup_main_structure_step extends backup_structure_step {
 /**
  * Execution step that will generate the final zip (.mbz) file with all the contents
  */
-class backup_zip_contents extends backup_execution_step {
+class backup_zip_contents extends backup_execution_step implements file_progress {
+    /**
+     * @var bool True if we have started tracking progress
+     */
+    protected $startedprogress;
 
     protected function define_execution() {
 
@@ -1691,11 +1712,50 @@ class backup_zip_contents extends backup_execution_step {
         $zipfile = $basepath . '/backup.mbz';
 
         // Get the zip packer
-        $zippacker = get_file_packer('application/zip');
+        $zippacker = get_file_packer('application/vnd.moodle.backup');
 
         // Zip files
-        $zippacker->archive_to_pathname($files, $zipfile);
+        $result = $zippacker->archive_to_pathname($files, $zipfile, true, $this);
+
+        // Something went wrong.
+        if ($result === false) {
+            @unlink($zipfile);
+            throw new backup_step_exception('error_zip_packing', '', 'An error was encountered while trying to generate backup zip');
+        }
+        // Read to make sure it is a valid backup. Refer MDL-37877 . Delete it, if found not to be valid.
+        try {
+            backup_general_helper::get_backup_information_from_mbz($zipfile);
+        } catch (backup_helper_exception $e) {
+            @unlink($zipfile);
+            throw new backup_step_exception('error_zip_packing', '', $e->debuginfo);
+        }
+
+            // If any progress happened, end it.
+        if ($this->startedprogress) {
+            $this->task->get_progress()->end_progress();
+        }
     }
+
+    /**
+     * Implementation for file_progress interface to display unzip progress.
+     *
+     * @param int $progress Current progress
+     * @param int $max Max value
+     */
+    public function progress($progress = file_progress::INDETERMINATE, $max = file_progress::INDETERMINATE) {
+        $reporter = $this->task->get_progress();
+
+        // Start tracking progress if necessary.
+        if (!$this->startedprogress) {
+            $reporter->start_progress('extract_file_to_dir', ($max == file_progress::INDETERMINATE)
+                    ? \core\progress\base::INDETERMINATE : $max);
+            $this->startedprogress = true;
+        }
+
+        // Pass progress through to whatever handles it.
+        $reporter->progress(($progress == file_progress::INDETERMINATE)
+                ? \core\progress\base::INDETERMINATE : $progress);
+     }
 }
 
 /**
@@ -1714,7 +1774,8 @@ class backup_store_backup_file extends backup_execution_step {
         $has_file_references = backup_controller_dbops::backup_includes_file_references($this->get_backupid());
         // Perform storage and return it (TODO: shouldn't be array but proper result object)
         return array(
-            'backup_destination' => backup_helper::store_backup_file($this->get_backupid(), $zipfile),
+            'backup_destination' => backup_helper::store_backup_file($this->get_backupid(), $zipfile,
+                    $this->task->get_progress()),
             'include_file_references_to_external_content' => $has_file_references
         );
     }
@@ -1955,6 +2016,8 @@ class backup_annotate_all_user_files extends backup_execution_step {
         // Fetch all annotated (final) users
         $rs = $DB->get_recordset('backup_ids_temp', array(
             'backupid' => $this->get_backupid(), 'itemname' => 'userfinal'));
+        $progress = $this->task->get_progress();
+        $progress->start_progress($this->get_name());
         foreach ($rs as $record) {
             $userid = $record->itemid;
             $userctx = context_user::instance($userid, IGNORE_MISSING);
@@ -1966,8 +2029,10 @@ class backup_annotate_all_user_files extends backup_execution_step {
                 // We don't need to specify itemid ($userid - 5th param) as far as by
                 // context we can get all the associated files. See MDL-22092
                 backup_structure_dbops::annotate_files($this->get_backupid(), $userctx->id, 'user', $filearea, null);
+                $progress->progress();
             }
         }
+        $progress->end_progress();
         $rs->close();
     }
 }

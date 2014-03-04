@@ -16,6 +16,8 @@
 
 namespace core\event;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Event for when a new blog entry is added..
  *
@@ -45,7 +47,7 @@ class blog_entry_created extends \core\event\base {
         $this->context = \context_system::instance();
         $this->data['objecttable'] = 'post';
         $this->data['crud'] = 'c';
-        $this->data['level'] = self::LEVEL_PARTICIPATING;
+        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
     }
 
     /**
@@ -53,7 +55,7 @@ class blog_entry_created extends \core\event\base {
      *
      * @param \blog_entry $data A reference to the active blog_entry object.
      */
-    public function set_custom_data($data) {
+    public function set_custom_data(\blog_entry $data) {
         $this->customobject = $data;
     }
 
@@ -72,7 +74,7 @@ class blog_entry_created extends \core\event\base {
      * @return string
      */
     public function get_description() {
-        return 'Blog entry "'. $this->other['subject']. '" was created by user with id '. $this->userid;
+        return 'Blog entry id '. $this->objectid. ' was created by userid '. $this->userid;
     }
 
     /**
@@ -107,6 +109,7 @@ class blog_entry_created extends \core\event\base {
      * @return array of parameters to be passed to legacy add_to_log() function.
      */
     protected function get_legacy_logdata() {
-        return array (SITEID, 'blog', 'add', 'index.php?userid='.$this->userid.'&entryid='.$this->objectid, $this->customobject->subject);
+        return array (SITEID, 'blog', 'add', 'index.php?userid=' . $this->relateduserid . '&entryid=' . $this->objectid,
+                $this->customobject->subject);
     }
 }

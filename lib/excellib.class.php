@@ -120,7 +120,7 @@ class MoodleExcelWorkbook {
             header('Pragma: no-cache');
         }
 
-        if (core_useragent::check_ie_version()) {
+        if (core_useragent::is_ie()) {
             $filename = rawurlencode($filename);
         } else {
             $filename = s($filename);
@@ -444,8 +444,7 @@ class MoodleExcelWorksheet {
 /**
  * Define and operate over one Format.
  *
- * A big part of this class acts as a wrapper over the PEAR
- * Spreadsheet_Excel_Writer_Workbook and OLE libraries
+ * A big part of this class acts as a wrapper over other libraries
  * maintaining Moodle functions isolated from underlying code.
  *
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}

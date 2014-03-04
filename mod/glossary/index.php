@@ -35,6 +35,7 @@ $PAGE->navbar->add($strglossarys, "index.php?id=$course->id");
 $PAGE->set_title($strglossarys);
 $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($strglossarys), 2);
 
 /// Get all the appropriate data
 
@@ -48,13 +49,13 @@ $usesections = course_format_uses_sections($course->format);
 /// Print the list of instances (your module will probably extend this)
 
 $timenow = time();
-$strsectionname  = get_string('sectionname', 'format_'.$course->format);
 $strname  = get_string("name");
 $strentries  = get_string("entries", "glossary");
 
 $table = new html_table();
 
 if ($usesections) {
+    $strsectionname = get_string('sectionname', 'format_'.$course->format);
     $table->head  = array ($strsectionname, $strname, $strentries);
     $table->align = array ("CENTER", "LEFT", "CENTER");
 } else {

@@ -18,8 +18,7 @@
 /**
  * Label module upgrade
  *
- * @package    mod
- * @subpackage label
+ * @package mod_label
  * @copyright  2006 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -81,6 +80,9 @@ function xmldb_label_upgrade($oldversion) {
     // Moodle v2.5.0 release upgrade line.
     // Put any upgrade step following this.
 
+
+    // Moodle v2.6.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

@@ -11,7 +11,7 @@ $url = new moodle_url('/course/loginas.php', array('id'=>$id));
 $PAGE->set_url($url);
 
 // Reset user back to their real self if needed, for security reasons you need to log out and log in again.
-if (session_is_loggedinas()) {
+if (\core\session\manager::is_loggedinas()) {
     require_sesskey();
     require_logout();
 
@@ -58,10 +58,27 @@ if (has_capability('moodle/user:loginas', $systemcontext)) {
         print_error('usernotincourse');
     }
     $context = $coursecontext;
+
+    // Check if course has SEPARATEGROUPS and user is part of that group.
+    if (groups_get_course_groupmode($course) == SEPARATEGROUPS &&
+            !has_capability('moodle/site:accessallgroups', $context)) {
+        $samegroup = false;
+        if ($groups = groups_get_all_groups($course->id, $USER->id)) {
+            foreach ($groups as $group) {
+                if (groups_is_member($group->id, $userid)) {
+                    $samegroup = true;
+                    break;
+                }
+            }
+        }
+        if (!$samegroup) {
+            print_error('nologinas');
+        }
+    }
 }
 
 // Login as this user and return to course home page.
-session_loginas($userid, $context);
+\core\session\manager::loginas($userid, $context);
 $newfullname = fullname($USER, true);
 
 $strloginas    = get_string('loginas');

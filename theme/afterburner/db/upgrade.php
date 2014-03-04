@@ -22,6 +22,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/**
+ * Upgrade steps for the Afterburner theme.
+ *
+ * @param int $oldversion
+ * @return bool
+ */
 function xmldb_theme_afterburner_upgrade($oldversion) {
     global $CFG, $DB, $OUTPUT;
 
@@ -64,6 +70,9 @@ function xmldb_theme_afterburner_upgrade($oldversion) {
     // Moodle v2.5.0 release upgrade line.
     // Put any upgrade step following this.
 
+
+    // Moodle v2.6.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

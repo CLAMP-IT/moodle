@@ -18,8 +18,7 @@
 /**
  * List of all resources in course
  *
- * @package    mod
- * @subpackage resource
+ * @package    mod_resource
  * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -33,7 +32,11 @@ $course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
 require_course_login($course, true);
 $PAGE->set_pagelayout('incourse');
 
-add_to_log($course->id, 'resource', 'view all', "index.php?id=$course->id", '');
+$params = array(
+    'context' => context_course::instance($course->id)
+);
+$event = \mod_resource\event\course_module_instance_list_viewed::create($params);
+$event->trigger();
 
 $strresource     = get_string('modulename', 'resource');
 $strresources    = get_string('modulenameplural', 'resource');
@@ -47,6 +50,7 @@ $PAGE->set_title($course->shortname.': '.$strresources);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strresources);
 echo $OUTPUT->header();
+echo $OUTPUT->heading($strresources);
 
 if (!$resources = get_all_instances_in_course('resource', $course)) {
     notice(get_string('thereareno', 'moodle', $strresources), "$CFG->wwwroot/course/view.php?id=$course->id");

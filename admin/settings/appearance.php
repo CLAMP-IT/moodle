@@ -2,7 +2,12 @@
 
 // This file defines settingpages and externalpages under the "appearance" category
 
-if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
+$capabilities = array(
+    'moodle/my:configsyspages',
+    'moodle/tag:manage'
+);
+
+if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) { // speedup for non-admins, add all caps used on this page
 
     $ADMIN->add('appearance', new admin_category('themes', new lang_string('themes')));
     // "themesettings" settingpage
@@ -36,8 +41,11 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     }
 
 
-    // calendar
+    // Calendar settings.
     $temp = new admin_settingpage('calendar', new lang_string('calendarsettings','admin'));
+
+    $temp->add(new admin_setting_configselect('calendartype', new lang_string('calendartype', 'admin'),
+        new lang_string('calendartype_desc', 'admin'), 'gregorian', \core_calendar\type_factory::get_list_of_calendar_types()));
     $temp->add(new admin_setting_special_adminseesall());
     //this is hacky because we do not want to include the stuff from calendar/lib.php
     $temp->add(new admin_setting_configselect('calendar_site_timeformat', new lang_string('pref_timeformat', 'calendar'),
@@ -183,13 +191,18 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     // "documentation" settingpage
     $temp = new admin_settingpage('documentation', new lang_string('moodledocs'));
     $temp->add(new admin_setting_configtext('docroot', new lang_string('docroot', 'admin'), new lang_string('configdocroot', 'admin'), 'http://docs.moodle.org', PARAM_URL));
+    $ltemp = array('' => get_string('forceno'));
+    $ltemp += get_string_manager()->get_list_of_translations(true);
+    $temp->add(new admin_setting_configselect('doclang', get_string('doclang', 'admin'), get_string('configdoclang', 'admin'), '', $ltemp));
     $temp->add(new admin_setting_configcheckbox('doctonewwindow', new lang_string('doctonewwindow', 'admin'), new lang_string('configdoctonewwindow', 'admin'), 0));
     $ADMIN->add('appearance', $temp);
 
-    $temp = new admin_externalpage('mypage', new lang_string('mypage', 'admin'), $CFG->wwwroot . '/my/indexsys.php');
+    $temp = new admin_externalpage('mypage', new lang_string('mypage', 'admin'), $CFG->wwwroot . '/my/indexsys.php',
+            'moodle/my:configsyspages');
     $ADMIN->add('appearance', $temp);
 
-    $temp = new admin_externalpage('profilepage', new lang_string('myprofile', 'admin'), $CFG->wwwroot . '/user/profilesys.php');
+    $temp = new admin_externalpage('profilepage', new lang_string('myprofile', 'admin'), $CFG->wwwroot . '/user/profilesys.php',
+            'moodle/my:configsyspages');
     $ADMIN->add('appearance', $temp);
 
     // coursecontact is the person responsible for course - usually manages enrolments, receives notification, etc.
@@ -207,7 +220,6 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     $ADMIN->add('appearance', $temp);
 
     $temp = new admin_settingpage('ajax', new lang_string('ajaxuse'));
-    $temp->add(new admin_setting_configcheckbox('enableajax', new lang_string('enableajax', 'admin'), new lang_string('configenableajax', 'admin'), 1));
     $temp->add(new admin_setting_configcheckbox('useexternalyui', new lang_string('useexternalyui', 'admin'), new lang_string('configuseexternalyui', 'admin'), 0));
     $temp->add(new admin_setting_configcheckbox('yuicomboloading', new lang_string('yuicomboloading', 'admin'), new lang_string('configyuicomboloading', 'admin'), 1));
     $setting = new admin_setting_configcheckbox('cachejs', new lang_string('cachejs', 'admin'), new lang_string('cachejs_help', 'admin'), 1);
@@ -219,7 +231,7 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     $ADMIN->add('appearance', $temp);
 
     // link to tag management interface
-    $ADMIN->add('appearance', new admin_externalpage('managetags', new lang_string('managetags', 'tag'), "$CFG->wwwroot/tag/manage.php"));
+    $ADMIN->add('appearance', new admin_externalpage('managetags', new lang_string('managetags', 'tag'), $CFG->wwwroot.'/tag/manage.php', 'moodle/tag:manage'));
 
     $temp = new admin_settingpage('additionalhtml', new lang_string('additionalhtml', 'admin'));
     $temp->add(new admin_setting_heading('additionalhtml_heading', new lang_string('additionalhtml_heading', 'admin'), new lang_string('additionalhtml_desc', 'admin')));

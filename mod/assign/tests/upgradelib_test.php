@@ -40,27 +40,26 @@ require_once($CFG->dirroot . '/mod/assign/tests/base_test.php');
  */
 class mod_assign_upgradelib_testcase extends mod_assign_base_testcase {
 
-    protected function tearDown() {
-        // Reset the timeouts.
-        set_time_limit(0);
-    }
-
     public function test_upgrade_upload_assignment() {
-        global $DB;
+        global $DB, $CFG;
+
+        $commentconfig = false;
+        if (!empty($CFG->usecomments)) {
+            $commentconfig = $CFG->usecomments;
+        }
+        $CFG->usecomments = false;
 
         $this->setUser($this->editingteachers[0]);
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assignment');
         $params = array('course'=>$this->course->id,
                         'assignmenttype'=>'upload');
-        $record = $generator->create_instance($params);
-
-        $assignment = new assignment_base($record->cmid);
+        $assignment = $generator->create_instance($params);
 
         $this->setAdminUser();
         $log = '';
         $upgrader = new assign_upgrade_manager();
 
-        $this->assertTrue($upgrader->upgrade_assignment($assignment->assignment->id, $log));
+        $this->assertTrue($upgrader->upgrade_assignment($assignment->id, $log));
         $record = $DB->get_record('assign', array('course'=>$this->course->id));
 
         $cm = get_coursemodule_from_instance('assign', $record->id);
@@ -81,25 +80,30 @@ class mod_assign_upgradelib_testcase extends mod_assign_base_testcase {
         $plugin = $assign->get_feedback_plugin_by_type('offline');
         $this->assertEmpty($plugin->is_enabled());
 
+        $CFG->usecomments = $commentconfig;
         course_delete_module($cm->id);
     }
 
     public function test_upgrade_uploadsingle_assignment() {
-        global $DB;
+        global $DB, $CFG;
+
+        $commentconfig = false;
+        if (!empty($CFG->usecomments)) {
+            $commentconfig = $CFG->usecomments;
+        }
+        $CFG->usecomments = false;
 
         $this->setUser($this->editingteachers[0]);
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assignment');
         $params = array('course'=>$this->course->id,
                         'assignmenttype'=>'uploadsingle');
-        $record = $generator->create_instance($params);
-
-        $assignment = new assignment_base($record->cmid);
+        $assignment = $generator->create_instance($params);
 
         $this->setAdminUser();
         $log = '';
         $upgrader = new assign_upgrade_manager();
 
-        $this->assertTrue($upgrader->upgrade_assignment($assignment->assignment->id, $log));
+        $this->assertTrue($upgrader->upgrade_assignment($assignment->id, $log));
         $record = $DB->get_record('assign', array('course'=>$this->course->id));
 
         $cm = get_coursemodule_from_instance('assign', $record->id);
@@ -120,25 +124,30 @@ class mod_assign_upgradelib_testcase extends mod_assign_base_testcase {
         $plugin = $assign->get_feedback_plugin_by_type('offline');
         $this->assertEmpty($plugin->is_enabled());
 
+        $CFG->usecomments = $commentconfig;
         course_delete_module($cm->id);
     }
 
     public function test_upgrade_onlinetext_assignment() {
-        global $DB;
+        global $DB, $CFG;
+
+        $commentconfig = false;
+        if (!empty($CFG->usecomments)) {
+            $commentconfig = $CFG->usecomments;
+        }
+        $CFG->usecomments = false;
 
         $this->setUser($this->editingteachers[0]);
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assignment');
         $params = array('course'=>$this->course->id,
                         'assignmenttype'=>'online');
-        $record = $generator->create_instance($params);
-
-        $assignment = new assignment_base($record->cmid);
+        $assignment = $generator->create_instance($params);
 
         $this->setAdminUser();
         $log = '';
         $upgrader = new assign_upgrade_manager();
 
-        $this->assertTrue($upgrader->upgrade_assignment($assignment->assignment->id, $log));
+        $this->assertTrue($upgrader->upgrade_assignment($assignment->id, $log));
         $record = $DB->get_record('assign', array('course'=>$this->course->id));
 
         $cm = get_coursemodule_from_instance('assign', $record->id);
@@ -159,25 +168,30 @@ class mod_assign_upgradelib_testcase extends mod_assign_base_testcase {
         $plugin = $assign->get_feedback_plugin_by_type('offline');
         $this->assertEmpty($plugin->is_enabled());
 
+        $CFG->usecomments = $commentconfig;
         course_delete_module($cm->id);
     }
 
     public function test_upgrade_offline_assignment() {
-        global $DB;
+        global $DB, $CFG;
+
+        $commentconfig = false;
+        if (!empty($CFG->usecomments)) {
+            $commentconfig = $CFG->usecomments;
+        }
+        $CFG->usecomments = false;
 
         $this->setUser($this->editingteachers[0]);
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_assignment');
         $params = array('course'=>$this->course->id,
                         'assignmenttype'=>'offline');
-        $record = $generator->create_instance($params);
-
-        $assignment = new assignment_base($record->cmid);
+        $assignment = $generator->create_instance($params);
 
         $this->setAdminUser();
         $log = '';
         $upgrader = new assign_upgrade_manager();
 
-        $this->assertTrue($upgrader->upgrade_assignment($assignment->assignment->id, $log));
+        $this->assertTrue($upgrader->upgrade_assignment($assignment->id, $log));
         $record = $DB->get_record('assign', array('course'=>$this->course->id));
 
         $cm = get_coursemodule_from_instance('assign', $record->id);
@@ -198,6 +212,7 @@ class mod_assign_upgradelib_testcase extends mod_assign_base_testcase {
         $plugin = $assign->get_feedback_plugin_by_type('offline');
         $this->assertEmpty($plugin->is_enabled());
 
+        $CFG->usecomments = $commentconfig;
         course_delete_module($cm->id);
     }
 }

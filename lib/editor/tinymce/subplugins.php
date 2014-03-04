@@ -61,5 +61,6 @@ if ($disable) {
 }
 
 set_config('disabledsubplugins', implode(',', $disabled), 'editor_tinymce');
+core_plugin_manager::reset_caches();
 
 redirect($returnurl);

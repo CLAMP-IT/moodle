@@ -180,6 +180,8 @@ var NODETYPE = {
     CUSTOM : 60,
     // @type int Setting = 70
     SETTING : 70,
+    // @type int site administration = 71
+    SITEADMIN : 71,
     // @type int User context = 80
     USER : 80,
     // @type int Container = 90
@@ -256,6 +258,26 @@ TREE.prototype = {
             }).wire();
             M.block_navigation.expandablebranchcount++;
             this.branches[branch.get('id')] = branch;
+        }
+        // Create siteadmin branch.
+        if (window.siteadminexpansion) {
+            var siteadminbranch = new BRANCH({
+                tree: this,
+                branchobj: window.siteadminexpansion,
+                overrides : {
+                    expandable : true,
+                    children : [],
+                    haschildren : true
+                }
+            }).wire();
+            M.block_navigation.expandablebranchcount++;
+            this.branches[siteadminbranch.get('id')] = siteadminbranch;
+            // Remove link on site admin with JS to keep old UI.
+            var siteadminlinknode = siteadminbranch.node.get('childNodes').item(0);
+            if (siteadminlinknode) {
+                var siteadminnode = Y.Node.create('<span tabindex="0">'+siteadminlinknode.get('innerHTML')+'</span>');
+                siteadminbranch.node.replaceChild(siteadminnode, siteadminlinknode);
+            }
         }
         if (M.block_navigation.expandablebranchcount > 0) {
             // Delegate some events to handle AJAX loading.
@@ -379,6 +401,15 @@ Y.extend(TREE, Y.Base, TREE.prototype, {
                     val = EXPANSIONLIMIT_EVERYTHING;
                 }
                 return val;
+            }
+        },
+        /**
+         * The navigation tree block instance.
+         */
+        instance : {
+            value : false,
+            setter : function(val) {
+                return parseInt(val, 10);
             }
         }
     }
@@ -559,7 +590,7 @@ BRANCH.prototype = {
         } else {
             e.stopPropagation();
         }
-        if (e.type === 'actionkey' && e.action === 'enter' && e.target.test('A')) {
+        if ((e.type === 'actionkey' && e.action === 'enter') || e.target.test('a')) {
             // No ajaxLoad for enter.
             this.node.setAttribute('data-expandable', '0');
             this.node.setAttribute('data-loaded', '1');
@@ -586,7 +617,13 @@ BRANCH.prototype = {
             instance : this.get('tree').get('instance')
         };
 
-        Y.io(M.cfg.wwwroot+'/lib/ajax/getnavbranch.php', {
+        var ajaxfile = '/lib/ajax/getnavbranch.php';
+        // For siteadmin navigation get tree from getsiteadminbranch.php.
+        if (this.get('type') === NODETYPE.SITEADMIN) {
+            ajaxfile = '/lib/ajax/getsiteadminbranch.php';
+        }
+
+        Y.io(M.cfg.wwwroot + ajaxfile, {
             method:'POST',
             data:  build_querystring(params),
             on: {
@@ -610,6 +647,12 @@ BRANCH.prototype = {
         this.node.setAttribute('data-loaded', '1');
         try {
             var object = Y.JSON.parse(outcome.responseText);
+            if (object.error) {
+                Y.use('moodle-core-notification-ajaxexception', function () {
+                    return new M.core.ajaxException(object).show();
+                });
+                return false;
+            }
             if (object.children && object.children.length > 0) {
                 var coursecount = 0;
                 for (var i in object.children) {
@@ -633,9 +676,16 @@ BRANCH.prototype = {
                 return true;
             }
             Y.log('AJAX loading complete but there were no children.', 'note', 'moodle-block_navigation');
-        } catch (ex) {
-            // If we got here then there was an error parsing the result.
-            Y.log('Error parsing AJAX response or adding branches to the navigation tree', 'error', 'moodle-block_navigation');
+        } catch (error) {
+            if (outcome && outcome.status && outcome.status > 0) {
+                // If we got here then there was an error parsing the result.
+                Y.log('Error parsing AJAX response or adding branches to the navigation tree', 'error', 'moodle-block_navigation');
+                Y.use('moodle-core-notification-exception', function () {
+                    return new M.core.exception(error).show();
+                });
+            }
+
+            return false;
         }
         // The branch is empty so class it accordingly
         this.node.replaceClass('branch', 'emptybranch');

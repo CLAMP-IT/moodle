@@ -226,6 +226,7 @@ $technical = array();
 $technical[] = get_string('behaviourbeingused', 'question',
         question_engine::get_behaviour_name($qa->get_behaviour_name()));
 $technical[] = get_string('technicalinfominfraction',     'question', $qa->get_min_fraction());
+$technical[] = get_string('technicalinfomaxfraction',     'question', $qa->get_max_fraction());
 $technical[] = get_string('technicalinfoquestionsummary', 'question', s($qa->get_question_summary()));
 $technical[] = get_string('technicalinforightsummary',    'question', s($qa->get_right_answer_summary()));
 $technical[] = get_string('technicalinfostate',           'question', '' . $qa->get_state());
@@ -274,12 +275,10 @@ print_collapsible_region_end();
 // Display the settings form.
 $optionsform->display();
 
-$PAGE->requires->js_init_call('M.core_question_preview.init', null, false, array(
-        'name' => 'core_question_preview',
-        'fullpath' => '/question/preview.js',
-        'requires' => array('base', 'dom', 'event-delegate', 'event-key', 'core_question_engine'),
-        'strings' => array(
-            array('closepreview', 'question'),
-        )));
+$PAGE->requires->js_module('core_question_engine');
+$PAGE->requires->strings_for_js(array(
+    'closepreview',
+), 'question');
+$PAGE->requires->yui_module('moodle-question-preview', 'M.question.preview.init');
 echo $OUTPUT->footer();
 

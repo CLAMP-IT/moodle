@@ -18,8 +18,7 @@
 /**
  * Private resource module utility functions
  *
- * @package    mod
- * @subpackage resource
+ * @package    mod_resource
  * @copyright  2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -263,16 +262,12 @@ function resource_print_header($resource, $cm, $course) {
  * @param object $resource
  * @param object $cm
  * @param object $course
- * @param bool $ignoresettings print even if not specified in modedit
+ * @param bool $notused This variable is no longer used
  * @return void
  */
-function resource_print_heading($resource, $cm, $course, $ignoresettings=false) {
+function resource_print_heading($resource, $cm, $course, $notused = false) {
     global $OUTPUT;
-
-    $options = empty($resource->displayoptions) ? array() : unserialize($resource->displayoptions);
-    if ($ignoresettings or !empty($options['printheading'])) {
-        echo $OUTPUT->heading(format_string($resource->name), 2, 'main', 'resourceheading');
-    }
+    echo $OUTPUT->heading(format_string($resource->name), 2);
 }
 
 /**
@@ -408,7 +403,7 @@ function resource_print_filenotfound($resource, $cm, $course) {
 }
 
 /**
- * Decide the best diaply format.
+ * Decide the best display format.
  * @param object $resource
  * @return int display type constant
  */
@@ -428,7 +423,7 @@ function resource_get_final_display_type($resource) {
     if (file_mimetype_in_typegroup($mimetype, 'archive')) {
         return RESOURCELIB_DISPLAY_DOWNLOAD;
     }
-    if (file_mimetype_in_typegroup($mimetype, array('web_image', '.pdf', '.htm', 'web_video', 'web_audio'))) {
+    if (file_mimetype_in_typegroup($mimetype, array('web_image', '.htm', 'web_video', 'web_audio'))) {
         return RESOURCELIB_DISPLAY_EMBED;
     }
 

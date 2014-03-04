@@ -24,9 +24,10 @@ class editsection_form extends moodleform {
         $mform->addElement('header', 'generalhdr', get_string('general'));
 
         $elementgroup = array();
-        $elementgroup[] = $mform->createElement('text', 'name', '', array('size' => '30'));
+        $elementgroup[] = $mform->createElement('text', 'name', '', array('size' => '30', 'maxlength' => '255'));
         $elementgroup[] = $mform->createElement('checkbox', 'usedefaultname', '', get_string('sectionusedefaultname'));
         $mform->addGroup($elementgroup, 'name_group', get_string('sectionname'), ' ', false);
+        $mform->addGroupRule('name_group', array('name' => array(array(get_string('maximumchars', '', 255), 'maxlength', 255))));
 
         $mform->setDefault('usedefaultname', true);
         $mform->setType('name', PARAM_TEXT);
@@ -66,13 +67,14 @@ class editsection_form extends moodleform {
             // Grouping conditions - only if grouping is enabled at site level
             if (!empty($CFG->enablegroupmembersonly)) {
                 $options = array();
-                $options[0] = get_string('none');
                 if ($groupings = $DB->get_records('groupings', array('courseid' => $course->id))) {
                     foreach ($groupings as $grouping) {
                         $options[$grouping->id] = format_string(
                                 $grouping->name, true, array('context' => $context));
                     }
                 }
+                core_collator::asort($options);
+                $options = array(0 => get_string('none')) + $options;
                 $mform->addElement('select', 'groupingid', get_string('groupingsection', 'group'), $options);
                 $mform->addHelpButton('groupingid', 'groupingsection', 'group');
             }

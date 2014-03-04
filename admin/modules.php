@@ -27,9 +27,6 @@
     $stractivitymodule = get_string("activitymodule");
     $strshowmodulecourse = get_string('showmodulecourse');
 
-    // Purge all caches related to activity modules administration.
-    cache::make('core', 'plugininfo_mod')->purge();
-
 /// If data submitted, then process and store.
 
     if (!empty($hide) and confirm_sesskey()) {
@@ -43,14 +40,14 @@
                    SET visibleold=visible, visible=0
                  WHERE module=?";
         $DB->execute($sql, array($module->id));
-        // clear the course modinfo cache for courses
-        // where we just uninstalld something
-        $sql = "UPDATE {course}
-                   SET modinfo=''
-                 WHERE id IN (SELECT DISTINCT course
+        // Increment course.cacherev for courses where we just made something invisible.
+        // This will force cache rebuilding on the next request.
+        increment_revision_number('course', 'cacherev',
+                "id IN (SELECT DISTINCT course
                                 FROM {course_modules}
-                               WHERE visibleold=1 AND module=?)";
-        $DB->execute($sql, array($module->id));
+                               WHERE visibleold=1 AND module=?)",
+                array($module->id));
+        core_plugin_manager::reset_caches();
         admin_get_root(true, false);  // settings not required - only pages
     }
 
@@ -60,14 +57,14 @@
         }
         $DB->set_field("modules", "visible", "1", array("id"=>$module->id)); // Show main module
         $DB->set_field('course_modules', 'visible', '1', array('visibleold'=>1, 'module'=>$module->id)); // Get the previous saved visible state for the course module.
-        // clear the course modinfo cache for courses
-        // where we just made something visible
-        $sql = "UPDATE {course}
-                   SET modinfo = ''
-                 WHERE id IN (SELECT DISTINCT course
+        // Increment course.cacherev for courses where we just made something visible.
+        // This will force cache rebuilding on the next request.
+        increment_revision_number('course', 'cacherev',
+                "id IN (SELECT DISTINCT course
                                 FROM {course_modules}
-                               WHERE visible=1 AND module=?)";
-        $DB->execute($sql, array($module->id));
+                               WHERE visible=1 AND module=?)",
+                array($module->id));
+        core_plugin_manager::reset_caches();
         admin_get_root(true, false);  // settings not required - only pages
     }
 
@@ -84,10 +81,10 @@
     // construct the flexible table ready to display
     $table = new flexible_table(MODULE_TABLE);
     $table->define_columns(array('name', 'instances', 'version', 'hideshow', 'uninstall', 'settings'));
-    $table->define_headers(array($stractivitymodule, $stractivities, $strversion, "$strhide/$strshow", $struninstall, $strsettings));
+    $table->define_headers(array($stractivitymodule, $stractivities, $strversion, "$strhide/$strshow", $strsettings, $struninstall));
     $table->define_baseurl($CFG->wwwroot.'/'.$CFG->admin.'/modules.php');
     $table->set_attribute('id', 'modules');
-    $table->set_attribute('class', 'generaltable');
+    $table->set_attribute('class', 'admintable generaltable');
     $table->setup();
 
     foreach ($modules as $module) {
@@ -103,7 +100,7 @@
         }
 
         $uninstall = '';
-        if ($uninstallurl = plugin_manager::instance()->get_uninstall_url('mod_'.$module->name)) {
+        if ($uninstallurl = core_plugin_manager::instance()->get_uninstall_url('mod_'.$module->name, 'manage')) {
             $uninstall = html_writer::link($uninstallurl, $struninstall);
         }
 
@@ -138,23 +135,23 @@
         } else {
             $visible = "<a href=\"modules.php?show=$module->name&amp;sesskey=".sesskey()."\" title=\"$strshow\">".
                        "<img src=\"" . $OUTPUT->pix_url('t/show') . "\" class=\"iconsmall\" alt=\"$strshow\" /></a>";
-            $class =   ' class="dimmed_text"';
+            $class =   'dimmed_text';
         }
         if ($module->name == "forum") {
             $uninstall = "";
             $visible = "";
             $class = "";
         }
-
+        $version = get_config('mod_'.$module->name, 'version');
 
         $table->add_data(array(
-            '<span'.$class.'>'.$strmodulename.'</span>',
+            $strmodulename,
             $countlink,
-            '<span'.$class.'>'.$module->version.'</span>',
+            $version,
             $visible,
+            $settings,
             $uninstall,
-            $settings
-        ));
+        ), $class);
     }
 
     $table->print_html();

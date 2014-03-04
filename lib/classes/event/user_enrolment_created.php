@@ -28,6 +28,12 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Event when user is enrolled in a course.
  *
+ * @property-read array $other {
+ *      Extra information about event.
+ *
+ *      @type string enrol name of enrolment instance.
+ * }
+ *
  * @package    core
  * @copyright  2013 Rajesh Taneja <rajesh@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -40,7 +46,7 @@ class user_enrolment_created extends base {
     protected function init() {
         $this->data['objecttable'] = 'user_enrolments';
         $this->data['crud'] = 'c';
-        $this->data['level'] = self::LEVEL_TEACHING;
+        $this->data['edulevel'] = self::LEVEL_OTHER;
     }
 
     /**
@@ -89,6 +95,15 @@ class user_enrolment_created extends base {
         $legacyeventdata->enrol = $this->other['enrol'];
         $legacyeventdata->courseid = $this->courseid;
         return $legacyeventdata;
+    }
+
+    /**
+     * Return legacy data for add_to_log().
+     *
+     * @return array
+     */
+    protected function get_legacy_logdata() {
+        return array($this->courseid, 'course', 'enrol', '../enrol/users.php?id=' . $this->courseid, $this->courseid);
     }
 
     /**

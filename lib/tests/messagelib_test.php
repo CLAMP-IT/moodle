@@ -27,6 +27,47 @@ defined('MOODLE_INTERNAL') || die();
 
 class core_messagelib_testcase extends advanced_testcase {
 
+    public function test_message_provider_disabled() {
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        unset_config('noemailever');
+
+        // Disable instantmessage provider.
+        $disableprovidersetting = 'moodle_instantmessage_disable';
+        set_config($disableprovidersetting, 1, 'message');
+        $preferences = get_message_output_default_preferences();
+        $this->assertTrue($preferences->$disableprovidersetting == 1);
+
+        $message = new stdClass();
+        $message->component         = 'moodle';
+        $message->name              = 'instantmessage';
+        $message->userfrom          = get_admin();
+        $message->userto            = $this->getDataGenerator()->create_user();;
+        $message->subject           = 'message subject 1';
+        $message->fullmessage       = 'message body';
+        $message->fullmessageformat = FORMAT_MARKDOWN;
+        $message->fullmessagehtml   = '<p>message body</p>';
+        $message->smallmessage      = 'small message';
+
+        // Check message is not sent.
+        $sink = $this->redirectEmails();
+        $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
+        message_send($message);
+        $emails = $sink->get_messages();
+        $this->assertEmpty($emails);
+
+        // Check message is sent.
+        set_config($disableprovidersetting, 0, 'message');
+        $preferences = get_message_output_default_preferences();
+        $this->assertTrue($preferences->$disableprovidersetting == 0);
+
+        $sink = $this->redirectEmails();
+        $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
+        message_send($message);
+        $emails = $sink->get_messages();
+        $email = reset($emails);
+        $this->assertEquals($email->subject, 'message subject 1');
+    }
     public function test_message_get_providers_for_user() {
         global $CFG, $DB;
 
@@ -93,7 +134,7 @@ class core_messagelib_testcase extends advanced_testcase {
         // however mod_quiz doesn't have a data generator.
         // Instead we're going to use backup notifications and give and take away the capability at various levels.
         $assign = $this->getDataGenerator()->create_module('assign', array('course'=>$course->id));
-        $modulecontext = context_module::instance($assign->id);
+        $modulecontext = context_module::instance($assign->cmid);
 
         // Create and enrol a teacher.
         $teacherrole = $DB->get_record('role', array('shortname'=>'editingteacher'), '*', MUST_EXIST);
@@ -121,7 +162,7 @@ class core_messagelib_testcase extends advanced_testcase {
         // They should now be able to see the backup message.
         assign_capability('moodle/site:config', CAP_ALLOW, $teacherrole->id, $modulecontext->id, true);
         accesslib_clear_all_caches_for_unit_testing();
-        $modulecontext = context_module::instance($assign->id);
+        $modulecontext = context_module::instance($assign->cmid);
         $this->assertTrue(has_capability('moodle/site:config', $modulecontext));
 
         $providers = message_get_providers_for_user($teacher->id);
@@ -132,13 +173,62 @@ class core_messagelib_testcase extends advanced_testcase {
         // They should not be able to see the backup message.
         assign_capability('moodle/site:config', CAP_PROHIBIT, $teacherrole->id, $coursecontext->id, true);
         accesslib_clear_all_caches_for_unit_testing();
-        $modulecontext = context_module::instance($assign->id);
+        $modulecontext = context_module::instance($assign->cmid);
         $this->assertFalse(has_capability('moodle/site:config', $modulecontext));
 
         $providers = message_get_providers_for_user($teacher->id);
         // Actually, handling PROHIBITs would be too expensive. We do not
         // care if users with PROHIBITs see a few more preferences than they should.
         // $this->assertFalse($this->message_type_present('moodle', 'backup', $providers));
+    }
+
+    public function test_message_attachment_send() {
+        global $CFG;
+        $this->preventResetByRollback();
+        $this->resetAfterTest();
+
+        // Set config setting to allow attachments.
+        $CFG->allowattachments = true;
+        unset_config('noemailever');
+
+        $user = $this->getDataGenerator()->create_user();
+        $context = context_user::instance($user->id);
+
+        // Create a test file.
+        $fs = get_file_storage();
+        $filerecord = array(
+                'contextid' => $context->id,
+                'component' => 'core',
+                'filearea'  => 'unittest',
+                'itemid'    => 99999,
+                'filepath'  => '/',
+                'filename'  => 'emailtest.txt'
+        );
+        $file = $fs->create_file_from_string($filerecord, 'Test content');
+
+        $message = new stdClass();
+        $message->component         = 'moodle';
+        $message->name              = 'instantmessage';
+        $message->userfrom          = get_admin();
+        $message->userto            = $user;
+        $message->subject           = 'message subject 1';
+        $message->fullmessage       = 'message body';
+        $message->fullmessageformat = FORMAT_MARKDOWN;
+        $message->fullmessagehtml   = '<p>message body</p>';
+        $message->smallmessage      = 'small message';
+        $message->attachment        = $file;
+        $message->attachname        = 'emailtest.txt';
+
+        // Make sure we are redirecting emails.
+        $sink = $this->redirectEmails();
+        $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
+        message_send($message);
+
+        // Get the email that we just sent.
+        $emails = $sink->get_messages();
+        $email = reset($emails);
+        $this->assertTrue(strpos($email->body, 'Content-Disposition: attachment;') !== false);
+        $this->assertTrue(strpos($email->body, 'emailtest.txt') !== false);
     }
 
     /**

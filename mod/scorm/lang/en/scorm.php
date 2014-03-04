@@ -17,7 +17,7 @@
 /**
  * Strings for component 'scorm', language 'en'
  *
- * @package   scorm
+ * @package   mod_scorm
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -33,6 +33,7 @@ $string['activityoverview'] = 'You have SCORM packages that need attention';
 $string['activitypleasewait'] = 'Activity loading, please wait ...';
 $string['adminsettings'] = 'Admin settings';
 $string['advanced'] = 'Parameters';
+$string['aliasonly'] = 'When selecting an imsmanifest.xml file from a repository you must use an alias/shortcut for this file.';
 $string['allowapidebug'] = 'Activate API debug and tracing (set the capture mask with apidebugmask)';
 $string['allowtypeexternal'] = 'Enable external package type';
 $string['allowtypeexternalaicc'] = 'Enable direct AICC URL';
@@ -65,7 +66,10 @@ $string['browse'] = 'Preview';
 $string['browsed'] = 'Browsed';
 $string['browsemode'] = 'Preview mode';
 $string['browserepository'] = 'Browse repository';
+$string['calculatedweight'] = 'Calculated weight';
 $string['cannotfindsco'] = 'Could not find SCO';
+$string['collapsetocwinsize'] = 'Collapse TOC when window size below';
+$string['collapsetocwinsizedesc'] = 'This setting lets you specify the window size below which the TOC should automatically collapse.';
 $string['compatibilitysettings'] = 'Compatibility settings';
 $string['completed'] = 'Completed';
 $string['completionscorerequired'] = 'Require minimum score';
@@ -102,10 +106,15 @@ $string['dnduploadscorm'] = 'Add a SCORM package';
 $string['domxml'] = 'DOMXML external library';
 $string['duedate'] = 'Due date';
 $string['element'] = 'Element';
-$string['elementdefinition'] = 'Element definition';
 $string['enter'] = 'Enter';
 $string['entercourse'] = 'Enter course';
 $string['errorlogs'] = 'Errors log';
+$string['eventattemptdeleted'] = 'Attempt deleted';
+$string['eventinteractionsviewed'] = 'Interactions viewed';
+$string['eventreportviewed'] = 'Report viewed';
+$string['eventscolaunched'] = 'Sco launched';
+$string['eventtracksviewed'] = 'Tracks viewed';
+$string['eventuserreportviewed'] = 'User report viewed';
 $string['everyday'] = 'Every day';
 $string['everytime'] = 'Every time it\'s used';
 $string['exceededmaxattempts'] = 'You have reached the maximum number of attempts.';
@@ -118,6 +127,7 @@ $string['finishscorm'] = 'If you have finished viewing this resource, {$a}';
 $string['finishscormlinkname'] = 'click here to return to the course page';
 $string['firstaccess'] = 'First access';
 $string['firstattempt'] = 'First attempt';
+$string['floating'] = 'Floating';
 $string['forcecompleted'] = 'Force completed';
 $string['forcecompleted_help'] = 'If enabled, the status of the current attempt is forced to "completed". (Only applicable to SCORM 1.2 packages.)';
 $string['forcecompleteddesc'] = 'This preference sets the default value for the force completed setting';
@@ -130,6 +140,8 @@ $string['forcejavascriptmessage'] = 'JavaScript is required to view this object,
 $string['found'] = 'Manifest found';
 $string['frameheight'] = 'The height of the stage frame or window.';
 $string['framewidth'] = 'The width of the stage frame or window.';
+$string['fromleft'] = 'From left';
+$string['fromtop'] = 'From top';
 $string['fullscreen'] = 'Fill the whole screen';
 $string['general'] = 'General data';
 $string['gradeaverage'] = 'Average grade';
@@ -155,8 +167,6 @@ $string['hidebrowse'] = 'Disable preview mode';
 $string['hidebrowse_help'] = 'Preview mode allows a student to browse an activity before attempting it. If preview mode is disabled, the preview button is hidden.';
 $string['hidebrowsedesc'] = 'Preview mode allows a student to browse an activity before attempting it.';
 $string['hideexit'] = 'Hide exit link';
-$string['hidenav'] = 'Hide navigation buttons';
-$string['hidenavdesc'] = 'Whether to show or hide the navigation buttons.';
 $string['hidereview'] = 'Hide review button';
 $string['hidetoc'] = 'Display course structure in player';
 $string['hidetoc_help'] = 'How the table of contents is displayed in the SCORM player';
@@ -167,21 +177,35 @@ $string['identifier'] = 'Question identifier';
 $string['incomplete'] = 'Incomplete';
 $string['info'] = 'Info';
 $string['interactions'] = 'Interactions';
-$string['interactionsid'] = 'Id of the element';
-$string['interactionscorrectcount'] = 'Number of correct results for the question';
-$string['interactionspattern'] = 'Pattern of correct response';
-$string['interactionslatency'] = 'The time elapsed between the time the interaction was made available to the learner for a response and the time of the first response.';
-$string['interactionsresponse'] = 'Student\'s response';
-$string['interactionsresult'] = 'Result based on student\'s response and correct result';
-$string['interactionsscoremin'] = 'Minimum value in the range for the raw score';
-$string['interactionsscoremax'] = 'Maximum value in the range for the raw score';
-$string['interactionsscoreraw'] = 'Number that reflects the performance of the learner relative to the range bounded by the values of min and max';
-$string['interactionssuspenddata'] = 'Provides space to store and retrieve data between learner sessions';
-$string['interactionstime'] = 'Time at which the attempt was started';
-$string['interactionstype'] = 'Type of question';
-$string['interactionsweight'] = 'Weight assigned to the element';
-$string['interactionslearnerresponse'] = 'Learner\'s response';
+$string['repositorynotsupported'] = 'Only file system repositories are supported when linking directly to an imsmanifest.xml file.';
+$string['trackid'] = 'Id';
+$string['trackid_help'] = 'This is the identifier set by your SCORM package for this question, the SCORM specification doesn\'t allow the full question text to be provided.';
+$string['trackcorrectcount'] = 'Correct count';
+$string['trackcorrectcount_help'] = 'Number of correct results for the question';
+$string['trackpattern'] = 'Pattern';
+$string['trackpattern_help'] = 'This is what a correct response to this question would be, it does not show the learners response.';
+$string['tracklatency'] = 'Latency';
+$string['tracklatency_help'] = 'The time elapsed between the time the question was made available to the learner for a response and the time of the first response.';
+$string['trackresponse'] = 'Response';
+$string['trackresponse_help'] = 'This is the response made by the learner for this question';
+$string['trackresult'] = 'Result';
+$string['trackresult_help'] = 'Shows if the learner entered a correct response.';
+$string['trackscoremin'] = 'Minimum score';
+$string['trackscoremin_help'] = 'Minimum value that can be assigned for the raw score';
+$string['trackscoremax'] = 'Maximum score';
+$string['trackscoremax_help'] = 'Maximum value that can be assigned for the raw score';
+$string['trackscoreraw'] = 'Raw score';
+$string['trackscoreraw_help'] = 'Number that reflects the performance of the learner relative to the range bounded by the values of min and max';
+$string['tracksuspenddata'] = 'Suspend data';
+$string['tracksuspenddata_help'] = 'Provides space to store and retrieve data between learner sessions';
+$string['tracktime'] = 'Time';
+$string['tracktime_help'] = 'Time at which the attempt was started';
+$string['tracktype'] = 'Type';
+$string['tracktype_help'] = 'Type of the question, for example "choice" or "shortanswer".';
+$string['trackweight'] = 'Weight';
+$string['trackweight_help'] = 'Weight assigned to the question when calculating score.';
 $string['invalidactivity'] = 'SCORM activity is incorrect';
+$string['invalidmanifestname'] = 'Only imsmanifest.xml or .zip files may be selected';
 $string['invalidurl'] = 'Invalid URL specified';
 $string['invalidurlhttpcheck'] = 'Invalid URL specified. Debug message:<pre>{$a->cmsg}</pre>';
 $string['invalidhacpsession'] = 'Invalid HACP session';
@@ -215,6 +239,17 @@ SCORM activities may be used
 * As an assessment tool';
 $string['modulename_link'] = 'mod/scorm/view';
 $string['modulenameplural'] = 'SCORM packages';
+$string['nav'] = 'Show Navigation';
+$string['nav_help'] = 'This setting specifies whether to show or hide the navigation buttons and their position.
+
+There are 3 options:
+
+* No - Navigation buttons are not shown
+* Under content - Navigation buttons are shown below the SCORM package content
+* Floating - Navigation buttons are shown floating, with the postition from the top and from the left determined by the package.';
+$string['navdesc'] = 'This setting specifies whether to show or hide navigation buttons and their position.';
+$string['navpositionleft'] = 'Position of navigation buttons from left in pixels.';
+$string['navpositiontop'] = 'Position of navigation buttons from top in pixels.';
 $string['newattempt'] = 'Start a new attempt';
 $string['next'] = 'Continue';
 $string['noactivity'] = 'Nothing to report';
@@ -241,7 +276,6 @@ $string['optionsadv_desc'] = 'If checked the width and height will be listed as 
 $string['organization'] = 'Organisation';
 $string['organizations'] = 'Organisations';
 $string['othersettings'] = 'Additional settings';
-$string['othertracks'] = 'Other tracks';
 $string['page-mod-scorm-x'] = 'Any SCORM module page';
 $string['pagesize'] = 'Page size';
 $string['package'] = 'Package file';
@@ -269,11 +303,12 @@ $string['report'] = 'Report';
 $string['reports'] = 'Reports';
 $string['reportcountallattempts'] = '{$a->nbattempts} attempts for {$a->nbusers} users, out of {$a->nbresults} results';
 $string['reportcountattempts'] = '{$a->nbresults} results ({$a->nbusers} users)';
-$string['resizable'] = 'Allow the window to be resized';
+$string['response'] = 'Response';
 $string['result'] = 'Result';
 $string['results'] = 'Results';
 $string['review'] = 'Review';
 $string['reviewmode'] = 'Review mode';
+$string['rightanswer'] = 'Right answer';
 $string['scoes'] = 'Learning objects';
 $string['score'] = 'Score';
 $string['scorm:addinstance'] = 'Add a new SCORM package';
@@ -328,6 +363,7 @@ $string['typeaiccurl'] = 'External AICC URL';
 $string['typeexternal'] = 'External SCORM manifest';
 $string['typelocal'] = 'Uploaded package';
 $string['typelocalsync'] = 'Downloaded package';
+$string['undercontent'] = 'Under content';
 $string['unziperror'] = 'An error occurs during package unzip';
 $string['updatefreq'] = 'Auto-update frequency';
 $string['updatefreq_error'] = 'Auto-update frequency can only be set when the package file is hosted externally';
