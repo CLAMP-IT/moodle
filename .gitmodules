@@ -13,3 +13,6 @@
 [submodule "local/smith-course-upload"]
 	path = local/smith-course-upload
 	url = http://kevinwiliarty.com/git/smith-course-upload.git
+[submodule "blocks/federated_login"]
+	path = blocks/federated_login
+	url = kw:/home4/kevinwi1/public_html/git/federated_login.git
