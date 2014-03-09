@@ -16,3 +16,6 @@
 [submodule "blocks/federated_login"]
 	path = blocks/federated_login
 	url = kw:/home4/kevinwi1/public_html/git/federated_login.git
+[submodule "blocks/vcl"]
+	path = blocks/vcl
+	url = https://github.com/acoburn/moodle-block_vcl.git
