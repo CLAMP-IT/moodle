@@ -1,3 +1,6 @@
 [submodule "report/customsql"]
 	path = report/customsql
 	url = https://github.com/timhunt/moodle-report_customsql.git
+[submodule "blocks/course_search"]
+	path = blocks/course_search
+	url = https://github.com/oohoo/moodle-block_course_search.git
