@@ -62,7 +62,7 @@
             unset($SESSION->lang);
             $SESSION->justloggedin = true;
 
-            add_to_log(SITEID, 'user', 'login', "view.php?id=$USER->id&course=".SITEID, $USER->id, 0, $USER->id);
+            /* add_to_log(SITEID, 'user', 'login', "view.php?id=$USER->id&course=".SITEID, $USER->id, 0, $USER->id); */
 
             $federatedcookiename = $CFG->block_federated_login_home_cookie_name;
             $federatedcookiename = (empty($federatedcookiename)) ? '_redirect_user_idp' : $federatedcookiename;
