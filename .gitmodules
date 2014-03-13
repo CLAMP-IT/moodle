@@ -1,0 +1,3 @@
+[submodule "blocks/federated_login"]
+	path = blocks/federated_login
+	url = https://github.com/kwiliarty/moodle-block_federated_login.git
