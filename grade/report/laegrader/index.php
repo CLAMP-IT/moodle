@@ -21,7 +21,7 @@ require_once $CFG->libdir.'/gradelib.php';
 require_once $CFG->dirroot.'/grade/lib.php';
 require_once $CFG->dirroot.'/grade/report/laegrader/lib.php';
 require_once $CFG->dirroot.'/grade/report/laegrader/locallib.php'; // END OF HACK
-require_once $CFG->dirroot.'/grade/report/laegrader/lae_grade_export_xls.php';
+//require_once $CFG->dirroot.'/grade/report/laegrader/lae_grade_export_xls.php';
 
 //require_js(array('yui_yahoo', 'yui_dom', 'yui_event', 'yui_container', 'yui_connection', 'yui_dragdrop', 'yui_element'));
 
@@ -139,7 +139,7 @@ if ($report->currentgroup == -2) {
 
 /// processing posted grades & feedback here
 if ($data = data_submitted() and confirm_sesskey() and has_capability('moodle/grade:edit', $context)) {
-    $warnings = $report->pre_process_grade($data);
+    $warnings = $report->process_data($data);
 } else {
     $warnings = array();
 }
@@ -189,8 +189,7 @@ $reporthtml .= '<script src="jquery-1.7.2.min.js" type="text/javascript"></scrip
        	 */
         // get how tall the scrolling window is by user configuration
 		$scrolling = get_user_preferences('grade_report_laegrader_reportheight');
-		$scrolling = $scrolling == null ? 380 : 300 + ($scrolling * 40);
-
+		$scrolling = $scrolling == null ? 300 + ($CFG->grade_report_laegrader_reportheight * 40) : 300 + ($scrolling * 40);
 		// initialize the javascript that will be used to enable scrolling
 		// special thanks to jaimon mathew for jscript
 		$headerrows = ($USER->gradeediting[$courseid]) ? 2 : 1;
