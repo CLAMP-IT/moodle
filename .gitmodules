@@ -1,0 +1,4 @@
+[submodule "blocks/panopto"]
+	path = blocks/panopto
+	url = https://github.com/Panopto/Moodle-2.0-Plugin-for-Panopto.git
+    url = https://github.com/kwiliarty/Moodle-2.0-Plugin-for-Panopto.git
