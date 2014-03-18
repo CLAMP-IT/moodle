@@ -127,6 +127,7 @@ class restore_course_task extends restore_task {
         $contents = array();
 
         $contents[] = new restore_decode_content('course', 'summary');
+        $contents[] = new restore_decode_content('event', 'description');
 
         return $contents;
     }

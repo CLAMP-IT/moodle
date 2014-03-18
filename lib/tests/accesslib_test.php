@@ -60,7 +60,7 @@ class core_accesslib_testcase extends advanced_testcase {
         $this->assertNotEmpty($ACCESSLIB_PRIVATE->rolepermissions);
         $this->assertNotEmpty($ACCESSLIB_PRIVATE->rolepermissions);
         $this->assertNotEmpty($ACCESSLIB_PRIVATE->accessdatabyuser);
-        accesslib_clear_all_caches(true);
+        accesslib_clear_all_caches_for_unit_testing();
         $this->assertEmpty($ACCESSLIB_PRIVATE->rolepermissions);
         $this->assertEmpty($ACCESSLIB_PRIVATE->rolepermissions);
         $this->assertEmpty($ACCESSLIB_PRIVATE->dirtycontexts);
@@ -2095,7 +2095,7 @@ class core_accesslib_testcase extends advanced_testcase {
         unassign_capability('moodle/site:accessallgroups', $allroles['teacher'], $frontpagecontext->id, true);
         unset($rc);
 
-        accesslib_clear_all_caches(false); // Must be done after assign_capability().
+        accesslib_clear_all_caches_for_unit_testing(); // Must be done after assign_capability().
 
 
         // Test role_assign(), role_unassign(), role_unassign_all() functions.
@@ -2112,7 +2112,7 @@ class core_accesslib_testcase extends advanced_testcase {
         $this->assertEquals(0, $DB->count_records('role_assignments', array('contextid'=>$context->id)));
         unset($context);
 
-        accesslib_clear_all_caches(false); // Just in case.
+        accesslib_clear_all_caches_for_unit_testing(); // Just in case.
 
 
         // Test has_capability(), get_users_by_capability(), role_switch(), reload_all_capabilities() and friends functions.
@@ -2173,7 +2173,7 @@ class core_accesslib_testcase extends advanced_testcase {
 
         assign_capability('mod/page:view', CAP_PREVENT, $allroles['guest'], $systemcontext, true);
 
-        accesslib_clear_all_caches(false); // Must be done after assign_capability().
+        accesslib_clear_all_caches_for_unit_testing(); /// Must be done after assign_capability().
 
         // Extra tests for guests and not-logged-in users because they can not be verified by cross checking
         // with get_users_by_capability() where they are ignored.
@@ -2296,7 +2296,7 @@ class core_accesslib_testcase extends advanced_testcase {
         unset($permissions);
         unset($roles);
 
-        accesslib_clear_all_caches(false); // Must be done after assign_capability().
+        accesslib_clear_all_caches_for_unit_testing(); // must be done after assign_capability().
 
         // Test time - let's set up some real user, just in case the logic for USER affects the others...
         $USER = $DB->get_record('user', array('id'=>$testusers[3]));
@@ -2798,6 +2798,41 @@ class core_accesslib_testcase extends advanced_testcase {
             $perms2 = array_values($DB->get_records('role_capabilities', array('capability'=>'mod/page:addinstance', 'roleid'=>$role->id), 'contextid, permission', 'contextid, permission'));
         }
         $this->assertEquals($perms1, $perms2);
+    }
+
+    /**
+     * Tests reset_role_capabilities function.
+     */
+    public function test_reset_role_capabilities() {
+        global $DB;
+        $this->resetAfterTest(true);
+        $generator = $this->getDataGenerator();
+
+        // Create test course and user, enrol one in the other.
+        $course = $generator->create_course();
+        $user = $generator->create_user();
+        $roleid = $DB->get_field('role', 'id', array('shortname' => 'student'), MUST_EXIST);
+        $generator->enrol_user($user->id, $course->id, $roleid);
+
+        // Change student role so it DOES have 'mod/forum:addinstance'.
+        $systemcontext = context_system::instance();
+        assign_capability('mod/forum:addinstance', CAP_ALLOW, $roleid, $systemcontext->id);
+
+        // Override course so it does NOT allow students 'mod/forum:viewdiscussion'.
+        $coursecontext = context_course::instance($course->id);
+        assign_capability('mod/forum:viewdiscussion', CAP_PREVENT, $roleid, $coursecontext->id);
+
+        // Check expected capabilities so far.
+        $this->assertTrue(has_capability('mod/forum:addinstance', $coursecontext, $user));
+        $this->assertFalse(has_capability('mod/forum:viewdiscussion', $coursecontext, $user));
+
+        // Oops, allowing student to add forums was a mistake, let's reset the role.
+        reset_role_capabilities($roleid);
+
+        // Check new expected capabilities - role capabilities should have been reset,
+        // while the override at course level should remain.
+        $this->assertFalse(has_capability('mod/forum:addinstance', $coursecontext, $user));
+        $this->assertFalse(has_capability('mod/forum:viewdiscussion', $coursecontext, $user));
     }
 }
 

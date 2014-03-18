@@ -1,5 +1,5 @@
 .block {border:1px solid;margin-bottom:1em;}
-.block .header h2 { padding: .2em 0 0 .2em; margin: 0;}
+.block .header h2 { padding: .2em 0 0 .2em; margin: 0;word-wrap: break-word;}
 .block .header .block_action {float:right;margin:4px 0 3px 0;vertical-align:top;}
 .block .header .block_action img,
 .block .header .block_action input {margin:0 3px; width: 12px; height: 12px;}
@@ -14,7 +14,6 @@
 .block .content .list .c0 {display:inline;}
 .block .content .list .c1 {margin-left:5px;display:inline;}
 .block .footer {margin-bottom: 4px;}
-.block .blockannotation {font-size:0.75em;margin: -1em 0 1em;}
 .block_navigation .block_tree li {overflow:hidden;}
 .block_calendar_upcoming .footer { margin-top: .5em; }
 

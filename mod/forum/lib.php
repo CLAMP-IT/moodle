@@ -3570,7 +3570,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
     $output .= html_writer::tag('div', implode(' | ', $commandhtml), array('class'=>'commands'));
 
     // Output link to post if required
-    if ($link) {
+    if ($link && forum_user_can_post($forum, $discussion, $USER, $cm, $course, $modcontext)) {
         if ($post->replies == 1) {
             $replystring = get_string('repliesone', 'forum', $post->replies);
         } else {
@@ -8515,8 +8515,6 @@ function forum_set_user_maildigest($forum, $maildigest, $user = null) {
             $subscription->id = $DB->insert_record('forum_digests', $subscription);
         }
     }
-
-    return true;
 }
 
 /**

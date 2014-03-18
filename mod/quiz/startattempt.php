@@ -93,9 +93,7 @@ if ($lastattempt && ($lastattempt->state == quiz_attempt::IN_PROGRESS ||
     $quizobj->create_attempt_object($lastattempt)->handle_if_time_expired($timenow, true);
 
     // And, if the attempt is now no longer in progress, redirect to the appropriate place.
-    if ($lastattempt->state == quiz_attempt::OVERDUE) {
-        redirect($quizobj->summary_url($lastattempt->id));
-    } else if ($lastattempt->state != quiz_attempt::IN_PROGRESS) {
+    if ($lastattempt->state == quiz_attempt::ABANDONED || $lastattempt->state == quiz_attempt::FINISHED) {
         redirect($quizobj->review_url($lastattempt->id));
     }
 
@@ -145,7 +143,7 @@ if ($accessmanager->is_preflight_check_required($currentattemptid)) {
 
         // Form not submitted successfully, re-display it and stop.
         $PAGE->set_url($quizobj->start_attempt_url($page));
-        $PAGE->set_title(format_string($quizobj->get_quiz_name()));
+        $PAGE->set_title($quizobj->get_quiz_name());
         $accessmanager->setup_attempt_page($PAGE);
         if (empty($quizobj->get_quiz()->showblocks)) {
             $PAGE->blocks->show_only_fake_blocks();
@@ -159,7 +157,11 @@ if ($accessmanager->is_preflight_check_required($currentattemptid)) {
     $accessmanager->notify_preflight_check_passed($currentattemptid);
 }
 if ($currentattemptid) {
-    redirect($quizobj->attempt_url($currentattemptid, $page));
+    if ($lastattempt->state == quiz_attempt::OVERDUE) {
+        redirect($quizobj->summary_url($lastattempt->id));
+    } else {
+        redirect($quizobj->attempt_url($currentattemptid, $page));
+    }
 }
 
 // Delete any previous preview attempts belonging to this user.
