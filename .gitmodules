@@ -20,3 +20,6 @@
 [submodule "blocks/learningresources"]
 	path = blocks/learningresources
 	url = https://github.com/kwiliarty/moodle-block_learningresources.git
+[submodule "theme/smithstandard"]
+	path = theme/smithstandard
+	url = https://kwiliarty@bitbucket.org/kwiliarty/smithstandard.git
