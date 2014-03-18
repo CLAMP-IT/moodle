@@ -54,6 +54,14 @@
                 && $user = authenticate_user_login($frm->username, $frm->password)) {
             complete_user_login($user);
 
+            $federatedcookiename = $CFG->block_federated_login_home_cookie_name;
+            $federatedcookiename = (empty($federatedcookiename)) ? '_redirect_user_idp' : $federatedcookiename;
+            $federatedcookievalue = "No default home";
+            if (array_key_exists($federatedcookiename, $_COOKIE)) {
+                $federatedcookievalue = $_COOKIE[$federatedcookiename];
+            }
+            add_to_log(SITEID, 'user', 'federated-login', "view.php?=$USER->id&course=".SITEID, $federatedcookievalue, 0, $USER->id);
+
             if (user_not_fully_set_up($USER)) {
                 $urltogo = $CFG->wwwroot.'/user/edit.php?id='.$USER->id.'&amp;course='.SITEID;
                 // We don't delete $SESSION->wantsurl yet, so we get there later
