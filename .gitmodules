@@ -23,3 +23,6 @@
 [submodule "theme/smithstandard"]
 	path = theme/smithstandard
 	url = https://kwiliarty@bitbucket.org/kwiliarty/smithstandard.git
+[submodule "mod/certificate"]
+	path = mod/certificate
+	url = https://github.com/markn86/moodle-mod_certificate.git
