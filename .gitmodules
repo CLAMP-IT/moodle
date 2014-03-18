@@ -26,3 +26,6 @@
 [submodule "mod/certificate"]
 	path = mod/certificate
 	url = https://github.com/markn86/moodle-mod_certificate.git
+[submodule "blocks/course_search"]
+	path = blocks/course_search
+	url = https://github.com/oohoo/moodle-block_course_search.git
