@@ -20,3 +20,6 @@
 [submodule "blocks/learningresources"]
 	path = blocks/learningresources
 	url = https://github.com/kwiliarty/moodle-block_learningresources.git
+[submodule "mod/certificate"]
+	path = mod/certificate
+	url = https://github.com/markn86/moodle-mod_certificate.git
