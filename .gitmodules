@@ -17,3 +17,6 @@
 [submodule "blocks/quickset"]
 	path = blocks/quickset
 	url = https://github.com/bobpuffer/moodle-block_quickset.git
+[submodule "blocks/learningresources"]
+	path = blocks/learningresources
+	url = https://github.com/kwiliarty/moodle-block_learningresources.git
