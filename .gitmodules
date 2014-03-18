@@ -32,3 +32,6 @@
 [submodule "local/smith-course-upload"]
 	path = local/smith-course-upload
 	url = https://kwiliarty@bitbucket.org/kwiliarty/moodle-local_smith-upload-courses.git
+[submodule "blocks/vcl"]
+	path = blocks/vcl
+	url = https://github.com/acoburn/moodle-block_vcl.git
