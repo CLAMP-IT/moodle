@@ -14,3 +14,6 @@
 [submodule "report/customsql"]
 	path = report/customsql
 	url = https://github.com/moodleou/moodle-report_customsql.git
+[submodule "blocks/quickset"]
+	path = blocks/quickset
+	url = https://github.com/bobpuffer/moodle-block_quickset.git
