@@ -5,3 +5,6 @@
 [submodule "blocks/federated_login"]
 	path = blocks/federated_login
 	url = https://github.com/kwiliarty/moodle-block_federated_login.git
+[submodule "blocks/filtered_course_list"]
+	path = blocks/filtered_course_list
+	url = https://github.com/kwiliarty/moodle-block_filtered_course_list.git
