@@ -26,3 +26,6 @@
 [submodule "blocks/course_search"]
 	path = blocks/course_search
 	url = https://github.com/oohoo/moodle-block_course_search.git
+[submodule "blocks/vcl"]
+	path = blocks/vcl
+	url = https://github.com/acoburn/moodle-block_vcl.git
