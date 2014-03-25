@@ -47,7 +47,9 @@ class questionnaire_settings_form extends moodleform {
             $mform->addElement('select', 'realm', get_string('realm', 'questionnaire'), $QUESTIONNAIRE_REALMS);
             $mform->setDefault('realm', $questionnaire->survey->realm);
             $mform->addHelpButton('realm', 'realm', 'questionnaire');
-        }
+        } else {
+            $mform->addElement('hidden', 'realm', 'private');
+	}
 
         $mform->addElement('text', 'title', get_string('title', 'questionnaire'), array('size'=>'60'));
         $mform->setDefault('title', $questionnaire->survey->title);
