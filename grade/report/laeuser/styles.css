@@ -1,0 +1,66 @@
+.path-grade-report-laeuser .laeuser-grade .datesubmitted {font-size: 0.7em;}
+.path-grade-report-laeuser .laeuser-grade .courseitem,
+.path-grade-report-laeuser .laeuser-grade .categoryitem {font-weight: bold;}
+.path-grade-report-laeuser .laeuser-grade td.cell {padding-left: 5px;padding-right: 5px;}
+#graded_users_selector {float: right;text-align: right;}
+
+/* this must be last if we want to override other category and course item colors */
+.path-grade-report-laeuser .laeuser-grade .hidden,
+.path-grade-report-laeuser .laeuser-grade .hidden a {color:#aaaaaa;}
+.laeuser-grade {border: 1px solid black;margin: auto;padding: 0.25em;font-size: 0.8em;}
+.laeuser-grade td {margin: 1px;padding: 0.25em;min-width: 1em;vertical-align: top;}
+.laeuser-grade thead {border-bottom: 3px double black;}
+.laeuser-grade thead th {padding: 0.25em 0.75em;}
+.laeuser-grade th.b2b:after {content:" Category Total";}
+.laeuser-grade td.oddd1,
+.laeuser-grade th.oddd1 {background-color: #f3dfd0 !Important;}
+.laeuser-grade td.oddd2,
+.laeuser-grade th.oddd2 {background-color: #d0dbf3 !Important;}
+.laeuser-grade td.oddd3,
+.laeuser-grade th.oddd3 {background-color: #d0f3d6 !Important;}
+.laeuser-grade td.oddd4,
+.laeuser-grade th.oddd4 {background-color: #f0f0aa !Important;}
+.laeuser-grade td.evend2,
+.laeuser-grade th.evend2 {background-color: #b0bbd3 !Important;}
+.laeuser-grade td.evend3,
+.laeuser-grade th.evend3 {background-color: #b0dfb6 !Important;}
+.laeuser-grade td.evend4,
+.laeuser-grade th.evend4 {background-color: #cac8be !Important;}
+.laeuser-grade td.b1t,
+.laeuser-grade td.b2t,
+.laeuser-grade th.b1t,
+.laeuser-grade th.b2t {border-top: 2px solid black;}
+.laeuser-grade td.b1r,
+.laeuser-grade td.b2r,
+.laeuser-grade th.b1r,
+.laeuser-grade th.b2r {border-right: 2px solid black;}
+.laeuser-grade td.b1b,
+.laeuser-grade td.b2b,
+.laeuser-grade th.b1b,
+.laeuser-grade th.b2b {border-bottom: 2px solid black;}
+.laeuser-grade td.b1l,
+.laeuser-grade td.b2l,
+.laeuser-grade th.b1l,
+.laeuser-grade th.b2l {border-left: 2px solid black;}
+.laeuser-grade td.baggt,
+.laeuser-grade td.baggb,
+.laeuser-grade th.baggt,
+.laeuser-grade th.baggb {font-style: italic;font-weight: bold;}
+.laeuser-grade td.baggt,
+.laeuser-grade th.baggt {border-top: 3px double black;}
+.laeuser-grade td.baggb,
+.laeuser-grade th.baggb {border-bottom: 3px double black;}
+.laeuser-grade td.item,
+.laeuser-grade th.item {border-left: 1px solid gray;border-right: 1px solid gray}
+.laeuser-grade td.excluded {background-color: #666;}
+.laeuser-grade td.hidden {color: #aaa;}
+.laeuser-grade td.feedbacktext {max-width:600px;padding:2px 2px;}
+.pagelayout-report .laeuser-grade .feedbacktext .no-overflow {overflow:auto;padding:0.25em;}
+
+.laeuser-grade th.header {text-align:center !Important;}
+#page-grade-report-laeuser-index .laeuser-grade td.target {background-color: #fed66d !Important; color: #fc6521 !1Important;}
+#page-grade-report-laeuser-index .laeuser-grade .warning {color: #ED4233 !1Important;}
+
+
+table.laeuser-grade td.feedbacktext {text-align:left;width: 40%;font-size: 0.8em;white-space:normal;}
+table.laeuser-grade td.itemcenter {text-align:center;}
