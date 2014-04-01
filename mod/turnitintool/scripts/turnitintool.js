@@ -20,7 +20,7 @@ function updateSubForm(submissionArray,stringsArray,thisForm,genspeed,user) {
     // stringsArray('addsubmission','resubmit','resubmission','resubmissionnotenabled');
     var userid = thisForm.userid.value;
     var partid = thisForm.submissionpart.value;
-    if (genspeed==1) {
+    if (genspeed>0) {
         thisForm.submissiontitle.value='';
         thisForm.submissiontitle.readOnly=false;
         thisForm.submissiontitle.style.color='inherit';
@@ -42,7 +42,7 @@ function updateSubForm(submissionArray,stringsArray,thisForm,genspeed,user) {
     var userFound=false;
     for (i=0;i<submissionArray.length;i++) {
         submission = submissionArray[i];
-        if (genspeed==1 && submission[4]!=1) {
+        if (genspeed>0 && submission[4]!=1) {
             if (submission[0]===userid && submission[1]===partid && !userFound) {
                 userFound=true;
                 if (submission[3]!="1" && user=="tutor") {
@@ -105,11 +105,18 @@ function refreshSubmissionsAjax( sidin, priority ) {
         var update = undefined != priority ? '&update='+priority : '&update=1';
         var subid = undefined != sidin ? '&subid='+sidin : '';
         jQuery('#inboxNotice').css( 'display', 'block' );
-        jQuery.ajax( { 
-            'url': location.href+update+subid,
+        var ajax = '&ajax=1';
+        jQuery.ajax( {
+            'url': location.href+update+subid+ajax,
             'success': function() {
                 refreshcount--;
                 if ( enrollcount < 1 ) window.location.reload();
+                return;
+            },
+            'error': function( xhr ) {
+                jQuery("#inboxNotice").hide();
+                alert( xhr.responseText );
+                return;
             }
         } );
     }

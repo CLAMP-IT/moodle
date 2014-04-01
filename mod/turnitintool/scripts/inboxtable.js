@@ -1,5 +1,6 @@
 (function($){
-    $.fn.inboxTable = function( uid, displayusi, turnitintool_datatables_strings ) {
+    $.inboxTable = {
+    init: function( uid, displayusi, turnitintool_datatables_strings ) {
         $.fn.dataTableExt.oStdClasses.sSortable = "header sort";
         $.fn.dataTableExt.oStdClasses.sSortableNone = "header nosort";
         $.fn.dataTableExt.oStdClasses.sSortAsc = "header asc";
@@ -147,7 +148,8 @@
         $("#inboxTable").css( "display", "table" );
         oTable.fnSetFilteringDelay(1000);
         return oTable;
-    };
+    }
+};
 
     $('.refreshrow').bind('click', function( ev ) {
         element = $(ev.currentTarget);
@@ -160,6 +162,7 @@
                 window.location.href = 'view.php?do=allsubmissions&id='+id;
             }
         });
+
     });
     
 })(jQuery);

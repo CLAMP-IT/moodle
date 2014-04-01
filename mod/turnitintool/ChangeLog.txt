@@ -1,3 +1,13 @@
+2014-02-26 : Changes to prevent apostrophe issues in Moodle 1.9
+2013-11-14 : Fixed assingment inbox so that it will error out instead of refreshing indefinitely
+2013-11-14 : Fixed user search in unlink/relink screen
+2013-11-14 : Submission logic fixed to allow resubmission until due date when reports generated on due date
+2013-11-14 : Assignment inbox stays in part view until all parts pass post date
+2013-11-14 : Changed the write to log function as it was causing errors in some environments
+2013-11-14 : Fixed various issues on postgres databases
+2013-11-14 : Added Russian and Polish strings to language packs
+2013-11-14 : Fixed refresh inbox row button
+2013-11-14 : Turnitin JavaScript namespaced to avoid overwriting by jQuery
 2013-05-20 : Refresh individual inbox row now fetches Translated Matching similarity
 2013-05-20 : Fixed issue where deleted parts were being flagged as duplicates after course reset
 2013-05-20 : Added support for backing up / restoring activity logs

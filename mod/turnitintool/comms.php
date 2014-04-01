@@ -89,7 +89,7 @@ class turnitintool_commclass {
         $this->apiurl=$CFG->turnitin_apiurl;
         $this->accountid=$CFG->turnitin_account_id;
         $this->uid=$iUid;
-        
+
         // Convert the email, firstname and lastname to psuedos for students if the option is set in config
         // Unless the user is already logged as a tutor then use real details
         if ( isset( $CFG->turnitin_enablepseudo ) AND $CFG->turnitin_enablepseudo == 1 AND $iUtp == 1 AND !turnitintool_istutor( $iUem ) ) {
@@ -97,7 +97,7 @@ class turnitintool_commclass {
             $iUln = turnitintool_pseudolastname( $iUem );
             $iUem = turnitintool_pseudoemail( $iUem );
         }
-        
+
         $this->ufn=$iUfn;
         $this->uln=$iUln;
         $this->uem=$iUem;
@@ -194,27 +194,27 @@ class turnitintool_commclass {
      */
     function getSubmissionArray() {
         $output=array();
-        
+
         $this->xmlToSimple( $this->result );
         $objects = $this->simplexml->object;
-        
+
         if ( !isset( $objects ) ) {
             return $output;
         }
-        
+
         foreach ( $objects as $object ) {
-            
+
             $objectid = (string)$object->objectID;
 
             $output[$objectid]["userid"] = (string)$object->userid;
             $output[$objectid]["firstname"] = (string)$object->firstname;
             $output[$objectid]["lastname"] = (string)$object->lastname;
             $output[$objectid]["title"] = html_entity_decode( (string)$object->title, ENT_QUOTES, "UTF-8" );
-            
+
             $output[$objectid]["similarityscore"] = ( !is_null( $object->similarityScore ) AND $object->similarityScore != "-1" ) ? $object->similarityScore : null;
 
             $transsimilarityscore = (integer)$object->translated_matching->similarityScore < 0 ? null : $object->translated_matching->similarityScore;
-            
+
             if ( !is_null( $transsimilarityscore ) ) {
                 if ( (integer)$object->overlap > (integer)$object->translated_matching->overlap ) {
                     $output[$objectid]["transmatch"] = 0;
@@ -239,16 +239,16 @@ class turnitintool_commclass {
 
             $anon = (string)$object->anon;
             $output[$objectid]["anon"] = ( !is_null( $anon ) AND $anon != "-1" ) ? $anon : null;
-            
+
             $grademarkstatus = (string)$object->gradeMarkStatus;
             $output[$objectid]["grademarkstatus"]=(!is_null( $grademarkstatus ) AND $grademarkstatus != "-1" ) ? $grademarkstatus : null;
-            
+
             $date_submitted = (string)$object->date_submitted;
             $output[$objectid]["date_submitted"]=( !is_null( $date_submitted ) AND $date_submitted != "-1" ) ? $date_submitted : null;
 
             $student_view = isset($object->student_responses) ? (string)$object->student_responses->student_response->response_time : null;
             $output[$objectid]["student_view"]=( isset( $object->student_responses ) AND !is_null( $student_view ) AND !empty( $student_view ) ) ? $student_view : 0;
-        
+
         }
         return $output;
 
@@ -401,6 +401,7 @@ class turnitintool_commclass {
     function doRequest($method, $url, $vars, $timeout=true, $status="") {
         global $CFG;
         $this->result=NULL;
+        $url = trim($url);
         if (is_callable(array($this->loaderbar,'redrawbar'))) {
             $this->loaderbar->redrawbar($status);
         }
@@ -547,7 +548,7 @@ class turnitintool_commclass {
      */
     function createAssignment($post,$do='INSERT',$status) {
         global $CFG;
-        
+
         if (!turnitintool_check_config()) {
             turnitintool_print_error('configureerror','turnitintool',NULL,NULL,__FILE__,__LINE__);
             exit();
@@ -560,7 +561,7 @@ class turnitintool_commclass {
             $thisfcmd=2;
             $userid='';
         }
-        
+
         // Use the Moodle Default Timezone and fallback on Server timzone if config not set
         $timezone = isset( $CFG->timezone ) ? $CFG->timezone : 20;
 

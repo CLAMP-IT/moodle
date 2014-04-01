@@ -34,7 +34,10 @@ class turnitintool_loaderbarclass {
      * 
      * @param int $iTotal The total number of Procedures to follow as sent in the total paramet for the class
      */
+
     function __construct($iTotal) {
+        $param_ajax=optional_param('ajax',null,PARAM_CLEAN);
+        if ( !empty( $param_ajax ) && $param_ajax ) return;
         $this->proc=0;
         $this->total=$iTotal;
         $this->starttime=time();
@@ -96,6 +99,8 @@ class turnitintool_loaderbarclass {
      * The endloader method draws the footer and sets CSS display:none; to the loader bar div
      */
     function endloader() {
+        $param_ajax=optional_param('ajax',null,PARAM_CLEAN);
+        if ( !empty( $param_ajax ) && $param_ajax ) return;
         echo '
             <script language="javascript" type="text/javascript">
                 closeLoader();
@@ -157,6 +162,8 @@ class turnitintool_loaderbarclass {
      * @param string $status The status message to display to the user that describes this procedure
      */
     function redrawbar($status="") {
+        $param_ajax=optional_param('ajax',null,PARAM_CLEAN);
+        if ( !empty( $param_ajax ) && $param_ajax ) return;
         $this->proc++;
         echo '
         <script language="javascript" type="text/javascript">

@@ -1,5 +1,28 @@
 Moodle Direct Release Notes
 ------------------------------------------------------------------------------------
+Date:       2014-Feb-26
+Release:    v2013111402
+
+- Fixes for apostrophes in Moodle 1.9
+
+####################################################################################
+Date:       2013-Nov-14
+Release:    v2013111401
+
+- In anonymous marking assignments, inbox displays in part view until all
+  parts have passed the post date.
+- Namespaced Turnitin JavaScript to avoid overwriting by other jQuery includes
+- Polish and Russian strings added to language packs
+- Help icons added for Turnitin advanced options
+- Resubmission is now possible when reports generated on due date
+- Fixes:
+    > Submission inbox catches errors, no longer refreshes indefinitely
+    > Refresh inbox row button now updates gradebook
+    > Various fixes to SQL queries for different database types
+    > Fixed default grade score
+    > Fixed error when writing to logs
+
+####################################################################################
 Date:       2012-Dec-04
 Release:    v2012120401
 

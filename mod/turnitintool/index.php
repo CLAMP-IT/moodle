@@ -30,7 +30,6 @@
 
     $strturnitintools = get_string("modulenameplural", "turnitintool");
     $strturnitintool  = get_string("modulename", "turnitintool");
-	
 
     if (!is_callable('build_navigation')) {
         $navigation = array(
@@ -45,7 +44,7 @@
     }
 
     /// Print the header
-    
+
     turnitintool_header(NULL,$course,$_SERVER["REQUEST_URI"],$strturnitintools, $SITE->fullname, $navigation, '', '', true, '', '');
 
     //print_header_simple($strturnitintools, '', $navigation, "", "", true, "", navmenu($course));
@@ -134,7 +133,7 @@
         }
 
         $link = '<a'.$dimmed.' href="view.php?id='.$turnitintool->coursemodule.'">'.$turnitintool->name.'</a>';
-        $part=turnitintool_get_record_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted=0','MIN(dtstart) AS dtstart');
+        $part=turnitintool_get_record_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted=0',NULL,'MIN(dtstart) AS dtstart');
         $dtstart = '<span'.$dimmed.'>'.userdate($part->dtstart,get_string('strftimedatetimeshort','langconfig')).'</span>';
         $partcount=turnitintool_count_records_select('turnitintool_parts','turnitintoolid='.$turnitintool->id.' AND deleted=0');
 		if (has_capability('mod/turnitintool:grade', get_context_instance(CONTEXT_MODULE, $turnitintool->coursemodule))) {

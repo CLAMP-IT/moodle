@@ -144,7 +144,7 @@ if ($ADMIN->fulltree) {
                        '', 0, turnitintool_filetype_array()));
 
     $settings->add(new admin_setting_configselect('turnitin_default_numparts', get_string('numberofparts','turnitintool'),
-                       '', 1, array(1=>1,2=>2,3=>3,4=>4,5=>5))); 
+                       '', 1, array(1=>1,2=>2,3=>3,4=>4,5=>5)));
 
     $options = array();
     $scales = get_scales_menu();
@@ -155,7 +155,7 @@ if ($ADMIN->fulltree) {
         $options[$i] = $i;
     }
     $settings->add(new admin_setting_configselect('turnitin_default_grade', get_string('overallgrade','turnitintool'),
-                       '', 100, $options)); 
+                       '', 100, $options));
     unset( $options );
 
     $ynoptions = array(0 => get_string('no', 'turnitintool'),
