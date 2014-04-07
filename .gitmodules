@@ -35,3 +35,6 @@
 [submodule "blocks/vcl"]
 	path = blocks/vcl
 	url = https://github.com/acoburn/moodle-block_vcl.git
+[submodule "lib/mathjax"]
+	path = lib/mathjax
+	url = git://github.com/mathjax/MathJax.git
