@@ -26,30 +26,15 @@ require_once(dirname(__FILE__) . '/../config.php');
 require_once($CFG->dirroot . '/message/lib.php');
 
 $userid = optional_param('id', $USER->id, PARAM_INT);    // user id
-$course = optional_param('course', SITEID, PARAM_INT);   // course id (defaults to Site)
 $disableall = optional_param('disableall', 0, PARAM_BOOL); //disable all of this user's notifications
 
 $url = new moodle_url('/message/edit.php');
 $url->param('id', $userid);
-$url->param('course', $course);
 
 $PAGE->set_url($url);
+$PAGE->set_popup_notification_allowed(false); // We are within the messaging system so don't show message popups
 
-if (!$course = $DB->get_record('course', array('id' => $course))) {
-    print_error('invalidcourseid');
-}
-
-if ($course->id != SITEID) {
-    require_login($course);
-
-} else {
-    if (!isloggedin()) {
-        if (empty($SESSION->wantsurl)) {
-            $SESSION->wantsurl = $CFG->httpswwwroot.'/message/edit.php';
-        }
-        redirect(get_login_url());
-    }
-}
+require_login();
 
 if (isguestuser()) {
     print_error('guestnoeditmessage', 'message');
@@ -59,22 +44,17 @@ if (!$user = $DB->get_record('user', array('id' => $userid))) {
     print_error('invaliduserid');
 }
 
-$systemcontext   = get_context_instance(CONTEXT_SYSTEM);
-$personalcontext = get_context_instance(CONTEXT_USER, $user->id);
-$coursecontext   = get_context_instance(CONTEXT_COURSE, $course->id);
+$systemcontext   = context_system::instance();
+$personalcontext = context_user::instance($user->id);
 
 $PAGE->set_context($personalcontext);
-$PAGE->set_pagelayout('course');
+$PAGE->set_pagelayout('admin');
 $PAGE->requires->js_init_call('M.core_message.init_editsettings');
 
 // check access control
 if ($user->id == $USER->id) {
     //editing own message profile
     require_capability('moodle/user:editownmessageprofile', $systemcontext);
-    if ($course->id != SITEID && $node = $PAGE->navigation->find($course->id, navigation_node::TYPE_COURSE)) {
-        $node->make_active();
-        $PAGE->navbar->includesettingsbase = true;
-    }
 } else {
     // teachers, parents, etc.
     require_capability('moodle/user:editmessageprofile', $personalcontext);
@@ -137,14 +117,14 @@ if (($form = data_submitted()) && confirm_sesskey()) {
 
     //process general messaging preferences
     $preferences['message_blocknoncontacts'] = !empty($form->blocknoncontacts)?1:0;
-    //$preferences['message_beepnewmessage']    = !empty($form->beepnewmessage)?1:0;
+    $preferences['message_beepnewmessage']   = !empty($form->beepnewmessage)?1:0;
 
     // Save all the new preferences to the database
     if (!set_user_preferences($preferences, $user->id)) {
         print_error('cannotupdateusermsgpref');
     }
 
-    redirect("$CFG->wwwroot/message/edit.php?id=$user->id&course=$course->id");
+    redirect("$CFG->wwwroot/message/edit.php?id=$user->id");
 }
 
 /// Load preferences
@@ -175,19 +155,12 @@ foreach ($processors as $processor) {
 
 //load general messaging preferences
 $preferences->blocknoncontacts  =  get_user_preferences( 'message_blocknoncontacts', '', $user->id);
-//$preferences->beepnewmessage    =  get_user_preferences( 'message_beepnewmessage', '', $user->id);
+$preferences->beepnewmessage    =  get_user_preferences( 'message_beepnewmessage', '', $user->id);
 
 /// Display page header
-$streditmymessage = get_string('editmymessage', 'message');
-$strparticipants  = get_string('participants');
-$userfullname     = fullname($user, true);
-
-$PAGE->set_title("$course->shortname: $streditmymessage");
-if ($course->id != SITEID) {
-    $PAGE->set_heading("$course->fullname: $streditmymessage");
-} else {
-    $PAGE->set_heading($course->fullname);
-}
+$strmessaging = get_string('messaging', 'message');
+$PAGE->set_title($strmessaging);
+$PAGE->set_heading($strmessaging);
 
 // Grab the renderer
 $renderer = $PAGE->get_renderer('core', 'message');

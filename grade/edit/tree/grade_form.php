@@ -58,6 +58,7 @@ class edit_grade_form extends moodleform {
         if ($grade_item->gradetype == GRADE_TYPE_VALUE) {
             // numeric grade
             $mform->addElement('text', 'finalgrade', get_string('finalgrade', 'grades'));
+            $mform->setType('finalgrade', PARAM_RAW);
             $mform->addHelpButton('finalgrade', 'finalgrade', 'grades');
             $mform->disabledIf('finalgrade', 'overridden', 'notchecked');
 
@@ -139,7 +140,7 @@ class edit_grade_form extends moodleform {
     function definition_after_data() {
         global $CFG, $COURSE, $DB;
 
-        $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        $context = context_course::instance($COURSE->id);
 
         $mform =& $this->_form;
         $grade_item = $this->_customdata['grade_item'];

@@ -40,7 +40,7 @@ require_once($CFG->dirroot . '/mod/quiz/report/overview/overview_table.php');
 class quiz_overview_report extends quiz_attempts_report {
 
     public function display($quiz, $cm, $course) {
-        global $CFG, $DB, $OUTPUT;
+        global $CFG, $DB, $OUTPUT, $PAGE;
 
         list($currentgroup, $students, $groupstudents, $allowed) =
                 $this->init('overview', 'quiz_overview_settings_form', $quiz, $cm, $course);
@@ -69,7 +69,7 @@ class quiz_overview_report extends quiz_attempts_report {
         $courseshortname = format_string($course->shortname, true,
                 array('context' => context_course::instance($course->id)));
         $table = new quiz_overview_table($quiz, $this->context, $this->qmsubselect,
-                $options, $groupstudents, $students, $questions, $this->get_base_url());
+                $options, $groupstudents, $students, $questions, $options->get_url());
         $filename = quiz_report_download_filename(get_string('overviewfilename', 'quiz_overview'),
                 $courseshortname, $quiz->name);
         $table->is_downloading($options->download, $filename,
@@ -78,6 +78,7 @@ class quiz_overview_report extends quiz_attempts_report {
             raise_memory_limit(MEMORY_EXTRA);
         }
 
+        $this->course = $course; // Hack to make this available in process_actions.
         $this->process_actions($quiz, $cm, $currentgroup, $groupstudents, $allowed, $options->get_url());
 
         // Start output.
@@ -237,30 +238,25 @@ class quiz_overview_report extends quiz_attempts_report {
         }
 
         if (!$table->is_downloading() && $options->usercanseegrades) {
+            $output = $PAGE->get_renderer('mod_quiz');
             if ($currentgroup && $groupstudents) {
                 list($usql, $params) = $DB->get_in_or_equal($groupstudents);
                 $params[] = $quiz->id;
                 if ($DB->record_exists_select('quiz_grades', "userid $usql AND quiz = ?",
                         $params)) {
-                     $imageurl = new moodle_url('/mod/quiz/report/overview/overviewgraph.php',
+                    $imageurl = new moodle_url('/mod/quiz/report/overview/overviewgraph.php',
                             array('id' => $quiz->id, 'groupid' => $currentgroup));
-                     $graphname = get_string('overviewreportgraphgroup', 'quiz_overview',
+                    $graphname = get_string('overviewreportgraphgroup', 'quiz_overview',
                             groups_get_group_name($currentgroup));
-                     echo $OUTPUT->heading($graphname);
-                     echo html_writer::tag('div', html_writer::empty_tag('img',
-                            array('src' => $imageurl, 'alt' => $graphname)),
-                            array('class' => 'graph'));
+                    echo $output->graph($imageurl, $graphname);
                 }
             }
 
             if ($DB->record_exists('quiz_grades', array('quiz'=> $quiz->id))) {
-                 $graphname = get_string('overviewreportgraph', 'quiz_overview');
-                 $imageurl = new moodle_url('/mod/quiz/report/overview/overviewgraph.php',
+                $imageurl = new moodle_url('/mod/quiz/report/overview/overviewgraph.php',
                         array('id' => $quiz->id));
-                 echo $OUTPUT->heading($graphname);
-                 echo html_writer::tag('div', html_writer::empty_tag('img',
-                        array('src' => $imageurl, 'alt' => $graphname)),
-                        array('class' => 'graph'));
+                $graphname = get_string('overviewreportgraph', 'quiz_overview');
+                echo $output->graph($imageurl, $graphname);
             }
         }
         return true;
@@ -272,28 +268,60 @@ class quiz_overview_report extends quiz_attempts_report {
         if (empty($currentgroup) || $groupstudents) {
             if (optional_param('regrade', 0, PARAM_BOOL) && confirm_sesskey()) {
                 if ($attemptids = optional_param_array('attemptid', array(), PARAM_INT)) {
-                    require_capability('mod/quiz:regrade', $this->context);
+                    $this->start_regrade($quiz, $cm);
                     $this->regrade_attempts($quiz, false, $groupstudents, $attemptids);
-                    redirect($redirecturl, '', 5);
+                    $this->finish_regrade($redirecturl);
                 }
             }
         }
 
         if (optional_param('regradeall', 0, PARAM_BOOL) && confirm_sesskey()) {
-            require_capability('mod/quiz:regrade', $this->context);
+            $this->start_regrade($quiz, $cm);
             $this->regrade_attempts($quiz, false, $groupstudents);
-            redirect($redirecturl, '', 5);
+            $this->finish_regrade($redirecturl);
 
         } else if (optional_param('regradealldry', 0, PARAM_BOOL) && confirm_sesskey()) {
-            require_capability('mod/quiz:regrade', $this->context);
+            $this->start_regrade($quiz, $cm);
             $this->regrade_attempts($quiz, true, $groupstudents);
-            redirect($redirecturl, '', 5);
+            $this->finish_regrade($redirecturl);
 
         } else if (optional_param('regradealldrydo', 0, PARAM_BOOL) && confirm_sesskey()) {
-            require_capability('mod/quiz:regrade', $this->context);
+            $this->start_regrade($quiz, $cm);
             $this->regrade_attempts_needing_it($quiz, $groupstudents);
-            redirect($redirecturl, '', 5);
+            $this->finish_regrade($redirecturl);
         }
+    }
+
+    /**
+     * Check necessary capabilities, and start the display of the regrade progress page.
+     * @param object $quiz the quiz settings.
+     * @param object $cm the cm object for the quiz.
+     */
+    protected function start_regrade($quiz, $cm) {
+        global $OUTPUT, $PAGE;
+        require_capability('mod/quiz:regrade', $this->context);
+        $this->print_header_and_tabs($cm, $this->course, $quiz, $this->mode);
+    }
+
+    /**
+     * Finish displaying the regrade progress page.
+     * @param moodle_url $nexturl where to send the user after the regrade.
+     * @uses exit. This method never returns.
+     */
+    protected function finish_regrade($nexturl) {
+        global $OUTPUT, $PAGE;
+        echo $OUTPUT->heading(get_string('regradecomplete', 'quiz_overview'), 3);
+        echo $OUTPUT->continue_button($nexturl);
+        echo $OUTPUT->footer();
+        die();
+    }
+
+    /**
+     * Unlock the session and allow the regrading process to run in the background.
+     */
+    protected function unlock_session() {
+        \core\session\manager::write_close();
+        ignore_user_abort(true);
     }
 
     /**
@@ -311,7 +339,8 @@ class quiz_overview_report extends quiz_attempts_report {
      */
     protected function regrade_attempt($attempt, $dryrun = false, $slots = null) {
         global $DB;
-        set_time_limit(30);
+        // Need more time for a quiz with many questions.
+        core_php_time_limit::raise(300);
 
         $transaction = $DB->start_delegated_transaction();
 
@@ -364,6 +393,7 @@ class quiz_overview_report extends quiz_attempts_report {
     protected function regrade_attempts($quiz, $dryrun = false,
             $groupstudents = array(), $attemptids = array()) {
         global $DB;
+        $this->unlock_session();
 
         $where = "quiz = ? AND preview = 0";
         $params = array($quiz->id);
@@ -387,8 +417,16 @@ class quiz_overview_report extends quiz_attempts_report {
 
         $this->clear_regrade_table($quiz, $groupstudents);
 
+        $progressbar = new progress_bar('quiz_overview_regrade', 500, true);
+        $a = array(
+            'count' => count($attempts),
+            'done'  => 0,
+        );
         foreach ($attempts as $attempt) {
             $this->regrade_attempt($attempt, $dryrun);
+            $a['done']++;
+            $progressbar->update($a['done'], $a['count'],
+                    get_string('regradingattemptxofy', 'quiz_overview', $a));
         }
 
         if (!$dryrun) {
@@ -405,6 +443,7 @@ class quiz_overview_report extends quiz_attempts_report {
      */
     protected function regrade_attempts_needing_it($quiz, $groupstudents) {
         global $DB;
+        $this->unlock_session();
 
         $where = "quiza.quiz = ? AND quiza.preview = 0 AND qqr.regraded = 0";
         $params = array($quiz->id);
@@ -435,8 +474,16 @@ class quiz_overview_report extends quiz_attempts_report {
 
         $this->clear_regrade_table($quiz, $groupstudents);
 
+        $progressbar = new progress_bar('quiz_overview_regrade', 500, true);
+        $a = array(
+            'count' => count($attempts),
+            'done'  => 0,
+        );
         foreach ($attempts as $attempt) {
             $this->regrade_attempt($attempt, false, $attemptquestions[$attempt->uniqueid]);
+            $a['done']++;
+            $progressbar->update($a['done'], $a['count'],
+                    get_string('regradingattemptxofy', 'quiz_overview', $a));
         }
 
         $this->update_overall_grades($quiz);

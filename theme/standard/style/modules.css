@@ -4,7 +4,6 @@
  **********************************************************/
 
 /** General **/
-#page-mod-assignment-index .cell,
 #page-mod-chat-index .cell,
 #page-mod-choice-index .cell,
 #page-mod-forum-index .generalbox .cell,
@@ -16,43 +15,12 @@
 .mod_introbox {width:90%;margin:1em auto;}
 table.mod_index {width:90%;margin:1em auto;}
 
-/** Assignment **/
-.path-mod-assignment .feedback .files {background-color: #EFEFEF;padding:5px;}
-.path-mod-assignment .feedback .time,
-#page-mod-assignment-view .feedback .date {font-size: 0.8em;}
-.path-mod-assignment #wordcount {font-size: 0.8em;text-align: right;}
-#page-mod-assignment-submissions .feedback .content,
-#page-mod-assignment-submissions .feedback .topic,
-#page-mod-assignment-submissions .feedback .picture {padding: 10px;border:1px solid #DDD;}
-#page-mod-assignment-submissions .generaltable .r1 {background-color: #FFFFFF;}
-#page-mod-assignment-submissions .s0 {background: #FFD991;}
-#page-mod-assignment-submissions table.submissions td.cell,
-#page-mod-assignment-submissions table.submissions th{border:1px solid #DDD;vertical-align: middle;padding-left: 5px;padding-right: 5px;}
-#page-mod-assignment-submissions .timemodified,
-#page-mod-assignment-submissions .timemarked {font-size: 0.9em;}
-#page-mod-assignment-submissions .fgcontrols {margin-top: 1em;text-align:center;}
-#page-mod-assignment-submissions .fgcontrols .fastgbutton{margin-top: 0.5em;}
-#page-mod-assignment-view #dates {font-size: 0.8em;margin:30px auto;}
-#page-mod-assignment-view #dates .c0 {text-align:right;font-weight:bold;}
-#page-mod-assignment-view .feedback {border:1px solid #DDD;}
-#page-mod-assignment-view .feedback .topic {padding: 4px;border:0px solid #DDD;border-bottom-width: 1px;}
-#page-mod-assignment-view .feedback .content {padding: 4px;}
-#page-mod-assignment-view .feedback .left {width: 35px;padding: 4px;text-align: center;vertical-align: top;}
-#page-mod-assignment-view #dates {font-size: 0.8em;margin:30px auto;}
-#page-mod-assignment-submissions .status,
-#page-mod-assignment-view #online .singlebutton {text-align: center;}
-#page-mod-assignment-submissions .submissions .grade,
-#page-mod-assignment-view .feedback .fullname,
-#page-mod-assignment-view .feedback .grade {font-weight:bold;}
-
 /** Chat **/
 .path-mod-chat .time {font-weight: bold;}
 .path-mod-chat .user {color:blue;}
 .path-mod-chat .chat-event {text-align:center;color:gray;}
 .path-mod-chat .chat-event .event,
 .path-mod-chat .chat-message .title {color:#888}
-.path-mod-chat .chat-event .text,
-.path-mod-chat .chat-message .text {text-align: left;color:#000;}
 .path-mod-chat #chat-header {background: transparent;font-size: 200%;}
 .path-mod-chat #chat-header p {font-size: 50%;color: gray;}
 #page-mod-chat-gui_basic h1 {font-size:1.4em;}
@@ -82,10 +50,13 @@ table.mod_index {width:90%;margin:1em auto;}
 .forumpost.firstpost .row.header {background-color:#DDD;}
 .forumpost .topic .author {font-size: 0.8em;padding:4px;}
 .forumpost .topic .subject {font-weight: bold;padding:4px 4px 0;}
-.forumpost .content div,
-.forumpost .options div {padding:4px;}
+.forumpost .content > div,
+.forumpost .options > div {padding:4px;}
 .forumpost.unread {background: #9EBEFF;}
 .forumpost.unread .content {border:2px solid #0046C7;} /** inside border of unread posts in nested format in */
+.forumpost .comment-ctrl,
+.forumpost .comment-ctrl div { padding: 0; }
+.forumpost .comment-ctrl .picture img { margin: 0; }
 
 #page-mod-forum-view .forummode,
 .path-mod-forum .forumheaderlist .replies {text-align: center;}
@@ -119,6 +90,7 @@ table.mod_index {width:90%;margin:1em auto;}
 .path-mod-glossary .glossarypost .picture,
 .path-mod-glossary .glossarypost .entryattachment,
 .path-mod-glossary .glossarypost .left {background-color: #F0F0F0;}
+.path-mod-glossary .comment-message .picture { background-color: transparent; }
 .path-mod-glossary .glossarypost .entrylowersection {padding-top: 10px;}
 .path-mod-glossary .glossarypost .commands,
 .path-mod-glossary .glossarypost .author,
@@ -131,7 +103,7 @@ table.mod_index {width:90%;margin:1em auto;}
 #page-mod-glossary-import table.glossaryimportexport {text-align: center;}
 .path-mod-glossary .glossarydisplay {width: 90%;text-align:center;}
 .path-mod-glossary .entrybox {border-width: 0px 1px 1px 1px;border-style: solid;border-color: #BBB;}
-.path-mod-glossary .entrybox hr {border-left:none;border-right:none;}
+.path-mod-glossary .entrybox hr {border-left:0;border-right:0;}
 #page-mod-glossary-report table tr.teacher {background: #F0F0F0;}
 #page-mod-glossary-view table.glossarycategoryheader {background-color: #DDD;}
 #page-mod-glossary-view table.glossarycategoryheader h2 {font-size: 1em;margin: 0;}
@@ -157,13 +129,11 @@ table.mod_index {width:90%;margin:1em auto;}
 #page-mod-lesson-essay .sent {color:#006600;}
 #page-mod-lesson-essay .ungraded {color:#999999;}
 #page-mod-lesson-essay .gradetable {margin-bottom: 20px;}
-.path-mod-lesson .branchbuttoncontainer.vertical .lessonbutton,
-.path-mod-lesson .centerpadded {padding:5px;}
+.path-mod-lesson .branchbuttoncontainer.vertical .lessonbutton {padding:5px;}
 #page-mod-lesson-essay .buttons,
 .path-mod-lesson .center,
 .path-mod-lesson .firstpageoptions,
 .path-mod-lesson .clock .content,
-.path-mod-lesson .centerpadded,
 #page-mod-lesson-view .password-form,
 .path-mod-lesson .edit_pages_box .addlinks {text-align:center;}
 
@@ -186,8 +156,8 @@ a#mod-scorm-log-toggle {font-size: 0.7em;font-weight: bold;}
 .path-mod-survey .resultgraph {text-align:center;border-width:1px;border-style: solid;}
 .path-mod-survey .questiontext {font-size:1em;}
 .path-mod-survey .surveytable .rblock label {text-align: center;}
-#page-mod-survey-view .r0 {background-color: #EEEEEE;}
-#page-mod-survey-view .r1 {background-color: #DDDDDD;}
+#page-mod-survey-view > tbody > tr:nth-of-type(odd) {background-color: #EEEEEE;}
+#page-mod-survey-view > tbody > tr:nth-of-type(even) {background-color: #DDDDDD;}
 #page-mod-survey-report .reportsummary,
 #page-mod-survey-report .studentreport,
 #page-mod-survey-report .reportbuttons,

@@ -62,7 +62,13 @@ if (!empty($userid)) {
     require_capability('report/stats:view', $coursecontext);
 }
 
-add_to_log($course->id, 'course', 'report stats', "report/stats/graph.php?userid=$userid&id=$course->id&mode=$mode&roleid=$roleid", $course->id);
+// Trigger a content view event.
+$event = \report_stats\event\content_viewed::create(array('courseid' => $course->id,
+                                                          'other'    => array('content' => 'stats graph')));
+$event->set_page_detail();
+$event->set_legacy_logdata(array($course->id, 'course', 'report stats',
+        "report/stats/graph.php?userid=$userid&id=$course->id&mode=$mode&roleid=$roleid", $course->id));
+$event->trigger();
 
 stats_check_uptodate($course->id);
 
@@ -125,11 +131,7 @@ if (empty($param->crosstab)) {
     $times = array();
     $roles = array();
     $missedlines = array();
-    $rolenames = get_all_roles();
-    foreach ($rolenames as $r) {
-        $rolenames[$r->id] = $r->name;
-    }
-    $rolenames = role_fix_names($rolenames, get_context_instance(CONTEXT_COURSE, $course->id));
+    $rolenames = role_fix_names(get_all_roles($coursecontext), $coursecontext, ROLENAME_ALIAS, true);
     foreach ($stats as $stat) {
         $data[$stat->roleid][$stat->timeend] = $stat->line1;
         if (!empty($stat->zerofixed)) {

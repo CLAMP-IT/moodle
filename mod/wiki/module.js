@@ -38,19 +38,23 @@ M.mod_wiki.init = function(Y, args) {
     });
     new WikiHelper(args);
 };
-M.mod_wiki.renew_lock = function(Y, args) {
-    function renewLock() {
-        var args = {};
-        args['sesskey'] = M.cfg.sesskey;
-        args['pageid'] = wiki.pageid;
-        if (wiki.section) {
-            args['section'] = wiki.section;
-        }
-        var callback = {};
-        YAHOO.util.Connect.asyncRequest('GET', 'lock.php?' + build_querystring(args), callback);
+M.mod_wiki.renew_lock = function() {
+    var args = {
+        sesskey: M.cfg.sesskey,
+        pageid: wiki.pageid
+    };
+    if (wiki.section) {
+        args.section = wiki.section;
     }
-    setInterval(renewLock, wiki.renew_lock_timeout * 1000);
-}
+    YUI().use('io', function(Y) {
+        function renewLock() {
+            Y.io('lock.php?' + build_querystring(args), {
+                method: 'POST'
+            });
+        }
+        setInterval(renewLock, wiki.renew_lock_timeout * 1000);
+    });
+};
 M.mod_wiki.history = function(Y, args) {
     var compare = false;
     var comparewith = false;
@@ -115,7 +119,7 @@ M.mod_wiki.deleteversion = function(Y, args) {
 
 M.mod_wiki.init_tree = function(Y, expand_all, htmlid) {
     Y.use('yui2-treeview', function(Y) {
-        var tree = new YAHOO.widget.TreeView(htmlid);
+        var tree = new Y.YUI2.widget.TreeView(htmlid);
 
         tree.subscribe("clickEvent", function(node, event) {
             // we want normal clicking which redirects to url

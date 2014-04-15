@@ -48,8 +48,18 @@ function textrotate_make_svg(el)
   el.parentNode.removeChild(el);
 }
 
+function browser_supports_svg() {
+    return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1");
+}
+
 function textrotate_init() {
-  var elements=YAHOO.util.Dom.getElementsByClassName('completion-activityname', 'span');
+    if (!browser_supports_svg()) {
+        // Feature detect, else bail.
+        return;
+    }
+
+YUI().use('yui2-dom', function(Y) {
+  var elements= Y.YUI2.util.Dom.getElementsByClassName('completion-activityname', 'span');
   for(var i=0;i<elements.length;i++)
   {
     var el=elements[i];
@@ -57,7 +67,7 @@ function textrotate_init() {
     textrotate_make_svg(el);
   }
 
-  elements=YAHOO.util.Dom.getElementsByClassName('completion-expected', 'div');
+  elements= Y.YUI2.util.Dom.getElementsByClassName('completion-expected', 'div');
   for(var i=0;i<elements.length;i++)
   {
     var el=elements[i];
@@ -68,18 +78,17 @@ function textrotate_init() {
     textrotate_make_svg(el.firstChild);
   }
 
-  elements=YAHOO.util.Dom.getElementsByClassName('rotateheaders', 'table');
+  elements= Y.YUI2.util.Dom.getElementsByClassName('rotateheaders', 'table');
   for(var i=0;i<elements.length;i++)
   {
     var table=elements[i];
-    var headercells = YAHOO.util.Dom.getElementsByClassName('header', 'th', table);
+    var headercells = Y.YUI2.util.Dom.getElementsByClassName('header', 'th', table);
     for(var j=0;j<headercells.length;j++)
     {
       var el=headercells[j];
       textrotate_make_svg(el.firstChild);
     }
   }
+});
 }
-
-YAHOO.util.Event.onDOMReady(textrotate_init);
 

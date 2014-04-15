@@ -8,13 +8,17 @@ require_once('../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/tablelib.php');
 
+$action  = required_param('action', PARAM_ALPHANUMEXT);
+$editor  = required_param('editor', PARAM_PLUGIN);
+$confirm = optional_param('confirm', 0, PARAM_BOOL);
+
+$PAGE->set_url('/admin/editors.php', array('action'=>$action, 'editor'=>$editor));
+$PAGE->set_context(context_system::instance());
+
 require_login();
-require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/site:config', context_system::instance());
 
 $returnurl = "$CFG->wwwroot/$CFG->admin/settings.php?section=manageeditors";
-
-$action = optional_param('action', '', PARAM_ACTION);
-$editor = optional_param('editor', '', PARAM_PLUGIN);
 
 // get currently installed and enabled auth plugins
 $available_editors = editors_get_available();
@@ -78,6 +82,7 @@ switch ($action) {
             }
         }
         break;
+
     default:
         break;
 }
@@ -88,6 +93,7 @@ if (empty($active_editors)) {
 }
 
 set_config('texteditors', implode(',', $active_editors));
+core_plugin_manager::reset_caches();
 
 if ($return) {
     redirect ($returnurl);

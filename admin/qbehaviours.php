@@ -28,19 +28,18 @@
 require_once(dirname(__FILE__) . '/../config.php');
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->libdir . '/adminlib.php');
-require_once($CFG->libdir . '/pluginlib.php');
 require_once($CFG->libdir . '/tablelib.php');
 
 // Check permissions.
 require_login();
-$systemcontext = get_context_instance(CONTEXT_SYSTEM);
+$systemcontext = context_system::instance();
 require_capability('moodle/question:config', $systemcontext);
 
 admin_externalpage_setup('manageqbehaviours');
 $thispageurl = new moodle_url('/admin/qbehaviours.php');
 
-$behaviours = get_plugin_list('qbehaviour');
-$pluginmanager = plugin_manager::instance();
+$behaviours = core_component::get_plugin_list('qbehaviour');
+$pluginmanager = core_plugin_manager::instance();
 
 // Get some data we will need - question counts and which types are needed.
 $counts = $DB->get_records_sql_menu("
@@ -92,6 +91,7 @@ if (($disable = optional_param('disable', '', PARAM_PLUGIN)) && confirm_sesskey(
         $disabledbehaviours[] = $disable;
         set_config('disabledbehaviours', implode(',', $disabledbehaviours), 'question');
     }
+    core_plugin_manager::reset_caches();
     redirect($thispageurl);
 }
 
@@ -109,6 +109,7 @@ if (($enable = optional_param('enable', '', PARAM_PLUGIN)) && confirm_sesskey())
         unset($disabledbehaviours[$key]);
         set_config('disabledbehaviours', implode(',', $disabledbehaviours), 'question');
     }
+    core_plugin_manager::reset_caches();
     redirect($thispageurl);
 }
 
@@ -136,70 +137,6 @@ if (($down = optional_param('down', '', PARAM_PLUGIN)) && confirm_sesskey()) {
     redirect($thispageurl);
 }
 
-// Delete.
-if (($delete = optional_param('delete', '', PARAM_PLUGIN)) && confirm_sesskey()) {
-    // Check it is OK to delete this question type.
-    if ($delete == 'missing') {
-        print_error('cannotdeletemissingbehaviour', 'question', $thispageurl);
-    }
-
-    if (!isset($behaviours[$delete])) {
-        print_error('unknownbehaviour', 'question', $thispageurl, $delete);
-    }
-
-    $behaviourname = $sortedbehaviours[$delete];
-    if ($counts[$delete] > 0) {
-        print_error('cannotdeletebehaviourinuse', 'question', $thispageurl, $behaviourname);
-    }
-    if ($needed[$delete] > 0) {
-        print_error('cannotdeleteneededbehaviour', 'question', $thispageurl, $behaviourname);
-    }
-
-    // If not yet confirmed, display a confirmation message.
-    if (!optional_param('confirm', '', PARAM_BOOL)) {
-        echo $OUTPUT->header();
-        echo $OUTPUT->heading(get_string('deletebehaviourareyousure', 'question', $behaviourname));
-        echo $OUTPUT->confirm(
-                get_string('deletebehaviourareyousuremessage', 'question', $behaviourname),
-                new moodle_url($thispageurl, array('delete' => $delete, 'confirm' => 1)),
-                $thispageurl);
-        echo $OUTPUT->footer();
-        exit;
-    }
-
-    // Do the deletion.
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('deletingbehaviour', 'question', $behaviourname));
-
-    // Delete any configuration records.
-    if (!unset_all_config_for_plugin('qbehaviour_' . $delete)) {
-        echo $OUTPUT->notification(get_string('errordeletingconfig', 'admin', 'qbehaviour_' . $delete));
-    }
-    if (($key = array_search($delete, $disabledbehaviours)) !== false) {
-        unset($disabledbehaviours[$key]);
-        set_config('disabledbehaviours', implode(',', $disabledbehaviours), 'question');
-    }
-    $behaviourorder = array_keys($sortedbehaviours);
-    if (($key = array_search($delete, $behaviourorder)) !== false) {
-        unset($behaviourorder[$key]);
-        set_config('behavioursortorder', implode(',', $behaviourorder), 'question');
-    }
-
-    // Then the tables themselves
-    drop_plugin_tables($delete, get_plugin_directory('qbehaviour', $delete) . '/db/install.xml', false);
-
-    // Remove event handlers and dequeue pending events
-    events_uninstall('qbehaviour_' . $delete);
-
-    $a = new stdClass();
-    $a->behaviour = $behaviourname;
-    $a->directory = get_plugin_directory('qbehaviour', $delete);
-    echo $OUTPUT->box(get_string('qbehaviourdeletefiles', 'question', $a), 'generalbox', 'notice');
-    echo $OUTPUT->continue_button($thispageurl);
-    echo $OUTPUT->footer();
-    exit;
-}
-
 // End of process actions ==================================================
 
 // Print the page heading.
@@ -210,12 +147,12 @@ echo $OUTPUT->heading(get_string('manageqbehaviours', 'admin'));
 $table = new flexible_table('qbehaviouradmintable');
 $table->define_baseurl($thispageurl);
 $table->define_columns(array('behaviour', 'numqas', 'version', 'requires',
-        'available', 'delete'));
+        'available', 'uninstall'));
 $table->define_headers(array(get_string('behaviour', 'question'), get_string('numqas', 'question'),
         get_string('version'), get_string('requires', 'admin'),
-        get_string('availableq', 'question'), get_string('delete')));
+        get_string('availableq', 'question'), get_string('uninstallplugin', 'core_admin')));
 $table->set_attribute('id', 'qbehaviours');
-$table->set_attribute('class', 'generaltable generalbox boxaligncenter boxwidthwide');
+$table->set_attribute('class', 'generaltable admintable');
 $table->setup();
 
 // Add a row for each question type.
@@ -258,7 +195,7 @@ foreach ($sortedbehaviours as $behaviour => $behaviourname) {
             $rowclass = 'dimmed_text';
         }
     } else {
-        $icons = $OUTPUT->spacer() . ' ';
+        $icons = $OUTPUT->spacer(array('class' => 'iconsmall'));
     }
 
     // Move icons.
@@ -270,9 +207,11 @@ foreach ($sortedbehaviours as $behaviour => $behaviourname) {
     if ($needed[$behaviour]) {
         $row[] = '';
     } else {
-        $row[] = html_writer::link(new moodle_url($thispageurl,
-                array('delete' => $behaviour, 'sesskey' => sesskey())), get_string('delete'),
+        $uninstallurl = core_plugin_manager::instance()->get_uninstall_url('qbehaviour_'.$behaviour, 'manage');
+        if ($uninstallurl) {
+            $row[] = html_writer::link($uninstallurl, get_string('uninstallplugin', 'core_admin'),
                 array('title' => get_string('uninstallbehaviour', 'question')));
+        }
     }
 
     $table->add_data($row, $rowclass);
@@ -284,10 +223,10 @@ echo $OUTPUT->footer();
 
 function question_behaviour_enable_disable_icons($behaviour, $enabled) {
     if ($enabled) {
-        return question_behaviour_icon_html('disable', $behaviour, 'i/hide',
+        return question_behaviour_icon_html('disable', $behaviour, 't/hide',
                 get_string('enabled', 'question'), get_string('disable'));
     } else {
-        return question_behaviour_icon_html('enable', $behaviour, 'i/show',
+        return question_behaviour_icon_html('enable', $behaviour, 't/show',
                 get_string('disabled', 'question'), get_string('enable'));
     }
 }
@@ -296,7 +235,7 @@ function question_behaviour_icon_html($action, $behaviour, $icon, $alt, $tip) {
     global $OUTPUT;
     return $OUTPUT->action_icon(new moodle_url('/admin/qbehaviours.php',
             array($action => $behaviour, 'sesskey' => sesskey())),
-            new pix_icon($icon, $alt, 'moodle', array('title' => '')),
-            null, array('title' => $tip)) . ' ';
+            new pix_icon($icon, $alt, 'moodle', array('title' => '', 'class' => 'iconsmall')),
+            null, array('title' => $tip));
 }
 

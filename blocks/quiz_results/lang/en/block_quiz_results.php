@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,8 +17,7 @@
 /**
  * Strings for component 'block_quiz_results', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package    block
- * @subpackage quiz_results
+ * @package    block_quiz_results
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -46,6 +44,7 @@ $string['error_emptyquizid'] = 'There is an error right now with this block: you
 $string['error_emptyquizrecord'] = 'There is an error right now with this block: the selected quiz does not seem to exist in the database.';
 $string['error_nogroupsexist'] = 'There is an error right now with this block: it is set to display grades in group mode, but the course has no defined groups.';
 $string['pluginname'] = 'Quiz results';
+$string['quiz_results:addinstance'] = 'Add a new quiz results block';
 $string['worstgrade'] = 'The lowest grade:';
 $string['worstgrades'] = 'The {$a} lowest grades:';
 $string['worstgroupgrade'] = 'The group with the lowest average:';

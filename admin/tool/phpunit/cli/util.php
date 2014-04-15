@@ -28,8 +28,11 @@ if (isset($_SERVER['REMOTE_ADDR'])) {
     die; // no access from web!
 }
 
+define('IGNORE_COMPONENT_CACHE', true);
+
 require_once(__DIR__.'/../../../../lib/clilib.php');
 require_once(__DIR__.'/../../../../lib/phpunit/bootstraplib.php');
+require_once(__DIR__.'/../../../../lib/testing/lib.php');
 
 // now get cli options
 list($options, $unrecognized) = cli_get_params(
@@ -39,7 +42,6 @@ list($options, $unrecognized) = cli_get_params(
         'buildconfig'           => false,
         'buildcomponentconfigs' => false,
         'diag'                  => false,
-        'phpunitdir'            => false,
         'run'                   => false,
         'help'                  => false,
     ),
@@ -48,26 +50,20 @@ list($options, $unrecognized) = cli_get_params(
     )
 );
 
-if ($options['phpunitdir']) {
-    // nasty skodak's hack for testing of future PHPUnit versions - intentionally not documented
-    if (!file_exists($options['phpunitdir'])) {
-        cli_error('Invalid custom PHPUnit lib location');
+if (file_exists(__DIR__.'/../../../../vendor/phpunit/phpunit/PHPUnit/Autoload.php')) {
+    // Composer packages present.
+    require_once(__DIR__.'/../../../../vendor/autoload.php');
+    require_once(__DIR__.'/../../../../vendor/phpunit/phpunit/PHPUnit/Autoload.php');
+
+} else {
+    // Verify PHPUnit PEAR libs can be loaded.
+    if (!include('PHPUnit/Autoload.php')) {
+        phpunit_bootstrap_error(PHPUNIT_EXITCODE_PHPUNITMISSING);
     }
-    $files = scandir($options['phpunitdir']);
-    foreach ($files as $file) {
-        $path = $options['phpunitdir'].'/'.$file;
-        if (!is_dir($path) or strpos($file, '.') === 0) {
-            continue;
-        }
-        ini_set('include_path', $path . PATH_SEPARATOR . ini_get('include_path'));
-    }
-    unset($files);
-    unset($file);
 }
 
-// verify PHPUnit libs are loaded
-if (!include_once('PHPUnit/Autoload.php')) {
-    phpunit_bootstrap_error(PHPUNIT_EXITCODE_PHPUNITMISSING);
+if ($options['install'] or $options['drop']) {
+    define('CACHE_DISABLE_ALL', true);
 }
 
 if ($options['run']) {
@@ -75,7 +71,7 @@ if ($options['run']) {
     unset($unrecognized);
 
     foreach ($_SERVER['argv'] as $k=>$v) {
-        if (strpos($v, '--run') === 0 or strpos($v, '--phpunitdir') === 0) {
+        if (strpos($v, '--run') === 0) {
             unset($_SERVER['argv'][$k]);
             $_SERVER['argc'] = $_SERVER['argc'] - 1;
         }
@@ -94,7 +90,6 @@ require(__DIR__ . '/../../../../lib/phpunit/bootstrap.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/upgradelib.php');
 require_once($CFG->libdir.'/clilib.php');
-require_once($CFG->libdir.'/pluginlib.php');
 require_once($CFG->libdir.'/installlib.php');
 
 if ($unrecognized) {
@@ -123,7 +118,7 @@ Options:
 -h, --help     Print out this help
 
 Example:
-\$/usr/bin/php lib/phpunit/tool.php --install
+\$ php ".testing_cli_argument_path('/admin/tool/phpunit/cli/util.php')." --install
 ";
     echo $help;
     exit(0);
@@ -149,8 +144,8 @@ if ($diag) {
 
 } else if ($drop) {
     // make sure tests do not run in parallel
-    phpunit_util::acquire_test_lock();
-    phpunit_util::drop_site();
+    test_lock::acquire('phpunit');
+    phpunit_util::drop_site(true);
     // note: we must stop here because $CFG is messed up and we can not reinstall, sorry
     exit(0);
 

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * Script to let a user edit the properties of a particular RSS feed.
  *
- * @package   moodlecore
+ * @package   block_rss_client
  * @copyright 2009 Tim Hunt
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,8 +31,8 @@ if (isguestuser()) {
 }
 
 $returnurl = optional_param('returnurl', '', PARAM_LOCALURL);
-$courseid = optional_param('courseid', 0, PARAM_INTEGER);
-$rssid = required_param('rssid', PARAM_INTEGER);
+$courseid = optional_param('courseid', 0, PARAM_INT);
+$rssid = required_param('rssid', PARAM_INT);
 
 if ($courseid = SITEID) {
     $courseid = 0;
@@ -43,7 +42,7 @@ if ($courseid) {
     $PAGE->set_course($course);
     $context = $PAGE->context;
 } else {
-    $context = get_context_instance(CONTEXT_SYSTEM);
+    $context = context_system::instance();
     $PAGE->set_context($context);
 }
 
@@ -71,11 +70,10 @@ $strviewfeed = get_string('viewfeed', 'block_rss_client');
 $PAGE->set_title($strviewfeed);
 $PAGE->set_heading($strviewfeed);
 
-$settingsurl = new moodle_url('/admin/settings.php?section=blocksettingrss_client');
 $managefeeds = new moodle_url('/blocks/rss_client/managefeeds.php', $urlparams);
 $PAGE->navbar->add(get_string('blocks'));
-$PAGE->navbar->add(get_string('pluginname', 'block_rss_client'), $settingsurl);
-$PAGE->navbar->add(get_string('managefeeds', 'block_rss_client'));
+$PAGE->navbar->add(get_string('pluginname', 'block_rss_client'));
+$PAGE->navbar->add(get_string('managefeeds', 'block_rss_client'), $managefeeds);
 $PAGE->navbar->add($strviewfeed);
 echo $OUTPUT->header();
 
@@ -85,15 +83,16 @@ if (!empty($rssrecord->preferredtitle)) {
     $feedtitle =  $rss->get_title();
 }
 echo '<table align="center" width="50%" cellspacing="1">'."\n";
-echo '<tr><td colspan="2"><strong>'. $feedtitle .'</strong></td></tr>'."\n";
+echo '<tr><td colspan="2"><strong>'. s($feedtitle) .'</strong></td></tr>'."\n";
 foreach ($rss->get_items() as $item) {
     echo '<tr><td valign="middle">'."\n";
-    echo '<a href="'. $item->get_link() .'" target="_blank"><strong>'. $item->get_title();
+    echo '<a href="'.$item->get_link().'" target="_blank"><strong>';
+    echo s($item->get_title());
     echo '</strong></a>'."\n";
     echo '</td>'."\n";
     echo '</tr>'."\n";
     echo '<tr><td colspan="2"><small>';
-    echo $item->get_description() .'</small></td></tr>'."\n";
+    echo format_text($item->get_description(), FORMAT_HTML) .'</small></td></tr>'."\n";
 }
 echo '</table>'."\n";
 

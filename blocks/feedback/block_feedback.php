@@ -1,10 +1,33 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Feedback block.
+ *
+ * @package    block_feedback
+ * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 if (is_file($CFG->dirroot.'/mod/feedback/lib.php')) {
     require_once($CFG->dirroot.'/mod/feedback/lib.php');
     define('FEEDBACK_BLOCK_LIB_IS_OK', true);
 }
 
-class block_feedback extends block_base {
+class block_feedback extends block_list {
 
     function init() {
         $this->title = get_string('feedback', 'block_feedback');
@@ -21,10 +44,13 @@ class block_feedback extends block_base {
             return $this->content;
         }
 
+        $this->content = new stdClass;
+        $this->content->items = array();
+        $this->content->icons = array();
+        $this->content->footer = '';
+
         if (!defined('FEEDBACK_BLOCK_LIB_IS_OK')) {
-            $this->content = new stdClass;
-            $this->content->text = get_string('missing_feedback_module', 'block_feedback');
-            $this->content->footer = '';
+            $this->content->items = array(get_string('missing_feedback_module', 'block_feedback'));
             return $this->content;
         }
 
@@ -33,9 +59,7 @@ class block_feedback extends block_base {
             $courseid = SITEID;
         }
 
-        $this->content = new stdClass;
-        $this->content->text = '';
-        $this->content->footer = '';
+        $icon = '<img src="'.$OUTPUT->pix_url('icon', 'feedback') . '" class="icon" alt="" />';
 
 
         if (empty($this->instance->pageid)) {
@@ -47,8 +71,7 @@ class block_feedback extends block_base {
             foreach ($feedbacks as $feedback) {
                 $url = new moodle_url($baseurl);
                 $url->params(array('id'=>$feedback->cmid, 'courseid'=>$courseid));
-                $icon = '<img src="'.$OUTPUT->pix_url('icon', 'feedback') . '" class="icon" alt="" />&nbsp;';
-                $this->content->text = ' <a href="'.$url->out().'">'.$icon.$feedback->name.'</a>';
+                $this->content->items[] = '<a href="'.$url->out().'">'.$icon.$feedback->name.'</a>';
             }
         }
 

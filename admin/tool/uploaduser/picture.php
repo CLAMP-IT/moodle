@@ -38,7 +38,7 @@ admin_externalpage_setup('tooluploaduserpictures');
 
 require_login();
 
-require_capability('moodle/site:uploadusers', get_context_instance(CONTEXT_SYSTEM));
+require_capability('tool/uploaduser:uploaduserpictures', context_system::instance());
 
 $site = get_site();
 
@@ -72,7 +72,7 @@ if ($formdata = $mform->get_data()) {
         // Large files are likely to take their time and memory. Let PHP know
         // that we'll take longer, and that the process should be recycled soon
         // to free up memory.
-        @set_time_limit(0);
+        core_php_time_limit::raise();
         raise_memory_limit(MEMORY_EXTRA);
 
         // Create a unique temporary directory, to process the zip file
@@ -247,7 +247,7 @@ function process_file ($file, $userfield, $overwrite) {
  * @return mixed new unique revision number or false if not saved
  */
 function my_save_profile_image($id, $originalfile) {
-    $context = get_context_instance(CONTEXT_USER, $id);
+    $context = context_user::instance($id);
     return process_new_icon($context, 'user', 'icon', 0, $originalfile);
 }
 

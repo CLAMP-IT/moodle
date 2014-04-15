@@ -18,8 +18,7 @@
 /**
  * True/false
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  2009 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -76,12 +75,11 @@ class lesson_page_type_truefalse extends lesson_page {
 
         $result = parent::check_answer();
 
-        $answerid = $data->answerid;
-        if ($answerid === false) {
+        if (empty($data->answerid)) {
             $result->noanswer = true;
             return $result;
         }
-        $result->answerid = $answerid;
+        $result->answerid = $data->answerid;
         $answer = $DB->get_record("lesson_answers", array("id" => $result->answerid), '*', MUST_EXIST);
         if ($this->lesson->jumpto_is_correct($this->properties->id, $answer->jumpto)) {
             $result->correctanswer = true;
@@ -158,7 +156,8 @@ class lesson_page_type_truefalse extends lesson_page {
         $answers  = $this->get_answers();
         $properties->id = $this->properties->id;
         $properties->lessonid = $this->lesson->id;
-        $properties = file_postupdate_standard_editor($properties, 'contents', array('noclean'=>true, 'maxfiles'=>EDITOR_UNLIMITED_FILES, 'maxbytes'=>$PAGE->course->maxbytes), get_context_instance(CONTEXT_MODULE, $PAGE->cm->id), 'mod_lesson', 'page_contents', $properties->id);
+        $properties->timemodified = time();
+        $properties = file_postupdate_standard_editor($properties, 'contents', array('noclean'=>true, 'maxfiles'=>EDITOR_UNLIMITED_FILES, 'maxbytes'=>$PAGE->course->maxbytes), context_module::instance($PAGE->cm->id), 'mod_lesson', 'page_contents', $properties->id);
         $DB->update_record("lesson_pages", $properties);
 
         // need to reset offset for correct and wrong responses
@@ -240,7 +239,7 @@ class lesson_page_type_truefalse extends lesson_page {
         $formattextdefoptions->noclean = true;
         foreach ($answers as $answer) {
             if ($this->properties->qoption) {
-                if ($useranswer == NULL) {
+                if ($useranswer == null) {
                     $userresponse = array();
                 } else {
                     $userresponse = explode(",", $useranswer->useranswer);
@@ -249,7 +248,7 @@ class lesson_page_type_truefalse extends lesson_page {
                     // make checked
                     $data = "<input  readonly=\"readonly\" disabled=\"disabled\" name=\"answer[$i]\" checked=\"checked\" type=\"checkbox\" value=\"1\" />";
                     if (!isset($answerdata->response)) {
-                        if ($answer->response == NULL) {
+                        if ($answer->response == null) {
                             if ($useranswer->correct) {
                                 $answerdata->response = get_string("thatsthecorrectanswer", "lesson");
                             } else {
@@ -278,10 +277,10 @@ class lesson_page_type_truefalse extends lesson_page {
                     $data .= format_text($answer->answer, $answer->answerformat, $formattextdefoptions);
                 }
             } else {
-                if ($useranswer != NULL and $answer->id == $useranswer->answerid) {
+                if ($useranswer != null and $answer->id == $useranswer->answerid) {
                     // make checked
                     $data = "<input  readonly=\"readonly\" disabled=\"disabled\" name=\"answer[$i]\" checked=\"checked\" type=\"checkbox\" value=\"1\" />";
-                    if ($answer->response == NULL) {
+                    if ($answer->response == null) {
                         if ($useranswer->correct) {
                             $answerdata->response = get_string("thatsthecorrectanswer", "lesson");
                         } else {
@@ -329,13 +328,13 @@ class lesson_add_page_form_truefalse extends lesson_add_page_form_base {
 
     public function custom_definition() {
         $this->_form->addElement('header', 'answertitle0', get_string('correctresponse', 'lesson'));
-        $this->add_answer(0, NULL, true);
+        $this->add_answer(0, null, true);
         $this->add_response(0);
         $this->add_jumpto(0, get_string('correctanswerjump', 'lesson'), LESSON_NEXTPAGE);
         $this->add_score(0, get_string('correctanswerscore', 'lesson'), 1);
 
         $this->_form->addElement('header', 'answertitle1', get_string('wrongresponse', 'lesson'));
-        $this->add_answer(1, NULL, true);
+        $this->add_answer(1, null, true);
         $this->add_response(1);
         $this->add_jumpto(1, get_string('wronganswerjump', 'lesson'), LESSON_THISPAGE);
         $this->add_score(1, get_string('wronganswerscore', 'lesson'), 0);

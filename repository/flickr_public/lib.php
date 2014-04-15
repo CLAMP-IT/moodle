@@ -42,6 +42,11 @@ class repository_flickr_public extends repository {
     public $photos;
 
     /**
+     * Stores sizes of images to prevent multiple API call
+     */
+    static private $sizes = array();
+
+    /**
      * constructor method
      *
      * @global object $CFG
@@ -213,13 +218,14 @@ class repository_flickr_public extends repository {
 
     public function license4moodle ($license_id) {
         $license = array(
+            '0' => 'allrightsreserved',
             '1' => 'cc-nc-sa',
             '2' => 'cc-nc',
             '3' => 'cc-nc-nd',
             '4' => 'cc',
             '5' => 'cc-sa',
             '6' => 'cc-nd',
-            '7' => 'allrightsreserved'
+            '7' => 'other'
             );
         return $license[$license_id];
     }
@@ -391,7 +397,7 @@ class repository_flickr_public extends repository {
         $str .= '<input type="hidden" name="repo_id" value="'.$this->id.'" />';
         $str .= '<input type="hidden" name="ctx_id" value="'.$this->context->id.'" />';
         $str .= '<input type="hidden" name="seekey" value="'.sesskey().'" />';
-        $str .= '<label>'.get_string('fulltext', 'repository_flickr_public').': </label><br/><input name="s" value="" /><br/>';
+        $str .= '<label>'.get_string('fulltext', 'repository_flickr_public').'</label><br/><input name="s" value="" /><br/>';
         $str .= '<label>'.get_string('tag', 'repository_flickr_public').'</label><br /><input type="text" name="flickr_tag" /><br />';
         return $str;
     }
@@ -402,20 +408,39 @@ class repository_flickr_public extends repository {
      * @return string
      */
     private function build_photo_url($photoid) {
-        $result = $this->flickr->photos_getSizes($photoid);
-        $url = '';
-        if(!empty($result[4])) {
-            $url = $result[4]['source'];
-        } elseif(!empty($result[3])) {
-            $url = $result[3]['source'];
-        } elseif(!empty($result[2])) {
-            $url = $result[2]['source'];
+        $bestsize = $this->get_best_size($photoid);
+        if (!isset($bestsize['source'])) {
+            throw new repository_exception('cannotdownload', 'repository');
         }
-        return $url;
+        return $bestsize['source'];
+    }
+
+    /**
+     * Returns the best size for a photo
+     *
+     * @param string $photoid the photo identifier
+     * @return array of information provided by the API
+     */
+    protected function get_best_size($photoid) {
+        if (!isset(self::$sizes[$photoid])) {
+            // Sizes are returned from smallest to greatest.
+            self::$sizes[$photoid] = $this->flickr->photos_getSizes($photoid);
+        }
+        $sizes = self::$sizes[$photoid];
+        $bestsize = array();
+        if (is_array($sizes)) {
+            while ($bestsize = array_pop($sizes)) {
+                // Make sure the source is set. Exit the loop if found.
+                if (isset($bestsize['source'])) {
+                    break;
+                }
+            }
+        }
+        return $bestsize;
     }
 
     public function get_link($photoid) {
-        return $this->build_photo_id($photoid);
+        return $this->build_photo_url($photoid);
     }
 
     /**
@@ -434,33 +459,23 @@ class repository_flickr_public extends repository {
             $author = $info['owner']['username'];
         }
         $copyright = get_string('author', 'repository') . ': ' . $author;
-        $result = $this->flickr->photos_getSizes($photoid);
-        // download link
-        $source = '';
-        // flickr photo page
-        $url = '';
-        if (!empty($result[4])) {
-            $source = $result[4]['source'];
-            $url = $result[4]['url'];
-        } elseif(!empty($result[3])) {
-            $source = $result[3]['source'];
-            $url = $result[3]['url'];
-        } elseif(!empty($result[2])) {
-            $source = $result[2]['source'];
-            $url = $result[2]['url'];
+
+        // If we can read the original secret, it means that we have access to the original picture.
+        if (isset($info['originalsecret'])) {
+            $source = $this->flickr->buildPhotoURL($info, 'original');
+        } else {
+            $source = $this->build_photo_url($photoid);
         }
-        $path = $this->prepare_file($file);
-        $fp = fopen($path, 'w');
-        $c = new curl;
-        $c->download(array(array('url'=>$source, 'file'=>$fp)));
-        // must close file handler, otherwise gd lib will fail to process it
-        fclose($fp);
+
+        $result = parent::get_file($source, $file);
+        $path = $result['path'];
+
         if (!empty($this->usewatermarks)) {
             $img = new moodle_image($path);
             $img->watermark($copyright, array(10,10), array('ttf'=>true, 'fontsize'=>12))->saveas($path);
         }
 
-        return array('path'=>$path, 'url'=>$url, 'author'=>$info['owner']['realname'], 'license'=>$this->license4moodle($info['license']));
+        return array('path'=>$path, 'author'=>$info['owner']['realname'], 'license'=>$this->license4moodle($info['license']));
     }
 
     /**
@@ -469,6 +484,7 @@ class repository_flickr_public extends repository {
      */
     public static function instance_config_form($mform) {
         $mform->addElement('text', 'email_address', get_string('emailaddress', 'repository_flickr_public'));
+        $mform->setType('email_address', PARAM_RAW_TRIMMED); // This is for sending to flickr. Not our job to validate it.
         $mform->addElement('checkbox', 'usewatermarks', get_string('watermark', 'repository_flickr_public'));
         $mform->setDefault('usewatermarks', 0);
     }
@@ -493,6 +509,7 @@ class repository_flickr_public extends repository {
         $strrequired = get_string('required');
 
         $mform->addElement('text', 'api_key', get_string('apikey', 'repository_flickr_public'), array('value'=>$api_key,'size' => '40'));
+        $mform->setType('api_key', PARAM_RAW_TRIMMED);
         $mform->addRule('api_key', $strrequired, 'required', null, 'client');
 
         $mform->addElement('static', null, '',  get_string('information','repository_flickr_public'));
@@ -512,7 +529,7 @@ class repository_flickr_public extends repository {
     public static function plugin_init() {
         //here we create a default instance for this type
 
-        $id = repository::static_function('flickr_public','create', 'flickr_public', 0, get_system_context(), array('name'=>'', 'email_address' => null, 'usewatermarks' => false), 0);
+        $id = repository::static_function('flickr_public','create', 'flickr_public', 0, context_system::instance(), array('name'=>'', 'email_address' => null, 'usewatermarks' => false), 0);
         if (empty($id)) {
             return false;
         } else {
@@ -534,5 +551,14 @@ class repository_flickr_public extends repository {
      */
     public function get_file_source_info($photoid) {
         return $this->build_photo_url($photoid);
+    }
+
+    /**
+     * Is this repository accessing private data?
+     *
+     * @return bool
+     */
+    public function contains_private_data() {
+        return false;
     }
 }

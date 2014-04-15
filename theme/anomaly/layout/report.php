@@ -1,10 +1,37 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * The report layout for the Anomaly theme.
+ *
+ * @package    theme_anomaly
+ * @copyright  2010 Patrick Malley (http://newschoollearning.com/)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 $hasheading = ($PAGE->heading);
 $hasnavbar = (empty($PAGE->layout_options['nonavbar']) && $PAGE->has_navbar());
 $hasfooter = (empty($PAGE->layout_options['nofooter']));
-$hassidepre = $PAGE->blocks->region_has_content('side-pre', $OUTPUT);
-$showsidepre = $hassidepre && !$PAGE->blocks->region_completely_docked('side-pre', $OUTPUT);
+$hassidepre = (empty($PAGE->layout_options['noblocks']) && $PAGE->blocks->region_has_content('side-pre', $OUTPUT));
+$hassidepost = (empty($PAGE->layout_options['noblocks']) && $PAGE->blocks->region_has_content('side-post', $OUTPUT));
+$haslogininfo = (empty($PAGE->layout_options['nologininfo']));
+
+$showsidepre = ($hassidepre && !$PAGE->blocks->region_completely_docked('side-pre', $OUTPUT));
+$showsidepost = ($hassidepost && !$PAGE->blocks->region_completely_docked('side-post', $OUTPUT));
+
 $custommenu = $OUTPUT->custom_menu();
 $hascustommenu = (empty($PAGE->layout_options['nocustommenu']) && !empty($custommenu));
 
@@ -17,6 +44,16 @@ if ($hascustommenu) {
 }
 if ($hasnavbar) {
     $bodyclasses[] = 'hasnavbar';
+}
+
+$courseheader = $coursecontentheader = $coursecontentfooter = $coursefooter = '';
+if (empty($PAGE->layout_options['nocourseheaderfooter'])) {
+    $courseheader = $OUTPUT->course_header();
+    $coursecontentheader = $OUTPUT->course_content_header();
+    if (empty($PAGE->layout_options['nocoursefooter'])) {
+        $coursecontentfooter = $OUTPUT->course_content_footer();
+        $coursefooter = $OUTPUT->course_footer();
+    }
 }
 
 echo $OUTPUT->doctype() ?>
@@ -44,9 +81,12 @@ echo $OUTPUT->doctype() ?>
             echo $PAGE->headingmenu
         ?></div><?php } ?>
 
+        <?php if (!empty($courseheader)) { ?>
+            <div id="course-header"><?php echo $courseheader; ?></div>
+        <?php } ?>
         <?php if ($hascustommenu) { ?>
- 	<div id="custommenu"><?php echo $custommenu; ?></div>
-		<?php } ?>
+    <div id="custommenu"><?php echo $custommenu; ?></div>
+        <?php } ?>
 
         <?php if ($hasnavbar) { ?>
             <div class="navbar clearfix">
@@ -61,7 +101,9 @@ echo $OUTPUT->doctype() ?>
     <div id="page-content" class="clearfix">
         <div id="report-main-content">
             <div class="region-content">
+                <?php echo $coursecontentheader; ?>
                 <?php echo $OUTPUT->main_content() ?>
+                <?php echo $coursecontentfooter; ?>
             </div>
         </div>
         <?php if ($hassidepre) { ?>
@@ -76,6 +118,9 @@ echo $OUTPUT->doctype() ?>
     </div>
 
 <!-- START OF FOOTER -->
+    <?php if (!empty($coursefooter)) { ?>
+        <div id="course-footer"><?php echo $coursefooter; ?></div>
+    <?php } ?>
     <?php if ($hasfooter) { ?>
     <div id="page-footer" class="clearfix">
         <p class="helplink"><?php echo page_doc_link(get_string('moodledocslink')) ?></p>

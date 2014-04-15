@@ -156,7 +156,7 @@ abstract class core_media {
      * @param moodle_url $url URL
      */
     public static function get_extension(moodle_url $url) {
-        // Note: Does not use textlib (. is UTF8-safe).
+        // Note: Does not use core_text (. is UTF8-safe).
         $filename = self::get_filename($url);
         $dot = strrpos($filename, '.');
         if ($dot === false) {
@@ -493,7 +493,7 @@ class core_media_player_vimeo extends core_media_player_external {
 
         $output = <<<OET
 <span class="mediaplugin mediaplugin_vimeo">
-<iframe title="$info" src="http://player.vimeo.com/video/$videoid"
+<iframe title="$info" src="https://player.vimeo.com/video/$videoid"
   width="$width" height="$height" frameborder="0"></iframe>
 </span>
 OET;
@@ -503,7 +503,7 @@ OET;
 
     protected function get_regex() {
         // Initial part of link.
-        $start = '~^http://vimeo\.com/';
+        $start = '~^https?://vimeo\.com/';
         // Middle bit: either watch?v= or v/.
         $middle = '([0-9]+)';
         return $start . $middle . core_media_player_external::END_LINK_REGEX_PART;
@@ -526,10 +526,7 @@ OET;
  */
 class core_media_player_youtube extends core_media_player_external {
     protected function embed_external(moodle_url $url, $name, $width, $height, $options) {
-        global $CFG;
-
-        $site = $this->matches[1];
-        $videoid = $this->matches[3];
+        $videoid = end($this->matches);
 
         $info = trim($name);
         if (empty($info) or strpos($info, 'http') === 0) {
@@ -539,34 +536,25 @@ class core_media_player_youtube extends core_media_player_external {
 
         self::pick_video_size($width, $height);
 
-        if (empty($CFG->xmlstrictheaders)) {
-            return <<<OET
-<iframe title="$info" width="$width" height="$height"
-  src="$site/embed/$videoid?rel=0&wmode=transparent" frameborder="0" allowfullscreen></iframe>
-OET;
-        }
-
-        // NOTE: we can not use any link fallback because it breaks built-in
-        // player on iOS devices.
-        $output = <<<OET
+        return <<<OET
 <span class="mediaplugin mediaplugin_youtube">
-<object title="$info" type="application/x-shockwave-flash"
-  data="$site/v/$videoid&amp;fs=1&amp;rel=0" width="$width" height="$height">
- <param name="movie" value="$site/v/$videoid&amp;fs=1&amp;rel=0" />
- <param name="FlashVars" value="playerMode=embedded" />
- <param name="allowFullScreen" value="true" />
-</object>
+<iframe title="$info" width="$width" height="$height"
+  src="https://www.youtube.com/embed/$videoid?rel=0&wmode=transparent" frameborder="0" allowfullscreen="1"></iframe>
 </span>
 OET;
 
-        return $output;
     }
 
     protected function get_regex() {
+        // Regex for standard youtube link
+         $link = '(youtube(-nocookie)?\.com/(?:watch\?v=|v/))';
+        // Regex for shortened youtube link
+        $shortlink = '((youtu|y2u)\.be/)';
+
         // Initial part of link.
-        $start = '~^(https?://www\.youtube(-nocookie)?\.com)/';
-        // Middle bit: either watch?v= or v/.
-        $middle = '(?:watch\?v=|v/)([a-z0-9\-_]+)';
+         $start = '~^https?://(www\.)?(' . $link . '|' . $shortlink . ')';
+        // Middle bit: Video key value
+        $middle = '([a-z0-9\-_]+)';
         return $start . $middle . core_media_player_external::END_LINK_REGEX_PART;
     }
 
@@ -577,7 +565,7 @@ OET;
     }
 
     public function get_embeddable_markers() {
-        return array('youtube');
+        return array('youtube.com', 'youtube-nocookie.com', 'youtu.be', 'y2u.be');
     }
 }
 
@@ -607,26 +595,16 @@ class core_media_player_youtube_playlist extends core_media_player_external {
 
         self::pick_video_size($width, $height);
 
-        // TODO: iframe HTML 5 video not implemented and object does not work
-        // on iOS devices.
-        $fallback = core_media_player::PLACEHOLDER;
-        $output = <<<OET
+        return <<<OET
 <span class="mediaplugin mediaplugin_youtube">
-<object title="$info" type="application/x-shockwave-flash"
-  data="$site/p/$playlist&amp;fs=1&amp;rel=0" width="$width" height="$height">
- <param name="movie" value="$site/v/$playlist&amp;fs=1&amp;rel=0" />
- <param name="FlashVars" value="playerMode=embedded" />
- <param name="allowFullScreen" value="true" />
-$fallback</object>
+<iframe width="$width" height="$height" src="https://$site/embed/videoseries?list=$playlist" frameborder="0" allowfullscreen="1"></iframe>
 </span>
 OET;
-
-        return $output;
     }
 
     protected function get_regex() {
         // Initial part of link.
-        $start = '~^(https?://www\.youtube(-nocookie)?\.com)/';
+        $start = '~^https?://(www\.youtube(-nocookie)?\.com)/';
         // Middle bit: either view_play_list?p= or p/ (doesn't work on youtube) or playlist?list=.
         $middle = '(?:view_play_list\?p=|p/|playlist\?list=)([a-z0-9\-_]+)';
         return $start . $middle . core_media_player_external::END_LINK_REGEX_PART;
@@ -839,7 +817,7 @@ class core_media_player_qt extends core_media_player {
         <param name="pluginspage" value="http://www.apple.com/quicktime/download/" />
         <param name="src" value="$url" />
         <param name="controller" value="true" />
-        <param name="loop" value="true" />
+        <param name="loop" value="false" />
         <param name="autoplay" value="false" />
         <param name="autostart" value="false" />
         <param name="scale" value="aspect" />
@@ -848,7 +826,7 @@ class core_media_player_qt extends core_media_player {
             <param name="src" value="$url" />
             <param name="pluginurl" value="http://www.apple.com/quicktime/download/" />
             <param name="controller" value="true" />
-            <param name="loop" value="true" />
+            <param name="loop" value="false" />
             <param name="autoplay" value="false" />
             <param name="autostart" value="false" />
             <param name="scale" value="aspect" />
@@ -952,7 +930,7 @@ class core_media_player_swf extends core_media_player {
   <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="$width" height="$height">
     <param name="movie" value="$url" />
     <param name="autoplay" value="true" />
-    <param name="loop" value="true" />
+    <param name="loop" value="false" />
     <param name="controller" value="true" />
     <param name="scale" value="aspect" />
     <param name="base" value="." />
@@ -961,7 +939,7 @@ class core_media_player_swf extends core_media_player {
     <object type="application/x-shockwave-flash" data="$url" width="$width" height="$height">
       <param name="controller" value="true" />
       <param name="autoplay" value="true" />
-      <param name="loop" value="true" />
+      <param name="loop" value="false" />
       <param name="scale" value="aspect" />
       <param name="base" value="." />
       <param name="allowscriptaccess" value="never" />
@@ -1005,8 +983,8 @@ class core_media_player_html5video extends core_media_player {
     public function embed($urls, $name, $width, $height, $options) {
         // Special handling to make videos play on Android devices pre 2.3.
         // Note: I tested and 2.3.3 (in emulator) works without, is 533.1 webkit.
-        $oldandroid = check_browser_version('WebKit Android') &&
-                !check_browser_version('WebKit Android', '533.1');
+        $oldandroid = core_useragent::is_webkit_android() &&
+                !core_useragent::check_webkit_android_version('533.1');
 
         // Build array of source tags.
         $sources = array();
@@ -1089,12 +1067,12 @@ OET;
                 // versions or manual plugins.
                 if ($ext === 'ogv' || $ext === 'webm') {
                     // Formats .ogv and .webm are not supported in IE or Safari.
-                    if (check_browser_version('MSIE') || check_browser_version('Safari')) {
+                    if (core_useragent::is_ie() || core_useragent::is_safari()) {
                         continue;
                     }
                 } else {
                     // Formats .m4v and .mp4 are not supported in Firefox or Opera.
-                    if (check_browser_version('Firefox') || check_browser_version('Opera')) {
+                    if (core_useragent::is_firefox() || core_useragent::is_opera()) {
                         continue;
                     }
                 }
@@ -1158,18 +1136,18 @@ OET;
             if (in_array($ext, $extensions)) {
                 if ($ext === 'ogg' || $ext === 'oga') {
                     // Formats .ogg and .oga are not supported in IE or Safari.
-                    if (check_browser_version('MSIE') || check_browser_version('Safari')) {
+                    if (core_useragent::is_ie() || core_useragent::is_safari()) {
                         continue;
                     }
                 } else {
                     // Formats .aac, .mp3, and .m4a are not supported in Firefox or Opera.
-                    if (check_browser_version('Firefox') || check_browser_version('Opera')) {
+                    if (core_useragent::is_firefox() || core_useragent::is_opera()) {
                         continue;
                     }
                 }
                 // Old Android versions (pre 2.3.3) 'support' audio tag but no codecs.
-                if (check_browser_version('WebKit Android') &&
-                        !check_browser_version('WebKit Android', '533.1')) {
+                if (core_useragent::is_webkit_android() &&
+                        !core_useragent::is_webkit_android('533.1')) {
                     continue;
                 }
 

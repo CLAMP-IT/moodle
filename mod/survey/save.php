@@ -19,7 +19,7 @@
  * This file is responsible for saving the results of a users survey and displaying
  * the final message.
  *
- * @package   mod-survey
+ * @package   mod_survey
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -47,20 +47,27 @@
     $PAGE->set_url('/mod/survey/save.php', array('id'=>$id));
     require_login($course, false, $cm);
 
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     require_capability('mod/survey:participate', $context);
 
     if (! $survey = $DB->get_record("survey", array("id"=>$cm->instance))) {
         print_error('invalidsurveyid', 'survey');
     }
 
-    add_to_log($course->id, "survey", "submit", "view.php?id=$cm->id", "$survey->id", "$cm->id");
+    $params = array(
+        'context' => $context,
+        'courseid' => $course->id,
+        'other' => array('surveyid' => $survey->id)
+    );
+    $event = \mod_survey\event\response_submitted::create($params);
+    $event->trigger();
 
     $strsurveysaved = get_string('surveysaved', 'survey');
 
     $PAGE->set_title($strsurveysaved);
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
+    echo $OUTPUT->heading($survey->name);
 
     if (survey_already_done($survey->id, $USER->id)) {
         notice(get_string("alreadysubmitted", "survey"), $_SERVER["HTTP_REFERER"]);

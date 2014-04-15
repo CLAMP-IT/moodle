@@ -1,4 +1,18 @@
-<!--
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 function NewHttpReq() {
     var httpReq = false;
     if (typeof XMLHttpRequest != 'undefined') {
@@ -27,7 +41,11 @@ function DoRequest(httpReq,url,param) {
     //popupwin(url+"\n"+param);
     httpReq.open("POST", url,false);
     httpReq.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    httpReq.send(param);
+    try {
+        httpReq.send(param);
+    } catch (e) {
+        return false;
+    }
     if (httpReq.status == 200) {
         //popupwin(url+"\n"+param+"\n"+httpReq.responseText);
         return httpReq.responseText;
@@ -42,4 +60,3 @@ function popupwin(content) {
     op.document.write(content);
     op.document.close();
 }
-//-->

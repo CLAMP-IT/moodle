@@ -121,12 +121,9 @@ abstract class quiz_attempts_report_table extends table_sql {
     public function col_picture($attempt) {
         global $OUTPUT;
         $user = new stdClass();
+        $additionalfields = explode(',', user_picture::fields());
+        $user = username_load_fields_from_object($user, $attempt, null, $additionalfields);
         $user->id = $attempt->userid;
-        $user->lastname = $attempt->lastname;
-        $user->firstname = $attempt->firstname;
-        $user->imagealt = $attempt->imagealt;
-        $user->picture = $attempt->picture;
-        $user->email = $attempt->email;
         return $OUTPUT->user_picture($user);
     }
 
@@ -137,7 +134,7 @@ abstract class quiz_attempts_report_table extends table_sql {
      */
     public function col_fullname($attempt) {
         $html = parent::col_fullname($attempt);
-        if ($this->is_downloading()) {
+        if ($this->is_downloading() || empty($attempt->attempt)) {
             return $html;
         }
 
@@ -152,7 +149,11 @@ abstract class quiz_attempts_report_table extends table_sql {
      * @return string HTML content to go inside the td.
      */
     public function col_state($attempt) {
-        return quiz_attempt::state_name($attempt->state);
+        if (!is_null($attempt->attempt)) {
+            return quiz_attempt::state_name($attempt->state);
+        } else {
+            return  '-';
+        }
     }
 
     /**
@@ -189,8 +190,6 @@ abstract class quiz_attempts_report_table extends table_sql {
     public function col_duration($attempt) {
         if ($attempt->timefinish) {
             return format_time($attempt->timefinish - $attempt->timestart);
-        } else if ($attempt->timestart) {
-            return get_string('unfinished', 'quiz');
         } else {
             return '-';
         }
@@ -235,32 +234,63 @@ abstract class quiz_attempts_report_table extends table_sql {
     public function make_review_link($data, $attempt, $slot) {
         global $OUTPUT;
 
-        $stepdata = $this->lateststeps[$attempt->usageid][$slot];
-        $state = question_state::get($stepdata->state);
-
         $flag = '';
-        if ($stepdata->flagged) {
-            $flag = ' ' . $OUTPUT->pix_icon('i/flagged', get_string('flagged', 'question'),
+        if ($this->is_flagged($attempt->usageid, $slot)) {
+            $flag = $OUTPUT->pix_icon('i/flagged', get_string('flagged', 'question'),
                     'moodle', array('class' => 'questionflag'));
         }
 
         $feedbackimg = '';
+        $state = $this->slot_state($attempt, $slot);
         if ($state->is_finished() && $state != question_state::$needsgrading) {
-            $feedbackimg = ' ' . $this->icon_for_fraction($stepdata->fraction);
+            $feedbackimg = $this->icon_for_fraction($this->slot_fraction($attempt, $slot));
         }
 
-        $output = html_writer::tag('span', html_writer::tag('span',
-                $data . $feedbackimg . $flag,
-                array('class' => $state->get_state_class(true))), array('class' => 'que'));
+        $output = html_writer::tag('span', $feedbackimg . html_writer::tag('span',
+                $data, array('class' => $state->get_state_class(true))) . $flag, array('class' => 'que'));
 
-        $url = new moodle_url('/mod/quiz/reviewquestion.php',
-                array('attempt' => $attempt->attempt, 'slot' => $slot));
+        $reviewparams = array('attempt' => $attempt->attempt, 'slot' => $slot);
+        if (isset($attempt->try)) {
+            $reviewparams['step'] = $this->step_no_for_try($attempt->usageid, $slot, $attempt->try);
+        }
+        $url = new moodle_url('/mod/quiz/reviewquestion.php', $reviewparams);
         $output = $OUTPUT->action_link($url, $output,
                 new popup_action('click', $url, 'reviewquestion',
                         array('height' => 450, 'width' => 650)),
                 array('title' => get_string('reviewresponse', 'quiz')));
 
         return $output;
+    }
+
+    /**
+     * @param object $attempt the row data
+     * @param int $slot
+     * @return question_state
+     */
+    protected function slot_state($attempt, $slot) {
+        $stepdata = $this->lateststeps[$attempt->usageid][$slot];
+        return question_state::get($stepdata->state);
+    }
+
+    /**
+     * @param int $questionusageid
+     * @param int $slot
+     * @return bool
+     */
+    protected function is_flagged($questionusageid, $slot) {
+        $stepdata = $this->lateststeps[$questionusageid][$slot];
+        return $stepdata->flagged;
+    }
+
+
+    /**
+     * @param object $attempt the row data
+     * @param int $slot
+     * @return float
+     */
+    protected function slot_fraction($attempt, $slot) {
+        $stepdata = $this->lateststeps[$attempt->usageid][$slot];
+        return $stepdata->fraction;
     }
 
     /**
@@ -271,17 +301,18 @@ abstract class quiz_attempts_report_table extends table_sql {
     protected function icon_for_fraction($fraction) {
         global $OUTPUT;
 
-        $state = question_state::graded_state_for_fraction($fraction);
-        if ($state == question_state::$gradedright) {
-            $icon = 'i/tick_green_big';
-        } else if ($state == question_state::$gradedpartial) {
-            $icon = 'i/tick_amber_big';
-        } else {
-            $icon = 'i/cross_red_big';
-        }
-
-        return $OUTPUT->pix_icon($icon, get_string($state->get_feedback_class(), 'question'),
+        $feedbackclass = question_state::graded_state_for_fraction($fraction)->get_feedback_class();
+        return $OUTPUT->pix_icon('i/grade_' . $feedbackclass, get_string($feedbackclass, 'question'),
                 'moodle', array('class' => 'icon'));
+    }
+
+    /**
+     * Load any extra data after main query. At this point you can call {@link get_qubaids_condition} to get the condition that
+     * limits the query to just the question usages shown in this report page or alternatively for all attempts if downloading a
+     * full report.
+     */
+    protected function load_extra_data() {
+        $this->lateststeps = $this->load_question_latest_steps();
     }
 
     /**
@@ -289,11 +320,14 @@ abstract class quiz_attempts_report_table extends table_sql {
      *
      * The results are returned as an two dimensional array $qubaid => $slot => $dataobject
      *
-     * @param qubaid_condition $qubaids used to restrict which usages are included
+     * @param qubaid_condition|null $qubaids used to restrict which usages are included
      * in the query. See {@link qubaid_condition}.
      * @return array of records. See the SQL in this function to see the fields available.
      */
-    protected function load_question_latest_steps(qubaid_condition $qubaids) {
+    protected function load_question_latest_steps(qubaid_condition $qubaids = null) {
+        if ($qubaids === null) {
+            $qubaids = $this->get_qubaids_condition();
+        }
         $dm = new question_engine_data_mapper();
         $latesstepdata = $dm->load_questions_usages_latest_steps(
                 $qubaids, array_keys($this->questions));
@@ -307,9 +341,19 @@ abstract class quiz_attempts_report_table extends table_sql {
     }
 
     /**
+     * Does this report require loading any more data after the main query. After the main query then
+     * you can use $this->get
+     *
+     * @return bool should {@link query_db()} call {@link load_extra_data}?
+     */
+    protected function requires_extra_data() {
+        return $this->requires_latest_steps_loaded();
+    }
+
+    /**
      * Does this report require the detailed information for each question from the
      * question_attempts_steps table?
-     * @return bool should {@link query_db()} call {@link load_question_latest_steps}?
+     * @return bool should {@link load_extra_data} call {@link load_question_latest_steps}?
      */
     protected function requires_latest_steps_loaded() {
         return false;
@@ -352,13 +396,12 @@ abstract class quiz_attempts_report_table extends table_sql {
         $extrafields = get_extra_user_fields_sql($this->context, 'u', '',
                 array('id', 'idnumber', 'firstname', 'lastname', 'picture',
                 'imagealt', 'institution', 'department', 'email'));
+        $allnames = get_all_user_name_fields(true, 'u');
         $fields .= '
                 quiza.uniqueid AS usageid,
                 quiza.id AS attempt,
                 u.id AS userid,
-                u.idnumber,
-                u.firstname,
-                u.lastname,
+                u.idnumber, ' . $allnames . ',
                 u.picture,
                 u.imagealt,
                 u.institution,
@@ -497,9 +540,8 @@ abstract class quiz_attempts_report_table extends table_sql {
 
         parent::query_db($pagesize, $useinitialsbar);
 
-        if ($this->requires_latest_steps_loaded()) {
-            $qubaids = $this->get_qubaids_condition();
-            $this->lateststeps = $this->load_question_latest_steps($qubaids);
+        if ($this->requires_extra_data()) {
+            $this->load_extra_data();
         }
     }
 
@@ -516,7 +558,7 @@ abstract class quiz_attempts_report_table extends table_sql {
             return;
         }
 
-        $url = new moodle_url($this->reporturl, $this->displayoptions);
+        $url = $this->options->get_url();
         $url->param('sesskey', sesskey());
 
         echo '<div id="tablecontainer">';

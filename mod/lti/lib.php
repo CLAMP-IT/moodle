@@ -35,8 +35,7 @@
 /**
  * This file contains a library of functions and constants for the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -48,6 +47,15 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
+
+/**
+ * Returns all other caps used in module.
+ *
+ * @return array
+ */
+function lti_get_extra_capabilities() {
+    return array('moodle/site:accessallgroups');
+}
 
 /**
  * List of features supported in URL module
@@ -163,13 +171,57 @@ function lti_delete_instance($id) {
     return $DB->delete_records("lti", array("id" => $basiclti->id));
 }
 
+function lti_get_types() {
+    global $OUTPUT;
+
+    $subtypes = array();
+    foreach (get_plugin_list('ltisource') as $name => $dir) {
+        if ($moretypes = component_callback("ltisource_$name", 'get_types')) {
+            $subtypes = array_merge($subtypes, $moretypes);
+        }
+    }
+    if (empty($subtypes)) {
+        return MOD_SUBTYPE_NO_CHILDREN;
+    }
+
+    $types = array();
+
+    $type           = new stdClass();
+    $type->modclass = MOD_CLASS_ACTIVITY;
+    $type->type     = 'lti_group_start';
+    $type->typestr  = '--'.get_string('modulenameplural', 'mod_lti');
+    $types[]        = $type;
+
+    $link     = get_string('modulename_link', 'mod_lti');
+    $linktext = get_string('morehelp');
+    $help     = get_string('modulename_help', 'mod_lti');
+    $help    .= html_writer::tag('div', $OUTPUT->doc_link($link, $linktext, true), array('class' => 'helpdoclink'));
+
+    $type           = new stdClass();
+    $type->modclass = MOD_CLASS_ACTIVITY;
+    $type->type     = 'lti';
+    $type->typestr  = get_string('generaltool', 'mod_lti');
+    $type->help     = $help;
+    $types[]        = $type;
+
+    $types = array_merge($types, $subtypes);
+
+    $type           = new stdClass();
+    $type->modclass = MOD_CLASS_ACTIVITY;
+    $type->type     = 'lti_group_end';
+    $type->typestr  = '--';
+    $types[]        = $type;
+
+    return $types;
+}
+
 /**
  * Given a coursemodule object, this function returns the extra
  * information needed to print this activity in various places.
  * For this module we just need to support external urls as
  * activity icons
  *
- * @param cm_info $coursemodule
+ * @param stdClass $coursemodule
  * @return cached_cm_info info
  */
 function lti_get_coursemodule_info($coursemodule) {
@@ -177,7 +229,7 @@ function lti_get_coursemodule_info($coursemodule) {
     require_once($CFG->dirroot.'/mod/lti/locallib.php');
 
     if (!$lti = $DB->get_record('lti', array('id' => $coursemodule->instance),
-            'icon, secureicon, intro, introformat, name')) {
+            'icon, secureicon, intro, introformat, name, toolurl, launchcontainer')) {
         return null;
     }
 
@@ -194,6 +246,19 @@ function lti_get_coursemodule_info($coursemodule) {
     if ($coursemodule->showdescription) {
         // Convert intro to html. Do not filter cached version, filters run at display time.
         $info->content = format_module_intro('lti', $lti, $coursemodule->id, false);
+    }
+
+    // Does the link open in a new window?
+    $tool = lti_get_tool_by_url_match($lti->toolurl);
+    if ($tool) {
+        $toolconfig = lti_get_type_config($tool->id);
+    } else {
+        $toolconfig = array();
+    }
+    $launchcontainer = lti_get_launch_container($lti, $toolconfig);
+    if ($launchcontainer == LTI_LAUNCH_CONTAINER_WINDOW) {
+        $launchurl = new moodle_url('/mod/lti/launch.php', array('id' => $coursemodule->id));
+        $info->onclick = "window.open('" . $launchurl->out(false) . "', 'lti'); return false;";
     }
 
     $info->name = $lti->name;
@@ -395,7 +460,7 @@ function lti_grade_item_delete($basiclti) {
 function lti_extend_settings_navigation($settings, $parentnode) {
     global $PAGE;
 
-    if (has_capability('mod/lti:grade', get_context_instance(CONTEXT_MODULE, $PAGE->cm->id))) {
+    if (has_capability('mod/lti:grade', context_module::instance($PAGE->cm->id))) {
         $keys = $parentnode->get_children_key_list();
 
         $node = navigation_node::create('Submissions',

@@ -60,13 +60,16 @@ require_once($CFG->dirroot . '/backup/util/helper/backup_null_iterator.class.php
 require_once($CFG->dirroot . '/backup/util/helper/backup_array_iterator.class.php');
 require_once($CFG->dirroot . '/backup/util/helper/backup_anonymizer_helper.class.php');
 require_once($CFG->dirroot . '/backup/util/helper/backup_file_manager.class.php');
+require_once($CFG->dirroot . '/backup/util/helper/restore_moodlexml_parser_processor.class.php'); // Required by backup_general_helper::get_backup_information().
 require_once($CFG->dirroot . '/backup/util/xml/xml_writer.class.php');
 require_once($CFG->dirroot . '/backup/util/xml/output/xml_output.class.php');
 require_once($CFG->dirroot . '/backup/util/xml/output/file_xml_output.class.php');
 require_once($CFG->dirroot . '/backup/util/xml/contenttransformer/xml_contenttransformer.class.php');
+require_once($CFG->dirroot . '/backup/util/xml/parser/progressive_parser.class.php');
 require_once($CFG->dirroot . '/backup/util/loggers/base_logger.class.php');
 require_once($CFG->dirroot . '/backup/util/loggers/error_log_logger.class.php');
 require_once($CFG->dirroot . '/backup/util/loggers/file_logger.class.php');
+require_once($CFG->dirroot . '/backup/util/loggers/core_backup_html_logger.class.php');
 require_once($CFG->dirroot . '/backup/util/loggers/database_logger.class.php');
 require_once($CFG->dirroot . '/backup/util/loggers/output_indented_logger.class.php');
 require_once($CFG->dirroot . '/backup/util/settings/setting_dependency.class.php');
@@ -84,6 +87,7 @@ require_once($CFG->dirroot . '/backup/util/plan/base_step.class.php');
 require_once($CFG->dirroot . '/backup/util/plan/backup_step.class.php');
 require_once($CFG->dirroot . '/backup/util/plan/backup_structure_step.class.php');
 require_once($CFG->dirroot . '/backup/util/plan/backup_execution_step.class.php');
+require_once($CFG->dirroot . '/backup/controller/base_controller.class.php');
 require_once($CFG->dirroot . '/backup/controller/backup_controller.class.php');
 require_once($CFG->dirroot . '/backup/util/ui/base_moodleform.class.php');
 require_once($CFG->dirroot . '/backup/util/ui/base_ui.class.php');

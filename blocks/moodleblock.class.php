@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,8 +17,7 @@
 /**
  * This file contains the parent class for moodle blocks, block_base.
  *
- * @package    core
- * @subpackage block
+ * @package    core_block
  * @license    http://www.gnu.org/copyleft/gpl.html GNU Public License
  */
 
@@ -43,7 +41,7 @@ define('BLOCK_TYPE_TREE',    3);
  * Class for describing a moodle block, all Moodle blocks derive from this class
  *
  * @author Jon Papaioannou
- * @package blocks
+ * @package core_block
  */
 class block_base {
 
@@ -58,6 +56,12 @@ class block_base {
      * @var string $title
      */
     var $title         = NULL;
+
+    /**
+     * The name of the block to be displayed in the block title area if the title is empty.
+     * @var string arialabel
+     */
+    var $arialabel         = NULL;
 
     /**
      * The type of content that this block creates. Currently support options - BLOCK_TYPE_LIST, BLOCK_TYPE_TEXT
@@ -224,7 +228,7 @@ class block_base {
         global $CFG;
 
         $bc = new block_contents($this->html_attributes());
-
+        $bc->attributes['data-block'] = $this->name();
         $bc->blockinstanceid = $this->instance->id;
         $bc->blockpositionid = $this->instance->blockpositionid;
 
@@ -239,6 +243,11 @@ class block_base {
 
         if (!$this->hide_header()) {
             $bc->title = $this->title;
+        }
+
+        if (empty($bc->title)) {
+            $bc->arialabel = new lang_string('pluginname', get_class($this));
+            $this->arialabel = $bc->arialabel;
         }
 
         if ($this->page->user_is_editing()) {
@@ -258,6 +267,10 @@ class block_base {
             $bc->collapsible = block_contents::HIDDEN;
         } else {
             $bc->collapsible = block_contents::VISIBLE;
+        }
+
+        if ($this->instance_can_be_docked() && !$this->hide_header()) {
+            $bc->dockable = true;
         }
 
         $bc->annotation = ''; // TODO MDL-19398 need to work out what to say here.
@@ -329,7 +342,7 @@ class block_base {
 
     /**
      * Subclasses should override this and return true if the
-     * subclass block has a config_global.html file.
+     * subclass block has a settings.php file.
      *
      * @return boolean
      */
@@ -398,8 +411,12 @@ class block_base {
     function html_attributes() {
         $attributes = array(
             'id' => 'inst' . $this->instance->id,
-            'class' => 'block_' . $this->name(). '  block'
+            'class' => 'block_' . $this->name(). '  block',
+            'role' => $this->get_aria_role()
         );
+        if ($this->hide_header()) {
+            $attributes['class'] .= ' no-header';
+        }
         if ($this->instance_can_be_docked() && get_user_preferences('docked_block_instance_'.$this->instance->id, 0)) {
             $attributes['class'] .= ' dock_on_load';
         }
@@ -418,14 +435,18 @@ class block_base {
             $this->config = unserialize(base64_decode($instance->configdata));
         }
         $this->instance = $instance;
-        $this->context = get_context_instance(CONTEXT_BLOCK, $instance->id);
+        $this->context = context_block::instance($instance->id);
         $this->page = $page;
         $this->specialization();
     }
 
+    /**
+     * Allows the block to load any JS it requires into the page.
+     *
+     * By default this function simply permits the user to dock the block if it is dockable.
+     */
     function get_required_javascript() {
         if ($this->instance_can_be_docked() && !$this->hide_header()) {
-            $this->page->requires->js_init_call('M.core_dock.init_genericblock', array($this->instance->id));
             user_preference_allow_ajax_update('docked_block_instance_'.$this->instance->id, PARAM_INT);
         }
     }
@@ -558,18 +579,47 @@ class block_base {
     function user_can_addto($page) {
         global $USER;
 
-        if (has_capability('moodle/block:edit', $page->context)) {
+        // The blocks in My Moodle are a special case and use a different capability.
+        if (!empty($USER->id)
+            && $page->context->contextlevel == CONTEXT_USER // Page belongs to a user
+            && $page->context->instanceid == $USER->id // Page belongs to this user
+            && $page->pagetype == 'my-index') { // Ensure we are on the My Moodle page
+            $capability = 'block/' . $this->name() . ':myaddinstance';
+            return $this->has_add_block_capability($page, $capability)
+                    && has_capability('moodle/my:manageblocks', $page->context);
+        }
+
+        $capability = 'block/' . $this->name() . ':addinstance';
+        if ($this->has_add_block_capability($page, $capability)
+                && has_capability('moodle/block:edit', $page->context)) {
             return true;
         }
 
-        // The blocks in My Moodle are a special case and use a different capability.
-        if (!empty($USER->id)
-            && $page->context->contextlevel == CONTEXT_USER             // Page belongs to a user
-            && $page->context->instanceid == $USER->id) {               // Page belongs to this user
-            return has_capability('moodle/my:manageblocks', $page->context);
-        }
-
         return false;
+    }
+
+    /**
+     * Returns true if the user can add a block to a page.
+     *
+     * @param moodle_page $page
+     * @param string $capability the capability to check
+     * @return boolean true if user can add a block, false otherwise.
+     */
+    private function has_add_block_capability($page, $capability) {
+        // Check if the capability exists.
+        if (!get_capability_info($capability)) {
+            // Debug warning that the capability does not exist, but no more than once per page.
+            static $warned = array();
+            if (!isset($warned[$this->name()])) {
+                debugging('The block ' .$this->name() . ' does not define the standard capability ' .
+                        $capability , DEBUG_DEVELOPER);
+                $warned[$this->name()] = 1;
+            }
+            // If the capability does not exist, the block can always be added.
+            return true;
+        } else {
+            return has_capability($capability, $page->context);
+        }
     }
 
     static function get_extra_capabilities() {
@@ -672,6 +722,29 @@ EOD;
     public static function comment_add(&$comments, $options) {
         return true;
     }
+
+    /**
+     * Returns the aria role attribute that best describes this block.
+     *
+     * Region is the default, but this should be overridden by a block is there is a region child, or even better
+     * a landmark child.
+     *
+     * Options are as follows:
+     *    - landmark
+     *      - application
+     *      - banner
+     *      - complementary
+     *      - contentinfo
+     *      - form
+     *      - main
+     *      - navigation
+     *      - search
+     *
+     * @return string
+     */
+    public function get_aria_role() {
+        return 'complementary';
+    }
 }
 
 /**
@@ -681,7 +754,7 @@ EOD;
  * $this->content->icons, instead of $this->content->text.
  *
  * @author Jon Papaioannou
- * @package blocks
+ * @package core_block
  */
 
 class block_list extends block_base {
@@ -727,7 +800,7 @@ class block_list extends block_base {
  * not in a separate array.
  *
  * @author Alan Trick
- * @package blocks
+ * @package core_block
  * @internal this extends block_list so we get is_empty() for free
  */
 class block_tree extends block_list {

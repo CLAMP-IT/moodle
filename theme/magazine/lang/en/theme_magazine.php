@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Language strings for the magazine theme.
+ *
+ * @package    theme_magazine
+ * @copyright  2010 John Stabinger (http://newschoollearning.com/)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 $string['pluginname'] = 'Magazine';
 $string['region-side-post'] = 'Right';
 $string['region-side-pre'] = 'Left';
@@ -12,23 +35,23 @@ $string['background'] = 'background';
 $string['backgrounddesc'] = 'Change the background image by entering the URL to a new image. (i.e., http://www.somesite/mybackground.jpg).';
 
 $string['linkcolor'] = 'link';
-$string['linkcolordesc'] = 'Set the color of links in the theme, use html hex code.';
+$string['linkcolordesc'] = 'Set the colour of links in the theme. Use html hex code.';
 
 $string['linkhover'] = 'linkhover';
-$string['linkhoverdesc'] = 'Set the color of links (on hover) in the theme, use html hex code.';
+$string['linkhoverdesc'] = 'Set the colour of links (on hover) in the theme. Use html hex code.';
 
-$string['maincolor'] = 'maincolor';
-$string['maincolordesc'] = 'Set the color hex code of the header, dock bar and other areas. Looks best as a dark or saturated color.';
+$string['maincolor'] = 'Main colour';
+$string['maincolordesc'] = 'Set the colour hex code of the header, dock bar and other areas. Looks best as a dark or saturated colour.';
 
-$string['maincoloraccent'] = 'maincoloraccent';
-$string['maincoloraccentdesc'] = 'Dark accent color for the dock bar and header borders. Should be slightly darker than the main color.';
+$string['maincoloraccent'] = 'Main colour accent';
+$string['maincoloraccentdesc'] = 'Dark accent colour for the dock bar and header borders. Should be slightly darker than the main colour.';
 
-$string['headingcolor'] = 'headingcolor';
-$string['headingcolordesc'] = 'This is the heading color for large headings (site news, my courses) and other headings.';
+$string['headingcolor'] = 'Heading colour';
+$string['headingcolordesc'] = 'This is the heading colour for large headings (site news, my courses) and other headings.';
 
-$string['blockcolor'] = 'blockcolor';
-$string['blockcolordesc'] = 'This is for the block header font color.';
+$string['blockcolor'] = 'Block colour';
+$string['blockcolordesc'] = 'This is for the block header font colour.';
 
 
 $string['forumback'] = 'forumback';
-$string['forumbackdesc'] = 'Set the background color of forum post subject.';
+$string['forumbackdesc'] = 'Set the background colour of forum post subject.';

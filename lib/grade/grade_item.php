@@ -742,7 +742,8 @@ class grade_item extends grade_object {
 
             // Standardise score to the new grade range
             // NOTE: this is not compatible with current assignment grading
-            if ($this->itemmodule != 'assignment' and ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
+            $isassignmentmodule = ($this->itemmodule == 'assignment') || ($this->itemmodule == 'assign');
+            if (!$isassignmentmodule && ($rawmin != $this->grademin or $rawmax != $this->grademax)) {
                 $rawgrade = grade_grade::standardise_score($rawgrade, $rawmin, $rawmax, $this->grademin, $this->grademax);
             }
 
@@ -1209,6 +1210,42 @@ class grade_item extends grade_object {
     }
 
     /**
+     * Detect duplicate grade item's sortorder and re-sort them.
+     * Note: Duplicate sortorder will be introduced while duplicating activities or
+     * merging two courses.
+     *
+     * @param int $courseid id of the course for which grade_items sortorder need to be fixed.
+     */
+    public static function fix_duplicate_sortorder($courseid) {
+        global $DB;
+
+        $transaction = $DB->start_delegated_transaction();
+
+        $sql = "SELECT DISTINCT g1.id, g1.courseid, g1.sortorder
+                    FROM {grade_items} g1
+                    JOIN {grade_items} g2 ON g1.courseid = g2.courseid
+                WHERE g1.sortorder = g2.sortorder AND g1.id != g2.id AND g1.courseid = :courseid
+                ORDER BY g1.sortorder DESC, g1.id DESC";
+
+        // Get all duplicates in course highest sort order, and higest id first so that we can make space at the
+        // bottom higher end of the sort orders and work down by id.
+        $rs = $DB->get_recordset_sql($sql, array('courseid' => $courseid));
+
+        foreach($rs as $duplicate) {
+            $DB->execute("UPDATE {grade_items}
+                            SET sortorder = sortorder + 1
+                          WHERE courseid = :courseid AND
+                          (sortorder > :sortorder OR (sortorder = :sortorder2 AND id > :id))",
+                array('courseid' => $duplicate->courseid,
+                    'sortorder' => $duplicate->sortorder,
+                    'sortorder2' => $duplicate->sortorder,
+                    'id' => $duplicate->id));
+        }
+        $rs->close();
+        $transaction->allow_commit();
+    }
+
+    /**
      * Returns the most descriptive field for this object.
      *
      * Determines what type of grade item it is then returns the appropriate string
@@ -1371,18 +1408,20 @@ class grade_item extends grade_object {
 
             if ($grade_category->aggregatesubcats) {
                 // return all children excluding category items
+                $params[] = $this->courseid;
                 $params[] = '%/' . $grade_category->id . '/%';
                 $sql = "SELECT gi.id
                           FROM {grade_items} gi
+                          JOIN {grade_categories} gc ON gi.categoryid = gc.id
                          WHERE $gtypes
                                $outcomes_sql
-                               AND gi.categoryid IN (
-                                  SELECT gc.id
-                                    FROM {grade_categories} gc
-                                   WHERE gc.path LIKE ?)";
+                               AND gi.courseid = ?
+                               AND gc.path LIKE ?";
             } else {
                 $params[] = $grade_category->id;
+                $params[] = $this->courseid;
                 $params[] = $grade_category->id;
+                $params[] = $this->courseid;
                 if (empty($CFG->grade_includescalesinaggregation)) {
                     $params[] = GRADE_TYPE_VALUE;
                 } else {
@@ -1393,6 +1432,7 @@ class grade_item extends grade_object {
                           FROM {grade_items} gi
                          WHERE $gtypes
                                AND gi.categoryid = ?
+                               AND gi.courseid = ?
                                $outcomes_sql
                         UNION
 
@@ -1400,6 +1440,7 @@ class grade_item extends grade_object {
                           FROM {grade_items} gi, {grade_categories} gc
                          WHERE (gi.itemtype = 'category' OR gi.itemtype = 'course') AND gi.iteminstance=gc.id
                                AND gc.parent = ?
+                               AND gi.courseid = ?
                                AND $gtypes
                                $outcomes_sql";
             }
@@ -1422,30 +1463,33 @@ class grade_item extends grade_object {
      * Refetch grades from modules, plugins.
      *
      * @param int $userid optional, limit the refetch to a single user
+     * @return bool Returns true on success or if there is nothing to do
      */
     public function refresh_grades($userid=0) {
         global $DB;
         if ($this->itemtype == 'mod') {
             if ($this->is_outcome_item()) {
                 //nothing to do
-                return;
+                return true;
             }
 
             if (!$activity = $DB->get_record($this->itemmodule, array('id' => $this->iteminstance))) {
                 debugging("Can not find $this->itemmodule activity with id $this->iteminstance");
-                return;
+                return false;
             }
 
             if (!$cm = get_coursemodule_from_instance($this->itemmodule, $activity->id, $this->courseid)) {
                 debugging('Can not find course module');
-                return;
+                return false;
             }
 
             $activity->modname    = $this->itemmodule;
             $activity->cmidnumber = $cm->idnumber;
 
-            grade_update_mod_grades($activity);
+            return grade_update_mod_grades($activity, $userid);
         }
+
+        return true;
     }
 
     /**
@@ -1498,6 +1542,11 @@ class grade_item extends grade_object {
         $oldgrade->overridden     = $grade->overridden;
         $oldgrade->feedback       = $grade->feedback;
         $oldgrade->feedbackformat = $grade->feedbackformat;
+
+        // MDL-31713 rawgramemin and max must be up to date so conditional access %'s works properly.
+        $grade->rawgrademin = $this->grademin;
+        $grade->rawgrademax = $this->grademax;
+        $grade->rawscaleid  = $this->scaleid;
 
         // changed grade?
         if ($finalgrade !== false) {
@@ -1726,16 +1775,27 @@ class grade_item extends grade_object {
             return true; // no need to recalculate locked items
         }
 
-        // precreate grades - we need them to exist
-        $params = array($this->courseid, $this->id, $this->id);
-        $sql = "SELECT DISTINCT go.userid
-                  FROM {grade_grades} go
-                       JOIN {grade_items} gi
-                       ON (gi.id = go.itemid AND gi.courseid = ?)
-                       LEFT OUTER JOIN {grade_grades} g
-                       ON (g.userid = go.userid AND g.itemid = ?)
-                 WHERE gi.id <> ? AND g.id IS NULL";
-        if ($missing = $DB->get_records_sql($sql, $params)) {
+        // Precreate grades - we need them to exist
+        if ($userid) {
+            $missing = array();
+            if (!$DB->record_exists('grade_grades', array('itemid'=>$this->id, 'userid'=>$userid))) {
+                $m = new stdClass();
+                $m->userid = $userid;
+                $missing[] = $m;
+            }
+        } else {
+            // Find any users who have grades for some but not all grade items in this course
+            $params = array('gicourseid' => $this->courseid, 'ggitemid' => $this->id);
+            $sql = "SELECT gg.userid
+                      FROM {grade_grades} gg
+                           JOIN {grade_items} gi
+                           ON (gi.id = gg.itemid AND gi.courseid = :gicourseid)
+                     GROUP BY gg.userid
+                     HAVING SUM(CASE WHEN gg.itemid = :ggitemid THEN 1 ELSE 0 END) = 0";
+            $missing = $DB->get_records_sql($sql, $params);
+        }
+
+        if ($missing) {
             foreach ($missing as $m) {
                 $grade = new grade_grade(array('itemid'=>$this->id, 'userid'=>$m->userid), false);
                 $grade->grade_item =& $this;
@@ -2066,5 +2126,17 @@ class grade_item extends grade_object {
         } else {
             return false;
         }
+    }
+
+    /**
+     * Returns whether the grade item can control the visibility of the grades
+     *
+     * @return bool
+     */
+    public function can_control_visibility() {
+        if (core_component::get_plugin_directory($this->itemtype, $this->itemmodule)) {
+            return !plugin_supports($this->itemtype, $this->itemmodule, FEATURE_CONTROLS_GRADE_VISIBILITY, false);
+        }
+        return parent::can_control_visibility();
     }
 }

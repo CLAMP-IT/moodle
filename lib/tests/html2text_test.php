@@ -29,13 +29,13 @@
 defined('MOODLE_INTERNAL') || die();
 
 
-class html2text_testcase extends basic_testcase {
+class core_html2text_testcase extends basic_testcase {
 
     /**
-     * ALT as image replacements
+     * ALT as image replacements.
      */
     public function test_images() {
-        $this->assertEquals('[edit]', html_to_text('<img src="edit.png" alt="edit" />'));
+        $this->assertSame('[edit]', html_to_text('<img src="edit.png" alt="edit" />'));
 
         $text = 'xx<img src="gif.gif" alt="some gif" />xx';
         $result = html_to_text($text, null, false, false);
@@ -43,10 +43,10 @@ class html2text_testcase extends basic_testcase {
     }
 
     /**
-     * No magic quotes messing
+     * No magic quotes messing.
      */
     public function test_no_strip_slashes() {
-        $this->assertEquals('[\edit]', html_to_text('<img src="edit.png" alt="\edit" />'));
+        $this->assertSame('[\edit]', html_to_text('<img src="edit.png" alt="\edit" />'));
 
         $text = '\\magic\\quotes\\are\\\\horrible';
         $result = html_to_text($text, null, false, false);
@@ -54,16 +54,16 @@ class html2text_testcase extends basic_testcase {
     }
 
     /**
-     * Textlib integration
+     * core_text integration.
      */
-    public function test_textlib() {
+    public function test_core_text() {
         $text = '<strong>Žluťoučký koníček</strong>';
         $result = html_to_text($text, null, false, false);
         $this->assertSame($result, 'ŽLUŤOUČKÝ KONÍČEK');
     }
 
     /**
-     * Protect 0
+     * Protect 0.
      */
     public function test_zero() {
         $text = '0';
@@ -73,10 +73,47 @@ class html2text_testcase extends basic_testcase {
         $this->assertSame('0', html_to_text('0'));
     }
 
-    // ======= Standard html2text conversion features =======
+    /**
+     * Test the links list enumeration.
+     */
+    public function test_build_link_list() {
+
+        // Note the trailing whitespace left intentionally in the text.
+        $text = 'Total of <a title="List of integrated issues"
+            href="http://tr.mdl.org/sh.jspa?r=1&j=p+%3D+%22I+d%22+%3D">     
+            <strong>27 issues</strong></a> and <a href="http://another.url/?f=a&amp;b=2">some</a> other
+have been fixed <strong><a href="http://third.url/view.php">last week</a></strong>';
+
+        // Do not collect links.
+        $result = html_to_text($text, 5000, false);
+        $this->assertSame('Total of 27 ISSUES and some other have been fixed LAST WEEK', $result);
+
+        // Collect and enumerate links.
+        $result = html_to_text($text, 5000, true);
+        $this->assertSame(0, strpos($result, 'Total of 27 ISSUES [1] and some [2] other have been fixed LAST WEEK [3]'));
+        $this->assertSame(false, strpos($result, '[0]'));
+        $this->assertSame(1, preg_match('|^'.preg_quote('[1] http://tr.mdl.org/sh.jspa?r=1&j=p+%3D+%22I+d%22+%3D').'$|m', $result));
+        $this->assertSame(1, preg_match('|^'.preg_quote('[2] http://another.url/?f=a&amp;b=2').'$|m', $result));
+        $this->assertSame(1, preg_match('|^'.preg_quote('[3] http://third.url/view.php').'$|m', $result));
+        $this->assertSame(false, strpos($result, '[4]'));
+
+        // Test multiple occurrences of the same URL.
+        $text = '<p>See <a href="http://moodle.org">moodle.org</a>,
+            <a href="http://www.google.fr">google</a>, <a href="http://www.univ-lemans.fr">univ-lemans</a>
+            and <a href="http://www.google.fr">google</a>.
+            Also try <a href="https://www.google.fr">google via HTTPS</a>.';
+        $result = html_to_text($text, 5000, true);
+        $this->assertSame(0, strpos($result, 'See moodle.org [1], google [2], univ-lemans [3] and google [2]. Also try google via HTTPS [4].'));
+        $this->assertSame(false, strpos($result, '[0]'));
+        $this->assertSame(1, preg_match('|^'.preg_quote('[1] http://moodle.org').'$|m', $result));
+        $this->assertSame(1, preg_match('|^'.preg_quote('[2] http://www.google.fr').'$|m', $result));
+        $this->assertSame(1, preg_match('|^'.preg_quote('[3] http://www.univ-lemans.fr').'$|m', $result));
+        $this->assertSame(1, preg_match('|^'.preg_quote('[4] https://www.google.fr').'$|m', $result));
+        $this->assertSame(false, strpos($result, '[5]'));
+    }
 
     /**
-     * Various invalid HTML typed by users that ignore html strict
+     * Various invalid HTML typed by users that ignore html strict.
      **/
     public function test_invalid_html() {
         $text = 'Gin & Tonic';
@@ -96,31 +133,31 @@ class html2text_testcase extends basic_testcase {
      * Basic text formatting.
      */
     public function test_simple() {
-        $this->assertEquals("_Hello_ WORLD!", html_to_text('<p><i>Hello</i> <b>world</b>!</p>'));
-        $this->assertEquals("All the WORLD’S a stage.\n\n-- William Shakespeare", html_to_text('<p>All the <strong>world’s</strong> a stage.</p><p>-- William Shakespeare</p>'));
-        $this->assertEquals("HELLO WORLD!\n\n", html_to_text('<h1>Hello world!</h1>'));
-        $this->assertEquals("Hello\nworld!", html_to_text('Hello<br />world!'));
+        $this->assertSame("_Hello_ WORLD!", html_to_text('<p><i>Hello</i> <b>world</b>!</p>'));
+        $this->assertSame("All the WORLD’S a stage.\n\n-- William Shakespeare", html_to_text('<p>All the <strong>world’s</strong> a stage.</p><p>-- William Shakespeare</p>'));
+        $this->assertSame("HELLO WORLD!\n\n", html_to_text('<h1>Hello world!</h1>'));
+        $this->assertSame("Hello\nworld!", html_to_text('Hello<br />world!'));
     }
 
     /**
-     * Test line wrapping
+     * Test line wrapping.
      */
     public function test_text_nowrap() {
         $long = "Here is a long string, more than 75 characters long, since by default html_to_text wraps text at 75 chars.";
         $wrapped = "Here is a long string, more than 75 characters long, since by default\nhtml_to_text wraps text at 75 chars.";
-        $this->assertEquals($long, html_to_text($long, 0));
-        $this->assertEquals($wrapped, html_to_text($long));
+        $this->assertSame($long, html_to_text($long, 0));
+        $this->assertSame($wrapped, html_to_text($long));
     }
 
     /**
-     * Whitespace removal
+     * Whitespace removal.
      */
     public function test_trailing_whitespace() {
-        $this->assertEquals('With trailing whitespace and some more text', html_to_text("With trailing whitespace   \nand some   more text", 0));
+        $this->assertSame('With trailing whitespace and some more text', html_to_text("With trailing whitespace   \nand some   more text", 0));
     }
 
     /**
-     * PRE parsing
+     * PRE parsing.
      */
     public function test_html_to_text_pre_parsing_problem() {
         $strorig = 'Consider the following function:<br /><pre><span style="color: rgb(153, 51, 102);">void FillMeUp(char* in_string) {'.
@@ -143,4 +180,3 @@ What would happen if a non-terminated string were input to this function?
         $this->assertSame($strconv, html_to_text($strorig));
     }
 }
-

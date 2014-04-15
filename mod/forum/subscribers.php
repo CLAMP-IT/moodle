@@ -18,7 +18,7 @@
 /**
  * This file is used to display and organise forum subscribers
  *
- * @package mod-forum
+ * @package   mod_forum
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -47,14 +47,19 @@ if (! $cm = get_coursemodule_from_instance('forum', $forum->id, $course->id)) {
 
 require_login($course, false, $cm);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 if (!has_capability('mod/forum:viewsubscribers', $context)) {
     print_error('nopermissiontosubscribe', 'forum');
 }
 
 unset($SESSION->fromdiscussion);
 
-add_to_log($course->id, "forum", "view subscribers", "subscribers.php?id=$forum->id", $forum->id, $cm->id);
+$params = array(
+    'context' => $context,
+    'other' => array('forumid' => $forum->id),
+);
+$event = \mod_forum\event\subscribers_viewed::create($params);
+$event->trigger();
 
 $forumoutput = $PAGE->get_renderer('mod_forum');
 $currentgroup = groups_get_activity_group($cm);

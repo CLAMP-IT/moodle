@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * The frontpage layout for the Boxxie theme.
+ *
+ * @package   theme_boxxie
+ * @copyright 2010 Patrick Malley
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 $hasheading = ($PAGE->heading);
 $hasnavbar = (empty($PAGE->layout_options['nonavbar']) && $PAGE->has_navbar());
@@ -70,7 +92,7 @@ echo $OUTPUT->doctype() ?>
                 </div>
 
                 <?php if ($hassidepre) { ?>
-                <div id="region-pre">
+                <div id="region-pre" class="block-region">
                     <div class="region-content">
                         <?php echo $OUTPUT->blocks_for_region('side-pre') ?>
                     </div>
@@ -78,7 +100,7 @@ echo $OUTPUT->doctype() ?>
                 <?php } ?>
 
                 <?php if ($hassidepost) { ?>
-                <div id="region-post">
+                <div id="region-post" class="block-region">
                     <div class="region-content">
                         <?php echo $OUTPUT->blocks_for_region('side-post') ?>
                     </div>
@@ -102,7 +124,7 @@ echo $OUTPUT->doctype() ?>
 
 if ($hasheading || $hasnavbar) { ?>
 
- 	<div class="myclear"></div>
+    <div class="myclear"></div>
   </div> <!-- END #page -->
 
 </div> <!-- END #page-wrapper -->

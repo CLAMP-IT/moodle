@@ -28,7 +28,8 @@ require_once($CFG->libdir.'/tablelib.php');
 /**
  * Class providing an API for the grader report building and displaying.
  * @uses grade_report
- * @package gradereport_grader
+ * @copyright 2007 Nicolas Connault
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class grade_report_grader extends grade_report {
     /**
@@ -43,7 +44,7 @@ class grade_report_grader extends grade_report {
      */
     public $gradeserror = array();
 
-//// SQL-RELATED
+    // SQL-RELATED
 
     /**
      * The id of the grade_item by which this report will be sorted.
@@ -83,10 +84,9 @@ class grade_report_grader extends grade_report {
 
     /**
      * Capability check caching
-     * */
+     * @var boolean $canviewhidden
+     */
     public $canviewhidden;
-
-    var $preferencespage=false;
 
     /**
      * Length at which feedback will be truncated (to the nearest word) and an ellipsis be added.
@@ -107,7 +107,7 @@ class grade_report_grader extends grade_report {
         global $CFG;
         parent::__construct($courseid, $gpr, $context, $page);
 
-        $this->canviewhidden = has_capability('moodle/grade:viewhidden', get_context_instance(CONTEXT_COURSE, $this->course->id));
+        $this->canviewhidden = has_capability('moodle/grade:viewhidden', context_course::instance($this->course->id));
 
         // load collapsed settings for this report
         if ($collapsed = get_user_preferences('grade_report_grader_collapsed_categories')) {
@@ -145,7 +145,7 @@ class grade_report_grader extends grade_report {
         $this->pbarurl = new moodle_url('/grade/report/grader/index.php', array('id' => $this->courseid));
 
         $this->setup_groups();
-
+        $this->setup_users();
         $this->setup_sortitemid();
     }
 
@@ -175,13 +175,14 @@ class grade_report_grader extends grade_report {
 
         // always initialize all arrays
         $queue = array();
+
         $this->load_users();
         $this->load_final_grades();
 
         // Were any changes made?
         $changedgrades = false;
 
-        foreach ($data as $varname => $postedvalue) {
+        foreach ($data as $varname => $students) {
 
             $needsupdate = false;
 
@@ -194,113 +195,125 @@ class grade_report_grader extends grade_report {
                 continue;
             }
 
-            $gradeinfo = explode("_", $varname);
-            $userid = clean_param($gradeinfo[1], PARAM_INT);
-            $itemid = clean_param($gradeinfo[2], PARAM_INT);
+            foreach ($students as $userid => $items) {
+                $userid = clean_param($userid, PARAM_INT);
+                foreach ($items as $itemid => $postedvalue) {
+                    $itemid = clean_param($itemid, PARAM_INT);
 
-            // Was change requested?
-            $oldvalue = $this->grades[$userid][$itemid];
-            if ($datatype === 'grade') {
-                // If there was no grade and there still isn't
-                if (is_null($oldvalue->finalgrade) && $postedvalue == -1) {
-                    // -1 means no grade
-                    continue;
-                }
+                    // Was change requested?
+                    $oldvalue = $this->grades[$userid][$itemid];
+                    if ($datatype === 'grade') {
+                        // If there was no grade and there still isn't
+                        if (is_null($oldvalue->finalgrade) && $postedvalue == -1) {
+                            // -1 means no grade
+                            continue;
+                        }
 
-                // If the grade item uses a custom scale
-                if (!empty($oldvalue->grade_item->scaleid)) {
+                        // If the grade item uses a custom scale
+                        if (!empty($oldvalue->grade_item->scaleid)) {
 
-                    if ((int)$oldvalue->finalgrade === (int)$postedvalue) {
-                        continue;
+                            if ((int)$oldvalue->finalgrade === (int)$postedvalue) {
+                                continue;
+                            }
+                        } else {
+                            // The grade item uses a numeric scale
+
+                            // Format the finalgrade from the DB so that it matches the grade from the client
+                            if ($postedvalue === format_float($oldvalue->finalgrade, $oldvalue->grade_item->get_decimals())) {
+                                continue;
+                            }
+                        }
+
+                        $changedgrades = true;
+
+                    } else if ($datatype === 'feedback') {
+                        // If quick grading is on, feedback needs to be compared without line breaks.
+                        if ($this->get_pref('quickgrading')) {
+                            $oldvalue->feedback = preg_replace("/\r\n|\r|\n/", "", $oldvalue->feedback);
+                        }
+                        if (($oldvalue->feedback === $postedvalue) or ($oldvalue->feedback === null and empty($postedvalue))) {
+                            continue;
+                        }
                     }
-                } else {
-                    // The grade item uses a numeric scale
 
-                    // Format the finalgrade from the DB so that it matches the grade from the client
-                    if ($postedvalue === format_float($oldvalue->finalgrade, $oldvalue->grade_item->get_decimals())) {
-                        continue;
+                    if (!$gradeitem = grade_item::fetch(array('id'=>$itemid, 'courseid'=>$this->courseid))) {
+                        print_error('invalidgradeitemid');
+                    }
+
+                    // Pre-process grade
+                    if ($datatype == 'grade') {
+                        $feedback = false;
+                        $feedbackformat = false;
+                        if ($gradeitem->gradetype == GRADE_TYPE_SCALE) {
+                            if ($postedvalue == -1) { // -1 means no grade
+                                $finalgrade = null;
+                            } else {
+                                $finalgrade = $postedvalue;
+                            }
+                        } else {
+                            $finalgrade = unformat_float($postedvalue);
+                        }
+
+                        $errorstr = '';
+                        // Warn if the grade is out of bounds.
+                        if (!is_null($finalgrade)) {
+                            $bounded = $gradeitem->bounded_grade($finalgrade);
+                            if ($bounded > $finalgrade) {
+                                $errorstr = 'lessthanmin';
+                            } else if ($bounded < $finalgrade) {
+                                $errorstr = 'morethanmax';
+                            }
+                        }
+                        if ($errorstr) {
+                            $userfields = 'id, ' . get_all_user_name_fields(true);
+                            $user = $DB->get_record('user', array('id' => $userid), $userfields);
+                            $gradestr = new stdClass();
+                            $gradestr->username = fullname($user);
+                            $gradestr->itemname = $gradeitem->get_name();
+                            $warnings[] = get_string($errorstr, 'grades', $gradestr);
+                        }
+
+                    } else if ($datatype == 'feedback') {
+                        $finalgrade = false;
+                        $trimmed = trim($postedvalue);
+                        if (empty($trimmed)) {
+                             $feedback = null;
+                        } else {
+                             $feedback = $postedvalue;
+                        }
+                    }
+
+                    // group access control
+                    if ($separategroups) {
+                        // note: we can not use $this->currentgroup because it would fail badly
+                        //       when having two browser windows each with different group
+                        $sharinggroup = false;
+                        foreach ($mygroups as $groupid) {
+                            if (groups_is_member($groupid, $userid)) {
+                                $sharinggroup = true;
+                                break;
+                            }
+                        }
+                        if (!$sharinggroup) {
+                            // either group membership changed or somebody is hacking grades of other group
+                            $warnings[] = get_string('errorsavegrade', 'grades');
+                            continue;
+                        }
+                    }
+
+                    $url = '/report/grader/index.php?id=' . $this->course->id;
+                    $fullname = fullname($this->users[$userid]);
+
+                    $info = "{$gradeitem->itemname}: $fullname";
+                    add_to_log($this->course->id, 'grade', 'update', $url, $info);
+
+                    $gradeitem->update_final_grade($userid, $finalgrade, 'gradebook', $feedback, FORMAT_MOODLE);
+
+                    // We can update feedback without reloading the grade item as it doesn't affect grade calculations
+                    if ($datatype === 'feedback') {
+                        $this->grades[$userid][$itemid]->feedback = $feedback;
                     }
                 }
-
-                $changedgrades = true;
-
-            } else if ($datatype === 'feedback') {
-                if ($oldvalue->feedback === $postedvalue) {
-                    continue;
-                }
-            }
-
-            if (!$gradeitem = grade_item::fetch(array('id'=>$itemid, 'courseid'=>$this->courseid))) { // we must verify course id here!
-                print_error('invalidgradeitemid');
-            }
-
-            // Pre-process grade
-            if ($datatype == 'grade') {
-                $feedback = false;
-                $feedbackformat = false;
-                if ($gradeitem->gradetype == GRADE_TYPE_SCALE) {
-                    if ($postedvalue == -1) { // -1 means no grade
-                        $finalgrade = null;
-                    } else {
-                        $finalgrade = $postedvalue;
-                    }
-                } else {
-                    $finalgrade = unformat_float($postedvalue);
-                }
-
-                $errorstr = '';
-                // Warn if the grade is out of bounds.
-                if (is_null($finalgrade)) {
-                    // ok
-                } else {
-                    $bounded = $gradeitem->bounded_grade($finalgrade);
-                    if ($bounded > $finalgrade) {
-                    $errorstr = 'lessthanmin';
-                    } else if ($bounded < $finalgrade) {
-                        $errorstr = 'morethanmax';
-                    }
-                }
-                if ($errorstr) {
-                    $user = $DB->get_record('user', array('id' => $userid), 'id, firstname, lastname');
-                    $gradestr = new stdClass();
-                    $gradestr->username = fullname($user);
-                    $gradestr->itemname = $gradeitem->get_name();
-                    $warnings[] = get_string($errorstr, 'grades', $gradestr);
-                }
-
-            } else if ($datatype == 'feedback') {
-                $finalgrade = false;
-                $trimmed = trim($postedvalue);
-                if (empty($trimmed)) {
-                     $feedback = NULL;
-                } else {
-                     $feedback = $postedvalue;
-                }
-            }
-
-            // group access control
-            if ($separategroups) {
-                // note: we can not use $this->currentgroup because it would fail badly
-                //       when having two browser windows each with different group
-                $sharinggroup = false;
-                foreach($mygroups as $groupid) {
-                    if (groups_is_member($groupid, $userid)) {
-                        $sharinggroup = true;
-                        break;
-                    }
-                }
-                if (!$sharinggroup) {
-                    // either group membership changed or somebody is hacking grades of other group
-                    $warnings[] = get_string('errorsavegrade', 'grades');
-                    continue;
-                }
-            }
-
-            $gradeitem->update_final_grade($userid, $finalgrade, 'gradebook', $feedback, FORMAT_MOODLE);
-
-            // We can update feedback without reloading the grade item as it doesn't affect grade calculations
-            if ($datatype === 'feedback') {
-                $this->grades[$userid][$itemid]->feedback = $feedback;
             }
         }
 
@@ -362,7 +375,7 @@ class grade_report_grader extends grade_report {
 
             if (isset($SESSION->gradeuserreport->sortitemid)) {
                 $this->sortitemid = $SESSION->gradeuserreport->sortitemid;
-            }else{
+            } else {
                 $this->sortitemid = 'lastname';
             }
 
@@ -383,25 +396,27 @@ class grade_report_grader extends grade_report {
         if (!empty($this->users)) {
             return;
         }
+        $this->setup_users();
 
-        //limit to users with a gradeable role
+        // Limit to users with a gradeable role.
         list($gradebookrolessql, $gradebookrolesparams) = $DB->get_in_or_equal(explode(',', $this->gradebookroles), SQL_PARAMS_NAMED, 'grbr0');
 
-        //limit to users with an active enrollment
+        // Limit to users with an active enrollment.
         list($enrolledsql, $enrolledparams) = get_enrolled_sql($this->context);
 
-        //fields we need from the user table
+        // Fields we need from the user table.
         $userfields = user_picture::fields('u', get_extra_user_fields($this->context));
 
-        $sortjoin = $sort = $params = null;
+        // We want to query both the current context and parent contexts.
+        list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal($this->context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx');
 
-        //if the user has clicked one of the sort asc/desc arrows
+        // If the user has clicked one of the sort asc/desc arrows.
         if (is_numeric($this->sortitemid)) {
-            $params = array_merge(array('gitemid'=>$this->sortitemid), $gradebookrolesparams, $this->groupwheresql_params, $enrolledparams);
+            $params = array_merge(array('gitemid' => $this->sortitemid), $gradebookrolesparams, $this->userwheresql_params,
+                    $this->groupwheresql_params, $enrolledparams, $relatedctxparams);
 
             $sortjoin = "LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = $this->sortitemid";
             $sort = "g.finalgrade $this->sortorder";
-
         } else {
             $sortjoin = '';
             switch($this->sortitemid) {
@@ -411,13 +426,16 @@ class grade_report_grader extends grade_report {
                 case 'firstname':
                     $sort = "u.firstname $this->sortorder, u.lastname $this->sortorder";
                     break;
+                case 'email':
+                    $sort = "u.email $this->sortorder";
+                    break;
                 case 'idnumber':
                 default:
                     $sort = "u.idnumber $this->sortorder";
                     break;
             }
 
-            $params = array_merge($gradebookrolesparams, $this->groupwheresql_params, $enrolledparams);
+            $params = array_merge($gradebookrolesparams, $this->userwheresql_params, $this->groupwheresql_params, $enrolledparams, $relatedctxparams);
         }
 
         $sql = "SELECT $userfields
@@ -429,12 +447,12 @@ class grade_report_grader extends grade_report {
                            SELECT DISTINCT ra.userid
                              FROM {role_assignments} ra
                             WHERE ra.roleid IN ($this->gradebookroles)
-                              AND ra.contextid " . get_related_contexts_string($this->context) . "
+                              AND ra.contextid $relatedctxsql
                        ) rainner ON rainner.userid = u.id
                    AND u.deleted = 0
+                   $this->userwheresql
                    $this->groupwheresql
               ORDER BY $sort";
-
         $studentsperpage = $this->get_students_per_page();
         $this->users = $DB->get_records_sql($sql, $params, $studentsperpage * $this->page, $studentsperpage);
 
@@ -447,7 +465,7 @@ class grade_report_grader extends grade_report {
             $this->userselect = "AND g.userid $usql";
             $this->userselect_params = $uparams;
 
-            //add a flag to each user indicating whether their enrolment is active
+            // Add a flag to each user indicating whether their enrolment is active.
             $sql = "SELECT ue.userid
                       FROM {user_enrolments} ue
                       JOIN {enrol} e ON e.id = ue.enrolid
@@ -455,16 +473,26 @@ class grade_report_grader extends grade_report {
                            AND ue.status = :uestatus
                            AND e.status = :estatus
                            AND e.courseid = :courseid
+                           AND ue.timestart < :now1 AND (ue.timeend = 0 OR ue.timeend > :now2)
                   GROUP BY ue.userid";
-            $coursecontext = get_course_context($this->context);
-            $params = array_merge($uparams, array('estatus'=>ENROL_INSTANCE_ENABLED, 'uestatus'=>ENROL_USER_ACTIVE, 'courseid'=>$coursecontext->instanceid));
+            $coursecontext = $this->context->get_course_context(true);
+            $time = time();
+            $params = array_merge($uparams, array('estatus' => ENROL_INSTANCE_ENABLED, 'uestatus' => ENROL_USER_ACTIVE,
+                    'courseid' => $coursecontext->instanceid, 'now1' => $time, 'now2' => $time));
             $useractiveenrolments = $DB->get_records_sql($sql, $params);
 
+            $defaultgradeshowactiveenrol = !empty($CFG->grade_report_showonlyactiveenrol);
+            $showonlyactiveenrol = get_user_preferences('grade_report_showonlyactiveenrol', $defaultgradeshowactiveenrol);
+            $showonlyactiveenrol = $showonlyactiveenrol || !has_capability('moodle/course:viewsuspendedusers', $coursecontext);
             foreach ($this->users as $user) {
-                $this->users[$user->id]->suspendedenrolment = !array_key_exists($user->id, $useractiveenrolments);
+                // If we are showing only active enrolments, then remove suspended users from list.
+                if ($showonlyactiveenrol && !array_key_exists($user->id, $useractiveenrolments)) {
+                    unset($this->users[$user->id]);
+                } else {
+                    $this->users[$user->id]->suspendedenrolment = !array_key_exists($user->id, $useractiveenrolments);
+                }
             }
         }
-
         return $this->users;
     }
 
@@ -479,6 +507,10 @@ class grade_report_grader extends grade_report {
             return;
         }
 
+        if (empty($this->users)) {
+            return;
+        }
+
         // please note that we must fetch all grade_grades fields if we want to construct grade_grade object from it!
         $params = array_merge(array('courseid'=>$this->courseid), $this->userselect_params);
         $sql = "SELECT g.*
@@ -487,7 +519,6 @@ class grade_report_grader extends grade_report {
                  WHERE g.itemid = gi.id AND gi.courseid = :courseid {$this->userselect}";
 
         $userids = array_keys($this->users);
-
 
         if ($grades = $DB->get_records_sql($sql, $params)) {
             foreach ($grades as $graderec) {
@@ -500,7 +531,7 @@ class grade_report_grader extends grade_report {
 
         // prefil grades that do not exist yet
         foreach ($userids as $userid) {
-            foreach ($this->gtree->get_items() as $itemid=>$unused) {
+            foreach ($this->gtree->get_items() as $itemid => $unused) {
                 if (!isset($this->grades[$userid][$itemid])) {
                     $this->grades[$userid][$itemid] = new grade_grade();
                     $this->grades[$userid][$itemid]->itemid = $itemid;
@@ -512,91 +543,20 @@ class grade_report_grader extends grade_report {
     }
 
     /**
-     * Builds and returns a div with on/off toggles.
-     * @return string HTML code
+     * Gets html toggle
+     * @deprecated since Moodle 2.4 as it appears not to be used any more.
      */
     public function get_toggles_html() {
-        global $CFG, $USER, $COURSE, $OUTPUT;
-
-        $html = '';
-        if ($USER->gradeediting[$this->courseid]) {
-            if (has_capability('moodle/grade:manage', $this->context) or has_capability('moodle/grade:hide', $this->context)) {
-                $html .= $this->print_toggle('eyecons');
-            }
-            if (has_capability('moodle/grade:manage', $this->context)
-             or has_capability('moodle/grade:lock', $this->context)
-             or has_capability('moodle/grade:unlock', $this->context)) {
-                $html .= $this->print_toggle('locks');
-            }
-            if (has_capability('moodle/grade:manage', $this->context)) {
-                $html .= $this->print_toggle('quickfeedback');
-            }
-
-            if (has_capability('moodle/grade:manage', $this->context)) {
-                $html .= $this->print_toggle('calculations');
-            }
-        }
-
-        if ($this->canviewhidden) {
-            $html .= $this->print_toggle('averages');
-        }
-
-        $html .= $this->print_toggle('ranges');
-        if (!empty($CFG->enableoutcomes)) {
-            $html .= $this->print_toggle('nooutcomes');
-        }
-
-        return $OUTPUT->container($html, 'grade-report-toggles');
+        throw new coding_exception('get_toggles_html() can not be used any more');
     }
 
     /**
-    * Shortcut function for printing the grader report toggles.
-    * @param string $type The type of toggle
-    * @param bool $return Whether to return the HTML string rather than printing it
-    * @return void
-    */
+     * Prints html toggle
+     * @deprecated since 2.4 as it appears not to be used any more.
+     * @param unknown $type
+     */
     public function print_toggle($type) {
-        global $CFG, $OUTPUT;
-
-        $icons = array('eyecons' => 't/hide',
-                       'calculations' => 't/calc',
-                       'locks' => 't/lock',
-                       'averages' => 't/mean',
-                       'quickfeedback' => 't/feedback',
-                       'nooutcomes' => 't/outcomes');
-
-        $prefname = 'grade_report_show' . $type;
-
-        if (array_key_exists($prefname, $CFG)) {
-            $showpref = get_user_preferences($prefname, $CFG->$prefname);
-        } else {
-            $showpref = get_user_preferences($prefname);
-        }
-
-        $strshow = $this->get_lang_string('show' . $type, 'grades');
-        $strhide = $this->get_lang_string('hide' . $type, 'grades');
-
-        $showhide = 'show';
-        $toggleaction = 1;
-
-        if ($showpref) {
-            $showhide = 'hide';
-            $toggleaction = 0;
-        }
-
-        if (array_key_exists($type, $icons)) {
-            $imagename = $icons[$type];
-        } else {
-            $imagename = "t/$type";
-        }
-
-        $string = ${'str' . $showhide};
-
-        $url = new moodle_url($this->baseurl, array('toggle' => $toggleaction, 'toggle_type' => $type));
-
-        $retval = $OUTPUT->container($OUTPUT->action_icon($url, new pix_icon($imagename, $string))); // TODO: this container looks wrong here
-
-        return $retval;
+        throw new coding_exception('print_toggle() can not be used any more');
     }
 
     /**
@@ -604,15 +564,15 @@ class grade_report_grader extends grade_report {
      * This consists of student names and icons, links to user reports and id numbers, as well
      * as header cells for these columns. It also includes the fillers required for the
      * categories displayed on the right side of the report.
+     * @param boolean $displayaverages whether to display average rows in the table
      * @return array Array of html_table_row objects
      */
-    public function get_left_rows() {
+    public function get_left_rows($displayaverages) {
         global $CFG, $USER, $OUTPUT;
 
         $rows = array();
 
         $showuserimage = $this->get_pref('showuserimage');
-        $fixedstudents = $this->is_fixed_students();
 
         $strfeedback  = $this->get_lang_string("feedback");
         $strgrade     = $this->get_lang_string('grade');
@@ -694,7 +654,8 @@ class grade_report_grader extends grade_report {
                 if (empty($suspendedstring)) {
                     $suspendedstring = get_string('userenrolmentsuspended', 'grades');
                 }
-                $usercell->text .= html_writer::empty_tag('img', array('src'=>$OUTPUT->pix_url('i/enrolmentsuspended'), 'title'=>$suspendedstring, 'alt'=>$suspendedstring, 'class'=>'usersuspendedicon'));
+                $usercell->text .= html_writer::empty_tag('img', array('src'=>$OUTPUT->pix_url('i/enrolmentsuspended'), 'title'=>$suspendedstring,
+                        'alt'=>$suspendedstring, 'class'=>'usersuspendedicon'));
             }
 
             $userrow->cells[] = $usercell;
@@ -724,17 +685,20 @@ class grade_report_grader extends grade_report {
         }
 
         $rows = $this->get_left_range_row($rows, $colspan);
-        $rows = $this->get_left_avg_row($rows, $colspan, true);
-        $rows = $this->get_left_avg_row($rows, $colspan);
+        if ($displayaverages) {
+            $rows = $this->get_left_avg_row($rows, $colspan, true);
+            $rows = $this->get_left_avg_row($rows, $colspan);
+        }
 
         return $rows;
     }
 
     /**
      * Builds and returns the rows that will make up the right part of the grader report
+     * @param boolean $displayaverages whether to display average rows in the table
      * @return array Array of html_table_row objects
      */
-    public function get_right_rows() {
+    public function get_right_rows($displayaverages) {
         global $CFG, $USER, $OUTPUT, $DB, $PAGE;
 
         $rows = array();
@@ -756,12 +720,7 @@ class grade_report_grader extends grade_report {
         );
         $jsscales = array();
 
-        foreach ($this->gtree->get_levels() as $key=>$row) {
-            if ($key == 0) {
-                // do not display course grade category
-                // continue;
-            }
-
+        foreach ($this->gtree->get_levels() as $key => $row) {
             $headingrow = new html_table_row();
             $headingrow->attributes['class'] = 'heading_name_row';
 
@@ -788,7 +747,7 @@ class grade_report_grader extends grade_report {
                     $catlevel = '';
                 }
 
-// Element is a filler
+                // Element is a filler
                 if ($type == 'filler' or $type == 'fillerfirst' or $type == 'fillerlast') {
                     $fillercell = new html_table_cell();
                     $fillercell->attributes['class'] = $type . ' ' . $catlevel;
@@ -797,9 +756,8 @@ class grade_report_grader extends grade_report {
                     $fillercell->header = true;
                     $fillercell->scope = 'col';
                     $headingrow->cells[] = $fillercell;
-                }
-// Element is a category
-                else if ($type == 'category') {
+                } else if ($type == 'category') {
+                    // Element is a category
                     $categorycell = new html_table_cell();
                     $categorycell->attributes['class'] = 'category ' . $catlevel;
                     $categorycell->colspan = $colspan;
@@ -814,12 +772,8 @@ class grade_report_grader extends grade_report {
                     }
 
                     $headingrow->cells[] = $categorycell;
-                }
-// Element is a grade_item
-                else {
-                    //$itemmodule = $element['object']->itemmodule;
-                    //$iteminstance = $element['object']->iteminstance;
-
+                } else {
+                    // Element is a grade_item
                     if ($element['object']->id == $this->sortitemid) {
                         if ($this->sortorder == 'ASC') {
                             $arrow = $this->get_sort_arrow('up', $sortlink);
@@ -833,10 +787,10 @@ class grade_report_grader extends grade_report {
                     $headerlink = $this->gtree->get_element_header($element, true, $this->get_pref('showactivityicons'), false);
 
                     $itemcell = new html_table_cell();
-                    $itemcell->attributes['class'] = $type . ' ' . $catlevel . ' highlightable';
+                    $itemcell->attributes['class'] = $type . ' ' . $catlevel . ' highlightable'. ' i'. $element['object']->id;
 
                     if ($element['object']->is_hidden()) {
-                        $itemcell->attributes['class'] .= ' hidden';
+                        $itemcell->attributes['class'] .= ' dimmed_text';
                     }
 
                     $itemcell->colspan = $colspan;
@@ -856,7 +810,7 @@ class grade_report_grader extends grade_report {
         $scaleslist = array();
         $tabindices = array();
 
-        foreach ($this->gtree->get_items() as $itemid=>$item) {
+        foreach ($this->gtree->get_items() as $itemid => $item) {
             $scale = null;
             if (!empty($item->scaleid)) {
                 $scaleslist[] = $item->scaleid;
@@ -889,14 +843,13 @@ class grade_report_grader extends grade_report {
                 unset($hidingaffected);
             }
 
-
             $itemrow = new html_table_row();
             $itemrow->id = 'user_'.$userid;
             $itemrow->attributes['class'] = $rowclasses[$this->rowcount % 2];
 
             $jsarguments['users'][$userid] = fullname($user);
 
-            foreach ($this->gtree->items as $itemid=>$unused) {
+            foreach ($this->gtree->items as $itemid => $unused) {
                 $item =& $this->gtree->items[$itemid];
                 $grade = $this->grades[$userid][$item->id];
 
@@ -915,13 +868,13 @@ class grade_report_grader extends grade_report {
                     $gradeval = $grade->finalgrade;
                 }
                 if (!empty($grade->finalgrade)) {
-                    $gradevalforJS = null;
+                    $gradevalforjs = null;
                     if ($item->scaleid && !empty($scalesarray[$item->scaleid])) {
-                        $gradevalforJS = (int)$gradeval;
+                        $gradevalforjs = (int)$gradeval;
                     } else {
-                        $gradevalforJS = format_float($gradeval, $decimalpoints);
+                        $gradevalforjs = format_float($gradeval, $decimalpoints);
                     }
-                    $jsarguments['grades'][] = array('user'=>$userid, 'item'=>$itemid, 'grade'=>$gradevalforJS);
+                    $jsarguments['grades'][] = array('user'=>$userid, 'item'=>$itemid, 'grade'=>$gradevalforjs);
                 }
 
                 // MDL-11274
@@ -929,7 +882,7 @@ class grade_report_grader extends grade_report {
                 if (!$this->canviewhidden and $grade->is_hidden()) {
                     if (!empty($CFG->grade_hiddenasdate) and $grade->get_datesubmitted() and !$item->is_category_item() and !$item->is_course_item()) {
                         // the problem here is that we do not have the time when grade value was modified, 'timemodified' is general modification date for grade_grades records
-                        $itemcell->text = html_writer::tag('span', userdate($grade->get_datesubmitted(),get_string('strftimedatetimeshort')), array('class'=>'datesubmitted'));
+                        $itemcell->text = html_writer::tag('span', userdate($grade->get_datesubmitted(), get_string('strftimedatetimeshort')), array('class'=>'datesubmitted'));
                     } else {
                         $itemcell->text = '-';
                     }
@@ -941,7 +894,7 @@ class grade_report_grader extends grade_report {
                 $eid = $this->gtree->get_grade_eid($grade);
                 $element = array('eid'=>$eid, 'object'=>$grade, 'type'=>'grade');
 
-                $itemcell->attributes['class'] .= ' grade';
+                $itemcell->attributes['class'] .= ' grade i'.$itemid;
                 if ($item->is_category_item()) {
                     $itemcell->attributes['class'] .= ' cat';
                 }
@@ -952,13 +905,10 @@ class grade_report_grader extends grade_report {
                     $itemcell->attributes['class'] .= ' overridden';
                 }
 
-                if ($grade->is_excluded()) {
-                    // $itemcell->attributes['class'] .= ' excluded';
-                }
-
                 if (!empty($grade->feedback)) {
                     //should we be truncating feedback? ie $short_feedback = shorten_text($feedback, $this->feedback_trunc_length);
-                    $jsarguments['feedback'][] = array('user'=>$userid, 'item'=>$itemid, 'content'=>wordwrap(trim(format_string($grade->feedback, $grade->feedbackformat)), 34, '<br/ >'));
+                    $jsarguments['feedback'][] = array('user'=>$userid, 'item'=>$itemid, 'content'=>wordwrap(trim(format_string($grade->feedback, $grade->feedbackformat)),
+                            34, '<br/ >'));
                 }
 
                 if ($grade->is_excluded()) {
@@ -978,7 +928,7 @@ class grade_report_grader extends grade_report {
                 $gradepass = ' gradefail ';
                 if ($grade->is_passed($item)) {
                     $gradepass = ' gradepass ';
-                } elseif (is_null($grade->is_passed($item))) {
+                } else if (is_null($grade->is_passed($item))) {
                     $gradepass = '';
                 }
 
@@ -1013,8 +963,9 @@ class grade_report_grader extends grade_report {
                                 $nogradestr = $this->get_lang_string('nooutcome', 'grades');
                             }
                             $attributes = array('tabindex' => $tabindices[$item->id]['grade'], 'id'=>'grade_'.$userid.'_'.$item->id);
-                            $itemcell->text .= html_writer::select($scaleopt, 'grade_'.$userid.'_'.$item->id, $gradeval, array(-1=>$nogradestr), $attributes);;
-                        } elseif(!empty($scale)) {
+                            $itemcell->text .= html_writer::label(get_string('typescale', 'grades'), $attributes['id'], false, array('class' => 'accesshide'));
+                            $itemcell->text .= html_writer::select($scaleopt, 'grade['.$userid.']['.$item->id.']', $gradeval, array(-1=>$nogradestr), $attributes);
+                        } else if (!empty($scale)) {
                             $scales = explode(",", $scale->scale);
 
                             // invalid grade if gradeval < 1
@@ -1024,27 +975,29 @@ class grade_report_grader extends grade_report {
                                 $gradeval = $grade->grade_item->bounded_grade($gradeval); //just in case somebody changes scale
                                 $itemcell->text .= html_writer::tag('span', $scales[$gradeval-1], array('class'=>"gradevalue$hidden$gradepass"));
                             }
-                        } else {
-                            // no such scale, throw error?
                         }
 
                     } else if ($item->gradetype != GRADE_TYPE_TEXT) { // Value type
                         if ($this->get_pref('quickgrading') and $grade->is_editable()) {
                             $value = format_float($gradeval, $decimalpoints);
+                            $gradelabel = fullname($user) . ' ' . $item->itemname;
+                            $itemcell->text .= '<label class="accesshide" for="grade_'.$userid.'_'.$item->id.'">'
+                                          .get_string('useractivitygrade', 'gradereport_grader', $gradelabel).'</label>';
                             $itemcell->text .= '<input size="6" tabindex="' . $tabindices[$item->id]['grade']
-                                          . '" type="text" class="text" title="'. $strgrade .'" name="grade_'
-                                          .$userid.'_' .$item->id.'" id="grade_'.$userid.'_'.$item->id.'" value="'.$value.'" />';
+                                          . '" type="text" class="text" title="'. $strgrade .'" name="grade['
+                                          .$userid.'][' .$item->id.']" id="grade_'.$userid.'_'.$item->id.'" value="'.$value.'" />';
                         } else {
                             $itemcell->text .= html_writer::tag('span', format_float($gradeval, $decimalpoints), array('class'=>"gradevalue$hidden$gradepass"));
                         }
                     }
 
-
                     // If quickfeedback is on, print an input element
                     if ($this->get_pref('showquickfeedback') and $grade->is_editable()) {
-
+                        $feedbacklabel = fullname($user) . ' ' . $item->itemname;
+                        $itemcell->text .= '<label class="accesshide" for="feedback_'.$userid.'_'.$item->id.'">'
+                                      .get_string('useractivityfeedback', 'gradereport_grader', $feedbacklabel).'</label>';
                         $itemcell->text .= '<input class="quickfeedback" tabindex="' . $tabindices[$item->id]['feedback'].'" id="feedback_'.$userid.'_'.$item->id
-                                      . '" size="6" title="' . $strfeedback . '" type="text" name="feedback_'.$userid.'_'.$item->id.'" value="' . s($grade->feedback) . '" />';
+                                      . '" size="6" title="' . $strfeedback . '" type="text" name="feedback['.$userid.']['.$item->id.']" value="' . s($grade->feedback) . '" />';
                     }
 
                 } else { // Not editing
@@ -1063,7 +1016,8 @@ class grade_report_grader extends grade_report {
                     if ($item->needsupdate) {
                         $itemcell->text .= html_writer::tag('span', get_string('error'), array('class'=>"gradingerror$hidden$gradepass"));
                     } else {
-                        $itemcell->text .= html_writer::tag('span', grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null), array('class'=>"gradevalue$hidden$gradepass"));
+                        $itemcell->text .= html_writer::tag('span', grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null),
+                                array('class'=>"gradevalue$hidden$gradepass"));
                         if ($this->get_pref('showanalysisicon')) {
                             $itemcell->text .= $this->gtree->get_grade_analysis_icon($grade);
                         }
@@ -1083,7 +1037,7 @@ class grade_report_grader extends grade_report {
             $jsarguments['cfg']['ajaxenabled'] = true;
             $jsarguments['cfg']['scales'] = array();
             foreach ($jsscales as $scale) {
-                $jsarguments['cfg']['scales'][$scale->id] = explode(',',$scale->scale);
+                $jsarguments['cfg']['scales'][$scale->id] = explode(',', $scale->scale);
             }
             $jsarguments['cfg']['feedbacktrunclength'] =  $this->feedback_trunc_length;
 
@@ -1100,12 +1054,14 @@ class grade_report_grader extends grade_report {
             'requires'  => array('base', 'dom', 'event', 'event-mouseenter', 'event-key', 'io-queue', 'json-parse', 'overlay')
         );
         $PAGE->requires->js_init_call('M.gradereport_grader.init_report', $jsarguments, false, $module);
-        $PAGE->requires->strings_for_js(array('addfeedback','feedback', 'grade'), 'grades');
-        $PAGE->requires->strings_for_js(array('ajaxchoosescale','ajaxclicktoclose','ajaxerror','ajaxfailedupdate', 'ajaxfieldchanged'), 'gradereport_grader');
+        $PAGE->requires->strings_for_js(array('addfeedback', 'feedback', 'grade'), 'grades');
+        $PAGE->requires->strings_for_js(array('ajaxchoosescale', 'ajaxclicktoclose', 'ajaxerror', 'ajaxfailedupdate', 'ajaxfieldchanged'), 'gradereport_grader');
 
         $rows = $this->get_right_range_row($rows);
-        $rows = $this->get_right_avg_row($rows, true);
-        $rows = $this->get_right_avg_row($rows);
+        if ($displayaverages) {
+            $rows = $this->get_right_avg_row($rows, true);
+            $rows = $this->get_right_avg_row($rows);
+        }
 
         return $rows;
     }
@@ -1114,17 +1070,17 @@ class grade_report_grader extends grade_report {
      * Depending on the style of report (fixedstudents vs traditional one-table),
      * arranges the rows of data in one or two tables, and returns the output of
      * these tables in HTML
+     * @param boolean $displayaverages whether to display average rows in the table
      * @return string HTML
      */
-    public function get_grade_table() {
+    public function get_grade_table($displayaverages = false) {
         global $OUTPUT;
         $fixedstudents = $this->is_fixed_students();
 
-        $leftrows = $this->get_left_rows();
-        $rightrows = $this->get_right_rows();
+        $leftrows = $this->get_left_rows($displayaverages);
+        $rightrows = $this->get_right_rows($displayaverages);
 
         $html = '';
-
 
         if ($fixedstudents) {
             $fixedcolumntable = new html_table();
@@ -1168,7 +1124,7 @@ class grade_report_grader extends grade_report {
             $controlscell = new html_table_cell();
             $controlscell->attributes['class'] = 'header controls';
             $controlscell->colspan = $colspan;
-            $controlscell->text = $this->get_lang_string('controls','grades');
+            $controlscell->text = $this->get_lang_string('controls', 'grades');
 
             $controlsrow->cells[] = $controlscell;
             $rows[] = $controlsrow;
@@ -1193,7 +1149,7 @@ class grade_report_grader extends grade_report {
             $rangecell->colspan = $colspan;
             $rangecell->header = true;
             $rangecell->scope = 'row';
-            $rangecell->text = $this->get_lang_string('range','grades');
+            $rangecell->text = $this->get_lang_string('range', 'grades');
             $rangerow->cells[] = $rangecell;
             $rows[] = $rangerow;
         }
@@ -1263,14 +1219,14 @@ class grade_report_grader extends grade_report {
             $iconsrow = new html_table_row();
             $iconsrow->attributes['class'] = 'controls';
 
-            foreach ($this->gtree->items as $itemid=>$unused) {
+            foreach ($this->gtree->items as $itemid => $unused) {
                 // emulate grade element
                 $item = $this->gtree->get_item($itemid);
 
                 $eid = $this->gtree->get_item_eid($item);
                 $element = $this->gtree->locate_element($eid);
                 $itemcell = new html_table_cell();
-                $itemcell->attributes['class'] = 'controls icons';
+                $itemcell->attributes['class'] = 'controls icons i'.$itemid;
                 $itemcell->text = $this->get_icons($element);
                 $iconsrow->cells[] = $itemcell;
             }
@@ -1293,11 +1249,10 @@ class grade_report_grader extends grade_report {
             $rangerow = new html_table_row();
             $rangerow->attributes['class'] = 'heading range';
 
-            foreach ($this->gtree->items as $itemid=>$unused) {
+            foreach ($this->gtree->items as $itemid => $unused) {
                 $item =& $this->gtree->items[$itemid];
                 $itemcell = new html_table_cell();
-                $itemcell->header = true;
-                $itemcell->attributes['class'] .= ' header range';
+                $itemcell->attributes['class'] .= ' range i'. $itemid;
 
                 $hidden = '';
                 if ($item->is_hidden()) {
@@ -1321,56 +1276,46 @@ class grade_report_grader extends grade_report {
      * @return array Array of rows for the right part of the report
      */
     public function get_right_avg_row($rows=array(), $grouponly=false) {
-        global $CFG, $USER, $DB, $OUTPUT;
+        global $USER, $DB, $OUTPUT;
 
         if (!$this->canviewhidden) {
-            // totals might be affected by hiding, if user can not see hidden grades the aggregations might be altered
-            // better not show them at all if user can not see all hidden grades
+            // Totals might be affected by hiding, if user can not see hidden grades the aggregations might be altered
+            // better not show them at all if user can not see all hidden grades.
             return $rows;
         }
-
-        $showaverages = $this->get_pref('showaverages');
-        $showaveragesgroup = $this->currentgroup && $showaverages;
 
         $averagesdisplaytype   = $this->get_pref('averagesdisplaytype');
         $averagesdecimalpoints = $this->get_pref('averagesdecimalpoints');
         $meanselection         = $this->get_pref('meanselection');
         $shownumberofgrades    = $this->get_pref('shownumberofgrades');
 
-        $avghtml = '';
-        $avgcssclass = 'avg';
-
         if ($grouponly) {
-            $straverage = get_string('groupavg', 'grades');
             $showaverages = $this->currentgroup && $this->get_pref('showaverages');
             $groupsql = $this->groupsql;
             $groupwheresql = $this->groupwheresql;
             $groupwheresqlparams = $this->groupwheresql_params;
-            $avgcssclass = 'groupavg';
         } else {
-            $straverage = get_string('overallaverage', 'grades');
             $showaverages = $this->get_pref('showaverages');
             $groupsql = "";
             $groupwheresql = "";
             $groupwheresqlparams = array();
         }
 
-        if ($shownumberofgrades) {
-            $straverage .= ' (' . get_string('submissions', 'grades') . ') ';
-        }
-
-        $totalcount = $this->get_numusers($grouponly);
-
-        //limit to users with a gradeable role
-        list($gradebookrolessql, $gradebookrolesparams) = $DB->get_in_or_equal(explode(',', $this->gradebookroles), SQL_PARAMS_NAMED, 'grbr0');
-
-        //limit to users with an active enrollment
-        list($enrolledsql, $enrolledparams) = get_enrolled_sql($this->context);
-
         if ($showaverages) {
-            $params = array_merge(array('courseid'=>$this->courseid), $gradebookrolesparams, $enrolledparams, $groupwheresqlparams);
+            $totalcount = $this->get_numusers($grouponly);
 
-            // find sums of all grade items in course
+            // Limit to users with a gradeable role.
+            list($gradebookrolessql, $gradebookrolesparams) = $DB->get_in_or_equal(explode(',', $this->gradebookroles), SQL_PARAMS_NAMED, 'grbr0');
+
+            // Limit to users with an active enrollment.
+            list($enrolledsql, $enrolledparams) = get_enrolled_sql($this->context);
+
+            // We want to query both the current context and parent contexts.
+            list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal($this->context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx');
+
+            $params = array_merge(array('courseid' => $this->courseid), $gradebookrolesparams, $enrolledparams, $groupwheresqlparams, $relatedctxparams);
+
+            // Find sums of all grade items in course.
             $sql = "SELECT g.itemid, SUM(g.finalgrade) AS sum
                       FROM {grade_items} gi
                       JOIN {grade_grades} g ON g.itemid = gi.id
@@ -1380,7 +1325,7 @@ class grade_report_grader extends grade_report {
                                SELECT DISTINCT ra.userid
                                  FROM {role_assignments} ra
                                 WHERE ra.roleid $gradebookrolessql
-                                  AND ra.contextid " . get_related_contexts_string($this->context) . "
+                                  AND ra.contextid $relatedctxsql
                            ) rainner ON rainner.userid = u.id
                       $groupsql
                      WHERE gi.courseid = :courseid
@@ -1409,7 +1354,7 @@ class grade_report_grader extends grade_report {
                       $groupsql
                      WHERE gi.courseid = :courseid
                            AND ra.roleid $gradebookrolessql
-                           AND ra.contextid ".get_related_contexts_string($this->context)."
+                           AND ra.contextid $relatedctxsql
                            AND u.deleted = 0
                            AND g.id IS NULL
                            $groupwheresql
@@ -1420,11 +1365,12 @@ class grade_report_grader extends grade_report {
             $avgrow = new html_table_row();
             $avgrow->attributes['class'] = 'avg';
 
-            foreach ($this->gtree->items as $itemid=>$unused) {
+            foreach ($this->gtree->items as $itemid => $unused) {
                 $item =& $this->gtree->items[$itemid];
 
                 if ($item->needsupdate) {
                     $avgcell = new html_table_cell();
+                    $avgcell->attributes['class'] = 'i'. $itemid;
                     $avgcell->text = $OUTPUT->container(get_string('error'), 'gradingerror');
                     $avgrow->cells[] = $avgcell;
                     continue;
@@ -1447,8 +1393,6 @@ class grade_report_grader extends grade_report {
                     $meancount = $totalcount;
                 }
 
-                $decimalpoints = $item->get_decimals();
-
                 // Determine which display type to use for this average
                 if ($USER->gradeediting[$this->courseid]) {
                     $displaytype = GRADE_DISPLAY_TYPE_REAL;
@@ -1470,6 +1414,7 @@ class grade_report_grader extends grade_report {
 
                 if (!isset($sumarray[$item->id]) || $meancount == 0) {
                     $avgcell = new html_table_cell();
+                    $avgcell->attributes['class'] = 'i'. $itemid;
                     $avgcell->text = '-';
                     $avgrow->cells[] = $avgcell;
 
@@ -1484,6 +1429,7 @@ class grade_report_grader extends grade_report {
                     }
 
                     $avgcell = new html_table_cell();
+                    $avgcell->attributes['class'] = 'i'. $itemid;
                     $avgcell->text = $gradehtml.$numberofgrades;
                     $avgrow->cells[] = $avgcell;
                 }
@@ -1498,7 +1444,7 @@ class grade_report_grader extends grade_report {
      * figures out the state of the object and builds then returns a div
      * with the icons needed for the grader report.
      *
-     * @param array $object
+     * @param array $element
      * @return string HTML
      */
     protected function get_icons($element) {
@@ -1525,7 +1471,7 @@ class grade_report_grader extends grade_report {
             }
 
             if ($this->get_pref('showeyecons')) {
-               $showhideicon = $this->gtree->get_hiding_icon($element, $this->gpr);
+                $showhideicon = $this->gtree->get_hiding_icon($element, $this->gpr);
             }
 
             if ($this->get_pref('showlocks')) {
@@ -1544,7 +1490,7 @@ class grade_report_grader extends grade_report {
 
     /**
      * Given a category element returns collapsing +/- icon if available
-     * @param object $object
+     * @param object $element
      * @return string HTML
      */
     protected function get_collapsing_icon($element) {
@@ -1583,6 +1529,16 @@ class grade_report_grader extends grade_report {
      * @return
      */
     public function process_action($target, $action) {
+        return self::do_process_action($target, $action);
+    }
+
+    /**
+     * Processes a single action against a category, grade_item or grade.
+     * @param string $target eid ({type}{id}, e.g. c4 for category4)
+     * @param string $action Which action to take (edit, delete etc...)
+     * @return
+     */
+    public static function do_process_action($target, $action) {
         // TODO: this code should be in some grade_tree static method
         $targettype = substr($target, 0, 1);
         $targetid = substr($target, 1);
@@ -1634,15 +1590,9 @@ class grade_report_grader extends grade_report {
      * @return bool
      */
     public function is_fixed_students() {
-        global $USER, $CFG;
-        return empty($USER->screenreader) && $CFG->grade_report_fixedstudents &&
-            (check_browser_version('MSIE', '7.0') ||
-             check_browser_version('Firefox', '2.0') ||
-             check_browser_version('Gecko', '2006010100') ||
-             check_browser_version('Camino', '1.0') ||
-             check_browser_version('Opera', '6.0') ||
-             check_browser_version('Chrome', '6') ||
-             check_browser_version('Safari', '300'));
+        global $CFG;
+
+        return $CFG->grade_report_fixedstudents;
     }
 
     /**
@@ -1661,6 +1611,8 @@ class grade_report_grader extends grade_report {
         $strsortdesc  = $this->get_lang_string('sortdesc', 'grades');
         $strfirstname = $this->get_lang_string('firstname');
         $strlastname  = $this->get_lang_string('lastname');
+        $iconasc = $OUTPUT->pix_icon('t/sort_asc', $strsortasc, '', array('class' => 'iconsmall sorticon'));
+        $icondesc = $OUTPUT->pix_icon('t/sort_desc', $strsortdesc, '', array('class' => 'iconsmall sorticon'));
 
         $firstlink = html_writer::link(new moodle_url($this->baseurl, array('sortitemid'=>'firstname')), $strfirstname);
         $lastlink = html_writer::link(new moodle_url($this->baseurl, array('sortitemid'=>'lastname')), $strlastname);
@@ -1669,9 +1621,9 @@ class grade_report_grader extends grade_report {
 
         if ($this->sortitemid === 'lastname') {
             if ($this->sortorder == 'ASC') {
-                $arrows['studentname'] .= print_arrow('up', $strsortasc, true);
+                $arrows['studentname'] .= $iconasc;
             } else {
-                $arrows['studentname'] .= print_arrow('down', $strsortdesc, true);
+                $arrows['studentname'] .= $icondesc;
             }
         }
 
@@ -1679,9 +1631,9 @@ class grade_report_grader extends grade_report {
 
         if ($this->sortitemid === 'firstname') {
             if ($this->sortorder == 'ASC') {
-                $arrows['studentname'] .= print_arrow('up', $strsortasc, true);
+                $arrows['studentname'] .= $iconasc;
             } else {
-                $arrows['studentname'] .= print_arrow('down', $strsortdesc, true);
+                $arrows['studentname'] .= $icondesc;
             }
         }
 
@@ -1692,9 +1644,9 @@ class grade_report_grader extends grade_report {
 
             if ($field == $this->sortitemid) {
                 if ($this->sortorder == 'ASC') {
-                    $arrows[$field] .= print_arrow('up', $strsortasc, true);
+                    $arrows[$field] .= $iconasc;
                 } else {
-                    $arrows[$field] .= print_arrow('down', $strsortdesc, true);
+                    $arrows[$field] .= $icondesc;
                 }
             }
         }
@@ -1705,55 +1657,10 @@ class grade_report_grader extends grade_report {
     /**
      * Returns the maximum number of students to be displayed on each page
      *
-     * Takes into account the 'studentsperpage' user preference and the 'max_input_vars'
-     * PHP setting. Too many fields is only a problem when submitting grades but
-     * we respect 'max_input_vars' even when viewing grades to prevent students disappearing
-     * when toggling editing on and off.
-     *
      * @return int The maximum number of students to display per page
      */
     public function get_students_per_page() {
-        global $USER;
-        static $studentsperpage = null;
-
-        if ($studentsperpage === null) {
-            $originalstudentsperpage = $studentsperpage = $this->get_pref('studentsperpage');
-
-            // Will this number of students result in more fields that we are allowed?
-            $maxinputvars = ini_get('max_input_vars');
-            if ($maxinputvars !== false) {
-                $fieldspergradeitem = 0; // The number of fields output per grade item for each student
-
-                if ($this->get_pref('quickgrading')) {
-                    // One grade field
-                    $fieldspergradeitem ++;
-                }
-                if ($this->get_pref('showquickfeedback')) {
-                    // One feedback field
-                    $fieldspergradeitem ++;
-                }
-
-                $fieldsperstudent = $fieldspergradeitem * count($this->gtree->get_items());
-                $fieldsrequired = $studentsperpage * $fieldsperstudent;
-                if ($fieldsrequired > $maxinputvars) {
-                    $studentsperpage = floor($maxinputvars / $fieldsperstudent);
-                    if ($studentsperpage<1) {
-                        // Make sure students per page doesn't fall below 1
-                        // PHP max_input_vars could potentially be reached with 1 student
-                        // if there are >500 grade items and quickgrading and showquickfeedback are on
-                        $studentsperpage = 1;
-                    }
-
-                    $a = new stdClass();
-                    $a->originalstudentsperpage = $originalstudentsperpage;
-                    $a->studentsperpage = $studentsperpage;
-                    $a->maxinputvars = $maxinputvars;
-                    debugging(get_string('studentsperpagereduced', 'grades', $a));
-                }
-            }
-        }
-
-        return $studentsperpage;
+        return $this->get_pref('studentsperpage');
     }
 }
 

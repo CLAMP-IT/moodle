@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package moodlecore
+ * @package    block_rss_client
  * @subpackage backup-moodle2
  * @copyright 2003 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -78,6 +77,9 @@ class restore_rss_client_block_structure_step extends restore_structure_step {
         $configdata = $DB->get_field('block_instances', 'configdata', array('id' => $this->task->get_blockid()));
         // Extract configdata
         $config = unserialize(base64_decode($configdata));
+        if (empty($config)) {
+            $config = new stdClass();
+        }
         // Set array of used rss feeds
         $config->rssid = $feedsarr;
         // Serialize back the configdata

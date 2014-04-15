@@ -24,43 +24,29 @@
 
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/assign/locallib.php');
-
-$id = required_param('id', PARAM_INT); // Course ID
+// For this type of page this is the course id.
+$id = required_param('id', PARAM_INT);
 
 $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
 require_login($course);
 $PAGE->set_url('/mod/assign/index.php', array('id' => $id));
 $PAGE->set_pagelayout('incourse');
 
-add_to_log($course->id, "assign", "view all", "index.php?id=$course->id", "");
+add_to_log($course->id, 'assign', 'view all', 'index.php?id=$course->id', '');
 
-// Print the header
+// Print the header.
 $strplural = get_string("modulenameplural", "assign");
 $PAGE->navbar->add($strplural);
 $PAGE->set_title($strplural);
 $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($strplural));
 
-// Get all the appropriate data
-if (!$assignments = get_all_instances_in_course("assign", $course)) {
-    notice(get_string('thereareno', 'moodle', $strplural), new moodle_url('/course/view.php', array('id' => $course->id)));
-    die;
-}
+$context = context_course::instance($course->id);
 
-// Check if we need the closing date header
-$table = new html_table();
-$table->head  = array ($strplural, get_string('duedate', 'assign'), get_string('submissions', 'assign'));
-$table->align = array ('left', 'left', 'center');
-$table->data = array();
-foreach ($assignments as $assignment) {
-    $cm = get_coursemodule_from_instance('assign', $assignment->id, 0, false, MUST_EXIST);
+require_capability('mod/assign:view', $context);
 
-    $link = html_writer::link(new moodle_url('/mod/assign/view.php', array('id' => $cm->id)), $assignment->name);
-    $date = userdate($assignment->duedate);
-    $submissions = $DB->count_records('assign_submission', array('assignment'=>$cm->instance));
-    $row = array($link, $date, $submissions);
-    $table->data[] = $row;
+$assign = new assign($context, null, $course);
 
-}
-echo html_writer::table($table);
-echo $OUTPUT->footer();
+// Get the assign to render the page.
+echo $assign->view('viewcourseindex');

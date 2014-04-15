@@ -36,6 +36,7 @@ $timefrom   = optional_param('timefrom', 0, PARAM_INT); // how far back to look.
 $action     = optional_param('action', '', PARAM_ALPHA);
 $page       = optional_param('page', 0, PARAM_INT);                     // which page to show
 $perpage    = optional_param('perpage', DEFAULT_PAGE_SIZE, PARAM_INT);  // how many per page
+$currentgroup = optional_param('group', 0, PARAM_INT); // Get the active group.
 
 $url = new moodle_url('/report/participation/index.php', array('id'=>$id));
 if ($roleid !== 0) $url->param('roleid');
@@ -60,10 +61,8 @@ if ($roleid != 0 and !$role = $DB->get_record('role', array('id'=>$roleid))) {
 }
 
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 require_capability('report/participation:view', $context);
-
-add_to_log($course->id, "course", "report participation", "report/participation/index.php?id=$course->id", $course->id);
 
 $strparticipation = get_string('participationreport');
 $strviews         = get_string('views');
@@ -83,6 +82,14 @@ if (!array_key_exists($action, $actionoptions)) {
 $PAGE->set_title($course->shortname .': '. $strparticipation);
 $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
+
+// Trigger a content view event.
+$event = \report_participation\event\content_viewed::create(array('courseid' => $course->id,
+                                                               'other'    => array('content' => 'participants')));
+$event->set_page_detail();
+$event->set_legacy_logdata(array($course->id, "course", "report participation",
+        "report/participation/index.php?id=$course->id", $course->id));
+$event->trigger();
 
 $modinfo = get_fast_modinfo($course);
 
@@ -137,19 +144,11 @@ if (strtotime('-1 year',$now) >= $minlog) {
     $timeoptions[strtotime('-1 year',$now)] = get_string('lastyear');
 }
 
-$roleoptions = array();
 // TODO: we need a new list of roles that are visible here
-if ($roles = get_roles_used_in_context($context)) {
-    foreach ($roles as $r) {
-        $roleoptions[$r->id] = $r->name;
-    }
-}
+$roles = get_roles_used_in_context($context);
 $guestrole = get_guest_role();
-if (empty($roleoptions[$guestrole->id])) {
-        $roleoptions[$guestrole->id] = $guestrole->name;
-}
-
-$roleoptions = role_fix_names($roleoptions, $context);
+$roles[$guestrole->id] = $guestrole;
+$roleoptions = role_fix_names($roles, $context, ROLENAME_ALIAS, true);
 
 // print first controls.
 echo '<form class="participationselectform" action="index.php" method="get"><div>'."\n".
@@ -166,10 +165,32 @@ echo '<input type="submit" value="'.get_string('go').'" />'."\n</div></form>\n";
 
 $baseurl =  $CFG->wwwroot.'/report/participation/index.php?id='.$course->id.'&amp;roleid='
     .$roleid.'&amp;instanceid='.$instanceid.'&amp;timefrom='.$timefrom.'&amp;action='.$action.'&amp;perpage='.$perpage;
+$select = groups_allgroups_course_menu($course, $baseurl, true, $currentgroup);
+
+// User cannot see any group.
+if (empty($select)) {
+    echo $OUTPUT->heading(get_string("notingroup"));
+    echo $OUTPUT->footer();
+    exit;
+} else {
+    echo $select;
+}
+
+// Fetch current active group.
+$groupmode = groups_get_course_groupmode($course);
+$currentgroup = $SESSION->activegroup[$course->id][$groupmode][$course->defaultgroupingid];
 
 if (!empty($instanceid) && !empty($roleid)) {
     // from here assume we have at least the module we're using.
     $cm = $modinfo->cms[$instanceid];
+
+    // Group security checks.
+    if (!groups_group_visible($currentgroup, $course, $cm)) {
+        echo $OUTPUT->heading(get_string("notingroup"));
+        echo $OUTPUT->footer();
+        exit;
+    }
+
     $modulename = get_string('modulename', $cm->modname);
 
     include_once($CFG->dirroot.'/mod/'.$cm->modname.'/lib.php');
@@ -222,14 +243,23 @@ if (!empty($instanceid) && !empty($roleid)) {
     list($actionsql, $params) = $DB->get_in_or_equal($actions, SQL_PARAMS_NAMED, 'action');
     $actionsql = "action $actionsql";
 
-    $relatedcontexts = get_related_contexts_string($context);
+    // We want to query both the current context and parent contexts.
+    list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal($context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx');
 
-    $sql = "SELECT ra.userid, u.firstname, u.lastname, u.idnumber, l.actioncount AS count
-            FROM (SELECT * FROM {role_assignments} WHERE contextid $relatedcontexts AND roleid = :roleid ) ra
+    $groupsql = "";
+    if (!empty($currentgroup)) {
+        $groupsql = "JOIN {groups_members} gm ON (gm.userid = u.id AND gm.groupid = :groupid)";
+        $params['groupid'] = $currentgroup;
+    }
+    $usernamefields = get_all_user_name_fields(true, 'u');
+    $sql = "SELECT ra.userid, $usernamefields, u.idnumber, l.actioncount AS count
+            FROM (SELECT * FROM {role_assignments} WHERE contextid $relatedctxsql AND roleid = :roleid ) ra
             JOIN {user} u ON u.id = ra.userid
+            $groupsql
             LEFT JOIN (
                 SELECT userid, COUNT(action) AS actioncount FROM {log} WHERE cmid = :instanceid AND time > :timefrom AND $actionsql GROUP BY userid
             ) l ON (l.userid = ra.userid)";
+    $params = array_merge($params, $relatedctxparams);
     $params['roleid'] = $roleid;
     $params['instanceid'] = $instanceid;
     $params['timefrom'] = $timefrom;
@@ -247,7 +277,8 @@ if (!empty($instanceid) && !empty($roleid)) {
     $countsql = "SELECT COUNT(DISTINCT(ra.userid))
                    FROM {role_assignments} ra
                    JOIN {user} u ON u.id = ra.userid
-                  WHERE ra.contextid $relatedcontexts AND ra.roleid = :roleid";
+                   $groupsql
+                  WHERE ra.contextid $relatedctxsql AND ra.roleid = :roleid";
 
     $totalcount = $DB->count_records_sql($countsql, $params);
 
@@ -311,7 +342,7 @@ if (!empty($instanceid) && !empty($roleid)) {
     }
     echo '</div>';
     echo '<div>';
-    echo '<label for="formaction">'.get_string('withselectedusers').'</label>';
+    echo html_writer::label(get_string('withselectedusers'), 'formactionselect');
     $displaylist['messageselect.php'] = get_string('messageselectadd');
     echo html_writer::select($displaylist, 'formaction', '', array(''=>'choosedots'), array('id'=>'formactionselect'));
     echo $OUTPUT->help_icon('withselectedusers');

@@ -17,16 +17,15 @@
 /**
  * Strings for component 'feedback', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package   feedback
+ * @package mod_feedback
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 $string['add_item'] = 'Add question to activity';
-$string['add_items'] = 'Add question to activity';
 $string['add_pagebreak'] = 'Add a page break';
 $string['adjustment'] = 'Adjustment';
-$string['after_submit'] = 'After submitting';
+$string['after_submit'] = 'After submission';
 $string['allowfullanonymous'] = 'Allow full anonymous';
 $string['analysis'] = 'Analysis';
 $string['anonymous'] = 'Anonymous';
@@ -34,7 +33,7 @@ $string['anonymous_edit'] = 'Record user names';
 $string['anonymous_entries'] = 'Anonymous entries';
 $string['anonymous_user'] = 'Anonymous user';
 $string['append_new_items'] = 'Append new items';
-$string['autonumbering'] = 'Automated numbers';
+$string['autonumbering'] = 'Auto number questions';
 $string['autonumbering_help'] = 'Enables or disables automated numbers for each question';
 $string['average'] = 'Average';
 $string['bold'] = 'Bold';
@@ -48,7 +47,7 @@ $string['completed'] = 'completed';
 $string['completed_feedbacks'] = 'Submitted answers';
 $string['complete_the_form'] = 'Answer the questions...';
 $string['completionsubmit'] = 'View as completed if the feedback is submitted';
-$string['configallowfullanonymous'] = 'If this option is set yes so the feedback can be completed without any preceding logon. It only affects feedbacks on the homepage.';
+$string['configallowfullanonymous'] = 'If set to \'yes\', users can complete a feedback activity on the front page without being required to log in.';
 $string['confirmdeleteentry'] = 'Are you sure you want to delete this entry?';
 $string['confirmdeleteitem'] = 'Are you sure you want to delete this element?';
 $string['confirmdeletetemplate'] = 'Are you sure you want to delete this template?';
@@ -62,28 +61,26 @@ $string['delete_item'] = 'Delete question';
 $string['delete_old_items'] = 'Delete old items';
 $string['delete_template'] = 'Delete template';
 $string['delete_templates'] = 'Delete template...';
-$string['depending'] = 'depending items';
-$string['depending_help'] = 'Depending items allow you to show items depend on values from other items.<br />
-<strong>Here an build example to use it:</strong><br />
+$string['depending'] = 'Dependencies';
+$string['depending_help'] = 'It is possible to show an item depending on the value of another item.<br />
+<strong>Here is an example.</strong><br />
 <ul>
-<li>First create an item on which value other items depends.</li>
-<li>Next add a pagebreak.</li>
-<li>Next add the items depend on the item-value before<br />
-Choose in the item creation-form the item in the list "depend item" and put the needed value into the textbox "depend value".</li>
+<li>First, create an item on which another item will depend on.</li>
+<li>Next, add a pagebreak.</li>
+<li>Then add the items dependant on the value of the item created before. Choose the item from the list labelled "Dependence item" and write the required value in the textbox labelled "Dependence value".</li>
 </ul>
-<strong>The structure should looks like this:</strong>
+<strong>The item structure should look like this.</strong>
 <ol>
-<li>Item Q: do you have a car? A: yes/no</li>
+<li>Item Q: Do you have a car? A: yes/no</li>
 <li>Pagebreak</li>
-<li>Item Q: what color has your car?<br />
+<li>Item Q: What colour is your car?<br />
 (this item depends on item 1 with value = yes)</li>
-<li>Item Q: why you have not a car?<br />
+<li>Item Q: Why don\'t you have a car?<br />
 (this item depends on item 1 with value = no)</li>
 <li> ... other items</li>
-</ol>
-That is all. Have fun!';
-$string['dependitem'] = 'depend item';
-$string['dependvalue'] = 'depend value';
+</ol>';
+$string['dependitem'] = 'Dependence item';
+$string['dependvalue'] = 'Dependence value';
 $string['description'] = 'Description';
 $string['do_not_analyse_empty_submits'] = 'Do not analyse empty submits';
 $string['dropdown'] = 'Multiple choice - single answer allowed (dropdownlist)';
@@ -93,22 +90,22 @@ $string['dropdown_values'] = 'Answers';
 $string['drop_feedback'] = 'Remove from this course';
 $string['edit_item'] = 'Edit question';
 $string['edit_items'] = 'Edit questions';
-$string['email_notification'] = 'Send e-mail notifications';
-$string['emailnotification'] = 'emailnotifications';
-$string['emailnotification_help'] = 'If enabled, administrators receive email notification of feedback submissions.';
+$string['email_notification'] = 'Enable notification of submissions';
+$string['email_notification_help'] = 'If enabled, teachers will receive notification of feedback submissions.';
 $string['emailteachermail'] = '{$a->username} has completed feedback activity : \'{$a->feedback}\'
 
 You can view it here:
 
 {$a->url}';
-$string['emailteachermailhtml'] = '{$a->username} has completed feedback activity : <i>\'{$a->feedback}\'</i><br /><br />
-You can view it <a href="{$a->url}">here</a>.';
+$string['emailteachermailhtml'] = '<p>{$a->username} has completed feedback activity : <i>\'{$a->feedback}\'</i>.</p>
+<p>It is <a href="{$a->url}">available on the site</a>.</p>';
 $string['entries_saved'] = 'Your answers have been saved. Thank you.';
 $string['export_questions'] = 'Export questions';
 $string['export_to_excel'] = 'Export to Excel';
+$string['eventresponsedeleted'] = 'Response deleted';
+$string['eventresponsesubmitted'] = 'Response submitted';
 $string['feedback:addinstance'] = 'Add a new feedback';
-$string['feedbackclose'] = 'Close the feedback at';
-$string['feedbackcloses'] = 'Feedback closes';
+$string['feedbackclose'] = 'Allow answers to';
 $string['feedback:complete'] = 'Complete a feedback';
 $string['feedback:createprivatetemplate'] = 'Create private template';
 $string['feedback:createpublictemplate'] = 'Create public template';
@@ -118,9 +115,7 @@ $string['feedback:edititems'] = 'Edit items';
 $string['feedback_is_not_for_anonymous'] = 'feedback is not for anonymous';
 $string['feedback_is_not_open'] = 'The feedback is not open';
 $string['feedback:mapcourse'] = 'Map courses to global feedbacks';
-$string['feedbackopen'] = 'Open the feedback at';
-$string['feedbackopens'] = 'Feedback opens';
-$string['feedback_options'] = 'Feedback options';
+$string['feedbackopen'] = 'Allow answers from';
 $string['feedback:receivemail'] = 'Receive email notification';
 $string['feedback:view'] = 'View a feedback';
 $string['feedback:viewanalysepage'] = 'View the analysis page after submit';
@@ -185,8 +180,7 @@ $string['multichoice'] = 'Multiple choice';
 $string['multichoicerated'] = 'Multiple choice (rated)';
 $string['multichoicetype'] = 'Multiple choice type';
 $string['multichoice_values'] = 'Multiple choice values';
-$string['multiple_submit'] = 'Multiple submissions';
-$string['multiplesubmit'] = 'Multiple submissions';
+$string['multiplesubmit'] = 'Allow multiple submissions';
 $string['multiplesubmit_help'] = 'If enabled for anonymous surveys, users can submit feedback an unlimited number of times.';
 $string['name'] = 'Name';
 $string['name_required'] = 'Name required';
@@ -213,7 +207,7 @@ $string['only_one_captcha_allowed'] = 'Only one captcha is allowed in a feedback
 $string['overview'] = 'Overview';
 $string['page'] = 'Page';
 $string['page-mod-feedback-x'] = 'Any feedback module page';
-$string['page_after_submit'] = 'Page after submit';
+$string['page_after_submit'] = 'Completion message';
 $string['pagebreak'] = 'Page break';
 $string['parameters_missing'] = 'Parameters missing from';
 $string['picture'] = 'Picture';
@@ -227,6 +221,7 @@ $string['preview_help'] = 'In the preview you can change the order of questions.
 $string['previous_page'] = 'Previous page';
 $string['public'] = 'Public';
 $string['question'] = 'Question';
+$string['questionandsubmission'] = 'Question and submission settings';
 $string['questions'] = 'Questions';
 $string['radio'] = 'Multiple choice - single answer';
 $string['radiobutton'] = 'Multiple choice - single answer allowed (radio buttons)';
@@ -256,7 +251,7 @@ $string['send_message'] = 'send message';
 $string['separator_decimal'] = '.';
 $string['separator_thousand'] = ',';
 $string['show_all'] = 'Show all';
-$string['show_analysepage_after_submit'] = 'Show analysis page after submit';
+$string['show_analysepage_after_submit'] = 'Show analysis page';
 $string['show_entries'] = 'Show responses';
 $string['show_entry'] = 'Show response';
 $string['show_nonrespondents'] = 'Show non-respondents';
@@ -280,15 +275,10 @@ $string['textfield_maxlength'] = 'Maximum characters accepted';
 $string['textfield_size'] = 'Textfield width';
 $string['there_are_no_settings_for_recaptcha'] = 'There are no settings for captcha';
 $string['this_feedback_is_already_submitted'] = 'You\'ve already completed this activity.';
-$string['timeclose'] = 'Time to close';
-$string['timeclose_help'] = 'You can specify times when the feedback is accessible for people to answer the questions. If the checkbox is not ticked there is no limit defined.';
-$string['timeopen'] = 'Time to open';
-$string['timeopen_help'] = 'You can specify times when the feedback is accessible for people to answer the questions. If the checkbox is not ticked there is no limit defined.';
 $string['typemissing'] = 'missing value "type"';
 $string['update_item'] = 'Save changes to question';
-$string['url_for_continue'] = 'URL for continue-button';
-$string['url_for_continue_help'] = 'By default after a feedback is submitted the target of the continue button is the course page. You can define here another target URL for this continue button.';
-$string['url_for_continue_button'] = 'URL for continue button';
+$string['url_for_continue'] = 'Link to next activity';
+$string['url_for_continue_help'] = 'After submitting the feedback, a continue button is displayed, which links to the course page. Alternatively, it may link to the next activity if the URL of the activity is entered here.';
 $string['use_one_line_for_each_value'] = '<br />Use one line for each answer!';
 $string['use_this_template'] = 'Use this template';
 $string['using_templates'] = 'Use a template';

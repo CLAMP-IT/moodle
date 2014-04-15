@@ -25,12 +25,10 @@
 require_once($CFG->dirroot . '/user/selector/lib.php');
 
 /*
-* This class displays either all the Moodle users allowed to use a service,
-* either all the other Moodle users.
+ * This class displays either all the Moodle users allowed to use a service,
+ * either all the other Moodle users.
  */
 class service_user_selector extends user_selector_base {
-    const MAX_USERS_PER_PAGE = 100;
-
     protected $serviceid;
     protected $displayallowedusers; //set to true if the selector displays the
                                     //allowed users on this service
@@ -41,8 +39,7 @@ class service_user_selector extends user_selector_base {
         parent::__construct($name, $options);
         if (!empty($options['serviceid'])) {
             $this->serviceid = $options['serviceid'];
-        }
-        else {
+        } else {
             throw new moodle_exception('serviceidnotfound');
         }
         $this->displayallowedusers = !empty($options['displayallowedusers']);
@@ -81,16 +78,17 @@ class service_user_selector extends user_selector_base {
                                                         AND esu.userid = u.id)";
         }
 
-        $order = ' ORDER BY u.lastname ASC, u.firstname ASC';
+        list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
+        $order = ' ORDER BY ' . $sort;
 
         if (!$this->is_validating()) {
             $potentialmemberscount = $DB->count_records_sql($countfields . $sql, $params);
-            if ($potentialmemberscount > service_user_selector::MAX_USERS_PER_PAGE) {
+            if ($potentialmemberscount > $this->maxusersperpage) {
                 return $this->too_many_results($search, $potentialmemberscount);
             }
         }
 
-        $availableusers = $DB->get_records_sql($fields . $sql . $order, $params);
+        $availableusers = $DB->get_records_sql($fields . $sql . $order, array_merge($params, $sortparams));
 
         if (empty($availableusers)) {
             return array();

@@ -10,9 +10,9 @@ body {
 }
 
 #page {
-    width:100%;
-    max-width: 1600px;
-    margin:0 auto;
+    width: 100%;
+    max-width: 1760px;
+    margin: 0 auto;
 }
 
 #page-content {
@@ -69,14 +69,12 @@ body {
 }
 
 #page-content #region-main .region-content {
-    overflow: hidden;
     margin: 20px;
     padding-bottom: 20px;
 }
 
 #page-content #region-pre .region-content,
 #page-content #region-post .region-content {
-    overflow: hidden;
     padding: 20px 10px;
 }
 

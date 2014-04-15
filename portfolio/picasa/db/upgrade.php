@@ -20,6 +20,7 @@
  */
 function xmldb_portfolio_picasa_upgrade($oldversion) {
     global $CFG, $DB;
+    require_once(__DIR__.'/upgradelib.php');
 
     $dbman = $DB->get_manager();
 
@@ -39,31 +40,20 @@ function xmldb_portfolio_picasa_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2012053001, 'portfolio', 'picasa');
     }
 
+    // Moodle v2.3.0 release upgrade line
+    // Put any upgrade step following this
+
+
+    // Moodle v2.4.0 release upgrade line
+    // Put any upgrade step following this
+
+
+    // Moodle v2.5.0 release upgrade line.
+    // Put any upgrade step following this.
+
+
+    // Moodle v2.6.0 release upgrade line.
+    // Put any upgrade step following this.
+
     return true;
-}
-
-function portfolio_picasa_admin_upgrade_notification() {
-    $admins = get_admins();
-
-    if (empty($admins)) {
-        return;
-    }
-    $mainadmin = reset($admins);
-    $a = new stdClass;
-    $a->docsurl = get_docs_url('Google_OAuth_2.0_setup');
-
-    foreach ($admins as $admin) {
-        $message = new stdClass();
-        $message->component         = 'moodle';
-        $message->name              = 'notices';
-        $message->userfrom          = $mainadmin;
-        $message->userto            = $admin;
-        $message->smallmessage      = get_string('oauth2upgrade_message_small', 'portfolio_picasa');
-        $message->subject           = get_string('oauth2upgrade_message_subject', 'portfolio_picasa');
-        $message->fullmessage       = get_string('oauth2upgrade_message_content', 'portfolio_picasa', $a);
-        $message->fullmessagehtml   = get_string('oauth2upgrade_message_content', 'portfolio_picasa', $a);
-        $message->fullmessageformat = FORMAT_PLAIN;
-        $message->notification      = 1;
-        message_send($message);
-    }
 }

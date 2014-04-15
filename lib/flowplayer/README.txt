@@ -1,8 +1,61 @@
 Version history:
 
+3.2.16
+------
+- #15 fixes for #627, handle the display init on startup.
+- #615 dispatch begin if in paused mode too early.
+- #629 if start has been dispatched already prevent dispatching many begin events.
+- #20 for the free player swap the logo with the stage video mask to display underneath not on top.
+- #42 pass in stream clips through and close the stream before returning to the parent clip.
+- #52 when replaying flag start has dispatched on the current clip.
+- #44 fixes for #627 check if the stagevideo dimensions and positioning has changed to update the stage video mask with.
+- unbinding and binding stage video events caused issues with instream playlists therefore has to be kept binded.
+  unbinded stage video events during seeking to prevent the mask repositioning.
+- #53 update url filter to accomodate for pretty urls with semi colons.
+- #50 if we have metadata already set it is being updated during seeks and switching, dispatch metadata change events instead.
+
+3.2.15
+------
+- #614 when the clip ends if the next clip in the provider has a different provider close the provider stream.
+- #627 only detach / attach the display on start events which causes issues in buffering events after a seek in stagevideo.
+- #627 re-enable stagevideo state change listeners if stagevideo is available or detach the fullscreen events on first call.
+- #9 when replaying from stopping, connection does not receive callbacks anymore.
+
+
+
+
+3.2.13
+------
+- Updated to automatically load the latest controls and audio plugins
+- #612 add some logging for the stagevideo render state to determine what mode the hardware acceleration is in for various systems.
+- #628 opera browsers do not return filesize correctly for latest flash players so require to use load completion instead which may help with gzipped files also.
+
+3.2.12
+------
+- new flowplayer.js version 3.2.11,
+   fixes removing the player in fullscreen mode leaves Android locked in landscape orientation (#511)
+- #586 add a bitrate label with a new namespace attribute fp:bitratelabel.
+- #583 fixes for handling the fullscreenOnly property better
+- #494 with relative filenames with a root path strip the baseurl of paths first.
+
+3.2.11
+------
+- new flowplayer.js, now requires Flash 10.1 as the minimum flash version
+- #526 allow click through event for flash installation message when using div containers.
+- #508 disabling the stagevideo screen mask, canvas is visible without it, this was causing issues with the display list.
+- #443 adding accessibility option to the playbuttonoverlay.
+
+
+3.2.10
+------
+- Fixed #514, scrubbing was broken
+- new flowplayer.js version 3.2.9, fixes #510
+
 3.2.9
 -----
 - Fixed #490, controlbar background, buffer bar and progress bar colors were all reset to white
+- #503 Update viewport when stage is added to obtain the coordnates correctly. Update viewport when in and out of fullscreen.
+- #508 stage video mask was being added to the top layer and hiding all children.
 
 3.2.8
 -----
@@ -69,6 +122,7 @@ this.loadPlugin("content","../flowplayer.content.swf", { html: "test"  }, functi
 - #461 when we have a clip base url set, we need the complete clip url sent to play2 for http streams.
 - #470 check for a playlist when replacing the playlist with an rss feed.
 - #494 regression issued caused by #412, enable base url correctly.
+- #30 regression caused by character replacements, removing for now and let end user deal with them.
 
 3.2.7
 -----

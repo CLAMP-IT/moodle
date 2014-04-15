@@ -21,34 +21,12 @@
  *
  * Included by import.ph
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
 
 defined('MOODLE_INTERNAL') || die();
-
-/**#@+
- * The core question types.
- *
- * These used to be in lib/questionlib.php, but are being deprecated. Copying them
- * here to keep this code working for now.
- */
-if (!defined('SHORTANSWER')) {
-    define("SHORTANSWER",   "shortanswer");
-    define("TRUEFALSE",     "truefalse");
-    define("MULTICHOICE",   "multichoice");
-    define("RANDOM",        "random");
-    define("MATCH",         "match");
-    define("RANDOMSAMATCH", "randomsamatch");
-    define("DESCRIPTION",   "description");
-    define("NUMERICAL",     "numerical");
-    define("MULTIANSWER",   "multianswer");
-    define("CALCULATED",    "calculated");
-    define("ESSAY",         "essay");
-}
-/**#@-*/
 
 /**
  * Given some question info and some data about the the answers
@@ -59,10 +37,10 @@ if (!defined('SHORTANSWER')) {
  * Lifted from mod/quiz/lib.php -
  *    1. all reference to oldanswers removed
  *    2. all reference to quiz_multichoice table removed
- *    3. In SHORTANSWER questions usecase is store in the qoption field
- *    4. In NUMERIC questions store the range as two answers
- *    5. TRUEFALSE options are ignored
- *    6. For MULTICHOICE questions with more than one answer the qoption field is true
+ *    3. In shortanswer questions usecase is store in the qoption field
+ *    4. In numeric questions store the range as two answers
+ *    5. truefalse options are ignored
+ *    6. For multichoice questions with more than one answer the qoption field is true
  *
  * @param opject $question Contains question data like question, type and answers.
  * @return object Returns $result->error or $result->notice.
@@ -116,7 +94,7 @@ function lesson_save_question_options($question, $lesson) {
             }
             break;
 
-        case LESSON_PAGE_NUMERICAL:   // Note similarities to SHORTANSWER
+        case LESSON_PAGE_NUMERICAL:   // Note similarities to shortanswer.
 
             $answers = array();
             $maxfraction = -1;
@@ -262,6 +240,7 @@ function lesson_save_question_options($question, $lesson) {
             // The first answer should always be the correct answer
             $correctanswer = clone($defaultanswer);
             $correctanswer->answer = get_string('thatsthecorrectanswer', 'lesson');
+            $correctanswer->jumpto = LESSON_NEXTPAGE;
             $DB->insert_record("lesson_answers", $correctanswer);
 
             // The second answer should always be the wrong answer
@@ -303,18 +282,23 @@ function lesson_save_question_options($question, $lesson) {
 class qformat_default {
 
     var $displayerrors = true;
-    var $category = NULL;
+    var $category = null;
     var $questionids = array();
-    var $qtypeconvert = array(NUMERICAL   => LESSON_PAGE_NUMERICAL,
-                              MULTICHOICE => LESSON_PAGE_MULTICHOICE,
-                              TRUEFALSE   => LESSON_PAGE_TRUEFALSE,
-                              SHORTANSWER => LESSON_PAGE_SHORTANSWER,
-                              MATCH       => LESSON_PAGE_MATCHING
+    protected $importcontext = null;
+    var $qtypeconvert = array('numerical'   => LESSON_PAGE_NUMERICAL,
+                               'multichoice' => LESSON_PAGE_MULTICHOICE,
+                               'truefalse'   => LESSON_PAGE_TRUEFALSE,
+                               'shortanswer' => LESSON_PAGE_SHORTANSWER,
+                               'match'       => LESSON_PAGE_MATCHING
                               );
 
     // Importing functions
     function provide_import() {
         return false;
+    }
+
+    function set_importcontext($context) {
+        $this->importcontext = $context;
     }
 
     function importpreprocess() {
@@ -343,6 +327,13 @@ class qformat_default {
                 $this->count_questions($questions)), 'notifysuccess');
 
         $count = 0;
+        $addquestionontop = false;
+        if ($pageid == 0) {
+            $addquestionontop = true;
+            $updatelessonpage = $DB->get_record('lesson_pages', array('lessonid' => $lesson->id, 'prevpageid' => 0));
+        } else {
+            $updatelessonpage = $DB->get_record('lesson_pages', array('lessonid' => $lesson->id, 'id' => $pageid));
+        }
 
         $unsupportedquestions = 0;
 
@@ -352,11 +343,11 @@ class qformat_default {
                 case 'category':
                     break;
                 // the good ones
-                case SHORTANSWER :
-                case NUMERICAL :
-                case TRUEFALSE :
-                case MULTICHOICE :
-                case MATCH :
+                case 'shortanswer' :
+                case 'numerical' :
+                case 'truefalse' :
+                case 'multichoice' :
+                case 'match' :
                     $count++;
 
                     //Show nice formated question in one line.
@@ -366,12 +357,12 @@ class qformat_default {
                     $newpage->lessonid = $lesson->id;
                     $newpage->qtype = $this->qtypeconvert[$question->qtype];
                     switch ($question->qtype) {
-                        case SHORTANSWER :
+                        case 'shortanswer' :
                             if (isset($question->usecase)) {
                                 $newpage->qoption = $question->usecase;
                             }
                             break;
-                        case MULTICHOICE :
+                        case 'multichoice' :
                             if (isset($question->single)) {
                                 $newpage->qoption = !$question->single;
                             }
@@ -384,6 +375,7 @@ class qformat_default {
                         $newpage->title = "Page $count";
                     }
                     $newpage->contents = $question->questiontext;
+                    $newpage->contentsformat = isset($question->questionformat) ? $question->questionformat : FORMAT_HTML;
 
                     // set up page links
                     if ($pageid) {
@@ -397,7 +389,6 @@ class qformat_default {
                         $newpageid = $DB->insert_record("lesson_pages", $newpage);
                         // update the linked list
                         $DB->set_field("lesson_pages", "nextpageid", $newpageid, array("id" => $pageid));
-
                     } else {
                         // new page is the first page
                         // get the existing (first) page (if any)
@@ -416,11 +407,21 @@ class qformat_default {
                             $DB->set_field("lesson_pages", "prevpageid", $newpageid, array("id" => $page->id));
                         }
                     }
+
                     // reset $pageid and put the page ID in $question, used in save_question_option()
                     $pageid = $newpageid;
                     $question->id = $newpageid;
 
                     $this->questionids[] = $question->id;
+
+                    // Import images in question text.
+                    if (isset($question->questiontextitemid)) {
+                        $questiontext = file_save_draft_area_files($question->questiontextitemid,
+                                $this->importcontext->id, 'mod_lesson', 'page_contents', $newpageid,
+                                null , $question->questiontext);
+                        // Update content with recoded urls.
+                        $DB->set_field("lesson_pages", "contents", $questiontext, array("id" => $newpageid));
+                    }
 
                     // Now to save all the answers and type-specific options
 
@@ -443,7 +444,14 @@ class qformat_default {
                     $unsupportedquestions++;
                     break;
             }
-
+        }
+        // Update the prev links if there were existing pages.
+        if (!empty($updatelessonpage)) {
+            if ($addquestionontop) {
+                $DB->set_field("lesson_pages", "prevpageid", $pageid, array("id" => $updatelessonpage->id));
+            } else {
+                $DB->set_field("lesson_pages", "prevpageid", $pageid, array("id" => $updatelessonpage->nextpageid));
+            }
         }
         if ($unsupportedquestions) {
             echo $OUTPUT->notification(get_string('unknownqtypesnotimported', 'lesson', $unsupportedquestions));
@@ -522,14 +530,45 @@ class qformat_default {
     }
 
 
-    function readquestion($lines) {
+    protected function readquestion($lines) {
     /// Given an array of lines known to define a question in
     /// this format, this function converts it into a question
     /// object suitable for processing and insertion into Moodle.
 
         echo "<p>This flash question format has not yet been completed!</p>";
 
-        return NULL;
+        return null;
+    }
+
+    /**
+     * Construct a reasonable default question name, based on the start of the question text.
+     * @param string $questiontext the question text.
+     * @param string $default default question name to use if the constructed one comes out blank.
+     * @return string a reasonable question name.
+     */
+    public function create_default_question_name($questiontext, $default) {
+        $name = $this->clean_question_name(shorten_text($questiontext, 80));
+        if ($name) {
+            return $name;
+        } else {
+            return $default;
+        }
+    }
+
+    /**
+     * Ensure that a question name does not contain anything nasty, and will fit in the DB field.
+     * @param string $name the raw question name.
+     * @return string a safe question name.
+     */
+    public function clean_question_name($name) {
+        $name = clean_param($name, PARAM_TEXT); // Matches what the question editing form does.
+        $name = trim($name);
+        $trimlength = 251;
+        while (core_text::strlen($name) > 255 && $trimlength > 0) {
+            $name = shorten_text($name, $trimlength);
+            $trimlength -= 10;
+        }
+        return $name;
     }
 
     function defaultquestion() {
@@ -577,9 +616,101 @@ class qformat_default {
     protected function format_question_text($question) {
         $formatoptions = new stdClass();
         $formatoptions->noclean = true;
-        return html_to_text(format_text($question->questiontext,
+        // The html_to_text call strips out all URLs, but format_text complains
+        // if it finds @@PLUGINFILE@@ tokens. So, we need to replace
+        // @@PLUGINFILE@@ with a real URL, but it doesn't matter what.
+        // We use http://example.com/.
+        $text = str_replace('@@PLUGINFILE@@/', 'http://example.com/', $question->questiontext);
+        return html_to_text(format_text($text,
                 $question->questiontextformat, $formatoptions), 0, false);
+    }
+
+    /**
+     * Since the lesson module tries to re-use the question bank import classes in
+     * a crazy way, this is necessary to stop things breaking.
+     */
+    protected function add_blank_combined_feedback($question) {
+        return $question;
     }
 }
 
 
+/**
+ * Since the lesson module tries to re-use the question bank import classes in
+ * a crazy way, this is necessary to stop things breaking. This should be exactly
+ * the same as the class defined in question/format.php.
+ */
+class qformat_based_on_xml extends qformat_default {
+    /**
+     * A lot of imported files contain unwanted entities.
+     * This method tries to clean up all known problems.
+     * @param string str string to correct
+     * @return string the corrected string
+     */
+    public function cleaninput($str) {
+
+        $html_code_list = array(
+            "&#039;" => "'",
+            "&#8217;" => "'",
+            "&#8220;" => "\"",
+            "&#8221;" => "\"",
+            "&#8211;" => "-",
+            "&#8212;" => "-",
+        );
+        $str = strtr($str, $html_code_list);
+        // Use core_text entities_to_utf8 function to convert only numerical entities.
+        $str = core_text::entities_to_utf8($str, false);
+        return $str;
+    }
+
+    /**
+     * Return the array moodle is expecting
+     * for an HTML text. No processing is done on $text.
+     * qformat classes that want to process $text
+     * for instance to import external images files
+     * and recode urls in $text must overwrite this method.
+     * @param array $text some HTML text string
+     * @return array with keys text, format and files.
+     */
+    public function text_field($text) {
+        return array(
+            'text' => trim($text),
+            'format' => FORMAT_HTML,
+            'files' => array(),
+        );
+    }
+
+    /**
+     * Return the value of a node, given a path to the node
+     * if it doesn't exist return the default value.
+     * @param array xml data to read
+     * @param array path path to node expressed as array
+     * @param mixed default
+     * @param bool istext process as text
+     * @param string error if set value must exist, return false and issue message if not
+     * @return mixed value
+     */
+    public function getpath($xml, $path, $default, $istext=false, $error='') {
+        foreach ($path as $index) {
+            if (!isset($xml[$index])) {
+                if (!empty($error)) {
+                    $this->error($error);
+                    return false;
+                } else {
+                    return $default;
+                }
+            }
+
+            $xml = $xml[$index];
+        }
+
+        if ($istext) {
+            if (!is_string($xml)) {
+                $this->error(get_string('invalidxml', 'qformat_xml'));
+            }
+            $xml = trim($xml);
+        }
+
+        return $xml;
+    }
+}

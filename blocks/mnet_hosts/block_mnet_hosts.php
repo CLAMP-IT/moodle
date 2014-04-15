@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * MNet hosts block.
+ *
+ * @package    block_mnet_hosts
+ * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 class block_mnet_hosts extends block_list {
     function init() {
@@ -10,7 +32,7 @@ class block_mnet_hosts extends block_list {
     }
 
     function applicable_formats() {
-        if (has_capability('moodle/site:mnetlogintoremote', get_context_instance(CONTEXT_SYSTEM), NULL, false)) {
+        if (has_capability('moodle/site:mnetlogintoremote', context_system::instance(), NULL, false)) {
             return array('all' => true, 'mod' => false, 'tag' => false);
         } else {
             return array('site' => true);
@@ -25,7 +47,7 @@ class block_mnet_hosts extends block_list {
             return false;
         }
 
-        if (session_is_loggedinas()) {
+        if (\core\session\manager::is_loggedinas()) {
             $this->content = new stdClass();
             $this->content->footer = html_writer::tag('span',
                 get_string('notpermittedtojumpas', 'mnet'));
@@ -59,7 +81,7 @@ class block_mnet_hosts extends block_list {
             }
         }
 
-        if (!has_capability('moodle/site:mnetlogintoremote', get_context_instance(CONTEXT_SYSTEM), NULL, false)) {
+        if (!has_capability('moodle/site:mnetlogintoremote', context_system::instance(), NULL, false)) {
             if (debugging() and !empty($CFG->debugdisplay)) {
                 $this->content = new stdClass();
                 $this->content->footer = html_writer::tag('span',

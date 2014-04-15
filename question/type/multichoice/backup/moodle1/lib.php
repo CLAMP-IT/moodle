@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -44,15 +43,15 @@ class moodle1_qtype_multichoice_handler extends moodle1_qtype_handler {
      */
     public function process_question(array $data, array $raw) {
 
-        // convert and write the answers first
+        // Convert and write the answers first.
         if (isset($data['answers'])) {
             $this->write_answers($data['answers'], $this->pluginname);
         }
 
-        // convert and write the multichoice
+        // Convert and write the multichoice.
         if (!isset($data['multichoice'])) {
             // This should never happen, but it can do if the 1.9 site contained
-            // corrupt data/
+            // corrupt data.
             $data['multichoice'] = array(array(
                 'single'                         => 1,
                 'shuffleanswers'                 => 1,
@@ -65,7 +64,7 @@ class moodle1_qtype_multichoice_handler extends moodle1_qtype_handler {
                 'answernumbering'                => 'abc',
             ));
         }
-        $this->write_multichoice($data['multichoice'], $data['oldquestiontextformat']);
+        $this->write_multichoice($data['multichoice'], $data['oldquestiontextformat'], $data['id']);
     }
 
     /**
@@ -73,17 +72,18 @@ class moodle1_qtype_multichoice_handler extends moodle1_qtype_handler {
      *
      * @param array $multichoices the grouped structure
      * @param int $oldquestiontextformat - {@see moodle1_question_bank_handler::process_question()}
+     * @param int $questionid question id
      */
-    protected function write_multichoice(array $multichoices, $oldquestiontextformat) {
+    protected function write_multichoice(array $multichoices, $oldquestiontextformat, $questionid) {
         global $CFG;
 
-        // the grouped array is supposed to have just one element - let us use foreach anyway
-        // just to be sure we do not loose anything
+        // The grouped array is supposed to have just one element - let us use foreach anyway
+        // just to be sure we do not loose anything.
         foreach ($multichoices as $multichoice) {
-            // append an artificial 'id' attribute (is not included in moodle.xml)
+            // Append an artificial 'id' attribute (is not included in moodle.xml).
             $multichoice['id'] = $this->converter->get_nextid();
 
-            // replay the upgrade step 2009021801
+            // Replay the upgrade step 2009021801.
             $multichoice['correctfeedbackformat']               = 0;
             $multichoice['partiallycorrectfeedbackformat']      = 0;
             $multichoice['incorrectfeedbackformat']             = 0;
@@ -100,6 +100,13 @@ class moodle1_qtype_multichoice_handler extends moodle1_qtype_handler {
                 $multichoice['partiallycorrectfeedbackformat']  = $oldquestiontextformat;
                 $multichoice['incorrectfeedbackformat']         = $oldquestiontextformat;
             }
+
+            $multichoice['correctfeedback'] = $this->migrate_files(
+                    $multichoice['correctfeedback'], 'question', 'correctfeedback', $questionid);
+            $multichoice['partiallycorrectfeedback'] = $this->migrate_files(
+                    $multichoice['partiallycorrectfeedback'], 'question', 'partiallycorrectfeedback', $questionid);
+            $multichoice['incorrectfeedback'] = $this->migrate_files(
+                    $multichoice['incorrectfeedback'], 'question', 'incorrectfeedback', $questionid);
 
             $this->write_xml('multichoice', $multichoice, array('/multichoice/id'));
         }

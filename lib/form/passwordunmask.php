@@ -53,19 +53,17 @@ class MoodleQuickForm_passwordunmask extends MoodleQuickForm_password {
      */
     function MoodleQuickForm_passwordunmask($elementName=null, $elementLabel=null, $attributes=null) {
         global $CFG;
-        if (empty($CFG->xmlstrictheaders)) {
-            // no standard mform in moodle should allow autocomplete of passwords
-            // this is valid attribute in html5, sorry, we have to ignore validation errors in legacy xhtml 1.0
-            if (empty($attributes)) {
-                $attributes = array('autocomplete'=>'off');
-            } else if (is_array($attributes)) {
-                $attributes['autocomplete'] = 'off';
-            } else {
-                if (strpos($attributes, 'autocomplete') === false) {
-                    $attributes .= ' autocomplete="off" ';
-                }
+        // no standard mform in moodle should allow autocomplete of passwords
+        if (empty($attributes)) {
+            $attributes = array('autocomplete'=>'off');
+        } else if (is_array($attributes)) {
+            $attributes['autocomplete'] = 'off';
+        } else {
+            if (strpos($attributes, 'autocomplete') === false) {
+                $attributes .= ' autocomplete="off" ';
             }
         }
+
         parent::MoodleQuickForm_password($elementName, $elementLabel, $attributes);
     }
 
@@ -82,8 +80,11 @@ class MoodleQuickForm_passwordunmask extends MoodleQuickForm_password {
         } else {
             $unmask = get_string('unmaskpassword', 'form');
             //Pass id of the element, so that unmask checkbox can be attached.
+            $attributes = array('formid' => $this->getAttribute('id'),
+                'checkboxlabel' => $unmask,
+                'checkboxname' => $this->getAttribute('name'));
             $PAGE->requires->yui_module('moodle-form-passwordunmask', 'M.form.passwordunmask',
-                    array(array('formid' => $this->getAttribute('id'), 'checkboxname' => $unmask)));
+                    array($attributes));
             return $this->_getTabs() . '<input' . $this->_getAttrString($this->_attributes) . ' />';
         }
     }

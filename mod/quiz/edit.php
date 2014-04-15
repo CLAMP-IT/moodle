@@ -73,7 +73,7 @@ function module_specific_buttons($cmid, $cmoptions) {
 function module_specific_controls($totalnumber, $recurse, $category, $cmid, $cmoptions) {
     global $OUTPUT;
     $out = '';
-    $catcontext = get_context_instance_by_id($category->contextid);
+    $catcontext = context::instance_by_id($category->contextid);
     if (has_capability('moodle/question:useall', $catcontext)) {
         if ($cmoptions->hasattempts) {
             $disabled = ' disabled="disabled"';
@@ -277,8 +277,11 @@ $remove = optional_param('remove', false, PARAM_INT);
 if ($remove && confirm_sesskey()) {
     // Remove a question from the quiz.
     // We require the user to have the 'use' capability on the question,
-    // so that then can add it back if they remove the wrong one by mistake.
-    quiz_require_question_use($remove);
+    // so that then can add it back if they remove the wrong one by mistake,
+    // but, if the question is missing, it can always be removed.
+    if ($DB->record_exists('question', array('id' => $remove))) {
+        quiz_require_question_use($remove);
+    }
     quiz_remove_question($quiz, $remove);
     quiz_delete_previews($quiz);
     quiz_update_sumgrades($quiz);
@@ -324,7 +327,7 @@ if (optional_param('savechanges', false, PARAM_BOOL) && confirm_sesskey()) {
             $questionid = $matches[2];
             // Make sure two questions don't overwrite each other. If we get a second
             // question with the same position, shift the second one along to the next gap.
-            $value = clean_param($value, PARAM_INTEGER);
+            $value = clean_param($value, PARAM_INT);
             while (array_key_exists($value, $questions)) {
                 $value++;
             }
@@ -402,8 +405,6 @@ $questionbank->process_actions($thispageurl, $cm);
 
 // End of process commands =====================================================
 
-$PAGE->requires->yui2_lib('container');
-$PAGE->requires->yui2_lib('dragdrop');
 $PAGE->requires->skip_link_to('questionbank',
         get_string('skipto', 'access', get_string('questionbank', 'question')));
 $PAGE->requires->skip_link_to('quizcontentsblock',
@@ -426,8 +427,14 @@ for ($pageiter = 1; $pageiter <= $numberoflisteners; $pageiter++) {
 }
 $PAGE->requires->data_for_js('quiz_edit_config', $quizeditconfig);
 $PAGE->requires->js('/question/qengine.js');
-$PAGE->requires->js('/mod/quiz/edit.js');
-$PAGE->requires->js_init_call('quiz_edit_init');
+$module = array(
+    'name'      => 'mod_quiz_edit',
+    'fullpath'  => '/mod/quiz/edit.js',
+    'requires'  => array('yui2-dom', 'yui2-event', 'yui2-container'),
+    'strings'   => array(),
+    'async'     => false,
+);
+$PAGE->requires->js_init_call('quiz_edit_init', null, false, $module);
 
 // Print the tabs to switch mode.
 if ($quiz_reordertool) {
@@ -454,12 +461,11 @@ if ($quiz_qbanktool) {
 echo '<div class="questionbankwindow ' . $bankclass . 'block">';
 echo '<div class="header"><div class="title"><h2>';
 echo get_string('questionbankcontents', 'quiz') .
-        ' <a href="' . $thispageurl->out(true, array('qbanktool' => '1')) .
-       '" id="showbankcmd">[' . get_string('show').
-       ']</a>
-       <a href="' . $thispageurl->out(true, array('qbanktool' => '0')) .
-       '" id="hidebankcmd">[' . get_string('hide').
-       ']</a>';
+       '&nbsp;[<a href="' . $thispageurl->out(true, array('qbanktool' => '1')) .
+       '" id="showbankcmd">' . get_string('show').
+       '</a><a href="' . $thispageurl->out(true, array('qbanktool' => '0')) .
+       '" id="hidebankcmd">' . get_string('hide').
+       '</a>]';
 echo '</h2></div></div><div class="content">';
 
 echo '<span id="questionbank"></span>';

@@ -37,7 +37,7 @@
         print_error('coursemisconf');
     }
 
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $PAGE->set_context($context);
     $PAGE->set_heading($course->fullname);
 
@@ -47,7 +47,17 @@
         notice(get_string('nopermissiontoseethechatlog', 'chat'));
     }
 
-    add_to_log($course->id, 'chat', 'report', "report.php?id=$cm->id", $chat->id, $cm->id);
+    $params = array(
+        'context' => $context,
+        'objectid' => $chat->id,
+        'other' => array(
+            'start' => $start,
+            'end' => $end
+        )
+    );
+    $event = \mod_chat\event\sessions_viewed::create($params);
+    $event->add_record_snapshot('chat', $chat);
+    $event->trigger();
 
     $strchats         = get_string('modulenameplural', 'chat');
     $strchat          = get_string('modulename', 'chat');
@@ -65,6 +75,7 @@
         $PAGE->navbar->add($strchatreport);
         $PAGE->set_title(format_string($chat->name).": $strchatreport");
         echo $OUTPUT->header();
+        echo $OUTPUT->heading(format_string($chat->name), 2);
 
     /// Check to see if groups are being used here
         $groupmode = groups_get_activity_groupmode($cm);
@@ -113,7 +124,7 @@
                     'end'   => $end,
                 );
                 $button = new portfolio_add_button();
-                $button->set_callback_options('chat_portfolio_caller', $buttonoptions, '/mod/chat/locallib.php');
+                $button->set_callback_options('chat_portfolio_caller', $buttonoptions, 'mod_chat');
                 $button->render();
             }
             echo $OUTPUT->box_end();
@@ -133,8 +144,7 @@
     $PAGE->set_title(format_string($chat->name).": $strchatreport");
     echo $OUTPUT->header();
 
-    echo $OUTPUT->heading(format_string($chat->name).': '.get_string('sessions', 'chat'));
-
+    echo $OUTPUT->heading(format_string($chat->name).': '.get_string('sessions', 'chat'), 2);
 
 /// Check to see if groups are being used here
     if ($groupmode = groups_get_activity_groupmode($cm)) {   // Groups are being used
@@ -168,16 +178,16 @@
 /// Get the messages
     if (empty($messages)) {   /// May have already got them above
         if (!$messages = $DB->get_records_select('chat_messages', "chatid = :chatid $groupselect", $params, "timestamp DESC")) {
-            echo $OUTPUT->heading(get_string('nomessages', 'chat'));
+            echo $OUTPUT->heading(get_string('nomessages', 'chat'), 3);
             echo $OUTPUT->footer();
             exit;
         }
     }
 
     if ($show_all) {
-        echo $OUTPUT->heading(get_string('listing_all_sessions', 'chat') .
-                      '&nbsp;<a href="report.php?id='.$cm->id.'&amp;show_all=0">' .
-                      get_string('list_complete_sessions', 'chat') .  '</a>');
+        $headingstr = get_string('listing_all_sessions', 'chat') . '&nbsp;';
+        $headingstr .= html_writer::link("report.php?id={$cm->id}&show_all=0", get_string('list_complete_sessions', 'chat'));
+        echo  $OUTPUT->heading($headingstr, 3);
     }
 
 /// Show all the sessions
@@ -239,7 +249,7 @@
                         'end'   => $sessionend,
                     );
                     $button = new portfolio_add_button();
-                    $button->set_callback_options('chat_portfolio_caller', $buttonoptions, '/mod/chat/locallib.php');
+                    $button->set_callback_options('chat_portfolio_caller', $buttonoptions, 'mod_chat');
                     $portfoliobutton = $button->to_html(PORTFOLIO_ADD_TEXT_LINK);
                     if (!empty($portfoliobutton)) {
                         echo '<br />' . $portfoliobutton;
@@ -265,16 +275,16 @@
     if (!empty($CFG->enableportfolios) && $canexportsess) {
         require_once($CFG->libdir . '/portfoliolib.php');
         $button = new portfolio_add_button();
-        $button->set_callback_options('chat_portfolio_caller', array('id' => $cm->id), '/mod/chat/locallib.php');
+        $button->set_callback_options('chat_portfolio_caller', array('id' => $cm->id), 'mod_chat');
         $button->render(null, get_string('addalltoportfolio', 'portfolio'));
     }
 
 
     if (!$show_all and $complete_sessions == 0) {
-        echo $OUTPUT->heading(get_string('no_complete_sessions_found', 'chat') .
-                      '&nbsp;<a href="report.php?id='.$cm->id.'&amp;show_all=1">' .
-                      get_string('list_all_sessions', 'chat') .
-                      '</a>');
+        echo html_writer::start_tag('p');
+        echo get_string('no_complete_sessions_found', 'chat') . '&nbsp;';
+        echo html_writer::link('report.php?id='.$cm->id.'&show_all=1', get_string('list_all_sessions', 'chat'));
+        echo html_writer::end_tag('p');
     }
 
 /// Finish the page

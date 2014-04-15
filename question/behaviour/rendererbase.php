@@ -71,7 +71,7 @@ abstract class qbehaviour_renderer extends plugin_renderer_base {
     public function manual_comment_fields(question_attempt $qa, question_display_options $options) {
         $inputname = $qa->get_behaviour_field_name('comment');
         $id = $inputname . '_id';
-        list($commenttext, $commentformat) = $qa->get_manual_comment();
+        list($commenttext, $commentformat) = $qa->get_current_manual_comment();
 
         $editor = editors_get_preferred_editor($commentformat);
         $strformats = format_text_menu();
@@ -87,23 +87,28 @@ abstract class qbehaviour_renderer extends plugin_renderer_base {
         $commenteditor = html_writer::tag('div', html_writer::tag('textarea', s($commenttext),
                 array('id' => $id, 'name' => $inputname, 'rows' => 10, 'cols' => 60)));
 
-        $commenteditor .= html_writer::start_tag('div');
-        if (count($formats == 1)) {
+        $editorformat = '';
+        if (count($formats) == 1) {
             reset($formats);
-            $commenteditor .= html_writer::empty_tag('input', array('type' => 'hidden',
+            $editorformat .= html_writer::empty_tag('input', array('type' => 'hidden',
                     'name' => $inputname . 'format', 'value' => key($formats)));
-
         } else {
-            $commenteditor .= html_writer::select(
-                    $formats, $inputname . 'format', $commentformat, '');
+            $editorformat = html_writer::start_tag('div', array('class' => 'fitem'));
+            $editorformat .= html_writer::start_tag('div', array('class' => 'fitemtitle'));
+            $editorformat .= html_writer::tag('label', get_string('format'), array('for'=>'menu'.$inputname.'format'));
+            $editorformat .= html_writer::end_tag('div');
+            $editorformat .= html_writer::start_tag('div', array('class' => 'felement fhtmleditor'));
+            $editorformat .= html_writer::select($formats, $inputname.'format', $commentformat, '');
+            $editorformat .= html_writer::end_tag('div');
+            $editorformat .= html_writer::end_tag('div');
         }
-        $commenteditor .= html_writer::end_tag('div');
 
         $comment = html_writer::tag('div', html_writer::tag('div',
                 html_writer::tag('label', get_string('comment', 'question'),
                 array('for' => $id)), array('class' => 'fitemtitle')) .
                 html_writer::tag('div', $commenteditor, array('class' => 'felement fhtmleditor')),
                 array('class' => 'fitem'));
+        $comment .= $editorformat;
 
         $mark = '';
         if ($qa->get_max_mark()) {
@@ -117,6 +122,7 @@ abstract class qbehaviour_renderer extends plugin_renderer_base {
                 'type' => 'text',
                 'size' => $fieldsize,
                 'name' => $markfield,
+                'id'=> $markfield
             );
             if (!is_null($currentmark)) {
                 $attributes['value'] = $qa->format_fraction_as_mark(
@@ -134,11 +140,15 @@ abstract class qbehaviour_renderer extends plugin_renderer_base {
                 'type' => 'hidden',
                 'name' => $qa->get_control_field_name('minfraction'),
                 'value' => $qa->get_min_fraction(),
+            )) . html_writer::empty_tag('input', array(
+                'type' => 'hidden',
+                'name' => $qa->get_control_field_name('maxfraction'),
+                'value' => $qa->get_max_fraction(),
             ));
 
             $errorclass = '';
             $error = '';
-            if ($currentmark > $maxmark || $currentmark < $maxmark * $qa->get_min_fraction()) {
+            if ($currentmark > $maxmark * $qa->get_max_fraction() || $currentmark < $maxmark * $qa->get_min_fraction()) {
                 $errorclass = ' error';
                 $error = html_writer::tag('span', get_string('manualgradeoutofrange', 'question'),
                         array('class' => 'error')) . html_writer::empty_tag('br');
@@ -224,5 +234,41 @@ abstract class qbehaviour_renderer extends plugin_renderer_base {
      */
     public function head_code(question_attempt $qa) {
         return '';
+    }
+
+    /**
+     * Generate the display of the marks for this question.
+     * @param question_attempt $qa the question attempt to display.
+     * @param core_question_renderer $qoutput the renderer for standard parts of questions.
+     * @param question_display_options $options controls what should and should not be displayed.
+     * @return HTML fragment.
+     */
+    public function mark_summary(question_attempt $qa, core_question_renderer $qoutput,
+            question_display_options $options) {
+        return $qoutput->standard_mark_summary($qa, $this, $options);
+    }
+
+    /**
+     * Generate the display of the available marks for this question.
+     * @param question_attempt $qa the question attempt to display.
+     * @param core_question_renderer $qoutput the renderer for standard parts of questions.
+     * @param question_display_options $options controls what should and should not be displayed.
+     * @return HTML fragment.
+     */
+    public function marked_out_of_max(question_attempt $qa, core_question_renderer $qoutput,
+            question_display_options $options) {
+        return $qoutput->standard_marked_out_of_max($qa, $options);
+    }
+
+    /**
+     * Generate the display of the marks for this question out of the available marks.
+     * @param question_attempt $qa the question attempt to display.
+     * @param core_question_renderer $qoutput the renderer for standard parts of questions.
+     * @param question_display_options $options controls what should and should not be displayed.
+     * @return HTML fragment.
+     */
+    public function mark_out_of_max(question_attempt $qa, core_question_renderer $qoutput,
+            question_display_options $options) {
+        return $qoutput->standard_mark_out_of_max($qa, $options);
     }
 }

@@ -14,15 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/*
- * @package    blocks
- * @subpackage community
+/**
+ * Community library
+ *
+ * @package    block_community
  * @author     Jerome Mouneyrac <jerome@mouneyrac.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL
  * @copyright  (C) 1999 onwards Martin Dougiamas  http://dougiamas.com
  *
- * Community library
-*/
+ *
+ */
 
 class block_community_manager {
 
@@ -38,6 +39,7 @@ class block_community_manager {
         $community = $this->block_community_get_course($course->url, $userid);
 
         if (empty($community)) {
+            $community = new stdClass();
             $community->userid = $userid;
             $community->coursename = $course->name;
             $community->coursedescription = $course->description;
@@ -113,7 +115,7 @@ class block_community_manager {
 
         $fs = get_file_storage();
         $record = new stdClass();
-        $record->contextid = get_context_instance(CONTEXT_USER, $USER->id)->id;
+        $record->contextid = context_user::instance($USER->id)->id;
         $record->component = 'user';
         $record->filearea = 'private';
         $record->itemid = 0;

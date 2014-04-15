@@ -18,7 +18,7 @@ if (!$course = $DB->get_record('course', array('id'=>$id))) {
 
 require_course_login($course);
 $PAGE->set_pagelayout('incourse');
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 
 add_to_log($course->id, "glossary", "view all", "index.php?id=$course->id", "");
 
@@ -35,6 +35,7 @@ $PAGE->navbar->add($strglossarys, "index.php?id=$course->id");
 $PAGE->set_title($strglossarys);
 $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($strglossarys), 2);
 
 /// Get all the appropriate data
 
@@ -44,20 +45,17 @@ if (! $glossarys = get_all_instances_in_course("glossary", $course)) {
 }
 
 $usesections = course_format_uses_sections($course->format);
-if ($usesections) {
-    $sections = get_all_sections($course->id);
-}
 
 /// Print the list of instances (your module will probably extend this)
 
 $timenow = time();
-$strsectionname  = get_string('sectionname', 'format_'.$course->format);
 $strname  = get_string("name");
 $strentries  = get_string("entries", "glossary");
 
 $table = new html_table();
 
 if ($usesections) {
+    $strsectionname = get_string('sectionname', 'format_'.$course->format);
     $table->head  = array ($strsectionname, $strname, $strentries);
     $table->align = array ("CENTER", "LEFT", "CENTER");
 } else {
@@ -88,7 +86,7 @@ foreach ($glossarys as $glossary) {
     if ($usesections) {
         if ($glossary->section !== $currentsection) {
             if ($glossary->section) {
-                $printsection = get_section_name($course, $sections[$glossary->section]);
+                $printsection = get_section_name($course, $glossary->section);
             }
             if ($currentsection !== "") {
                 $table->data[] = 'hr';

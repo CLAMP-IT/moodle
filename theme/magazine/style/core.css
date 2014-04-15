@@ -12,7 +12,7 @@ html a:hover,body a:hover {
 
 /** remove text decoration from some links **/
 
-div.yui3-widget-bd a, .tabtree li a, .block div.content a, .unlist a, .categorybox a, .course_category_tree a, .section a {
+div.yui3-widget-bd a, .tabtree li a, .block div.content a, .unlist a, .course_category_tree a, .section a {
     text-decoration: none;
 }
 
@@ -52,6 +52,10 @@ div#headerinner {
     line-height: 30px;
     min-width: 400px;
 }
+.dir-rtl #headright {
+    float: left;
+    min-width: 300px;
+}
 
 #headright a {
     color: #fff;
@@ -66,12 +70,20 @@ div#headerinner {
     font-size: 9px;
 }
 
+.dir-rtl #headright div.langmenu {
+    float: left !important;
+}
+
 #headleft {
     float: left;
     height: 30px;
     line-height: 30px;
     color: #fff;
     font-size: 12px;
+}
+
+.dir-rtl #headleft {
+    float: right;
 }
 
 /** Logo and menu bar divs and wrap **/
@@ -99,6 +111,10 @@ div.thetitle {
     float: left;
 }
 
+.dir-rtl div.thetitle {
+    float: right;
+}
+
 #nologo {
     width: 337px;
     float: left;
@@ -106,6 +122,11 @@ div.thetitle {
     padding-left: 3px;
     margin-top: 40px;
     }
+
+.dir-rtl #nologo {
+    float: right;
+    padding-right: 3px;
+}
 
 #nologo.nomenu {
     width: 100%;
@@ -118,17 +139,20 @@ div.thetitle {
     font-weight: 800;
     letter-spacing: -1px;
     line-height: 45px;
-
-
 }
+
 #nologo a:hover {
     text-decoration: none;
 }
+
 div.rightinfo {
     float: right;
     min-width: 470px;
     height: 130px;
     overflow: hidden;
+}
+.dir-rtl div.rightinfo {
+    float: left;
 }
 
 #menucontainer {
@@ -136,6 +160,12 @@ div.rightinfo {
     margin-top: 40px;
 }
 
+#course-header {
+    width: 93%;
+    min-width: 910px;
+    margin: 0 auto;
+    overflow: hidden;
+}
 
 /** main content wraps **/
 
@@ -191,6 +221,10 @@ div.jcontrolsleft {
     float: left;
     min-width: 100px;
 }
+.dir-rtl div.jcontrolsleft {
+    float:right;
+    margin-right: 15px;
+}
 
 div.jcontrolsright {
     float: right;
@@ -199,11 +233,23 @@ div.jcontrolsright {
     margin-right: 15px;
 }
 
+.dir-rtl div.jcontrolsright {
+    float: left;
+    margin-left: 15px;
+}
+
 div.jcontrolsright div.singlebutton, div.jcontrolsright div.forumsearch {
     margin: 5px 0px 0px;
 }
 
 /** foot wraps and inner divs **/
+
+#course-footer {
+    width: 93%;
+    min-width: 910px;
+    margin: 0 auto;
+    overflow: hidden;
+}
 
 #footer {
     width: 91%;
@@ -242,6 +288,9 @@ div.johndocsleft {
     width: 300px;
     color: #333333;
     font-size: 11px;
+}
+.dir-rtl div.johndocsleft {
+    float: right;
 }
 
 /** Some breadcrumb style **/
@@ -410,7 +459,12 @@ div#jcontrols_button span.arrow.sep {
 
 /** inner block style for decent display of recent news, etc **/
 
-.block_recent_activity.block_docked div.content h2.main, .block_recent_activity.block_docked div.content h3.main, .side-pre .block div.content h2.main,.side-post .block div.content h2.main,.block div.content h3.main,.block div.content h2 {
+.block_recent_activity.block_docked div.content h2,
+.block_recent_activity.block_docked div.content h3,
+.side-pre .block div.content h2,
+.side-post .block div.content h2,
+.block div.content h3,
+.block div.content h2 {
     font-size: 13px;
     color: #333;
     font-weight: 800;
@@ -440,7 +494,7 @@ div.yui3-widget-bd {
     background: none;
 }
 
-div.yui3-widget-bd h1.helpheading {
+div.yui3-widget-bd h2.helpheading {
     font-size: 16px !important;
     font-weight: 800;
     margin-top: 5px;
@@ -448,7 +502,7 @@ div.yui3-widget-bd h1.helpheading {
 
 .yui-module.yui-overlay.yui-panel div.hd {
     background: #eeeeee url([[pix:theme|bart5]]) repeat-x 0% 90%;
-    }
+}
 
 /**moodle dropdown css for yui menu **/
 
@@ -642,8 +696,8 @@ html>
 }
 
 /** main headings **/
-
-.generalbox h2,h3.sectionname, h2.headingblock,h2.main,h3.main, h2.main a, h3.main a, div.loginpanel h2, div.signuppanel h2 {
+.generalbox h2,h3.sectionname, div.loginpanel h2, div.signuppanel h2,
+#site-news-forum h2, #frontpage-course-list h2, #frontpage-category-names h2, #frontpage-category-combo h2 {
     font-size: 30px;
     padding-bottom: 2px;
     margin: 3px 0 2px;
@@ -654,9 +708,13 @@ html>
     letter-spacing: -1px;
     line-height: 1em;
     background: url([[pix:theme|hr_grid]]) repeat-x 0% 89%
-    }
+}
 
-.generalbox h2, #page-course-info h2.main, h3.sectionname, h2.main a, h3.main a, div.loginpanel h2, div.signuppanel h2, div.hd h3.main {
+.course_category_tree .info > .categoryname {
+    display: inline;
+}
+
+.generalbox h2, h3.sectionname, div.loginpanel h2, div.signuppanel h2, div.hd h3 {
     font-size: 22px;
     background: none;
 }
@@ -739,10 +797,6 @@ td.author {
     font-weight: 800;
 }
 
-.info .name a {
-    font-weight: bold;
-}
-
 .indent {
     margin-left: 30px;
 }
@@ -761,6 +815,15 @@ div.subscribelink {
 .mform fieldset,fieldset.clearfix {
     border: 1px solid #dadada !important;
     background: #f9f9f9;
+}
+
+.mform .btn-cancel {
+    color: #32529A;
+    text-decoration: none;
+}
+.mform .btn-cancel:hover, .mform .btn-cancel:focus {
+    color: #4E2300;
+    text-decoration: none;
 }
 
 .ftoggler {
@@ -804,7 +867,12 @@ table#categoryquestions th a {
     padding: 5px;
 }
 
-tr.r1 td {
+.generaltable .header,
+.generaltable .header a {
+    padding: 0;
+}
+
+> tbody > tr:nth-of-type(even) td {
     background-color: #f9f9f9;
 }
 
@@ -816,7 +884,7 @@ table.rolecap td.risk {
     border-left: 1px solid #dadada;
 }
 
-/** Coursebox and category box stuff for front page **/
+/** Course and category listings **/
 
 ul.unlist, ul.unlist li, ul.unlist li div, ul.unlist li div ul, ul.unlist li div ul li {
     list-style-type: none;
@@ -825,97 +893,52 @@ ul.unlist, ul.unlist li, ul.unlist li div, ul.unlist li div ul, ul.unlist li div
 }
 
 div.coursebox {
-    padding-bottom: 7px !important;
-    margin-bottom: 7px !important;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 7px;
+    border-color: #eeeeee;
 }
 
-div.coursebox h3.name {
-    margin-top: 0px;
-    margin-bottom: 0px;
+div.coursebox.collapsed {
+    margin-bottom: 0;
 }
 
-div.coursebox h3.name a {
+div.coursebox > .info > .coursename {
+    font-weight: inherit;
+}
+
+div.coursebox > .info > h3.coursename a {
     font-size: 16px;
     font-weight: 400;
 }
 
-.unlist div.summary {
+.coursebox div.summary {
     font-size: 14px;
     color: #666666;
     font-style: italic;
 }
 
-.unlist ul.teachers {
-    display: block;
-    padding-left: 5px !important;
-}
-
-.unlist ul.teachers li {
+.coursebox .content ul.teachers li,
+.coursebox .content .coursecat {
     font-size: 10px;
 }
 
-.unlist ul.teachers li a {
+.coursebox .content ul.teachers li a,
+.coursebox .content .coursecat a,
+.coursebox .content .coursefile a {
     font-size: 11px;
 }
 
-div.categorybox {
-    border: none !important;
-    margin-top: 0;
-}
-
-td.category.name a {
-    padding-left: 20px;
-    background: url([[pix:theme|jcourse]]) no-repeat 0 50%;
-    font-weight: 400;
-    font-size: 16px;
-}
-
-#course-index td.category.name a {
-    padding-left: 0px;
-    background-image: none;
-}
-
-table.categorylist td {
-    padding: 0;
-}
-
-div.course_category_tree a {
+div.course_category_tree .category > .info a {
     font-size: 16px;
     font-weight: 400;
     text-decoration: none;
 }
 
-div.course_category_tree div.category,div.course_category_tree div.category_label,div.course_category_tree div.courses {
-    margin-bottom: 8px;
-}
-
-div.course_category_tree div.category.with_children div.category_label {
-    background-position: 0 55% !important;
-}
-
-div.course_category_tree div.course.odd {
+div.course_category_tree div.coursebox.odd {
     background: #eee;
 }
 
-div.course_category_tree div.course a {
+div.course_category_tree div.coursebox > .info > .categoryname > a {
     font-size: 14px;
-}
-
-div.category.subcategory.with_children {
-    margin-left: 20px;
-}
-
-div.course_category_tree div.controls {
-    font-size: 10px;
-    color: #666;
-    text-transform: uppercase;
-}
-
-div.course_category_tree div.controls div {
-    margin-top: 3px;
-    margin-right: 10px;
-    border-bottom: 1px solid #dadada;
 }
 
 /** inside  of course **/
@@ -964,7 +987,7 @@ div.course-content div.left.side {
     color: #666;
 }
 
-span.completionprogress {
+div.completionprogress {
     font-size: 11px;
     font-weight: 200;
 }
@@ -994,7 +1017,7 @@ div.assignment.overview div {
 
 /** glossary activity **/
 
-table.glossarycategoryheader h2.main {
+table.glossarycategoryheader h2 {
     text-align: center;
     margin-bottom: 0;
     margin-top: 0;
@@ -1025,6 +1048,9 @@ table.glossarypost td.entry h3 {
     margin-bottom: 3px;
     margin-top: 2px;
 }
+#page-mod-wiki-view.dir-rtl h2.wiki_headingtitle {
+    text-align: right;
+}
 
 /**HR in content blocks **/
 
@@ -1040,7 +1066,7 @@ table.glossarypost td.entry h3 {
 
 div#intro {
     border: none;
-    text-align: center;
+    text-align: left;
     font-size: 14px;
     color: #333333;
 }
@@ -1053,7 +1079,9 @@ div.questionbankwindow.block div.header {
     background: #eee !important;
 }
 
-div.questionbankwindow.block div.header a {
+#page-mod-quiz-edit .questionbankwindow.block div.header div.title h2,
+#page-mod-quiz-edit .questionbankwindow a#showbankcmd,
+#page-mod-quiz-edit .questionbankwindow a#hidebankcmd {
     color: #333333 !important;
     font-size: 11px;
 }
@@ -1064,11 +1092,11 @@ div.generalbox, div.section {
 
 /** take borders away from some generalboxes here **/
 
-div.generalbox.sitetopic, div.generalbox.authsui,#page-course-info div.generalbox, #page-admin-roles-assign div.generalbox, table.roleassigntable, table.roleassigntable td, #page-blocks-private-edit div.generalbox {
+div.generalbox.sitetopic, div.generalbox.authsui,#page-admin-roles-assign div.generalbox, table.roleassigntable, table.roleassigntable td, #page-blocks-private-edit div.generalbox {
     border: none;
 }
 
-div.generalbox.firstpageoptions h3.main {
+div.generalbox.firstpageoptions h3 {
     font-size: 16px;
 }
 
@@ -1117,13 +1145,4 @@ div.course-content div.availabilityinfo {
 
 div.singlebutton.forumaddnew {
     text-align: center;
-}
-
-#page-course-info h2.main {
-    line-height: 5px;
-    margin-bottom: 5px;
-}
-
-#page-course-info div.generalbox ul, #page-course-info div.generalbox li {
-    list-style-type: none;
 }

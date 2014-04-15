@@ -23,10 +23,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+define('NO_OUTPUT_BUFFERING', true);
+
 require_once('../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 
-$action  = required_param('action', PARAM_ACTION);
+$action  = required_param('action', PARAM_ALPHANUMEXT);
 $enrol   = required_param('enrol', PARAM_PLUGIN);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
@@ -34,7 +36,7 @@ $PAGE->set_url('/admin/enrol.php');
 $PAGE->set_context(context_system::instance());
 
 require_login();
-require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/site:config', context_system::instance());
 require_sesskey();
 
 $enabled = enrol_get_plugins(true);
@@ -48,6 +50,7 @@ switch ($action) {
     case 'disable':
         unset($enabled[$enrol]);
         set_config('enrol_plugins_enabled', implode(',', array_keys($enabled)));
+        core_plugin_manager::reset_caches();
         $syscontext->mark_dirty(); // resets all enrol caches
         break;
 
@@ -58,6 +61,7 @@ switch ($action) {
         $enabled = array_keys($enabled);
         $enabled[] = $enrol;
         set_config('enrol_plugins_enabled', implode(',', $enabled));
+        core_plugin_manager::reset_caches();
         $syscontext->mark_dirty(); // resets all enrol caches
         break;
 
@@ -93,34 +97,36 @@ switch ($action) {
         set_config('enrol_plugins_enabled', implode(',', $enabled));
         break;
 
-    case 'uninstall':
-        echo $OUTPUT->header();
-        echo $OUTPUT->heading(get_string('enrolments', 'enrol'));
-
+    case 'migrate':
         if (get_string_manager()->string_exists('pluginname', 'enrol_'.$enrol)) {
             $strplugin = get_string('pluginname', 'enrol_'.$enrol);
         } else {
             $strplugin = $enrol;
         }
 
-        if (!$confirm) {
-            $uurl = new moodle_url('/admin/enrol.php', array('action'=>'uninstall', 'enrol'=>$enrol, 'sesskey'=>sesskey(), 'confirm'=>1));
-            echo $OUTPUT->confirm(get_string('uninstallconfirm', 'enrol', $strplugin), $uurl, $return);
-            echo $OUTPUT->footer();
-            exit;
+        $PAGE->set_title($strplugin);
+        echo $OUTPUT->header();
 
-        } else {  // Delete everything!!
-            uninstall_plugin('enrol', $enrol);
-            $syscontext->mark_dirty(); // resets all enrol caches
+        // This may take a long time.
+        core_php_time_limit::raise();
 
-            $a = new stdClass();
-            $a->plugin = $strplugin;
-            $a->directory = "$CFG->dirroot/enrol/$enrol";
-            echo $OUTPUT->notification(get_string('uninstalldeletefiles', 'enrol', $a), 'notifysuccess');
-            echo $OUTPUT->continue_button($return);
-            echo $OUTPUT->footer();
-            exit;
+        // Disable plugin to prevent concurrent cron execution.
+        unset($enabled[$enrol]);
+        set_config('enrol_plugins_enabled', implode(',', array_keys($enabled)));
+
+        echo $OUTPUT->heading(get_string('uninstallmigrating', 'enrol', 'enrol_'.$enrol));
+
+        require_once("$CFG->dirroot/enrol/manual/locallib.php");
+        enrol_manual_migrate_plugin_enrolments($enrol);
+
+        echo $OUTPUT->notification(get_string('success'), 'notifysuccess');
+
+        if (!$return = core_plugin_manager::instance()->get_uninstall_url('enrol_'.$enrol, 'manage')) {
+            $return = new moodle_url('/admin/plugins.php');
         }
+        echo $OUTPUT->continue_button($return);
+        echo $OUTPUT->footer();
+        exit;
 }
 
 

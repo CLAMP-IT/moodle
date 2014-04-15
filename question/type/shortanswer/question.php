@@ -78,20 +78,31 @@ class qtype_shortanswer_question extends question_graded_by_strategy
     }
 
     public function compare_response_with_answer(array $response, question_answer $answer) {
+        if (!array_key_exists('answer', $response) || is_null($response['answer'])) {
+            return false;
+        }
+
         return self::compare_string_with_wildcard(
                 $response['answer'], $answer->answer, !$this->usecase);
     }
 
     public static function compare_string_with_wildcard($string, $pattern, $ignorecase) {
-        // Break the string on non-escaped asterisks.
-        $bits = preg_split('/(?<!\\\\)\*/', $pattern);
+
+        // Normalise any non-canonical UTF-8 characters before we start.
+        $pattern = self::safe_normalize($pattern);
+        $string = self::safe_normalize($string);
+
+        // Break the string on non-escaped runs of asterisks.
+        // ** is equivalent to *, but people were doing that, and with many *s it breaks preg.
+        $bits = preg_split('/(?<!\\\\)\*+/', $pattern);
+
         // Escape regexp special characters in the bits.
-        $excapedbits = array();
+        $escapedbits = array();
         foreach ($bits as $bit) {
-            $excapedbits[] = preg_quote(str_replace('\*', '*', $bit));
+            $escapedbits[] = preg_quote(str_replace('\*', '*', $bit), '|');
         }
         // Put it back together to make the regexp.
-        $regexp = '|^' . implode('.*', $excapedbits) . '$|u';
+        $regexp = '|^' . implode('.*', $escapedbits) . '$|u';
 
         // Make the match insensitive if requested to.
         if ($ignorecase) {
@@ -99,6 +110,31 @@ class qtype_shortanswer_question extends question_graded_by_strategy
         }
 
         return preg_match($regexp, trim($string));
+    }
+
+    /**
+     * Normalise a UTf-8 string to FORM_C, avoiding the pitfalls in PHP's
+     * normalizer_normalize function.
+     * @param string $string the input string.
+     * @return string the normalised string.
+     */
+    protected static function safe_normalize($string) {
+        if ($string === '') {
+            return '';
+        }
+
+        if (!function_exists('normalizer_normalize')) {
+            return $string;
+        }
+
+        $normalised = normalizer_normalize($string, Normalizer::FORM_C);
+        if (is_null($normalised)) {
+            // An error occurred in normalizer_normalize, but we have no idea what.
+            debugging('Failed to normalise string: ' . $string, DEBUG_DEVELOPER);
+            return $string; // Return the original string, since it is the best we have.
+        }
+
+        return $normalised;
     }
 
     public function get_correct_response() {
@@ -127,9 +163,9 @@ class qtype_shortanswer_question extends question_graded_by_strategy
             $args, $forcedownload) {
         if ($component == 'question' && $filearea == 'answerfeedback') {
             $currentanswer = $qa->get_last_qt_var('answer');
-            $answer = $qa->get_question()->get_matching_answer(array('answer' => $currentanswer));
-            $answerid = reset($args); // itemid is answer id.
-            return $options->feedback && $answerid == $answer->id;
+            $answer = $this->get_matching_answer(array('answer' => $currentanswer));
+            $answerid = reset($args); // Itemid is answer id.
+            return $options->feedback && $answer && $answerid == $answer->id;
 
         } else if ($component == 'question' && $filearea == 'hint') {
             return $this->check_hint_file_access($qa, $options, $args);

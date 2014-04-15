@@ -37,6 +37,7 @@ require_once(__DIR__.'/mysqli_native_moodle_temptables.php');
  */
 class mysqli_native_moodle_database extends moodle_database {
 
+    /** @var mysqli $mysqli */
     protected $mysqli = null;
 
     private $transactions_supported = null;
@@ -82,7 +83,13 @@ class mysqli_native_moodle_database extends moodle_database {
             throw new dml_connection_exception($dberr);
         }
 
-        $result = $conn->query("CREATE DATABASE $dbname DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
+        if (isset($dboptions['dbcollation']) and strpos($dboptions['dbcollation'], 'utf8_') === 0) {
+            $collation = $dboptions['dbcollation'];
+        } else {
+            $collation = 'utf8_unicode_ci';
+        }
+
+        $result = $conn->query("CREATE DATABASE $dbname DEFAULT CHARACTER SET utf8 DEFAULT COLLATE ".$collation);
 
         $conn->close();
 
@@ -146,22 +153,28 @@ class mysqli_native_moodle_database extends moodle_database {
             return $this->dboptions['dbengine'];
         }
 
-        $engine = null;
-
-        if (!$this->external) {
-            // look for current engine of our config table (the first table that gets created),
-            // so that we create all tables with the same engine
-            $sql = "SELECT engine FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = DATABASE() AND table_name = '{$this->prefix}config'";
-            $this->query_start($sql, NULL, SQL_QUERY_AUX);
-            $result = $this->mysqli->query($sql);
-            $this->query_end($result);
-            if ($rec = $result->fetch_assoc()) {
-                $engine = $rec['engine'];
-            }
-            $result->close();
+        if ($this->external) {
+            return null;
         }
 
+        $engine = null;
+
+        // Look for current engine of our config table (the first table that gets created),
+        // so that we create all tables with the same engine.
+        $sql = "SELECT engine
+                  FROM INFORMATION_SCHEMA.TABLES
+                 WHERE table_schema = DATABASE() AND table_name = '{$this->prefix}config'";
+        $this->query_start($sql, NULL, SQL_QUERY_AUX);
+        $result = $this->mysqli->query($sql);
+        $this->query_end($result);
+        if ($rec = $result->fetch_assoc()) {
+            $engine = $rec['engine'];
+        }
+        $result->close();
+
         if ($engine) {
+            // Cache the result to improve performance.
+            $this->dboptions['dbengine'] = $engine;
             return $engine;
         }
 
@@ -175,7 +188,7 @@ class mysqli_native_moodle_database extends moodle_database {
         }
         $result->close();
 
-        if (!$this->external and $engine === 'MyISAM') {
+        if ($engine === 'MyISAM') {
             // we really do not want MyISAM for Moodle, InnoDB or XtraDB is a reasonable defaults if supported
             $sql = "SHOW STORAGE ENGINES";
             $this->query_start($sql, NULL, SQL_QUERY_AUX);
@@ -196,7 +209,75 @@ class mysqli_native_moodle_database extends moodle_database {
             }
         }
 
+        // Cache the result to improve performance.
+        $this->dboptions['dbengine'] = $engine;
         return $engine;
+    }
+
+    /**
+     * Returns the current MySQL db collation.
+     *
+     * This is an ugly workaround for MySQL default collation problems.
+     *
+     * @return string or null MySQL collation name
+     */
+    public function get_dbcollation() {
+        if (isset($this->dboptions['dbcollation'])) {
+            return $this->dboptions['dbcollation'];
+        }
+        if ($this->external) {
+            return null;
+        }
+
+        $collation = null;
+
+        // Look for current collation of our config table (the first table that gets created),
+        // so that we create all tables with the same collation.
+        $sql = "SELECT collation_name
+                  FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE table_schema = DATABASE() AND table_name = '{$this->prefix}config' AND column_name = 'value'";
+        $this->query_start($sql, NULL, SQL_QUERY_AUX);
+        $result = $this->mysqli->query($sql);
+        $this->query_end($result);
+        if ($rec = $result->fetch_assoc()) {
+            $collation = $rec['collation_name'];
+        }
+        $result->close();
+
+        if (!$collation) {
+            // Get the default database collation, but only if using UTF-8.
+            $sql = "SELECT @@collation_database";
+            $this->query_start($sql, NULL, SQL_QUERY_AUX);
+            $result = $this->mysqli->query($sql);
+            $this->query_end($result);
+            if ($rec = $result->fetch_assoc()) {
+                if (strpos($rec['@@collation_database'], 'utf8_') === 0) {
+                    $collation = $rec['@@collation_database'];
+                }
+            }
+            $result->close();
+        }
+
+        if (!$collation) {
+            // We want only utf8 compatible collations.
+            $collation = null;
+            $sql = "SHOW COLLATION WHERE Collation LIKE 'utf8\_%' AND Charset = 'utf8'";
+            $this->query_start($sql, NULL, SQL_QUERY_AUX);
+            $result = $this->mysqli->query($sql);
+            $this->query_end($result);
+            while ($res = $result->fetch_assoc()) {
+                $collation = $res['Collation'];
+                if (strtoupper($res['Default']) === 'YES') {
+                    $collation = $res['Collation'];
+                    break;
+                }
+            }
+            $result->close();
+        }
+
+        // Cache the result to improve performance.
+        $this->dboptions['dbcollation'] = $collation;
+        return $collation;
     }
 
     /**
@@ -218,15 +299,6 @@ class mysqli_native_moodle_database extends moodle_database {
     }
 
     /**
-     * Returns localised database description
-     * Note: can be used before connect()
-     * @return string
-     */
-    public function get_configuration_hints() {
-        return get_string('databasesettingssub_mysqli', 'install');
-    }
-
-    /**
      * Diagnose database and tables, this function is used
      * to verify database and driver settings, db engine types, etc.
      *
@@ -235,15 +307,19 @@ class mysqli_native_moodle_database extends moodle_database {
     public function diagnose() {
         $sloppymyisamfound = false;
         $prefix = str_replace('_', '\\_', $this->prefix);
-        $sql = "SHOW TABLE STATUS WHERE Name LIKE BINARY '$prefix%'";
+        $sql = "SELECT COUNT('x')
+                  FROM INFORMATION_SCHEMA.TABLES
+                 WHERE table_schema = DATABASE()
+                       AND table_name LIKE BINARY '$prefix%'
+                       AND Engine = 'MyISAM'";
         $this->query_start($sql, null, SQL_QUERY_AUX);
         $result = $this->mysqli->query($sql);
         $this->query_end($result);
         if ($result) {
-            while ($arr = $result->fetch_assoc()) {
-                if ($arr['Engine'] === 'MyISAM') {
+            if ($arr = $result->fetch_assoc()) {
+                $count = reset($arr);
+                if ($count) {
                     $sloppymyisamfound = true;
-                    break;
                 }
             }
             $result->close();
@@ -293,6 +369,9 @@ class mysqli_native_moodle_database extends moodle_database {
         if (empty($dbport)) {
             $dbport = 3306;
         }
+        if ($dbhost and !empty($this->dboptions['dbpersist'])) {
+            $dbhost = "p:$dbhost";
+        }
         ob_start();
         $this->mysqli = new mysqli($dbhost, $dbuser, $dbpass, $dbname, $dbport, $dbsocket);
         $dberr = ob_get_contents();
@@ -300,6 +379,7 @@ class mysqli_native_moodle_database extends moodle_database {
         $errorno = @$this->mysqli->connect_errno;
 
         if ($errorno !== 0) {
+            $this->mysqli = null;
             throw new dml_connection_exception($dberr);
         }
 
@@ -427,14 +507,19 @@ class mysqli_native_moodle_database extends moodle_database {
      * Returns detailed information about columns in table. This information is cached internally.
      * @param string $table name
      * @param bool $usecache
-     * @return array array of database_column_info objects indexed with column names
+     * @return database_column_info[] array of database_column_info objects indexed with column names
      */
     public function get_columns($table, $usecache=true) {
-        if ($usecache and isset($this->columns[$table])) {
-            return $this->columns[$table];
+
+        if ($usecache) {
+            $properties = array('dbfamily' => $this->get_dbfamily(), 'settings' => $this->get_settings_hash());
+            $cache = cache::make('core', 'databasemeta', $properties);
+            if ($data = $cache->get($table)) {
+                return $data;
+            }
         }
 
-        $this->columns[$table] = array();
+        $structure = array();
 
         $sql = "SELECT column_name, data_type, character_maximum_length, numeric_precision,
                        numeric_scale, is_nullable, column_type, column_default, column_key, extra
@@ -454,7 +539,7 @@ class mysqli_native_moodle_database extends moodle_database {
             // standard table exists
             while ($rawcolumn = $result->fetch_assoc()) {
                 $info = (object)$this->get_column_info((object)$rawcolumn);
-                $this->columns[$table][$info->name] = new database_column_info($info);
+                $structure[$info->name] = new database_column_info($info);
             }
             $result->close();
 
@@ -485,7 +570,27 @@ class mysqli_native_moodle_database extends moodle_database {
 
                 } else if (preg_match('/([a-z]*int[a-z]*)\((\d+)\)/i', $rawcolumn->column_type, $matches)) {
                     $rawcolumn->data_type = $matches[1];
-                    $rawcolumn->character_maximum_length = $matches[2];
+                    $rawcolumn->numeric_precision = $matches[2];
+                    $rawcolumn->max_length = $rawcolumn->numeric_precision;
+
+                    $type = strtoupper($matches[1]);
+                    if ($type === 'BIGINT') {
+                        $maxlength = 18;
+                    } else if ($type === 'INT' or $type === 'INTEGER') {
+                        $maxlength = 9;
+                    } else if ($type === 'MEDIUMINT') {
+                        $maxlength = 6;
+                    } else if ($type === 'SMALLINT') {
+                        $maxlength = 4;
+                    } else if ($type === 'TINYINT') {
+                        $maxlength = 2;
+                    } else {
+                        // This should not happen.
+                        $maxlength = 0;
+                    }
+                    if ($maxlength < $rawcolumn->max_length) {
+                        $rawcolumn->max_length = $maxlength;
+                    }
 
                 } else if (preg_match('/(decimal)\((\d+),(\d+)\)/i', $rawcolumn->column_type, $matches)) {
                     $rawcolumn->data_type = $matches[1];
@@ -509,12 +614,16 @@ class mysqli_native_moodle_database extends moodle_database {
                 }
 
                 $info = $this->get_column_info($rawcolumn);
-                $this->columns[$table][$info->name] = new database_column_info($info);
+                $structure[$info->name] = new database_column_info($info);
             }
             $result->close();
         }
 
-        return $this->columns[$table];
+        if ($usecache) {
+            $cache->set($table, $structure);
+        }
+
+        return $structure;
     }
 
     /**
@@ -546,7 +655,30 @@ class mysqli_native_moodle_database extends moodle_database {
                 $info->meta_type = 'R';
                 $info->unique    = true;
             }
+            // Return number of decimals, not bytes here.
             $info->max_length    = $rawcolumn->numeric_precision;
+            if (preg_match('/([a-z]*int[a-z]*)\((\d+)\)/i', $rawcolumn->column_type, $matches)) {
+                $type = strtoupper($matches[1]);
+                if ($type === 'BIGINT') {
+                    $maxlength = 18;
+                } else if ($type === 'INT' or $type === 'INTEGER') {
+                    $maxlength = 9;
+                } else if ($type === 'MEDIUMINT') {
+                    $maxlength = 6;
+                } else if ($type === 'SMALLINT') {
+                    $maxlength = 4;
+                } else if ($type === 'TINYINT') {
+                    $maxlength = 2;
+                } else {
+                    // This should not happen.
+                    $maxlength = 0;
+                }
+                // It is possible that display precision is different from storage type length,
+                // always use the smaller value to make sure our data fits.
+                if ($maxlength < $info->max_length) {
+                    $info->max_length = $maxlength;
+                }
+            }
             $info->unsigned      = (stripos($rawcolumn->column_type, 'unsigned') !== false);
             $info->auto_increment= (strpos($rawcolumn->extra, 'auto_increment') !== false);
 
@@ -591,6 +723,7 @@ class mysqli_native_moodle_database extends moodle_database {
             case 'SMALLINT':
             case 'MEDIUMINT':
             case 'INT':
+            case 'INTEGER':
             case 'BIGINT':
                 $type = 'I';
                 break;
@@ -665,62 +798,62 @@ class mysqli_native_moodle_database extends moodle_database {
     }
 
     /**
-     * Is db in unicode mode?
+     * Is this database compatible with utf8?
      * @return bool
      */
     public function setup_is_unicodedb() {
-        $sql = "SHOW LOCAL VARIABLES LIKE 'character_set_database'";
-        $this->query_start($sql, null, SQL_QUERY_AUX);
+        // All new tables are created with this collation, we just have to make sure it is utf8 compatible,
+        // if config table already exists it has this collation too.
+        $collation = $this->get_dbcollation();
+
+        $sql = "SHOW COLLATION WHERE Collation ='$collation' AND Charset = 'utf8'";
+        $this->query_start($sql, NULL, SQL_QUERY_AUX);
         $result = $this->mysqli->query($sql);
         $this->query_end($result);
-
-        $return = false;
-        if ($result) {
-            while($row = $result->fetch_assoc()) {
-                if (isset($row['Value'])) {
-                    $return = (strtoupper($row['Value']) === 'UTF8' or strtoupper($row['Value']) === 'UTF-8');
-                }
-                break;
-            }
-            $result->close();
+        if ($result->fetch_assoc()) {
+            $return = true;
+        } else {
+            $return = false;
         }
-
-        if (!$return) {
-            return false;
-        }
-
-        $sql = "SHOW LOCAL VARIABLES LIKE 'collation_database'";
-        $this->query_start($sql, null, SQL_QUERY_AUX);
-        $result = $this->mysqli->query($sql);
-        $this->query_end($result);
-
-        $return = false;
-        if ($result) {
-            while($row = $result->fetch_assoc()) {
-                if (isset($row['Value'])) {
-                    $return = (strpos($row['Value'], 'latin1') !== 0);
-                }
-                break;
-            }
-            $result->close();
-        }
+        $result->close();
 
         return $return;
     }
 
     /**
      * Do NOT use in code, to be used by database_manager only!
-     * @param string $sql query
+     * @param string|array $sql query
      * @return bool true
-     * @throws dml_exception A DML specific exception is thrown for any errors.
+     * @throws ddl_change_structure_exception A DDL specific exception is thrown for any errors.
      */
     public function change_database_structure($sql) {
+        $this->get_manager(); // Includes DDL exceptions classes ;-)
+        if (is_array($sql)) {
+            $sql = implode("\n;\n", $sql);
+        }
+
+        try {
+            $this->query_start($sql, null, SQL_QUERY_STRUCTURE);
+            $result = $this->mysqli->multi_query($sql);
+            if ($result === false) {
+                $this->query_end(false);
+            }
+            while ($this->mysqli->more_results()) {
+                $result = $this->mysqli->next_result();
+                if ($result === false) {
+                    $this->query_end(false);
+                }
+            }
+            $this->query_end(true);
+        } catch (ddl_change_structure_exception $e) {
+            while (@$this->mysqli->more_results()) {
+                @$this->mysqli->next_result();
+            }
+            $this->reset_caches();
+            throw $e;
+        }
+
         $this->reset_caches();
-
-        $this->query_start($sql, null, SQL_QUERY_STRUCTURE);
-        $result = $this->mysqli->query($sql);
-        $this->query_end($result);
-
         return true;
     }
 
@@ -733,8 +866,8 @@ class mysqli_native_moodle_database extends moodle_database {
             return $sql;
         }
         // ok, we have verified sql statement with ? and correct number of params
-        $parts = explode('?', $sql);
-        $return = array_shift($parts);
+        $parts = array_reverse(explode('?', $sql));
+        $return = array_pop($parts);
         foreach ($params as $param) {
             if (is_bool($param)) {
                 $return .= (int)$param;
@@ -748,7 +881,7 @@ class mysqli_native_moodle_database extends moodle_database {
                 $param = $this->mysqli->real_escape_string($param);
                 $return .= "'$param'";
             }
-            $return .= array_shift($parts);
+            $return .= array_pop($parts);
         }
         return $return;
     }
@@ -801,10 +934,8 @@ class mysqli_native_moodle_database extends moodle_database {
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
     public function get_recordset_sql($sql, array $params=null, $limitfrom=0, $limitnum=0) {
-        $limitfrom = (int)$limitfrom;
-        $limitnum  = (int)$limitnum;
-        $limitfrom = ($limitfrom < 0) ? 0 : $limitfrom;
-        $limitnum  = ($limitnum < 0)  ? 0 : $limitnum;
+
+        list($limitfrom, $limitnum) = $this->normalise_limit_from_num($limitfrom, $limitnum);
 
         if ($limitfrom or $limitnum) {
             if ($limitnum < 1) {
@@ -819,6 +950,27 @@ class mysqli_native_moodle_database extends moodle_database {
         $this->query_start($sql, $params, SQL_QUERY_SELECT);
         // no MYSQLI_USE_RESULT here, it would block write ops on affected tables
         $result = $this->mysqli->query($rawsql, MYSQLI_STORE_RESULT);
+        $this->query_end($result);
+
+        return $this->create_recordset($result);
+    }
+
+    /**
+     * Get all records from a table.
+     *
+     * This method works around potential memory problems and may improve performance,
+     * this method may block access to table until the recordset is closed.
+     *
+     * @param string $table Name of database table.
+     * @return moodle_recordset A moodle_recordset instance {@link function get_recordset}.
+     * @throws dml_exception A DML specific exception is thrown for any errors.
+     */
+    public function export_table_recordset($table) {
+        $sql = $this->fix_table_names("SELECT * FROM {{$table}}");
+
+        $this->query_start($sql, array(), SQL_QUERY_SELECT);
+        // MYSQLI_STORE_RESULT may eat all memory for large tables, unfortunately MYSQLI_USE_RESULT blocks other queries.
+        $result = $this->mysqli->query($sql, MYSQLI_USE_RESULT);
         $this->query_end($result);
 
         return $this->create_recordset($result);
@@ -844,10 +996,8 @@ class mysqli_native_moodle_database extends moodle_database {
      * @throws dml_exception A DML specific exception is thrown for any errors.
      */
     public function get_records_sql($sql, array $params=null, $limitfrom=0, $limitnum=0) {
-        $limitfrom = (int)$limitfrom;
-        $limitnum  = (int)$limitnum;
-        $limitfrom = ($limitfrom < 0) ? 0 : $limitfrom;
-        $limitnum  = ($limitnum < 0)  ? 0 : $limitnum;
+
+        list($limitfrom, $limitnum) = $this->normalise_limit_from_num($limitfrom, $limitnum);
 
         if ($limitfrom or $limitnum) {
             if ($limitnum < 1) {
@@ -974,6 +1124,10 @@ class mysqli_native_moodle_database extends moodle_database {
         $dataobject = (array)$dataobject;
 
         $columns = $this->get_columns($table);
+        if (empty($columns)) {
+            throw new dml_exception('ddltablenotexist', $table);
+        }
+
         $cleaned = array();
 
         foreach ($dataobject as $field=>$value) {
@@ -988,6 +1142,124 @@ class mysqli_native_moodle_database extends moodle_database {
         }
 
         return $this->insert_record_raw($table, $cleaned, $returnid, $bulk);
+    }
+
+    /**
+     * Insert multiple records into database as fast as possible.
+     *
+     * Order of inserts is maintained, but the operation is not atomic,
+     * use transactions if necessary.
+     *
+     * This method is intended for inserting of large number of small objects,
+     * do not use for huge objects with text or binary fields.
+     *
+     * @since 2.7
+     *
+     * @param string $table  The database table to be inserted into
+     * @param array|Traversable $dataobjects list of objects to be inserted, must be compatible with foreach
+     * @return void does not return new record ids
+     *
+     * @throws coding_exception if data objects have different structure
+     * @throws dml_exception A DML specific exception is thrown for any errors.
+     */
+    public function insert_records($table, $dataobjects) {
+        if (!is_array($dataobjects) and !$dataobjects instanceof Traversable) {
+            throw new coding_exception('insert_records() passed non-traversable object');
+        }
+
+        // MySQL has a relatively small query length limit by default,
+        // make sure 'max_allowed_packet' in my.cnf is high enough
+        // if you change the following default...
+        static $chunksize = null;
+        if ($chunksize === null) {
+            if (!empty($this->dboptions['bulkinsertsize'])) {
+                $chunksize = (int)$this->dboptions['bulkinsertsize'];
+
+            } else {
+                if (PHP_INT_SIZE === 4) {
+                    // Bad luck for Windows, we cannot do any maths with large numbers.
+                    $chunksize = 5;
+                } else {
+                    $sql = "SHOW VARIABLES LIKE 'max_allowed_packet'";
+                    $this->query_start($sql, null, SQL_QUERY_AUX);
+                    $result = $this->mysqli->query($sql);
+                    $this->query_end($result);
+                    $size = 0;
+                    if ($rec = $result->fetch_assoc()) {
+                        $size = $rec['Value'];
+                    }
+                    $result->close();
+                    // Hopefully 200kb per object are enough.
+                    $chunksize = (int)($size / 200000);
+                    if ($chunksize > 50) {
+                        $chunksize = 50;
+                    }
+                }
+            }
+        }
+
+        $columns = $this->get_columns($table, true);
+        $fields = null;
+        $count = 0;
+        $chunk = array();
+        foreach ($dataobjects as $dataobject) {
+            if (!is_array($dataobject) and !is_object($dataobject)) {
+                throw new coding_exception('insert_records() passed invalid record object');
+            }
+            $dataobject = (array)$dataobject;
+            if ($fields === null) {
+                $fields = array_keys($dataobject);
+                $columns = array_intersect_key($columns, $dataobject);
+                unset($columns['id']);
+            } else if ($fields !== array_keys($dataobject)) {
+                throw new coding_exception('All dataobjects in insert_records() must have the same structure!');
+            }
+
+            $count++;
+            $chunk[] = $dataobject;
+
+            if ($count === $chunksize) {
+                $this->insert_chunk($table, $chunk, $columns);
+                $chunk = array();
+                $count = 0;
+            }
+        }
+
+        if ($count) {
+            $this->insert_chunk($table, $chunk, $columns);
+        }
+    }
+
+    /**
+     * Insert records in chunks.
+     *
+     * Note: can be used only from insert_records().
+     *
+     * @param string $table
+     * @param array $chunk
+     * @param database_column_info[] $columns
+     */
+    protected function insert_chunk($table, array $chunk, array $columns) {
+        $fieldssql = '('.implode(',', array_keys($columns)).')';
+
+        $valuessql = '('.implode(',', array_fill(0, count($columns), '?')).')';
+        $valuessql = implode(',', array_fill(0, count($chunk), $valuessql));
+
+        $params = array();
+        foreach ($chunk as $dataobject) {
+            foreach ($columns as $field => $column) {
+                $params[] = $this->normalise_value($column, $dataobject[$field]);
+            }
+        }
+
+        $sql = "INSERT INTO {$this->prefix}$table $fieldssql VALUES $valuessql";
+
+        list($sql, $params, $type) = $this->fix_sql_params($sql, $params);
+        $rawsql = $this->emulate_bound_params($sql, $params);
+
+        $this->query_start($sql, $params, SQL_QUERY_INSERT);
+        $result = $this->mysqli->query($rawsql);
+        $this->query_end($result);
     }
 
     /**
@@ -1260,6 +1532,16 @@ class mysqli_native_moodle_database extends moodle_database {
         return ' CAST(' . $fieldname . ' AS SIGNED) ';
     }
 
+    /**
+     * Does this driver support tool_replace?
+     *
+     * @since 2.6.1
+     * @return bool
+     */
+    public function replace_all_text_supported() {
+        return true;
+    }
+
     public function session_lock_supported() {
         return true;
     }
@@ -1292,6 +1574,10 @@ class mysqli_native_moodle_database extends moodle_database {
     }
 
     public function release_session_lock($rowid) {
+        if (!$this->used_for_db_sessions) {
+            return;
+        }
+
         parent::release_session_lock($rowid);
         $fullname = $this->dbname.'-'.$this->prefix.'-session-'.$rowid;
         $sql = "SELECT RELEASE_LOCK('$fullname')";

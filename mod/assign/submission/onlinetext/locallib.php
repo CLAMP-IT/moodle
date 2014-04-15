@@ -25,9 +25,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-/**
- * File area for online text submission assignment
- */
+// File area for online text submission assignment.
 define('ASSIGNSUBMISSION_ONLINETEXT_FILEAREA', 'submissions_onlinetext');
 
 /**
@@ -48,12 +46,12 @@ class assign_submission_onlinetext extends assign_submission_plugin {
     }
 
 
-   /**
-    * Get onlinetext submission information from the database
-    *
-    * @param  int $submissionid
-    * @return mixed
-    */
+    /**
+     * Get onlinetext submission information from the database
+     *
+     * @param  int $submissionid
+     * @return mixed
+     */
     private function get_onlinetext_submission($submissionid) {
         global $DB;
 
@@ -90,9 +88,15 @@ class assign_submission_onlinetext extends assign_submission_plugin {
 
         }
 
+        $data = file_prepare_standard_editor($data,
+                                             'onlinetext',
+                                             $editoroptions,
+                                             $this->assignment->get_context(),
+                                             'assignsubmission_onlinetext',
+                                             ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
+                                             $submissionid);
+        $mform->addElement('editor', 'onlinetext_editor', $this->get_name(), null, $editoroptions);
 
-        $data = file_prepare_standard_editor($data, 'onlinetext', $editoroptions, $this->assignment->get_context(), 'assignsubmission_onlinetext', ASSIGNSUBMISSION_ONLINETEXT_FILEAREA, $submissionid);
-        $mform->addElement('editor', 'onlinetext_editor', '', null, $editoroptions);
         return true;
     }
 
@@ -112,28 +116,84 @@ class assign_submission_onlinetext extends assign_submission_plugin {
         return $editoroptions;
     }
 
-     /**
-      * Save data to the database
-      *
-      * @param stdClass $submission
-      * @param stdClass $data
-      * @return bool
-      */
-     public function save(stdClass $submission, stdClass $data) {
-        global $DB;
+    /**
+     * Save data to the database and trigger plagiarism plugin,
+     * if enabled, to scan the uploaded content via events trigger
+     *
+     * @param stdClass $submission
+     * @param stdClass $data
+     * @return bool
+     */
+    public function save(stdClass $submission, stdClass $data) {
+        global $USER, $DB;
 
         $editoroptions = $this->get_edit_options();
 
-        $data = file_postupdate_standard_editor($data, 'onlinetext', $editoroptions, $this->assignment->get_context(), 'assignsubmission_onlinetext', ASSIGNSUBMISSION_ONLINETEXT_FILEAREA, $submission->id);
+        $data = file_postupdate_standard_editor($data,
+                                                'onlinetext',
+                                                $editoroptions,
+                                                $this->assignment->get_context(),
+                                                'assignsubmission_onlinetext',
+                                                ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
+                                                $submission->id);
 
         $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
+
+        $fs = get_file_storage();
+
+        $files = $fs->get_area_files($this->assignment->get_context()->id,
+                                     'assignsubmission_onlinetext',
+                                     ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
+                                     $submission->id,
+                                     'id',
+                                     false);
+
+        $params = array(
+            'context' => context_module::instance($this->assignment->get_course_module()->id),
+            'courseid' => $this->assignment->get_course()->id,
+            'objectid' => $submission->id,
+            'other' => array(
+                'pathnamehashes' => array_keys($files),
+                'content' => trim($data->onlinetext),
+                'format' => $data->onlinetext_editor['format']
+            )
+        );
+        $event = \assignsubmission_onlinetext\event\assessable_uploaded::create($params);
+        $event->trigger();
+
+        $groupname = null;
+        $groupid = 0;
+        // Get the group name as other fields are not transcribed in the logs and this information is important.
+        if (empty($submission->userid) && !empty($submission->groupid)) {
+            $groupname = $DB->get_field('groups', 'name', array('id' => $submission->groupid), '*', MUST_EXIST);
+            $groupid = $submission->groupid;
+        } else {
+            $params['relateduserid'] = $submission->userid;
+        }
+
+        $count = count_words($data->onlinetext);
+
+        // Unset the objectid and other field from params for use in submission events.
+        unset($params['objectid']);
+        unset($params['other']);
+        $params['other'] = array(
+            'submissionid' => $submission->id,
+            'submissionattempt' => $submission->attemptnumber,
+            'submissionstatus' => $submission->status,
+            'onlinetextwordcount' => $count,
+            'groupid' => $groupid,
+            'groupname' => $groupname
+        );
+
         if ($onlinetextsubmission) {
 
             $onlinetextsubmission->onlinetext = $data->onlinetext;
             $onlinetextsubmission->onlineformat = $data->onlinetext_editor['format'];
-
-
-            return $DB->update_record('assignsubmission_onlinetext', $onlinetextsubmission);
+            $params['objectid'] = $onlinetextsubmission->id;
+            $updatestatus = $DB->update_record('assignsubmission_onlinetext', $onlinetextsubmission);
+            $event = \assignsubmission_onlinetext\event\submission_updated::create($params);
+            $event->trigger();
+            return $updatestatus;
         } else {
 
             $onlinetextsubmission = new stdClass();
@@ -142,10 +202,21 @@ class assign_submission_onlinetext extends assign_submission_plugin {
 
             $onlinetextsubmission->submission = $submission->id;
             $onlinetextsubmission->assignment = $this->assignment->get_instance()->id;
-            return $DB->insert_record('assignsubmission_onlinetext', $onlinetextsubmission) > 0;
+            $onlinetextsubmission->id = $DB->insert_record('assignsubmission_onlinetext', $onlinetextsubmission);
+            $params['objectid'] = $onlinetextsubmission->id;
+            $event = \assignsubmission_onlinetext\event\submission_created::create($params);
+            $event->trigger();
+            return $onlinetextsubmission->id > 0;
         }
+    }
 
-
+    /**
+     * Return a list of the text fields that can be imported/exported by this plugin
+     *
+     * @return array An array of field names and descriptions. (name=>description, ...)
+     */
+    public function get_editor_fields() {
+        return array('onlinetext' => get_string('pluginname', 'assignsubmission_comments'));
     }
 
     /**
@@ -181,8 +252,7 @@ class assign_submission_onlinetext extends assign_submission_plugin {
             }
         }
 
-
-         return 0;
+        return 0;
     }
 
 
@@ -194,45 +264,73 @@ class assign_submission_onlinetext extends assign_submission_plugin {
       * @return string
       */
     public function view_summary(stdClass $submission, & $showviewlink) {
+        global $CFG;
 
         $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
-        // always show the view link
+        // Always show the view link.
         $showviewlink = true;
 
         if ($onlinetextsubmission) {
-            $text = format_text($onlinetextsubmission->onlinetext, $onlinetextsubmission->onlineformat, array('context'=>$this->assignment->get_context()));
+            $text = $this->assignment->render_editor_content(ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
+                                                             $onlinetextsubmission->submission,
+                                                             $this->get_type(),
+                                                             'onlinetext',
+                                                             'assignsubmission_onlinetext');
+
             $shorttext = shorten_text($text, 140);
+            $plagiarismlinks = '';
+
+            if (!empty($CFG->enableplagiarism)) {
+                require_once($CFG->libdir . '/plagiarismlib.php');
+
+                $plagiarismlinks .= plagiarism_get_links(array('userid' => $submission->userid,
+                    'content' => trim($text),
+                    'cmid' => $this->assignment->get_course_module()->id,
+                    'course' => $this->assignment->get_course()->id,
+                    'assignment' => $submission->assignment));
+            }
             if ($text != $shorttext) {
-                return $shorttext . get_string('numwords', 'assignsubmission_onlinetext', count_words($text));
+                $wordcount = get_string('numwords', 'assignsubmission_onlinetext', count_words($text));
+
+                return $shorttext . $plagiarismlinks . $wordcount;
             } else {
-                return $shorttext;
+                return $shorttext . $plagiarismlinks;
             }
         }
         return '';
     }
 
     /**
-     * Produce a list of files suitable for export that represent this submission
+     * Produce a list of files suitable for export that represent this submission.
      *
      * @param stdClass $submission - For this is the submission data
+     * @param stdClass $user - This is the user record for this submission
      * @return array - return an array of files indexed by filename
      */
-    public function get_files(stdClass $submission) {
+    public function get_files(stdClass $submission, stdClass $user) {
         global $DB;
+
         $files = array();
         $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
+
         if ($onlinetextsubmission) {
-            $user = $DB->get_record("user", array("id"=>$submission->userid),'id,username,firstname,lastname', MUST_EXIST);
+            $finaltext = $this->assignment->download_rewrite_pluginfile_urls($onlinetextsubmission->onlinetext, $user, $this);
+            $formattedtext = format_text($finaltext,
+                                         $onlinetextsubmission->onlineformat,
+                                         array('context'=>$this->assignment->get_context()));
+            $submissioncontent = '<html><body>'. $formattedtext . '</body></html>';
 
-            $prefix = clean_filename(fullname($user) . "_" .$submission->userid . "_");
-            $finaltext = str_replace('@@PLUGINFILE@@/', $prefix, $onlinetextsubmission->onlinetext);
-            $submissioncontent = "<html><body>". format_text($finaltext, $onlinetextsubmission->onlineformat, array('context'=>$this->assignment->get_context())). "</body></html>";      //fetched from database
-
-            $files[get_string('onlinetextfilename', 'assignsubmission_onlinetext')] = array($submissioncontent);
+            $filename = get_string('onlinetextfilename', 'assignsubmission_onlinetext');
+            $files[$filename] = array($submissioncontent);
 
             $fs = get_file_storage();
 
-            $fsfiles = $fs->get_area_files($this->assignment->get_context()->id, 'assignsubmission_onlinetext', ASSIGNSUBMISSION_ONLINETEXT_FILEAREA, $submission->id, "timemodified", false);
+            $fsfiles = $fs->get_area_files($this->assignment->get_context()->id,
+                                           'assignsubmission_onlinetext',
+                                           ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
+                                           $submission->id,
+                                           'timemodified',
+                                           false);
 
             foreach ($fsfiles as $file) {
                 $files[$file->get_filename()] = $file;
@@ -253,18 +351,21 @@ class assign_submission_onlinetext extends assign_submission_plugin {
 
         $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
 
-
         if ($onlinetextsubmission) {
 
-            // render for portfolio API
-            $result .= $this->assignment->render_editor_content(ASSIGNSUBMISSION_ONLINETEXT_FILEAREA, $onlinetextsubmission->submission, $this->get_type(), 'onlinetext', 'assignsubmission_onlinetext');
+            // Render for portfolio API.
+            $result .= $this->assignment->render_editor_content(ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
+                                                                $onlinetextsubmission->submission,
+                                                                $this->get_type(),
+                                                                'onlinetext',
+                                                                'assignsubmission_onlinetext');
 
         }
 
         return $result;
     }
 
-     /**
+    /**
      * Return true if this plugin can upgrade an old Moodle 2.2 assignment of this type and version.
      *
      * @param string $type old assignment subtype
@@ -288,7 +389,7 @@ class assign_submission_onlinetext extends assign_submission_plugin {
      * @return bool Was it a success?
      */
     public function upgrade_settings(context $oldcontext, stdClass $oldassignment, & $log) {
-        // first upgrade settings (nothing to do)
+        // No settings to upgrade.
         return true;
     }
 
@@ -302,7 +403,11 @@ class assign_submission_onlinetext extends assign_submission_plugin {
      * @param string $log Record upgrade messages in the log
      * @return bool true or false - false will trigger a rollback
      */
-    public function upgrade(context $oldcontext, stdClass $oldassignment, stdClass $oldsubmission, stdClass $submission, & $log) {
+    public function upgrade(context $oldcontext,
+                            stdClass $oldassignment,
+                            stdClass $oldsubmission,
+                            stdClass $submission,
+                            & $log) {
         global $DB;
 
         $onlinetextsubmission = new stdClass();
@@ -325,12 +430,11 @@ class assign_submission_onlinetext extends assign_submission_plugin {
             return false;
         }
 
-        // now copy the area files
+        // Now copy the area files.
         $this->assignment->copy_area_files_for_upgrade($oldcontext->id,
                                                         'mod_assignment',
                                                         'submission',
                                                         $oldsubmission->id,
-                                                        // New file area
                                                         $this->assignment->get_context()->id,
                                                         'assignsubmission_onlinetext',
                                                         ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
@@ -345,13 +449,12 @@ class assign_submission_onlinetext extends assign_submission_plugin {
      * @return string
      */
     public function format_for_log(stdClass $submission) {
-        // format the info for each submission plugin add_to_log
+        // Format the info for each submission plugin (will be logged).
         $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
         $onlinetextloginfo = '';
-        $text = format_text($onlinetextsubmission->onlinetext,
-                            $onlinetextsubmission->onlineformat,
-                            array('context'=>$this->assignment->get_context()));
-        $onlinetextloginfo .= get_string('numwordsforlog', 'assignsubmission_onlinetext', count_words($text));
+        $onlinetextloginfo .= get_string('numwordsforlog',
+                                         'assignsubmission_onlinetext',
+                                         count_words($onlinetextsubmission->onlinetext));
 
         return $onlinetextloginfo;
     }
@@ -363,8 +466,8 @@ class assign_submission_onlinetext extends assign_submission_plugin {
      */
     public function delete_instance() {
         global $DB;
-        // will throw exception on failure
-        $DB->delete_records('assignsubmission_onlinetext', array('assignment'=>$this->assignment->get_instance()->id));
+        $DB->delete_records('assignsubmission_onlinetext',
+                            array('assignment'=>$this->assignment->get_instance()->id));
 
         return true;
     }
@@ -376,7 +479,9 @@ class assign_submission_onlinetext extends assign_submission_plugin {
      * @return bool
      */
     public function is_empty(stdClass $submission) {
-        return $this->view($submission) == '';
+        $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
+
+        return empty($onlinetextsubmission->onlinetext);
     }
 
     /**
@@ -385,6 +490,48 @@ class assign_submission_onlinetext extends assign_submission_plugin {
      */
     public function get_file_areas() {
         return array(ASSIGNSUBMISSION_ONLINETEXT_FILEAREA=>$this->get_name());
+    }
+
+    /**
+     * Copy the student's submission from a previous submission. Used when a student opts to base their resubmission
+     * on the last submission.
+     * @param stdClass $sourcesubmission
+     * @param stdClass $destsubmission
+     */
+    public function copy_submission(stdClass $sourcesubmission, stdClass $destsubmission) {
+        global $DB;
+
+        // Copy the files across (attached via the text editor).
+        $contextid = $this->assignment->get_context()->id;
+        $fs = get_file_storage();
+        $files = $fs->get_area_files($contextid, 'assignsubmission_onlinetext',
+                                     ASSIGNSUBMISSION_ONLINETEXT_FILEAREA, $sourcesubmission->id, 'id', false);
+        foreach ($files as $file) {
+            $fieldupdates = array('itemid' => $destsubmission->id);
+            $fs->create_file_from_storedfile($fieldupdates, $file);
+        }
+
+        // Copy the assignsubmission_onlinetext record.
+        $onlinetextsubmission = $this->get_onlinetext_submission($sourcesubmission->id);
+        if ($onlinetextsubmission) {
+            unset($onlinetextsubmission->id);
+            $onlinetextsubmission->submission = $destsubmission->id;
+            $DB->insert_record('assignsubmission_onlinetext', $onlinetextsubmission);
+        }
+        return true;
+    }
+
+    /**
+     * Return a description of external params suitable for uploading an onlinetext submission from a webservice.
+     *
+     * @return external_description|null
+     */
+    public function get_external_parameters() {
+        $editorparams = array('text' => new external_value(PARAM_TEXT, 'The text for this submission.'),
+                              'format' => new external_value(PARAM_INT, 'The format for this submission'),
+                              'itemid' => new external_value(PARAM_INT, 'The draft area id for files attached to the submission'));
+        $editorstructure = new external_single_structure($editorparams);
+        return array('onlinetext_editor' => $editorstructure);
     }
 
 }

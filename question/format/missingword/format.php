@@ -17,8 +17,7 @@
 /**
  * Missing word question importer.
  *
- * @package    qformat
- * @subpackage missingword
+ * @package    qformat_missingword
  * @copyright  1999 onwards Martin Dougiamas {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -52,47 +51,41 @@ defined('MOODLE_INTERNAL') || die();
  */
 class qformat_missingword extends qformat_default {
 
-    function provide_import() {
-      return true;
+    public function provide_import() {
+        return true;
     }
 
-    function readquestion($lines) {
-    /// Given an array of lines known to define a question in
-    /// this format, this function converts it into a question
-    /// object suitable for processing and insertion into Moodle.
+    public function readquestion($lines) {
+        // Given an array of lines known to define a question in
+        // this format, this function converts it into a question
+        // object suitable for processing and insertion into Moodle.
 
         $question = $this->defaultquestion();
-        ///$comment added by T Robb
-        $comment = NULL;
+        $comment = null; // Added by T Robb.
         $text = implode(" ", $lines);
 
-        /// Find answer section
+        // Find answer section.
 
         $answerstart = strpos($text, "{");
         if ($answerstart === false) {
-            if ($this->displayerrors) {
-                echo "<p>$text<p>Could not find a {";
-            }
+            $this->error(get_string('beginanswernotfound', 'qformat_missingword'), $text);
             return false;
         }
 
         $answerfinish = strpos($text, "}");
         if ($answerfinish === false) {
-            if ($this->displayerrors) {
-                echo "<p>$text<p>Could not find a }";
-            }
+            $this->error(get_string('endanswernotfound', 'qformat_missingword'), $text);
             return false;
         }
 
         $answerlength = $answerfinish - $answerstart;
         $answertext = substr($text, $answerstart + 1, $answerlength - 1);
 
-        /// Save the new question text
+        // Save the new question text.
         $question->questiontext = substr_replace($text, "_____", $answerstart, $answerlength+1);
-        $question->name = $question->questiontext;
+        $question->name = $this->create_default_question_name($question->questiontext, get_string('questionname', 'question'));
 
-
-        /// Parse the answers
+        // Parse the answers.
         $answertext = str_replace("=", "~=", $answertext);
         $answers = explode("~", $answertext);
         if (isset($answers[0])) {
@@ -105,14 +98,12 @@ class qformat_missingword extends qformat_default {
         $countanswers = count($answers);
 
         switch ($countanswers) {
-            case 0:  // invalid question
-                if ($this->displayerrors) {
-                    echo "<p>No answers found in $answertext";
-                }
+            case 0:  // Invalid question.
+                $this->error(get_string('noanswerfound', 'qformat_missingword'), $answertext);
                 return false;
 
             case 1:
-                $question->qtype = SHORTANSWER;
+                $question->qtype = 'shortanswer';
 
                 $answer = trim($answers[0]);
                 if ($answer[0] == "=") {
@@ -120,54 +111,54 @@ class qformat_missingword extends qformat_default {
                 }
                 $question->answer[]   = $answer;
                 $question->fraction[] = 1;
-                $question->feedback[] = "";
+                $question->feedback[] = array('text' => '', 'format' => FORMAT_HTML);
 
                 return $question;
 
             default:
-                $question->qtype = MULTICHOICE;
+                $question->qtype = 'multichoice';
+                $question = $this->add_blank_combined_feedback($question);
+                $question->single = 1; // Only one answer allowed.
 
                 foreach ($answers as $key => $answer) {
                     $answer = trim($answer);
 
-                    // Tom's addition starts here
+                    // Tom's addition starts here.
                     $answeight = 0;
-                    if (strspn($answer,"1234567890%") > 0){
-                        //Make sure that the percent sign is the last in the span
-                        if (strpos($answer,"%") == strspn($answer,"1234567890%") - 1) {
-                            $answeight0 = substr($answer,0,strspn($answer,"1234567890%"));
-                            $answeight = round(($answeight0/100),2);
-                            $answer = substr($answer,(strspn($answer,"1234567890%")));
+                    if (strspn($answer, "1234567890%") > 0) {
+                        // Make sure that the percent sign is the last in the span.
+                        if (strpos($answer, "%") == strspn($answer, "1234567890%") - 1) {
+                            $answeight0 = substr($answer, 0, strspn($answer, "1234567890%"));
+                            $answeight = round(($answeight0/100), 2);
+                            $answer = substr($answer, (strspn($answer, "1234567890%")));
                         }
                     }
-                    if ($answer[0] == "="){
+                    if ($answer[0] == "=") {
                         $answeight = 1;
                     }
-                    //remove the protective underscore for leading numbers in answers
-                    if ($answer[0] == "_"){
+                    // Remove the protective underscore for leading numbers in answers.
+                    if ($answer[0] == "_") {
                         $answer = substr($answer, 1);
                     }
                     $answer = trim($answer);
 
-                    if (strpos($answer,"#") > 0){
-                        $hashpos = strpos($answer,"#");
-                        $comment = substr(($answer),$hashpos+1);
-                        $answer  = substr($answer,0,$hashpos);
+                    if (strpos($answer, "#") > 0) {
+                        $hashpos = strpos($answer, "#");
+                        $comment = substr(($answer), $hashpos+1);
+                        $answer  = substr($answer, 0, $hashpos);
                     } else {
                         $comment = " ";
                     }
-                    // End of Tom's addition
+                    // End of Tom's addition.
 
                     if ($answer[0] == "=") {
-#                       $question->fraction[$key] = 1;
                         $question->fraction[$key] = $answeight;
                         $answer = substr($answer, 1);
                     } else {
-#                       $question->fraction[$key] = 0;
                         $question->fraction[$key] = $answeight;
                     }
-                    $question->answer[$key]   = $answer;
-                    $question->feedback[$key] = $comment;
+                    $question->answer[$key]   = array('text' => $answer, 'format' => FORMAT_HTML);
+                    $question->feedback[$key] = array('text' => $comment, 'format' => FORMAT_HTML);
                 }
 
                 return $question;

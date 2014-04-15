@@ -30,9 +30,10 @@ require_once('import_outcomes_form.php');
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $action   = optional_param('action', '', PARAM_ALPHA);
-$scope    = optional_param('scope', 'global', PARAM_ALPHA);
+$scope    = optional_param('scope', 'custom', PARAM_ALPHA);
 
 $PAGE->set_url('/grade/edit/outcome/import.php', array('courseid' => $courseid));
+$PAGE->set_pagelayout('admin');
 
 /// Make sure they can even access this course
 if ($courseid) {
@@ -40,7 +41,7 @@ if ($courseid) {
         print_error('nocourseid');
     }
     require_login($course);
-    $context = get_context_instance(CONTEXT_COURSE, $course->id);
+    $context = context_course::instance($course->id);
 
     if (empty($CFG->enableoutcomes)) {
         redirect('../../index.php?id='.$courseid);
@@ -49,7 +50,7 @@ if ($courseid) {
 } else {
     require_once $CFG->libdir.'/adminlib.php';
     admin_externalpage_setup('outcomes');
-    $context = get_context_instance(CONTEXT_SYSTEM);
+    $context = context_system::instance();
 }
 
 require_capability('moodle/grade:manageoutcomes', $context);
@@ -79,7 +80,7 @@ if (!$upload_form->save_file('userfile', $imported_file, true)) {
 if (isset($courseid) && ($scope  == 'custom')) {
     // custom scale
     $local_scope = true;
-} elseif (($scope == 'global') && has_capability('moodle/grade:manage', get_context_instance(CONTEXT_SYSTEM))) {
+} elseif (($scope == 'global') && has_capability('moodle/grade:manage', context_system::instance())) {
     // global scale
     $local_scope = false;
 } else {

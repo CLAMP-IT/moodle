@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -42,4 +41,5 @@ $string['petsanimals'] = 'Pets &amp; Animals';
 $string['pluginname'] = 'Youtube';
 $string['scienceandtech'] = 'Science &amp; Tech';
 $string['sports'] = 'Sports';
+$string['tag_youtube:addinstance'] = 'Add a new youtube block';
 $string['travel'] = 'Travel &amp; Places';

@@ -20,7 +20,7 @@
  *
  * @copyright 2005 Martin Dougiamas  http://dougiamas.com
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package mod-data
+ * @package mod_data
  */
 
 require_once('../../config.php');
@@ -66,15 +66,23 @@ if ($id) {
 
 require_login($course, false, $cm);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 require_capability('mod/data:managetemplates', $context);
 
 if (!$DB->count_records('data_fields', array('dataid'=>$data->id))) {      // Brand new database!
     redirect($CFG->wwwroot.'/mod/data/field.php?d='.$data->id);  // Redirect to field entry
 }
 
-add_to_log($course->id, 'data', 'templates view', "templates.php?id=$cm->id&amp;d=$data->id", $data->id, $cm->id);
-
+// Trigger an event for viewing templates.
+$event = \mod_data\event\template_viewed::create(array(
+    'context' => $context,
+    'courseid' => $course->id,
+    'other' => array(
+        'dataid' => $data->id
+    )
+));
+$event->add_record_snapshot('data', $data);
+$event->trigger();
 
 /// Print the page header
 
@@ -90,10 +98,10 @@ if ($mode == 'singletemplate') {
 $PAGE->requires->js('/mod/data/data.js');
 $PAGE->set_title($data->name);
 $PAGE->set_heading($course->fullname);
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout('admin');
 echo $OUTPUT->header();
-echo $OUTPUT->heading(format_string($data->name));
-
+echo $OUTPUT->heading(format_string($data->name), 2);
+echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
 
 /// Groups needed for Add entry tab
 $currentgroup = groups_get_activity_group($cm);
@@ -136,12 +144,21 @@ if (($mytemplate = data_submitted()) && confirm_sesskey()) {
             if (empty($disableeditor) && empty($enableeditor)) {
                 $DB->update_record('data', $newtemplate);
                 echo $OUTPUT->notification(get_string('templatesaved', 'data'), 'notifysuccess');
-                add_to_log($course->id, 'data', 'templates saved', "templates.php?id=$cm->id&amp;d=$data->id", $data->id, $cm->id);
+
+                // Trigger an event for saving the templates.
+                $event = \mod_data\event\template_updated::create(array(
+                    'context' => $context,
+                    'courseid' => $course->id,
+                    'other' => array(
+                        'dataid' => $data->id,
+                    )
+                ));
+                $event->trigger();
             }
         }
     }
 } else {
-    echo '<div class="littleintro" style="text-align:center">'.get_string('header'.$mode,'data').'</div>';
+    echo '<div class="template_heading">'.get_string('header'.$mode,'data').'</div>';
 }
 
 /// If everything is empty then generate some defaults
@@ -192,13 +209,13 @@ echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
 echo '<table cellpadding="4" cellspacing="0" border="0">';
 
 /// Add the HTML editor(s).
-$usehtmleditor = can_use_html_editor() && ($mode != 'csstemplate') && ($mode != 'jstemplate') && !$disableeditor;
+$usehtmleditor = ($mode != 'csstemplate') && ($mode != 'jstemplate') && !$disableeditor;
 if ($mode == 'listtemplate'){
     // Print the list template header.
     echo '<tr>';
     echo '<td>&nbsp;</td>';
     echo '<td>';
-    echo '<div style="text-align:center"><label for="edit-listtemplateheader">'.get_string('header','data').'</label></div>';
+    echo '<div class="template_heading"><label for="edit-listtemplateheader">'.get_string('header','data').'</label></div>';
 
     $field = 'listtemplateheader';
     $editor->use_editor($field, $options);
@@ -244,6 +261,7 @@ if ($mode != 'csstemplate' and $mode != 'jstemplate') {
         echo '<option value="##edit##">' .get_string('edit', 'data'). ' - ##edit##</option>';
         echo '<option value="##delete##">' .get_string('delete', 'data'). ' - ##delete##</option>';
         echo '<option value="##approve##">' .get_string('approve', 'data'). ' - ##approve##</option>';
+        echo '<option value="##disapprove##">' .get_string('disapprove', 'data'). ' - ##disapprove##</option>';
         if ($mode != 'rsstemplate') {
             echo '<option value="##export##">' .get_string('export', 'data'). ' - ##export##</option>';
         }
@@ -251,6 +269,7 @@ if ($mode != 'csstemplate' and $mode != 'jstemplate') {
             // more points to single template - not useable there
             echo '<option value="##more##">' .get_string('more', 'data'). ' - ##more##</option>';
             echo '<option value="##moreurl##">' .get_string('moreurl', 'data'). ' - ##moreurl##</option>';
+            echo '<option value="##delcheck##">' .get_string('delcheck', 'data'). ' - ##delcheck##</option>';
         }
         echo '</optgroup>';
         echo '<optgroup label="'.get_string('other', 'data').'">';
@@ -273,15 +292,13 @@ if ($mode != 'csstemplate' and $mode != 'jstemplate') {
 
     echo '</select>';
     echo '<br /><br /><br /><br /><input type="submit" name="defaultform" value="'.get_string('resettemplate','data').'" />';
-    if (can_use_html_editor()) {
-        echo '<br /><br />';
-        if ($usehtmleditor) {
-            $switcheditor = get_string('editordisable', 'data');
-            echo '<input type="submit" name="switcheditor" value="'.s($switcheditor).'" />';
-        } else {
-            $switcheditor = get_string('editorenable', 'data');
-            echo '<input type="submit" name="useeditor" value="'.s($switcheditor).'" />';
-        }
+    echo '<br /><br />';
+    if ($usehtmleditor) {
+        $switcheditor = get_string('editordisable', 'data');
+        echo '<input type="submit" name="switcheditor" value="'.s($switcheditor).'" />';
+    } else {
+        $switcheditor = get_string('editorenable', 'data');
+        echo '<input type="submit" name="useeditor" value="'.s($switcheditor).'" />';
     }
 } else {
     echo '<br /><br /><br /><br /><input type="submit" name="defaultform" value="'.get_string('resettemplate','data').'" />';
@@ -290,9 +307,9 @@ echo '</td>';
 
 echo '<td valign="top">';
 if ($mode == 'listtemplate'){
-    echo '<div style="text-align:center"><label for="edit-template">'.get_string('multientry','data').'</label></div>';
+    echo '<div class="template_heading"><label for="edit-template">'.get_string('multientry','data').'</label></div>';
 } else {
-    echo '<div style="text-align:center"><label for="edit-template">'.get_string($mode,'data').'</label></div>';
+    echo '<div class="template_heading"><label for="edit-template">'.get_string($mode,'data').'</label></div>';
 }
 
 $field = 'template';
@@ -305,7 +322,7 @@ if ($mode == 'listtemplate'){
     echo '<tr>';
     echo '<td>&nbsp;</td>';
     echo '<td>';
-    echo '<div style="text-align:center"><label for="edit-listtemplatefooter">'.get_string('footer','data').'</label></div>';
+    echo '<div class="template_heading"><label for="edit-listtemplatefooter">'.get_string('footer','data').'</label></div>';
 
     $field = 'listtemplatefooter';
     $editor->use_editor($field, $options);
@@ -316,7 +333,7 @@ if ($mode == 'listtemplate'){
     echo '<tr>';
     echo '<td>&nbsp;</td>';
     echo '<td>';
-    echo '<div style="text-align:center"><label for="edit-rsstitletemplate">'.get_string('rsstitletemplate','data').'</label></div>';
+    echo '<div class="template_heading"><label for="edit-rsstitletemplate">'.get_string('rsstitletemplate','data').'</label></div>';
 
     $field = 'rsstitletemplate';
     $editor->use_editor($field, $options);
@@ -325,7 +342,7 @@ if ($mode == 'listtemplate'){
     echo '</tr>';
 }
 
-echo '<tr><td style="text-align:center" colspan="2">';
+echo '<tr><td class="save_template" colspan="2">';
 echo '<input type="submit" value="'.get_string('savetemplate','data').'" />&nbsp;';
 
 echo '</td></tr></table>';

@@ -63,7 +63,7 @@ class question_engine_data_mapper {
     /**
      * @param moodle_database $db a database connectoin. Defaults to global $DB.
      */
-    public function __construct($db = null) {
+    public function __construct(moodle_database $db = null) {
         if (is_null($db)) {
             global $DB;
             $this->db = $DB;
@@ -106,17 +106,19 @@ class question_engine_data_mapper {
         $record->variant = $qa->get_variant();
         $record->maxmark = $qa->get_max_mark();
         $record->minfraction = $qa->get_min_fraction();
+        $record->maxfraction = $qa->get_max_fraction();
         $record->flagged = $qa->is_flagged();
         $record->questionsummary = $qa->get_question_summary();
-        if (textlib::strlen($record->questionsummary) > question_bank::MAX_SUMMARY_LENGTH) {
+        if (core_text::strlen($record->questionsummary) > question_bank::MAX_SUMMARY_LENGTH) {
             // It seems some people write very long quesions! MDL-30760
-            $record->questionsummary = textlib::substr($record->questionsummary,
+            $record->questionsummary = core_text::substr($record->questionsummary,
                     0, question_bank::MAX_SUMMARY_LENGTH - 3) . '...';
         }
         $record->rightanswer = $qa->get_right_answer_summary();
         $record->responsesummary = $qa->get_response_summary();
         $record->timemodified = time();
         $record->id = $this->db->insert_record('question_attempts', $record);
+        $qa->set_database_id($record->id);
 
         foreach ($qa->get_step_iterator() as $seq => $step) {
             $this->insert_question_attempt_step($step, $record->id, $seq, $context);
@@ -151,6 +153,8 @@ class question_engine_data_mapper {
         foreach ($step->get_all_data() as $name => $value) {
             if ($value instanceof question_file_saver) {
                 $value->save_files($stepid, $context);
+            }
+            if ($value instanceof question_response_files) {
                 $value = (string) $value;
             }
 
@@ -205,6 +209,8 @@ class question_engine_data_mapper {
     public function load_question_attempt_step($stepid) {
         $records = $this->db->get_recordset_sql("
 SELECT
+    quba.contextid,
+    COALLESCE(q.qtype, 'missingtype') AS qtype,
     qas.id AS attemptstepid,
     qas.questionattemptid,
     qas.sequencenumber,
@@ -215,7 +221,10 @@ SELECT
     qasd.name,
     qasd.value
 
-FROM {question_attempt_steps} qas
+FROM      {question_attempt_steps}     qas
+JOIN      {question_attempts}          qa   ON qa.id              = qas.questionattemptid
+JOIN      {question_usages}            quba ON quba.id            = qa.questionusageid
+LEFT JOIN {question}                   q    ON q.id               = qa.questionid
 LEFT JOIN {question_attempt_step_data} qasd ON qasd.attemptstepid = qas.id
 
 WHERE
@@ -251,6 +260,7 @@ SELECT
     qa.variant,
     qa.maxmark,
     qa.minfraction,
+    qa.maxfraction,
     qa.flagged,
     qa.questionsummary,
     qa.rightanswer,
@@ -310,6 +320,7 @@ SELECT
     qa.variant,
     qa.maxmark,
     qa.minfraction,
+    qa.maxfraction,
     qa.flagged,
     qa.questionsummary,
     qa.rightanswer,
@@ -348,19 +359,18 @@ ORDER BY
     }
 
     /**
-     * Load information about the latest state of each question from the database.
-     *
-     * @param qubaid_condition $qubaids used to restrict which usages are included
-     * in the query. See {@link qubaid_condition}.
-     * @param array $slots A list of slots for the questions you want to konw about.
-     * @return array of records. See the SQL in this function to see the fields available.
+     * Load all {@link question_usage_by_activity} from the database for one qubaid_condition
+     * Include all its {@link question_attempt}s and all their steps.
+     * @param qubaid_condition $qubaids the condition that tells us which usages to load.
+     * @return question_usage_by_activity[] the usages that were loaded.
      */
-    public function load_questions_usages_latest_steps(qubaid_condition $qubaids, $slots) {
-        list($slottest, $params) = $this->db->get_in_or_equal($slots, SQL_PARAMS_NAMED, 'slot');
-
-        $records = $this->db->get_records_sql("
+    public function load_questions_usages_by_activity($qubaids) {
+        $records = $this->db->get_recordset_sql("
 SELECT
-    qas.id,
+    quba.id AS qubaid,
+    quba.contextid,
+    quba.component,
+    quba.preferredbehaviour,
     qa.id AS questionattemptid,
     qa.questionusageid,
     qa.slot,
@@ -369,6 +379,7 @@ SELECT
     qa.variant,
     qa.maxmark,
     qa.minfraction,
+    qa.maxfraction,
     qa.flagged,
     qa.questionsummary,
     qa.rightanswer,
@@ -379,11 +390,83 @@ SELECT
     qas.state,
     qas.fraction,
     qas.timecreated,
-    qas.userid
+    qas.userid,
+    qasd.name,
+    qasd.value
+
+FROM      {question_usages}            quba
+LEFT JOIN {question_attempts}          qa   ON qa.questionusageid    = quba.id
+LEFT JOIN {question_attempt_steps}     qas  ON qas.questionattemptid = qa.id
+LEFT JOIN {question_attempt_step_data} qasd ON qasd.attemptstepid    = qas.id
+
+WHERE
+    quba.id {$qubaids->usage_id_in()}
+
+ORDER BY
+    quba.id,
+    qa.slot,
+    qas.sequencenumber
+    ", $qubaids->usage_id_in_params());
+
+        if (!$records->valid()) {
+            throw new coding_exception('Failed to load questions_usages_by_activity for qubaid_condition :' . $qubaids);
+        }
+
+        $qubas = array();
+        do {
+            $record = $records->current();
+            $qubas[$record->qubaid] = question_usage_by_activity::load_from_records($records, $record->qubaid);
+        } while ($records->valid());
+
+        $records->close();
+
+        return $qubas;
+    }
+
+    /**
+     * Load information about the latest state of each question from the database.
+     *
+     * @param qubaid_condition $qubaids used to restrict which usages are included
+     *                                  in the query. See {@link qubaid_condition}.
+     * @param array            $slots   A list of slots for the questions you want to know about.
+     * @param string|null      $fields
+     * @return array of records. See the SQL in this function to see the fields available.
+     */
+    public function load_questions_usages_latest_steps(qubaid_condition $qubaids, $slots, $fields = null) {
+        list($slottest, $params) = $this->db->get_in_or_equal($slots, SQL_PARAMS_NAMED, 'slot');
+
+        if ($fields === null) {
+            $fields = "qas.id,
+    qa.id AS questionattemptid,
+    qa.questionusageid,
+    qa.slot,
+    qa.behaviour,
+    qa.questionid,
+    qa.variant,
+    qa.maxmark,
+    qa.minfraction,
+    qa.maxfraction,
+    qa.flagged,
+    qa.questionsummary,
+    qa.rightanswer,
+    qa.responsesummary,
+    qa.timemodified,
+    qas.id AS attemptstepid,
+    qas.sequencenumber,
+    qas.state,
+    qas.fraction,
+    qas.timecreated,
+    qas.userid";
+
+        }
+
+        $records = $this->db->get_records_sql("
+SELECT
+    {$fields}
 
 FROM {$qubaids->from_question_attempts('qa')}
-JOIN {question_attempt_steps} qas ON
-        qas.id = {$this->latest_step_for_qa_subquery()}
+JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+        AND qas.sequencenumber = {$this->latest_step_for_qa_subquery()}
 
 WHERE
     {$qubaids->where()} AND
@@ -420,8 +503,8 @@ SELECT
     COUNT(1) AS numattempts
 
 FROM {$qubaids->from_question_attempts('qa')}
-JOIN {question_attempt_steps} qas ON
-        qas.id = {$this->latest_step_for_qa_subquery()}
+JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+        AND qas.sequencenumber = {$this->latest_step_for_qa_subquery()}
 JOIN {question} q ON q.id = qa.questionid
 
 WHERE
@@ -492,7 +575,7 @@ ORDER BY
      */
     public function load_questions_usages_where_question_in_state(
             qubaid_condition $qubaids, $summarystate, $slot, $questionid = null,
-            $orderby = 'random', $params, $limitfrom = 0, $limitnum = null) {
+            $orderby = 'random', $params = array(), $limitfrom = 0, $limitnum = null) {
 
         $extrawhere = '';
         if ($questionid) {
@@ -513,26 +596,28 @@ ORDER BY
             $sqlorderby = '';
         }
 
-        // We always want the total count, as well as the partcular list of ids,
-        // based on the paging and sort order. Becuase the list of ids is never
-        // going to be too rediculously long. My worst-case scenario is
-        // 10,000 students in the coures, each doing 5 quiz attempts. That
+        // We always want the total count, as well as the partcular list of ids
+        // based on the paging and sort order. Because the list of ids is never
+        // going to be too ridiculously long. My worst-case scenario is
+        // 10,000 students in the course, each doing 5 quiz attempts. That
         // is a 50,000 element int => int array, which PHP seems to use 5MB
-        // memeory to store on a 64 bit server.
+        // memory to store on a 64 bit server.
+        $qubaidswhere = $qubaids->where(); // Must call this before params.
         $params += $qubaids->from_where_params();
         $params['slot'] = $slot;
+
         $qubaids = $this->db->get_records_sql_menu("
 SELECT
     qa.questionusageid,
     1
 
 FROM {$qubaids->from_question_attempts('qa')}
-JOIN {question_attempt_steps} qas ON
-        qas.id = {$this->latest_step_for_qa_subquery()}
+JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+        AND qas.sequencenumber = {$this->latest_step_for_qa_subquery()}
 JOIN {question} q ON q.id = qa.questionid
 
 WHERE
-    {$qubaids->where()} AND
+    {$qubaidswhere} AND
     qa.slot = :slot
     $extrawhere
 
@@ -569,7 +654,7 @@ $sqlorderby
             $slotwhere = " AND qa.slot $slottest";
         } else {
             $slotwhere = '';
-            $params = array();
+            $slotsparams = array();
         }
 
         list($statetest, $stateparams) = $this->db->get_in_or_equal(array(
@@ -589,8 +674,8 @@ SELECT
     COUNT(1) AS numaveraged
 
 FROM {$qubaids->from_question_attempts('qa')}
-JOIN {question_attempt_steps} qas ON
-        qas.id = {$this->latest_step_for_qa_subquery()}
+JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+        AND qas.sequencenumber = {$this->latest_step_for_qa_subquery()}
 
 WHERE
     {$qubaids->where()}
@@ -612,12 +697,7 @@ ORDER BY qa.slot
      * @return array of question_attempts.
      */
     public function load_attempts_at_question($questionid, qubaid_condition $qubaids) {
-        global $DB;
-
-        $params = $qubaids->from_where_params();
-        $params['questionid'] = $questionid;
-
-        $records = $DB->get_recordset_sql("
+        $sql = "
 SELECT
     quba.contextid,
     quba.preferredbehaviour,
@@ -629,6 +709,7 @@ SELECT
     qa.variant,
     qa.maxmark,
     qa.minfraction,
+    qa.maxfraction,
     qa.flagged,
     qa.questionsummary,
     qa.rightanswer,
@@ -655,8 +736,13 @@ WHERE
 ORDER BY
     quba.id,
     qa.id,
-    qas.sequencenumber
-        ", $params);
+    qas.sequencenumber";
+
+        // For qubaid_list must call this after calling methods that generate sql.
+        $params = $qubaids->from_where_params();
+        $params['questionid'] = $questionid;
+
+        $records = $this->db->get_recordset_sql($sql, $params);
 
         $questionattempts = array();
         while ($records->valid()) {
@@ -696,6 +782,7 @@ ORDER BY
         $record->id = $qa->get_database_id();
         $record->maxmark = $qa->get_max_mark();
         $record->minfraction = $qa->get_min_fraction();
+        $record->maxfraction = $qa->get_max_fraction();
         $record->flagged = $qa->is_flagged();
         $record->questionsummary = $qa->get_question_summary();
         $record->rightanswer = $qa->get_right_answer_summary();
@@ -758,6 +845,14 @@ ORDER BY
      * @param qubaid_condition $qubaids identifies which question useages to delete.
      */
     protected function delete_usage_records_for_mysql(qubaid_condition $qubaids) {
+        $qubaidtest = $qubaids->usage_id_in();
+        if (strpos($qubaidtest, 'question_usages') !== false &&
+                strpos($qubaidtest, 'IN (SELECT') === 0) {
+            // This horrible hack is required by MDL-29847. It comes from
+            // http://www.xaprb.com/blog/2006/06/23/how-to-select-from-an-update-target-in-mysql/
+            $qubaidtest = 'IN (SELECT * FROM ' . substr($qubaidtest, 3) . ' AS hack_subquery_alias)';
+        }
+
         // TODO once MDL-29589 is fixed, eliminate this method, and instead use the new $DB API.
         $this->db->execute('
                 DELETE qu, qa, qas, qasd
@@ -765,7 +860,7 @@ ORDER BY
                   JOIN {question_attempts}          qa   ON qa.questionusageid = qu.id
              LEFT JOIN {question_attempt_steps}     qas  ON qas.questionattemptid = qa.id
              LEFT JOIN {question_attempt_step_data} qasd ON qasd.attemptstepid = qas.id
-                 WHERE qu.id ' . $qubaids->usage_id_in(),
+                 WHERE qu.id ' . $qubaidtest,
                 $qubaids->usage_id_in_params());
     }
 
@@ -898,10 +993,11 @@ ORDER BY
         // NULL total into a 0.
         return "SELECT COALESCE(SUM(qa.maxmark * qas.fraction), 0)
             FROM {question_attempts} qa
-            JOIN {question_attempt_steps} qas ON qas.id = (
-                SELECT MAX(summarks_qas.id)
-                  FROM {question_attempt_steps} summarks_qas
-                 WHERE summarks_qas.questionattemptid = qa.id
+            JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+                    AND qas.sequencenumber = (
+                            SELECT MAX(summarks_qas.sequencenumber)
+                              FROM {question_attempt_steps} summarks_qas
+                             WHERE summarks_qas.questionattemptid = qa.id
             )
             WHERE qa.questionusageid = $qubaid
             HAVING COUNT(CASE
@@ -929,6 +1025,7 @@ ORDER BY
                        {$alias}qa.variant,
                        {$alias}qa.maxmark,
                        {$alias}qa.minfraction,
+                       {$alias}qa.maxfraction,
                        {$alias}qa.flagged,
                        {$alias}qa.questionsummary,
                        {$alias}qa.rightanswer,
@@ -942,15 +1039,15 @@ ORDER BY
                        {$alias}qas.userid
 
                   FROM {$qubaids->from_question_attempts($alias . 'qa')}
-                  JOIN {question_attempt_steps} {$alias}qas ON
-                           {$alias}qas.id = {$this->latest_step_for_qa_subquery($alias . 'qa.id')}
+                  JOIN {question_attempt_steps} {$alias}qas ON {$alias}qas.questionattemptid = {$alias}qa.id
+                            AND {$alias}qas.sequencenumber = {$this->latest_step_for_qa_subquery($alias . 'qa.id')}
                  WHERE {$qubaids->where()}
             ) $alias", $qubaids->from_where_params());
     }
 
     protected function latest_step_for_qa_subquery($questionattemptid = 'qa.id') {
         return "(
-                SELECT MAX(id)
+                SELECT MAX(sequencenumber)
                 FROM {question_attempt_steps}
                 WHERE questionattemptid = $questionattemptid
             )";
@@ -1193,6 +1290,21 @@ class question_engine_unit_of_work implements question_usage_observer {
 
 
 /**
+ * The interface implemented by {@link question_file_saver} and {@link question_file_loader}.
+ *
+ * @copyright  2012 The Open University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+interface question_response_files {
+    /**
+     * Get the files that were submitted.
+     * @return array of stored_files objects.
+     */
+    public function get_files();
+}
+
+
+/**
  * This class represents the promise to save some files from a particular draft
  * file area into a particular file area. It is used beause the necessary
  * information about what to save is to hand in the
@@ -1203,7 +1315,7 @@ class question_engine_unit_of_work implements question_usage_observer {
  * @copyright  2011 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class question_file_saver {
+class question_file_saver implements question_response_files {
     /** @var int the id of the draft file area to save files from. */
     protected $draftitemid;
     /** @var string the owning component name. */
@@ -1240,7 +1352,7 @@ class question_file_saver {
         global $USER;
 
         $fs = get_file_storage();
-        $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+        $usercontext = context_user::instance($USER->id);
 
         $files = $fs->get_area_files($usercontext->id, 'user', 'draft',
                 $draftitemid, 'sortorder, filepath, filename', false);
@@ -1250,23 +1362,24 @@ class question_file_saver {
             $string .= $file->get_filepath() . $file->get_filename() . '|' .
                     $file->get_contenthash() . '|';
         }
-
-        if ($string) {
-            $hash = md5($string);
-        } else {
-            $hash = '';
-        }
+        $hash = md5($string);
 
         if (is_null($text)) {
-            return $hash;
+            if ($string) {
+                return $hash;
+            } else {
+                return '';
+            }
         }
 
         // We add the file hash so a simple string comparison will say if the
         // files have been changed. First strip off any existing file hash.
-        $text = preg_replace('/\s*<!-- File hash: \w+ -->\s*$/', '', $text);
-        $text = file_rewrite_urls_to_pluginfile($text, $draftitemid);
-        if ($hash) {
-            $text .= '<!-- File hash: ' . $hash . ' -->';
+        if ($text !== '') {
+            $text = preg_replace('/\s*<!-- File hash: \w+ -->\s*$/', '', $text);
+            $text = file_rewrite_urls_to_pluginfile($text, $draftitemid);
+            if ($string) {
+                $text .= '<!-- File hash: ' . $hash . ' -->';
+            }
         }
         return $text;
     }
@@ -1282,6 +1395,108 @@ class question_file_saver {
     public function save_files($itemid, $context) {
         file_save_draft_area_files($this->draftitemid, $context->id,
                 $this->component, $this->filearea, $itemid);
+    }
+
+    /**
+     * Get the files that were submitted.
+     * @return array of stored_files objects.
+     */
+    public function get_files() {
+        global $USER;
+
+        $fs = get_file_storage();
+        $usercontext = context_user::instance($USER->id);
+
+        return $fs->get_area_files($usercontext->id, 'user', 'draft',
+                $this->draftitemid, 'sortorder, filepath, filename', false);
+    }
+}
+
+
+/**
+ * This class is the mirror image of {@link question_file_saver}. It allows
+ * files to be accessed again later (e.g. when re-grading) using that same
+ * API as when doing the original grading.
+ *
+ * @copyright  2012 The Open University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class question_file_loader implements question_response_files {
+    /** @var question_attempt_step the step that these files belong to. */
+    protected $step;
+
+    /** @var string the field name for these files - which is used to construct the file area name. */
+    protected $name;
+
+    /**
+    * @var string the value to stored in the question_attempt_step_data to
+     * represent these files.
+    */
+    protected $value;
+
+    /** @var int the context id that the files belong to. */
+    protected $contextid;
+
+    /**
+     * Constuctor.
+     * @param question_attempt_step $step the step that these files belong to.
+     * @param string $name string the field name for these files - which is used to construct the file area name.
+     * @param string $value the value to stored in the question_attempt_step_data to
+     *      represent these files.
+     * @param int $contextid the context id that the files belong to.
+     */
+    public function __construct(question_attempt_step $step, $name, $value, $contextid) {
+        $this->step = $step;
+        $this->name = $name;
+        $this->value = $value;
+        $this->contextid = $contextid;
+    }
+
+    public function __toString() {
+        return $this->value;
+    }
+
+    /**
+     * Get the files that were submitted.
+     * @return array of stored_files objects.
+     */
+    public function get_files() {
+        return $this->step->get_qt_files($this->name, $this->contextid);
+    }
+
+    /**
+     * Copy these files into a draft area, and return the corresponding
+     * {@link question_file_saver} that can save them again.
+     *
+     * This is used by {@link question_attempt::start_based_on()}, which is used
+     * (for example) by the quizzes 'Each attempt builds on last' feature.
+     *
+     * @return question_file_saver that can re-save these files again.
+     */
+    public function get_question_file_saver() {
+
+        // There are three possibilities here for what $value will look like:
+        // 1) some HTML content followed by an MD5 hash in a HTML comment;
+        // 2) a plain MD5 hash;
+        // 3) or some real content, without any hash.
+        // The problem is that 3) is ambiguous in the case where a student writes
+        // a response that looks exactly like an MD5 hash. For attempts made now,
+        // we avoid case 3) by always going for case 1) or 2) (except when the
+        // response is blank. However, there may be case 3) data in the database
+        // so we need to handle it as best we can.
+        if (preg_match('/\s*<!-- File hash: [0-9a-zA-Z]{32} -->\s*$/', $this->value)) {
+            $value = preg_replace('/\s*<!-- File hash: [0-9a-zA-Z]{32} -->\s*$/', '', $this->value);
+
+        } else if (preg_match('/^[0-9a-zA-Z]{32}$/', $this->value)) {
+            $value = null;
+
+        } else {
+            $value = $this->value;
+        }
+
+        list($draftid, $text) = $this->step->prepare_response_files_draft_itemid_with_text(
+                $this->name, $this->contextid, $value);
+        return new question_file_saver($draftid, 'question', 'response_' . $this->name, $text);
     }
 }
 
@@ -1328,6 +1543,14 @@ abstract class qubaid_condition {
      * @return the params needed by a query that uses {@link usage_id_in()}.
      */
     public abstract function usage_id_in_params();
+
+    /**
+     * @return string 40-character hash code that uniquely identifies the combination of properties and class name of this qubaid
+     *                  condition.
+     */
+    public function get_hash_code() {
+        return sha1(serialize($this));
+    }
 }
 
 

@@ -32,11 +32,12 @@ if (!empty($id)) {
 require_course_login($course);
 $PAGE->set_pagelayout('incourse');
 
-add_to_log($course->id, "scorm", "view all", "index.php?id=$course->id", "");
+// Trigger instances list viewed event.
+$event = \mod_scorm\event\course_module_instance_list_viewed::create(array('context' => context_course::instance($course->id)));
+$event->trigger();
 
 $strscorm = get_string("modulename", "scorm");
 $strscorms = get_string("modulenameplural", "scorm");
-$strsectionname  = get_string('sectionname', 'format_'.$course->format);
 $strname = get_string("name");
 $strsummary = get_string("summary");
 $strreport = get_string("report", 'scorm');
@@ -46,11 +47,9 @@ $PAGE->set_title($strscorms);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strscorms);
 echo $OUTPUT->header();
+echo $OUTPUT->heading($strscorms);
 
 $usesections = course_format_uses_sections($course->format);
-if ($usesections) {
-    $sections = get_all_sections($course->id);
-}
 
 if ($usesections) {
     $sortorder = "cw.section ASC";
@@ -66,6 +65,7 @@ if (! $scorms = get_all_instances_in_course("scorm", $course)) {
 $table = new html_table();
 
 if ($usesections) {
+    $strsectionname = get_string('sectionname', 'format_'.$course->format);
     $table->head  = array ($strsectionname, $strname, $strsummary, $strreport);
     $table->align = array ("center", "left", "left", "left");
 } else {
@@ -74,11 +74,11 @@ if ($usesections) {
 }
 
 foreach ($scorms as $scorm) {
-    $context = get_context_instance(CONTEXT_MODULE, $scorm->coursemodule);
+    $context = context_module::instance($scorm->coursemodule);
     $tt = "";
     if ($usesections) {
         if ($scorm->section) {
-            $tt = get_section_name($course, $sections[$scorm->section]);
+            $tt = get_section_name($course, $scorm->section);
         }
     } else {
         $tt = userdate($scorm->timemodified);

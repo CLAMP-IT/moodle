@@ -90,7 +90,7 @@ class quiz_access_manager {
      * @return array of all the installed rule class names.
      */
     protected static function get_rule_classes() {
-        return get_plugin_list_with_class('quizaccess', '', 'rule.php');
+        return core_component::get_plugin_list_with_class('quizaccess', '', 'rule.php');
     }
 
     /**
@@ -121,6 +121,24 @@ class quiz_access_manager {
             $options += $rule::get_browser_security_choices();
         }
         return $options;
+    }
+
+    /**
+     * Validate the data from any form fields added using {@link add_settings_form_fields()}.
+     * @param array $errors the errors found so far.
+     * @param array $data the submitted form data.
+     * @param array $files information about any uploaded files.
+     * @param mod_quiz_mod_form $quizform the quiz form object.
+     * @return array $errors the updated $errors array.
+     */
+    public static function validate_settings_form_fields(array $errors,
+            array $data, $files, mod_quiz_mod_form $this) {
+
+        foreach (self::get_rule_classes() as $rule) {
+            $errors = $rule::validate_settings_form_fields($errors, $data, $files, $this);
+        }
+
+        return $errors;
     }
 
     /**
@@ -392,17 +410,35 @@ class quiz_access_manager {
     }
 
     /**
-     * Compute how much time is left before this attempt must be submitted.
+     * Compute when the attempt must be submitted.
+     *
+     * @param object $attempt the data from the relevant quiz_attempts row.
+     * @return int|false the attempt close time.
+     *      False if there is no limit.
+     */
+    public function get_end_time($attempt) {
+        $timeclose = false;
+        foreach ($this->rules as $rule) {
+            $ruletimeclose = $rule->end_time($attempt);
+            if ($ruletimeclose !== false && ($timeclose === false || $ruletimeclose < $timeclose)) {
+                $timeclose = $ruletimeclose;
+            }
+        }
+        return $timeclose;
+    }
+
+    /**
+     * Compute what should be displayed to the user for time remaining in this attempt.
      *
      * @param object $attempt the data from the relevant quiz_attempts row.
      * @param int $timenow the time to consider as 'now'.
      * @return int|false the number of seconds remaining for this attempt.
-     *      False if there is no limit.
+     *      False if no limit should be displayed.
      */
-    public function get_time_left($attempt, $timenow) {
+    public function get_time_left_display($attempt, $timenow) {
         $timeleft = false;
         foreach ($this->rules as $rule) {
-            $ruletimeleft = $rule->time_left($attempt, $timenow);
+            $ruletimeleft = $rule->time_left_display($attempt, $timenow);
             if ($ruletimeleft !== false && ($timeleft === false || $ruletimeleft < $timeleft)) {
                 $timeleft = $ruletimeleft;
             }
@@ -445,7 +481,7 @@ class quiz_access_manager {
      */
     public function back_to_view_page($output, $message = '') {
         if ($this->attempt_must_be_in_popup()) {
-            echo $output->close_attempt_popup($message, $this->quizobj->view_url());
+            echo $output->close_attempt_popup($this->quizobj->view_url(), $message);
             die();
         } else {
             redirect($this->quizobj->view_url(), $message);

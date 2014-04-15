@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -25,3 +24,4 @@
 
 $string['advancedsearch'] = 'Advanced search';
 $string['pluginname'] = 'Search forums';
+$string['search_forums:addinstance'] = 'Add a new search forums block';

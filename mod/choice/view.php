@@ -31,9 +31,7 @@
     $strchoice = get_string('modulename', 'choice');
     $strchoices = get_string('modulenameplural', 'choice');
 
-    if (!$context = get_context_instance(CONTEXT_MODULE, $cm->id)) {
-        print_error('badcontext');
-    }
+    $context = context_module::instance($cm->id);
 
     if ($action == 'delchoice' and confirm_sesskey() and is_enrolled($context, NULL, 'mod/choice:choose') and $choice->allowupdate) {
         if ($answer = $DB->get_record('choice_answers', array('choiceid' => $choice->id, 'userid' => $USER->id))) {
@@ -47,7 +45,7 @@
         }
     }
 
-    $PAGE->set_title(format_string($choice->name));
+    $PAGE->set_title($choice->name);
     $PAGE->set_heading($course->fullname);
 
     // Mark viewed by user (if required)
@@ -71,14 +69,22 @@
             choice_user_submit_response($answer, $choice, $USER->id, $course, $cm);
         }
         echo $OUTPUT->header();
+        echo $OUTPUT->heading($choice->name, 2, null);
         echo $OUTPUT->notification(get_string('choicesaved', 'choice'),'notifysuccess');
     } else {
         echo $OUTPUT->header();
+        echo $OUTPUT->heading($choice->name, 2, null);
     }
 
 
 /// Display the choice and possibly results
-    add_to_log($course->id, "choice", "view", "view.php?id=$cm->id", $choice->id, $cm->id);
+    $eventdata = array();
+    $eventdata['objectid'] = $choice->id;
+    $eventdata['context'] = $context;
+    $eventdata['courseid'] = $course->id;
+
+    $event = \mod_choice\event\course_module_viewed::create($eventdata);
+    $event->trigger();
 
     /// Check to see if groups are being used in this choice
     $groupmode = groups_get_activity_groupmode($cm);
@@ -133,7 +139,7 @@
     }
 
     if (!$choiceformshown) {
-        $sitecontext = get_context_instance(CONTEXT_SYSTEM);
+        $sitecontext = context_system::instance();
 
         if (isguestuser()) {
             // Guest account
@@ -144,7 +150,7 @@
             $SESSION->wantsurl = qualified_me();
             $SESSION->enrolcancel = (!empty($_SERVER['HTTP_REFERER'])) ? $_SERVER['HTTP_REFERER'] : '';
 
-            $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+            $coursecontext = context_course::instance($course->id);
             $courseshortname = format_string($course->shortname, true, array('context' => $coursecontext));
 
             echo $OUTPUT->box_start('generalbox', 'notice');

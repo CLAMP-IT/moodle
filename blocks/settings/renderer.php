@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Settings block
+ *
+ * @package    block_settings
+ * @copyright  2010 Sam Hemelryk
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 class block_settings_renderer extends plugin_renderer_base {
 
@@ -40,18 +62,20 @@ class block_settings_renderer extends plugin_renderer_base {
 
             // this applies to the li item which contains all child lists too
             $liclasses = array($item->get_css_type());
+            $liexpandable = array();
             if (!$item->forceopen || (!$item->forceopen && $item->collapse) || ($item->children->count()==0  && $item->nodetype==navigation_node::NODETYPE_BRANCH)) {
                 $liclasses[] = 'collapsed';
             }
             if ($isbranch) {
                 $liclasses[] = 'contains_branch';
+                $liexpandable = array('aria-expanded' => in_array('collapsed', $liclasses) ? "false" : "true");
             } else if ($hasicon) {
                 $liclasses[] = 'item_with_icon';
             }
             if ($item->isactive === true) {
                 $liclasses[] = 'current_branch';
             }
-            $liattr = array('class'=>join(' ',$liclasses));
+            $liattr = array('class' => join(' ',$liclasses)) + $liexpandable;
             // class attribute on the div item which only contains the item content
             $divclasses = array('tree_item');
             if ($isbranch) {
@@ -82,7 +106,7 @@ class block_settings_renderer extends plugin_renderer_base {
     }
 
     public function search_form(moodle_url $formtarget, $searchvalue) {
-        $content = html_writer::start_tag('form', array('class'=>'adminsearchform', 'method'=>'get', 'action'=>$formtarget));
+        $content = html_writer::start_tag('form', array('class'=>'adminsearchform', 'method'=>'get', 'action'=>$formtarget, 'role' => 'search'));
         $content .= html_writer::start_tag('div');
         $content .= html_writer::tag('label', s(get_string('searchinsettings', 'admin')), array('for'=>'adminsearchquery', 'class'=>'accesshide'));
         $content .= html_writer::empty_tag('input', array('id'=>'adminsearchquery', 'type'=>'text', 'name'=>'query', 'value'=>s($searchvalue)));

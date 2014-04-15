@@ -32,13 +32,14 @@ $groupids = required_param('groups', PARAM_SEQUENCE);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
 $PAGE->set_url('/group/delete.php', array('courseid'=>$courseid,'groups'=>$groupids));
+$PAGE->set_pagelayout('standard');
 
 // Make sure course is OK and user has access to manage groups
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('invalidcourseid');
 }
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 require_capability('moodle/course:managegroups', $context);
 $changeidnumber = has_capability('moodle/course:changeidnumber', $context);
 

@@ -27,7 +27,7 @@ if (!$course = $DB->get_record('course', array('id'=>$note->courseid))) {
 require_login($course);
 
 // locate context information
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 
 // check capability
 if (!has_capability('moodle/notes:manage', $context)) {
@@ -41,9 +41,7 @@ if (empty($CFG->enablenotes)) {
 if (data_submitted() && confirm_sesskey()) {
 //if data was submitted and is valid, then delete note
     $returnurl = $CFG->wwwroot . '/notes/index.php?course=' . $course->id . '&amp;user=' . $note->userid;
-    if (note_delete($noteid)) {
-        add_to_log($note->courseid, 'notes', 'delete', 'index.php?course='.$note->courseid.'&amp;user='.$note->userid . '#note-' . $note->id , 'delete note');
-    } else {
+    if (!note_delete($note)) {
         print_error('cannotdeletepost', 'notes', $returnurl);
     }
     redirect($returnurl);
@@ -56,7 +54,7 @@ if (data_submitted() && confirm_sesskey()) {
 
 // output HTML
     $link = null;
-    if (has_capability('moodle/course:viewparticipants', $context) || has_capability('moodle/site:viewparticipants', get_context_instance(CONTEXT_SYSTEM))) {
+    if (has_capability('moodle/course:viewparticipants', $context) || has_capability('moodle/site:viewparticipants', context_system::instance())) {
         $link = new moodle_url('/user/index.php',array('id'=>$course->id));
     }
     $PAGE->navbar->add(get_string('participants'), $link);

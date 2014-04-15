@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,9 +17,7 @@
 /**
  * Paypal utility script
  *
- * @package    enrol
- * @subpackage paypal
- * @subpackage file
+ * @package    enrol_paypal
  * @copyright  2004 onwards Martin Dougiamas (http://dougiamas.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -34,11 +31,12 @@ if (!$course = $DB->get_record("course", array("id"=>$id))) {
     redirect($CFG->wwwroot);
 }
 
-$context = get_context_instance(CONTEXT_COURSE, $course->id, MUST_EXIST);
+$context = context_course::instance($course->id, MUST_EXIST);
+$PAGE->set_context($context);
 
 require_login();
 
-if ($SESSION->wantsurl) {
+if (!empty($SESSION->wantsurl)) {
     $destination = $SESSION->wantsurl;
     unset($SESSION->wantsurl);
 } else {

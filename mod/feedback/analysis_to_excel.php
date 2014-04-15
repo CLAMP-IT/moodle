@@ -19,7 +19,7 @@
  *
  * @author Andreas Grabs
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package feedback
+ * @package mod_feedback
  */
 
 require_once("../../config.php");
@@ -51,9 +51,7 @@ if (! $feedback = $DB->get_record("feedback", array("id"=>$cm->instance))) {
     print_error('invalidcoursemodule');
 }
 
-if (!$context = get_context_instance(CONTEXT_MODULE, $cm->id)) {
-        print_error('badcontext');
-}
+$context = context_module::instance($cm->id);
 
 require_login($course, true, $cm);
 
@@ -125,8 +123,8 @@ $xls_formats->procent = $workbook->add_format(array(
 // Creating the worksheets
 $sheetname = clean_param($feedback->name, PARAM_ALPHANUM);
 error_reporting(0);
-$worksheet1 =& $workbook->add_worksheet(substr($sheetname, 0, 31));
-$worksheet2 =& $workbook->add_worksheet('detailed');
+$worksheet1 = $workbook->add_worksheet(substr($sheetname, 0, 31));
+$worksheet2 = $workbook->add_worksheet('detailed');
 error_reporting($CFG->debug);
 $worksheet1->hide_gridlines();
 $worksheet1->set_column(0, 0, 10);
@@ -306,7 +304,7 @@ function feedback_excelprint_detailed_items(&$worksheet, $xls_formats,
     $worksheet->write_number($row_offset, $col_offset, $courseid, $xls_formats->default);
     $col_offset++;
     if (isset($courseid) AND $course = $DB->get_record('course', array('id' => $courseid))) {
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $courseid);
+        $coursecontext = context_course::instance($courseid);
         $shortname = format_string($course->shortname, true, array('context' => $coursecontext));
         $worksheet->write_string($row_offset, $col_offset, $shortname, $xls_formats->default);
     }

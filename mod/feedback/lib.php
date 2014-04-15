@@ -18,7 +18,7 @@
  * Library of functions and constants for module feedback
  * includes the main-part of feedback-functions
  *
- * @package mod-feedback
+ * @package mod_feedback
  * @copyright Andreas Grabs
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,6 +27,8 @@
 require_once($CFG->libdir.'/eventslib.php');
 /** Include calendar/lib.php */
 require_once($CFG->dirroot.'/calendar/lib.php');
+// Include forms lib.
+require_once($CFG->libdir.'/formslib.php');
 
 define('FEEDBACK_ANONYMOUS_YES', 1);
 define('FEEDBACK_ANONYMOUS_NO', 2);
@@ -37,6 +39,15 @@ define('FEEDBACK_RESETFORM_RESET', 'feedback_reset_data_');
 define('FEEDBACK_RESETFORM_DROP', 'feedback_drop_feedback_');
 define('FEEDBACK_MAX_PIX_LENGTH', '400'); //max. Breite des grafischen Balkens in der Auswertung
 define('FEEDBACK_DEFAULT_PAGE_COUNT', 20);
+
+/**
+ * Returns all other caps used in module.
+ *
+ * @return array
+ */
+function feedback_get_extra_capabilities() {
+    return array('moodle/site:accessallgroups');
+}
 
 /**
  * @uses FEATURE_GROUPS
@@ -80,13 +91,6 @@ function feedback_add_instance($feedback) {
     $feedback->timemodified = time();
     $feedback->id = '';
 
-    //check if openenable and/or closeenable is set and set correctly to save in db
-    if (empty($feedback->openenable)) {
-        $feedback->timeopen = 0;
-    }
-    if (empty($feedback->closeenable)) {
-        $feedback->timeclose = 0;
-    }
     if (empty($feedback->site_after_submit)) {
         $feedback->site_after_submit = '';
     }
@@ -102,7 +106,7 @@ function feedback_add_instance($feedback) {
         $cm = get_coursemodule_from_id('feedback', $feedback->id);
         $feedback->coursemodule = $cm->id;
     }
-    $context = get_context_instance(CONTEXT_MODULE, $feedback->coursemodule);
+    $context = context_module::instance($feedback->coursemodule);
 
     $editoroptions = feedback_get_editor_options();
 
@@ -133,13 +137,6 @@ function feedback_update_instance($feedback) {
     $feedback->timemodified = time();
     $feedback->id = $feedback->instance;
 
-    //check if openenable and/or closeenable is set and set correctly to save in db
-    if (empty($feedback->openenable)) {
-        $feedback->timeopen = 0;
-    }
-    if (empty($feedback->closeenable)) {
-        $feedback->timeclose = 0;
-    }
     if (empty($feedback->site_after_submit)) {
         $feedback->site_after_submit = '';
     }
@@ -150,7 +147,7 @@ function feedback_update_instance($feedback) {
     //create or update the new events
     feedback_set_events($feedback);
 
-    $context = get_context_instance(CONTEXT_MODULE, $feedback->coursemodule);
+    $context = context_module::instance($feedback->coursemodule);
 
     $editoroptions = feedback_get_editor_options();
 
@@ -400,7 +397,7 @@ function feedback_get_recent_mod_activity(&$activities, &$index,
 
     $sql .= " WHERE fc.timemodified > ? AND fk.id = ? ";
     $sqlargs[] = $timemodified;
-    $sqlargs[] = $cm->instace;
+    $sqlargs[] = $cm->instance;
 
     if ($userid) {
         $sql .= " AND u.id = ? ";
@@ -416,7 +413,12 @@ function feedback_get_recent_mod_activity(&$activities, &$index,
         return;
     }
 
-    $cm_context      = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $cm_context = context_module::instance($cm->id);
+
+    if (!has_capability('mod/feedback:view', $cm_context)) {
+        return;
+    }
+
     $accessallgroups = has_capability('moodle/site:accessallgroups', $cm_context);
     $viewfullnames   = has_capability('moodle/site:viewfullnames', $cm_context);
     $groupmode       = groups_get_activity_groupmode($cm, $course);
@@ -453,13 +455,24 @@ function feedback_get_recent_mod_activity(&$activities, &$index,
         $tmpactivity->sectionnum= $cm->sectionnum;
         $tmpactivity->timestamp = $feedbackitem->timemodified;
 
+        $tmpactivity->content = new stdClass();
         $tmpactivity->content->feedbackid = $feedbackitem->id;
         $tmpactivity->content->feedbackuserid = $feedbackitem->userid;
 
-        //TODO: add all necessary user fields, this is not enough for user_picture
-        $tmpactivity->user->userid   = $feedbackitem->userid;
+        $userfields = explode(',', user_picture::fields());
+        $tmpactivity->user = new stdClass();
+        foreach ($userfields as $userfield) {
+            if ($userfield == 'id') {
+                $tmpactivity->user->{$userfield} = $feedbackitem->userid; // aliased in SQL above
+            } else {
+                if (!empty($feedbackitem->{$userfield})) {
+                    $tmpactivity->user->{$userfield} = $feedbackitem->{$userfield};
+                } else {
+                    $tmpactivity->user->{$userfield} = null;
+                }
+            }
+        }
         $tmpactivity->user->fullname = fullname($feedbackitem, $viewfullnames);
-        $tmpactivity->user->picture  = $feedbackitem->picture;
 
         $activities[$index++] = $tmpactivity;
     }
@@ -500,7 +513,7 @@ function feedback_print_recent_mod_activity($activity, $courseid, $detail, $modn
     echo '</div>';
 
     echo '<div class="user">';
-    echo "<a href=\"$CFG->wwwroot/user/view.php?id={$activity->user->userid}&amp;course=$courseid\">"
+    echo "<a href=\"$CFG->wwwroot/user/view.php?id={$activity->user->id}&amp;course=$courseid\">"
          ."{$activity->user->fullname}</a> - ".userdate($activity->timestamp);
     echo '</div>';
 
@@ -826,9 +839,7 @@ function feedback_get_context($cmid) {
         return $context;
     }
 
-    if (!$context = get_context_instance(CONTEXT_MODULE, $cmid)) {
-            print_error('badcontext');
-    }
+    $context = context_module::instance($cmid);
     return $context;
 }
 
@@ -869,7 +880,7 @@ function feedback_get_incomplete_users($cm,
 
     global $DB;
 
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
 
     //first get all user who can complete this feedback
     $cap = 'mod/feedback:complete';
@@ -975,9 +986,7 @@ function feedback_get_complete_users($cm,
 
     global $DB;
 
-    if (!$context = get_context_instance(CONTEXT_MODULE, $cm->id)) {
-            print_error('badcontext');
-    }
+    $context = context_module::instance($cm->id);
 
     $params = (array)$params;
 
@@ -1023,9 +1032,7 @@ function feedback_get_complete_users($cm,
  */
 function feedback_get_viewreports_users($cmid, $groups = false) {
 
-    if (!$context = get_context_instance(CONTEXT_MODULE, $cmid)) {
-            print_error('badcontext');
-    }
+    $context = context_module::instance($cmid);
 
     //description of the call below:
     //get_users_by_capability($context, $capability, $fields='', $sort='', $limitfrom='',
@@ -1051,9 +1058,7 @@ function feedback_get_viewreports_users($cmid, $groups = false) {
  */
 function feedback_get_receivemail_users($cmid, $groups = false) {
 
-    if (!$context = get_context_instance(CONTEXT_MODULE, $cmid)) {
-            print_error('badcontext');
-    }
+    $context = context_module::instance($cmid);
 
     //description of the call below:
     //get_users_by_capability($context, $capability, $fields='', $sort='', $limitfrom='',
@@ -1124,12 +1129,12 @@ function feedback_save_as_template($feedback, $name, $ispublic = 0) {
     //if the template is public the files are in the system context
     //files in the feedback_item are in the feedback_context of the feedback
     if ($ispublic) {
-        $s_context = get_system_context();
+        $s_context = context_system::instance();
     } else {
-        $s_context = get_context_instance(CONTEXT_COURSE, $newtempl->course);
+        $s_context = context_course::instance($newtempl->course);
     }
     $cm = get_coursemodule_from_instance('feedback', $feedback->id);
-    $f_context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $f_context = context_module::instance($cm->id);
 
     //create items of this new template
     //depend items we are storing temporary in an mapping list array(new id => dependitem)
@@ -1229,13 +1234,13 @@ function feedback_items_from_template($feedback, $templateid, $deleteold = false
     //files in the template_item are in the context of the current course
     //files in the feedback_item are in the feedback_context of the feedback
     if ($template->ispublic) {
-        $s_context = get_system_context();
+        $s_context = context_system::instance();
     } else {
-        $s_context = get_context_instance(CONTEXT_COURSE, $feedback->course);
+        $s_context = context_course::instance($feedback->course);
     }
     $course = $DB->get_record('course', array('id'=>$feedback->course));
     $cm = get_coursemodule_from_instance('feedback', $feedback->id);
-    $f_context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $f_context = context_module::instance($cm->id);
 
     //if deleteold then delete all old items before
     //get all items
@@ -1532,9 +1537,9 @@ function feedback_delete_item($itemid, $renumber = true, $template = false) {
 
     if ($template) {
         if ($template->ispublic) {
-            $context = get_system_context();
+            $context = context_system::instance();
         } else {
-            $context = get_context_instance(CONTEXT_COURSE, $template->course);
+            $context = context_course::instance($template->course);
         }
         $templatefiles = $fs->get_area_files($context->id,
                                     'mod_feedback',
@@ -1550,7 +1555,7 @@ function feedback_delete_item($itemid, $renumber = true, $template = false) {
         if (!$cm = get_coursemodule_from_instance('feedback', $item->feedback)) {
             return false;
         }
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context = context_module::instance($cm->id);
 
         $itemfiles = $fs->get_area_files($context->id,
                                     'mod_feedback',
@@ -1903,6 +1908,23 @@ function feedback_save_tmp_values($feedbackcompletedtmp, $feedbackcompleted, $us
     //drop all the tmpvalues
     $DB->delete_records('feedback_valuetmp', array('completed'=>$tmpcplid));
     $DB->delete_records('feedback_completedtmp', array('id'=>$tmpcplid));
+
+    // Trigger event for the delete action we performed.
+    $cm = get_coursemodule_from_instance('feedback', $feedbackcompleted->feedback);
+    $event = \mod_feedback\event\response_submitted::create(array(
+        'relateduserid' => $userid,
+        'objectid' => $feedbackcompleted->id,
+        'context' => context_module::instance($cm->id),
+        'other' => array(
+            'cmid' => $cm->id,
+            'instanceid' => $feedbackcompleted->feedback,
+            'anonymous' => $feedbackcompleted->anonymous_response
+        )
+    ));
+
+    $event->add_record_snapshot('feedback_completed', $feedbackcompleted);
+
+    $event->trigger();
     return $feedbackcompleted->id;
 
 }
@@ -2203,10 +2225,13 @@ function feedback_check_values($firstitem, $lastitem) {
         $formvalname = $item->typ . '_' . $item->id;
 
         if ($itemobj->value_is_array()) {
-            $value = optional_param_array($formvalname, null, $itemobj->value_type());
+            //get the raw value here. It is cleaned after that by the object itself
+            $value = optional_param_array($formvalname, null, PARAM_RAW);
         } else {
-            $value = optional_param($formvalname, null, $itemobj->value_type());
+            //get the raw value here. It is cleaned after that by the object itself
+            $value = optional_param($formvalname, null, PARAM_RAW);
         }
+        $value = $itemobj->clean_input_value($value);
 
         //check if the value is set
         if (is_null($value) AND $item->required == 1) {
@@ -2654,8 +2679,25 @@ function feedback_delete_completed($completedid) {
     if ($completion->is_enabled($cm) && $feedback->completionsubmit) {
         $completion->update_state($cm, COMPLETION_INCOMPLETE, $completed->userid);
     }
-    //last we delete the completed-record
-    return $DB->delete_records('feedback_completed', array('id'=>$completed->id));
+    // Last we delete the completed-record.
+    $return = $DB->delete_records('feedback_completed', array('id'=>$completed->id));
+
+    // Trigger event for the delete action we performed.
+    $event = \mod_feedback\event\response_deleted::create(array(
+        'relateduserid' => $completed->userid,
+        'objectid' => $completedid,
+        'courseid' => $course->id,
+        'context' => context_module::instance($cm->id),
+        'other' => array('cmid' => $cm->id, 'instanceid' => $feedback->id, 'anonymous' => $completed->anonymous_response)
+    ));
+
+    $event->add_record_snapshot('feedback_completed', $completed);
+    $event->add_record_snapshot('course', $course);
+    $event->add_record_snapshot('feedback', $feedback);
+
+    $event->trigger();
+
+    return $return;
 }
 
 ////////////////////////////////////////////////
@@ -2985,7 +3027,7 @@ function feedback_send_email_anonym($cm, $feedback, $course) {
  * @return string the text you want to post
  */
 function feedback_send_email_text($info, $course) {
-    $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+    $coursecontext = context_course::instance($course->id);
     $courseshortname = format_string($course->shortname, true, array('context' => $coursecontext));
     $posttext  = $courseshortname.' -> '.get_string('modulenameplural', 'feedback').' -> '.
                     $info->feedback."\n";
@@ -3006,7 +3048,7 @@ function feedback_send_email_text($info, $course) {
  */
 function feedback_send_email_html($info, $course, $cm) {
     global $CFG;
-    $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+    $coursecontext = context_course::instance($course->id);
     $courseshortname = format_string($course->shortname, true, array('context' => $coursecontext));
     $course_url = $CFG->wwwroot.'/course/view.php?id='.$course->id;
     $feedback_all_url = $CFG->wwwroot.'/mod/feedback/index.php?id='.$course->id;
@@ -3046,7 +3088,7 @@ function feedback_extend_settings_navigation(settings_navigation $settings,
 
     global $PAGE, $DB;
 
-    if (!$context = get_context_instance(CONTEXT_MODULE, $PAGE->cm->id)) {
+    if (!$context = context_module::instance($PAGE->cm->id, IGNORE_MISSING)) {
         print_error('badcontext');
     }
 
@@ -3115,4 +3157,25 @@ function feedback_init_feedback_session() {
 function feedback_page_type_list($pagetype, $parentcontext, $currentcontext) {
     $module_pagetype = array('mod-feedback-*'=>get_string('page-mod-feedback-x', 'feedback'));
     return $module_pagetype;
+}
+
+/**
+ * Move save the items of the given $feedback in the order of $itemlist.
+ * @param string $itemlist a comma separated list with item ids
+ * @param stdClass $feedback
+ * @return bool true if success
+ */
+function feedback_ajax_saveitemorder($itemlist, $feedback) {
+    global $DB;
+
+    $result = true;
+    $position = 0;
+    foreach ($itemlist as $itemid) {
+        $position++;
+        $result = $result && $DB->set_field('feedback_item',
+                                            'position',
+                                            $position,
+                                            array('id'=>$itemid, 'feedback'=>$feedback->id));
+    }
+    return $result;
 }

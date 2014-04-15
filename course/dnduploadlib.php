@@ -51,7 +51,7 @@ function dndupload_add_to_course($course, $modnames) {
     // Add the javascript to the page.
     $jsmodule = array(
         'name' => 'coursedndupload',
-        'fullpath' => new moodle_url('/course/dndupload.js'),
+        'fullpath' => '/course/dndupload.js',
         'strings' => array(
             array('addfilehere', 'moodle'),
             array('dndworkingfiletextlink', 'moodle'),
@@ -67,7 +67,7 @@ function dndupload_add_to_course($course, $modnames) {
             array('upload', 'moodle'),
             array('cancel', 'moodle')
         ),
-        'requires' => array('node', 'event', 'panel', 'json', 'anim')
+        'requires' => array('node', 'event', 'json', 'anim')
     );
     $vars = array(
         array('courseid' => $course->id,
@@ -107,22 +107,22 @@ class dndupload_handler {
      * @param object $course The course this is being added to (to check course_allowed_module() )
      */
     public function __construct($course, $modnames = null) {
-        global $CFG;
+        global $CFG, $PAGE;
 
         // Add some default types to handle.
         // Note: 'Files' type is hard-coded into the Javascript as this needs to be ...
         // ... treated a little differently.
-        $this->add_type('url', array('url', 'text/uri-list', 'text/x-moz-url'), get_string('addlinkhere', 'moodle'),
-                        get_string('nameforlink', 'moodle'), 10);
-        $this->add_type('text/html', array('text/html'), get_string('addpagehere', 'moodle'),
-                        get_string('nameforpage', 'moodle'), 20);
-        $this->add_type('text', array('text', 'text/plain'), get_string('addpagehere', 'moodle'),
-                        get_string('nameforpage', 'moodle'), 30);
+        $this->register_type('url', array('url', 'text/uri-list', 'text/x-moz-url'), get_string('addlinkhere', 'moodle'),
+                        get_string('nameforlink', 'moodle'), get_string('whatforlink', 'moodle'), 10);
+        $this->register_type('text/html', array('text/html'), get_string('addpagehere', 'moodle'),
+                        get_string('nameforpage', 'moodle'), get_string('whatforpage', 'moodle'), 20);
+        $this->register_type('text', array('text', 'text/plain'), get_string('addpagehere', 'moodle'),
+                        get_string('nameforpage', 'moodle'), get_string('whatforpage', 'moodle'), 30);
 
         // Loop through all modules to find handlers.
         $mods = get_plugin_list_with_function('mod', 'dndupload_register');
         foreach ($mods as $component => $funcname) {
-            list($modtype, $modname) = normalize_component($component);
+            list($modtype, $modname) = core_component::normalize_component($component);
             if ($modnames && !array_key_exists($modname, $modnames)) {
                 continue; // Module is deactivated (hidden) at the site level.
             }
@@ -135,7 +135,7 @@ class dndupload_handler {
             }
             if (isset($resp['files'])) {
                 foreach ($resp['files'] as $file) {
-                    $this->add_file_handler($file['extension'], $modname, $file['message']);
+                    $this->register_file_handler($file['extension'], $modname, $file['message']);
                 }
             }
             if (isset($resp['addtypes'])) {
@@ -145,15 +145,20 @@ class dndupload_handler {
                     } else {
                         $priority = 100;
                     }
-                    $this->add_type($type['identifier'], $type['datatransfertypes'],
-                                    $type['addmessage'], $type['namemessage'], $priority);
+                    if (!isset($type['handlermessage'])) {
+                        $type['handlermessage'] = '';
+                    }
+                    $this->register_type($type['identifier'], $type['datatransfertypes'],
+                                    $type['addmessage'], $type['namemessage'], $type['handlermessage'], $priority);
                 }
             }
             if (isset($resp['types'])) {
                 foreach ($resp['types'] as $type) {
-                    $this->add_type_handler($type['identifier'], $modname, $type['message']);
+                    $noname = !empty($type['noname']);
+                    $this->register_type_handler($type['identifier'], $modname, $type['message'], $noname);
                 }
             }
+            $PAGE->requires->string_for_js('pluginname', $modname);
         }
     }
 
@@ -168,10 +173,11 @@ class dndupload_handler {
      *                           dragged onto the page
      * @param string $namemessage The message to pop up when asking for the name to give the
      *                            course module instance when it is created
+     * @param string $handlermessage The message to pop up when asking which module should handle this type
      * @param int $priority Controls the order in which types are checked by the browser (mainly
      *                      needed to check for 'text' last as that is usually given as fallback)
      */
-    public function add_type($identifier, $datatransfertypes, $addmessage, $namemessage, $priority=100) {
+    protected function register_type($identifier, $datatransfertypes, $addmessage, $namemessage, $handlermessage, $priority=100) {
         if ($this->is_known_type($identifier)) {
             throw new coding_exception("Type $identifier is already registered");
         }
@@ -181,6 +187,7 @@ class dndupload_handler {
         $add->datatransfertypes = $datatransfertypes;
         $add->addmessage = $addmessage;
         $add->namemessage = $namemessage;
+        $add->handlermessage = $handlermessage;
         $add->priority = $priority;
         $add->handlers = array();
 
@@ -191,12 +198,14 @@ class dndupload_handler {
      * Used to declare that a particular module will handle a particular type
      * of dropped data
      *
-     * @param string $type The name of the type (as declared in add_type)
+     * @param string $type The name of the type (as declared in register_type)
      * @param string $module The name of the module to handle this type
      * @param string $message The message to show the user if more than one handler is registered
      *                        for a type and the user needs to make a choice between them
+     * @param bool $noname If true, the 'name' dialog should be disabled in the pop-up.
+     * @throws coding_exception
      */
-    public function add_type_handler($type, $module, $message) {
+    protected function register_type_handler($type, $module, $message, $noname) {
         if (!$this->is_known_type($type)) {
             throw new coding_exception("Trying to add handler for unknown type $type");
         }
@@ -205,6 +214,7 @@ class dndupload_handler {
         $add->type = $type;
         $add->module = $module;
         $add->message = $message;
+        $add->noname = $noname ? 1 : 0;
 
         $this->types[$type]->handlers[] = $add;
     }
@@ -218,7 +228,7 @@ class dndupload_handler {
      * @param string $message The message to show the user if more than one handler is registered
      *                        for a type and the user needs to make a choice between them
      */
-    public function add_file_handler($extension, $module, $message) {
+    protected function register_file_handler($extension, $module, $message) {
         $extension = strtolower($extension);
 
         $add = new stdClass;
@@ -530,9 +540,9 @@ class dndupload_ajax_processor {
      * @return string the display name to use
      */
     protected function display_name_from_file($filename) {
-        $pos = textlib::strrpos($filename, '.');
+        $pos = core_text::strrpos($filename, '.');
         if ($pos) { // Want to skip if $pos === 0 OR $pos === false.
-            $filename = textlib::substr($filename, 0, $pos);
+            $filename = core_text::substr($filename, 0, $pos);
         }
         return str_replace('_', ' ', $filename);
     }
@@ -541,6 +551,8 @@ class dndupload_ajax_processor {
      * Create the coursemodule to hold the file/content that has been uploaded
      */
     protected function create_course_module() {
+        global $CFG;
+
         if (!course_allowed_module($this->course, $this->module->name)) {
             throw new coding_exception("The module {$this->module->name} is not allowed to be added to this course");
         }
@@ -555,18 +567,19 @@ class dndupload_ajax_processor {
         $this->cm->groupmode = $this->course->groupmode;
         $this->cm->groupingid = $this->course->defaultgroupingid;
 
+        // Set the correct default for completion tracking.
+        $this->cm->completion = COMPLETION_TRACKING_NONE;
+        $completion = new completion_info($this->course);
+        if ($completion->is_enabled() && $CFG->completiondefault) {
+            if (plugin_supports('mod', $this->cm->modulename, FEATURE_MODEDIT_DEFAULT_COMPLETION, true)) {
+                $this->cm->completion = COMPLETION_TRACKING_MANUAL;
+            }
+        }
+
         if (!$this->cm->id = add_course_module($this->cm)) {
             throw new coding_exception("Unable to create the course module");
         }
-        // The following are used inside some few core functions, so may as well set them here.
         $this->cm->coursemodule = $this->cm->id;
-        $groupbuttons = ($this->course->groupmode or (!$this->course->groupmodeforce));
-        if ($groupbuttons and plugin_supports('mod', $this->module->name, FEATURE_GROUPS, 0)) {
-            $this->cm->groupmodelink = (!$this->course->groupmodeforce);
-        } else {
-            $this->cm->groupmodelink = false;
-            $this->cm->groupmode = false;
-        }
     }
 
     /**
@@ -607,42 +620,46 @@ class dndupload_ajax_processor {
 
         if (!$instanceid) {
             // Something has gone wrong - undo everything we can.
-            delete_course_module($this->cm->id);
+            course_delete_module($this->cm->id);
             throw new moodle_exception('errorcreatingactivity', 'moodle', '', $this->module->name);
         }
 
+        // Note the section visibility
+        $visible = get_fast_modinfo($this->course)->get_section_info($this->section)->visible;
+
         $DB->set_field('course_modules', 'instance', $instanceid, array('id' => $this->cm->id));
-
-        $sectionid = add_mod_to_section($this->cm);
-        $DB->set_field('course_modules', 'section', $sectionid, array('id' => $this->cm->id));
-
-        set_coursemodule_visible($this->cm->id, true);
-
-        // Rebuild the course cache and retrieve the final info about this module.
+        // Rebuild the course cache after update action
         rebuild_course_cache($this->course->id, true);
-        $this->course->modinfo = null; // Otherwise we will just get the old version back again.
+
+        $sectionid = course_add_cm_to_section($this->course, $this->cm->id, $this->section);
+
+        set_coursemodule_visible($this->cm->id, $visible);
+        if (!$visible) {
+            $DB->set_field('course_modules', 'visibleold', 1, array('id' => $this->cm->id));
+        }
+
+        // retrieve the final info about this module.
         $info = get_fast_modinfo($this->course);
         if (!isset($info->cms[$this->cm->id])) {
             // The course module has not been properly created in the course - undo everything.
-            delete_course_module($this->cm->id);
+            course_delete_module($this->cm->id);
             throw new moodle_exception('errorcreatingactivity', 'moodle', '', $this->module->name);
         }
-        $mod = $info->cms[$this->cm->id];
-        $mod->groupmodelink = $this->cm->groupmodelink;
-        $mod->groupmode = $this->cm->groupmode;
+        $mod = $info->get_cm($this->cm->id);
 
-        // Trigger mod_created event with information about this module.
-        $eventdata = new stdClass();
-        $eventdata->modulename = $mod->modname;
-        $eventdata->name       = $mod->name;
-        $eventdata->cmid       = $mod->id;
-        $eventdata->courseid   = $this->course->id;
-        $eventdata->userid     = $USER->id;
-        events_trigger('mod_created', $eventdata);
+        // Trigger course module created event.
+        $event = \core\event\course_module_created::create(array(
+            'courseid' => $this->course->id,
+            'context'  => context_module::instance($mod->id),
+            'objectid' => $mod->id,
+            'other'    => array(
+                'modulename' => $mod->modname,
+                'name'       => $mod->name,
+                'instanceid' => $instanceid
+            )
+        ));
+        $event->trigger();
 
-        add_to_log($this->course->id, "course", "add mod",
-                   "../mod/{$mod->modname}/view.php?id=$mod->id",
-                   "{$mod->modname} $instanceid");
         add_to_log($this->course->id, $mod->modname, "add",
                    "view.php?id=$mod->id",
                    "$instanceid", $mod->id);
@@ -656,16 +673,19 @@ class dndupload_ajax_processor {
      * @param cm_info $mod details of the mod just created
      */
     protected function send_response($mod) {
-        global $OUTPUT;
+        global $OUTPUT, $PAGE;
 
         $resp = new stdClass();
         $resp->error = self::ERROR_OK;
-        $resp->icon = $mod->get_icon_url()->out();
-        $resp->name = $mod->name;
-        $resp->link = $mod->get_url()->out();
-        $resp->elementid = 'module-'.$mod->id;
-        $resp->commands = make_editing_buttons($mod, true, true, 0, $mod->sectionnum);
-        $resp->onclick = $mod->get_on_click();
+        $resp->elementid = 'module-' . $mod->id;
+
+        $courserenderer = $PAGE->get_renderer('core', 'course');
+        $completioninfo = new completion_info($this->course);
+        $info = get_fast_modinfo($this->course);
+        $sr = null;
+        $modulehtml = $courserenderer->course_section_cm($this->course, $completioninfo,
+                $mod, null, array());
+        $resp->fullcontent = $courserenderer->course_section_cm_list_item($this->course, $completioninfo, $mod, $sr);
 
         echo $OUTPUT->header();
         echo json_encode($resp);

@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * The default layout for the Brick theme.
+ *
+ * @package   theme_brick
+ * @copyright 2010 John Stabinger (http://newschoollearning.com/)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 $hasheading = ($PAGE->heading);
 $hasnavbutton = ($PAGE->button);
@@ -16,6 +38,16 @@ if ($showsidepost) {
     $bodyclasses[] = 'side-post-only';
 } else if (!$showsidepost) {
     $bodyclasses[] = 'content-only';
+}
+
+$courseheader = $coursecontentheader = $coursecontentfooter = $coursefooter = '';
+if (empty($PAGE->layout_options['nocourseheaderfooter'])) {
+    $courseheader = $OUTPUT->course_header();
+    $coursecontentheader = $OUTPUT->course_content_header();
+    if (empty($PAGE->layout_options['nocoursefooter'])) {
+        $coursecontentfooter = $OUTPUT->course_content_footer();
+        $coursefooter = $OUTPUT->course_footer();
+    }
 }
 
 echo $OUTPUT->doctype() ?>
@@ -81,6 +113,9 @@ echo $OUTPUT->doctype() ?>
 	<div id="page">
 		<div id="wrapper" class="clearfix">
 
+          <?php if (!empty($courseheader)) { ?>
+            <div id="course-header"><?php echo $courseheader; ?></div>
+          <?php } ?>
 <!-- START OF CONTENT -->
 
 			<div id="page-content-wrapper" class="wrapper clearfix">
@@ -100,7 +135,9 @@ echo $OUTPUT->doctype() ?>
     	        							</div>
         								<?php } ?>
 
+                                        <?php echo $coursecontentheader; ?>
             	            	    	<?php echo $OUTPUT->main_content() ?>
+                                        <?php echo $coursecontentfooter; ?>
 
 	                	        	</div>
     	                		</div>
@@ -128,6 +165,9 @@ echo $OUTPUT->doctype() ?>
     		</div>
 
 <!-- END OF CONTENT -->
+            <?php if (!empty($coursefooter)) { ?>
+                <div id="course-footer"><?php echo $coursefooter; ?></div>
+            <?php } ?>
 
 
 		</div>

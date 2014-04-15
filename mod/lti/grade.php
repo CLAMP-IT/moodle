@@ -35,8 +35,7 @@
 /**
  * This file contains submissions-specific code for the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -68,7 +67,7 @@ if ($l) {  // Two ways to specify the module
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
 require_login($course, false, $cm);
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 require_capability('mod/lti:grade', $context);
 
 $url = new moodle_url('/mod/lti/grade.php', array('id' => $cm->id));
@@ -80,13 +79,11 @@ $PAGE->set_url($url);
 $module = array(
     'name'      => 'mod_lti_submissions',
     'fullpath'  => '/mod/lti/submissions.js',
-    'requires'  => array('base'),
+    'requires'  => array('base', 'yui2-datatable'),
     'strings'   => array(),
 );
 
 $PAGE->requires->js_init_call('M.mod_lti.submissions.init', array(), true, $module);
-
-$PAGE->requires->yui2_lib('datatable');
 
 $submissionquery = '
     SELECT s.id, u.firstname, u.lastname, u.id AS userid, s.datesubmitted, s.gradepercent
@@ -155,13 +152,14 @@ foreach ($submissions as $submission) {
 
 $table = str_replace('<!--table body-->', $rows, $html);
 
-$title = 'Submissions for ' . $lti->name;
+$title = get_string('submissionsfor', 'lti', $lti->name);
 
-$PAGE->set_title(format_string($title , true));
+$PAGE->set_title($title);
 $PAGE->set_heading($course->fullname);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading($title );
+echo $OUTPUT->heading(format_string($lti->name, true, array('context' => $context)));
+echo $OUTPUT->heading(get_string('submissions', 'lti'), 3);
 
 echo $table;
 

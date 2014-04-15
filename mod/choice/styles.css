@@ -15,7 +15,7 @@
 
 .path-mod-choice .horizontal,
 .path-mod-choice .vertical {margin-left: 10%;margin-right: 10%;}
-.path-mod-choice .horizontal .choices .option {padding-right:20px;display:inline; white-space: normal;}
+.path-mod-choice .horizontal .choices .option {padding-right: 20px; display: inline-block; white-space: normal;}
 .path-mod-choice .horizontal .choices .button {margin-top: 10px;}
 .path-mod-choice ul.choices li {list-style:none;}
 .path-mod-choice .results { text-align: center;}
@@ -23,6 +23,8 @@
 
 .path-mod-choice .results.anonymous .graph.vertical,
 .path-mod-choice .cell {vertical-align: bottom; text-align: center; }
+.path-mod-choice .results.anonymous th.header {border: 1px solid inherit;}
+
 .path-mod-choice .results.names .header{width:10%; white-space: normal;}
 .path-mod-choice .results.names .cell{vertical-align: top; text-align: left;}
 .path-mod-choice .results.names .user,

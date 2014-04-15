@@ -41,10 +41,15 @@ if ($courseid) {
 
     // Check user is logged in
     $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
-    $context = get_context_instance(CONTEXT_COURSE, $course->id);
+    $context = context_course::instance($course->id);
     require_login($course);
 
     $completion = new completion_info($course);
+    if (!$completion->is_enabled()) {
+        throw new moodle_exception('completionnotenabled', 'completion');
+    } elseif (!$completion->is_tracked_user($USER->id)) {
+        throw new moodle_exception('nottracked', 'completion');
+    }
 
     // Check if we are marking a user complete via the completion report
     $user = optional_param('user', 0, PARAM_INT);
@@ -53,7 +58,7 @@ if ($courseid) {
     if ($user && $rolec) {
         require_sesskey();
 
-        completion_criteria::factory((object) array('id'=>$rolec, 'criteriatype'=>COMPLETION_CRITERIA_TYPE_ROLE)); //TODO: this is dumb, because it does not fetch the data?!?!
+        completion_criteria::factory(array('id'=>$rolec, 'criteriatype'=>COMPLETION_CRITERIA_TYPE_ROLE)); //TODO: this is dumb, because it does not fetch the data?!?!
         $criteria = completion_criteria_role::fetch(array('id'=>$rolec));
 
         if ($criteria and user_has_role_assignment($USER->id, $criteria->role, $context->id)) {
@@ -123,7 +128,7 @@ switch($targetstate) {
 }
 
 // Get course-modules entry
-$cm = get_coursemodule_from_id(null, $cmid, null, false, MUST_EXIST);
+$cm = get_coursemodule_from_id(null, $cmid, null, true, MUST_EXIST);
 $course = $DB->get_record('course', array('id'=>$cm->course), '*', MUST_EXIST);
 
 // Check user is logged in
@@ -133,11 +138,16 @@ if (isguestuser() or !confirm_sesskey()) {
     print_error('error');
 }
 
-// Now change state
+// Set up completion object and check it is enabled.
 $completion = new completion_info($course);
 if (!$completion->is_enabled()) {
-    die;
+    throw new moodle_exception('completionnotenabled', 'completion');
 }
+
+// NOTE: All users are allowed to toggle their completion state, including
+// users for whom completion information is not directly tracked. (I.e. even
+// if you are a teacher, or admin who is not enrolled, you can still toggle
+// your own completion state. You just don't appear on the reports.)
 
 // Check completion state is manual
 if($cm->completion != COMPLETION_TRACKING_MANUAL) {
@@ -152,8 +162,12 @@ if ($fromajax) {
 } else {
     // In case of use in other areas of code we allow a 'backto' parameter,
     // otherwise go back to course page
-    $backto = optional_param('backto', 'view.php?id='.$course->id, PARAM_URL);
-    redirect($backto);
+
+    if ($backto = optional_param('backto', null, PARAM_URL)) {
+        redirect($backto);
+    } else {
+        redirect(course_get_url($course, $cm->sectionnum));
+    }
 }
 
 // utility functions

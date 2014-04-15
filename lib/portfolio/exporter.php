@@ -66,10 +66,10 @@ class portfolio_exporter {
     public $instancefile;
 
     /**
-     * @var string the file to include that contains the class definition of
+     * @var string the component that contains the class definition of
      *             the caller object used to re-waken the object after sleep
      */
-    public $callerfile;
+    public $callercomponent;
 
     /** @var int the current stage of the export */
     private $stage;
@@ -115,16 +115,16 @@ class portfolio_exporter {
      *
      * @param portfolio_plugin_base $instance portfolio instance (passed by reference)
      * @param portfolio_caller_base $caller portfolio caller (passed by reference)
-     * @param string $callerfile path to callerfile (relative to dataroot)
+     * @param string $callercomponent the name of the callercomponent
      */
-    public function __construct(&$instance, &$caller, $callerfile) {
+    public function __construct(&$instance, &$caller, $callercomponent) {
         $this->instance =& $instance;
         $this->caller =& $caller;
         if ($instance) {
             $this->instancefile = 'portfolio/' . $instance->get('plugin') . '/lib.php';
             $this->instance->set('exporter', $this);
         }
-        $this->callerfile = $callerfile;
+        $this->callercomponent = $callercomponent;
         $this->stage = PORTFOLIO_STAGE_CONFIG;
         $this->caller->set('exporter', $this);
         $this->alreadystolen = array();
@@ -335,7 +335,7 @@ class portfolio_exporter {
                 $mform->display();
                 echo $OUTPUT->box_end();
                 echo $OUTPUT->footer();
-                return false;;
+                return false;
             }
         } else {
             $this->noexportconfig = true;
@@ -395,7 +395,13 @@ class portfolio_exporter {
             foreach ($previous as $row) {
                 $previousstr .= userdate($row->time);
                 if ($row->caller_class != get_class($this->caller)) {
-                    require_once($CFG->dirroot . '/' . $row->caller_file);
+                    if (!empty($row->caller_file)) {
+                        portfolio_include_callback_file($row->caller_file);
+                    } else if (!empty($row->caller_component)) {
+                        portfolio_include_callback_file($row->caller_component);
+                    } else { // Ok, that's weird - this should never happen. Is the apocalypse coming?
+                        continue;
+                    }
                     $previousstr .= ' (' . call_user_func(array($row->caller_class, 'display_name')) . ')';
                 }
                 $previousstr .= '<br />';
@@ -428,9 +434,11 @@ class portfolio_exporter {
      * @return bool whether or not to process the next stage. this is important as the control function is called recursively.
      */
     public function process_stage_queueorwait() {
+        global $DB;
+
         $wait = $this->instance->get_export_config('wait');
         if (empty($wait)) {
-            events_trigger('portfolio_send', $this->id);
+            $DB->set_field('portfolio_tempdata', 'queued', 1, array('id' => $this->id));
             $this->queued = true;
             return $this->process_stage_finished(true);
         }
@@ -522,15 +530,16 @@ class portfolio_exporter {
     public function log_transfer() {
         global $DB;
         $l = array(
-            'userid'         => $this->user->id,
-            'portfolio'      => $this->instance->get('id'),
-            'caller_file'    => $this->callerfile,
-            'caller_sha1'    => $this->caller->get_sha1(),
-            'caller_class'   => get_class($this->caller),
-            'continueurl'    => $this->instance->get_static_continue_url(),
-            'returnurl'      => $this->caller->get_return_url(),
-            'tempdataid'     => $this->id,
-            'time'           => time(),
+            'userid' => $this->user->id,
+            'portfolio' => $this->instance->get('id'),
+            'caller_file'=> '',
+            'caller_component' => $this->callercomponent,
+            'caller_sha1' => $this->caller->get_sha1(),
+            'caller_class' => get_class($this->caller),
+            'continueurl' => $this->instance->get_static_continue_url(),
+            'returnurl' => $this->caller->get_return_url(),
+            'tempdataid' => $this->id,
+            'time' => time(),
         );
         $DB->insert_record('portfolio_log', $l);
     }
@@ -681,7 +690,14 @@ class portfolio_exporter {
         if ($exporter->instancefile) {
             require_once($CFG->dirroot . '/' . $exporter->instancefile);
         }
-        require_once($CFG->dirroot . '/' . $exporter->callerfile);
+        if (!empty($exporter->callerfile)) {
+            portfolio_include_callback_file($exporter->callerfile);
+        } else if (!empty($exporter->callercomponent)) {
+            portfolio_include_callback_file($exporter->callercomponent);
+        } else {
+            return; // Should never get here!
+        }
+
         $exporter = unserialize(serialize($exporter));
         if (!$exporter->get('id')) {
             // workaround for weird case
@@ -722,15 +738,18 @@ class portfolio_exporter {
         if ($this->get('user')->id != $USER->id) { // make sure it belongs to the right user
             throw new portfolio_exception('notyours', 'portfolio');
         }
-        if (!$readonly && $this->get('instance') && !$this->get('instance')->allows_multiple_exports()
-            && ($already = portfolio_existing_exports($this->get('user')->id, $this->get('instance')->get('plugin')))
-            && array_shift(array_keys($already)) != $this->get('id')
-        ) {
-            $a = (object)array(
-                'plugin'  => $this->get('instance')->get('plugin'),
-                'link'    => $CFG->wwwroot . '/user/portfoliologs.php',
-            );
-            throw new portfolio_exception('nomultipleexports', 'portfolio', '', $a);
+        if (!$readonly && $this->get('instance') && !$this->get('instance')->allows_multiple_exports()) {
+            $already = portfolio_existing_exports($this->get('user')->id, $this->get('instance')->get('plugin'));
+            $already = array_keys($already);
+
+            if (array_shift($already) != $this->get('id')) {
+
+                $a = (object)array(
+                    'plugin'  => $this->get('instance')->get('plugin'),
+                    'link'    => $CFG->wwwroot . '/user/portfoliologs.php',
+                );
+                throw new portfolio_exception('nomultipleexports', 'portfolio', '', $a);
+            }
         }
         if (!$this->caller->check_permissions()) { // recall the caller permission check
             throw new portfolio_caller_exception('nopermissions', 'portfolio', $this->caller->get_return_url());
@@ -818,7 +837,7 @@ class portfolio_exporter {
             if ($f->get_filename() == $skipfile) {
                 continue;
             }
-            $returnfiles[$f->get_filepath() . '/' . $f->get_filename()] = $f;
+            $returnfiles[$f->get_filepath() . $f->get_filename()] = $f;
         }
         return $returnfiles;
     }

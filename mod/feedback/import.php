@@ -19,7 +19,7 @@
  *
  * @author Andreas Grabs
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package feedback
+ * @package mod_feedback
  */
 
 require_once("../../config.php");
@@ -52,9 +52,7 @@ if (! $feedback = $DB->get_record("feedback", array("id"=>$cm->instance))) {
     print_error('invalidcoursemodule');
 }
 
-if (!$context = get_context_instance(CONTEXT_MODULE, $cm->id)) {
-    print_error('badcontext');
-}
+$context = context_module::instance($cm->id);
 
 require_login($course, true, $cm);
 
@@ -94,10 +92,10 @@ if ($choosefile) {
 $strfeedbacks = get_string("modulenameplural", "feedback");
 $strfeedback  = get_string("modulename", "feedback");
 
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_title(format_string($feedback->name));
+$PAGE->set_heading($course->fullname);
+$PAGE->set_title($feedback->name);
 echo $OUTPUT->header();
-
+echo $OUTPUT->heading(format_string($feedback->name));
 /// print the tabs
 require('tabs.php');
 
@@ -105,7 +103,7 @@ require('tabs.php');
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-echo $OUTPUT->heading(get_string('import_questions', 'feedback'));
+echo $OUTPUT->heading(get_string('import_questions', 'feedback'), 3);
 
 if (isset($importerror->msg) AND is_array($importerror->msg)) {
     echo $OUTPUT->box_start('generalbox errorboxcontent boxaligncenter');
@@ -286,6 +284,6 @@ function feedback_check_xml_utf8($text) {
     //encoding is given in $match[2]
     if (isset($match[0]) AND isset($match[1]) AND isset($match[2])) {
         $enc = $match[2];
-        return textlib::convert($text, $enc);
+        return core_text::convert($text, $enc);
     }
 }

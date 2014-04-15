@@ -17,8 +17,7 @@
 /**
  * Upgrade script for the quiz module.
  *
- * @package    mod
- * @subpackage quiz
+ * @package    mod_quiz
  * @copyright  2006 Eloy Lafuente (stronk7)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -113,7 +112,7 @@ function xmldb_quiz_upgrade($oldversion) {
         // Get a list of response variables that have files.
         require_once($CFG->dirroot . '/question/type/questiontypebase.php');
         $variables = array();
-        foreach (get_plugin_list('qtype') as $qtypename => $path) {
+        foreach (core_component::get_plugin_list('qtype') as $qtypename => $path) {
             $file = $path . '/questiontype.php';
             if (!is_readable($file)) {
                 continue;
@@ -325,6 +324,195 @@ function xmldb_quiz_upgrade($oldversion) {
 
         // Quiz savepoint reached.
         upgrade_mod_savepoint(true, 2012040206, 'quiz');
+    }
+
+    // Moodle v2.3.0 release upgrade line
+    // Put any upgrade step following this
+
+    if ($oldversion < 2012061702) {
+
+        // MDL-32791 somebody reported having nonsense rows in their
+        // quiz_question_instances which caused various problems. These rows
+        // are meaningless, hence this upgrade step to clean them up.
+        $DB->delete_records('quiz_question_instances', array('question' => 0));
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2012061702, 'quiz');
+    }
+
+    if ($oldversion < 2012061703) {
+
+        // MDL-34702 the questiondecimalpoints column was created with default -2
+        // when it should have been -1, and no-one has noticed in the last 2+ years!
+
+        // Changing the default of field questiondecimalpoints on table quiz to -1.
+        $table = new xmldb_table('quiz');
+        $field = new xmldb_field('questiondecimalpoints', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '-1', 'decimalpoints');
+
+        // Launch change of default for field questiondecimalpoints.
+        $dbman->change_field_default($table, $field);
+
+        // Correct any wrong values.
+        $DB->set_field('quiz', 'questiondecimalpoints', -1, array('questiondecimalpoints' => -2));
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2012061703, 'quiz');
+    }
+
+    if ($oldversion < 2012100801) {
+
+        // Define field timecheckstate to be added to quiz_attempts
+        $table = new xmldb_table('quiz_attempts');
+        $field = new xmldb_field('timecheckstate', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'timemodified');
+
+        // Conditionally launch add field timecheckstate
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index state-timecheckstate (not unique) to be added to quiz_attempts
+        $table = new xmldb_table('quiz_attempts');
+        $index = new xmldb_index('state-timecheckstate', XMLDB_INDEX_NOTUNIQUE, array('state', 'timecheckstate'));
+
+        // Conditionally launch add index state-timecheckstate
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Overdue cron no longer needs these
+        unset_config('overduelastrun', 'quiz');
+        unset_config('overduedoneto', 'quiz');
+
+        // Update timecheckstate on all open attempts
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+        quiz_update_open_attempts(array());
+
+        // quiz savepoint reached
+        upgrade_mod_savepoint(true, 2012100801, 'quiz');
+    }
+
+    // Moodle v2.4.0 release upgrade line
+    // Put any upgrade step following this
+
+    if ($oldversion < 2013031900) {
+        // Quiz manual grading UI should be controlled by mod/quiz:grade, not :viewreports.
+        $DB->set_field('quiz_reports', 'capability', 'mod/quiz:grade', array('name' => 'grading'));
+
+        // Mod quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2013031900, 'quiz');
+    }
+
+    // Moodle v2.5.0 release upgrade line.
+    // Put any upgrade step following this.
+
+
+    // Moodle v2.6.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2014011300) {
+
+        // Define key quiz (foreign) to be dropped form quiz_question_instances.
+        $table = new xmldb_table('quiz_question_instances');
+        $key = new xmldb_key('quiz', XMLDB_KEY_FOREIGN, array('quiz'), 'quiz', array('id'));
+
+        // Launch drop key quiz.
+        $dbman->drop_key($table, $key);
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014011300, 'quiz');
+    }
+
+    if ($oldversion < 2014011301) {
+
+        // Rename field quiz on table quiz_question_instances to quizid.
+        $table = new xmldb_table('quiz_question_instances');
+        $field = new xmldb_field('quiz', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'id');
+
+        // Launch rename field quiz.
+        $dbman->rename_field($table, $field, 'quizid');
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014011301, 'quiz');
+    }
+
+    if ($oldversion < 2014011302) {
+
+        // Define key quizid (foreign) to be added to quiz_question_instances.
+        $table = new xmldb_table('quiz_question_instances');
+        $key = new xmldb_key('quizid', XMLDB_KEY_FOREIGN, array('quizid'), 'quiz', array('id'));
+
+        // Launch add key quizid.
+        $dbman->add_key($table, $key);
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014011302, 'quiz');
+    }
+
+    if ($oldversion < 2014011303) {
+
+        // Define key question (foreign) to be dropped form quiz_question_instances.
+        $table = new xmldb_table('quiz_question_instances');
+        $key = new xmldb_key('question', XMLDB_KEY_FOREIGN, array('question'), 'question', array('id'));
+
+        // Launch drop key question.
+        $dbman->drop_key($table, $key);
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014011303, 'quiz');
+    }
+
+    if ($oldversion < 2014011304) {
+
+        // Rename field question on table quiz_question_instances to questionid.
+        $table = new xmldb_table('quiz_question_instances');
+        $field = new xmldb_field('question', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'quiz');
+
+        // Launch rename field question.
+        $dbman->rename_field($table, $field, 'questionid');
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014011304, 'quiz');
+    }
+
+    if ($oldversion < 2014011305) {
+
+        // Define key questionid (foreign) to be added to quiz_question_instances.
+        $table = new xmldb_table('quiz_question_instances');
+        $key = new xmldb_key('questionid', XMLDB_KEY_FOREIGN, array('questionid'), 'question', array('id'));
+
+        // Launch add key questionid.
+        $dbman->add_key($table, $key);
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014011305, 'quiz');
+    }
+
+    if ($oldversion < 2014011306) {
+
+        // Rename field grade on table quiz_question_instances to maxmark.
+        $table = new xmldb_table('quiz_question_instances');
+        $field = new xmldb_field('grade', XMLDB_TYPE_NUMBER, '12, 7', null, XMLDB_NOTNULL, null, '0', 'question');
+
+        // Launch rename field grade.
+        $dbman->rename_field($table, $field, 'maxmark');
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014011306, 'quiz');
+    }
+
+    if ($oldversion < 2014021300) {
+
+        // Define field needsupgradetonewqe to be dropped from quiz_attempts.
+        $table = new xmldb_table('quiz_attempts');
+        $field = new xmldb_field('needsupgradetonewqe');
+
+        // Conditionally launch drop field needsupgradetonewqe.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2014021300, 'quiz');
     }
 
     return true;

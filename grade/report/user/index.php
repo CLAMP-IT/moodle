@@ -39,7 +39,7 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
 require_login($course);
 $PAGE->set_pagelayout('report');
 
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 require_capability('gradereport/user:view', $context);
 
 if (empty($userid)) {
@@ -60,7 +60,7 @@ if (has_capability('moodle/grade:viewall', $context)) {
     //ok - can view own grades
     $access = true;
 
-} else if (has_capability('moodle/grade:viewall', get_context_instance(CONTEXT_USER, $userid)) and $course->showgrades) {
+} else if (has_capability('moodle/grade:viewall', context_user::instance($userid)) and $course->showgrades) {
     // ok - can view grades of this user- parent most probably
     $access = true;
 }
@@ -101,8 +101,12 @@ if (has_capability('moodle/grade:viewall', $context)) { //Teachers will see all 
         $user_selector = true;
     }
 
+    $defaultgradeshowactiveenrol = !empty($CFG->grade_report_showonlyactiveenrol);
+    $showonlyactiveenrol = get_user_preferences('grade_report_showonlyactiveenrol', $defaultgradeshowactiveenrol);
+    $showonlyactiveenrol = $showonlyactiveenrol || !has_capability('moodle/course:viewsuspendedusers', $context);
     if (empty($userid)) {
         $gui = new graded_users_iterator($course, null, $currentgroup);
+        $gui->require_active_enrolment($showonlyactiveenrol);
         $gui->init();
         // Add tabs
         print_grade_page_head($courseid, 'report', 'user');

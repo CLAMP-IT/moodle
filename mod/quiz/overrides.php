@@ -62,7 +62,7 @@ $PAGE->set_url($url);
 
 require_login($course, false, $cm);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 
 // Check the user has the required capabilities to list overrides.
 require_capability('mod/quiz:manageoverrides', $context);
@@ -72,6 +72,7 @@ $PAGE->set_pagelayout('admin');
 $PAGE->set_title(get_string('overrides', 'quiz'));
 $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($quiz->name, true, array('context' => $context)));
 
 // Delete orphaned group overrides.
 $sql = 'SELECT o.id
@@ -90,20 +91,22 @@ if (!empty($orphaned)) {
 if ($groupmode) {
     $colname = get_string('group');
     $sql = 'SELECT o.*, g.name
-                FROM {quiz_overrides} o JOIN {groups} g
-                ON o.groupid = g.id
-                WHERE o.quiz = ?
+                FROM {quiz_overrides} o
+                JOIN {groups} g ON o.groupid = g.id
+                WHERE o.quiz = :quizid
                 ORDER BY g.name';
+    $params = array('quizid' => $quiz->id);
 } else {
     $colname = get_string('user');
-    $sql = 'SELECT o.*, u.firstname, u.lastname
-                FROM {quiz_overrides} o JOIN {user} u
-                ON o.userid = u.id
-                WHERE o.quiz = ?
-                ORDER BY u.lastname, u.firstname';
+    list($sort, $params) = users_order_by_sql('u');
+    $sql = 'SELECT o.*, ' . get_all_user_name_fields(true, 'u') . '
+            FROM {quiz_overrides} o
+            JOIN {user} u ON o.userid = u.id
+            WHERE o.quiz = :quizid
+            ORDER BY ' . $sort;
+    $params['quizid'] = $quiz->id;
 }
 
-$params = array($quiz->id);
 $overrides = $DB->get_records_sql($sql, $params);
 
 // Initialise table.

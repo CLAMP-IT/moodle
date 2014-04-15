@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,8 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    gradingform
- * @subpackage rubric
+ * Language file for plugin gradingform_rubric
+ *
+ * @package    gradingform_rubric
  * @copyright  2011 David Mudrak <david@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -36,7 +36,7 @@ $string['criterionmovedown'] = 'Move down';
 $string['criterionmoveup'] = 'Move up';
 $string['definerubric'] = 'Define rubric';
 $string['description'] = 'Description';
-$string['enableremarks'] = 'Allow grader to add text remarks for each criteria';
+$string['enableremarks'] = 'Allow grader to add text remarks for each criterion';
 $string['err_mintwolevels'] = 'Each criterion must have at least two levels';
 $string['err_nocriteria'] = 'Rubric must contain at least one criterion';
 $string['err_nodefinition'] = 'Level definition can not be empty';

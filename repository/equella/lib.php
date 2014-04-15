@@ -93,6 +93,11 @@ class repository_equella extends repository {
                 . '&attachmentUuidUrls=true'
                 . '&options='.urlencode($this->get_option('equella_options') . $mimetypesstr)
                 . $restrict;
+
+        $manageurl = $this->get_option('equella_url');
+        $manageurl = str_ireplace('signon.do', 'logon.do', $manageurl);
+        $manageurl = $this->appendtoken($manageurl);
+
         $list = array();
         $list['object'] = array();
         $list['object']['type'] = 'text/html';
@@ -100,6 +105,7 @@ class repository_equella extends repository {
         $list['nologin']  = true;
         $list['nosearch'] = true;
         $list['norefresh'] = true;
+        $list['manage'] = $manageurl;
         return $list;
     }
 
@@ -123,71 +129,123 @@ class repository_equella extends repository {
     }
 
     /**
-     * Download a file, this function can be overridden by subclass. {@link curl}
+     * Counts the number of failed connections.
      *
-     * @param string $url the url of file
-     * @param string $filename save location
-     * @return string the location of the file
+     * If we received the connection timeout more than 3 times in a row, we don't attemt to
+     * connect to the server any more during this request.
+     *
+     * This function is used by {@link repository_equella::sync_reference()} that
+     * synchronises the file size of referenced files.
+     *
+     * @param int $errno omit if we just want to know the return value, the last curl_errno otherwise
+     * @return bool true if we had less than 3 failed connections, false if no more connections
+     * attempts recommended
      */
-    public function get_file($url, $filename = '') {
-        global $USER;
-        $cookiename = uniqid('', true) . '.cookie';
-        $dir = make_temp_directory('repository/equella/' . $USER->id);
-        $cookiepathname = $dir . '/' . $cookiename;
-        $path = $this->prepare_file($filename);
-        $fp = fopen($path, 'w');
-        $c = new curl(array('cookie'=>$cookiepathname));
-        $c->download(array(array('url'=>$url, 'file'=>$fp)), array('CURLOPT_FOLLOWLOCATION'=>true));
-        // Close file handler.
-        fclose($fp);
-        // Delete cookie jar.
-        unlink($cookiepathname);
-        return array('path'=>$path, 'url'=>$url);
+    private function connection_result($errno = null) {
+        static $countfailures = array();
+        $sess = sesskey();
+        if (!array_key_exists($sess, $countfailures)) {
+            $countfailures[$sess] = 0;
+        }
+        if ($errno !== null) {
+            if ($errno == 0) {
+                // reset count of failed connections
+                $countfailures[$sess] = 0;
+            } else if ($errno == 7 /*CURLE_COULDNT_CONNECT*/ || $errno == 9 /*CURLE_REMOTE_ACCESS_DENIED*/) {
+                // problems with server
+                $countfailures[$sess]++;
+            }
+        }
+        return ($countfailures[$sess] < 3);
     }
 
     /**
-     * Returns information about file in this repository by reference
-     * {@link repository::get_file_reference()}
-     * {@link repository::get_file()}
+     * Download a file, this function can be overridden by subclass. {@link curl}
      *
-     * Returns null if file not found or can not be accessed
-     *
-     * @param stdClass $reference file reference db record
-     * @return null|stdClass containing attribute 'filepath'
+     * @param string $reference the source of the file
+     * @param string $filename filename (without path) to save the downloaded file in the
+     * temporary directory
+     * @return null|array null if download failed or array with elements:
+     *   path: internal location of the file
+     *   url: URL to the source (from parameters)
      */
-    public function get_file_by_reference($reference) {
-        $ref = unserialize(base64_decode($reference->reference));
-        $url = $this->appendtoken($ref->url);
-
-        if (!$url) {
+    public function get_file($reference, $filename = '') {
+        global $USER, $CFG;
+        $ref = @unserialize(base64_decode($reference));
+        if (!isset($ref->url) || !($url = $this->appendtoken($ref->url))) {
             // Occurs when the user isn't known..
             return null;
         }
+        $path = $this->prepare_file($filename);
+        $cookiepathname = $this->prepare_file($USER->id. '_'. uniqid('', true). '.cookie');
+        $c = new curl(array('cookie'=>$cookiepathname));
+        $result = $c->download_one($url, null, array('filepath' => $path, 'followlocation' => true, 'timeout' => $CFG->repositorygetfiletimeout));
+        // Delete cookie jar.
+        if (file_exists($cookiepathname)) {
+            unlink($cookiepathname);
+        }
+        if ($result !== true) {
+            throw new moodle_exception('errorwhiledownload', 'repository', '', $result);
+        }
+        return array('path'=>$path, 'url'=>$url);
+    }
 
-        // We use this cache to get the correct file size.
-        $cachedfilepath = cache_file::get($url, array('ttl' => 0));
-        if ($cachedfilepath === false) {
-            // Cache the file.
-            $path = $this->get_file($url);
-            $cachedfilepath = cache_file::create_from_file($url, $path['path']);
+    public function sync_reference(stored_file $file) {
+        global $USER;
+        if ($file->get_referencelastsync() + DAYSECS > time() || !$this->connection_result()) {
+            // Synchronise not more often than once a day.
+            // if we had several unsuccessfull attempts to connect to server - do not try any more.
+            return false;
+        }
+        $ref = @unserialize(base64_decode($file->get_reference()));
+        if (!isset($ref->url) || !($url = $this->appendtoken($ref->url))) {
+            // Occurs when the user isn't known..
+            $file->set_missingsource();
+            return true;
         }
 
-        if ($cachedfilepath && is_readable($cachedfilepath)) {
-            return (object)array('filepath' => $cachedfilepath);
+        $cookiepathname = $this->prepare_file($USER->id. '_'. uniqid('', true). '.cookie');
+        $c = new curl(array('cookie' => $cookiepathname));
+        if (file_extension_in_typegroup($ref->filename, 'web_image')) {
+            $path = $this->prepare_file('');
+            $result = $c->download_one($url, null, array('filepath' => $path, 'followlocation' => true, 'timeout' => $CFG->repositorysyncimagetimeout));
+            if ($result === true) {
+                $fs = get_file_storage();
+                list($contenthash, $filesize, $newfile) = $fs->add_file_to_pool($path);
+                $file->set_synchronized($contenthash, $filesize);
+                return true;
+            }
+        } else {
+            $result = $c->head($url, array('followlocation' => true, 'timeout' => $CFG->repositorysyncfiletimeout));
         }
-        return null;
+        // Delete cookie jar.
+        if (file_exists($cookiepathname)) {
+            unlink($cookiepathname);
+        }
+
+        $this->connection_result($c->get_errno());
+        $curlinfo = $c->get_info();
+        if (isset($curlinfo['http_code']) && $curlinfo['http_code'] == 200
+                && array_key_exists('download_content_length', $curlinfo)
+                && $curlinfo['download_content_length'] >= 0) {
+            // we received a correct header and at least can tell the file size
+            $file->set_synchronized(null, $curlinfo['download_content_length']);
+            return true;
+        }
+        $file->set_missingsource();
+        return true;
     }
 
     /**
      * Repository method to serve the referenced file
      *
      * @param stored_file $storedfile the file that contains the reference
-     * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+     * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
      * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
      * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
      * @param array $options additional options affecting the file serving
      */
-    public function send_file($stored_file, $lifetime=86400 , $filter=0, $forcedownload=false, array $options = null) {
+    public function send_file($stored_file, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
         $reference  = unserialize(base64_decode($stored_file->get_reference()));
         $url = $this->appendtoken($reference->url);
         if ($url) {
@@ -219,7 +277,7 @@ class repository_equella extends repository {
         );
         $mform->addElement('select', 'equella_select_restriction', get_string('selectrestriction', 'repository_equella'), $choices);
 
-        $mform->addElement('header', '',
+        $mform->addElement('header', 'groupheader',
             get_string('group', 'repository_equella', get_string('groupdefault', 'repository_equella')));
         $mform->addElement('text', 'equella_shareid', get_string('sharedid', 'repository_equella'));
         $mform->setType('equella_shareid', PARAM_RAW);
@@ -230,7 +288,8 @@ class repository_equella extends repository {
         $mform->addRule('equella_sharedsecret', $strrequired, 'required', null, 'client');
 
         foreach (self::get_all_editing_roles() as $role) {
-            $mform->addElement('header', '', get_string('group', 'repository_equella', format_string($role->name)));
+            $mform->addElement('header', 'groupheader_'.$role->shortname, get_string('group', 'repository_equella',
+                format_string($role->name)));
             $mform->addElement('text', "equella_{$role->shortname}_shareid", get_string('sharedid', 'repository_equella'));
             $mform->setType("equella_{$role->shortname}_shareid", PARAM_RAW);
             $mform->addElement('text', "equella_{$role->shortname}_sharedsecret",
@@ -364,5 +423,14 @@ class repository_equella extends repository {
         } else {
             return get_string('lostsource', 'repository', '');
         }
+    }
+
+    /**
+     * Is this repository accessing private data?
+     *
+     * @return bool
+     */
+    public function contains_private_data() {
+        return false;
     }
 }

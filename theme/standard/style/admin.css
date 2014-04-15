@@ -1,15 +1,13 @@
 /** Admin **/
 
-#page-admin-course-category .rolelink {text-align:right;padding:10px;}
+#page-admin-course-manage .rolelink {text-align:right;padding:10px;}
 
 #page-admin-lang .generalbox,
-#page-admin-course-index .singlebutton,
-#page-admin-course-index .addcategory,
-#page-admin-course-category .addcategory,
+#page-admin-course-manage .singlebutton,
+#page-admin-course-manage .addcategory,
 #page-admin-stickyblocks .generalbox,
 #page-admin-maintenance .buttons,
-#page-admin-course-index .buttons,
-#page-admin-course-category .buttons,
+#page-admin-course-manage .buttons,
 #page-admin-index .copyright,
 #page-admin-index .copyrightnotice,
 #page-admin-index .adminerror,
@@ -21,7 +19,6 @@
 #page-admin-index .adminerror,
 #page-admin-index .adminwarning {margin:20px;}
 
-#page-admin-index .maturitywarning {margin-left:auto;margin-right:auto;text-align:center;width:60%;background-color:#ffd3d9;}
 #page-admin-index .releasenoteslink {margin-left:auto;margin-right:auto;text-align:center;width:60%;}
 
 #page-admin-enrol .enrolplugintable {width:700px;margin:1em auto;}
@@ -82,13 +79,14 @@
 .admin .generalboxcontent {background-color:#EEEEEE;}
 .admin .generalbox {border-color:#BBBBBB;background-color:#EEEEEE;}
 .admin .informationbox {border-color:#BBBBBB;background-color:#FFFFFF;}
-#page-admin-index .adminerror {background-color:#FF6666;}
+#page-admin-index .adminwarning {background-color:#f3f2aa;}
+#page-admin-index .adminerror {background-color:#ffd3d9;}
 #page-admin-index .c0 {background-color: #FAFAFA;}
-.path-admin .blockstable .r0 {background-color: #F0F0F0;}
-.path-admin .blockstable .r1 {background-color: #FAFAFA;}
+.path-admin .blockstable > tbody > tr:nth-of-type(odd) {background-color: #F0F0F0;}
+.path-admin .blockstable > tbody > tr:nth-of-type(even) {background-color: #FAFAFA;}
 .path-admin .incompatibleblockstable td.c0 {color: #ff0000;}
-table.flexible  .r0 {background-color: #F0F0F0;}
-table.flexible .r1 {background-color: #FAFAFA;}
+table.flexible > tbody > tr:nth-of-type(odd) {background-color: #F0F0F0;}
+table.flexible > tbody > tr:nth-of-type(even) {background-color: #FAFAFA;}
 #page-admin-report-security-index #timewarning {text-align:center;}
 
 #adminsettings fieldset {background-color: #EEE;border:1px solid #BBB;color: #000;}
@@ -106,8 +104,8 @@ table.flexible .r1 {background-color: #FAFAFA;}
 #page-admin-qtypes .cell.c3 {font-size: 0.7em;}
 
 #page-admin-lang .translator {border-color: #DDDDDD;}
-#page-admin-lang .translator tr.r0 {background-color: #F0F0F0;}
-#page-admin-lang .translator tr.r1 {background-color: #FAFAFA;}
+#page-admin-lang .translator > tbody > tr:nth-of-type(odd) {background-color: #F0F0F0;}
+#page-admin-lang .translator > tbody > tr:nth-of-type(even) {background-color: #FAFAFA;}
 #page-admin-lang .translator .strkey {color: #666666;}
 #page-admin-lang .translator .bothmissing {background-color: #EF6868;}
 #page-admin-lang .translator .mastermissing {background-color: #FEFF7F;}
@@ -128,7 +126,7 @@ table.flexible .r1 {background-color: #FAFAFA;}
 #page-admin-roles-manage .rolecap,
 #page-admin-roles-override .rolecap {border:none;border-bottom:1px solid #CECECE;}
 
-.path-admin .manageauthtable {width:90%;margin:0 auto;}
+.path-admin #manageauthtable {width:90%;margin:0 auto;}
 
 #explaincaps .rolecap.yes {background-color: #DDFFDD;}
 #explaincaps .rolecap.no {background-color: #FFDDDD;}

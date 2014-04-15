@@ -20,12 +20,13 @@
  *
  * @copyright 2005 Martin Dougiamas  http://dougiamas.com
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package mod-data
+ * @package mod_data
  */
 
 require_once('../../config.php');
 require_once('lib.php');
 require_once("$CFG->libdir/rsslib.php");
+require_once("$CFG->libdir/form/filemanager.php");
 
 $id    = optional_param('id', 0, PARAM_INT);    // course module id
 $d     = optional_param('d', 0, PARAM_INT);    // database id
@@ -74,14 +75,14 @@ if (isguestuser()) {
     redirect('view.php?d='.$data->id);
 }
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 
 /// If it's hidden then it doesn't show anything.  :)
 if (empty($cm->visible) and !has_capability('moodle/course:viewhiddenactivities', $context)) {
     $strdatabases = get_string("modulenameplural", "data");
 
-    $PAGE->set_title(format_string($data->name));
-    $PAGE->set_heading(format_string($course->fullname));
+    $PAGE->set_title($data->name);
+    $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
     notice(get_string("activityiscurrentlyhidden"));
 }
@@ -121,9 +122,9 @@ if ($cancel) {
 
 /// RSS and CSS and JS meta
 if (!empty($CFG->enablerssfeeds) && !empty($CFG->data_enablerssfeeds) && $data->rssarticles > 0) {
-    $rsspath = rss_get_url($context->id, $USER->id, 'mod_data', $data->id);
-    $courseshortname = format_string($course->shortname, true, array('context' => get_context_instance(CONTEXT_COURSE, $course->id)));
-    $PAGE->add_alternate_version($courseshortname . ': %fullname%', $rsspath, 'application/rss+xml');
+    $courseshortname = format_string($course->shortname, true, array('context' => context_course::instance($course->id)));
+    $rsstitle = $courseshortname . ': ' . format_string($data->name);
+    rss_add_http_header($context, 'mod_data', $data, $rsstitle);
 }
 if ($data->csstemplate) {
     $PAGE->requires->css('/mod/data/css.php?d='.$data->id);
@@ -185,7 +186,17 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
             }
         }
 
-        add_to_log($course->id, 'data', 'update', "view.php?d=$data->id&amp;rid=$rid", $data->id, $cm->id);
+        // Trigger an event for updating this record.
+        $event = \mod_data\event\record_updated::create(array(
+            'objectid' => $rid,
+            'context' => $context,
+            'courseid' => $course->id,
+            'other' => array(
+                'dataid' => $data->id
+            )
+        ));
+        $event->add_record_snapshot('data', $data);
+        $event->trigger();
 
         redirect($CFG->wwwroot.'/mod/data/view.php?d='.$data->id.'&rid='.$rid);
 
@@ -235,8 +246,6 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
                 }
             }
 
-            add_to_log($course->id, 'data', 'add', "view.php?d=$data->id&amp;rid=$recordid", $data->id, $cm->id);
-
             if (!empty($datarecord->saveandview)) {
                 redirect($CFG->wwwroot.'/mod/data/view.php?d='.$data->id.'&rid='.$recordid);
             }
@@ -248,8 +257,9 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
 /// Print the page header
 
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($data->name), 2);
+echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
 groups_print_activity_menu($cm, $CFG->wwwroot.'/mod/data/edit.php?d='.$data->id);
-echo $OUTPUT->heading(format_string($data->name));
 
 /// Print the tabs
 
@@ -274,7 +284,7 @@ echo '<input name="sesskey" value="'.sesskey().'" type="hidden" />';
 echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
 
 if (!$rid){
-    echo $OUTPUT->heading(get_string('newentry','data'), 2);
+    echo $OUTPUT->heading(get_string('newentry','data'), 3);
 }
 
 /******************************************

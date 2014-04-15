@@ -29,6 +29,7 @@ $id = optional_param('id', 0, PARAM_INT);       // Course Module ID, or
 $a = optional_param('a', 0, PARAM_INT);         // scorm ID.
 $scoid = required_param('scoid', PARAM_INT);     // sco ID.
 $mode = optional_param('mode', '', PARAM_ALPHA); // navigation mode.
+$currentorg = optional_param('currentorg', '', PARAM_RAW); // Selected organization.
 $attempt = required_param('attempt', PARAM_INT); // new attempt.
 
 if (!empty($id)) {
@@ -85,7 +86,17 @@ if (!$sco = scorm_get_sco($scoid)) {
     print_error('cannotfindsco', 'scorm');
 }
 if (scorm_version_check($scorm->version, SCORM_13)) {
-    $userdata->{'cmi.scaled_passing_score'} = $DB->get_field('scorm_seq_objective', 'minnormalizedmeasure', array('scoid'=>$scoid));
+    $objectives = $DB->get_records('scorm_seq_objective', array('scoid' => $scoid));
+    $index = 0;
+    foreach ($objectives as $objective) {
+        if (!empty($objective->minnormalizedmeasure)) {
+            $userdata->{'cmi.scaled_passing_score'} = $objective->minnormalizedmeasure;
+        }
+        if (!empty($objective->objectiveid)) {
+            $userdata->{'cmi.objectives.N'.$index.'.id'} = $objective->objectiveid;
+            $index++;
+        }
+    }
 }
 
 header('Content-Type: text/javascript; charset=UTF-8');

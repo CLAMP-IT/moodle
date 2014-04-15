@@ -18,8 +18,7 @@
 /**
  * Branch Table
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  2009 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -153,7 +152,7 @@ class lesson_page_type_branchtable extends lesson_page {
         global $USER, $DB, $PAGE, $CFG;
 
         require_sesskey();
-        $newpageid = optional_param('jumpto', NULL, PARAM_INT);
+        $newpageid = optional_param('jumpto', null, PARAM_INT);
         // going to insert into lesson_branch
         if ($newpageid == LESSON_RANDOMBRANCH) {
             $branchflag = 1;
@@ -176,7 +175,7 @@ class lesson_page_type_branchtable extends lesson_page {
         $DB->insert_record("lesson_branch", $branch);
 
         //  this is called when jumping to random from a branch table
-        $context = get_context_instance(CONTEXT_MODULE, $PAGE->cm->id);
+        $context = context_module::instance($PAGE->cm->id);
         if($newpageid == LESSON_UNSEENBRANCHPAGE) {
             if (has_capability('mod/lesson:manage', $context)) {
                  $newpageid = LESSON_NEXTPAGE;

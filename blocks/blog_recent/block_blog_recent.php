@@ -17,10 +17,9 @@
 /**
  * Recent Blog Entries Block page.
  *
- * @package    block
- * @subpackage blog_recent
- * @copyright  2009 Nicolas Connault
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_blog_recent
+ * @copyright 2009 Nicolas Connault
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -52,7 +51,7 @@ class block_blog_recent extends block_base {
         }
 
         // verify blog is enabled
-        if (empty($CFG->bloglevel)) {
+        if (empty($CFG->enableblogs)) {
             $this->content = new stdClass();
             $this->content->text = '';
             if ($this->page->user_is_editing()) {
@@ -83,20 +82,24 @@ class block_blog_recent extends block_base {
 
         $this->content = new stdClass();
         $this->content->footer = '';
+        $this->content->text = '';
 
         $context = $this->page->context;
 
+        $url = new moodle_url('/blog/index.php');
         $filter = array();
         if ($context->contextlevel == CONTEXT_MODULE) {
             $filter['module'] = $context->instanceid;
             $a = new stdClass;
             $a->type = get_string('modulename', $this->page->cm->modname);
             $strview = get_string('viewallmodentries', 'blog', $a);
+            $url->param('modid', $context->instanceid);
         } else if ($context->contextlevel == CONTEXT_COURSE) {
             $filter['course'] = $context->instanceid;
             $a = new stdClass;
             $a->type = get_string('course');
             $strview = get_string('viewblogentries', 'blog', $a);
+            $url->param('courseid', $context->instanceid);
         } else {
             $strview = get_string('viewsiteentries', 'blog');
         }
@@ -104,7 +107,6 @@ class block_blog_recent extends block_base {
 
         $bloglisting = new blog_listing($filter);
         $entries = $bloglisting->get_entries(0, $this->config->numberofrecentblogentries, 4);
-        $url = new moodle_url('/blog/index.php', $filter);
 
         if (!empty($entries)) {
             $entrieslist = array();

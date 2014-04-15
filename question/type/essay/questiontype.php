@@ -63,21 +63,36 @@ class qtype_essay extends question_type {
         }
 
         $options->responseformat = $formdata->responseformat;
+        $options->responserequired = $formdata->responserequired;
         $options->responsefieldlines = $formdata->responsefieldlines;
         $options->attachments = $formdata->attachments;
+        $options->attachmentsrequired = $formdata->attachmentsrequired;
         $options->graderinfo = $this->import_or_save_files($formdata->graderinfo,
                 $context, 'qtype_essay', 'graderinfo', $formdata->id);
         $options->graderinfoformat = $formdata->graderinfo['format'];
+        $options->responsetemplate = $formdata->responsetemplate['text'];
+        $options->responsetemplateformat = $formdata->responsetemplate['format'];
         $DB->update_record('qtype_essay_options', $options);
     }
 
     protected function initialise_question_instance(question_definition $question, $questiondata) {
         parent::initialise_question_instance($question, $questiondata);
         $question->responseformat = $questiondata->options->responseformat;
+        $question->responserequired = $questiondata->options->responserequired;
         $question->responsefieldlines = $questiondata->options->responsefieldlines;
         $question->attachments = $questiondata->options->attachments;
+        $question->attachmentsrequired = $questiondata->options->attachmentsrequired;
         $question->graderinfo = $questiondata->options->graderinfo;
         $question->graderinfoformat = $questiondata->options->graderinfoformat;
+        $question->responsetemplate = $questiondata->options->responsetemplate;
+        $question->responsetemplateformat = $questiondata->options->responsetemplateformat;
+    }
+
+    public function delete_question($questionid, $contextid) {
+        global $DB;
+
+        $DB->delete_records('qtype_essay_options', array('questionid' => $questionid));
+        parent::delete_question($questionid, $contextid);
     }
 
     /**
@@ -90,6 +105,17 @@ class qtype_essay extends question_type {
             'editorfilepicker' => get_string('formateditorfilepicker', 'qtype_essay'),
             'plain' => get_string('formatplain', 'qtype_essay'),
             'monospaced' => get_string('formatmonospaced', 'qtype_essay'),
+            'noinline' => get_string('formatnoinline', 'qtype_essay'),
+        );
+    }
+
+    /**
+     * @return array the choices that should be offerd when asking if a response is required
+     */
+    public function response_required_options() {
+        return array(
+            1 => get_string('responseisrequired', 'qtype_essay'),
+            0 => get_string('responsenotrequired', 'qtype_essay'),
         );
     }
 
@@ -114,6 +140,18 @@ class qtype_essay extends question_type {
             2 => '2',
             3 => '3',
             -1 => get_string('unlimited'),
+        );
+    }
+
+    /**
+     * @return array the choices that should be offered for the number of required attachments.
+     */
+    public function attachments_required_options() {
+        return array(
+            0 => get_string('attachmentsoptional', 'qtype_essay'),
+            1 => '1',
+            2 => '2',
+            3 => '3'
         );
     }
 

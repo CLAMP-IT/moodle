@@ -6,7 +6,7 @@
  * @author Josep Arús
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package wiki
+ * @package mod_wiki
  */
 
 require_once($CFG->dirroot . "/lib/outputcomponents.php");
@@ -14,9 +14,9 @@ require_once($CFG->dirroot . "/lib/outputcomponents.php");
 class parser_utils {
         
     public static function h($tag, $text = null, $options = array(), $escape_text = false) {
-        $tag = htmlentities($tag);
+        $tag = htmlentities($tag, ENT_COMPAT, 'UTF-8');
         if(!empty($text) && $escape_text) {
-                $text = htmlentities($text);
+                $text = htmlentities($text, ENT_COMPAT, 'UTF-8');
             }
         return html_writer::tag($tag, $text, $options);
     }

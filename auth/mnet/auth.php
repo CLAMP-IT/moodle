@@ -1,20 +1,29 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @author Martin Dougiamas
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package moodle multiauth
- *
  * Authentication Plugin: Moodle Network Authentication
- *
  * Multiple host authentication support for Moodle Network.
  *
- * 2006-11-01  File created.
+ * @package auth_mnet
+ * @author Martin Dougiamas
+ * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
  */
 
-if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
-}
+defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir.'/authlib.php');
 
@@ -81,7 +90,7 @@ class auth_plugin_mnet extends auth_plugin_base {
 
         if (array_key_exists('picture', $userdata) && !empty($user->picture)) {
             $fs = get_file_storage();
-            $usercontext = get_context_instance(CONTEXT_USER, $user->id, MUST_EXIST);
+            $usercontext = context_user::instance($user->id, MUST_EXIST);
             if ($usericonfile = $fs->get_file($usercontext->id, 'user', 'icon', 0, '/', 'f1.png')) {
                 $userdata['_mnet_userpicture_timemodified'] = $usericonfile->get_timemodified();
                 $userdata['_mnet_userpicture_mimetype'] = $usericonfile->get_mimetype();
@@ -132,12 +141,12 @@ class auth_plugin_mnet extends auth_plugin_base {
         global $CFG, $USER, $DB;
         require_once $CFG->dirroot . '/mnet/xmlrpc/client.php';
 
-        if (session_is_loggedinas()) {
+        if (\core\session\manager::is_loggedinas()) {
             print_error('notpermittedtojumpas', 'mnet');
         }
 
         // check remote login permissions
-        if (! has_capability('moodle/site:mnetlogintoremote', get_system_context())
+        if (! has_capability('moodle/site:mnetlogintoremote', context_system::instance())
                 or is_mnet_remote_user($USER)
                 or isguestuser()
                 or !isloggedin()) {
@@ -207,6 +216,7 @@ class auth_plugin_mnet extends auth_plugin_base {
         global $CFG, $DB;
         require_once $CFG->dirroot . '/mnet/xmlrpc/client.php';
         require_once $CFG->libdir . '/gdlib.php';
+        require_once($CFG->dirroot.'/user/lib.php');
 
         // verify the remote host is configured locally before attempting RPC call
         if (! $remotehost = $DB->get_record('mnet_host', array('wwwroot' => $remotepeer->wwwroot, 'deleted' => 0))) {
@@ -299,7 +309,7 @@ class auth_plugin_mnet extends auth_plugin_base {
 
             if ($key == '_mnet_userpicture_timemodified' and empty($CFG->disableuserimages) and isset($remoteuser->picture)) {
                 // update the user picture if there is a newer verion at the identity provider
-                $usercontext = get_context_instance(CONTEXT_USER, $localuser->id, MUST_EXIST);
+                $usercontext = context_user::instance($localuser->id, MUST_EXIST);
                 if ($usericonfile = $fs->get_file($usercontext->id, 'user', 'icon', 0, '/', 'f1.png')) {
                     $localtimemodified = $usericonfile->get_timemodified();
                 } else if ($usericonfile = $fs->get_file($usercontext->id, 'user', 'icon', 0, '/', 'f1.jpg')) {
@@ -352,8 +362,7 @@ class auth_plugin_mnet extends auth_plugin_base {
         if (empty($localuser->firstaccess)) { // Now firstaccess, grab it here
             $localuser->firstaccess = time();
         }
-
-        $DB->update_record('user', $localuser);
+        user_update_user($localuser, false);
 
         if (!$firsttime) {
             // repeat customer! let the IDP know about enrolments
@@ -378,23 +387,28 @@ class auth_plugin_mnet extends auth_plugin_base {
                 $extra = $DB->get_records_sql($sql);
 
                 $keys = array_keys($courses);
-                $defaultrole = reset(get_archetype_roles('student'));
-                //$defaultrole = get_default_course_role($ccache[$shortname]); //TODO: rewrite this completely, there is no default course role any more!!!
-                foreach ($keys AS $id) {
-                    if ($courses[$id]->visible == 0) {
-                        unset($courses[$id]);
-                        continue;
-                    }
-                    $courses[$id]->cat_id          = $courses[$id]->category;
-                    $courses[$id]->defaultroleid   = $defaultrole->id;
-                    unset($courses[$id]->category);
-                    unset($courses[$id]->visible);
+                $studentroles = get_archetype_roles('student');
+                if (!empty($studentroles)) {
+                    $defaultrole = reset($studentroles);
+                    //$defaultrole = get_default_course_role($ccache[$shortname]); //TODO: rewrite this completely, there is no default course role any more!!!
+                    foreach ($keys AS $id) {
+                        if ($courses[$id]->visible == 0) {
+                            unset($courses[$id]);
+                            continue;
+                        }
+                        $courses[$id]->cat_id          = $courses[$id]->category;
+                        $courses[$id]->defaultroleid   = $defaultrole->id;
+                        unset($courses[$id]->category);
+                        unset($courses[$id]->visible);
 
-                    $courses[$id]->cat_name        = $extra[$id]->cat_name;
-                    $courses[$id]->cat_description = $extra[$id]->cat_description;
-                    $courses[$id]->defaultrolename = $defaultrole->name;
-                    // coerce to array
-                    $courses[$id] = (array)$courses[$id];
+                        $courses[$id]->cat_name        = $extra[$id]->cat_name;
+                        $courses[$id]->cat_description = $extra[$id]->cat_description;
+                        $courses[$id]->defaultrolename = $defaultrole->name;
+                        // coerce to array
+                        $courses[$id] = (array)$courses[$id];
+                    }
+                } else {
+                    throw new moodle_exception('unknownrole', 'error', '', 'student');
                 }
             } else {
                 // if the array is empty, send it anyway
@@ -752,26 +766,17 @@ class auth_plugin_mnet extends auth_plugin_base {
             }
             $mnethostlogssql = "
             SELECT
-                mhostlogs.remoteid, mhostlogs.time, mhostlogs.userid, mhostlogs.ip,
-                mhostlogs.course, mhostlogs.module, mhostlogs.cmid, mhostlogs.action,
-                mhostlogs.url, mhostlogs.info, mhostlogs.username, c.fullname as coursename,
-                c.modinfo
+                l.id as remoteid, l.time, l.userid, l.ip, l.course, l.module, l.cmid,
+                l.action, l.url, l.info, u.username
             FROM
-                (
-                    SELECT
-                        l.id as remoteid, l.time, l.userid, l.ip, l.course, l.module, l.cmid,
-                        l.action, l.url, l.info, u.username
-                    FROM
-                        {user} u
-                        INNER JOIN {log} l on l.userid = u.id
-                    WHERE
-                        u.mnethostid = ?
-                        AND l.id > ?
-                    ORDER BY remoteid ASC
-                    LIMIT 500
-                ) mhostlogs
-                INNER JOIN {course} c on c.id = mhostlogs.course
-            ORDER by mhostlogs.remoteid ASC";
+                {user} u
+                INNER JOIN {log} l on l.userid = u.id
+            WHERE
+                u.mnethostid = ?
+                AND l.id > ?
+                AND l.course IS NOT NULL
+            ORDER by l.id ASC
+            LIMIT 500";
 
             $mnethostlogs = $DB->get_records_sql($mnethostlogssql, array($mnethostid, $mnet_request->response['last log id']));
 
@@ -782,18 +787,18 @@ class auth_plugin_mnet extends auth_plugin_base {
             $processedlogs = array();
 
             foreach($mnethostlogs as $hostlog) {
-                // Extract the name of the relevant module instance from the
-                // course modinfo if possible.
-                if (!empty($hostlog->modinfo) && !empty($hostlog->cmid)) {
-                    $modinfo = unserialize($hostlog->modinfo);
-                    unset($hostlog->modinfo);
-                    $modulearray = array();
-                    foreach($modinfo as $module) {
-                        $modulearray[$module->cm] = $module->name;
+                try {
+                    // Get impersonalised course information. If it is cached there will be no DB queries.
+                    $modinfo = get_fast_modinfo($hostlog->course, -1);
+                    $hostlog->coursename = $modinfo->get_course()->fullname;
+                    if (!empty($hostlog->cmid) && isset($modinfo->cms[$hostlog->cmid])) {
+                        $hostlog->resource_name = $modinfo->cms[$hostlog->cmid]->name;
+                    } else {
+                        $hostlog->resource_name = '';
                     }
-                    $hostlog->resource_name = $modulearray[$hostlog->cmid];
-                } else {
-                    $hostlog->resource_name = '';
+                } catch (moodle_exception $e) {
+                    // Course not found
+                    continue;
                 }
 
                 $processedlogs[] = array (
@@ -914,7 +919,7 @@ class auth_plugin_mnet extends auth_plugin_base {
                 $returnString .= "We failed to refresh the session for the following usernames: \n".implode("\n", $subArray)."\n\n";
             } else {
                 foreach($results as $emigrant) {
-                    session_touch($emigrant->session_id);
+                    \core\session\manager::touch_session($emigrant->session_id);
                 }
             }
         }
@@ -936,7 +941,6 @@ class auth_plugin_mnet extends auth_plugin_base {
         // run the keepalive client
         $this->keepalive_client();
 
-        // admin/cron.php should have run srand for us
         $random100 = rand(0,100);
         if ($random100 < 10) {     // Approximately 10% of the time.
             // nuke olden sessions
@@ -1071,7 +1075,7 @@ class auth_plugin_mnet extends auth_plugin_base {
                                  array('useragent'=>$useragent, 'userid'=>$userid));
 
         if (isset($remoteclient) && isset($remoteclient->id)) {
-            session_kill_user($userid);
+            \core\session\manager::kill_user_sessions($userid);
         }
         return $returnstring;
     }
@@ -1091,7 +1095,7 @@ class auth_plugin_mnet extends auth_plugin_base {
         $session = $DB->get_record('mnet_session', array('username'=>$username, 'mnethostid'=>$remoteclient->id, 'useragent'=>$useragent));
         $DB->delete_records('mnet_session', array('username'=>$username, 'mnethostid'=>$remoteclient->id, 'useragent'=>$useragent));
         if (false != $session) {
-            session_kill($session->session_id);
+            \core\session\manager::kill_session($session->session_id);
             return true;
         }
         return false;
@@ -1108,7 +1112,7 @@ class auth_plugin_mnet extends auth_plugin_base {
         global $CFG;
         if (is_array($sessionArray)) {
             while($session = array_pop($sessionArray)) {
-                session_kill($session->session_id);
+                \core\session\manager::kill_session($session->session_id);
             }
             return true;
         }
@@ -1136,7 +1140,7 @@ class auth_plugin_mnet extends auth_plugin_base {
 
         if ($user = $DB->get_record('user', array('username' => $username, 'mnethostid' => $CFG->mnet_localhost_id))) {
             $fs = get_file_storage();
-            $usercontext = get_context_instance(CONTEXT_USER, $user->id, MUST_EXIST);
+            $usercontext = context_user::instance($user->id, MUST_EXIST);
             $return = array();
             if ($f1 = $fs->get_file($usercontext->id, 'user', 'icon', 0, '/', 'f1.png')) {
                 $return['f1'] = base64_encode($f1->get_content());

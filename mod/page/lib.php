@@ -16,8 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    mod
- * @subpackage page
+ * @package mod_page
  * @copyright  2009 Petr Skoda (http://skodak.org)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -97,7 +96,6 @@ function page_add_instance($data, $mform = null) {
         $displayoptions['popupwidth']  = $data->popupwidth;
         $displayoptions['popupheight'] = $data->popupheight;
     }
-    $displayoptions['printheading'] = $data->printheading;
     $displayoptions['printintro']   = $data->printintro;
     $data->displayoptions = serialize($displayoptions);
 
@@ -110,7 +108,7 @@ function page_add_instance($data, $mform = null) {
 
     // we need to use context now, so we need to make sure all needed info is already in db
     $DB->set_field('course_modules', 'instance', $data->id, array('id'=>$cmid));
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
+    $context = context_module::instance($cmid);
 
     if ($mform and !empty($data->page['itemid'])) {
         $draftitemid = $data->page['itemid'];
@@ -143,7 +141,6 @@ function page_update_instance($data, $mform) {
         $displayoptions['popupwidth']  = $data->popupwidth;
         $displayoptions['popupheight'] = $data->popupheight;
     }
-    $displayoptions['printheading'] = $data->printheading;
     $displayoptions['printintro']   = $data->printintro;
     $data->displayoptions = serialize($displayoptions);
 
@@ -152,7 +149,7 @@ function page_update_instance($data, $mform) {
 
     $DB->update_record('page', $data);
 
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
+    $context = context_module::instance($cmid);
     if ($draftitemid) {
         $data->content = file_save_draft_area_files($draftitemid, $context->id, 'mod_page', 'content', 0, page_get_editor_options($context), $data->content);
         $DB->update_record('page', $data);
@@ -238,7 +235,7 @@ function page_user_complete($course, $user, $mod, $page) {
  *
  * See {@link get_array_of_activities()} in course/lib.php
  *
- * @param cm_info $coursemodule
+ * @param stdClass $coursemodule
  * @return cached_cm_info Info to customise main page display
  */
 function page_get_coursemodule_info($coursemodule) {
@@ -407,7 +404,7 @@ function page_pluginfile($course, $cm, $context, $filearea, $args, $forcedownloa
         }
 
         // finally send the file
-        send_stored_file($file, 86400, 0, $forcedownload, $options);
+        send_stored_file($file, null, 0, $forcedownload, $options);
     }
 }
 
@@ -430,7 +427,7 @@ function page_page_type_list($pagetype, $parentcontext, $currentcontext) {
 function page_export_contents($cm, $baseurl) {
     global $CFG, $DB;
     $contents = array();
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
 
     $page = $DB->get_record('page', array('id'=>$cm->instance), '*', MUST_EXIST);
 
@@ -510,7 +507,6 @@ function page_dndupload_handle($uploadinfo) {
     $data->display = $config->display;
     $data->popupheight = $config->popupheight;
     $data->popupwidth = $config->popupwidth;
-    $data->printheading = $config->printheading;
     $data->printintro = $config->printintro;
 
     return page_add_instance($data, null);

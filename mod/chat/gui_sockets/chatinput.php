@@ -8,6 +8,7 @@ require('../lib.php');
 $chat_sid = required_param('chat_sid', PARAM_ALPHANUM);
 
 $PAGE->set_url('/mod/chat/gui_sockets/chatinput.php', array('chat_sid'=>$chat_sid));
+$PAGE->set_popup_notification_allowed(false);
 
 if (!$chatuser = $DB->get_record('chat_users', array('sid'=>$chat_sid))) {
     print_error('notlogged', 'chat');
@@ -17,6 +18,7 @@ if (!$chatuser = $DB->get_record('chat_users', array('sid'=>$chat_sid))) {
 $USER = $DB->get_record('user', array('id'=>$chatuser->userid));
 
 //Setup course, lang and theme
+$PAGE->set_pagelayout('embedded');
 $PAGE->set_course($DB->get_record('course', array('id' => $chatuser->course)));
 $PAGE->requires->js('/mod/chat/gui_sockets/chat_gui_sockets.js', true);
 $PAGE->requires->js_function_call('setfocus');
@@ -28,8 +30,8 @@ echo $OUTPUT->header();
 
     <form action="../empty.php" method="get" target="empty" id="inputform"
           onsubmit="return empty_field_and_submit();">
+        <label class="accesshide" for="chat_message"><?php print_string('entermessage', 'chat'); ?></label>
         <input type="text" name="chat_message" id="chat_message" size="60" value="" />
-        <?php echo $OUTPUT->help_icon('usingchat', 'chat'); ?>
     </form>
 
     <form action="<?php echo "http://$CFG->chat_serverhost:$CFG->chat_serverport/"; ?>" method="get" target="empty" id="sendform">

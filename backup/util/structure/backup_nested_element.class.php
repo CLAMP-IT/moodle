@@ -31,12 +31,15 @@ class backup_nested_element extends base_nested_element implements processable {
 
     protected $var_array; // To be used in case we pass one in-memory structure
     protected $table;     // Table (without prefix) to fetch records from
+    protected $tablesortby; // The field to sort by when using the table methods
     protected $sql;       // Raw SQL to fetch records from
     protected $params;    // Unprocessed params as specified in the set_source() call
     protected $procparams;// Processed (path resolved) params array
     protected $aliases;   // Define DB->final element aliases
     protected $fileannotations;   // array of file areas to be searched by file annotations
     protected $counter;   // Number of instances of this element that have been processed
+    protected $results;  // Logs the results we encounter during the process.
+    protected $logs;     // Some log messages that could be retrieved later.
 
     /**
      * Constructor - instantiates one backup_nested_element, specifying its basic info.
@@ -49,14 +52,23 @@ class backup_nested_element extends base_nested_element implements processable {
         parent::__construct($name, $attributes, $final_elements);
         $this->var_array = null;
         $this->table     = null;
+        $this->tablesortby = null;
         $this->sql       = null;
         $this->params    = null;
         $this->procparams= null;
         $this->aliases   = array();
         $this->fileannotations = array();
         $this->counter   = 0;
+        $this->results  = array();
+        $this->logs     = array();
     }
 
+    /**
+     * Process the nested element
+     *
+     * @param object $processor the processor
+     * @return void
+     */
     public function process($processor) {
         if (!$processor instanceof base_processor) { // No correct processor, throw exception
             throw new base_element_struct_exception('incorrect_processor');
@@ -113,18 +125,84 @@ class backup_nested_element extends base_nested_element implements processable {
         $iterator->close();
     }
 
+    /**
+     * Saves a log message to an array
+     *
+     * @see backup_helper::log()
+     * @param string $message to add to the logs
+     * @param int $level level of importance {@link backup::LOG_DEBUG} and other constants
+     * @param mixed $a to be included in $message
+     * @param int $depth of the message
+     * @param display $bool supporting translation via get_string() if true
+     * @return void
+     */
+    protected function add_log($message, $level, $a = null, $depth = null, $display = false) {
+        // Adding the result to the oldest parent.
+        if ($this->get_parent()) {
+            $parent = $this->get_grandparent();
+            $parent->add_log($message, $level, $a, $depth, $display);
+        } else {
+            $log = new stdClass();
+            $log->message = $message;
+            $log->level = $level;
+            $log->a = $a;
+            $log->depth = $depth;
+            $log->display = $display;
+            $this->logs[] = $log;
+        }
+    }
+
+    /**
+     * Saves the results to an array
+     *
+     * @param array $result associative array
+     * @return void
+     */
+    protected function add_result($result) {
+        if (is_array($result)) {
+            // Adding the result to the oldest parent.
+            if ($this->get_parent()) {
+                $parent = $this->get_grandparent();
+                $parent->add_result($result);
+            } else {
+                $this->results = array_merge($this->results, $result);
+            }
+        }
+    }
+
+    /**
+     * Returns the logs
+     *
+     * @return array of log objects
+     */
+    public function get_logs() {
+        return $this->logs;
+    }
+
+    /**
+     * Returns the results
+     *
+     * @return associative array of results
+     */
+    public function get_results() {
+        return $this->results;
+    }
+
     public function set_source_array($arr) {
         // TODO: Only elements having final elements can set source
         $this->var_array = $arr;
     }
 
-    public function set_source_table($table, $params) {
+    public function set_source_table($table, $params, $sortby = null) {
         if (!is_array($params)) { // Check we are passing array
             throw new base_element_struct_exception('setsourcerequiresarrayofparams');
         }
         // TODO: Only elements having final elements can set source
         $this->table = $table;
         $this->procparams = $this->convert_table_params($params);
+        if ($sortby) {
+            $this->tablesortby = $sortby;
+        }
     }
 
     public function set_source_sql($sql, $params) {
@@ -184,6 +262,10 @@ class backup_nested_element extends base_nested_element implements processable {
 
     public function get_source_table() {
         return $this->table;
+    }
+
+    public function get_source_table_sortby() {
+        return $this->tablesortby;
     }
 
     public function get_source_sql() {

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * Code for ajax user selectors.
  *
- * @package   user
+ * @package   core_user
  * @copyright 1999 onwards Martin Dougiamas  http://dougiamas.com
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -34,6 +33,9 @@ define('USER_SELECTOR_DEFAULT_ROWS', 20);
  * In your theme, you must give each user-selector a defined width. If the
  * user selector has name="myid", then the div myid_wrapper must have a width
  * specified.
+ *
+ * @copyright 1999 onwards Martin Dougiamas  http://dougiamas.com
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class user_selector_base {
     /** @var string The control name (and id) in the HTML. */
@@ -70,15 +72,15 @@ abstract class user_selector_base {
     protected static $jsmodule = array(
                 'name' => 'user_selector',
                 'fullpath' => '/user/selector/module.js',
-                'requires'  => array('node', 'event-custom', 'datasource', 'json'),
+                'requires'  => array('node', 'event-custom', 'datasource', 'json', 'moodle-core-notification'),
                 'strings' => array(
                     array('previouslyselectedusers', 'moodle', '%%SEARCHTERM%%'),
                     array('nomatchingusers', 'moodle', '%%SEARCHTERM%%'),
                     array('none', 'moodle')
                 ));
 
-
-    // Public API ==============================================================
+    /** @var int this is used to define maximum number of users visible in list */
+    public $maxusersperpage = 100;
 
     /**
      * Constructor. Each subclass must have a constructor with this signature.
@@ -93,12 +95,11 @@ abstract class user_selector_base {
         // Initialise member variables from constructor arguments.
         $this->name = $name;
 
-        // Use specified context for permission checks, system context if not
-        // specified
+        // Use specified context for permission checks, system context if not specified.
         if (isset($options['accesscontext'])) {
             $this->accesscontext = $options['accesscontext'];
         } else {
-            $this->accesscontext = get_context_instance(CONTEXT_SYSTEM);
+            $this->accesscontext = context_system::instance();
         }
 
         if (isset($options['extrafields'])) {
@@ -120,12 +121,16 @@ abstract class user_selector_base {
         $this->preserveselected = $this->initialise_option('userselector_preserveselected', $this->preserveselected);
         $this->autoselectunique = $this->initialise_option('userselector_autoselectunique', $this->autoselectunique);
         $this->searchanywhere = $this->initialise_option('userselector_searchanywhere', $this->searchanywhere);
+
+        if (!empty($CFG->maxusersperpage)) {
+            $this->maxusersperpage = $CFG->maxusersperpage;
+        }
     }
 
     /**
-     * All to the list of user ids that this control will not select. For example,
-     * on the role assign page, we do not list the users who already have the role
-     * in question.
+     * All to the list of user ids that this control will not select.
+     *
+     * For example, on the role assign page, we do not list the users who already have the role in question.
      *
      * @param array $arrayofuserids the user ids to exclude.
      */
@@ -137,10 +142,12 @@ abstract class user_selector_base {
      * Clear the list of excluded user ids.
      */
     public function clear_exclusions() {
-        $exclude = array();
+        $this->exclude = array();
     }
 
     /**
+     * Returns the list of user ids that this control will not select.
+     *
      * @return array the list of user ids that this control will not select.
      */
     public function get_exclusions() {
@@ -148,9 +155,12 @@ abstract class user_selector_base {
     }
 
     /**
-     * @return array of user objects. The users that were selected. This is a more sophisticated version
-     * of optional_param($this->name, array(), PARAM_INTEGER) that validates the
+     * The users that were selected.
+     *
+     * This is a more sophisticated version of optional_param($this->name, array(), PARAM_INT) that validates the
      * returned list of ids against the rules for this user selector.
+     *
+     * @return array of user objects.
      */
     public function get_selected_users() {
         // Do a lazy load.
@@ -162,6 +172,8 @@ abstract class user_selector_base {
 
     /**
      * Convenience method for when multiselect is false (throws an exception if not).
+     *
+     * @throws moodle_exception
      * @return object the selected user object, or null if none.
      */
     public function get_selected_user() {
@@ -179,6 +191,8 @@ abstract class user_selector_base {
     }
 
     /**
+     * Invalidates the list of selected users.
+     *
      * If you update the database in such a way that it is likely to change the
      * list of users that this component is allowed to select from, then you
      * must call this method. For example, on the role assign page, after you have
@@ -190,6 +204,7 @@ abstract class user_selector_base {
 
     /**
      * Output this user_selector as HTML.
+     *
      * @param boolean $return if true, return the HTML as a string instead of outputting it.
      * @return mixed if $return is true, returns the HTML as a string, otherwise returns nothing.
      */
@@ -230,10 +245,13 @@ abstract class user_selector_base {
         $optionsoutput = false;
         if (!user_selector_base::$searchoptionsoutput) {
             $output .= print_collapsible_region_start('', 'userselector_options',
-                    get_string('searchoptions'), 'userselector_optionscollapsed', true, true);
-            $output .= $this->option_checkbox('preserveselected', $this->preserveselected, get_string('userselectorpreserveselected'));
-            $output .= $this->option_checkbox('autoselectunique', $this->autoselectunique, get_string('userselectorautoselectunique'));
-            $output .= $this->option_checkbox('searchanywhere', $this->searchanywhere, get_string('userselectorsearchanywhere'));
+                get_string('searchoptions'), 'userselector_optionscollapsed', true, true);
+            $output .= $this->option_checkbox('preserveselected', $this->preserveselected,
+                get_string('userselectorpreserveselected'));
+            $output .= $this->option_checkbox('autoselectunique', $this->autoselectunique,
+                get_string('userselectorautoselectunique'));
+            $output .= $this->option_checkbox('searchanywhere', $this->searchanywhere,
+                get_string('userselectorsearchanywhere'));
             $output .= print_collapsible_region_end(true);
 
             $PAGE->requires->js_init_call('M.core_user.init_user_selector_options_tracker', array(), false, self::$jsmodule);
@@ -262,6 +280,8 @@ abstract class user_selector_base {
     }
 
     /**
+     * Returns the number of rows to display in this control.
+     *
      * @return integer the height this control will be displayed, in rows.
      */
     public function get_rows() {
@@ -278,6 +298,8 @@ abstract class user_selector_base {
     }
 
     /**
+     * Returns true is multiselect should be allowed.
+     *
      * @return boolean whether this control will allow selection of more than one user.
      */
     public function is_multiselect() {
@@ -285,6 +307,8 @@ abstract class user_selector_base {
     }
 
     /**
+     * Returns the id/name of this control.
+     *
      * @return string the id/name that this control will have in the HTML.
      */
     public function get_name() {
@@ -292,16 +316,13 @@ abstract class user_selector_base {
     }
 
     /**
-     * Set the user fields that are displayed in the selector in addition to the
-     * user's name.
+     * Set the user fields that are displayed in the selector in addition to the user's name.
      *
      * @param array $fields a list of field names that exist in the user table.
      */
     public function set_extra_fields($fields) {
         $this->extrafields = $fields;
     }
-
-    // API for sublasses =======================================================
 
     /**
      * Search the database for users matching the $search string, and any other
@@ -349,9 +370,9 @@ abstract class user_selector_base {
         );
     }
 
-    // Inner workings ==========================================================
-
     /**
+     * Returns true if this control is validating a list of users.
+     *
      * @return boolean if true, we are validating a list of selected users,
      *      rather than preparing a list of uesrs to choose from.
      */
@@ -360,19 +381,18 @@ abstract class user_selector_base {
     }
 
     /**
-     * Get the list of users that were selected by doing optional_param then
-     * validating the result.
+     * Get the list of users that were selected by doing optional_param then validating the result.
      *
      * @return array of user objects.
      */
     protected function load_selected_users() {
         // See if we got anything.
         if ($this->multiselect) {
-            $userids = optional_param_array($this->name, array(), PARAM_INTEGER);
-        } else if ($userid = optional_param($this->name, 0, PARAM_INTEGER)) {
+            $userids = optional_param_array($this->name, array(), PARAM_INT);
+        } else if ($userid = optional_param($this->name, 0, PARAM_INT)) {
             $userids = array($userid);
         }
-        // If there are no users there is nobody to load
+        // If there are no users there is nobody to load.
         if (empty($userids)) {
             return array();
         }
@@ -401,14 +421,17 @@ abstract class user_selector_base {
     }
 
     /**
+     * Returns SQL to select required fields.
+     *
      * @param string $u the table alias for the user table in the query being
      *      built. May be ''.
      * @return string fragment of SQL to go in the select list of the query.
      */
     protected function required_fields_sql($u) {
         // Raw list of fields.
-        $fields = array('id', 'firstname', 'lastname');
-        $fields = array_merge($fields, $this->extrafields);
+        $fields = array('id');
+        // Add additional name fields.
+        $fields = array_merge($fields, get_all_user_name_fields(), $this->extrafields);
 
         // Prepend the table alias.
         if ($u) {
@@ -420,6 +443,8 @@ abstract class user_selector_base {
     }
 
     /**
+     * Returns an array with SQL to perform a search and the params that go into it.
+     *
      * @param string $search the text to search for.
      * @param string $u the table alias for the user table in the query being
      *      built. May be ''.
@@ -428,67 +453,13 @@ abstract class user_selector_base {
      *      this uses ? style placeholders.
      */
     protected function search_sql($search, $u) {
-        global $DB, $CFG;
-        $params = array();
-        $tests = array();
-
-        if ($u) {
-            $u .= '.';
-        }
-
-        // If we have a $search string, put a field LIKE '$search%' condition on each field.
-        if ($search) {
-            $conditions = array(
-                $DB->sql_fullname($u . 'firstname', $u . 'lastname'),
-                $conditions[] = $u . 'lastname'
-            );
-            foreach ($this->extrafields as $field) {
-                $conditions[] = $u . $field;
-            }
-            if ($this->searchanywhere) {
-                $searchparam = '%' . $search . '%';
-            } else {
-                $searchparam = $search . '%';
-            }
-            $i = 0;
-            foreach ($conditions as $key=>$condition) {
-                $conditions[$key] = $DB->sql_like($condition, ":con{$i}00", false, false);
-                $params["con{$i}00"] = $searchparam;
-                $i++;
-            }
-            $tests[] = '(' . implode(' OR ', $conditions) . ')';
-        }
-
-        // Add some additional sensible conditions
-        $tests[] = $u . "id <> :guestid";
-        $params['guestid'] = $CFG->siteguest;
-        $tests[] = $u . 'deleted = 0';
-        $tests[] = $u . 'confirmed = 1';
-
-        // If we are being asked to exclude any users, do that.
-        if (!empty($this->exclude)) {
-            list($usertest, $userparams) = $DB->get_in_or_equal($this->exclude, SQL_PARAMS_NAMED, 'ex', false);
-            $tests[] = $u . 'id ' . $usertest;
-            $params = array_merge($params, $userparams);
-        }
-
-        // If we are validating a set list of userids, add an id IN (...) test.
-        if (!empty($this->validatinguserids)) {
-            list($usertest, $userparams) = $DB->get_in_or_equal($this->validatinguserids, SQL_PARAMS_NAMED, 'val');
-            $tests[] = $u . 'id ' . $usertest;
-            $params = array_merge($params, $userparams);
-        }
-
-        if (empty($tests)) {
-            $tests[] = '1 = 1';
-        }
-
-        // Combing the conditions and return.
-        return array(implode(' AND ', $tests), $params);
+        return users_search_sql($search, $u, $this->searchanywhere, $this->extrafields,
+                $this->exclude, $this->validatinguserids);
     }
 
     /**
      * Used to generate a nice message when there are too many users to show.
+     *
      * The message includes the number of users that currently match, and the
      * text of the message depends on whether the search term is non-blank.
      *
@@ -511,10 +482,12 @@ abstract class user_selector_base {
 
     /**
      * Output the list of <optgroup>s and <options>s that go inside the select.
+     *
      * This method should do the same as the JavaScript method
      * user_selector.prototype.handle_response.
      *
      * @param array $groupedusers an array, as returned by find_users.
+     * @param string $search
      * @return string HTML code.
      */
     protected function output_options($groupedusers, $search) {
@@ -550,8 +523,7 @@ abstract class user_selector_base {
             $output .= $this->output_optgroup(get_string('previouslyselectedusers', '', $search), $this->selected, true);
         }
 
-        // This method trashes $this->selected, so clear the cache so it is
-        // rebuilt before anyone tried to use it again.
+        // This method trashes $this->selected, so clear the cache so it is rebuilt before anyone tried to use it again.
         $this->selected = null;
 
         return $output;
@@ -578,6 +550,11 @@ abstract class user_selector_base {
                 unset($this->selected[$user->id]);
                 $output .= '    <option' . $attributes . ' value="' . $user->id . '">' .
                         $this->output_user($user) . "</option>\n";
+                if (!empty($user->infobelow)) {
+                    // Poor man's indent  here is because CSS styles do not work in select options, except in Firefox.
+                    $output .= '    <option disabled="disabled" class="userselector-infobelow">' .
+                            '&nbsp;&nbsp;&nbsp;&nbsp;' . s($user->infobelow) . '</option>';
+                }
             }
         } else {
             $output = '  <optgroup label="' . htmlspecialchars($groupname) . '">' . "\n";
@@ -606,15 +583,22 @@ abstract class user_selector_base {
     }
 
     /**
+     * Returns the string to use for the search button caption.
+     *
      * @return string the caption for the search button.
      */
     protected function search_button_caption() {
         return get_string('search');
     }
 
-    // Initialise one of the option checkboxes, either from
-    // the request, or failing that from the user_preferences table, or
-    // finally from the given default.
+    /**
+     * Initialise one of the option checkboxes, either from  the request, or failing that from the
+     * user_preferences table, or finally from the given default.
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed|null|string
+     */
     private function initialise_option($name, $default) {
         $param = optional_param($name, null, PARAM_BOOL);
         if (is_null($param)) {
@@ -625,7 +609,14 @@ abstract class user_selector_base {
         }
     }
 
-    // Output one of the options checkboxes.
+    /**
+     * Output one of the options checkboxes.
+     *
+     * @param string $name
+     * @param string $on
+     * @param string $label
+     * @return string
+     */
     private function option_checkbox($name, $on, $label) {
         if ($on) {
             $checked = ' checked="checked"';
@@ -643,8 +634,10 @@ abstract class user_selector_base {
     }
 
     /**
-     * @param boolean $optiontracker if true, initialise JavaScript for updating the user prefs.
-     * @return any HTML needed here.
+     * Initialises JS for this control.
+     *
+     * @param string $search
+     * @return string any HTML needed here.
      */
     protected function initialise_javascript($search) {
         global $USER, $PAGE, $OUTPUT;
@@ -656,33 +649,47 @@ abstract class user_selector_base {
         $USER->userselectors[$hash] = $options;
 
         // Initialise the selector.
-        $PAGE->requires->js_init_call('M.core_user.init_user_selector', array($this->name, $hash, $this->extrafields, $search), false, self::$jsmodule);
+        $PAGE->requires->js_init_call(
+            'M.core_user.init_user_selector',
+            array($this->name, $hash, $this->extrafields, $search),
+            false,
+            self::$jsmodule
+        );
         return $output;
     }
 }
 
-// User selectors for managing group members ==================================
-
 /**
  * Base class to avoid duplicating code.
+ *
+ * @copyright 1999 onwards Martin Dougiamas  http://dougiamas.com
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class groups_user_selector_base extends user_selector_base {
+    /** @var int */
     protected $groupid;
+    /** @var  int */
     protected $courseid;
 
     /**
+     * Constructor.
+     *
      * @param string $name control name
      * @param array $options should have two elements with keys groupid and courseid.
      */
     public function __construct($name, $options) {
         global $CFG;
-        $options['accesscontext'] = get_context_instance(CONTEXT_COURSE, $options['courseid']);
+        $options['accesscontext'] = context_course::instance($options['courseid']);
         parent::__construct($name, $options);
         $this->groupid = $options['groupid'];
         $this->courseid = $options['courseid'];
         require_once($CFG->dirroot . '/group/lib.php');
     }
 
+    /**
+     * Returns options for this selector.
+     * @return array
+     */
     protected function get_options() {
         $options = parent::get_options();
         $options['groupid'] = $this->groupid;
@@ -691,7 +698,10 @@ abstract class groups_user_selector_base extends user_selector_base {
     }
 
     /**
+     * Creates an organised array from given data.
+     *
      * @param array $roles array in the format returned by groups_calculate_role_people.
+     * @param string $search
      * @return array array in the format find_users is supposed to return.
      */
     protected function convert_array_format($roles, $search) {
@@ -712,6 +722,10 @@ abstract class groups_user_selector_base extends user_selector_base {
             foreach ($groupedusers[$groupname] as &$user) {
                 unset($user->roles);
                 $user->fullname = fullname($user);
+                if (!empty($user->component)) {
+                    $user->infobelow = get_string('addedby', 'group',
+                        get_string('pluginname', $user->component));
+                }
             }
         }
         return $groupedusers;
@@ -720,30 +734,53 @@ abstract class groups_user_selector_base extends user_selector_base {
 
 /**
  * User selector subclass for the list of users who are in a certain group.
+ *
  * Used on the add group memebers page.
+ *
+ * @copyright 1999 onwards Martin Dougiamas  http://dougiamas.com
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class group_members_selector extends groups_user_selector_base {
+
+    /**
+     * Finds users to display in this control.
+     * @param string $search
+     * @return array
+     */
     public function find_users($search) {
         list($wherecondition, $params) = $this->search_sql($search, 'u');
+
+        list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
+
         $roles = groups_get_members_by_role($this->groupid, $this->courseid,
-                $this->required_fields_sql('u'), 'u.lastname, u.firstname',
-                $wherecondition, $params);
+                $this->required_fields_sql('u') . ', gm.component',
+                $sort, $wherecondition, array_merge($params, $sortparams));
+
         return $this->convert_array_format($roles, $search);
     }
 }
 
 /**
  * User selector subclass for the list of users who are not in a certain group.
+ *
  * Used on the add group members page.
+ *
+ * @copyright 1999 onwards Martin Dougiamas  http://dougiamas.com
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class group_non_members_selector extends groups_user_selector_base {
-    const MAX_USERS_PER_PAGE = 100;
-
     /**
      * An array of user ids populated by find_users() used in print_user_summaries()
+     * @var array
      */
     private $potentialmembersids = array();
 
+    /**
+     * Output user.
+     *
+     * @param stdClass $user
+     * @return string
+     */
     public function output_user($user) {
         return parent::output_user($user) . ' (' . $user->numgroups . ')';
     }
@@ -771,10 +808,10 @@ class group_non_members_selector extends groups_user_selector_base {
 
         $usersummaries = array();
 
-        // Get other groups user already belongs to
+        // Get other groups user already belongs to.
         $usergroups = array();
         $potentialmembersids = $this->potentialmembersids;
-        if( empty($potentialmembersids)==false ) {
+        if (empty($potentialmembersids) == false) {
             list($membersidsclause, $params) = $DB->get_in_or_equal($potentialmembersids, SQL_PARAMS_NAMED, 'pm');
             $sql = "SELECT u.id AS userid, g.*
                     FROM {user} u
@@ -805,11 +842,17 @@ class group_non_members_selector extends groups_user_selector_base {
         $PAGE->requires->data_for_js('userSummaries', $usersummaries);
     }
 
+    /**
+     * Finds users to display in this control.
+     *
+     * @param string $search
+     * @return array
+     */
     public function find_users($search) {
         global $DB;
 
         // Get list of allowed roles.
-        $context = get_context_instance(CONTEXT_COURSE, $this->courseid);
+        $context = context_course::instance($this->courseid);
         if ($validroleids = groups_get_possible_roles($context)) {
             list($roleids, $roleparams) = $DB->get_in_or_equal($validroleids, SQL_PARAMS_NAMED, 'r');
         } else {
@@ -817,12 +860,16 @@ class group_non_members_selector extends groups_user_selector_base {
             $roleparams = array();
         }
 
+        // We want to query both the current context and parent contexts.
+        list($relatedctxsql, $relatedctxparams) =
+            $DB->get_in_or_equal($context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx');
+
         // Get the search condition.
         list($searchcondition, $searchparams) = $this->search_sql($search, 'u');
 
-        // Build the SQL
+        // Build the SQL.
         list($enrolsql, $enrolparams) = get_enrolled_sql($context);
-        $fields = "SELECT r.id AS roleid, r.shortname AS roleshortname, r.name AS rolename, u.id AS userid,
+        $fields = "SELECT r.id AS roleid, u.id AS userid,
                           " . $this->required_fields_sql('u') . ",
                           (SELECT count(igm.groupid)
                              FROM {groups_members} igm
@@ -830,35 +877,36 @@ class group_non_members_selector extends groups_user_selector_base {
                             WHERE igm.userid = u.id AND ig.courseid = :courseid) AS numgroups";
         $sql = "   FROM {user} u
                    JOIN ($enrolsql) e ON e.id = u.id
-              LEFT JOIN {role_assignments} ra ON (ra.userid = u.id AND ra.contextid " . get_related_contexts_string($context) . " AND ra.roleid $roleids)
+              LEFT JOIN {role_assignments} ra ON (ra.userid = u.id AND ra.contextid $relatedctxsql AND ra.roleid $roleids)
               LEFT JOIN {role} r ON r.id = ra.roleid
+              LEFT JOIN {groups_members} gm ON (gm.userid = u.id AND gm.groupid = :groupid)
                   WHERE u.deleted = 0
-                        AND u.id NOT IN (SELECT userid
-                                          FROM {groups_members}
-                                         WHERE groupid = :groupid)
+                        AND gm.id IS NULL
                         AND $searchcondition";
-        $orderby = "ORDER BY u.lastname, u.firstname";
 
-        $params = array_merge($searchparams, $roleparams, $enrolparams);
+        list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
+        $orderby = ' ORDER BY ' . $sort;
+
+        $params = array_merge($searchparams, $roleparams, $enrolparams, $relatedctxparams);
         $params['courseid'] = $this->courseid;
         $params['groupid']  = $this->groupid;
 
         if (!$this->is_validating()) {
             $potentialmemberscount = $DB->count_records_sql("SELECT COUNT(DISTINCT u.id) $sql", $params);
-            if ($potentialmemberscount > group_non_members_selector::MAX_USERS_PER_PAGE) {
+            if ($potentialmemberscount > $this->maxusersperpage) {
                 return $this->too_many_results($search, $potentialmemberscount);
             }
         }
 
-        $rs = $DB->get_recordset_sql("$fields $sql $orderby", $params);
-        $roles =  groups_calculate_role_people($rs, $context);
+        $rs = $DB->get_recordset_sql("$fields $sql $orderby", array_merge($params, $sortparams));
+        $roles = groups_calculate_role_people($rs, $context);
 
-        //don't hold onto user IDs if we're doing validation
+        // Don't hold onto user IDs if we're doing validation.
         if (empty($this->validatinguserids) ) {
-            if($roles) {
-                foreach($roles as $k=>$v) {
-                    if($v) {
-                        foreach($v->users as $uid=>$userobject) {
+            if ($roles) {
+                foreach ($roles as $k => $v) {
+                    if ($v) {
+                        foreach ($v->users as $uid => $userobject) {
                             $this->potentialmembersids[] = $uid;
                         }
                     }

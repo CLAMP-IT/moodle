@@ -50,7 +50,7 @@ if (!$user = $DB->get_record('user', array('id'=>$note->userid))) {
 require_login($course);
 
 /// locate context information
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 require_capability('moodle/notes:manage', $context);
 
 if (empty($CFG->enablenotes)) {
@@ -70,9 +70,13 @@ if ($noteform->is_cancelled()) {
 
 /// if data was submitted and validated, then save it to database
 if ($note = $noteform->get_data()){
-    if (note_save($note)) {
-        add_to_log($note->courseid, 'notes', 'update', 'index.php?course='.$note->courseid.'&amp;user='.$note->userid . '#note-' . $note->id, 'update note');
+    if ($noteid) {
+        // A noteid has been used, we don't allow editing of course or user so
+        // lets unset them to be sure we never change that by accident.
+        unset($note->courseid);
+        unset($note->userid);
     }
+    note_save($note);
     // redirect to notes list that contains this note
     redirect($CFG->wwwroot . '/notes/index.php?course=' . $note->courseid . '&amp;user=' . $note->userid);
 }
@@ -85,7 +89,7 @@ if ($noteid) {
 
 /// output HTML
 $link = null;
-if (has_capability('moodle/course:viewparticipants', $context) || has_capability('moodle/site:viewparticipants', get_context_instance(CONTEXT_SYSTEM))) {
+if (has_capability('moodle/course:viewparticipants', $context) || has_capability('moodle/site:viewparticipants', context_system::instance())) {
     $link = new moodle_url('/user/index.php',array('id'=>$course->id));
 }
 $PAGE->navbar->add(get_string('participants'), $link);

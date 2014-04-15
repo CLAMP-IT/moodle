@@ -92,7 +92,7 @@ function filter_text_image($imagefile, $tex, $height, $width, $align, $alt) {
     }
     $anchorcontents .= "\" $style/>";
 
-    if (!file_exists("$CFG->dataroot/filter/tex/$imagefile") && has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM))) {
+    if (!file_exists("$CFG->dataroot/filter/tex/$imagefile") && has_capability('moodle/site:config', context_system::instance())) {
         $link = '/filter/tex/texdebug.php';
         $action = null;
     } else {
@@ -181,7 +181,8 @@ class filter_tex extends moodle_text_filter {
                 $texcache->timemodified = time();
                 $DB->insert_record("cache_filters", $texcache, false);
             }
-            $filename = $md5 . ".{$CFG->filter_tex_convertformat}";
+            $convertformat = get_config('filter_tex', 'convertformat');
+            $filename = $md5.".{$convertformat}";
             $text = str_replace( $matches[0][$i], filter_text_image($filename, $texexp, 0, 0, $align, $alt), $text);
         }
         return $text;

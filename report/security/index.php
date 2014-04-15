@@ -42,7 +42,7 @@ if (array_search($issue, $issues, true) === false) {
 
 // we may need a bit more memory and this may take a long time to process
 raise_memory_limit(MEMORY_EXTRA);
-@set_time_limit(0);
+core_php_time_limit::raise();
 
 // Print the header.
 admin_externalpage_setup('reportsecurity', '', null, '', array('pagelayout'=>'report'));
@@ -76,9 +76,9 @@ if ($issue and ($result = $issue(true))) {
 
     $table = new html_table();
     $table->head  = array($strissue, $strstatus, $strdesc, $strconfig);
-    $table->size  = array('30%', '10%', '50%', '10%' );
-    $table->align = array('left', 'left', 'left', 'left');
-    $table->attributes = array('class'=>'scurityreporttable generaltable');
+    $table->rowclasses = array('leftalign issue', 'leftalign status', 'leftalign desc', 'leftalign config');
+    $table->attributes = array('class'=>'admintable securityreport generaltable');
+    $table->id = 'securityissuereporttable';
     $table->data  = array();
 
     // print detail of one issue only
@@ -103,9 +103,9 @@ if ($issue and ($result = $issue(true))) {
 
     $table = new html_table();
     $table->head  = array($strissue, $strstatus, $strdesc);
-    $table->size  = array('30%', '10%', '60%' );
-    $table->align = array('left', 'left', 'left');
-    $table->attributes = array('class'=>'scurityreporttable generaltable');
+    $table->colclasses = array('leftalign issue', 'leftalign status', 'leftalign desc');
+    $table->attributes = array('class'=>'admintable securityreport generaltable');
+    $table->id = 'securityreporttable';
     $table->data  = array();
 
     foreach ($issues as $issue) {

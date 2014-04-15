@@ -50,17 +50,17 @@ $question = question_bank::load_question($id);
 if ($cmid = optional_param('cmid', 0, PARAM_INT)) {
     $cm = get_coursemodule_from_id(false, $cmid);
     require_login($cm->course, false, $cm);
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
+    $context = context_module::instance($cmid);
 
 } else if ($courseid = optional_param('courseid', 0, PARAM_INT)) {
     require_login($courseid);
-    $context = get_context_instance(CONTEXT_COURSE, $courseid);
+    $context = context_course::instance($courseid);
 
 } else {
     require_login();
     $category = $DB->get_record('question_categories',
             array('id' => $question->category), '*', MUST_EXIST);
-    $context = get_context_instance_by_id($category->contextid);
+    $context = context::instance_by_id($category->contextid);
     $PAGE->set_context($context);
     // Note that in the other cases, require_login will set the correct page context.
 }
@@ -75,14 +75,10 @@ $options->set_from_request();
 $PAGE->set_url(question_preview_url($id, $options->behaviour, $options->maxmark,
         $options, $options->variant, $context));
 
-// Get and validate exitsing preview, or start a new one.
+// Get and validate existing preview, or start a new one.
 $previewid = optional_param('previewid', 0, PARAM_INT);
 
 if ($previewid) {
-    if (!isset($SESSION->question_previews[$previewid])) {
-        print_error('notyourpreview', 'question');
-    }
-
     try {
         $quba = question_engine::load_questions_usage_by_activity($previewid);
 
@@ -92,6 +88,10 @@ if ($previewid) {
         print_error('submissionoutofsequencefriendlymessage', 'question',
                 question_preview_url($question->id, $options->behaviour,
                 $options->maxmark, $options, $options->variant, $context), null, $e);
+    }
+
+    if ($quba->get_owning_context()->instanceid != $USER->id) {
+        print_error('notyourpreview', 'question');
     }
 
     $slot = $quba->get_first_question_number();
@@ -104,7 +104,7 @@ if ($previewid) {
 
 } else {
     $quba = question_engine::make_questions_usage_by_activity(
-            'core_question_preview', $context);
+            'core_question_preview', context_user::instance($USER->id));
     $quba->set_preferred_behaviour($options->behaviour);
     $slot = $quba->add_question($question, $options->maxmark);
 
@@ -119,14 +119,12 @@ if ($previewid) {
     $transaction = $DB->start_delegated_transaction();
     question_engine::save_questions_usage_by_activity($quba);
     $transaction->allow_commit();
-
-    $SESSION->question_previews[$quba->get_id()] = true;
 }
 $options->behaviour = $quba->get_preferred_behaviour();
 $options->maxmark = $quba->get_question_max_mark($slot);
 
 // Create the settings form, and initialise the fields.
-$optionsform = new preview_options_form(question_preview_form_url($question->id, $context),
+$optionsform = new preview_options_form(question_preview_form_url($question->id, $context, $previewid),
         array('quba' => $quba, 'maxvariant' => $maxvariant));
 $optionsform->set_data($options);
 
@@ -137,7 +135,9 @@ if ($newoptions = $optionsform->get_submitted_data()) {
     if (!isset($newoptions->variant)) {
         $newoptions->variant = $options->variant;
     }
-    restart_preview($previewid, $question->id, $newoptions, $context);
+    if (isset($newoptions->saverestart)) {
+        restart_preview($previewid, $question->id, $newoptions, $context);
+    }
 }
 
 // Prepare a URL that is used in various places.
@@ -226,6 +226,7 @@ $technical = array();
 $technical[] = get_string('behaviourbeingused', 'question',
         question_engine::get_behaviour_name($qa->get_behaviour_name()));
 $technical[] = get_string('technicalinfominfraction',     'question', $qa->get_min_fraction());
+$technical[] = get_string('technicalinfomaxfraction',     'question', $qa->get_max_fraction());
 $technical[] = get_string('technicalinfoquestionsummary', 'question', s($qa->get_question_summary()));
 $technical[] = get_string('technicalinforightsummary',    'question', s($qa->get_right_answer_summary()));
 $technical[] = get_string('technicalinfostate',           'question', '' . $qa->get_state());
@@ -274,12 +275,10 @@ print_collapsible_region_end();
 // Display the settings form.
 $optionsform->display();
 
-$PAGE->requires->js_init_call('M.core_question_preview.init', null, false, array(
-        'name' => 'core_question_preview',
-        'fullpath' => '/question/preview.js',
-        'requires' => array('base', 'dom', 'event-delegate', 'event-key', 'core_question_engine'),
-        'strings' => array(
-            array('closepreview', 'question'),
-        )));
+$PAGE->requires->js_module('core_question_engine');
+$PAGE->requires->strings_for_js(array(
+    'closepreview',
+), 'question');
+$PAGE->requires->yui_module('moodle-question-preview', 'M.question.preview.init');
 echo $OUTPUT->footer();
 

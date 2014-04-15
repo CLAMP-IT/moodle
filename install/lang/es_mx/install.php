@@ -31,7 +31,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['admindirname'] = 'Directorio Admin';
-$string['availablelangs'] = 'Lista de idiomas disponibles';
+$string['availablelangs'] = 'Paquetes de idiomas disponibles';
 $string['chooselanguagehead'] = 'Seleccionar idioma';
 $string['chooselanguagesub'] = 'Por favor, seleccione un idioma para el proceso de instalación. Este idioma se usará también como idioma por defecto del sitio, si bien puede cambiarse más adelante.';
 $string['clialreadyconfigured'] = 'El archivo config.php ya existe, por favor use admin/cli/install_database.php si desea instalar este sitio';
@@ -48,12 +48,12 @@ $string['environmenthead'] = 'Comprobando su entorno';
 $string['environmentsub2'] = 'Cada versión de Moodle tiene algún requisito mínimo de la versión de PHP y un número obligatorio de extensiones de PHP. Una comprobación del entorno completo se realiza antes de cada instalación y actualización. Por favor, póngase en contacto con el administrador del servidor si no sabe cómo instalar la nueva versión o habilitar las extensiones PHP.';
 $string['errorsinenvironment'] = '¡La comprobación del entorno falló!';
 $string['installation'] = 'Instalación';
-$string['langdownloaderror'] = 'El idioma "{$a}" no pudo ser instalado. El proceso de instalación continuará en inglés.';
+$string['langdownloaderror'] = 'El idioma "{$a}" no pudo ser instalado. El proceso de instalación continuará en Inglés.';
 $string['memorylimithelp'] = '<p>El límite de memoria PHP en su servidor es actualmente {$a}.</p>
 
 <p>Esto puede ocasionar que Moodle tenga problemas de memoria más adelante, especialmente si usted tiene activados muchos módulos y/o muchos usuarios.</p>
 
-<p>Recomendamos que configure PHP con el límite más alto posible, e.g. 40M.
+<p>Recomendamos que configure PHP con el límite más alto posible, por ejemplo: 40M.
 Hay varias formas de hacer esto:</p>
 <ol>
 <li>Si puede hacerlo, recompile PHP con <i>--enable-memory-limit</i>.
@@ -85,7 +85,7 @@ $string['phpversionhelp'] = '<p>Moodle requiere al menos una versión de PHP 4.3
 (En caso de 5.0.x podría también revertir a la versión 4.4.x)</p>';
 $string['welcomep10'] = '{$a->installername} ({$a->installerversion})';
 $string['welcomep20'] = 'Si está viendo esta página es porque ha podido ejecutar el paquete <strong>{$a->packname} {$a->packversion}</strong> en su computadora. !Enhorabuena!';
-$string['welcomep30'] = 'Esta versión de <strong>{$a->installername}</strong> incluye las aplicaciones necesarias para que <strong>Moodle</strong> funcione en su computadora principalmente:';
+$string['welcomep30'] = 'Esta versión de <strong>{$a->installername}</strong> incluye las aplicaciones necesarias para que <strong>Moodle</strong> funcione en su computadora,  principalmente:';
 $string['welcomep40'] = 'El paquete también incluye <strong>Moodle {$a->moodlerelease} ({$a->moodleversion})</strong>.';
 $string['welcomep50'] = 'El uso de todas las aplicaciones del paquete está gobernado por sus respectivas
     licencias. El programa <strong>{$a->installername}</strong> es

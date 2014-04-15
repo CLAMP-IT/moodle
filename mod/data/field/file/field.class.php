@@ -43,7 +43,7 @@ class data_field_file extends data_field_base {
 
                 if (!empty($content->content)) {
                     if ($file = $fs->get_file($this->context->id, 'mod_data', 'content', $content->id, '/', $content->content)) {
-                        $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+                        $usercontext = context_user::instance($USER->id);
                         if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid, 'id DESC', false)) {
                             return false;
                         }
@@ -71,27 +71,45 @@ class data_field_file extends data_field_base {
         $html .= '<input type="hidden" name="field_'.$this->field->id.'_file" value="'.$itemid.'" />';
 
         $options = new stdClass();
-        $options->maxbytes  = $this->field->param3;
+        $options->maxbytes = $this->field->param3;
+        $options->maxfiles  = 1; // Limit to one file for the moment, this may be changed if requested as a feature in the future.
         $options->itemid    = $itemid;
         $options->accepted_types = '*';
         $options->return_types = FILE_INTERNAL;
         $options->context = $PAGE->context;
 
-        $fp = new file_picker($options);
-        // print out file picker
-        $html .= $OUTPUT->render($fp);
+        $fm = new form_filemanager($options);
+        // Print out file manager.
+
+        $output = $PAGE->get_renderer('core', 'files');
+        $html .= $output->render($fm);
 
         $html .= '</fieldset>';
         $html .= '</div>';
 
-        $module = array('name'=>'data_filepicker', 'fullpath'=>'/mod/data/data.js', 'requires'=>array('core_filepicker'));
-        $PAGE->requires->js_init_call('M.data_filepicker.init', array($fp->options), true, $module);
+        $module = array(
+            'name'=>'form_filemanager',
+            'fullpath'=>'/lib/form/filemanager.js',
+            'requires' => array('core_filepicker', 'base', 'io-base', 'node',
+                    'json', 'core_dndupload', 'panel', 'resize-plugin', 'dd-plugin'),
+            'strings' => array(
+                array('error', 'moodle'), array('info', 'moodle'), array('confirmdeletefile', 'repository'),
+                array('draftareanofiles', 'repository'), array('entername', 'repository'), array('enternewname', 'repository'),
+                array('invalidjson', 'repository'), array('popupblockeddownload', 'repository'),
+                array('unknownoriginal', 'repository'), array('confirmdeletefolder', 'repository'),
+                array('confirmdeletefilewithhref', 'repository'), array('confirmrenamefolder', 'repository'),
+                array('confirmrenamefile', 'repository'), array('edit', 'moodle')
+            )
+        );
+
+        $PAGE->requires->js_init_call('M.form_filemanager.init', array($fm->options), true, $module);
 
         return $html;
     }
 
     function display_search_field($value = '') {
-        return '<input type="text" size="16" name="f_'.$this->field->id.'" value="'.$value.'" />';
+        return '<label class="accesshide" for="f_' . $this->field->id . '">' . $this->field->name . '</label>' .
+               '<input type="text" size="16" id="f_'.$this->field->id.'" name="f_'.$this->field->id.'" value="'.$value.'" />';
     }
 
     function generate_sql($tablealias, $value) {
@@ -166,7 +184,7 @@ class data_field_file extends data_field_base {
         // delete existing files
         $fs->delete_area_files($this->context->id, 'mod_data', 'content', $content->id);
 
-        $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+        $usercontext = context_user::instance($USER->id);
         $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $value, 'timecreated DESC');
 
         if (count($files)<2) {

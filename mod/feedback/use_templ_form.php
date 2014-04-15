@@ -19,7 +19,7 @@
  *
  * @author Andreas Grabs
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package feedback
+ * @package mod_feedback
  */
 
 if (!defined('MOODLE_INTERNAL')) {
@@ -33,7 +33,7 @@ class mod_feedback_use_templ_form extends moodleform {
         $mform =& $this->_form;
 
         //headline
-        $mform->addElement('header', 'general', '');
+        $mform->addElement('header', 'general', get_string('general', 'form'));
 
         // visible elements
         $mform->addElement('radio', 'deleteolditems', '1)', get_string('delete_old_items', 'feedback'), 1);

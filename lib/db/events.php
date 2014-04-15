@@ -33,29 +33,28 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-/* List of handlers */
+/* List of legacy event handlers */
 
 $handlers = array(
-
-/*
- * portfolio queued event - for non interactive file transfers
- * NOTE: this is a HACK, please do not add any more things like this here
- *       (it is just abusing cron to do very time consuming things which is wrong any way)
- *
- * TODO: this has to be moved into separate queueing framework....
- */
-    'portfolio_send' => array (
-        'handlerfile'      => '/lib/portfolio.php',
-        'handlerfunction'  => 'portfolio_handle_event',    // argument to call_user_func(), could be an array
-        'schedule'         => 'cron',
-        'internal'         => 0,
-    ),
-
-
-/* no more here please, core should not consume any events!!!!!!! */
+    /* No more old events! */
 );
 
+$observers = array(
 
+    array(
+        'eventname'   => '\core\event\course_module_completion_updated',
+        'callback'    => 'core_badges_observer::course_module_criteria_review',
+    ),
+    array(
+        'eventname'   => '\core\event\course_completed',
+        'callback'    => 'core_badges_observer::course_criteria_review',
+    ),
+    array(
+        'eventname'   => '\core\event\user_updated',
+        'callback'    => 'core_badges_observer::profile_criteria_review',
+    )
+
+);
 
 
 /* List of events thrown from Moodle core
@@ -77,6 +76,7 @@ course_created - object course table record
 course_updated - object course table record
 course_content_removed - object course table record + context property
 course_deleted - object course table record + context property
+course_restored - custom object with courseid, userid and restore information
 
 user_enrolled - object record from user_enrolments table + courseid,enrol
 user_enrol_modified - object record from user_enrolments table + courseid,enrol
@@ -120,5 +120,11 @@ role_unassigned       - object role_assignments table record
 mod_deleted - int courseid, int cmid, text modulename - happens when a module is deleted
 mod_created - int courseid, int cmid, text modulename - happens when a module is created
 mod_updated - int courseid, int cmid, text modulename - happens when a module is updated
+
+=== blog events
+
+blog_entry_added - blog post object
+blog_entry_edited - blog post object
+blog_entry_deleteded - blog post object
 
 */

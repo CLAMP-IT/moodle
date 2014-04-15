@@ -19,7 +19,7 @@
  *
  * @author Andreas Grabs
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package feedback
+ * @package mod_feedback
  */
 
 require_once("../../config.php");
@@ -65,14 +65,10 @@ $url = new moodle_url('/mod/feedback/show_nonrespondents.php', array('id'=>$cm->
 
 $PAGE->set_url($url);
 
-if (!$context = get_context_instance(CONTEXT_MODULE, $cm->id)) {
-        print_error('badcontext');
-}
+$context = context_module::instance($cm->id);
 
 //we need the coursecontext to allow sending of mass mails
-if (!$coursecontext = get_context_instance(CONTEXT_COURSE, $course->id)) {
-        print_error('badcontext');
-}
+$coursecontext = context_course::instance($course->id);
 
 require_login($course, true, $cm);
 
@@ -85,7 +81,7 @@ require_capability('mod/feedback:viewreports', $context);
 if ($action == 'sendmessage' AND has_capability('moodle/course:bulkmessaging', $coursecontext)) {
     $shortname = format_string($course->shortname,
                             true,
-                            array('context' => get_context_instance(CONTEXT_COURSE, $course->id)));
+                            array('context' => $coursecontext));
     $strfeedbacks = get_string("modulenameplural", "feedback");
 
     $htmlmessage = "<body id=\"email\">";
@@ -135,8 +131,8 @@ if ($action == 'sendmessage' AND has_capability('moodle/course:bulkmessaging', $
 
 /// Print the page header
 $PAGE->navbar->add(get_string('show_nonrespondents', 'feedback'));
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_title(format_string($feedback->name));
+$PAGE->set_heading($course->fullname);
+$PAGE->set_title($feedback->name);
 echo $OUTPUT->header();
 
 require('tabs.php');
@@ -272,7 +268,6 @@ if (!$students) {
         echo $OUTPUT->container(html_writer::link($allurl, get_string('showall', '', $matchcount)), array(), 'showall');
     }
     if (has_capability('moodle/course:bulkmessaging', $coursecontext)) {
-        $usehtmleditor = can_use_html_editor();
         echo '<div class="buttons"><br />';
         echo '<input type="button" id="checkall" value="'.get_string('selectall').'" /> ';
         echo '<input type="button" id="checknone" value="'.get_string('deselectall').'" /> ';
@@ -283,13 +278,9 @@ if (!$students) {
         echo '<label for="feedback_subject">'.get_string('subject', 'feedback').'&nbsp;</label>';
         echo '<input type="text" id="feedback_subject" size="50" maxlength="255" name="subject" value="'.$subject.'" />';
         echo '</div>';
-        print_textarea($usehtmleditor, 15, 25, 30, 10, "message", $message);
-        if ($usehtmleditor) {
-            print_string('formathtml');
-            echo '<input type="hidden" name="format" value="'.FORMAT_HTML.'" />';
-        } else {
-            choose_from_menu(format_text_menu(), "format", $format, "");
-        }
+        print_textarea(true, 15, 25, 30, 10, "message", $message);
+        print_string('formathtml');
+        echo '<input type="hidden" name="format" value="'.FORMAT_HTML.'" />';
         echo '<br /><div class="buttons">';
         echo '<input type="submit" name="send_message" value="'.get_string('send', 'feedback').'" />';
         echo '</div>';

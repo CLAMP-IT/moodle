@@ -17,10 +17,10 @@
 /**
  * BC user image location
  *
- * @package    core
- * @subpackage file
- * @copyright  2010 Petr Skoda (http://skodak.org)
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   core_user
+ * @category  files
+ * @copyright 2010 Petr Skoda (http://skodak.org)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 define('NO_DEBUG_DISPLAY', true);
@@ -42,8 +42,8 @@ if (count($args) == 2) {
     } else {
         $image = 'f2';
     }
-    if ($usercontext = get_context_instance(CONTEXT_USER, $userid)) {
-        $url = moodle_url::make_pluginfile_url($usercontext->id, 'user', 'icon', NULL, '/', $image);
+    if ($usercontext = context_user::instance($userid, IGNORE_MISSING)) {
+        $url = moodle_url::make_pluginfile_url($usercontext->id, 'user', 'icon', null, '/', $image);
         redirect($url);
     }
 }

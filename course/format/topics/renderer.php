@@ -36,6 +36,20 @@ require_once($CFG->dirroot.'/course/format/renderer.php');
 class format_topics_renderer extends format_section_renderer_base {
 
     /**
+     * Constructor method, calls the parent constructor
+     *
+     * @param moodle_page $page
+     * @param string $target one of rendering target constants
+     */
+    public function __construct(moodle_page $page, $target) {
+        parent::__construct($page, $target);
+
+        // Since format_topics_renderer::section_edit_controls() only displays the 'Set current section' control when editing mode is on
+        // we need to be sure that the link 'Turn editing mode on' is available for a user who does not have any other managing capability.
+        $page->set_other_editing_capability('moodle/course:setcurrentsection');
+    }
+
+    /**
      * Generate the starting container html for a list of sections
      * @return string HTML to output.
      */
@@ -74,9 +88,7 @@ class format_topics_renderer extends format_section_renderer_base {
             return array();
         }
 
-        if (!has_capability('moodle/course:update', context_course::instance($course->id))) {
-            return array();
-        }
+        $coursecontext = context_course::instance($course->id);
 
         if ($onsectionpage) {
             $url = course_get_url($course, $section->section);
@@ -86,18 +98,20 @@ class format_topics_renderer extends format_section_renderer_base {
         $url->param('sesskey', sesskey());
 
         $controls = array();
-        if ($course->marker == $section->section) {  // Show the "light globe" on/off.
-            $url->param('marker', 0);
-            $controls[] = html_writer::link($url,
-                                html_writer::empty_tag('img', array('src' => $this->output->pix_url('i/marked'),
-                                    'class' => 'icon ', 'alt' => get_string('markedthistopic'))),
-                                array('title' => get_string('markedthistopic'), 'class' => 'editing_highlight'));
-        } else {
-            $url->param('marker', $section->section);
-            $controls[] = html_writer::link($url,
-                            html_writer::empty_tag('img', array('src' => $this->output->pix_url('i/marker'),
-                                'class' => 'icon', 'alt' => get_string('markthistopic'))),
-                            array('title' => get_string('markthistopic'), 'class' => 'editing_highlight'));
+        if (has_capability('moodle/course:setcurrentsection', $coursecontext)) {
+            if ($course->marker == $section->section) {  // Show the "light globe" on/off.
+                $url->param('marker', 0);
+                $controls[] = html_writer::link($url,
+                                    html_writer::empty_tag('img', array('src' => $this->output->pix_url('i/marked'),
+                                        'class' => 'icon ', 'alt' => get_string('markedthistopic'))),
+                                    array('title' => get_string('markedthistopic'), 'class' => 'editing_highlight'));
+            } else {
+                $url->param('marker', $section->section);
+                $controls[] = html_writer::link($url,
+                                html_writer::empty_tag('img', array('src' => $this->output->pix_url('i/marker'),
+                                    'class' => 'icon', 'alt' => get_string('markthistopic'))),
+                                array('title' => get_string('markthistopic'), 'class' => 'editing_highlight'));
+            }
         }
 
         return array_merge($controls, parent::section_edit_controls($course, $section, $onsectionpage));

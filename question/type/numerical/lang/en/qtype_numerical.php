@@ -24,8 +24,10 @@
  */
 
 $string['acceptederror'] = 'Accepted error';
-$string['addmoreanswerblanks'] = 'Blanks for {no} More Answers';
-$string['addmoreunitblanks'] = 'Blanks for {no} More Units';
+$string['answererror'] = 'Error';
+$string['addmoreanswerblanks'] = 'Blanks for {no} more answers';
+$string['addmoreunitblanks'] = 'Blanks for {no} more units';
+$string['answercolon'] = 'Answer:';
 $string['answermustbenumberorstar'] = 'The answer must be a number, for example -1.234 or 3e8, or \'*\'.';
 $string['answerno'] = 'Answer {$a}';
 $string['decfractionofquestiongrade'] = 'as a fraction (0-1) of the question grade';
@@ -53,7 +55,7 @@ The first unit (Unit 1) has a default multiplier of 1. Thus if the correct numer
 If you add the unit kW with a multiplier of 0.001, this will add a correct response of 5.5 kW. This means that the answers 5500W or 5.5kW would be marked correct.
 
 Note that the accepted error is also multiplied, so an allowed error of 100W would become an error of 0.1kW.';
-$string['manynumerical'] = 'Units are optional. If a unit is entered, it is used to convert the reponse to Unit 1 before grading.';
+$string['manynumerical'] = 'Units are optional. If a unit is entered, it is used to convert the response to Unit 1 before grading.';
 $string['nominal'] = 'Nominal';
 $string['onlynumerical'] = 'Units are not used at all. Only the numerical value is graded.';
 $string['oneunitshown'] = 'Unit 1 is automatically displayed beside the answer box.';
@@ -77,7 +79,6 @@ $string['unitchoice'] = 'a multiple choice selection';
 $string['unitedit'] = 'Edit unit';
 $string['unitgraded'] = 'The unit must be given, and will be graded.';
 $string['unithandling'] = 'Unit handling';
-$string['unithdr'] = 'Unit {$a}';
 $string['unitincorrect'] = 'You did not give the correct unit.';
 $string['unitmandatory'] = 'Mandatory';
 $string['unitmandatory_help'] = '
@@ -101,15 +102,17 @@ $string['unitpenalty_help'] = 'The penalty is applied if
 * the wrong unit name is entered into the unit input, or
 * a unit is entered into the value input box';
 $string['unitposition'] = 'Units go';
+$string['units'] = 'Units';
 $string['unitselect'] = 'a drop-down menu';
+$string['unitx'] = 'Unit {no} ';
 $string['validnumberformats'] = 'Valid number formats';
-$string['validnumberformats_help'] = '
-* regular numbers 13500.67, 13 500.67, 13500,67 or 13 500,67
+$string['validnumberformats_help'] = '* regular numbers 13500.67, 13 500.67, 13500,67 or 13 500,67
 
-* if you use , as thousand separator *always* put the decimal . as in
- 13,500.67 : 13,500.
+* if your language pack settings (langconfig.php file) uses a comma (,) as thousand separator *always* put the decimal point (.) as in 13,500.67 : 13,500.
 
-* for exponent form, say 1.350067 * 10<sup>4</sup>, use
- 1.350067 E4 : 1.350067 E04 ';
+* for exponent form, say 1.350067 * 10<sup>4</sup>, use 1.350067 E4 : 1.350067 E04';
 
 $string['validnumbers'] = '13500.67, 13 500.67, 13,500.67, 13500,67, 13 500,67, 1.350067 E4 or 1.350067 E04';
+$string['xmustbenumeric'] = '{$a} must be a number.';
+$string['xmustnotbenumeric'] = '{$a} cannot be a number.';
+$string['youmustenteramultiplierhere'] = 'You must enter a multiplier here.';

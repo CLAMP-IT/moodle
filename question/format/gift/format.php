@@ -17,8 +17,7 @@
 /**
  * GIFT format question importer/exporter.
  *
- * @package    qformat
- * @subpackage gift
+ * @package    qformat_gift
  * @copyright  2003 Paul Tsuchido Shew
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -75,12 +74,12 @@ class qformat_gift extends qformat_default {
     }
 
     protected function answerweightparser(&$answer) {
-        $answer = substr($answer, 1);                        // removes initial %
-        $end_position  = strpos($answer, "%");
-        $answer_weight = substr($answer, 0, $end_position);  // gets weight as integer
-        $answer_weight = $answer_weight/100;                 // converts to percent
-        $answer = substr($answer, $end_position+1);          // removes comment from answer
-        return $answer_weight;
+        $answer = substr($answer, 1);                        // Removes initial %.
+        $endposition  = strpos($answer, "%");
+        $answerweight = substr($answer, 0, $endposition);  // Gets weight as integer.
+        $answerweight = $answerweight/100;                 // Converts to percent.
+        $answer = substr($answer, $endposition+1);          // Removes comment from answer.
+        return $answerweight;
     }
 
     protected function commentparser($answer, $defaultformat) {
@@ -111,10 +110,10 @@ class qformat_gift extends qformat_default {
     }
 
     protected function escapedchar_pre($string) {
-        //Replaces escaped control characters with a placeholder BEFORE processing
+        // Replaces escaped control characters with a placeholder BEFORE processing.
 
-        $escapedcharacters = array("\\:",    "\\#",    "\\=",    "\\{",    "\\}",    "\\~",    "\\n"  );  //dlnsk
-        $placeholders      = array("&&058;", "&&035;", "&&061;", "&&123;", "&&125;", "&&126;", "&&010");  //dlnsk
+        $escapedcharacters = array("\\:",    "\\#",    "\\=",    "\\{",    "\\}",    "\\~",    "\\n"  );
+        $placeholders      = array("&&058;", "&&035;", "&&061;", "&&123;", "&&125;", "&&126;", "&&010");
 
         $string = str_replace("\\\\", "&&092;", $string);
         $string = str_replace($escapedcharacters, $placeholders, $string);
@@ -123,9 +122,9 @@ class qformat_gift extends qformat_default {
     }
 
     protected function escapedchar_post($string) {
-        //Replaces placeholders with corresponding character AFTER processing is done
-        $placeholders = array("&&058;", "&&035;", "&&061;", "&&123;", "&&125;", "&&126;", "&&010"); //dlnsk
-        $characters   = array(":",     "#",      "=",      "{",      "}",      "~",      "\n"  ); //dlnsk
+        // Replaces placeholders with corresponding character AFTER processing is done.
+        $placeholders = array("&&058;", "&&035;", "&&061;", "&&123;", "&&125;", "&&126;", "&&010");
+        $characters   = array(":",     "#",      "=",      "{",      "}",      "~",      "\n"  );
         $string = str_replace($placeholders, $characters, $string);
         return $string;
     }
@@ -160,15 +159,15 @@ class qformat_gift extends qformat_default {
     }
 
     public function readquestion($lines) {
-    // Given an array of lines known to define a question in this format, this function
-    // converts it into a question object suitable for processing and insertion into Moodle.
+        // Given an array of lines known to define a question in this format, this function
+        // converts it into a question object suitable for processing and insertion into Moodle.
 
         $question = $this->defaultquestion();
-        $comment = NULL;
-        // define replaced by simple assignment, stop redefine notices
-        $gift_answerweight_regex = '/^%\-*([0-9]{1,2})\.?([0-9]*)%/';
+        $comment = null;
+        // Define replaced by simple assignment, stop redefine notices.
+        $giftanswerweightregex = '/^%\-*([0-9]{1,2})\.?([0-9]*)%/';
 
-        // REMOVED COMMENTED LINES and IMPLODE
+        // REMOVED COMMENTED LINES and IMPLODE.
         foreach ($lines as $key => $line) {
             $line = trim($line);
             if (substr($line, 0, 2) == '//') {
@@ -182,125 +181,135 @@ class qformat_gift extends qformat_default {
             return false;
         }
 
-        // Substitute escaped control characters with placeholders
+        // Substitute escaped control characters with placeholders.
         $text = $this->escapedchar_pre($text);
 
-        // Look for category modifier
+        // Look for category modifier.
         if (preg_match('~^\$CATEGORY:~', $text)) {
-            // $newcategory = $matches[1];
             $newcategory = trim(substr($text, 10));
 
-            // build fake question to contain category
+            // Build fake question to contain category.
             $question->qtype = 'category';
             $question->category = $newcategory;
             return $question;
         }
 
-        // QUESTION NAME parser
+        // Question name parser.
         if (substr($text, 0, 2) == '::') {
             $text = substr($text, 2);
 
             $namefinish = strpos($text, '::');
             if ($namefinish === false) {
                 $question->name = false;
-                // name will be assigned after processing question text below
+                // Name will be assigned after processing question text below.
             } else {
                 $questionname = substr($text, 0, $namefinish);
-                $question->name = trim($this->escapedchar_post($questionname));
-                $text = trim(substr($text, $namefinish+2)); // Remove name from text
+                $question->name = $this->clean_question_name($this->escapedchar_post($questionname));
+                $text = trim(substr($text, $namefinish+2)); // Remove name from text.
             }
         } else {
             $question->name = false;
         }
 
-
-        // FIND ANSWER section
-        // no answer means its a description
+        // Find the answer section.
         $answerstart = strpos($text, '{');
         $answerfinish = strpos($text, '}');
 
         $description = false;
-        if (($answerstart === false) and ($answerfinish === false)) {
+        if ($answerstart === false && $answerfinish === false) {
+            // No answer means it's a description.
             $description = true;
             $answertext = '';
             $answerlength = 0;
-        } else if (!(($answerstart !== false) and ($answerfinish !== false))) {
+
+        } else if ($answerstart === false || $answerfinish === false) {
             $this->error(get_string('braceerror', 'qformat_gift'), $text);
             return false;
+
         } else {
             $answerlength = $answerfinish - $answerstart;
             $answertext = trim(substr($text, $answerstart + 1, $answerlength - 1));
         }
 
-        // Format QUESTION TEXT without answer, inserting "_____" as necessary
+        // Format the question text, without answer, inserting "_____" as necessary.
         if ($description) {
             $questiontext = $text;
         } else if (substr($text, -1) == "}") {
-            // no blank line if answers follow question, outside of closing punctuation
-            $questiontext = substr_replace($text, "", $answerstart, $answerlength+1);
+            // No blank line if answers follow question, outside of closing punctuation.
+            $questiontext = substr_replace($text, "", $answerstart, $answerlength + 1);
         } else {
-            // inserts blank line for missing word format
-            $questiontext = substr_replace($text, "_____", $answerstart, $answerlength+1);
+            // Inserts blank line for missing word format.
+            $questiontext = substr_replace($text, "_____", $answerstart, $answerlength + 1);
         }
 
-        // Get questiontext format from questiontext
+        // Look to see if there is any general feedback.
+        $gfseparator = strrpos($answertext, '####');
+        if ($gfseparator === false) {
+            $generalfeedback = '';
+        } else {
+            $generalfeedback = substr($answertext, $gfseparator + 4);
+            $answertext = trim(substr($answertext, 0, $gfseparator));
+        }
+
+        // Get questiontext format from questiontext.
         $text = $this->parse_text_with_format($questiontext);
         $question->questiontextformat = $text['format'];
-        $question->generalfeedbackformat = $text['format'];
         $question->questiontext = $text['text'];
 
-        // set question name if not already set
+        // Get generalfeedback format from questiontext.
+        $text = $this->parse_text_with_format($generalfeedback, $question->questiontextformat);
+        $question->generalfeedback = $text['text'];
+        $question->generalfeedbackformat = $text['format'];
+
+        // Set question name if not already set.
         if ($question->name === false) {
-            $question->name = $question->questiontext;
+            $question->name = $this->create_default_question_name($question->questiontext, get_string('questionname', 'question'));
         }
 
-        // ensure name is not longer than 250 characters
-        $question->name = shorten_text($question->name, 200);
-        $question->name = strip_tags(substr($question->name, 0, 250));
+        // Determine question type.
+        $question->qtype = null;
 
-        // determine QUESTION TYPE
-        $question->qtype = NULL;
-
-        // give plugins first try
-        // plugins must promise not to intercept standard qtypes
-        // MDL-12346, this could be called from lesson mod which has its own base class =(
-        if (method_exists($this, 'try_importing_using_qtypes') && ($try_question = $this->try_importing_using_qtypes($lines, $question, $answertext))) {
-            return $try_question;
+        // Give plugins first try.
+        // Plugins must promise not to intercept standard qtypes
+        // MDL-12346, this could be called from lesson mod which has its own base class =(.
+        if (method_exists($this, 'try_importing_using_qtypes')
+                && ($tryquestion = $this->try_importing_using_qtypes($lines, $question, $answertext))) {
+            return $tryquestion;
         }
 
         if ($description) {
-            $question->qtype = DESCRIPTION;
+            $question->qtype = 'description';
 
         } else if ($answertext == '') {
-            $question->qtype = ESSAY;
+            $question->qtype = 'essay';
 
         } else if ($answertext{0} == '#') {
-            $question->qtype = NUMERICAL;
+            $question->qtype = 'numerical';
 
-        } else if (strpos($answertext, '~') !== false)  {
-            // only Multiplechoice questions contain tilde ~
-            $question->qtype = MULTICHOICE;
+        } else if (strpos($answertext, '~') !== false) {
+            // Only Multiplechoice questions contain tilde ~.
+            $question->qtype = 'multichoice';
 
         } else if (strpos($answertext, '=')  !== false
                 && strpos($answertext, '->') !== false) {
-            // only Matching contains both = and ->
-            $question->qtype = MATCH;
+            // Only Matching contains both = and ->.
+            $question->qtype = 'match';
 
-        } else { // either TRUEFALSE or SHORTANSWER
+        } else { // Either truefalse or shortanswer.
 
-            // TRUEFALSE question check
-            $truefalse_check = $answertext;
+            // Truefalse question check.
+            $truefalsecheck = $answertext;
             if (strpos($answertext, '#') > 0) {
-                // strip comments to check for TrueFalse question
-                $truefalse_check = trim(substr($answertext, 0, strpos($answertext,"#")));
+                // Strip comments to check for TrueFalse question.
+                $truefalsecheck = trim(substr($answertext, 0, strpos($answertext, "#")));
             }
 
-            $valid_tf_answers = array('T', 'TRUE', 'F', 'FALSE');
-            if (in_array($truefalse_check, $valid_tf_answers)) {
-                $question->qtype = TRUEFALSE;
+            $validtfanswers = array('T', 'TRUE', 'F', 'FALSE');
+            if (in_array($truefalsecheck, $validtfanswers)) {
+                $question->qtype = 'truefalse';
 
-            } else { // Must be SHORTANSWER
-                $question->qtype = SHORTANSWER;
+            } else { // Must be shortanswer.
+                $question->qtype = 'shortanswer';
             }
         }
 
@@ -311,24 +320,28 @@ class qformat_gift extends qformat_default {
         }
 
         switch ($question->qtype) {
-            case DESCRIPTION:
+            case 'description':
                 $question->defaultmark = 0;
                 $question->length = 0;
                 return $question;
 
-            case ESSAY:
+            case 'essay':
                 $question->responseformat = 'editor';
+                $question->responserequired = 1;
                 $question->responsefieldlines = 15;
                 $question->attachments = 0;
+                $question->attachmentsrequired = 0;
                 $question->graderinfo = array(
                         'text' => '', 'format' => FORMAT_HTML, 'files' => array());
+                $question->responsetemplate = array(
+                        'text' => '', 'format' => FORMAT_HTML);
                 return $question;
 
-            case MULTICHOICE:
-                if (strpos($answertext,"=") === false) {
-                    $question->single = 0; // multiple answers are enabled if no single answer is 100% correct
+            case 'multichoice':
+                if (strpos($answertext, "=") === false) {
+                    $question->single = 0; // Multiple answers are enabled if no single answer is 100% correct.
                 } else {
-                    $question->single = 1; // only one answer allowed (the default)
+                    $question->single = 1; // Only one answer allowed (the default).
                 }
                 $question = $this->add_blank_combined_feedback($question);
 
@@ -350,25 +363,25 @@ class qformat_gift extends qformat_default {
                 foreach ($answers as $key => $answer) {
                     $answer = trim($answer);
 
-                    // determine answer weight
+                    // Determine answer weight.
                     if ($answer[0] == '=') {
-                        $answer_weight = 1;
+                        $answerweight = 1;
                         $answer = substr($answer, 1);
 
-                    } else if (preg_match($gift_answerweight_regex, $answer)) {    // check for properly formatted answer weight
-                        $answer_weight = $this->answerweightparser($answer);
+                    } else if (preg_match($giftanswerweightregex, $answer)) {    // Check for properly formatted answer weight.
+                        $answerweight = $this->answerweightparser($answer);
 
-                    } else {     //default, i.e., wrong anwer
-                        $answer_weight = 0;
+                    } else {     // Default, i.e., wrong anwer.
+                        $answerweight = 0;
                     }
                     list($question->answer[$key], $question->feedback[$key]) =
                             $this->commentparser($answer, $question->questiontextformat);
-                    $question->fraction[$key] = $answer_weight;
-                }  // end foreach answer
+                    $question->fraction[$key] = $answerweight;
+                }  // End foreach answer.
 
                 return $question;
 
-            case MATCH:
+            case 'match':
                 $question = $this->add_blank_combined_feedback($question);
 
                 $answers = explode('=', $answertext);
@@ -379,14 +392,14 @@ class qformat_gift extends qformat_default {
                     array_shift($answers);
                 }
 
-                if (!$this->check_answer_count(2,$answers,$text)) {
+                if (!$this->check_answer_count(2, $answers, $text)) {
                     return false;
                 }
 
                 foreach ($answers as $key => $answer) {
                     $answer = trim($answer);
                     if (strpos($answer, "->") === false) {
-                        $this->error(get_string('giftmatchingformat','qformat_gift'), $answer);
+                        $this->error(get_string('giftmatchingformat', 'qformat_gift'), $answer);
                         return false;
                     }
 
@@ -399,7 +412,7 @@ class qformat_gift extends qformat_default {
 
                 return $question;
 
-            case TRUEFALSE:
+            case 'truefalse':
                 list($answer, $wrongfeedback, $rightfeedback) =
                         $this->split_truefalse_comment($answertext, $question->questiontextformat);
 
@@ -417,8 +430,8 @@ class qformat_gift extends qformat_default {
 
                 return $question;
 
-            case SHORTANSWER:
-                // SHORTANSWER Question
+            case 'shortanswer':
+                // Shortanswer question.
                 $answers = explode("=", $answertext);
                 if (isset($answers[0])) {
                     $answers[0] = trim($answers[0]);
@@ -434,25 +447,25 @@ class qformat_gift extends qformat_default {
                 foreach ($answers as $key => $answer) {
                     $answer = trim($answer);
 
-                    // Answer weight
-                    if (preg_match($gift_answerweight_regex, $answer)) {    // check for properly formatted answer weight
-                        $answer_weight = $this->answerweightparser($answer);
-                    } else {     //default, i.e., full-credit anwer
-                        $answer_weight = 1;
+                    // Answer weight.
+                    if (preg_match($giftanswerweightregex, $answer)) {    // Check for properly formatted answer weight.
+                        $answerweight = $this->answerweightparser($answer);
+                    } else {     // Default, i.e., full-credit anwer.
+                        $answerweight = 1;
                     }
 
                     list($answer, $question->feedback[$key]) = $this->commentparser(
                             $answer, $question->questiontextformat);
 
                     $question->answer[$key] = $answer['text'];
-                    $question->fraction[$key] = $answer_weight;
+                    $question->fraction[$key] = $answerweight;
                 }
 
                 return $question;
 
-            case NUMERICAL:
-                // Note similarities to ShortAnswer
-                $answertext = substr($answertext, 1); // remove leading "#"
+            case 'numerical':
+                // Note similarities to ShortAnswer.
+                $answertext = substr($answertext, 1); // Remove leading "#".
 
                 // If there is feedback for a wrong answer, store it for now.
                 if (($pos = strpos($answertext, '~')) !== false) {
@@ -471,8 +484,8 @@ class qformat_gift extends qformat_default {
                 }
 
                 if (count($answers) == 0) {
-                    // invalid question
-                    $giftnonumericalanswers = get_string('giftnonumericalanswers','qformat_gift');
+                    // Invalid question.
+                    $giftnonumericalanswers = get_string('giftnonumericalanswers', 'qformat_gift');
                     $this->error($giftnonumericalanswers, $text);
                     return false;
                 }
@@ -480,30 +493,30 @@ class qformat_gift extends qformat_default {
                 foreach ($answers as $key => $answer) {
                     $answer = trim($answer);
 
-                    // Answer weight
-                    if (preg_match($gift_answerweight_regex, $answer)) {    // check for properly formatted answer weight
-                        $answer_weight = $this->answerweightparser($answer);
-                    } else {     //default, i.e., full-credit anwer
-                        $answer_weight = 1;
+                    // Answer weight.
+                    if (preg_match($giftanswerweightregex, $answer)) {    // Check for properly formatted answer weight.
+                        $answerweight = $this->answerweightparser($answer);
+                    } else {     // Default, i.e., full-credit anwer.
+                        $answerweight = 1;
                     }
 
                     list($answer, $question->feedback[$key]) = $this->commentparser(
                             $answer, $question->questiontextformat);
-                    $question->fraction[$key] = $answer_weight;
+                    $question->fraction[$key] = $answerweight;
                     $answer = $answer['text'];
 
-                    //Calculate Answer and Min/Max values
-                    if (strpos($answer,"..") > 0) { // optional [min]..[max] format
-                        $marker = strpos($answer,"..");
-                        $max = trim(substr($answer, $marker+2));
+                    // Calculate Answer and Min/Max values.
+                    if (strpos($answer, "..") > 0) { // Optional [min]..[max] format.
+                        $marker = strpos($answer, "..");
+                        $max = trim(substr($answer, $marker + 2));
                         $min = trim(substr($answer, 0, $marker));
                         $ans = ($max + $min)/2;
                         $tol = $max - $ans;
-                    } else if (strpos($answer, ':') > 0) { // standard [answer]:[errormargin] format
+                    } else if (strpos($answer, ':') > 0) { // Standard [answer]:[errormargin] format.
                         $marker = strpos($answer, ':');
                         $tol = trim(substr($answer, $marker+1));
                         $ans = trim(substr($answer, 0, $marker));
-                    } else { // only one valid answer (zero errormargin)
+                    } else { // Only one valid answer (zero errormargin).
                         $tol = 0;
                         $ans = trim($answer);
                     }
@@ -514,7 +527,7 @@ class qformat_gift extends qformat_default {
                         return false;
                     }
 
-                    // store results
+                    // Store results.
                     $question->answer[$key] = $ans;
                     $question->tolerance[$key] = $tol;
                 }
@@ -537,24 +550,11 @@ class qformat_gift extends qformat_default {
         }
     }
 
-    protected function add_blank_combined_feedback($question) {
-        $question->correctfeedback['text'] = '';
-        $question->correctfeedback['format'] = $question->questiontextformat;
-        $question->correctfeedback['files'] = array();
-        $question->partiallycorrectfeedback['text'] = '';
-        $question->partiallycorrectfeedback['format'] = $question->questiontextformat;
-        $question->partiallycorrectfeedback['files'] = array();
-        $question->incorrectfeedback['text'] = '';
-        $question->incorrectfeedback['format'] = $question->questiontextformat;
-        $question->incorrectfeedback['files'] = array();
-        return $question;
-    }
-
     protected function repchar($text, $notused = 0) {
         // Escapes 'reserved' characters # = ~ {) :
-        // Removes new lines
-        $reserved = array( '#', '=', '~', '{', '}', ':', "\n", "\r");
-        $escaped =  array('\#','\=','\~','\{','\}','\:', '\n', '' );
+        // Removes new lines.
+        $reserved = array(  '\\',  '#', '=', '~', '{', '}', ':', "\n", "\r");
+        $escaped =  array('\\\\', '\#', '\=', '\~', '\{', '\}', '\:', '\n', '');
 
         $newtext = str_replace($reserved, $escaped, $text);
         return $newtext;
@@ -609,141 +609,165 @@ class qformat_gift extends qformat_default {
         return $output;
     }
 
-    public function writequestion($question) {
-        global $OUTPUT;
+    /**
+     * Outputs the general feedback for the question, if any. This needs to be the
+     * last thing before the }.
+     * @param object $question the question data.
+     * @param string $indent to put before the general feedback. Defaults to a tab.
+     *      If this is not blank, a newline is added after the line.
+     */
+    public function write_general_feedback($question, $indent = "\t") {
+        $generalfeedback = $this->write_questiontext($question->generalfeedback,
+                $question->generalfeedbackformat, $question->questiontextformat);
 
-        // Start with a comment
-        $expout = "// question: $question->id  name: $question->name\n";
-
-        // output depends on question type
-        switch($question->qtype) {
-
-        case 'category':
-            // not a real question, used to insert category switch
-            $expout .= "\$CATEGORY: $question->category\n";
-            break;
-
-        case DESCRIPTION:
-            $expout .= $this->write_name($question->name);
-            $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
-            break;
-
-        case ESSAY:
-            $expout .= $this->write_name($question->name);
-            $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
-            $expout .= "{}\n";
-            break;
-
-        case TRUEFALSE:
-            $trueanswer = $question->options->answers[$question->options->trueanswer];
-            $falseanswer = $question->options->answers[$question->options->falseanswer];
-            if ($trueanswer->fraction == 1) {
-                $answertext = 'TRUE';
-                $rightfeedback = $this->write_questiontext($trueanswer->feedback,
-                        $trueanswer->feedbackformat, $question->questiontextformat);
-                $wrongfeedback = $this->write_questiontext($falseanswer->feedback,
-                        $falseanswer->feedbackformat, $question->questiontextformat);
-            } else {
-                $answertext = 'FALSE';
-                $rightfeedback = $this->write_questiontext($falseanswer->feedback,
-                        $falseanswer->feedbackformat, $question->questiontextformat);
-                $wrongfeedback = $this->write_questiontext($trueanswer->feedback,
-                        $trueanswer->feedbackformat, $question->questiontextformat);
-            }
-
-            $expout .= $this->write_name($question->name);
-            $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
-            $expout .= '{' . $this->repchar($answertext);
-            if ($wrongfeedback) {
-                $expout .= '#' . $wrongfeedback;
-            } else if ($rightfeedback) {
-                $expout .= '#';
-            }
-            if ($rightfeedback) {
-                $expout .= '#' . $rightfeedback;
-            }
-            $expout .= "}\n";
-            break;
-
-        case MULTICHOICE:
-            $expout .= $this->write_name($question->name);
-            $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
-            $expout .= "{\n";
-            foreach($question->options->answers as $answer) {
-                if ($answer->fraction == 1) {
-                    $answertext = '=';
-                } else if ($answer->fraction == 0) {
-                    $answertext = '~';
-                } else {
-                    $weight = $answer->fraction * 100;
-                    $answertext = '~%' . $weight . '%';
-                }
-                $expout .= "\t" . $answertext . $this->write_questiontext($answer->answer,
-                            $answer->answerformat, $question->questiontextformat);
-                if ($answer->feedback != '') {
-                    $expout .= '#' . $this->write_questiontext($answer->feedback,
-                            $answer->feedbackformat, $question->questiontextformat);
-                }
-                $expout .= "\n";
-            }
-            $expout .= "}\n";
-            break;
-
-        case SHORTANSWER:
-            $expout .= $this->write_name($question->name);
-            $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
-            $expout .= "{\n";
-            foreach($question->options->answers as $answer) {
-                $weight = 100 * $answer->fraction;
-                $expout .= "\t=%" . $weight . '%' . $this->repchar($answer->answer) .
-                        '#' . $this->write_questiontext($answer->feedback,
-                            $answer->feedbackformat, $question->questiontextformat) . "\n";
-            }
-            $expout .= "}\n";
-            break;
-
-        case NUMERICAL:
-            $expout .= $this->write_name($question->name);
-            $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
-            $expout .= "{#\n";
-            foreach ($question->options->answers as $answer) {
-                if ($answer->answer != '' && $answer->answer != '*') {
-                    $weight = 100 * $answer->fraction;
-                    $expout .= "\t=%" . $weight . '%' . $answer->answer . ':' .
-                            (float)$answer->tolerance . '#' . $this->write_questiontext($answer->feedback,
-                            $answer->feedbackformat, $question->questiontextformat) . "\n";
-                } else {
-                    $expout .= "\t~#" . $this->write_questiontext($answer->feedback,
-                            $answer->feedbackformat, $question->questiontextformat) . "\n";
-                }
-            }
-            $expout .= "}\n";
-            break;
-
-        case MATCH:
-            $expout .= $this->write_name($question->name);
-            $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
-            $expout .= "{\n";
-            foreach($question->options->subquestions as $subquestion) {
-                $expout .= "\t=" . $this->write_questiontext($subquestion->questiontext,
-                        $subquestion->questiontextformat, $question->questiontextformat) .
-                        ' -> ' . $this->repchar($subquestion->answertext) . "\n";
-            }
-            $expout .= "}\n";
-            break;
-
-        default:
-            // Check for plugins
-            if ($out = $this->try_exporting_using_qtypes($question->qtype, $question)) {
-                $expout .= $out;
-            } else {
-                $expout .= "Question type $question->qtype is not supported\n";
-                echo $OUTPUT->notification(get_string('nohandler', 'qformat_gift',
-                        question_bank::get_qtype_name($question->qtype)));
+        if ($generalfeedback) {
+            $generalfeedback = '####' . $generalfeedback;
+            if ($indent) {
+                $generalfeedback = $indent . $generalfeedback . "\n";
             }
         }
 
-        // Add empty line to delimit questions
+        return $generalfeedback;
+    }
+
+    public function writequestion($question) {
+        global $OUTPUT;
+
+        // Start with a comment.
+        $expout = "// question: $question->id  name: $question->name\n";
+
+        // Output depends on question type.
+        switch($question->qtype) {
+
+            case 'category':
+                // Not a real question, used to insert category switch.
+                $expout .= "\$CATEGORY: $question->category\n";
+                break;
+
+            case 'description':
+                $expout .= $this->write_name($question->name);
+                $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
+                break;
+
+            case 'essay':
+                $expout .= $this->write_name($question->name);
+                $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
+                $expout .= "{";
+                $expout .= $this->write_general_feedback($question, '');
+                $expout .= "}\n";
+                break;
+
+            case 'truefalse':
+                $trueanswer = $question->options->answers[$question->options->trueanswer];
+                $falseanswer = $question->options->answers[$question->options->falseanswer];
+                if ($trueanswer->fraction == 1) {
+                    $answertext = 'TRUE';
+                    $rightfeedback = $this->write_questiontext($trueanswer->feedback,
+                            $trueanswer->feedbackformat, $question->questiontextformat);
+                    $wrongfeedback = $this->write_questiontext($falseanswer->feedback,
+                            $falseanswer->feedbackformat, $question->questiontextformat);
+                } else {
+                    $answertext = 'FALSE';
+                    $rightfeedback = $this->write_questiontext($falseanswer->feedback,
+                            $falseanswer->feedbackformat, $question->questiontextformat);
+                    $wrongfeedback = $this->write_questiontext($trueanswer->feedback,
+                            $trueanswer->feedbackformat, $question->questiontextformat);
+                }
+
+                $expout .= $this->write_name($question->name);
+                $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
+                $expout .= '{' . $this->repchar($answertext);
+                if ($wrongfeedback) {
+                    $expout .= '#' . $wrongfeedback;
+                } else if ($rightfeedback) {
+                    $expout .= '#';
+                }
+                if ($rightfeedback) {
+                    $expout .= '#' . $rightfeedback;
+                }
+                $expout .= $this->write_general_feedback($question, '');
+                $expout .= "}\n";
+                break;
+
+            case 'multichoice':
+                $expout .= $this->write_name($question->name);
+                $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
+                $expout .= "{\n";
+                foreach ($question->options->answers as $answer) {
+                    if ($answer->fraction == 1) {
+                        $answertext = '=';
+                    } else if ($answer->fraction == 0) {
+                        $answertext = '~';
+                    } else {
+                        $weight = $answer->fraction * 100;
+                        $answertext = '~%' . $weight . '%';
+                    }
+                    $expout .= "\t" . $answertext . $this->write_questiontext($answer->answer,
+                                $answer->answerformat, $question->questiontextformat);
+                    if ($answer->feedback != '') {
+                        $expout .= '#' . $this->write_questiontext($answer->feedback,
+                                $answer->feedbackformat, $question->questiontextformat);
+                    }
+                    $expout .= "\n";
+                }
+                $expout .= $this->write_general_feedback($question);
+                $expout .= "}\n";
+                break;
+
+            case 'shortanswer':
+                $expout .= $this->write_name($question->name);
+                $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
+                $expout .= "{\n";
+                foreach ($question->options->answers as $answer) {
+                    $weight = 100 * $answer->fraction;
+                    $expout .= "\t=%" . $weight . '%' . $this->repchar($answer->answer) .
+                            '#' . $this->write_questiontext($answer->feedback,
+                                $answer->feedbackformat, $question->questiontextformat) . "\n";
+                }
+                $expout .= $this->write_general_feedback($question);
+                $expout .= "}\n";
+                break;
+
+            case 'numerical':
+                $expout .= $this->write_name($question->name);
+                $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
+                $expout .= "{#\n";
+                foreach ($question->options->answers as $answer) {
+                    if ($answer->answer != '' && $answer->answer != '*') {
+                        $weight = 100 * $answer->fraction;
+                        $expout .= "\t=%" . $weight . '%' . $answer->answer . ':' .
+                                (float)$answer->tolerance . '#' . $this->write_questiontext($answer->feedback,
+                                $answer->feedbackformat, $question->questiontextformat) . "\n";
+                    } else {
+                        $expout .= "\t~#" . $this->write_questiontext($answer->feedback,
+                                $answer->feedbackformat, $question->questiontextformat) . "\n";
+                    }
+                }
+                $expout .= $this->write_general_feedback($question);
+                $expout .= "}\n";
+                break;
+
+            case 'match':
+                $expout .= $this->write_name($question->name);
+                $expout .= $this->write_questiontext($question->questiontext, $question->questiontextformat);
+                $expout .= "{\n";
+                foreach ($question->options->subquestions as $subquestion) {
+                    $expout .= "\t=" . $this->write_questiontext($subquestion->questiontext,
+                            $subquestion->questiontextformat, $question->questiontextformat) .
+                            ' -> ' . $this->repchar($subquestion->answertext) . "\n";
+                }
+                $expout .= $this->write_general_feedback($question);
+                $expout .= "}\n";
+                break;
+
+            default:
+                // Check for plugins.
+                if ($out = $this->try_exporting_using_qtypes($question->qtype, $question)) {
+                    $expout .= $out;
+                }
+        }
+
+        // Add empty line to delimit questions.
         $expout .= "\n";
         return $expout;
     }

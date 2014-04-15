@@ -42,7 +42,7 @@ class data_field_picture extends data_field_base {
                 file_prepare_draft_area($itemid, $this->context->id, 'mod_data', 'content', $content->id);
                 if (!empty($content->content)) {
                     if ($file = $fs->get_file($this->context->id, 'mod_data', 'content', $content->id, '/', $content->content)) {
-                        $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+                        $usercontext = context_user::instance($USER->id);
                         if (!$files = $fs->get_area_files($usercontext->id, 'user', 'draft', $itemid, 'id DESC', false)) {
                             return false;
                         }
@@ -67,13 +67,16 @@ class data_field_picture extends data_field_base {
 
         $str = '<div title="'.s($this->field->description).'">';
         $str .= '<fieldset><legend><span class="accesshide">'.$this->field->name.'</span></legend>';
+        $str .= '<noscript>';
         if ($file) {
             $src = file_encode_url($CFG->wwwroot.'/pluginfile.php/', $this->context->id.'/mod_data/content/'.$content->id.'/'.$file->get_filename());
             $str .= '<img width="'.s($this->previewwidth).'" height="'.s($this->previewheight).'" src="'.$src.'" alt="" />';
         }
+        $str .= '</noscript>';
 
         $options = new stdClass();
         $options->maxbytes  = $this->field->param3;
+        $options->maxfiles  = 1; // Only one picture permitted.
         $options->itemid    = $itemid;
         $options->accepted_types = array('web_image');
         $options->return_types = FILE_INTERNAL;
@@ -82,9 +85,12 @@ class data_field_picture extends data_field_base {
             $options->filename = $file->get_filename();
             $options->filepath = '/';
         }
-        $fp = new file_picker($options);
-        $str .= $OUTPUT->render($fp);
 
+        $fm = new form_filemanager($options);
+        // Print out file manager.
+
+        $output = $PAGE->get_renderer('core', 'files');
+        $str .= $output->render($fm);
 
         $str .= '<div class="mdl-left">';
         $str .= '<input type="hidden" name="field_'.$this->field->id.'_file" value="'.$itemid.'" />';
@@ -95,8 +101,23 @@ class data_field_picture extends data_field_base {
         $str .= '</fieldset>';
         $str .= '</div>';
 
-        $module = array('name'=>'data_imagepicker', 'fullpath'=>'/mod/data/data.js', 'requires'=>array('core_filepicker'));
-        $PAGE->requires->js_init_call('M.data_imagepicker.init', array($fp->options), true, $module);
+        $module = array(
+            'name'=>'form_filemanager',
+            'fullpath'=>'/lib/form/filemanager.js',
+            'requires' => array('core_filepicker', 'base', 'io-base', 'node',
+                    'json', 'core_dndupload', 'panel', 'resize-plugin', 'dd-plugin'),
+            'strings' => array(
+                array('error', 'moodle'), array('info', 'moodle'), array('confirmdeletefile', 'repository'),
+                array('draftareanofiles', 'repository'), array('entername', 'repository'), array('enternewname', 'repository'),
+                array('invalidjson', 'repository'), array('popupblockeddownload', 'repository'),
+                array('unknownoriginal', 'repository'), array('confirmdeletefolder', 'repository'),
+                array('confirmdeletefilewithhref', 'repository'), array('confirmrenamefolder', 'repository'),
+                array('confirmrenamefile', 'repository'), array('edit', 'moodle')
+            )
+        );
+
+        $PAGE->requires->js_init_call('M.form_filemanager.init', array($fm->options), true, $module);
+
         return $str;
     }
 
@@ -118,7 +139,8 @@ class data_field_picture extends data_field_base {
     }
 
     function display_search_field($value = '') {
-        return '<input type="text" size="16" name="f_'.$this->field->id.'" value="'.$value.'" />';
+        return '<label class="accesshide" for="f_'.$this->field->id.'">' . get_string('fieldname', 'data') . '</label>' .
+               '<input type="text" size="16" id="f_'.$this->field->id.'" name="f_'.$this->field->id.'" value="'.$value.'" />';
     }
 
     function parse_search_field() {
@@ -151,13 +173,13 @@ class data_field_picture extends data_field_base {
         if ($template == 'listtemplate') {
             $src = file_encode_url($CFG->wwwroot.'/pluginfile.php', '/'.$this->context->id.'/mod_data/content/'.$content->id.'/'.'thumb_'.$content->content);
             // no need to add width/height, because the thumb is resized properly
-            $str = '<a href="view.php?d='.$this->field->dataid.'&amp;rid='.$recordid.'"><img src="'.$src.'" alt="'.s($alt).'" title="'.s($title).'" style="border:0px" /></a>';
+            $str = '<a href="view.php?d='.$this->field->dataid.'&amp;rid='.$recordid.'"><img src="'.$src.'" alt="'.s($alt).'" title="'.s($title).'" class="list_picture"/></a>';
 
         } else {
             $src = file_encode_url($CFG->wwwroot.'/pluginfile.php', '/'.$this->context->id.'/mod_data/content/'.$content->id.'/'.$content->content);
             $width  = $this->field->param1 ? ' width="'.s($this->field->param1).'" ':' ';
             $height = $this->field->param2 ? ' height="'.s($this->field->param2).'" ':' ';
-            $str = '<a href="'.$src.'"><img '.$width.$height.' src="'.$src.'" alt="'.s($alt).'" title="'.s($title).'" style="border:0px" /></a>';
+            $str = '<a href="'.$src.'"><img '.$width.$height.' src="'.$src.'" alt="'.s($alt).'" title="'.s($title).'" class="list_picture"/></a>';
         }
 
         return $str;
@@ -188,7 +210,7 @@ class data_field_picture extends data_field_base {
                     if ($thumbfile = $fs->get_file($this->context->id, 'mod_data', 'content', $content->id, '/', 'thumb_'.$content->content)) {
                         $thumbfile->delete();
                     }
-                    @set_time_limit(300);
+                    core_php_time_limit::raise(300);
                     // Might be slow!
                     $this->update_thumbnail($content, $file);
                 }
@@ -214,7 +236,7 @@ class data_field_picture extends data_field_base {
             case 'file':
                 $fs = get_file_storage();
                 $fs->delete_area_files($this->context->id, 'mod_data', 'content', $content->id);
-                $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+                $usercontext = context_user::instance($USER->id);
                 $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $value);
                 if (count($files)<2) {
                     // no file
@@ -228,6 +250,13 @@ class data_field_picture extends data_field_base {
                             $content->content = $draftfile->get_filename();
 
                             $file = $fs->create_file_from_storedfile($file_record, $draftfile);
+
+                            // If the file is not a valid image, redirect back to the upload form.
+                            if ($file->get_imageinfo() === false) {
+                                $url = new moodle_url('/mod/data/edit.php', array('d' => $this->field->dataid));
+                                redirect($url, get_string('invalidfiletype', 'error', $file->get_filename()));
+                            }
+
                             $DB->update_record('data_content', $content);
                             $this->update_thumbnail($content, $file);
 

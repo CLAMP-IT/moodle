@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,7 +22,7 @@
  *    - Region post width
  *    - Some custom CSS
  *
- * @package  moodlecore
+ * @package  theme_nonzero
  * @copyright 2010 Dietmar Wagner
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -31,28 +30,31 @@
 defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
-    // Block region-pre width
+    // Block region-pre width.
     $name = 'theme_nonzero/regionprewidth';
     $title = get_string('regionprewidth','theme_nonzero');
     $description = get_string('regionprewidthdesc', 'theme_nonzero');
     $default = 200;
     $choices = array(180=>'180px', 190=>'190px', 200=>'200px', 210=>'210px', 220=>'220px', 230=>'230px', 240=>'240px', 250=>'250px', 260=>'260px');
     $setting = new admin_setting_configselect($name, $title, $description, $default, $choices);
+    $setting->set_updatedcallback('theme_reset_all_caches');
     $settings->add($setting);
 
-    // Block region-post width
+    // Block region-post width.
     $name = 'theme_nonzero/regionpostwidth';
     $title = get_string('regionpostwidth','theme_nonzero');
     $description = get_string('regionpostwidthdesc', 'theme_nonzero');
     $default = 200;
     $choices = array(180=>'180px', 190=>'190px', 200=>'200px', 210=>'210px', 220=>'220px', 230=>'230px', 240=>'240px', 250=>'250px', 260=>'260px');
     $setting = new admin_setting_configselect($name, $title, $description, $default, $choices);
+    $setting->set_updatedcallback('theme_reset_all_caches');
     $settings->add($setting);
 
-    // Custom CSS file
+    // Custom CSS file.
     $name = 'theme_nonzero/customcss';
     $title = get_string('customcss','theme_nonzero');
     $description = get_string('customcssdesc', 'theme_nonzero');
     $setting = new admin_setting_configtextarea($name, $title, $description, '');
+    $setting->set_updatedcallback('theme_reset_all_caches');
     $settings->add($setting);
 }

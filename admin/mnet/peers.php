@@ -30,11 +30,11 @@
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/mnet/lib.php');
-require_once($CFG->dirroot.'/admin/mnet/peer_forms.php');
+require_once($CFG->dirroot.'/'.$CFG->admin.'/mnet/peer_forms.php');
 
 require_login();
 
-$context = get_context_instance(CONTEXT_SYSTEM);
+$context = context_system::instance();
 require_capability('moodle/site:config', $context, $USER->id, true, 'nopermissions');
 
 /// Initialize variables.

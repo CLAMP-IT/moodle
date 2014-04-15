@@ -1,13 +1,19 @@
 /*$$$$$$$$$$$$$$$$$ User $$$$$$$$$$$$$$$$$$$$*/
-
 .userprofile .fullprofilelink {text-align:center; margin:10px;}
 .userprofile .profilepicture {float:left; margin-right:20px;}
 .userprofile .description {margin-bottom:20px;}
+.userprofile dl {margin-top:10px;  margin-left:0;  width:100%;}
+.userprofile dl dt, .userprofile dl dd {padding-top:3px;  padding-bottom:3px;}
+.userprofile dl dt {margin:0; font-weight:bold; display:block; float:left; width:110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.userprofile dl dd {margin:0; margin-left:120px;}
 
 .user-box {margin:8px;width:115px;height:160px;text-align:center;float:left;clear: none;}
 
+.userlist .action-icon img {vertical-align: middle;}
+
 .userlist #showall {margin: 10px 0px;}
 .userlist .buttons {text-align: center;}
+.userlist .buttons label {padding: 0 3px;}
 .userlist table#participants {text-align:center;}
 .userlist table#participants td,
 .userlist table#participants th {vertical-align: middle;text-align: left;padding: 4px;}
@@ -27,7 +33,6 @@
 .userinfobox .list td {padding: 3px;}
 .userinfobox .username {padding-bottom: 20px;font-weight: bold;}
 .userinfobox td.label {text-align:right;white-space: nowrap;vertical-align: top;font-weight:bold;}
-
 .groupinfobox {border:1px solid;}
 .groupinfobox .left {padding: 10px;width: 100px;vertical-align: top;}
 
@@ -39,6 +44,9 @@
 .userselector select {width: 100%;}
 .userselector div {margin-top: 0.2em;}
 .userselector div label {margin-right: 0.3em;}
+/* Next style does not work in all browsers but looks nicer when it does */
+.userselector .userselector-infobelow {font-size: 0.8em;}
+
 #userselector_options {padding:0.3em 0;}
 #userselector_options .collapsibleregioncaption {font-weight: bold;}
 #userselector_options p {margin:0.2em 0;text-align:left;}
@@ -50,9 +58,9 @@
 
 /** Overide for RTL layout **/
 .dir-rtl .userprofile .profilepicture {float:right; margin-left:20px;margin-right:0px;}
-.dir-rtl .descriptionbox {margin-right: 110px;margin-left: 0px; }
 .dir-rtl .userlist table#participants td,
 .dir-rtl .userlist table#participants th {text-align: right;}
 .dir-rtl .userlist table#participants {margin: 0 auto;}
-
-#page-my-index.dir-rtl .block h3.main { text-align: right;}
+.dir-rtl .userprofile dl dt {float:right; width:110px; margin-left:10px;}
+.dir-rtl .userprofile dl dd {margin-right: 120px;}
+#page-my-index.dir-rtl .block h3 { text-align: right;}

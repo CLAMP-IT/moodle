@@ -50,14 +50,14 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
 
 $PAGE->set_pagelayout('incourse');
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 if (!has_capability('moodle/grade:manage', $context)) {
     require_capability('moodle/grade:edit', $context);
 }
 
 // default return url
 $gpr = new grade_plugin_return();
-$returnurl = $gpr->get_return_url($CFG->wwwroot.'/grade/report.php?id='.$course->id);
+$returnurl = $gpr->get_return_url($CFG->wwwroot.'/grade/report/index.php?id='.$course->id);
 
 // security checks!
 if (!empty($id)) {
@@ -107,21 +107,17 @@ $mform = new edit_grade_form(null, array('grade_item'=>$grade_item, 'gpr'=>$gpr)
 if ($grade = $DB->get_record('grade_grades', array('itemid' => $grade_item->id, 'userid' => $userid))) {
 
     // always clean existing feedback - grading should not have XSS risk
-    if (can_use_html_editor()) {
-        if (empty($grade->feedback)) {
-            $grade->feedback  = '';
-        } else {
-            $options = new stdClass();
-            $options->smiley  = false;
-            $options->filter  = false;
-            $options->noclean = false;
-            $options->para    = false;
-            $grade->feedback  = format_text($grade->feedback, $grade->feedbackformat, $options);
-        }
-        $grade->feedbackformat = FORMAT_HTML;
+    if (empty($grade->feedback)) {
+        $grade->feedback  = '';
     } else {
-        $grade->feedback       = clean_text($grade->feedback, $grade->feedbackformat);
+        $options = new stdClass();
+        $options->smiley  = false;
+        $options->filter  = false;
+        $options->noclean = false;
+        $options->para    = false;
+        $grade->feedback  = format_text($grade->feedback, $grade->feedbackformat, $options);
     }
+    $grade->feedbackformat = FORMAT_HTML;
 
     $grade->locked      = $grade->locked     > 0 ? 1:0;
     $grade->overridden  = $grade->overridden > 0 ? 1:0;
@@ -200,6 +196,18 @@ if ($mform->is_cancelled()) {
         $data->feedback       = $old_grade_grade->feedback;
         $data->feedbackformat = $old_grade_grade->feedbackformat;
     }
+
+    // Only log a grade override if they actually changed the student grade.
+    if ($data->finalgrade != $old_grade_grade->finalgrade) {
+        $url = '/report/grader/index.php?id=' . $course->id;
+
+        $user = $DB->get_record('user', array('id'=>$data->userid), '*', MUST_EXIST);
+        $fullname = fullname($user);
+
+        $info = "{$grade_item->itemname}: $fullname";
+        add_to_log($course->id, 'grade', 'update', $url, $info);
+    }
+
     // update final grade or feedback
     // when we set override grade the first time, it happens here
     $grade_item->update_final_grade($data->userid, $data->finalgrade, 'editgrade', $data->feedback, $data->feedbackformat);
@@ -213,6 +221,19 @@ if ($mform->is_cancelled()) {
             $data->overridden = 0; // checkbox unticked
         }
         $grade_grade->set_overridden($data->overridden);
+
+        if ($data->overridden == 0 && $data->overridden != $old_grade_grade->overridden) {
+            // Log removing an override.
+            // The addition of an override is logged above.
+            // One or the other will happen but never both.
+            $url = '/report/grader/index.php?id=' . $course->id;
+
+            $user = $DB->get_record('user', array('id'=>$data->userid), '*', MUST_EXIST);
+            $fullname = fullname($user);
+
+            $info = "{$grade_item->itemname}: $fullname";
+            add_to_log($course->id, 'grade', 'update', $url, $info);
+        }
     }
 
     if (has_capability('moodle/grade:manage', $context) or has_capability('moodle/grade:hide', $context)) {

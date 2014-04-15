@@ -51,6 +51,11 @@ class restore_ui extends base_ui {
     protected $stage = null;
 
     /**
+     * @var \core\progress\base Progress indicator (where there is no controller)
+     */
+    protected $progressreporter = null;
+
+    /**
      * String mappings to the above stages
      * @var array
      */
@@ -127,6 +132,38 @@ class restore_ui extends base_ui {
     public function get_restoreid() {
         return $this->controller->get_restoreid();
     }
+
+    /**
+     * Gets the progress reporter object in use for this restore UI.
+     *
+     * IMPORTANT: This progress reporter is used only for UI progress that is
+     * outside the restore controller. The restore controller has its own
+     * progress reporter which is used for progress during the main restore.
+     * Use the restore controller's progress reporter to report progress during
+     * a restore operation, not this one.
+     *
+     * This extra reporter is necessary because on some restore UI screens,
+     * there are long-running tasks even though there is no restore controller
+     * in use.
+     *
+     * @return \core\progress\null
+     */
+    public function get_progress_reporter() {
+        if (!$this->progressreporter) {
+            $this->progressreporter = new \core\progress\null();
+        }
+        return $this->progressreporter;
+    }
+
+    /**
+     * Sets the progress reporter that will be returned by get_progress_reporter.
+     *
+     * @param c\core\progress\base$progressreporter Progress reporter
+     */
+    public function set_progress_reporter(\core\progress\base $progressreporter) {
+        $this->progressreporter = $progressreporter;
+    }
+
     /**
      * Executes the restore plan
      * @return bool

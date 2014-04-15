@@ -127,6 +127,7 @@ EOD;
         }
         $this->processedfiles[] = $url;
         $curl = new curl;
+        $curl->setopt(array('CURLOPT_FOLLOWLOCATION' => true, 'CURLOPT_MAXREDIRS' => 3));
         $msg = $curl->head($url);
         $info = $curl->get_info();
         if ($info['http_code'] != 200) {
@@ -167,6 +168,8 @@ EOD;
             } else if (strstr($info['content_type'], 'image/')) {
                 // download this file
                 $this->add_image_to_list($info['url'], $info['url'], $list);
+            } else {
+                $list['error'] = get_string('validfiletype', 'repository_url');
             }
 
             // parse all found css styles
@@ -227,5 +230,22 @@ EOD;
     public function get_file_source_info($url) {
         return $url;
     }
-}
 
+    /**
+     * file types supported by url downloader plugin
+     *
+     * @return array
+     */
+    public function supported_filetypes() {
+        return array('web_image');
+    }
+
+    /**
+     * Is this repository accessing private data?
+     *
+     * @return bool
+     */
+    public function contains_private_data() {
+        return false;
+    }
+}

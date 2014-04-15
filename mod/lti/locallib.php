@@ -35,8 +35,7 @@
 /**
  * This file contains the library of functions and constants for the lti module
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -162,20 +161,33 @@ function lti_view($instance) {
 
     if (empty($key) || empty($secret)) {
         $returnurlparams['unsigned'] = '1';
-
-        //Add the return URL. We send the launch container along to help us avoid frames-within-frames when the user returns
-        $url = new moodle_url('/mod/lti/return.php', $returnurlparams);
-        $returnurl = $url->out(false);
-
-        if ($typeconfig['forcessl'] == '1') {
-            $returnurl = lti_ensure_url_is_https($returnurl);
-        }
-
-        $requestparams['launch_presentation_return_url'] = $returnurl;
     }
+
+    // Add the return URL. We send the launch container along to help us avoid frames-within-frames when the user returns.
+    $url = new moodle_url('/mod/lti/return.php', $returnurlparams);
+    $returnurl = $url->out(false);
+
+    if ($typeconfig['forcessl'] == '1') {
+        $returnurl = lti_ensure_url_is_https($returnurl);
+    }
+
+    $requestparams['launch_presentation_return_url'] = $returnurl;
 
     if (!empty($key) && !empty($secret)) {
         $parms = lti_sign_parameters($requestparams, $endpoint, "POST", $key, $secret);
+
+        $endpointurl = new moodle_url($endpoint);
+        $endpointparams = $endpointurl->params();
+
+        // Strip querystring params in endpoint url from $parms to avoid duplication.
+        if (!empty($endpointparams) && !empty($parms)) {
+            foreach (array_keys($endpointparams) as $paramname) {
+                if (isset($parms[$paramname])) {
+                    unset($parms[$paramname]);
+                }
+            }
+        }
+
     } else {
         //If no key and secret, do the launch unsigned.
         $parms = $requestparams;
@@ -228,11 +240,6 @@ function lti_build_request($instance, $typeconfig, $course) {
 
     $role = lti_get_ims_role($USER, $instance->cmid, $instance->course);
 
-    $locale = $course->lang;
-    if ( strlen($locale) < 1 ) {
-         $locale = $CFG->lang;
-    }
-
     $requestparams = array(
         'resource_link_id' => $instance->id,
         'resource_link_title' => $instance->name,
@@ -242,7 +249,7 @@ function lti_build_request($instance, $typeconfig, $course) {
         'context_id' => $course->id,
         'context_label' => $course->shortname,
         'context_title' => $course->fullname,
-        'launch_presentation_locale' => $locale,
+        'launch_presentation_locale' => current_language()
     );
 
     $placementsecret = $instance->servicesalt;
@@ -290,7 +297,7 @@ function lti_build_request($instance, $typeconfig, $course) {
     if ($customstr) {
         $custom = lti_split_custom_parameters($customstr);
     }
-    if (!isset($typeconfig['allowinstructorcustom']) || $typeconfig['allowinstructorcustom'] == LTI_SETTING_NEVER) {
+    if (isset($typeconfig['allowinstructorcustom']) && $typeconfig['allowinstructorcustom'] == LTI_SETTING_NEVER) {
         $requestparams = array_merge($custom, $requestparams);
     } else {
         if ($instructorcustomstr) {
@@ -325,7 +332,7 @@ function lti_build_request($instance, $typeconfig, $course) {
 }
 
 function lti_get_tool_table($tools, $id) {
-    global $CFG, $USER;
+    global $CFG, $OUTPUT, $USER;
     $html = '';
 
     $typename = get_string('typename', 'lti');
@@ -357,11 +364,16 @@ function lti_get_tool_table($tools, $id) {
             $update = get_string('update', 'lti');
             $delete = get_string('delete', 'lti');
 
-            $accepthtml = "
-                <a class=\"editing_accept\" href=\"{$CFG->wwwroot}/mod/lti/typessettings.php?action=accept&amp;id={$type->id}&amp;sesskey={$USER->sesskey}&amp;tab={$id}\" title=\"{$accept}\">
-                    <img class=\"iconsmall\" alt=\"{$accept}\" src=\"{$CFG->wwwroot}/pix/t/clear.gif\"/>
-                </a>
-            ";
+            $baseurl = new moodle_url('/mod/lti/typessettings.php', array(
+                    'action' => 'accept',
+                    'id' => $type->id,
+                    'sesskey' => sesskey(),
+                    'tab' => $id
+                ));
+
+            $accepthtml = $OUTPUT->action_icon($baseurl,
+                    new pix_icon('t/check', $accept, '', array('class' => 'iconsmall')), null,
+                    array('title' => $accept, 'class' => 'editing_accept'));
 
             $deleteaction = 'delete';
 
@@ -374,6 +386,17 @@ function lti_get_tool_table($tools, $id) {
                 $delete = get_string('reject', 'lti');
             }
 
+            $updateurl = clone($baseurl);
+            $updateurl->param('action', 'update');
+            $updatehtml = $OUTPUT->action_icon($updateurl,
+                    new pix_icon('t/edit', $update, '', array('class' => 'iconsmall')), null,
+                    array('title' => $update, 'class' => 'editing_update'));
+
+            $deleteurl = clone($baseurl);
+            $deleteurl->param('action', $deleteaction);
+            $deletehtml = $OUTPUT->action_icon($deleteurl,
+                    new pix_icon('t/delete', $delete, '', array('class' => 'iconsmall')), null,
+                    array('title' => $delete, 'class' => 'editing_delete'));
             $html .= "
             <tr>
                 <td>
@@ -386,13 +409,7 @@ function lti_get_tool_table($tools, $id) {
                     {$date}
                 </td>
                 <td align=\"center\">
-                    {$accepthtml}
-                    <a class=\"editing_update\" href=\"{$CFG->wwwroot}/mod/lti/typessettings.php?action=update&amp;id={$type->id}&amp;sesskey={$USER->sesskey}&amp;tab={$id}\" title=\"{$update}\">
-                        <img class=\"iconsmall\" alt=\"{$update}\" src=\"{$CFG->wwwroot}/pix/t/edit.gif\"/>
-                    </a>
-                    <a class=\"editing_delete\" href=\"{$CFG->wwwroot}/mod/lti/typessettings.php?action={$deleteaction}&amp;id={$type->id}&amp;sesskey={$USER->sesskey}&amp;tab={$id}\" title=\"{$delete}\">
-                        <img class=\"iconsmall\" alt=\"{$delete}\" src=\"{$CFG->wwwroot}/pix/t/delete.gif\"/>
-                    </a>
+                    {$accepthtml}{$updatehtml}{$deletehtml}
                 </td>
             </tr>
             ";
@@ -420,8 +437,8 @@ function lti_split_custom_parameters($customstr) {
         if ( $pos === false || $pos < 1 ) {
             continue;
         }
-        $key = trim(textlib::substr($line, 0, $pos));
-        $val = trim(textlib::substr($line, $pos+1, strlen($line)));
+        $key = trim(core_text::substr($line, 0, $pos));
+        $val = trim(core_text::substr($line, $pos+1, strlen($line)));
         $key = lti_map_keyname($key);
         $retval['custom_'.$key] = $val;
     }
@@ -437,7 +454,7 @@ function lti_split_custom_parameters($customstr) {
  */
 function lti_map_keyname($key) {
     $newkey = "";
-    $key = textlib::strtolower(trim($key));
+    $key = core_text::strtolower(trim($key));
     foreach (str_split($key) as $ch) {
         if ( ($ch >= 'a' && $ch <= 'z') || ($ch >= '0' && $ch <= '9') ) {
             $newkey .= $ch;
@@ -462,7 +479,7 @@ function lti_get_ims_role($user, $cmid, $courseid) {
         //If no cmid is passed, check if the user is a teacher in the course
         //This allows other modules to programmatically "fake" a launch without
         //a real LTI instance
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $courseid);
+        $coursecontext = context_course::instance($courseid);
 
         if (has_capability('moodle/course:manageactivities', $coursecontext)) {
             array_push($roles, 'Instructor');
@@ -470,7 +487,7 @@ function lti_get_ims_role($user, $cmid, $courseid) {
             array_push($roles, 'Learner');
         }
     } else {
-        $context = get_context_instance(CONTEXT_MODULE, $cmid);
+        $context = context_module::instance($cmid);
 
         if (has_capability('mod/lti:manage', $context)) {
             array_push($roles, 'Instructor');
@@ -500,7 +517,7 @@ function lti_get_type_config($typeid) {
                 FROM {lti_types_config}
                WHERE typeid = :typeid1
            UNION ALL
-              SELECT 'toolurl' AS name, baseurl AS value
+              SELECT 'toolurl' AS name, " . $DB->sql_compare_text('baseurl', 1333) . " AS value
                 FROM {lti_types}
                WHERE id = :typeid2";
 
@@ -566,6 +583,23 @@ function lti_filter_get_types($course) {
     }
 
     return $DB->get_records('lti_types', $filter);
+}
+
+/**
+ * Given an array of tools, filter them based on their state
+ *
+ * @param array $tools An array of lti_types records
+ * @param int $state One of the LTI_TOOL_STATE_* constants
+ * @return array
+ */
+function lti_filter_tool_types(array $tools, $state) {
+    $return = array();
+    foreach ($tools as $key => $tool) {
+        if ($tool->state == $state) {
+            $return[$key] = $tool;
+        }
+    }
+    return $return;
 }
 
 function lti_get_types_for_add_instance() {
@@ -1110,12 +1144,12 @@ function lti_get_launch_container($lti, $toolconfig) {
         $launchcontainer = LTI_LAUNCH_CONTAINER_EMBED_NO_BLOCKS;
     }
 
-    $devicetype = get_device_type();
+    $devicetype = core_useragent::get_device_type();
 
     //Scrolling within the object element doesn't work on iOS or Android
     //Opening the popup window also had some issues in testing
     //For mobile devices, always take up the entire screen to ensure the best experience
-    if ($devicetype === 'mobile' || $devicetype === 'tablet' ) {
+    if ($devicetype === core_useragent::DEVICETYPE_MOBILE || $devicetype === core_useragent::DEVICETYPE_TABLET ) {
         $launchcontainer = LTI_LAUNCH_CONTAINER_REPLACE_MOODLE_WINDOW;
     }
 
@@ -1133,7 +1167,7 @@ function lti_ensure_url_is_https($url) {
     } else {
         //If the URL starts with http, replace with https
         if (stripos($url, 'http://') === 0) {
-            $url = 'https://' . substr($url, 8);
+            $url = 'https://' . substr($url, 7);
         }
     }
 

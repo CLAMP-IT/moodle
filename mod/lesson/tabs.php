@@ -20,8 +20,7 @@
 *
 * This file was adapted from the mod/quiz/tabs.php
 *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
 */
@@ -38,7 +37,7 @@ if (!isset($currenttab)) {
 }
 if (!isset($cm)) {
     $cm = get_coursemodule_from_instance('lesson', $lesson->id);
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
 }
 if (!isset($course)) {
     $course = $DB->get_record('course', array('id' => $lesson->course));

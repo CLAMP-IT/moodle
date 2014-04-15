@@ -35,7 +35,7 @@ $course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
 $PAGE->set_url('/group/import.php', array('id'=>$id));
 
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $id);
+$context = context_course::instance($id);
 
 require_capability('moodle/course:managegroups', $context);
 
@@ -82,7 +82,8 @@ if ($mform_post->is_cancelled()) {
             "idnumber" => 1,
             "groupidnumber" => 1,
             "description" => 1,
-            "enrolmentkey" => 1);
+            "enrolmentkey" => 1,
+            "groupingname" => 1);
 
     // --- get header (field names) ---
     $header = explode($csv_delimiter, array_shift($rawlines));
@@ -160,7 +161,7 @@ if ($mform_post->is_cancelled()) {
             if (isset($newgroup->courseid)) {
                 $linenum++;
                 $groupname = $newgroup->name;
-                $newgrpcoursecontext = get_context_instance(CONTEXT_COURSE, $newgroup->courseid);
+                $newgrpcoursecontext = context_course::instance($newgroup->courseid);
 
                 ///Users cannot upload groups in courses they cannot update.
                 if (!has_capability('moodle/course:managegroups', $newgrpcoursecontext) or (!is_enrolled($newgrpcoursecontext) and !has_capability('moodle/course:view', $newgrpcoursecontext))) {
@@ -187,10 +188,37 @@ if ($mform_post->is_cancelled()) {
                     }
                     if ($groupid = groups_get_group_by_name($newgroup->courseid, $groupname)) {
                         echo $OUTPUT->notification("$groupname :".get_string('groupexistforcourse', 'error', $groupname));
-                    } else if (groups_create_group($newgroup)) {
+                    } else if ($groupid = groups_create_group($newgroup)) {
                         echo $OUTPUT->notification(get_string('groupaddedsuccesfully', 'group', $groupname), 'notifysuccess');
                     } else {
                         echo $OUTPUT->notification(get_string('groupnotaddederror', 'error', $groupname));
+                        continue;
+                    }
+
+                    // Add group to grouping
+                    if (!empty($newgroup->groupingname) || is_numeric($newgroup->groupingname)) {
+                        $groupingname = $newgroup->groupingname;
+                        if (! $groupingid = groups_get_grouping_by_name($newgroup->courseid, $groupingname)) {
+                            $data = new stdClass();
+                            $data->courseid = $newgroup->courseid;
+                            $data->name = $groupingname;
+                            if ($groupingid = groups_create_grouping($data)) {
+                                echo $OUTPUT->notification(get_string('groupingaddedsuccesfully', 'group', $groupingname), 'notifysuccess');
+                            } else {
+                                echo $OUTPUT->notification(get_string('groupingnotaddederror', 'error', $groupingname));
+                                continue;
+                            }
+                        }
+
+                        // if we have reached here we definitely have a groupingid
+                        $a = array('groupname' => $groupname, 'groupingname' => $groupingname);
+                        try {
+                            groups_assign_grouping($groupingid, $groupid);
+                            echo $OUTPUT->notification(get_string('groupaddedtogroupingsuccesfully', 'group', $a), 'notifysuccess');
+                        } catch (Exception $e) {
+                            echo $OUTPUT->notification(get_string('groupnotaddedtogroupingerror', 'error', $a));
+                        }
+
                     }
                 }
             }

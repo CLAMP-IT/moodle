@@ -27,9 +27,9 @@
 require_once(dirname(__FILE__) . '/../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 
-$action = optional_param('action', '', PARAM_ACTION);
+$action = optional_param('action', '', PARAM_ALPHANUMEXT);
 
-$syscontext = get_context_instance(CONTEXT_SYSTEM);
+$syscontext = context_system::instance();
 
 require_login();
 admin_externalpage_setup('toolunsuproles'); // checks permissions specified in settings.php
@@ -61,7 +61,7 @@ if ($action === 'delete') {
     //show confirmation
     echo $OUTPUT->header();
     $yesurl = new moodle_url($PAGE->url, array('roleid'=>$roleid, 'contextlevel'=>$contextlevel, 'action'=>'delete', 'confirm'=>1, 'sesskey'=>sesskey()));
-    $levelname = get_contextlevel_name($contextlevel);
+    $levelname = context_helper::get_level_name($contextlevel);
     $rolename = format_string($role->name);
     $message = get_string('confirmdelete', 'tool_unsuproles', array('level'=>$levelname, 'role'=>$rolename));
     echo $OUTPUT->confirm($message, $yesurl, $PAGE->url);
@@ -96,8 +96,8 @@ if (!$problems) {
     $roles = get_all_roles();
     $data = array();
     foreach ($problems as $problem) {
-        $levelname = get_contextlevel_name($problem->contextlevel);
-        $rolename = format_string($roles[$problem->roleid]->name);
+        $levelname = context_helper::get_level_name($problem->contextlevel);
+        $rolename = role_get_name($roles[$problem->roleid]);
         //TODO: show list of users if count low
         $count = $problem->racount;
         $edit = array();

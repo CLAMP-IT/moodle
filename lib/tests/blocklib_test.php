@@ -31,32 +31,18 @@ require_once($CFG->libdir . '/blocklib.php');
 require_once($CFG->dirroot . '/blocks/moodleblock.class.php');
 
 
-/** Test-specific subclass to make some protected things public. */
-class testable_block_manager extends block_manager {
-
-    public function mark_loaded() {
-        $this->birecordsbyregion = array();
-    }
-    public function get_loaded_blocks() {
-        return $this->birecordsbyregion;
-    }
-}
-class block_ablocktype extends block_base {
-    public function init() {
-    }
-}
-
 /**
- * Test functions that don't need to touch the database.
+ * Test various block related classes.
  */
-class moodle_block_manager_testcase extends basic_testcase {
+class core_blocklib_testcase extends advanced_testcase {
     protected $testpage;
     protected $blockmanager;
+    protected $isediting = null;
 
     protected function setUp() {
         parent::setUp();
         $this->testpage = new moodle_page();
-        $this->testpage->set_context(get_context_instance(CONTEXT_SYSTEM));
+        $this->testpage->set_context(context_system::instance());
         $this->blockmanager = new testable_block_manager($this->testpage);
     }
 
@@ -66,15 +52,25 @@ class moodle_block_manager_testcase extends basic_testcase {
         parent::tearDown();
     }
 
+    protected function purge_blocks() {
+        global $DB;
+        $this->resetAfterTest();
+
+        $bis = $DB->get_records('block_instances');
+        foreach ($bis as $instance) {
+            blocks_delete_instance($instance);
+        }
+    }
+
     public function test_no_regions_initially() {
-        // Exercise SUT & Validate
+        // Exercise SUT & Validate.
         $this->assertEquals(array(), $this->blockmanager->get_regions());
     }
 
     public function test_add_region() {
         // Exercise SUT.
         $this->blockmanager->add_region('a-region-name');
-        // Validate
+        // Validate.
         $this->assertEquals(array('a-region-name'), $this->blockmanager->get_regions());
     }
 
@@ -83,7 +79,7 @@ class moodle_block_manager_testcase extends basic_testcase {
         $regions = array('a-region', 'another-region');
         // Exercise SUT.
         $this->blockmanager->add_regions($regions);
-        // Validate
+        // Validate.
         $this->assertEquals($regions, $this->blockmanager->get_regions(), '', 0, 10, true);
     }
 
@@ -91,13 +87,12 @@ class moodle_block_manager_testcase extends basic_testcase {
         // Exercise SUT.
         $this->blockmanager->add_region('a-region-name');
         $this->blockmanager->add_region('another-region');
-        // Validate
+        // Validate.
         $this->assertEquals(array('a-region-name', 'another-region'), $this->blockmanager->get_regions(), '', 0, 10, true);
     }
 
     /**
      * @expectedException coding_exception
-     * @return void
      */
     public function test_cannot_add_region_after_loaded() {
         // Set up fixture.
@@ -111,13 +106,12 @@ class moodle_block_manager_testcase extends basic_testcase {
         $this->blockmanager->add_region('a-region-name');
         // Exercise SUT.
         $this->blockmanager->set_default_region('a-region-name');
-        // Validate
+        // Validate.
         $this->assertEquals('a-region-name', $this->blockmanager->get_default_region());
     }
 
     /**
      * @expectedException coding_exception
-     * @return void
      */
     public function test_cannot_set_unknown_region_as_default() {
         // Exercise SUT.
@@ -126,7 +120,6 @@ class moodle_block_manager_testcase extends basic_testcase {
 
     /**
      * @expectedException coding_exception
-     * @return void
      */
     public function test_cannot_change_default_region_after_loaded() {
         // Set up fixture.
@@ -147,23 +140,6 @@ class moodle_block_manager_testcase extends basic_testcase {
 
         $this->assertEquals(array('mod-forum-index', 'mod-*-index', 'mod-forum-index-*', 'mod-forum-*', 'mod-*', '*'),
             matching_page_type_patterns('mod-forum-index'), '', 0, 10, true);
-    }
-}
-
-/**
- * Test methods that load and save data from block_instances and block_positions.
- */
-class moodle_block_manager_test_saving_loading_testcase extends advanced_testcase {
-
-    protected $isediting = null;
-
-    protected function purge_blocks() {
-        global $DB;
-        $bis = $DB->get_records('block_instances');
-        foreach($bis as $instance) {
-            blocks_delete_instance($instance);
-        }
-        $this->resetAfterTest(true);
     }
 
     protected function get_a_page_and_block_manager($regions, $context, $pagetype, $subpage = '') {
@@ -205,7 +181,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
 
         // Set up fixture.
         list($page, $blockmanager) = $this->get_a_page_and_block_manager(array('a-region'),
-            get_context_instance(CONTEXT_SYSTEM), 'page-type');
+            context_system::instance(), 'page-type');
         // Exercise SUT.
         $blockmanager->load_blocks();
         // Validate.
@@ -219,7 +195,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
         // Set up fixture.
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
-        $context = get_context_instance(CONTEXT_SYSTEM);
+        $context = context_system::instance();
 
         list($page, $blockmanager) = $this->get_a_page_and_block_manager(array($regionname),
             $context, 'page-type');
@@ -238,7 +214,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
         // Set up fixture.
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
-        $context = get_context_instance(CONTEXT_SYSTEM);
+        $context = context_system::instance();
 
         list($page, $blockmanager) = $this->get_a_page_and_block_manager(array($regionname),
             $context, 'page-type');
@@ -253,20 +229,12 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
     }
 
     public function test_block_not_included_in_different_context() {
-        global $DB;
         $this->purge_blocks();
 
         // Set up fixture.
-        $syscontext = get_context_instance(CONTEXT_SYSTEM);
-        $cat = new stdClass();
-        $cat->name         = 'testcategory';
-        $cat->parent       = 0;
-        $cat->depth        = 1;
-        $cat->sortorder    = 100;
-        $cat->timemodified = time();
-        $catid = $DB->insert_record('course_categories', $cat);
-        $DB->set_field('course_categories', 'path', '/' . $catid, array('id' => $catid));
-        $fakecontext = context_coursecat::instance($catid);
+        $syscontext = context_system::instance();
+        $cat = $this->getDataGenerator()->create_category(array('name' => 'testcategory'));
+        $fakecontext = context_coursecat::instance($cat->id);
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
 
@@ -286,7 +254,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
         $this->purge_blocks();
 
         // Set up fixture.
-        $syscontext = get_context_instance(CONTEXT_SYSTEM);
+        $syscontext = context_system::instance();
         $childcontext = context_coursecat::instance(1);
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
@@ -307,7 +275,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
         $this->purge_blocks();
 
         // Set up fixture.
-        $syscontext = get_context_instance(CONTEXT_SYSTEM);
+        $syscontext = context_system::instance();
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
 
@@ -329,7 +297,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
         // Set up fixture.
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
-        $syscontext = get_context_instance(CONTEXT_SYSTEM);
+        $syscontext = context_system::instance();
 
         list($page, $blockmanager) = $this->get_a_page_and_block_manager(array($regionname),
             $syscontext, 'page-type', 'sub-page');
@@ -349,7 +317,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
         // Set up fixture.
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
-        $syscontext = get_context_instance(CONTEXT_SYSTEM);
+        $syscontext = context_system::instance();
 
         list($page, $blockmanager) = $this->get_a_page_and_block_manager(array($regionname),
             $syscontext, 'page-type', 'sub-page');
@@ -369,7 +337,7 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
         // Set up fixture.
         $regionname = 'a-region';
         $blockname = $this->get_a_known_block_type();
-        $syscontext = get_context_instance(CONTEXT_SYSTEM);
+        $syscontext = context_system::instance();
 
         list($page, $blockmanager) = $this->get_a_page_and_block_manager(array($regionname),
             $syscontext, 'page-type', 'sub-page');
@@ -384,3 +352,23 @@ class moodle_block_manager_test_saving_loading_testcase extends advanced_testcas
     }
 }
 
+/**
+ * Test-specific subclass to make some protected things public.
+ */
+class testable_block_manager extends block_manager {
+
+    public function mark_loaded() {
+        $this->birecordsbyregion = array();
+    }
+    public function get_loaded_blocks() {
+        return $this->birecordsbyregion;
+    }
+}
+
+/**
+ * Test-specific subclass to make some protected things public.
+ */
+class block_ablocktype extends block_base {
+    public function init() {
+    }
+}

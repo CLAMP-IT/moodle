@@ -18,8 +18,7 @@
 /**
  * Standard library of functions and constants for lesson
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -43,6 +42,8 @@ function lesson_add_instance($data, $mform) {
     global $DB;
 
     $cmid = $data->coursemodule;
+    $draftitemid = $data->mediafile;
+    $context = context_module::instance($cmid);
 
     lesson_process_pre_save($data);
 
@@ -50,14 +51,9 @@ function lesson_add_instance($data, $mform) {
     $lessonid = $DB->insert_record("lesson", $data);
     $data->id = $lessonid;
 
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
     $lesson = $DB->get_record('lesson', array('id'=>$lessonid), '*', MUST_EXIST);
 
-    if ($filename = $mform->get_new_filename('mediafilepicker')) {
-        if ($file = $mform->save_stored_file('mediafilepicker', $context->id, 'mod_lesson', 'mediafile', 0, '/', $filename)) {
-            $DB->set_field('lesson', 'mediafile', '/'.$file->get_filename(), array('id'=>$lesson->id));
-        }
-    }
+    lesson_update_media_file($lessonid, $context, $draftitemid);
 
     lesson_process_post_save($data);
 
@@ -80,22 +76,15 @@ function lesson_update_instance($data, $mform) {
 
     $data->id = $data->instance;
     $cmid = $data->coursemodule;
+    $draftitemid = $data->mediafile;
+    $context = context_module::instance($cmid);
 
     lesson_process_pre_save($data);
 
     unset($data->mediafile);
     $DB->update_record("lesson", $data);
 
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
-    if ($filename = $mform->get_new_filename('mediafilepicker')) {
-        if ($file = $mform->save_stored_file('mediafilepicker', $context->id, 'mod_lesson', 'mediafile', 0, '/', $filename, true)) {
-            $DB->set_field('lesson', 'mediafile', '/'.$file->get_filename(), array('id'=>$data->id));
-        } else {
-            $DB->set_field('lesson', 'mediafile', '', array('id'=>$data->id));
-        }
-    } else {
-        $DB->set_field('lesson', 'mediafile', '', array('id'=>$data->id));
-    }
+    lesson_update_media_file($data->id, $context, $draftitemid);
 
     lesson_process_post_save($data);
 
@@ -295,7 +284,7 @@ function lesson_print_overview($courses, &$htmlarray) {
             $str .= $OUTPUT->box(get_string('lessoncloseson', 'lesson', userdate($lesson->deadline)), 'info');
 
             // Attempt information
-            if (has_capability('mod/lesson:manage', get_context_instance(CONTEXT_MODULE, $lesson->coursemodule))) {
+            if (has_capability('mod/lesson:manage', context_module::instance($lesson->coursemodule))) {
                 // Number of user attempts
                 $attempts = $DB->count_records('lesson_attempts', array('lessonid'=>$lesson->id));
                 $str     .= $OUTPUT->box(get_string('xattempts', 'lesson', $attempts), 'info');
@@ -345,7 +334,7 @@ function lesson_get_user_grades($lesson, $userid=0) {
 
     $params = array("lessonid" => $lesson->id,"lessonid2" => $lesson->id);
 
-    if (isset($userid)) {
+    if (!empty($userid)) {
         $params["userid"] = $userid;
         $params["userid2"] = $userid;
         $user = "AND u.id = :userid";
@@ -411,7 +400,7 @@ function lesson_update_grades($lesson, $userid=0, $nullifnone=true) {
     } else if ($userid and $nullifnone) {
         $grade = new stdClass();
         $grade->userid   = $userid;
-        $grade->rawgrade = NULL;
+        $grade->rawgrade = null;
         lesson_grade_item_update($lesson, $grade);
 
     } else {
@@ -459,7 +448,7 @@ function lesson_upgrade_grades() {
  * @param array|object $grades optional array/object of grade(s); 'reset' means reset grades in gradebook
  * @return int 0 if ok, error code otherwise
  */
-function lesson_grade_item_update($lesson, $grades=NULL) {
+function lesson_grade_item_update($lesson, $grades=null) {
     global $CFG;
     if (!function_exists('grade_update')) { //workaround for buggy PHP versions
         require_once($CFG->libdir.'/gradelib.php');
@@ -478,13 +467,29 @@ function lesson_grade_item_update($lesson, $grades=NULL) {
     } else if ($lesson->grade < 0) {
         $params['gradetype']  = GRADE_TYPE_SCALE;
         $params['scaleid']   = -$lesson->grade;
+
+        // Make sure current grade fetched correctly from $grades
+        $currentgrade = null;
+        if (!empty($grades)) {
+            if (is_array($grades)) {
+                $currentgrade = reset($grades);
+            } else {
+                $currentgrade = $grades;
+            }
+        }
+
+        // When converting a score to a scale, use scale's grade maximum to calculate it.
+        if (!empty($currentgrade) && $currentgrade->rawgrade !== null) {
+            $grade = grade_get_grades($lesson->course, 'mod', 'lesson', $lesson->id, $currentgrade->userid);
+            $params['grademax']   = reset($grade->items)->grademax;
+        }
     } else {
         $params['gradetype']  = GRADE_TYPE_NONE;
     }
 
     if ($grades  === 'reset') {
         $params['reset'] = true;
-        $grades = NULL;
+        $grades = null;
     } else if (!empty($grades)) {
         // Need to calculate raw grade (Note: $grades has many forms)
         if (is_object($grades)) {
@@ -498,7 +503,7 @@ function lesson_grade_item_update($lesson, $grades=NULL) {
             }
             //check raw grade isnt null otherwise we erroneously insert a grade of 0
             if ($grade['rawgrade'] !== null) {
-                $grades[$key]['rawgrade'] = ($grade['rawgrade'] * $lesson->grade / 100);
+                $grades[$key]['rawgrade'] = ($grade['rawgrade'] * $params['grademax'] / 100);
             } else {
                 //setting rawgrade to null just in case user is deleting a grade
                 $grades[$key]['rawgrade'] = null;
@@ -813,7 +818,7 @@ function lesson_extend_settings_navigation($settings, $lessonnode) {
  */
 function lesson_get_import_export_formats($type) {
     global $CFG;
-    $fileformats = get_plugin_list("qformat");
+    $fileformats = core_component::get_plugin_list("qformat");
 
     $fileformatname=array();
     foreach ($fileformats as $fileformat=>$fdir) {
@@ -879,7 +884,11 @@ function lesson_pluginfile($course, $cm, $context, $filearea, $args, $forcedownl
         $fullpath = "/$context->id/mod_lesson/$filearea/$pageid/".implode('/', $args);
 
     } else if ($filearea === 'mediafile') {
-        array_shift($args); // ignore itemid - caching only
+        if (count($args) > 1) {
+            // Remove the itemid when it appears to be part of the arguments. If there is only one argument
+            // then it is surely the file name. The itemid is sometimes used to prevent browser caching.
+            array_shift($args);
+        }
         $fullpath = "/$context->id/mod_lesson/$filearea/0/".implode('/', $args);
 
     } else {
@@ -900,14 +909,12 @@ function lesson_pluginfile($course, $cm, $context, $filearea, $args, $forcedownl
  *
  * @package  mod_lesson
  * @category files
- * @todo MDL-31048 localize
  * @return array a list of available file areas
  */
 function lesson_get_file_areas() {
     $areas = array();
-    $areas['page_contents'] = 'Page contents'; //TODO: localize!!!!
-    $areas['mediafile'] = 'Media file'; //TODO: localize!!!!
-
+    $areas['page_contents'] = get_string('pagecontents', 'mod_lesson');
+    $areas['mediafile'] = get_string('mediafile', 'mod_lesson');
     return $areas;
 }
 
@@ -929,20 +936,43 @@ function lesson_get_file_areas() {
  * @return file_info_stored
  */
 function lesson_get_file_info($browser, $areas, $course, $cm, $context, $filearea, $itemid, $filepath, $filename) {
-    global $CFG;
-    if (has_capability('moodle/course:managefiles', $context)) {
-        // no peaking here for students!!
+    global $CFG, $DB;
+
+    if (!has_capability('moodle/course:managefiles', $context)) {
+        // No peaking here for students!
         return null;
+    }
+
+    // Mediafile area does not have sub directories, so let's select the default itemid to prevent
+    // the user from selecting a directory to access the mediafile content.
+    if ($filearea == 'mediafile' && is_null($itemid)) {
+        $itemid = 0;
+    }
+
+    if (is_null($itemid)) {
+        return new mod_lesson_file_info($browser, $course, $cm, $context, $areas, $filearea);
     }
 
     $fs = get_file_storage();
     $filepath = is_null($filepath) ? '/' : $filepath;
     $filename = is_null($filename) ? '.' : $filename;
-    $urlbase = $CFG->wwwroot.'/pluginfile.php';
     if (!$storedfile = $fs->get_file($context->id, 'mod_lesson', $filearea, $itemid, $filepath, $filename)) {
         return null;
     }
-    return new file_info_stored($browser, $context, $storedfile, $urlbase, $filearea, $itemid, true, true, false);
+
+    $itemname = $filearea;
+    if ($filearea == 'page_contents') {
+        $itemname = $DB->get_field('lesson_pages', 'title', array('lessonid' => $cm->instance, 'id' => $itemid));
+        $itemname = format_string($itemname, true, array('context' => $context));
+    } else {
+        $areas = lesson_get_file_areas();
+        if (isset($areas[$filearea])) {
+            $itemname = $areas[$filearea];
+        }
+    }
+
+    $urlbase = $CFG->wwwroot . '/pluginfile.php';
+    return new file_info_stored($browser, $context, $storedfile, $urlbase, $itemname, $itemid, true, true, false);
 }
 
 
@@ -958,4 +988,34 @@ function lesson_page_type_list($pagetype, $parentcontext, $currentcontext) {
         'mod-lesson-view'=>get_string('page-mod-lesson-view', 'lesson'),
         'mod-lesson-edit'=>get_string('page-mod-lesson-edit', 'lesson'));
     return $module_pagetype;
+}
+
+/**
+ * Update the lesson activity to include any file
+ * that was uploaded, or if there is none, set the
+ * mediafile field to blank.
+ *
+ * @param int $lessonid the lesson id
+ * @param stdClass $context the context
+ * @param int $draftitemid the draft item
+ */
+function lesson_update_media_file($lessonid, $context, $draftitemid) {
+    global $DB;
+
+    // Set the filestorage object.
+    $fs = get_file_storage();
+    // Save the file if it exists that is currently in the draft area.
+    file_save_draft_area_files($draftitemid, $context->id, 'mod_lesson', 'mediafile', 0);
+    // Get the file if it exists.
+    $files = $fs->get_area_files($context->id, 'mod_lesson', 'mediafile', 0, 'itemid, filepath, filename', false);
+    // Check that there is a file to process.
+    if (count($files) == 1) {
+        // Get the first (and only) file.
+        $file = reset($files);
+        // Set the mediafile column in the lessons table.
+        $DB->set_field('lesson', 'mediafile', '/' . $file->get_filename(), array('id' => $lessonid));
+    } else {
+        // Set the mediafile column in the lessons table.
+        $DB->set_field('lesson', 'mediafile', '', array('id' => $lessonid));
+    }
 }

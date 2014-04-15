@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * Form for editing RSS client block instances.
  *
- * @package   moodlecore
+ * @package   block_rss_client
  * @copyright 2009 Tim Hunt
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -40,7 +39,7 @@ class block_rss_client_edit_form extends block_edit_form {
         $mform->setDefault('config_display_description', 0);
 
         $mform->addElement('text', 'config_shownumentries', get_string('shownumentrieslabel', 'block_rss_client'), array('size' => 5));
-        $mform->setType('config_shownumentries', PARAM_INTEGER);
+        $mform->setType('config_shownumentries', PARAM_INT);
         $mform->addRule('config_shownumentries', null, 'numeric', null, 'client');
         if (!empty($CFG->block_rss_client_num_entries)) {
             $mform->setDefault('config_shownumentries', $CFG->block_rss_client_num_entries);
@@ -54,7 +53,7 @@ class block_rss_client_edit_form extends block_edit_form {
                 FROM {block_rss_client}
                 WHERE userid = ? OR shared = 1
                 ORDER BY CASE WHEN preferredtitle = ? THEN ' . $DB->sql_compare_text('title', 64) . ' ELSE preferredtitle END ',
-                array($DB->sql_empty(), $USER->id, $DB->sql_empty()));
+                array('', $USER->id, ''));
         if ($rssfeeds) {
             $select = $mform->addElement('select', 'config_rssid', get_string('choosefeedlabel', 'block_rss_client'), $rssfeeds);
             $select->setMultiple(true);

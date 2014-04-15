@@ -19,7 +19,7 @@
  *
  * @author Dan Marsden and others.
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package scorm
+ * @package mod_scorm
  */
 
 if (empty($scorm)) {
@@ -32,7 +32,7 @@ if (!isset($cm)) {
     $cm = get_coursemodule_from_instance('scorm', $scorm->id);
 }
 
-$contextmodule = get_context_instance(CONTEXT_MODULE, $cm->id);
+$contextmodule = context_module::instance($cm->id);
 
 $tabs = array();
 $row = array();

@@ -17,8 +17,7 @@
 /**
  * Aiken format question importer.
  *
- * @package    qformat
- * @subpackage aiken
+ * @package    qformat_aiken
  * @copyright  2003 Tom Robb <tom@robb.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -65,17 +64,16 @@ class qformat_aiken extends qformat_default {
         foreach ($lines as $line) {
             $stp = strpos($line, $endchar, 0);
             $newlines = explode($endchar, $line);
-            $foundQ = 0;
             $linescount = count($newlines);
             for ($i=0; $i < $linescount; $i++) {
                 $nowline = trim($newlines[$i]);
                 // Go through the array and build an object called $question
-                // When done, add $question to $questions
+                // When done, add $question to $questions.
                 if (strlen($nowline) < 2) {
                     continue;
                 }
                 if (preg_match('/^[A-Z][).][ \t]/', $nowline)) {
-                    // A choice. Trim off the label and space, then save
+                    // A choice. Trim off the label and space, then save.
                     $question->answer[] = $this->text_field(
                             htmlspecialchars(trim(substr($nowline, 2)), ENT_NOQUOTES));
                     $question->fraction[] = 0;
@@ -89,13 +87,13 @@ class qformat_aiken extends qformat_default {
                     $question->fraction[$rightans] = 1;
                     $questions[] = $question;
 
-                    // Clear array for next question set
+                    // Clear array for next question set.
                     $question = $this->defaultquestion();
                     continue;
                 } else {
                     // Must be the first line of a new question, since no recognised prefix.
-                    $question->qtype = MULTICHOICE;
-                    $question->name = shorten_text(s($nowline), 50);
+                    $question->qtype = 'multichoice';
+                    $question->name = $this->create_default_question_name($nowline, get_string('questionname', 'question'));
                     $question->questiontext = htmlspecialchars(trim($nowline), ENT_NOQUOTES);
                     $question->questiontextformat = FORMAT_HTML;
                     $question->generalfeedback = '';
@@ -122,7 +120,7 @@ class qformat_aiken extends qformat_default {
     }
 
     public function readquestion($lines) {
-        //this is no longer needed but might still be called by default.php
+        // This is no longer needed but might still be called by default.php.
         return;
     }
 }

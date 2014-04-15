@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * General layout for the splash theme
+ * Report layout for the splash theme
  *
  * @package    theme_splash
  * @copyright  2012 Caroline Kennedy - Synergy Learning
@@ -33,6 +33,16 @@ $hascustommenu = (empty($PAGE->layout_options['nocustommenu']) && !empty($custom
 
 splash_check_colourswitch();
 splash_initialise_colourswitcher($PAGE);
+
+$courseheader = $coursecontentheader = $coursecontentfooter = $coursefooter = '';
+if (empty($PAGE->layout_options['nocourseheaderfooter'])) {
+    $courseheader = $OUTPUT->course_header();
+    $coursecontentheader = $OUTPUT->course_content_header();
+    if (empty($PAGE->layout_options['nocoursefooter'])) {
+        $coursecontentfooter = $OUTPUT->course_content_footer();
+        $coursefooter = $OUTPUT->course_footer();
+    }
+}
 
 $bodyclasses = array();
 $bodyclasses[] = 'splash-'.splash_get_colour();
@@ -107,7 +117,12 @@ echo $OUTPUT->doctype() ?>
         alt="orange" /></a></li>
         </ul>
         </div>
-        <?php echo $OUTPUT->lang_menu();?>
+        <?php
+        if (!empty($PAGE->layout_options['langmenu'])) {
+            echo $OUTPUT->lang_menu();
+        }
+        echo $PAGE->headingmenu
+        ?>
         </div>
         <div id="logobox">
         <?php
@@ -143,6 +158,9 @@ echo $OUTPUT->doctype() ?>
         <?php
     } ?>
     <!-- END CUSTOMMENU -->
+    <?php if (!empty($courseheader)) { ?>
+    <div id="course-header"><?php echo $courseheader; ?></div>
+    <?php } ?>
     <div class="navbar">
     <div class="wrapper clearfix">
     <div class="breadcrumb">
@@ -164,7 +182,9 @@ echo $OUTPUT->doctype() ?>
         <div id="page-content" class="clearfix">
             <div id="report-main-content">
                 <div class="region-content">
+                    <?php echo $coursecontentheader; ?>
                     <?php echo $OUTPUT->main_content() ?>
+                    <?php echo $coursecontentfooter; ?>
                 </div>
             </div>
             <?php if ($hassidepre) { ?>
@@ -180,6 +200,9 @@ echo $OUTPUT->doctype() ?>
         </div>
 
         <!-- END OF CONTENT -->
+        <?php if (!empty($coursefooter)) { ?>
+        <div id="course-footer"><?php echo $coursefooter; ?></div>
+        <?php } ?>
         <div class="clearfix"></div>
     <!-- END OF #Page -->
     </div>

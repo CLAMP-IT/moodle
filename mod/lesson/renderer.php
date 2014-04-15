@@ -18,8 +18,7 @@
 /**
  * Moodle renderer used to display special elements of the lesson module
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  2009 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -30,20 +29,25 @@ class mod_lesson_renderer extends plugin_renderer_base {
     /**
      * Returns the header for the lesson module
      *
-     * @param lesson $lesson
-     * @param string $currenttab
-     * @param bool $extraeditbuttons
-     * @param int $lessonpageid
+     * @param lesson $lesson a lesson object.
+     * @param string $currenttab current tab that is shown.
+     * @param bool   $extraeditbuttons if extra edit buttons should be displayed.
+     * @param int    $lessonpageid id of the lesson page that needs to be displayed.
+     * @param string $extrapagetitle String to appent to the page title.
      * @return string
      */
-    public function header($lesson, $cm, $currenttab = '', $extraeditbuttons = false, $lessonpageid = null) {
+    public function header($lesson, $cm, $currenttab = '', $extraeditbuttons = false, $lessonpageid = null, $extrapagetitle = null) {
         global $CFG;
 
         $activityname = format_string($lesson->name, true, $lesson->course);
-        $title = $this->page->course->shortname.": ".$activityname;
+        if (empty($extrapagetitle)) {
+            $title = $this->page->course->shortname.": ".$activityname;
+        } else {
+            $title = $this->page->course->shortname.": ".$activityname.": ".$extrapagetitle;
+        }
 
         // Build the buttons
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context = context_module::instance($cm->id);
 
     /// Header setup
         $this->page->set_title($title);
@@ -215,7 +219,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
         $table->width = '80%';
         $table->data = array();
 
-        $canedit = has_capability('mod/lesson:edit', get_context_instance(CONTEXT_MODULE, $this->page->cm->id));
+        $canedit = has_capability('mod/lesson:edit', context_module::instance($this->page->cm->id));
 
         while ($pageid != 0) {
             $page = $lesson->load_page($pageid);
@@ -250,7 +254,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
         $manager = lesson_page_type_manager::get($lesson);
         $qtypes = $manager->get_page_type_strings();
         $npages = count($lesson->load_all_pages());
-        $canedit = has_capability('mod/lesson:edit', get_context_instance(CONTEXT_MODULE, $this->page->cm->id));
+        $canedit = has_capability('mod/lesson:edit', context_module::instance($this->page->cm->id));
 
         $content = '';
         if ($canedit) {
@@ -296,7 +300,9 @@ class mod_lesson_renderer extends plugin_renderer_base {
 
             $pagetable = $page->display_answers($pagetable);
 
+            $content .= html_writer::start_tag('div', array('class' => 'no-overflow'));
             $content .= html_writer::table($pagetable);
+            $content .= html_writer::end_tag('div');
 
             if ($canedit) {
                 $content .= $this->add_page_links($lesson, $pageid);
@@ -363,9 +369,6 @@ class mod_lesson_renderer extends plugin_renderer_base {
 
         $importquestionsurl = new moodle_url('/mod/lesson/import.php',array('id'=>$this->page->cm->id, 'pageid'=>$prevpageid));
         $links[] = html_writer::link($importquestionsurl, get_string('importquestions', 'lesson'));
-
-        $importppturl = new moodle_url('/mod/lesson/importppt.php',array('id'=>$this->page->cm->id, 'pageid'=>$prevpageid));
-        $links[] = html_writer::link($importppturl, get_string('importppt', 'lesson'));
 
         $manager = lesson_page_type_manager::get($lesson);
         foreach ($manager->get_add_page_type_links($prevpageid) as $link) {
@@ -452,7 +455,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
     public function ongoing_score(lesson $lesson) {
         global $USER, $DB;
 
-        $context = get_context_instance(CONTEXT_MODULE, $this->page->cm->id);
+        $context = context_module::instance($this->page->cm->id);
         if (has_capability('mod/lesson:manage', $context)) {
             return $this->output->box(get_string('teacherongoingwarning', 'lesson'), "ongoing center");
         } else {
@@ -483,7 +486,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
     public function progress_bar(lesson $lesson) {
         global $CFG, $USER, $DB;
 
-        $context = get_context_instance(CONTEXT_MODULE, $this->page->cm->id);
+        $context = context_module::instance($this->page->cm->id);
 
         // lesson setting to turn progress bar on or off
         if (!$lesson->progressbar) {
@@ -510,15 +513,20 @@ class mod_lesson_renderer extends plugin_renderer_base {
                 $ntries = 0;  // may not be necessary
             }
 
-
             $viewedpageids = array();
-            if ($attempts = $lesson->get_attempts($ntries, true)) {
-                $viewedpageids = array_merge($viewedpageids, array_keys($attempts));
+            if ($attempts = $lesson->get_attempts($ntries, false)) {
+                foreach($attempts as $attempt) {
+                    $viewedpageids[$attempt->pageid] = $attempt;
+                }
             }
 
+            $viewedbranches = array();
             // collect all of the branch tables viewed
-            if ($viewedbranches = $DB->get_records("lesson_branch", array ("lessonid"=>$lesson->id, "userid"=>$USER->id, "retry"=>$ntries), 'timeseen DESC', 'id, pageid')) {
-                $viewedpageids = array_merge($viewedpageids, array_keys($viewedbranches));
+            if ($branches = $DB->get_records("lesson_branch", array ("lessonid"=>$lesson->id, "userid"=>$USER->id, "retry"=>$ntries), 'timeseen ASC', 'id, pageid')) {
+                foreach($branches as $branch) {
+                    $viewedbranches[$branch->pageid] = $branch;
+                }
+                $viewedpageids = array_merge($viewedpageids, $viewedbranches);
             }
 
             // Filter out the following pages:

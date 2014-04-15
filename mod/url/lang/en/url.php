@@ -18,8 +18,7 @@
 /**
  * Strings for component 'url', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package    mod
- * @subpackage url
+ * @package    mod_url
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -37,10 +36,9 @@ $string['displayselect_help'] = 'This setting, together with the URL file type a
 
 * Automatic - The best display option for the URL is selected automatically
 * Embed - The URL is displayed within the page below the navigation bar together with the URL description and any blocks
-* Force download - The user is prompted to download the URL file
 * Open - Only the URL is displayed in the browser window
 * In pop-up - The URL is displayed in a new browser window without menus or an address bar
-* In frame - The URL is displayed within a frame below the the navigation bar and URL description
+* In frame - The URL is displayed within a frame below the navigation bar and URL description
 * New window - The URL is displayed in a new browser window with menus and an address bar';
 $string['displayselectexplain'] = 'Choose display type, unfortunately not all types are suitable for all URLs.';
 $string['externalurl'] = 'External URL';
@@ -57,19 +55,16 @@ Note that URLs can also be added to any other resource or activity type through 
 $string['modulename_link'] = 'mod/url/view';
 $string['modulenameplural'] = 'URLs';
 $string['neverseen'] = 'Never seen';
-$string['optionsheader'] = 'Options';
 $string['page-mod-url-x'] = 'Any URL module page';
 $string['parameterinfo'] = '&amp;parameter=variable';
-$string['parametersheader'] = 'Parameters';
+$string['parametersheader'] = 'URL variables';
 $string['parametersheader_help'] = 'Some internal Moodle variables may be automatically appended to the URL. Type your name for the parameter into each text box(es) and then select the required matching variable.';
 $string['pluginadministration'] = 'URL module administration';
 $string['pluginname'] = 'URL';
-$string['popupheight'] = 'Popup height (in pixels)';
+$string['popupheight'] = 'Pop-up height (in pixels)';
 $string['popupheightexplain'] = 'Specifies default height of popup windows.';
-$string['popupwidth'] = 'Popup width (in pixels)';
+$string['popupwidth'] = 'Pop-up width (in pixels)';
 $string['popupwidthexplain'] = 'Specifies default width of popup windows.';
-$string['printheading'] = 'Display URL name';
-$string['printheadingexplain'] = 'Display URL name above content? Some display types may not display URL name even if enabled.';
 $string['printintro'] = 'Display URL description';
 $string['printintroexplain'] = 'Display URL description below content? Some display types may not display description even if enabled.';
 $string['rolesinparams'] = 'Include role names in parameters';

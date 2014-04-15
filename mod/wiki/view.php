@@ -18,9 +18,9 @@
 /**
  * This file contains all necessary code to view a wiki page
  *
- * @package mod-wiki-2.0
- * @copyrigth 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
- * @copyrigth 2009 Universitat Politecnica de Catalunya http://www.upc.edu
+ * @package mod_wiki
+ * @copyright 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
+ * @copyright 2009 Universitat Politecnica de Catalunya http://www.upc.edu
  *
  * @author Jordi Piguillem
  * @author Marc Alier
@@ -67,6 +67,8 @@ if ($id) {
 
     // Checking course instance
     $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+
+    require_login($course, true, $cm);
 
     // Checking wiki instance
     if (!$wiki = wiki_get_wiki($cm->instance)) {
@@ -138,6 +140,7 @@ if ($id) {
     // Checking course instance
     $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
+    require_login($course, true, $cm);
     /*
      * Case 2:
      *
@@ -166,9 +169,9 @@ if ($id) {
     }
 
     // Checking course instance
-    if (!$course = $DB->get_record("course", array("id" => $cm->course))) {
-        print_error('coursemisconf');
-    }
+    $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+
+    require_login($course, true, $cm);
 
     $groupmode = groups_get_activity_groupmode($cm);
 
@@ -187,7 +190,7 @@ if ($id) {
 
     // Getting subwiki instance. If it does not exists, redirect to create page
     if (!$subwiki = wiki_get_subwiki_by_group($wiki->id, $gid, $uid)) {
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context = context_module::instance($cm->id);
 
         $modeanduser = $wiki->wikimode == 'individual' && $uid != $USER->id;
         $modeandgroupmember = $wiki->wikimode == 'collaborative' && !groups_is_member($gid);
@@ -267,9 +270,8 @@ if ($id) {
 } else {
     print_error('incorrectparameters');
 }
-require_login($course, true, $cm);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 require_capability('mod/wiki:viewpage', $context);
 
 // Update 'viewed' state if required by completion system
@@ -283,24 +285,43 @@ if (($edit != - 1) and $PAGE->user_allowed_editing()) {
 
 $wikipage = new page_wiki_view($wiki, $subwiki, $cm);
 
-/*The following piece of code is used in order
- * to perform set_url correctly. It is necessary in order
- * to make page_wiki_view class know that this page
- * has been called via its id.
- */
-if ($id) {
-    $wikipage->set_coursemodule($id);
-}
-
 $wikipage->set_gid($currentgroup);
 $wikipage->set_page($page);
 
 if($pageid) {
-    add_to_log($course->id, 'wiki', 'view', "view.php?pageid=".$pageid, $pageid, $cm->id);
+    $event = \mod_wiki\event\page_viewed::create(
+            array(
+                'context' => $context,
+                'objectid' => $pageid
+                )
+            );
+    $event->add_record_snapshot('wiki_pages', $page);
+    $event->trigger();
 } else if($id) {
-    add_to_log($course->id, 'wiki', 'view', "view.php?id=".$id, $id, $cm->id);
+    $event = \mod_wiki\event\course_module_viewed::create(
+            array(
+                'context' => $context,
+                'objectid' => $wiki->id
+                )
+            );
+    $event->add_record_snapshot('wiki', $wiki);
+    $event->trigger();
 } else if($wid && $title) {
-    add_to_log($course->id, 'wiki', 'view', "view.php?wid=".$wid."&title=".$title, $wid, $cm->id);
+    $event = \mod_wiki\event\page_viewed::create(
+            array(
+                'context' => $context,
+                'objectid' => $page->id,
+                'relateduserid' => $uid,
+                'other' => array(
+                    'title' => $title,
+                    'wid' => $wid,
+                    'group' => $gid,
+                    'groupanduser' => $groupanduser)
+                )
+            );
+    $event->add_record_snapshot('wiki_pages', $page);
+    $event->add_record_snapshot('wiki', $wiki);
+    $event->trigger();
 }
 
 $wikipage->print_header();

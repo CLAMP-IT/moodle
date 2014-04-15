@@ -32,21 +32,28 @@ require_once($CFG->libdir.'/filelib.php');
  * @package  core_tag
  * @access   public
  * @category tag
- * @param    int       $nr_of_tags Limit for the number of tags to return/display
+ * @param    array     $tagset Array of tags to display
+ * @param    int       $nr_of_tags Limit for the number of tags to return/display, used if $tagset is null
  * @param    bool      $return     if true the function will return the generated tag cloud instead of displaying it.
+ * @param    string    $sort (optional) selected sorting, default is alpha sort (name) also timemodified or popularity
  * @return string|null a HTML string or null if this function does the output
  */
-function tag_print_cloud($nr_of_tags=150, $return=false) {
+function tag_print_cloud($tagset=null, $nr_of_tags=150, $return=false, $sort='') {
     global $CFG, $DB;
 
-    $can_manage_tags = has_capability('moodle/tag:manage', get_context_instance(CONTEXT_SYSTEM));
+    $can_manage_tags = has_capability('moodle/tag:manage', context_system::instance());
 
-    if ( !$tagsincloud = $DB->get_records_sql('SELECT tg.rawname, tg.id, tg.name, tg.tagtype, COUNT(ti.id) AS count, tg.flag
-                                                 FROM {tag_instance} ti JOIN {tag} tg ON tg.id = ti.tagid
-                                                WHERE ti.itemtype <> \'tag\'
-                                             GROUP BY tg.id, tg.rawname, tg.name, tg.flag, tg.tagtype
-                                             ORDER BY count DESC, tg.name ASC', null, 0, $nr_of_tags) ) {
-        $tagsincloud = array();
+    if (is_null($tagset)) {
+        // No tag set received, so fetch tags from database
+        if ( !$tagsincloud = $DB->get_records_sql('SELECT tg.rawname, tg.id, tg.name, tg.tagtype, COUNT(ti.id) AS count, tg.flag
+                                                   FROM {tag_instance} ti JOIN {tag} tg ON tg.id = ti.tagid
+                                                   WHERE ti.itemtype <> \'tag\'
+                                                   GROUP BY tg.id, tg.rawname, tg.name, tg.flag, tg.tagtype
+                                                   ORDER BY count DESC, tg.name ASC', null, 0, $nr_of_tags) ) {
+            $tagsincloud = array();
+        }
+    } else {
+        $tagsincloud = $tagset;
     }
 
     $tagkeys = array_keys($tagsincloud);
@@ -63,7 +70,19 @@ function tag_print_cloud($nr_of_tags=150, $return=false) {
         $etags[] = $tag;
     }
 
+    // Set up sort global - used to pass sort type into tag_cloud_sort through usort() avoiding multiple sort functions.
+    // TODO make calling functions pass 'count' or 'timemodified' not 'popularity' or 'date'.
+    $oldsort = empty($CFG->tagsort) ? null : $CFG->tagsort;
+    if ($sort == 'popularity') {
+        $CFG->tagsort = 'count';
+    } else if ($sort == 'date') {
+        $CFG->tagsort = 'timemodified';
+    } else {
+        $CFG->tagsort = 'name';
+    }
     usort($etags, "tag_cloud_sort");
+    $CFG->tagsort = $oldsort;
+
     $output = '';
     $output .= "\n<ul class='tag_cloud inline-list'>\n";
     foreach ($etags as $tag) {
@@ -146,7 +165,7 @@ function tag_print_description_box($tag_object, $return=false) {
         $options = new stdClass();
         $options->para = false;
         $options->overflowdiv = true;
-        $tag_object->description = file_rewrite_pluginfile_urls($tag_object->description, 'pluginfile.php', get_context_instance(CONTEXT_SYSTEM)->id, 'tag', 'description', $tag_object->id);
+        $tag_object->description = file_rewrite_pluginfile_urls($tag_object->description, 'pluginfile.php', context_system::instance()->id, 'tag', 'description', $tag_object->id);
         $output .= format_text($tag_object->description, $tag_object->descriptionformat, $options);
     }
 
@@ -190,7 +209,7 @@ function tag_print_management_box($tag_object, $return=false) {
 
     if (!isguestuser()) {
         $output .= $OUTPUT->box_start('box','tag-management-box');
-        $systemcontext   = get_context_instance(CONTEXT_SYSTEM);
+        $systemcontext   = context_system::instance();
         $links = array();
 
         // Add a link for users to add/remove this from their interests
@@ -200,8 +219,10 @@ function tag_print_management_box($tag_object, $return=false) {
             $links[] = '<a href="'. $CFG->wwwroot .'/tag/user.php?action=addinterest&amp;sesskey='. sesskey() .'&amp;tag='. rawurlencode($tag_object->name) .'">'. get_string('addtagtomyinterests', 'tag', $tagname) .'</a>';
         }
 
-        // flag as inappropriate link
-        $links[] = '<a href="'. $CFG->wwwroot .'/tag/user.php?action=flaginappropriate&amp;sesskey='. sesskey() .'&amp;tag='. rawurlencode($tag_object->name) .'">'. get_string('flagasinappropriate', 'tag', rawurlencode($tagname)) .'</a>';
+        // Flag as inappropriate link.  Only people with moodle/tag:flag capability.
+        if (has_capability('moodle/tag:flag', $systemcontext)) {
+            $links[] = '<a href="'. $CFG->wwwroot .'/tag/user.php?action=flaginappropriate&amp;sesskey='. sesskey() .'&amp;tag='. rawurlencode($tag_object->name) .'">'. get_string('flagasinappropriate', 'tag', rawurlencode($tagname)) .'</a>';
+        }
 
         // Edit tag: Only people with moodle/tag:edit capability who either have it as an interest or can manage tags
         if (has_capability('moodle/tag:edit', $systemcontext) ||
@@ -233,6 +254,7 @@ function tag_print_search_box($return=false) {
     $output = $OUTPUT->box_start('','tag-search-box');
     $output .= '<form action="'.$CFG->wwwroot.'/tag/search.php" style="display:inline">';
     $output .= '<div>';
+    $output .= '<label class="accesshide" for="searchform_search">'.get_string('searchtags', 'tag').'</label>';
     $output .= '<input id="searchform_search" name="query" type="text" size="40" />';
     $output .= '<button id="searchform_button" type="submit">'. get_string('search', 'tag') .'</button><br />';
     $output .= '</div>';
@@ -261,7 +283,8 @@ function tag_print_search_results($query,  $page, $perpage, $return=false) {
 
     global $CFG, $USER, $OUTPUT;
 
-    $query = array_shift(tag_normalize($query, TAG_CASE_ORIGINAL));
+    $norm = tag_normalize($query, TAG_CASE_ORIGINAL);
+    $query = array_shift($norm);
 
     $count = sizeof(tag_find_tags($query, false));
     $tags = array();
@@ -356,7 +379,7 @@ function tag_print_tagged_users_table($tag_object, $limitfrom='', $limitnum='', 
 function tag_print_user_box($user, $return=false) {
     global $CFG, $OUTPUT;
 
-    $usercontext = get_context_instance(CONTEXT_USER, $user->id);
+    $usercontext = context_user::instance($user->id);
     $profilelink = '';
 
     if ($usercontext and (has_capability('moodle/user:viewdetails', $usercontext) || has_coursecontact_role($user->id))) {
@@ -380,8 +403,8 @@ function tag_print_user_box($user, $return=false) {
     }
 
     //truncate name if it's too big
-    if (textlib::strlen($fullname) > 26) {
-        $fullname = textlib::substr($fullname, 0, 26) .'...';
+    if (core_text::strlen($fullname) > 26) {
+        $fullname = core_text::substr($fullname, 0, 26) .'...';
     }
 
     $output .= '<strong>'. $fullname .'</strong>';

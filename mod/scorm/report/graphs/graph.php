@@ -28,54 +28,34 @@ require_once($CFG->libdir . '/graphlib.php');
 require_once($CFG->dirroot.'/mod/scorm/report/reportlib.php');
 require_once($CFG->dirroot.'/mod/scorm/locallib.php');
 
-$scoid = required_param('scoid', PARAM_INT);// sco ID
+$scoid = required_param('scoid', PARAM_INT);// SCO ID.
 
-$sco = $DB->get_record('scorm_scoes', array('id'=>$scoid), '*', MUST_EXIST);
-$scorm = $DB->get_record('scorm', array('id'=>$sco->scorm), '*', MUST_EXIST);
+$sco = $DB->get_record('scorm_scoes', array('id' => $scoid), '*', MUST_EXIST);
+$scorm = $DB->get_record('scorm', array('id' => $sco->scorm), '*', MUST_EXIST);
 $cm = get_coursemodule_from_instance('scorm', $scorm->id, 0, false, MUST_EXIST);
-$course = $DB->get_record('course', array('id'=>$scorm->course), '*', MUST_EXIST);
+$course = $DB->get_record('course', array('id' => $scorm->course), '*', MUST_EXIST);
 
 
-// Capability Checks
+// Capability Checks.
 require_login($course, false, $cm);
 $contextmodule = context_module::instance($cm->id);
 require_capability('mod/scorm:viewreport', $contextmodule);
 
-// find out current groups mode
+// Find out current groups mode.
 $currentgroup = groups_get_activity_group($cm, true);
 
-// Group Check
+// Group Check.
 if (empty($currentgroup)) {
-    // all users who can attempt scoes
-    if (!$students = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', '', '', '', '', '', '', false)) {
-        $nostudents = true;
-        $allowedlist = '';
-    } else {
-        $allowedlist = array_keys($students);
-    }
+    // All users who can attempt scoes.
+    $students = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', 'u.id' , '', '', '', '', '', false);
+    $allowedlist = empty($students) ? array() : array_keys($students);
 } else {
-    // all users who can attempt scoes and who are in the currently selected group
-    if (!$groupstudents = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', '', '', '', '', $currentgroup, '', false)) {
-        $nostudents = true;
-        $groupstudents = array();
-    }
-    $allowedlist = array_keys($groupstudents);
+    // All users who can attempt scoes and who are in the currently selected group.
+    $groupstudents = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', 'u.id', '', '', '', $currentgroup, '', false);
+    $allowedlist = empty($groupstudents) ? array() : array_keys($groupstudents);
 }
 
 $params = array();
-list($usql, $params) = $DB->get_in_or_equal($allowedlist);
-$params[] = $scoid;
-
-// Determine Sco keys to be used
-if (scorm_version_check($scorm->version, SCORM_13)) {
-    $maxkey = 'cmi.score.max';
-    $minkey = 'cmi.score.min';
-    $scorekey = 'cmi.score.raw';
-} else {
-    $maxkey = 'cmi.core.score.max';
-    $minkey = 'cmi.core.score.min';
-    $scorekey = 'cmi.core.score.raw';
-}
 $bands = 11;
 $bandwidth = 10;
 
@@ -86,10 +66,11 @@ for ($i = 0; $i < $bands; $i++) {
     $graphdata[$i] = 0;
 }
 
-
-// Do this only if we have students to report
-if(!$nostudents) {
-    // Construct the SQL
+// Do this only if we have students to report.
+if (!empty($allowedlist)) {
+    list($usql, $params) = $DB->get_in_or_equal($allowedlist);
+    $params[] = $scoid;
+    // Construct the SQL.
     $select = 'SELECT DISTINCT '.$DB->sql_concat('st.userid', '\'#\'', 'COALESCE(st.attempt, 0)').' AS uniqueid, ';
     $select .= 'st.userid AS userid, st.scormid AS scormid, st.attempt AS attempt, st.scoid AS scoid ';
     $from = 'FROM {scorm_scoes_track} st ';
@@ -98,29 +79,30 @@ if(!$nostudents) {
 
     foreach ($attempts as $attempt) {
         if ($trackdata = scorm_get_tracks($scoid, $attempt->userid, $attempt->attempt)) {
-            if (isset($trackdata->$scorekey)) {
-                $score = $trackdata->$scorekey;
-                if (!isset($trackdata->$minkey) || empty($trackdata->$minkey)) {
+            if (isset($trackdata->score_raw)) {
+                $score = $trackdata->score_raw;
+                if (empty($trackdata->score_min)) {
                     $minmark = 0;
                 } else {
-                    $minmark = $trackdata->$minkey;
+                    $minmark = $trackdata->score_min;
                 }
-                if (!isset($trackdata->$maxkey) || empty($trackdata->$maxkey)) {
+                if (empty($trackdata->score_max)) {
                     $maxmark = 100;
                 } else {
-                    $maxmark = $trackdata->$maxkey;
+                    $maxmark = $trackdata->score_max;
                 }
                 $range = ($maxmark - $minmark);
                 if (empty($range)) {
                     continue;
                 }
-                $percent = round((($score*100)/$range), 2);
-                if (empty($usergrades[$attempt->userid]) || !isset($usergrades[$attempt->userid]) || ($percent > $usergrades[$attempt->userid]) || ($usergrades[$attempt->userid] === '*')) {
+                $percent = round((($score * 100) / $range), 2);
+                if (empty($usergrades[$attempt->userid]) || !isset($usergrades[$attempt->userid])
+                        || ($percent > $usergrades[$attempt->userid]) || ($usergrades[$attempt->userid] === '*')) {
                     $usergrades[$attempt->userid] = $percent;
                 }
                 unset($percent);
             } else {
-                // User has made an attempt but either SCO was not able to record the score or something else is broken in SCO
+                // User has made an attempt but either SCO was not able to record the score or something else is broken in SCO.
                 if (!isset($usergrades[$attempt->userid])) {
                     $usergrades[$attempt->userid] = '*';
                 }
@@ -130,7 +112,7 @@ if(!$nostudents) {
 }
 
 $bandlabels[] = get_string('invaliddata', 'scormreport_graphs');
-for ($i = 1; $i <= $bands-1; $i++) {
+for ($i = 1; $i <= $bands - 1; $i++) {
     $bandlabels[] = ($i - 1) * $bandwidth . ' - ' . $i * $bandwidth;
 }
 // Recording all users  who attempted the SCO,but resulting data was invalid.
@@ -138,7 +120,7 @@ foreach ($usergrades as $userpercent) {
     if ($userpercent === '*') {
         $graphdata[0]++;
     } else {
-        $gradeband = floor($userpercent/10);
+        $gradeband = floor($userpercent / 10);
         if ($gradeband != ($bands - 1)) {
             $gradeband++;
         }
@@ -154,12 +136,12 @@ $line->parameter['y_label_angle'] = 90;
 $line->parameter['x_label_angle'] = 0;
 $line->parameter['x_axis_angle'] = 60;
 
-//following two lines seem to silence notice warnings from graphlib.php
+// Following two lines seem to silence notice warnings from graphlib.php.
 $line->y_tick_labels = null;
 $line->offset_relation = null;
 
 $line->parameter['bar_size'] = 1;
-// don't forget to increase spacing so that graph doesn't become one big block of colour
+// Don't forget to increase spacing so that graph doesn't become one big block of colour.
 $line->parameter['bar_spacing'] = 10;
 $line->x_data = $bandlabels;
 
@@ -174,11 +156,11 @@ $line->y_data['allusers'] = $graphdata;
 $line->y_order = array('allusers');
 
 $ymax = max($line->y_data['allusers']);
-$line->parameter['y_min_left'] = 0;  // start at 0
+$line->parameter['y_min_left'] = 0;  // Start at 0.
 $line->parameter['y_max_left'] = $ymax;
 $line->parameter['y_decimal_left'] = 0; // 2 decimal places for y axis.
 
-//pick a sensible number of gridlines depending on max value on graph.
+// Pick a sensible number of gridlines depending on max value on graph.
 $gridlines = $ymax;
 while ($gridlines >= 10) {
     if ($gridlines >= 50) {
@@ -187,7 +169,7 @@ while ($gridlines >= 10) {
         $gridlines /= 2;
     }
 }
-
-$line->parameter['y_axis_gridlines'] = $gridlines + 1;
+$gridlines = max(2, ($gridlines + 1)); // We need a minimum of two lines.
+$line->parameter['y_axis_gridlines'] = $gridlines;
 
 $line->draw();

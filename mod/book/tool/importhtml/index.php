@@ -60,14 +60,15 @@ $mform = new booktool_importhtml_form(null, array('id'=>$id, 'chapterid'=>$chapt
 // If data submitted, then process and store.
 if ($mform->is_cancelled()) {
     if (empty($chapter->id)) {
-        redirect("/mod/book/view.php?id=$cm->id");
+        redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id");
     } else {
-        redirect("/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
+        redirect($CFG->wwwroot."/mod/book/view.php?id=$cm->id&chapterid=$chapter->id");
     }
 
 } else if ($data = $mform->get_data()) {
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('importingchapters', 'booktool_importhtml'));
+    echo $OUTPUT->heading($book->name);
+    echo $OUTPUT->heading(get_string('importingchapters', 'booktool_importhtml'), 3);
 
     // this is a bloody hack - children do not try this at home!
     $fs = get_file_storage();
@@ -84,7 +85,7 @@ if ($mform->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('import', 'booktool_importhtml'));
+echo $OUTPUT->heading($book->name);
 
 $mform->display();
 

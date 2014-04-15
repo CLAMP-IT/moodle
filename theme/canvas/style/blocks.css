@@ -18,11 +18,12 @@
     margin-right: 2px;
 }
 
-.block h3.main {
+.block h3 {
     padding: 0.5em 0;
     text-align: left;
     font-size: 1.1em;
 }
+.dir-rtl .block h3 {text-align: right;}
 
 /* Login
 ------------------------------*/
@@ -45,6 +46,8 @@
 .block_login .footer {
     text-align: left;
 }
+.dir-rtl .block_login .footer {text-align: right;}
+
 /* News
 -------------------------------*/
 
@@ -111,4 +114,11 @@
 .block_blog_menu .list li {
     font-size: 0.9em;
     margin: 0.25em 0;
+}
+
+/* Add block
+------------------------------*/
+
+.block_adminblock .content .singleselect {
+    text-align: left;
 }

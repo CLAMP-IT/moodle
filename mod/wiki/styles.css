@@ -17,8 +17,8 @@
  * Wiki module style sheet
  *
  * @package mod-wiki-2.0
- * @copyrigth 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
- * @copyrigth 2009 Universitat Politecnica de Catalunya http://www.upc.edu
+ * @copyright 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
+ * @copyright 2009 Universitat Politecnica de Catalunya http://www.upc.edu
  *
  * @author Jordi Piguillem
  * @author Marc Alier
@@ -46,11 +46,6 @@
     width: 50%;
     margin: auto;
     border: thin solid blue;
-}
-
-.wiki_info {
-    color: darkred;
-    text-decoration: underline;
 }
 
 .wiki_button {
@@ -142,14 +137,15 @@
 }
 
 .wiki_modifieduser img {
-    border: thin black solid;
+    border: thin solid black;
 }
 
-.wiki_restore_yes, .wiki_deletecomment_yes {
+.wiki_restore_yes, .wiki_deletecomment_yes,
+.dir-rtl .wiki_restore_no, .dir-rtl .wiki_deletecomment_no {
     float: left;
 }
-
-.wiki_restore_no, .wiki_deletecomment_no {
+.wiki_restore_no, .wiki_deletecomment_no,
+.dir-rtl .wiki_restore_yes, .dir-rtl .wiki_deletecomment_yes {
     float: right;
 }
 
@@ -363,3 +359,8 @@ a.wiki_edit_section {
     height: 22px;
     vertical-align: middle;
 }
+
+.path-mod-wiki .printicon {
+    background: url([[pix:t/print]]) no-repeat scroll 2px center transparent; padding-left: 20px;
+}
+#page-mod-wiki-prettyview .displayprinticon {text-align: right;}

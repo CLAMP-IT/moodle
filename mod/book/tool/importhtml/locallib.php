@@ -54,7 +54,7 @@ function toolbook_importhtml_import_chapters($package, $type, $book, $context, $
     }
     if ($type == 0) {
         $chapterfile = reset($chapterfiles);
-        if ($file = $fs->get_file_by_hash("$context->id/mod_book/importhtmltemp/0/$chapterfile->pathname")) {
+        if ($file = $fs->get_file_by_hash(sha1("$context->id/mod_book/importhtmltemp/0/$chapterfile->pathname"))) {
             $htmlcontent = toolbook_importhtml_fix_encoding($file->get_content());
             $htmlchapters = toolbook_importhtml_parse_headings(toolbook_importhtml_parse_body($htmlcontent));
             // TODO: process h1 as main chapter and h2 as subchapters
@@ -84,7 +84,13 @@ function toolbook_importhtml_import_chapters($package, $type, $book, $context, $
                 $chapter->id = $DB->insert_record('book_chapters', $chapter);
                 $chapters[$chapter->id] = $chapter;
 
-                add_to_log($book->course, 'book', 'update', 'view.php?id='.$context->instanceid.'&chapterid='.$chapter->id, $book->id, $context->instanceid);
+                $params = array(
+                    'context' => $context,
+                    'objectid' => $chapter->id
+                );
+                $event = \mod_book\event\chapter_created::create($params);
+                $event->add_record_snapshot('book_chapters', $chapter);
+                $event->trigger();
             }
         }
     }
@@ -138,7 +144,7 @@ function toolbook_importhtml_import_chapters($package, $type, $book, $context, $
                 foreach ($allchapters as $target) {
                     if ($target->importsrc === $chapterpath) {
                         $newcontent = str_replace($match, 'href="'.new moodle_url('/mod/book/view.php',
-                                array('id'=>$context->instanceid, 'chapter'=>$target->id)).'"', $newcontent);
+                                array('id'=>$context->instanceid, 'chapterid'=>$target->id)).'"', $newcontent);
                     }
                 }
             }
@@ -215,7 +221,7 @@ function toolbook_importhtml_fix_encoding($html) {
         $head = $matches[1];
         if (preg_match('/charset=([^"]+)/is', $head, $matches)) {
             $enc = $matches[1];
-            return textlib::convert($html, $enc, 'utf-8');
+            return core_text::convert($html, $enc, 'utf-8');
         }
     }
     return iconv('UTF-8', 'UTF-8//IGNORE', $html);
@@ -299,9 +305,9 @@ function toolbook_importhtml_get_chapter_files($package, $type) {
         }
     }
 
-    collatorlib::ksort($tophtmlfiles, collatorlib::SORT_NATURAL);
-    collatorlib::ksort($subhtmlfiles, collatorlib::SORT_NATURAL);
-    collatorlib::ksort($topdirs, collatorlib::SORT_NATURAL);
+    core_collator::ksort($tophtmlfiles, core_collator::SORT_NATURAL);
+    core_collator::ksort($subhtmlfiles, core_collator::SORT_NATURAL);
+    core_collator::ksort($topdirs, core_collator::SORT_NATURAL);
 
     $chapterfiles = array();
 
@@ -313,7 +319,7 @@ function toolbook_importhtml_get_chapter_files($package, $type) {
             if (empty($htmlfiles)) {
                 continue;
             }
-            collatorlib::ksort($htmlfiles, collatorlib::SORT_NATURAL);
+            core_collator::ksort($htmlfiles, core_collator::SORT_NATURAL);
             if (isset($htmlfiles[$dir.'/index.html'])) {
                 $htmlfile = $htmlfiles[$dir.'/index.html'];
             } else if (isset($htmlfiles[$dir.'/index.htm'])) {

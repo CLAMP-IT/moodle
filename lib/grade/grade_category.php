@@ -878,22 +878,69 @@ class grade_category extends grade_object {
             asort($grade_values, SORT_NUMERIC);
             $dropped = 0;
 
-            foreach ($grade_values as $itemid=>$value) {
+            // If we have fewer grade items available to drop than $this->droplow, use this flag to escape the loop
+            // May occur because of "extra credit" or if droplow is higher than the number of grade items
+            $droppedsomething = true;
 
-                if ($dropped < $this->droplow) {
+            while ($dropped < $this->droplow && $droppedsomething) {
+                $droppedsomething = false;
 
-                    if ($extraused and $items[$itemid]->aggregationcoef > 0) {
-                        // no drop low for extra credits
+                $grade_keys = array_keys($grade_values);
+                $gradekeycount = count($grade_keys);
 
-                    } else {
-                        unset($grade_values[$itemid]);
-                        $dropped++;
-                    }
-
-                } else {
-                    // we have dropped enough
+                if ($gradekeycount === 0) {
+                    //We've dropped all grade items
                     break;
                 }
+
+                $originalindex = $founditemid = $foundmax = null;
+
+                // Find the first remaining grade item that is available to be dropped
+                foreach ($grade_keys as $gradekeyindex=>$gradekey) {
+                    if (!$extraused || $items[$gradekey]->aggregationcoef <= 0) {
+                        // Found a non-extra credit grade item that is eligible to be dropped
+                        $originalindex = $gradekeyindex;
+                        $founditemid = $grade_keys[$originalindex];
+                        $foundmax = $items[$founditemid]->grademax;
+                        break;
+                    }
+                }
+
+                if (empty($founditemid)) {
+                    // No grade items available to drop
+                    break;
+                }
+
+                // Now iterate over the remaining grade items
+                // We're looking for other grade items with the same grade value but a higher grademax
+                $i = 1;
+                while ($originalindex + $i < $gradekeycount) {
+
+                    $possibleitemid = $grade_keys[$originalindex+$i];
+                    $i++;
+
+                    if ($grade_values[$founditemid] != $grade_values[$possibleitemid]) {
+                        // The next grade item has a different grade value. Stop looking.
+                        break;
+                    }
+
+                    if ($extraused && $items[$possibleitemid]->aggregationcoef > 0) {
+                        // Don't drop extra credit grade items. Continue the search.
+                        continue;
+                    }
+
+                    if ($foundmax < $items[$possibleitemid]->grademax) {
+                        // Found a grade item with the same grade value and a higher grademax
+                        $foundmax = $items[$possibleitemid]->grademax;
+                        $founditemid = $possibleitemid;
+                        // Continue searching to see if there is an even higher grademax
+                    }
+                }
+
+                // Now drop whatever grade item we have found
+                unset($grade_values[$founditemid]);
+                $dropped++;
+                $droppedsomething = true;
             }
 
         } else if (!empty($this->keephigh)) {
@@ -920,10 +967,20 @@ class grade_category extends grade_object {
      *
      * @return bool True if extra credit used
      */
-    function is_extracredit_used() {
-        return ($this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2
-             or $this->aggregation == GRADE_AGGREGATE_EXTRACREDIT_MEAN
-             or $this->aggregation == GRADE_AGGREGATE_SUM);
+    public function is_extracredit_used() {
+        return self::aggregation_uses_extracredit($this->aggregation);
+    }
+
+    /**
+     * Returns true if aggregation passed is using extracredit.
+     *
+     * @param int $aggregation Aggregation const.
+     * @return bool True if extra credit used
+     */
+    public static function aggregation_uses_extracredit($aggregation) {
+        return ($aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2
+             or $aggregation == GRADE_AGGREGATE_EXTRACREDIT_MEAN
+             or $aggregation == GRADE_AGGREGATE_SUM);
     }
 
     /**
@@ -932,10 +989,21 @@ class grade_category extends grade_object {
      * @return bool True if an aggregation coefficient is being used
      */
     public function is_aggregationcoef_used() {
-        return ($this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN
-             or $this->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2
-             or $this->aggregation == GRADE_AGGREGATE_EXTRACREDIT_MEAN
-             or $this->aggregation == GRADE_AGGREGATE_SUM);
+        return self::aggregation_uses_aggregationcoef($this->aggregation);
+
+    }
+
+    /**
+     * Returns true if aggregation uses aggregationcoef
+     *
+     * @param int $aggregation Aggregation const.
+     * @return bool True if an aggregation coefficient is being used
+     */
+    public static function aggregation_uses_aggregationcoef($aggregation) {
+        return ($aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN
+             or $aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2
+             or $aggregation == GRADE_AGGREGATE_EXTRACREDIT_MEAN
+             or $aggregation == GRADE_AGGREGATE_SUM);
 
     }
 
@@ -1107,13 +1175,17 @@ class grade_category extends grade_object {
 
             } else {
                 $categoryid = $item->categoryid;
+                if (empty($categoryid)) {
+                    debugging('Found a grade item that isnt in a category');
+                }
             }
 
             // prevent problems with duplicate sortorders in db
             $sortorder = $item->sortorder;
 
-            while (array_key_exists($sortorder, $cats[$categoryid]->children)) {
-                //debugging("$sortorder exists in item loop");
+            while (array_key_exists($categoryid, $cats)
+                && array_key_exists($sortorder, $cats[$categoryid]->children)) {
+
                 $sortorder++;
             }
 
@@ -1522,14 +1594,14 @@ class grade_category extends grade_object {
 
             //weight and extra credit share a column :( Would like a default of 1 for weight and 0 for extra credit
             //Flip from the default of 0 to 1 (or vice versa) if ALL items in the category are still set to the old default.
-            if ($params->aggregation==GRADE_AGGREGATE_WEIGHTED_MEAN || $params->aggregation==GRADE_AGGREGATE_EXTRACREDIT_MEAN) {
+            if (self::aggregation_uses_aggregationcoef($params->aggregation)) {
                 $sql = $defaultaggregationcoef = null;
 
-                if ($params->aggregation==GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                if (!self::aggregation_uses_extracredit($params->aggregation)) {
                     //if all items in this category have aggregation coefficient of 0 we can change it to 1 ie evenly weighted
                     $sql = "select count(id) from {grade_items} where categoryid=:categoryid and aggregationcoef!=0";
                     $defaultaggregationcoef = 1;
-                } else if ($params->aggregation==GRADE_AGGREGATE_EXTRACREDIT_MEAN) {
+                } else {
                     //if all items in this category have aggregation coefficient of 1 we can change it to 0 ie no extra credit
                     $sql = "select count(id) from {grade_items} where categoryid=:categoryid and aggregationcoef!=1";
                     $defaultaggregationcoef = 0;
@@ -1565,7 +1637,9 @@ class grade_category extends grade_object {
             if ($children = grade_item::fetch_all(array('categoryid'=>$this->id))) {
 
                 foreach ($children as $child) {
-                    $child->set_hidden($hidden, $cascade);
+                    if ($child->can_control_visibility()) {
+                        $child->set_hidden($hidden, $cascade);
+                    }
                 }
             }
 

@@ -17,15 +17,12 @@
 /**
  * Strings for component 'block_myprofile', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package    block
- * @subpackage myprofile
+ * @package    block_myprofile
  * @copyright  2010 Remote-Learner.net
  * @author     Olav Jordan <olav.jordan@remote-learner.ca>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'Logged in user';
-$string['myprofile_settings'] = 'Visible user information';
 $string['contentsettings'] = 'Display settings for content region';
 $string['display_picture'] = 'Display picture';
 $string['display_country'] = 'Display country';
@@ -45,3 +42,7 @@ $string['display_firstaccess'] = 'Display first access';
 $string['display_lastaccess'] = 'Display last access';
 $string['display_currentlogin'] = 'Display current login';
 $string['display_lastip'] = 'Display last IP';
+$string['myprofile:addinstance'] = 'Add a new logged in user block';
+$string['myprofile:myaddinstance'] = 'Add a new logged in user block to My home';
+$string['myprofile_settings'] = 'Visible user information';
+$string['pluginname'] = 'Logged in user';

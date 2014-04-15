@@ -30,7 +30,7 @@
  *
  * TODO: Finish phpdocs
  */
-class restore_controller extends backup implements loggable {
+class restore_controller extends base_controller {
 
     protected $tempdir;   // Directory under tempdir/backup awaiting restore
     protected $restoreid; // Unique identificator for this restore
@@ -55,11 +55,14 @@ class restore_controller extends backup implements loggable {
     protected $execution;     // inmediate/delayed
     protected $executiontime; // epoch time when we want the restore to be executed (requires cron to run)
 
-    protected $logger;      // Logging chain object (moodle, inline, fs, db, syslog)
-
     protected $checksum; // Cache @checksumable results for lighter @is_checksum_correct() uses
 
     /**
+     * Constructor.
+     *
+     * If you specify a progress monitor, this will be used to report progress
+     * while loading the plan, as well as for future use. (You can change it
+     * for a different one later using set_progress.)
      *
      * @param string $tempdir Directory under tempdir/backup awaiting restore
      * @param int $courseid Course id where restore is going to happen
@@ -67,8 +70,10 @@ class restore_controller extends backup implements loggable {
      * @param int $mode backup::MODE_[ GENERAL | HUB | IMPORT | SAMESITE ]
      * @param int $userid
      * @param int $target backup::TARGET_[ NEW_COURSE | CURRENT_ADDING | CURRENT_DELETING | EXISTING_ADDING | EXISTING_DELETING ]
+     * @param \core\progress\base $progress Optional progress monitor
      */
-    public function __construct($tempdir, $courseid, $interactive, $mode, $userid, $target){
+    public function __construct($tempdir, $courseid, $interactive, $mode, $userid, $target,
+            \core\progress\base $progress = null) {
         $this->tempdir = $tempdir;
         $this->courseid = $courseid;
         $this->interactive = $interactive;
@@ -100,6 +105,15 @@ class restore_controller extends backup implements loggable {
 
         // Default logger chain (based on interactive/execution)
         $this->logger = backup_factory::get_logger_chain($this->interactive, $this->execution, $this->restoreid);
+
+        // By default there is no progress reporter unless you specify one so it
+        // can be used during loading of the plan.
+        if ($progress) {
+            $this->progress = $progress;
+        } else {
+            $this->progress = new \core\progress\null();
+        }
+        $this->progress->start_progress('Constructing restore_controller');
 
         // Instantiate the output_controller singleton and active it if interactive and inmediate
         $oc = output_controller::get_instance();
@@ -133,6 +147,9 @@ class restore_controller extends backup implements loggable {
                 $this->set_status(backup::STATUS_NEED_PRECHECK);
             }
         }
+
+        // Tell progress monitor that we finished loading.
+        $this->progress->end_progress();
     }
 
     /**
@@ -296,13 +313,9 @@ class restore_controller extends backup implements loggable {
         return $this->info;
     }
 
-    public function get_logger() {
-        return $this->logger;
-    }
-
     public function execute_plan() {
         // Basic/initial prevention against time/memory limits
-        set_time_limit(1 * 60 * 60); // 1 hour for 1 course initially granted
+        core_php_time_limit::raise(1 * 60 * 60); // 1 hour for 1 course initially granted
         raise_memory_limit(MEMORY_EXTRA);
         // If this is not a course restore, inform the plan we are not
         // including all the activities for sure. This will affect any
@@ -335,6 +348,9 @@ class restore_controller extends backup implements loggable {
         if ($this->status != backup::STATUS_NEED_PRECHECK) {
             throw new restore_controller_exception('cannot_precheck_wrong_status', $this->status);
         }
+        // Basic/initial prevention against time/memory limits
+        core_php_time_limit::raise(1 * 60 * 60); // 1 hour for 1 course initially granted
+        raise_memory_limit(MEMORY_EXTRA);
         $this->precheck = restore_prechecks_helper::execute_prechecks($this, $droptemptablesafter);
         if (!array_key_exists('errors', $this->precheck)) { // No errors, can be executed
             $this->set_status(backup::STATUS_AWAITING);
@@ -362,10 +378,6 @@ class restore_controller extends backup implements loggable {
             throw new restore_controller_exception('precheck_not_executed');
         }
         return $this->precheck;
-    }
-
-    public function log($message, $level, $a = null, $depth = null, $display = false) {
-        backup_helper::log($message, $level, $a, $depth, $display, $this->logger);
     }
 
     /**
@@ -408,8 +420,9 @@ class restore_controller extends backup implements loggable {
         require_once($CFG->dirroot . '/backup/util/helper/convert_helper.class.php');
 
         // Basic/initial prevention against time/memory limits
-        set_time_limit(1 * 60 * 60); // 1 hour for 1 course initially granted
+        core_php_time_limit::raise(1 * 60 * 60); // 1 hour for 1 course initially granted
         raise_memory_limit(MEMORY_EXTRA);
+        $this->progress->start_progress('Backup format conversion');
 
         if ($this->status != backup::STATUS_REQUIRE_CONV) {
             throw new restore_controller_exception('cannot_convert_not_required_status');
@@ -440,6 +453,7 @@ class restore_controller extends backup implements loggable {
         } else {
             $this->set_status(backup::STATUS_NEED_PRECHECK);
         }
+        $this->progress->end_progress();
     }
 
 // Protected API starts here

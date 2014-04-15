@@ -117,27 +117,73 @@ class mysql_sql_generator extends sql_generator {
      * by any of its comments, indexes and sequence creation SQL statements.
      */
     public function getCreateTableSQL($xmldb_table) {
-        // first find out if want some special db engine
-        $engine = null;
-        if (method_exists($this->mdb, 'get_dbengine')) {
-            $engine = $this->mdb->get_dbengine();
-        }
+        // First find out if want some special db engine.
+        $engine = $this->mdb->get_dbengine();
+        // Do we know collation?
+        $collation = $this->mdb->get_dbcollation();
 
         $sqlarr = parent::getCreateTableSQL($xmldb_table);
 
-        if (!$engine) {
-            // we rely on database defaults
-            return $sqlarr;
-        }
-
-        // let's inject the engine into SQL
-        foreach ($sqlarr as $i=>$sql) {
-            if (strpos($sql, 'CREATE TABLE ') === 0) {
-                $sqlarr[$i] .= " ENGINE = $engine";
+        // This is a very nasty hack that tries to use just one query per created table
+        // because MySQL is stupidly slow when modifying empty tables.
+        // Note: it is safer to inject everything on new lines because there might be some trailing -- comments.
+        $sqls = array();
+        $prevcreate = null;
+        $matches = null;
+        foreach ($sqlarr as $sql) {
+            if (preg_match('/^CREATE TABLE ([^ ]+)/', $sql, $matches)) {
+                $prevcreate = $matches[1];
+                $sql = preg_replace('/\s*\)\s*$/s', '/*keyblock*/)', $sql);
+                // Let's inject the extra MySQL tweaks here.
+                if ($engine) {
+                    $sql .= "\n ENGINE = $engine";
+                }
+                if ($collation) {
+                    if (strpos($collation, 'utf8_') === 0) {
+                        $sql .= "\n DEFAULT CHARACTER SET utf8";
+                    }
+                    $sql .= "\n DEFAULT COLLATE = $collation";
+                }
+                $sqls[] = $sql;
+                continue;
             }
+            if ($prevcreate) {
+                if (preg_match('/^ALTER TABLE '.$prevcreate.' COMMENT=(.*)$/s', $sql, $matches)) {
+                    $prev = array_pop($sqls);
+                    $prev .= "\n COMMENT=$matches[1]";
+                    $sqls[] = $prev;
+                    continue;
+                }
+                if (preg_match('/^CREATE INDEX ([^ ]+) ON '.$prevcreate.' (.*)$/s', $sql, $matches)) {
+                    $prev = array_pop($sqls);
+                    if (strpos($prev, '/*keyblock*/')) {
+                        $prev = str_replace('/*keyblock*/', "\n, KEY $matches[1] $matches[2]/*keyblock*/", $prev);
+                        $sqls[] = $prev;
+                        continue;
+                    } else {
+                        $sqls[] = $prev;
+                    }
+                }
+                if (preg_match('/^CREATE UNIQUE INDEX ([^ ]+) ON '.$prevcreate.' (.*)$/s', $sql, $matches)) {
+                    $prev = array_pop($sqls);
+                    if (strpos($prev, '/*keyblock*/')) {
+                        $prev = str_replace('/*keyblock*/', "\n, UNIQUE KEY $matches[1] $matches[2]/*keyblock*/", $prev);
+                        $sqls[] = $prev;
+                        continue;
+                    } else {
+                        $sqls[] = $prev;
+                    }
+                }
+            }
+            $prevcreate = null;
+            $sqls[] = $sql;
         }
 
-        return $sqlarr;
+        foreach ($sqls as $key => $sql) {
+            $sqls[$key] = str_replace('/*keyblock*/', "\n", $sql);
+        }
+
+        return $sqls;
     }
 
     /**
@@ -148,9 +194,26 @@ class mysql_sql_generator extends sql_generator {
      * @return array of sql statements
      */
     public function getCreateTempTableSQL($xmldb_table) {
+        // Do we know collation?
+        $collation = $this->mdb->get_dbcollation();
         $this->temptables->add_temptable($xmldb_table->getName());
-        $sqlarr = parent::getCreateTableSQL($xmldb_table); // we do not want the engine hack included in create table SQL
-        $sqlarr = preg_replace('/^CREATE TABLE (.*)/s', 'CREATE TEMPORARY TABLE $1', $sqlarr);
+
+        $sqlarr = parent::getCreateTableSQL($xmldb_table);
+
+        // Let's inject the extra MySQL tweaks.
+        foreach ($sqlarr as $i=>$sql) {
+            if (strpos($sql, 'CREATE TABLE ') === 0) {
+                // We do not want the engine hack included in create table SQL.
+                $sqlarr[$i] = preg_replace('/^CREATE TABLE (.*)/s', 'CREATE TEMPORARY TABLE $1', $sql);
+                if ($collation) {
+                    if (strpos($collation, 'utf8_') === 0) {
+                        $sqlarr[$i] .= " DEFAULT CHARACTER SET utf8";
+                    }
+                    $sqlarr[$i] .= " DEFAULT COLLATE $collation";
+                }
+            }
+        }
+
         return $sqlarr;
     }
 
@@ -231,9 +294,21 @@ class mysql_sql_generator extends sql_generator {
                     $xmldb_length='255';
                 }
                 $dbtype .= '(' . $xmldb_length . ')';
+                if ($collation = $this->mdb->get_dbcollation()) {
+                    if (strpos($collation, 'utf8_') === 0) {
+                        $dbtype .= " CHARACTER SET utf8";
+                    }
+                    $dbtype .= " COLLATE $collation";
+                }
                 break;
             case XMLDB_TYPE_TEXT:
                 $dbtype = 'LONGTEXT';
+                if ($collation = $this->mdb->get_dbcollation()) {
+                    if (strpos($collation, 'utf8_') === 0) {
+                        $dbtype .= " CHARACTER SET utf8";
+                    }
+                    $dbtype .= " COLLATE $collation";
+                }
                 break;
             case XMLDB_TYPE_BINARY:
                 $dbtype = 'LONGBLOB';
@@ -333,18 +408,14 @@ class mysql_sql_generator extends sql_generator {
      */
     public function isNameInUse($object_name, $type, $table_name) {
 
-        // Calculate the real table name
-        $xmldb_table = new xmldb_table($table_name);
-        $tname = $this->getTableName($xmldb_table);
-
         switch($type) {
             case 'ix':
             case 'uix':
                 // First of all, check table exists
                 $metatables = $this->mdb->get_tables();
-                if (isset($metatables[$tname])) {
+                if (isset($metatables[$table_name])) {
                     // Fetch all the indexes in the table
-                    if ($indexes = $this->mdb->get_indexes($tname)) {
+                    if ($indexes = $this->mdb->get_indexes($table_name)) {
                         // Look for existing index in array
                         if (isset($indexes[$object_name])) {
                             return true;

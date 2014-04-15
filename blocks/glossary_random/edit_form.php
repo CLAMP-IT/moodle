@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,7 +17,7 @@
 /**
  * Form for editing HTML block instances.
  *
- * @package   moodlecore
+ * @package   block_glossary_random
  * @copyright 2009 Tim Hunt
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -38,10 +37,10 @@ class block_glossary_random_edit_form extends block_edit_form {
 
         $mform->addElement('text', 'config_title', get_string('title', 'block_glossary_random'));
         $mform->setDefault('config_title', get_string('pluginname','block_glossary_random'));
-        $mform->setType('config_title', PARAM_MULTILANG);
+        $mform->setType('config_title', PARAM_TEXT);
 
         // Select glossaries to put in dropdown box ...
-        $glossaries = $DB->get_records_menu('glossary', array('course' => $this->block->course->id), 'name', 'id,name');
+        $glossaries = $DB->get_records_select_menu('glossary', 'course = ? OR globalglossary = ?', array($this->block->course->id, 1), 'name', 'id,name');
         foreach($glossaries as $key => $value) {
             $glossaries[$key] = strip_tags(format_string($value, true));
         }
@@ -49,13 +48,14 @@ class block_glossary_random_edit_form extends block_edit_form {
 
         $mform->addElement('text', 'config_refresh', get_string('refresh', 'block_glossary_random'), array('size' => 5));
         $mform->setDefault('config_refresh', 0);
-        $mform->setType('config_refresh', PARAM_INTEGER);
+        $mform->setType('config_refresh', PARAM_INT);
 
         // and select quotetypes to put in dropdown box
         $types = array(
             0 => get_string('random','block_glossary_random'),
             1 => get_string('lastmodified','block_glossary_random'),
-            2 => get_string('nextone','block_glossary_random')
+            2 => get_string('nextone','block_glossary_random'),
+            3 => get_string('nextalpha','block_glossary_random')
         );
         $mform->addElement('select', 'config_type', get_string('type', 'block_glossary_random'), $types);
 

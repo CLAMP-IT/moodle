@@ -17,7 +17,7 @@
 /**
  * Manage files in wiki
  *
- * @package   mod-wiki-2.0
+ * @package   mod_wiki
  * @copyright 2011 Dongsheng Cai <dongsheng@moodle.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -31,7 +31,7 @@ require_once("$CFG->dirroot/repository/lib.php");
 $subwikiid = required_param('subwiki', PARAM_INT);
 // not being used for file management, we use it to generate navbar link
 $pageid    = optional_param('pageid', 0, PARAM_INT);
-$returnurl = optional_param('returnurl', '', PARAM_URL);
+$returnurl = optional_param('returnurl', '', PARAM_LOCALURL);
 
 if (!$subwiki = wiki_get_subwiki($subwikiid)) {
     print_error('incorrectsubwikiid', 'wiki');
@@ -50,7 +50,7 @@ if (!$cm = get_coursemodule_from_instance("wiki", $subwiki->wikiid)) {
 // Checking course instance
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 
 require_login($course, true, $cm);
 require_capability('mod/wiki:managefiles', $context);
@@ -70,7 +70,7 @@ $url = new moodle_url('/mod/wiki/filesedit.php', array('subwiki'=>$subwiki->id, 
 $PAGE->set_url($url);
 $PAGE->set_context($context);
 $PAGE->set_title($title);
-$PAGE->set_heading($title);
+$PAGE->set_heading($course->fullname);
 $PAGE->navbar->add(format_string(get_string('wikifiles', 'wiki')), $CFG->wwwroot . '/mod/wiki/files.php?pageid=' . $pageid);
 $PAGE->navbar->add(format_string($title));
 
@@ -91,6 +91,8 @@ if ($mform->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
+echo $OUTPUT->heading($wiki->name);
+echo $OUTPUT->box(format_module_intro('wiki', $wiki, $PAGE->cm->id), 'generalbox', 'intro');
 echo $OUTPUT->box_start('generalbox');
 $mform->display();
 echo $OUTPUT->box_end();

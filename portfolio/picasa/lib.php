@@ -44,7 +44,9 @@ class portfolio_plugin_picasa extends portfolio_plugin_push_base {
     }
 
     public function expected_time($callertime) {
-        return $callertime;
+        // We're forcing this to be run 'interactively' because the plugin
+        // does not support running in cron.
+        return PORTFOLIO_TIME_LOW;
     }
 
     public function send_package() {
@@ -108,7 +110,9 @@ class portfolio_plugin_picasa extends portfolio_plugin_push_base {
         $mform->addElement('static', null, '', get_string('oauthinfo', 'portfolio_picasa', $a));
 
         $mform->addElement('text', 'clientid', get_string('clientid', 'portfolio_picasa'));
+        $mform->setType('clientid', PARAM_RAW_TRIMMED);
         $mform->addElement('text', 'secret', get_string('secret', 'portfolio_picasa'));
+        $mform->setType('secret', PARAM_RAW_TRIMMED);
 
         $strrequired = get_string('required');
         $mform->addRule('clientid', $strrequired, 'required', null, 'client');

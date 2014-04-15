@@ -20,8 +20,7 @@
  * This plugin does not add any entries into the user_enrolments table,
  * the access control is granted on the fly via the tricks in require_login().
  *
- * @package    enrol
- * @subpackage guest
+ * @package    enrol_guest
  * @copyright  2010 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -45,14 +44,14 @@ class enrol_guest_plugin extends enrol_plugin {
     public function get_info_icons(array $instances) {
         foreach ($instances as $instance) {
             if ($instance->password !== '') {
-                return array(new pix_icon('withpassword', get_string('pluginname', 'enrol_guest'), 'enrol_guest'));
+                return array(new pix_icon('withpassword', get_string('guestaccess_withpassword', 'enrol_guest'), 'enrol_guest'));
             } else {
-                return array(new pix_icon('withoutpassword', get_string('pluginname', 'enrol_guest'), 'enrol_guest'));
+                return array(new pix_icon('withoutpassword', get_string('guestaccess_withoutpassword', 'enrol_guest'), 'enrol_guest'));
             }
         }
     }
 
-    public function enrol_user(stdClass $instance, $userid, $roleid = NULL, $timestart = 0, $timeend = 0, $status = NULL) {
+    public function enrol_user(stdClass $instance, $userid, $roleid = null, $timestart = 0, $timeend = 0, $status = null, $recovergrades = null) {
         // no real enrolments here!
         return;
     }
@@ -85,7 +84,7 @@ class enrol_guest_plugin extends enrol_plugin {
 
         if ($allow) {
             // Temporarily assign them some guest role for this context
-            $context = get_context_instance(CONTEXT_COURSE, $instance->courseid);
+            $context = context_course::instance($instance->courseid);
             load_temp_course_role($context, $CFG->guestroleid);
             return ENROL_MAX_TIMESTAMP;
         }
@@ -101,7 +100,7 @@ class enrol_guest_plugin extends enrol_plugin {
     public function get_newinstance_link($courseid) {
         global $DB;
 
-        $context = get_context_instance(CONTEXT_COURSE, $courseid, MUST_EXIST);
+        $context = context_course::instance($courseid, MUST_EXIST);
 
         if (!has_capability('moodle/course:enrolconfig', $context) or !has_capability('enrol/guest:config', $context)) {
             return NULL;
@@ -140,7 +139,7 @@ class enrol_guest_plugin extends enrol_plugin {
         if ($instance->id == $instanceid) {
             if ($data = $form->get_data()) {
                 // add guest role
-                $context = get_context_instance(CONTEXT_COURSE, $instance->courseid);
+                $context = context_course::instance($instance->courseid);
                 $USER->enrol_guest_passwords[$instance->id] = $data->guestpassword; // this is a hack, ideally we should not add stuff to $USER...
                 if (isset($USER->enrol['tempguest'][$instance->courseid])) {
                     remove_temp_course_roles($context);
@@ -184,7 +183,11 @@ class enrol_guest_plugin extends enrol_plugin {
         }
 
         $header = $this->get_instance_name($instance);
-        $config = has_capability('enrol/guest:config', $context);
+        if (!$i) {
+            $config = guess_if_creator_will_have_course_capability('enrol/guest:config', $context);
+        } else {
+            $config = has_capability('enrol/guest:config', $context);
+        }
 
         $mform->addElement('header', 'enrol_guest_header_'.$i, $header);
 
@@ -197,12 +200,27 @@ class enrol_guest_plugin extends enrol_plugin {
         $mform->setAdvanced('enrol_guest_status_'.$i, $this->get_config('status_adv'));
         if (!$config) {
             $mform->hardFreeze('enrol_guest_status_'.$i);
+            if (!$i) {
+                $mform->setConstant('enrol_guest_status_'.$i, $this->get_config('status'));
+            } else {
+                $mform->setConstant('enrol_guest_status_'.$i, $instance->status);
+            }
         }
 
         $mform->addElement('passwordunmask', 'enrol_guest_password_'.$i, get_string('password', 'enrol_guest'));
         $mform->addHelpButton('enrol_guest_password_'.$i, 'password', 'enrol_guest');
         if (!$config) {
             $mform->hardFreeze('enrol_guest_password_'.$i);
+            if (!$i) {
+                if ($this->get_config('requirepassword')) {
+                    $password = generate_password(20);
+                } else {
+                    $password = '';
+                }
+                $mform->setConstant('enrol_guest_password_'.$i, $password);
+            } else {
+                $mform->setConstant('enrol_guest_password_'.$i, $instance->password);
+            }
         } else {
             $mform->disabledIf('enrol_guest_password_'.$i, 'enrol_guest_status_'.$i, 'noteq', ENROL_INSTANCE_ENABLED);
         }
@@ -280,57 +298,46 @@ class enrol_guest_plugin extends enrol_plugin {
     public function course_updated($inserted, $course, $data) {
         global $DB;
 
-        $context = get_context_instance(CONTEXT_COURSE, $course->id);
-
-        if (has_capability('enrol/guest:config', $context)) {
-            if ($inserted) {
-                if (isset($data->enrol_guest_status_0)) {
-                    $fields = array('status'=>$data->enrol_guest_status_0);
-                    if ($fields['status'] == ENROL_INSTANCE_ENABLED) {
-                        $fields['password'] = $data->enrol_guest_password_0;
-                    } else {
-                        if ($this->get_config('requirepassword')) {
-                            $fields['password'] = generate_password(20);
-                        }
-                    }
-                    $this->add_instance($course, $fields);
+        if ($inserted) {
+            if (isset($data->enrol_guest_status_0)) {
+                $fields = array('status'=>$data->enrol_guest_status_0);
+                if ($fields['status'] == ENROL_INSTANCE_ENABLED) {
+                    $fields['password'] = $data->enrol_guest_password_0;
                 } else {
-                    if ($this->get_config('defaultenrol')) {
-                        $this->add_default_instance($course);
+                    if ($this->get_config('requirepassword')) {
+                        $fields['password'] = generate_password(20);
                     }
                 }
+                $this->add_instance($course, $fields);
             } else {
-                $instances = $DB->get_records('enrol', array('courseid'=>$course->id, 'enrol'=>'guest'));
-                foreach ($instances as $instance) {
-                    $i = $instance->id;
-
-                    if (isset($data->{'enrol_guest_status_'.$i})) {
-                        $reset = ($instance->status != $data->{'enrol_guest_status_'.$i});
-
-                        $instance->status       = $data->{'enrol_guest_status_'.$i};
-                        $instance->timemodified = time();
-                        if ($instance->status == ENROL_INSTANCE_ENABLED) {
-                            if ($instance->password !== $data->{'enrol_guest_password_'.$i}) {
-                                $reset = true;
-                            }
-                            $instance->password = $data->{'enrol_guest_password_'.$i};
-                        }
-                        $DB->update_record('enrol', $instance);
-
-                        if ($reset) {
-                            $context->mark_dirty();
-                        }
-                    }
+                if ($this->get_config('defaultenrol')) {
+                    $this->add_default_instance($course);
                 }
             }
 
         } else {
-            if ($inserted) {
-                if ($this->get_config('defaultenrol')) {
-                    $this->add_default_instance($course);
+            $instances = $DB->get_records('enrol', array('courseid'=>$course->id, 'enrol'=>'guest'));
+            foreach ($instances as $instance) {
+                $i = $instance->id;
+
+                if (isset($data->{'enrol_guest_status_'.$i})) {
+                    $reset = ($instance->status != $data->{'enrol_guest_status_'.$i});
+
+                    $instance->status       = $data->{'enrol_guest_status_'.$i};
+                    $instance->timemodified = time();
+                    if ($instance->status == ENROL_INSTANCE_ENABLED) {
+                        if ($instance->password !== $data->{'enrol_guest_password_'.$i}) {
+                            $reset = true;
+                        }
+                        $instance->password = $data->{'enrol_guest_password_'.$i};
+                    }
+                    $DB->update_record('enrol', $instance);
+
+                    if ($reset) {
+                        $context = context_course::instance($course->id);
+                        $context->mark_dirty();
+                    }
                 }
-            } else {
-                // bad luck, user can not change anything
             }
         }
     }
@@ -366,18 +373,22 @@ class enrol_guest_plugin extends enrol_plugin {
         return $this->add_instance($course, $fields);
     }
 
-}
+    /**
+     * Restore instance and map settings.
+     *
+     * @param restore_enrolments_structure_step $step
+     * @param stdClass $data
+     * @param stdClass $course
+     * @param int $oldid
+     */
+    public function restore_instance(restore_enrolments_structure_step $step, stdClass $data, $course, $oldid) {
+        global $DB;
 
-/**
- * Indicates API features that the enrol plugin supports.
- *
- * @param string $feature
- * @return mixed True if yes (some features may use other values)
- */
-function enrol_guest_supports($feature) {
-    switch($feature) {
-        case ENROL_RESTORE_TYPE: return ENROL_RESTORE_NOUSERS;
+        if (!$DB->record_exists('enrol', array('courseid' => $data->courseid, 'enrol' => $this->get_name()))) {
+            $this->add_instance($course, (array)$data);
+        }
 
-        default: return null;
+        // No need to set mapping, we do not restore users or roles here.
+        $step->set_mapping('enrol', $oldid, 0);
     }
 }

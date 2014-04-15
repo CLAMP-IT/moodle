@@ -26,7 +26,7 @@ class grade_edit_tree {
     public $columns = array();
 
     /**
-     * @var object $gtree          @see grade/lib.php
+     * @var grade_tree $gtree   @see grade/lib.php
      */
     public $gtree;
 
@@ -273,12 +273,6 @@ class grade_edit_tree {
                 $root = true;
             }
 
-            $row_count_offset = 0;
-
-            if (empty($category_total_item) && !$this->moving) {
-                $row_count_offset = -1;
-            }
-
             $levelclass = "level$level";
 
             $courseclass = '';
@@ -297,7 +291,7 @@ class grade_edit_tree {
             $headercell->scope = 'row';
             $headercell->attributes['title'] = $object->stripped_name;
             $headercell->attributes['class'] = 'cell rowspan ' . $levelclass;
-            $headercell->rowspan = $row_count+1+$row_count_offset;
+            $headercell->rowspan = $row_count + 1;
             $row->cells[] = $headercell;
 
             foreach ($this->columns as $column) {
@@ -315,7 +309,7 @@ class grade_edit_tree {
             $endcell->colspan = (19 - $level);
             $endcell->attributes['class'] = 'colspan ' . $levelclass;
 
-            $returnrows[] = new html_table_row(array($endcell));;
+            $returnrows[] = new html_table_row(array($endcell));
 
         } else { // Dealing with a grade item
 
@@ -373,12 +367,16 @@ class grade_edit_tree {
 
         if ((($aggcoef == 'aggregationcoefweight' || $aggcoef == 'aggregationcoef') && $type == 'weight') ||
             ($aggcoef == 'aggregationcoefextraweight' && $type == 'extra')) {
-            return '<input type="text" size="6" id="aggregationcoef_'.$item->id.'" name="aggregationcoef_'.$item->id.'"
+            return '<label class="accesshide" for="aggregationcoef_'.$item->id.'">'.
+                get_string('extracreditvalue', 'grades', $item->itemname).'</label>'.
+                '<input type="text" size="6" id="aggregationcoef_'.$item->id.'" name="aggregationcoef_'.$item->id.'"
                 value="'.grade_edit_tree::format_number($item->aggregationcoef).'" />';
         } elseif ($aggcoef == 'aggregationcoefextrasum' && $type == 'extra') {
             $checked = ($item->aggregationcoef > 0) ? 'checked="checked"' : '';
             return '<input type="hidden" name="extracredit_'.$item->id.'" value="0" />
-                    <input type="checkbox" id="extracredit_'.$item->id.'" name="extracredit_'.$item->id.'" value="1" '."$checked />\n";
+                <label class="accesshide" for="extracredit_'.$item->id.'">'.
+                get_string('extracreditvalue', 'grades', $item->itemname).'</label>
+                <input type="checkbox" id="extracredit_'.$item->id.'" name="extracredit_'.$item->id.'" value="1" '."$checked />\n";
         } else {
             return '';
         }
@@ -389,7 +387,7 @@ class grade_edit_tree {
     //Grader report has its own decimal place settings so they are handled elsewhere
     static function format_number($number) {
         $formatted = rtrim(format_float($number, 4),'0');
-        if (substr($formatted, -1)=='.') { //if last char is the decimal point
+        if (substr($formatted, -1)==get_string('decsep', 'langconfig')) { //if last char is the decimal point
             $formatted .= '0';
         }
         return $formatted;
@@ -673,7 +671,8 @@ class grade_edit_tree_column_aggregation extends grade_edit_tree_column_category
         } else {
             $attributes = array();
             $attributes['id'] = 'aggregation_'.$category->id;
-            $aggregation = html_writer::select($options, 'aggregation_'.$category->id, $category->aggregation, null, $attributes);
+            $aggregation = html_writer::label(get_string('aggregation', 'grades'), 'aggregation_'.$category->id, false, array('class' => 'accesshide'));
+            $aggregation .= html_writer::select($options, 'aggregation_'.$category->id, $category->aggregation, null, $attributes);
             $action = new component_action('change', 'update_category_aggregation', array('courseid' => $params['id'], 'category' => $category->id, 'sesskey' => sesskey()));
             $OUTPUT->add_action_handler($action, 'aggregation_'.$category->id);
         }
@@ -794,9 +793,12 @@ class grade_edit_tree_column_range extends grade_edit_tree_column {
     public function get_item_cell($item, $params) {
         global $DB, $OUTPUT;
 
-        // If the parent aggregation is Sum of Grades, this cannot be changed
+        // If the parent aggregation is Sum of Grades, we should show the number, even for scales, as that value is used...
+        // ...in the computation. For text grades, the grademax is not used, so we can still show the no value string.
         $parent_cat = $item->get_parent_category();
-        if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM) {
+        if ($item->gradetype == GRADE_TYPE_TEXT) {
+            $grademax = ' - ';
+        } else if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM) {
             $grademax = format_float($item->grademax, $item->get_decimals());
         } elseif ($item->gradetype == GRADE_TYPE_SCALE) {
             $scale = $DB->get_record('scale', array('id' => $item->scaleid));
@@ -810,7 +812,9 @@ class grade_edit_tree_column_range extends grade_edit_tree_column {
         } elseif ($item->is_external_item()) {
             $grademax = format_float($item->grademax, $item->get_decimals());
         } else {
-            $grademax = '<input type="text" size="6" id="grademax'.$item->id.'" name="grademax_'.$item->id.'" value="'.format_float($item->grademax, $item->get_decimals()).'" />';
+            $grademax = '<label class="accesshide" for="grademax'.$item->id.'">'.get_string('grademax', 'grades').'</label>
+                <input type="text" size="6" id="grademax'.$item->id.'" name="grademax_'.$item->id.'" value="'.
+                format_float($item->grademax, $item->get_decimals()).'" />';
         }
 
         $itemcell = clone($this->itemcell);
@@ -846,7 +850,10 @@ class grade_edit_tree_column_aggregateonlygraded extends grade_edit_tree_column_
     public function get_category_cell($category, $levelclass, $params) {
         $onlygradedcheck = ($category->aggregateonlygraded == 1) ? 'checked="checked"' : '';
         $hidden = '<input type="hidden" name="aggregateonlygraded_'.$category->id.'" value="0" />';
-        $aggregateonlygraded ='<input type="checkbox" id="aggregateonlygraded_'.$category->id.'" name="aggregateonlygraded_'.$category->id.'" value="1" '.$onlygradedcheck . ' />';
+        $aggregateonlygraded = '<label class="accesshide" for="aggregateonlygraded_'.$category->id.'">'.
+                get_string('aggregateonlygraded', 'grades').'</label>
+                <input type="checkbox" id="aggregateonlygraded_'.$category->id.'" name="aggregateonlygraded_'.
+                $category->id.'" value="1" '.$onlygradedcheck . ' />';
 
         if ($this->forced) {
             $aggregateonlygraded = ($category->aggregateonlygraded) ? get_string('yes') : get_string('no');
@@ -883,7 +890,10 @@ class grade_edit_tree_column_aggregatesubcats extends grade_edit_tree_column_cat
     public function get_category_cell($category, $levelclass, $params) {
         $subcatscheck = ($category->aggregatesubcats == 1) ? 'checked="checked"' : '';
         $hidden = '<input type="hidden" name="aggregatesubcats_'.$category->id.'" value="0" />';
-        $aggregatesubcats = '<input type="checkbox" id="aggregatesubcats_'.$category->id.'" name="aggregatesubcats_'.$category->id.'" value="1" ' . $subcatscheck.' />';
+        $aggregatesubcats = '<label class="accesshide" for="aggregatesubcats_'.$category->id.'">'.
+                get_string('aggregatesubcats', 'grades').'</label>
+                <input type="checkbox" id="aggregatesubcats_'.$category->id.'" name="aggregatesubcats_'.$category->id.
+                '" value="1" ' . $subcatscheck.' />';
 
         if ($this->forced) {
             $aggregatesubcats = ($category->aggregatesubcats) ? get_string('yes') : get_string('no');
@@ -921,7 +931,10 @@ class grade_edit_tree_column_aggregateoutcomes extends grade_edit_tree_column_ca
     public function get_category_cell($category, $levelclass, $params) {
         $outcomescheck = ($category->aggregateoutcomes == 1) ? 'checked="checked"' : '';
         $hidden = '<input type="hidden" name="aggregateoutcomes_'.$category->id.'" value="0" />';
-        $aggregateoutcomes = '<input type="checkbox" id="aggregateoutcomes_'.$category->id.'" name="aggregateoutcomes_'.$category->id.'" value="1" ' . $outcomescheck.' />';
+        $aggregateoutcomes = '<label class="accesshide" for="aggregateoutcomes_'.$category->id.'">'.
+                get_string('aggregateoutcomes', 'grades').'</label>
+                <input type="checkbox" id="aggregateoutcomes_'.$category->id.'" name="aggregateoutcomes_'.$category->id.
+                '" value="1" ' . $outcomescheck.' />';
 
         if ($this->forced) {
             $aggregateoutcomes = ($category->aggregateoutcomes) ? get_string('yes') : get_string('no');
@@ -963,7 +976,9 @@ class grade_edit_tree_column_droplow extends grade_edit_tree_column_category {
     }
 
     public function get_category_cell($category, $levelclass, $params) {
-        $droplow = '<input type="text" size="3" id="droplow_'.$category->id.'" name="droplow_'.$category->id.'" value="'.$category->droplow.'" />';
+        $droplow = '<label class="accesshide" for="droplow_' . $category->id.'">' . get_string('droplowestvalue', 'grades') . '</label>';
+        $droplow .= '<input type="text" size="3" id="droplow_' . $category->id . '" name="droplow_' . $category->id . '" value="'
+                . $category->droplow.'" />';
 
         if ($this->forced) {
             $droplow = $category->droplow;
@@ -996,7 +1011,9 @@ class grade_edit_tree_column_keephigh extends grade_edit_tree_column_category {
     }
 
     public function get_category_cell($category, $levelclass, $params) {
-        $keephigh = '<input type="text" size="3" id="keephigh_'.$category->id.'" name="keephigh_'.$category->id.'" value="'.$category->keephigh.'" />';
+        $keephigh = '<label class="accesshide" for="keephigh_'.$category->id.'">'.get_string('keephigh', 'grades').'</label>';
+        $keephigh .= '<input type="text" size="3" id="keephigh_'.$category->id.'" name="keephigh_'.$category->id.'" value="'.
+                $category->keephigh.'" />';
 
         if ($this->forced) {
             $keephigh = $category->keephigh;
@@ -1043,8 +1060,10 @@ class grade_edit_tree_column_multfactor extends grade_edit_tree_column {
             $itemcell->text = '&nbsp;';
             return $itemcell;
         }
-
-        $multfactor = '<input type="text" size="4" id="multfactor'.$item->id.'" name="multfactor_'.$item->id.'" value="'.grade_edit_tree::format_number($item->multfactor).'" />';
+        $multfactor = '<label class="accesshide" for="multfactor'.$item->id.'">'.
+                get_string('multfactorvalue', 'grades', $item->itemname).'</label>
+                <input type="text" size="4" id="multfactor'.$item->id.'" name="multfactor_'.$item->id.'" value="'.
+                grade_edit_tree::format_number($item->multfactor).'" />';
 
         $itemcell->text = $multfactor;
         return $itemcell;
@@ -1086,7 +1105,10 @@ class grade_edit_tree_column_plusfactor extends grade_edit_tree_column {
             return $itemcell;
         }
 
-        $plusfactor = '<input type="text" size="4" id="plusfactor_'.$item->id.'" name="plusfactor_'.$item->id.'" value="'.grade_edit_tree::format_number($item->plusfactor).'" />';
+        $plusfactor = '<label class="accesshide" for="plusfactor_'. $item->id . '">'.
+                get_string('plusfactorvalue', 'grades', $item->itemname).'</label>
+                <input type="text" size="4" id="plusfactor_'.$item->id.'" name="plusfactor_'.$item->id.'" value="'.
+                grade_edit_tree::format_number($item->plusfactor).'" />';
 
         $itemcell->text = $plusfactor;
         return $itemcell;
@@ -1174,7 +1196,10 @@ class grade_edit_tree_column_select extends grade_edit_tree_column {
         $itemselect = '';
 
         if ($params['itemtype'] != 'course' && $params['itemtype'] != 'category') {
-            $itemselect = '<input class="itemselect" type="checkbox" name="select_'.$params['eid'].'" onchange="toggleCategorySelector();"/>'; // TODO: convert to YUI handler
+            $itemselect = '<label class="accesshide" for="select_'.$params['eid'].'">'.
+                get_string('select', 'grades', $item->itemname).'</label>
+                <input class="itemselect" type="checkbox" name="select_'.$params['eid'].'" id="select_'.$params['eid'].
+                '" onchange="toggleCategorySelector();"/>'; // TODO: convert to YUI handler
         }
         //html_writer::table() will wrap the item cell contents in a <TD> so don't do it here
         return $itemselect;

@@ -18,8 +18,7 @@
 /**
  * List of all pages in course
  *
- * @package    mod
- * @subpackage page
+ * @package mod_page
  * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -33,11 +32,12 @@ $course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
 require_course_login($course, true);
 $PAGE->set_pagelayout('incourse');
 
-add_to_log($course->id, 'page', 'view all', "index.php?id=$course->id", '');
+// Trigger instances list viewed event.
+$event = \mod_page\event\course_module_instance_list_viewed::create(array('context' => context_course::instance($course->id)));
+$event->trigger();
 
 $strpage         = get_string('modulename', 'page');
 $strpages        = get_string('modulenameplural', 'page');
-$strsectionname  = get_string('sectionname', 'format_'.$course->format);
 $strname         = get_string('name');
 $strintro        = get_string('moduleintro');
 $strlastmodified = get_string('lastmodified');
@@ -47,21 +47,19 @@ $PAGE->set_title($course->shortname.': '.$strpages);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strpages);
 echo $OUTPUT->header();
-
+echo $OUTPUT->heading($strpages);
 if (!$pages = get_all_instances_in_course('page', $course)) {
     notice(get_string('thereareno', 'moodle', $strpages), "$CFG->wwwroot/course/view.php?id=$course->id");
     exit;
 }
 
 $usesections = course_format_uses_sections($course->format);
-if ($usesections) {
-    $sections = get_all_sections($course->id);
-}
 
 $table = new html_table();
 $table->attributes['class'] = 'generaltable mod_index';
 
 if ($usesections) {
+    $strsectionname = get_string('sectionname', 'format_'.$course->format);
     $table->head  = array ($strsectionname, $strname, $strintro);
     $table->align = array ('center', 'left', 'left');
 } else {
@@ -77,7 +75,7 @@ foreach ($pages as $page) {
         $printsection = '';
         if ($page->section !== $currentsection) {
             if ($page->section) {
-                $printsection = get_section_name($course, $sections[$page->section]);
+                $printsection = get_section_name($course, $page->section);
             }
             if ($currentsection !== '') {
                 $table->data[] = 'hr';

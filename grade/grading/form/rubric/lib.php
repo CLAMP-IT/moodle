@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,8 +17,7 @@
 /**
  * Grading method controller for the Rubric plugin
  *
- * @package    gradingform
- * @subpackage rubric
+ * @package    gradingform_rubric
  * @copyright  2011 David Mudrak <david@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,6 +28,10 @@ require_once($CFG->dirroot.'/grade/grading/form/lib.php');
 
 /**
  * This controller encapsulates the rubric grading logic
+ *
+ * @package    gradingform_rubric
+ * @copyright  2011 David Mudrak <david@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class gradingform_rubric_controller extends gradingform_controller {
     // Modes of displaying the rubric (used in gradingform_rubric_renderer)
@@ -160,7 +162,7 @@ class gradingform_rubric_controller extends gradingform_controller {
             $criterionmaxscore = null;
             if (preg_match('/^NEWID\d+$/', $id)) {
                 // insert criterion into DB
-                $data = array('definitionid' => $this->definition->id, 'descriptionformat' => FORMAT_MOODLE); // TODO format is not supported yet
+                $data = array('definitionid' => $this->definition->id, 'descriptionformat' => FORMAT_MOODLE); // TODO MDL-31235 format is not supported yet
                 foreach ($criteriafields as $key) {
                     if (array_key_exists($key, $criterion)) {
                         $data[$key] = $criterion[$key];
@@ -203,13 +205,12 @@ class gradingform_rubric_controller extends gradingform_controller {
                 if (isset($level['score'])) {
                     $level['score'] = (float)$level['score'];
                     if ($level['score']<0) {
-                        // TODO why we can't allow negative score for rubric?
                         $level['score'] = 0;
                     }
                 }
                 if (preg_match('/^NEWID\d+$/', $levelid)) {
                     // insert level into DB
-                    $data = array('criterionid' => $id, 'definitionformat' => FORMAT_MOODLE); // TODO format is not supported yet
+                    $data = array('criterionid' => $id, 'definitionformat' => FORMAT_MOODLE); // TODO MDL-31235 format is not supported yet
                     foreach ($levelfields as $key) {
                         if (array_key_exists($key, $level)) {
                             $data[$key] = $level[$key];
@@ -504,10 +505,22 @@ class gradingform_rubric_controller extends gradingform_controller {
             throw new coding_exception('It is the caller\'s responsibility to make sure that the form is actually defined');
         }
 
-        $output = $this->get_renderer($page);
         $criteria = $this->definition->rubric_criteria;
         $options = $this->get_options();
         $rubric = '';
+        if (has_capability('moodle/grade:managegradingforms', $page->context)) {
+            $showdescription = true;
+        } else {
+            if (empty($options['alwaysshowdefinition']))  {
+                // ensure we don't display unless show rubric option enabled
+                return '';
+            }
+            $showdescription = $options['showdescriptionstudent'];
+        }
+        $output = $this->get_renderer($page);
+        if ($showdescription) {
+            $rubric .= $output->box($this->get_formatted_description(), 'gradingform_rubric-description');
+        }
         if (has_capability('moodle/grade:managegradingforms', $page->context)) {
             $rubric .= $output->display_rubric_mapping_explained($this->get_min_max_score());
             $rubric .= $output->display_rubric($criteria, $options, self::DISPLAY_PREVIEW, 'rubric');
@@ -556,7 +569,8 @@ class gradingform_rubric_controller extends gradingform_controller {
             return $this->get_instance($instance);
         }
         if ($itemid && $raterid) {
-            if ($rs = $DB->get_records('grading_instances', array('raterid' => $raterid, 'itemid' => $itemid), 'timemodified DESC', '*', 0, 1)) {
+            $params = array('definitionid' => $this->definition->id, 'raterid' => $raterid, 'itemid' => $itemid);
+            if ($rs = $DB->get_records('grading_instances', $params, 'timemodified DESC', '*', 0, 1)) {
                 $record = reset($rs);
                 $currentinstance = $this->get_current_instance($raterid, $itemid);
                 if ($record->status == gradingform_rubric_instance::INSTANCE_STATUS_INCOMPLETE &&
@@ -583,7 +597,7 @@ class gradingform_rubric_controller extends gradingform_controller {
         return $this->get_renderer($page)->display_instances($this->get_active_instances($itemid), $defaultcontent, $cangrade);
     }
 
-    //// full-text search support /////////////////////////////////////////////
+    // ///// full-text search support /////////////////////////////////////////////
 
     /**
      * Prepare the part of the search query to append to the FROM statement
@@ -644,16 +658,73 @@ class gradingform_rubric_controller extends gradingform_controller {
         }
         return $returnvalue;
     }
+
+    /**
+     * @return array An array containing a single key/value pair with the 'rubric_criteria' external_multiple_structure.
+     * @see gradingform_controller::get_external_definition_details()
+     * @since Moodle 2.5
+     */
+    public static function get_external_definition_details() {
+        $rubric_criteria = new external_multiple_structure(
+            new external_single_structure(
+                array(
+                   'id'   => new external_value(PARAM_INT, 'criterion id'),
+                   'sortorder' => new external_value(PARAM_INT, 'sortorder'),
+                   'description' => new external_value(PARAM_RAW, 'description', VALUE_OPTIONAL),
+                   'descriptionformat' => new external_format_value('description', VALUE_OPTIONAL),
+                   'levels' => new external_multiple_structure(
+                                   new external_single_structure(
+                                       array(
+                                        'id' => new external_value(PARAM_INT, 'level id'),
+                                        'score' => new external_value(PARAM_FLOAT, 'score'),
+                                        'definition' => new external_value(PARAM_RAW, 'definition', VALUE_OPTIONAL),
+                                        'definitionformat' => new external_format_value('definition', VALUE_OPTIONAL)
+                                       )
+                                  ), 'levels', VALUE_OPTIONAL
+                              )
+                   )
+              ), 'definition details', VALUE_OPTIONAL
+        );
+        return array('rubric_criteria' => $rubric_criteria);
+    }
+
+    /**
+     * Returns an array that defines the structure of the rubric's filling. This function is used by
+     * the web service function core_grading_external::get_gradingform_instances().
+     *
+     * @return An array containing a single key/value pair with the 'criteria' external_multiple_structure
+     * @see gradingform_controller::get_external_instance_filling_details()
+     * @since Moodle 2.6
+     */
+    public static function get_external_instance_filling_details() {
+        $criteria = new external_multiple_structure(
+            new external_single_structure(
+                array(
+                    'id' => new external_value(PARAM_INT, 'filling id'),
+                    'criterionid' => new external_value(PARAM_INT, 'criterion id'),
+                    'levelid' => new external_value(PARAM_INT, 'level id', VALUE_OPTIONAL),
+                    'remark' => new external_value(PARAM_RAW, 'remark', VALUE_OPTIONAL),
+                    'remarkformat' => new external_format_value('remark', VALUE_OPTIONAL)
+                )
+            ), 'filling', VALUE_OPTIONAL
+        );
+        return array ('criteria' => $criteria);
+    }
+
 }
 
 /**
- * Class to manage one rubric grading instance. Stores information and performs actions like
- * update, copy, validate, submit, etc.
+ * Class to manage one rubric grading instance.
  *
+ * Stores information and performs actions like update, copy, validate, submit, etc.
+ *
+ * @package    gradingform_rubric
  * @copyright  2011 Marina Glancy
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class gradingform_rubric_instance extends gradingform_instance {
 
+    /** @var array stores the rubric, has two keys: 'criteria' and 'options' */
     protected $rubric;
 
     /**
@@ -744,7 +815,8 @@ class gradingform_rubric_instance extends gradingform_instance {
                 $DB->insert_record('gradingform_rubric_fillings', $newrecord);
             } else {
                 $newrecord = array('id' => $currentgrade['criteria'][$criterionid]['id']);
-                foreach (array('levelid', 'remark'/*, 'remarkformat' TODO */) as $key) {
+                foreach (array('levelid', 'remark'/*, 'remarkformat' */) as $key) {
+                    // TODO MDL-31235 format is not supported yet
                     if (isset($record[$key]) && $currentgrade['criteria'][$criterionid][$key] != $record[$key]) {
                         $newrecord[$key] = $record[$key];
                     }
@@ -765,10 +837,9 @@ class gradingform_rubric_instance extends gradingform_instance {
     /**
      * Calculates the grade to be pushed to the gradebook
      *
-     * @return int the valid grade from $this->get_controller()->get_grade_range()
+     * @return float|int the valid grade from $this->get_controller()->get_grade_range()
      */
     public function get_grade() {
-        global $DB, $USER;
         $grade = $this->get_rubric_filling();
 
         if (!($scores = $this->get_controller()->get_min_max_score()) || $scores['maxscore'] <= $scores['minscore']) {
@@ -787,14 +858,18 @@ class gradingform_rubric_instance extends gradingform_instance {
         foreach ($grade['criteria'] as $id => $record) {
             $curscore += $this->get_controller()->get_definition()->rubric_criteria[$id]['levels'][$record['levelid']]['score'];
         }
-        return round(($curscore-$scores['minscore'])/($scores['maxscore']-$scores['minscore'])*($maxgrade-$mingrade), 0) + $mingrade;
+        $gradeoffset = ($curscore-$scores['minscore'])/($scores['maxscore']-$scores['minscore'])*($maxgrade-$mingrade);
+        if ($this->get_controller()->get_allow_grade_decimals()) {
+            return $gradeoffset + $mingrade;
+        }
+        return round($gradeoffset, 0) + $mingrade;
     }
 
     /**
      * Returns html for form element of type 'grading'.
      *
      * @param moodle_page $page
-     * @param MoodleQuickForm_grading $formelement
+     * @param MoodleQuickForm_grading $gradingformelement
      * @return string
      */
     public function render_grading_element($page, $gradingformelement) {

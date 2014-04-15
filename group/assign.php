@@ -40,7 +40,7 @@ if (!$course = $DB->get_record('course', array('id'=>$grouping->courseid))) {
 $courseid = $course->id;
 
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $courseid);
+$context = context_course::instance($courseid);
 require_capability('moodle/course:managegroups', $context);
 
 $returnurl = $CFG->wwwroot.'/group/groupings.php?id='.$courseid;
@@ -53,13 +53,19 @@ if ($frm = data_submitted() and confirm_sesskey()) {
 
     } else if (isset($frm->add) and !empty($frm->addselect)) {
         foreach ($frm->addselect as $groupid) {
-            groups_assign_grouping($grouping->id, (int)$groupid);
+            // Ask this method not to purge the cache, we'll do it ourselves afterwards.
+            groups_assign_grouping($grouping->id, (int)$groupid, null, false);
         }
+        // Invalidate the course groups cache seeing as we've changed it.
+        cache_helper::invalidate_by_definition('core', 'groupdata', array(), array($courseid));
 
     } else if (isset($frm->remove) and !empty($frm->removeselect)) {
         foreach ($frm->removeselect as $groupid) {
-            groups_unassign_grouping($grouping->id, (int)$groupid);
+            // Ask this method not to purge the cache, we'll do it ourselves afterwards.
+            groups_unassign_grouping($grouping->id, (int)$groupid, false);
         }
+        // Invalidate the course groups cache seeing as we've changed it.
+        cache_helper::invalidate_by_definition('core', 'groupdata', array(), array($courseid));
     }
 }
 

@@ -95,6 +95,9 @@ function min_fix_utf8($value) {
         error_reporting($olderror ^ E_NOTICE);
     }
 
+    // No null bytes expected in our data, so let's remove it.
+    $value = str_replace("\0", '', $value);
+
     static $buggyiconv = null;
     if ($buggyiconv === null) {
         $buggyiconv = (!function_exists('iconv') or iconv('UTF-8', 'UTF-8//IGNORE', '100'.chr(130).'€') !== '100€');
@@ -139,14 +142,14 @@ function min_enable_zlib_compression() {
 
     // zlib.output_compression is preferred over ob_gzhandler()
     if (!empty($_SERVER['HTTP_USER_AGENT']) and strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6') !== false) {
-        @ini_set('zlib.output_compression', 'Off');
+        ini_set('zlib.output_compression', 'Off');
         if (function_exists('apache_setenv')) {
-            @apache_setenv('no-gzip', 1);
+            apache_setenv('no-gzip', 1);
         }
         return false;
     }
 
-    @ini_set('output_handler', '');
+    ini_set('output_handler', '');
 
     /*
      * docs clearly say 'on' means enable and number means size of buffer,
@@ -154,7 +157,7 @@ function min_enable_zlib_compression() {
      * 1 probably sets chunk size to 4096. our CSS and JS scripts are much bigger,
      * so let's try some bigger sizes.
      */
-    @ini_set('zlib.output_compression', 65536);
+    ini_set('zlib.output_compression', 65536);
 
     return true;
 }

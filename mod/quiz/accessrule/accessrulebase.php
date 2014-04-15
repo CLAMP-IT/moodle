@@ -180,14 +180,28 @@ abstract class quiz_access_rule_base {
 
     /**
      * If, because of this rule, the user has to finish their attempt by a certain time,
-     * you should override this method to return the amount of time left in seconds.
+     * you should override this method to return the attempt end time.
+     * @param object $attempt the current attempt
+     * @return mixed the attempt close time, or false if there is no close time.
+     */
+    public function end_time($attempt) {
+        return false;
+    }
+
+    /**
+     * If the user should be shown a different amount of time than $timenow - $this->end_time(), then
+     * override this method.  This is useful if the time remaining is large enough to be omitted.
      * @param object $attempt the current attempt
      * @param int $timenow the time now. We don't use $this->timenow, so we can
      * give the user a more accurate indication of how much time is left.
-     * @return mixed false if there is no deadline, of the time left in seconds if there is one.
+     * @return mixed the time left in seconds (can be negative) or false if there is no limit.
      */
-    public function time_left($attempt, $timenow) {
-        return false;
+    public function time_left_display($attempt, $timenow) {
+        $endtime = $this->end_time($attempt);
+        if ($endtime === false) {
+            return false;
+        }
+        return $endtime - $timenow;
     }
 
     /**
@@ -240,6 +254,20 @@ abstract class quiz_access_rule_base {
     public static function add_settings_form_fields(
             mod_quiz_mod_form $quizform, MoodleQuickForm $mform) {
         // By default do nothing.
+    }
+
+    /**
+     * Validate the data from any form fields added using {@link add_settings_form_fields()}.
+     * @param array $errors the errors found so far.
+     * @param array $data the submitted form data.
+     * @param array $files information about any uploaded files.
+     * @param mod_quiz_mod_form $quizform the quiz form object.
+     * @return array $errors the updated $errors array.
+     */
+    public static function validate_settings_form_fields(array $errors,
+            array $data, $files, mod_quiz_mod_form $quizform) {
+
+        return $errors;
     }
 
     /**

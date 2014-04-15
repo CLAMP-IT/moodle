@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,13 +17,11 @@
 /**
  * Strings for component 'workshop', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package    mod
- * @subpackage workshop
+ * @package    mod_workshop
  * @copyright  2009 David Mudrak <david@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['accesscontrol'] = 'Access control';
 $string['aggregategrades'] = 'Re-calculate grades';
 $string['aggregation'] = 'Grades aggregation';
 $string['allocate'] = 'Allocate submissions';
@@ -35,8 +32,11 @@ $string['allocationerror'] = 'Allocation error';
 $string['allocationconfigured'] = 'Allocation configured';
 $string['allsubmissions'] = 'All submissions ({$a})';
 $string['alreadygraded'] = 'Already graded';
+$string['areaconclusion'] = 'Conclusion text';
 $string['areainstructauthors'] = 'Instructions for submission';
 $string['areainstructreviewers'] = 'Instructions for assessment';
+$string['areaoverallfeedbackattachment'] = 'Overall feedback attachments';
+$string['areaoverallfeedbackcontent'] = 'Overall feedback texts';
 $string['areasubmissionattachment'] = 'Submission attachments';
 $string['areasubmissioncontent'] = 'Submission texts';
 $string['assess'] = 'Assess';
@@ -77,13 +77,15 @@ $string['clearassessments'] = 'Clear assessments';
 $string['clearassessments_help'] = 'The calculated grades for submission and grades for assessment will be reset. The information how the assessment forms are filled is still kept, but all the reviewers must open the assessment form again and re-save it to get the given grades calculated again.';
 $string['clearassessmentsconfirm'] = 'Are you sure you want to clear all assessment grades? You will not be able to get the information back on your own, reviewers will have to re-assess the allocated submissions.';
 $string['clearaggregatedgradesconfirm'] = 'Are you sure you want to clear the calculated grades for submissions and grades for assessment?';
+$string['conclusion'] = 'Conclusion';
+$string['conclusion_help'] = 'Conclusion text is displayed to participants at the end of the activity.';
 $string['configexamplesmode'] = 'Default mode of examples assessment in workshops';
 $string['configgrade'] = 'Default maximum grade for submission in workshops';
 $string['configgradedecimals'] = 'Default number of digits that should be shown after the decimal point when displaying grades.';
 $string['configgradinggrade'] = 'Default maximum grade for assessment in workshops';
 $string['configmaxbytes'] = 'Default maximum submission file size for all workshops on the site (subject to course limits and other local settings)';
 $string['configstrategy'] = 'Default grading strategy for workshops';
-$string['createsubmission'] = 'Submit';
+$string['createsubmission'] = 'Start preparing your submission';
 $string['daysago'] = '{$a} days ago';
 $string['daysleft'] = '{$a} days left';
 $string['daystoday'] = 'today';
@@ -100,7 +102,21 @@ $string['err_removegrademappings'] = 'Unable to remove the unused grade mappings
 $string['evaluategradeswait'] = 'Please wait until the assessments are evaluated and the grades are calculated';
 $string['evaluation'] = 'Grading evaluation';
 $string['evaluationmethod'] = 'Grading evaluation method';
-$string['evaluationmethod_help'] = 'The grading evaluation method determines how the grade for assessment is calculated. There is currently just one option - comparison with the best assessment.';
+$string['evaluationmethod_help'] = 'The grading evaluation method determines how the grade for assessment is calculated. You can let it re-calculate grades repeatedly with different settings unless you are happy with the result.';
+$string['evaluationsettings'] = 'Grading evaluation settings';
+$string['eventassessmentevaluationsreset'] = 'Assessment evaluations reset';
+$string['eventassessableuploaded'] = 'Assessable uploaded';
+$string['eventassessmentevaluated'] = 'Assessment evaluated';
+$string['eventassessmentreevaluated'] = 'Assessment re-evaluated';
+$string['eventinstanceslistviewed'] = 'Workshop instance list viewed';
+$string['eventsubmissionassessed'] = 'Submission assessed';
+$string['eventsubmissionassessmentsreset'] = 'Submission assessments cleared';
+$string['eventsubmissioncreated'] = 'Submission created';
+$string['eventsubmissionreassessed'] = 'Submission re-assessed';
+$string['eventsubmissionupdated'] = 'Submission updated';
+$string['eventsubmissionviewed'] = 'Submission viewed';
+$string['eventphaseswitched'] = 'Phase switched';
+$string['event_assessable_uploaded'] = 'A submission has been uploaded.';
 $string['example'] = 'Example submission';
 $string['exampleadd'] = 'Add example submission';
 $string['exampleassess'] = 'Assess example submission';
@@ -120,8 +136,10 @@ $string['examplesmode'] = 'Mode of examples assessment';
 $string['examplesubmissions'] = 'Example submissions';
 $string['examplesvoluntary'] = 'Assessment of example submission is voluntary';
 $string['feedbackauthor'] = 'Feedback for the author';
+$string['feedbackauthorattachment'] = 'Attachment';
 $string['feedbackby'] = 'Feedback by {$a}';
 $string['feedbackreviewer'] = 'Feedback for the reviewer';
+$string['feedbacksettings'] = 'Feedback';
 $string['formataggregatedgrade'] = '{$a->grade}';
 $string['formataggregatedgradeover'] = '<del>{$a->grade}</del><br /><ins>{$a->over}</ins>';
 $string['formatpeergrade'] = '<span class="grade">{$a->grade}</span> <span class="gradinggrade">({$a->gradinggrade})</span>';
@@ -150,12 +168,12 @@ $string['iamsure'] = 'Yes, I am sure';
 $string['info'] = 'Info';
 $string['instructauthors'] = 'Instructions for submission';
 $string['instructreviewers'] = 'Instructions for assessment';
-$string['introduction'] = 'Introduction';
+$string['introduction'] = 'Description';
 $string['latesubmissions'] = 'Late submissions';
 $string['latesubmissions_desc'] = 'Allow submissions after the deadline';
 $string['latesubmissions_help'] = 'If enabled, an author may submit their work after the submissions deadline or during the assessment phase. Late submissions cannot be edited though.';
 $string['latesubmissionsallowed'] = 'Late submissions are allowed';
-$string['maxbytes'] = 'Maximum file size';
+$string['maxbytes'] = 'Maximum submission attachment size';
 $string['modulename'] = 'Workshop';
 $string['modulename_help'] = 'The workshop activity module enables the collection, review and peer assessment of students\' work.
 
@@ -179,6 +197,14 @@ $string['notoverridden'] = 'Not overriden';
 $string['noworkshops'] = 'There are no workshops in this course';
 $string['noyoursubmission'] = 'You have not submitted your work yet';
 $string['nullgrade'] = '-';
+$string['overallfeedback'] = 'Overall feedback';
+$string['overallfeedbackfiles'] = 'Maximum number of overall feedback attachments';
+$string['overallfeedbackmaxbytes'] = 'Maximum overall feedback attachment size';
+$string['overallfeedbackmode'] = 'Overall feedback mode';
+$string['overallfeedbackmode_0'] = 'Disabled';
+$string['overallfeedbackmode_1'] = 'Enabled and optional';
+$string['overallfeedbackmode_2'] = 'Enabled and required';
+$string['overallfeedbackmode_help'] = 'If enabled, a text field is displayed at the bottom of the assessment form. Reviewers can put the overall assessment of the submission there, or provide additional explanation of their assessment.';
 $string['page-mod-workshop-x'] = 'Any workshop module page';
 $string['participant'] = 'Participant';
 $string['participantrevierof'] = 'Participant is reviewer of';
@@ -203,6 +229,7 @@ $string['recentsubmissions'] = 'Workshop submissions:';
 $string['saveandclose'] = 'Save and close';
 $string['saveandcontinue'] = 'Save and continue editing';
 $string['saveandpreview'] = 'Save and preview';
+$string['saveandshownext'] = 'Save and show next';
 $string['selfassessmentdisabled'] = 'Self-assessment disabled';
 $string['showingperpage'] = 'Showing {$a} items per page';
 $string['showingperpagechange'] = 'Change ...';
@@ -218,8 +245,8 @@ $string['strategy_help'] = 'The grading strategy determines the assessment form 
 * Rubric - A level assessment is given regarding specified criteria';
 $string['strategyhaschanged'] = 'The workshop grading strategy has changed since the form was opened for editing.';
 $string['submission'] = 'Submission';
-$string['submissionby'] = 'Submission by {$a}';
 $string['submissionattachment'] = 'Attachment';
+$string['submissionby'] = 'Submission by {$a}';
 $string['submissioncontent'] = 'Submission content';
 $string['submissionend'] = 'Submissions deadline';
 $string['submissionendbeforestart'] = 'Submissions deadline can not be specified before the open for submissions date';
@@ -254,9 +281,10 @@ $string['switchphase50info'] = 'You are about to close the workshop. This will r
 $string['taskassesspeers'] = 'Assess peers';
 $string['taskassesspeersdetails'] = 'total: {$a->total}<br />pending: {$a->todo}';
 $string['taskassessself'] = 'Assess yourself';
+$string['taskconclusion'] = 'Provide a conclusion of the activity';
 $string['taskinstructauthors'] = 'Provide instructions for submission';
 $string['taskinstructreviewers'] = 'Provide instructions for assessment';
-$string['taskintro'] = 'Set the workshop introduction';
+$string['taskintro'] = 'Set the workshop description';
 $string['tasksubmit'] = 'Submit your work';
 $string['toolbox'] = 'Workshop toolbox';
 $string['undersetup'] = 'The workshop is currently being set up. Please wait until it is switched to the next phase.';
@@ -278,7 +306,6 @@ $string['withoutsubmission'] = 'Reviewer without own submission';
 $string['workshop:addinstance'] = 'Add a new workshop';
 $string['workshop:allocate'] = 'Allocate submissions for review';
 $string['workshop:editdimensions'] = 'Edit assessment forms';
-$string['workshopfeatures'] = 'Workshop features';
 $string['workshop:ignoredeadlines'] = 'Ignore time restrictions';
 $string['workshop:manageexamples'] = 'Manage example submissions';
 $string['workshopname'] = 'Workshop name';
@@ -295,4 +322,5 @@ $string['workshop:viewauthorpublished'] = 'View authors of published submissions
 $string['workshop:viewpublishedsubmissions'] = 'View published submissions';
 $string['workshop:viewreviewernames'] = 'View reviewer names';
 $string['yourassessment'] = 'Your assessment';
+$string['yourgrades'] = 'Your grades';
 $string['yoursubmission'] = 'Your submission';

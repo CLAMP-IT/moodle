@@ -41,7 +41,7 @@ class qtype_truefalse_question extends question_graded_automatically {
     public $falseanswerid;
 
     public function get_expected_data() {
-        return array('answer' => PARAM_INTEGER);
+        return array('answer' => PARAM_INT);
     }
 
     public function get_correct_response() {
@@ -101,7 +101,7 @@ class qtype_truefalse_question extends question_graded_automatically {
 
     public function check_file_access($qa, $options, $component, $filearea, $args, $forcedownload) {
         if ($component == 'question' && $filearea == 'answerfeedback') {
-            $answerid = reset($args); // itemid is answer id.
+            $answerid = reset($args); // Itemid is answer id.
             $response = $qa->get_last_qt_var('answer', '');
             return $options->feedback && (
                     ($answerid == $this->trueanswerid && $response) ||

@@ -17,28 +17,24 @@
 /**
  * Category enrolment plugin event handler definition.
  *
- * @package enrol_category
- * @category event
+ * @package   enrol_category
+ * @category  event
  * @copyright 2010 Petr Skoda {@link http://skodak.org}
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-/* List of handlers */
-$handlers = array (
-    'role_assigned' => array (
-        'handlerfile'      => '/enrol/category/locallib.php',
-        'handlerfunction'  => array('enrol_category_handler', 'role_assigned'),
-        'schedule'         => 'instant',
-        'internal'         => 1,
+$observers = array (
+
+    array (
+        'eventname' => '\core\event\role_assigned',
+        'callback'  => 'enrol_category_observer::role_assigned',
     ),
 
-    'role_unassigned' => array (
-        'handlerfile'      => '/enrol/category/locallib.php',
-        'handlerfunction'  => array('enrol_category_handler', 'role_unassigned'),
-        'schedule'         => 'instant',
-        'internal'         => 1,
+    array (
+        'eventname' => '\core\event\role_unassigned',
+        'callback'  => 'enrol_category_observer::role_unassigned',
     ),
 
 );

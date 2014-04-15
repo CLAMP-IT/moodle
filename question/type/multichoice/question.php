@@ -97,11 +97,11 @@ abstract class qtype_multichoice_base extends question_graded_automatically {
             return $this->check_combined_feedback_file_access($qa, $options, $filearea);
 
         } else if ($component == 'question' && $filearea == 'answer') {
-            $answerid = reset($args); // itemid is answer id.
+            $answerid = reset($args); // Itemid is answer id.
             return  in_array($answerid, $this->order);
 
         } else if ($component == 'question' && $filearea == 'answerfeedback') {
-            $answerid = reset($args); // itemid is answer id.
+            $answerid = reset($args); // Itemid is answer id.
             $response = $this->get_response($qa);
             $isselected = false;
             foreach ($this->order as $value => $ansid) {
@@ -110,7 +110,7 @@ abstract class qtype_multichoice_base extends question_graded_automatically {
                     break;
                 }
             }
-            // $options->suppresschoicefeedback is a hack specific to the
+            // Param $options->suppresschoicefeedback is a hack specific to the
             // oumultiresponse question type. It would be good to refactor to
             // avoid refering to it here.
             return $options->feedback && empty($options->suppresschoicefeedback) &&
@@ -126,10 +126,10 @@ abstract class qtype_multichoice_base extends question_graded_automatically {
     }
 
     public function make_html_inline($html) {
-        $html = preg_replace('~\s*<p>\s*~', '', $html);
-        $html = preg_replace('~\s*</p>\s*~', '<br />', $html);
-        $html = preg_replace('~<br />$~', '', $html);
-        return $html;
+        $html = preg_replace('~\s*<p>\s*~u', '', $html);
+        $html = preg_replace('~\s*</p>\s*~u', '<br />', $html);
+        $html = preg_replace('~(<br\s*/?>)+$~u', '', $html);
+        return trim($html);
     }
 }
 
@@ -194,12 +194,19 @@ class qtype_multichoice_single_question extends qtype_multichoice_base {
         return array();
     }
 
+
+    public function prepare_simulated_post_data($simulatedresponse) {
+        $ansnumbertoanswerid = array_keys($this->answers);
+        $ansid = $ansnumbertoanswerid[$simulatedresponse['answer']];
+        return array('answer' => array_search($ansid, $this->order));
+    }
+
     public function is_same_response(array $prevresponse, array $newresponse) {
         return question_utils::arrays_same_at_key($prevresponse, $newresponse, 'answer');
     }
 
     public function is_complete_response(array $response) {
-        return array_key_exists('answer', $response);
+        return array_key_exists('answer', $response) && $response['answer'] !== '';
     }
 
     public function is_gradable_response(array $response) {
@@ -335,10 +342,21 @@ class qtype_multichoice_multi_question extends qtype_multichoice_base {
         return $response;
     }
 
+    public function prepare_simulated_post_data($simulatedresponse) {
+        $postdata = array();
+        $ansidtochoiceno = array_flip($this->order);
+        ksort($ansidtochoiceno, SORT_NUMERIC);
+        $ansnotochoiceno = array_values($ansidtochoiceno);
+        foreach ($simulatedresponse as $ansno => $checked) {
+            $postdata[$this->field($ansnotochoiceno[$ansno])] = $checked;
+        }
+        return $postdata;
+    }
+
     public function is_same_response(array $prevresponse, array $newresponse) {
         foreach ($this->order as $key => $notused) {
             $fieldname = $this->field($key);
-            if (!question_utils::arrays_same_at_key($prevresponse, $newresponse, $fieldname)) {
+            if (!question_utils::arrays_same_at_key_integer($prevresponse, $newresponse, $fieldname)) {
                 return false;
             }
         }

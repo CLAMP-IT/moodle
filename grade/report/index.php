@@ -33,10 +33,10 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('nocourseid');
 }
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 
 /// find all accessible reports
-$reports = get_plugin_list('gradereport');     // Get all installed reports
+$reports = core_component::get_plugin_list('gradereport');     // Get all installed reports
 
 foreach ($reports as $plugin => $plugindir) {                      // Remove ones we can't see
     if (!has_capability('gradereport/'.$plugin.':view', $context)) {

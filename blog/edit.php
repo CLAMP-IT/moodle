@@ -45,7 +45,6 @@ $returnurl = new moodle_url('/blog/index.php');
 
 if (!empty($courseid) && empty($modid)) {
     $returnurl->param('courseid', $courseid);
-    $PAGE->set_context(get_context_instance(CONTEXT_COURSE, $courseid));
 }
 
 // If a modid is given, guess courseid
@@ -53,13 +52,12 @@ if (!empty($modid)) {
     $returnurl->param('modid', $modid);
     $courseid = $DB->get_field('course_modules', 'course', array('id' => $modid));
     $returnurl->param('courseid', $courseid);
-    $PAGE->set_context(get_context_instance(CONTEXT_MODULE, $modid));
 }
 
-// If courseid is empty use the system context
-if (empty($courseid)) {
-    $PAGE->set_context(get_context_instance(CONTEXT_SYSTEM));
-}
+// Blogs are always in system context.
+$sitecontext = context_system::instance();
+$PAGE->set_context($sitecontext);
+
 
 $blogheaders = blog_get_headers();
 
@@ -69,7 +67,7 @@ if ($action == 'edit') {
     $id = required_param('entryid', PARAM_INT);
 }
 
-if (empty($CFG->bloglevel)) {
+if (empty($CFG->enableblogs)) {
     print_error('blogdisable', 'blog');
 }
 
@@ -77,7 +75,6 @@ if (isguestuser()) {
     print_error('noguestentry', 'blog');
 }
 
-$sitecontext = get_context_instance(CONTEXT_SYSTEM);
 if (!has_capability('moodle/blog:create', $sitecontext) && !has_capability('moodle/blog:manageentries', $sitecontext)) {
     print_error('cannoteditentryorblog');
 }
@@ -105,6 +102,9 @@ if ($id) {
 }
 $returnurl->param('userid', $userid);
 
+// Blog renderer.
+$output = $PAGE->get_renderer('blog');
+
 $strblogs = get_string('blogs','blog');
 
 if ($action === 'delete'){
@@ -117,6 +117,7 @@ if ($action === 'delete'){
             print_error('nopermissionstodeleteentry', 'blog');
         } else {
             $entry->delete();
+            blog_rss_delete_file($userid);
             redirect($returnurl);
         }
     } else if (blog_user_can_edit_entry($entry)) {
@@ -125,7 +126,11 @@ if ($action === 'delete'){
         $PAGE->set_title("$SITE->shortname: $strblogs");
         $PAGE->set_heading($SITE->fullname);
         echo $OUTPUT->header();
-        $entry->print_html();
+
+        // Output the entry.
+        $entry->prepare_render();
+        echo $output->render($entry);
+
         echo '<br />';
         echo $OUTPUT->confirm(get_string('blogdeleteconfirm', 'blog'), new moodle_url('edit.php', $optionsyes),new moodle_url( 'index.php', $optionsno));
         echo $OUTPUT->footer();
@@ -143,7 +148,7 @@ if (!empty($entry->id)) {
     if ($CFG->useblogassociations && ($blogassociations = $DB->get_records('blog_association', array('blogid' => $entry->id)))) {
 
         foreach ($blogassociations as $assocrec) {
-            $context = get_context_instance_by_id($assocrec->contextid);
+            $context = context::instance_by_id($assocrec->contextid);
 
             switch ($context->contextlevel) {
                 case CONTEXT_COURSE:
@@ -158,7 +163,8 @@ if (!empty($entry->id)) {
 }
 
 require_once('edit_form.php');
-$summaryoptions = array('subdirs'=>false, 'maxfiles'=> 99, 'maxbytes'=>$CFG->maxbytes, 'trusttext'=>true, 'context'=>$sitecontext);
+$summaryoptions = array('maxfiles'=> 99, 'maxbytes'=>$CFG->maxbytes, 'trusttext'=>true, 'context'=>$sitecontext,
+    'subdirs'=>file_area_contains_subdirs($sitecontext, 'blog', 'post', $entry->id));
 $attachmentoptions = array('subdirs'=>false, 'maxfiles'=> 99, 'maxbytes'=>$CFG->maxbytes);
 
 $blogeditform = new blog_edit_form(null, compact('entry', 'summaryoptions', 'attachmentoptions', 'sitecontext', 'courseid', 'modid'));
@@ -215,13 +221,13 @@ switch ($action) {
 
             //pre-select the course for associations
             if ($courseid) {
-                $context = get_context_instance(CONTEXT_COURSE, $courseid);
+                $context = context_course::instance($courseid);
                 $entry->courseassoc = $context->id;
             }
 
             //pre-select the mod for associations
             if ($modid) {
-                $context = get_context_instance(CONTEXT_MODULE, $modid);
+                $context = context_module::instance($modid);
                 $entry->modassoc = $context->id;
             }
         }

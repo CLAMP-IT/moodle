@@ -36,7 +36,7 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('nocourseid');
 }
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 
 // default return url
 $gpr = new grade_plugin_return();
@@ -62,6 +62,9 @@ switch ($action) {
             if ($type == 'grade' and empty($object->id)) {
                 $object->insert();
             }
+            if (!$object->can_control_visibility()) {
+                print_error('componentcontrolsvisibility', 'grades', $returnurl);
+            }
             $object->set_hidden(1, true);
         }
         break;
@@ -73,6 +76,9 @@ switch ($action) {
             }
             if ($type == 'grade' and empty($object->id)) {
                 $object->insert();
+            }
+            if (!$object->can_control_visibility()) {
+                print_error('componentcontrolsvisibility', 'grades', $returnurl);
             }
             $object->set_hidden(0, true);
         }

@@ -14,7 +14,7 @@
 /**
 	\mainpage
 	
-	 @version V5.16 26 Mar 2012   (c) 2000-2012 John Lim (jlim#natsoft.com). All rights reserved.
+	 @version V5.18 3 Sep 2012   (c) 2000-2012 John Lim (jlim#natsoft.com). All rights reserved.
 
 	Released under both BSD license and Lesser GPL library license. You can choose which license
 	you prefer.
@@ -169,15 +169,10 @@
 				die("Illegal path http:// or ftp://");
 		}
 		
-			
-		// Initialize random number generator for randomizing cache flushes
-		// -- note Since PHP 4.2.0, the seed  becomes optional and defaults to a random value if omitted.
-		 srand(((double)microtime())*1000000);
-		
 		/**
 		 * ADODB version as a string.
 		 */
-		$ADODB_vers = 'V5.16 26 Mar 2012  (c) 2000-2012 John Lim (jlim#natsoft.com). All rights reserved. Released BSD & LGPL.';
+		$ADODB_vers = 'V5.18 3 Sep 2012  (c) 2000-2012 John Lim (jlim#natsoft.com). All rights reserved. Released BSD & LGPL.';
 	
 		/**
 		 * Determines whether recordset->RecordCount() is used. 
@@ -315,10 +310,12 @@
 		// create temp directories
 		function createdir($hash, $debug)
 		{
+		global $ADODB_CACHE_PERMS;
+		
 			$dir = $this->getdirname($hash);
 			if ($this->notSafeMode && !file_exists($dir)) {
 				$oldu = umask(0);
-				if (!@mkdir($dir,0771)) if(!is_dir($dir) && $debug) ADOConnection::outp("Cannot create $dir");
+				if (!@mkdir($dir, empty($ADODB_CACHE_PERMS) ? 0771 : $ADODB_CACHE_PERMS)) if(!is_dir($dir) && $debug) ADOConnection::outp("Cannot create $dir");
 				umask($oldu);
 			}
 		
@@ -2848,6 +2845,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		function FieldCount(){ return 0;}
 		function Init() {}
 		function getIterator() {return new ADODB_Iterator_empty($this);}
+		function GetAssoc() {return array();}
 	}
 	
 	//==============================================================================================	
@@ -3158,7 +3156,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 			$false = false;
 			return $false;
 		}
-		$numIndex = isset($this->fields[0]);
+		$numIndex = isset($this->fields[0]) && isset($this->fields[1]);
 		$results = array();
 		
 		if (!$first2cols && ($cols > 2 || $force_array)) {
@@ -3499,22 +3497,22 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
    *
    * $upper  0 = lowercase, 1 = uppercase, 2 = whatever is returned by FetchField
    */
-	function GetRowAssoc($upper=1)
+	function GetRowAssoc($upper=1) 
 	{
 		$record = array();
-	 //	if (!$this->fields) return $record;
-		
-	   	if (!$this->bind) {
+		if (!$this->bind) {
 			$this->GetAssocKeys($upper);
 		}
-		
 		foreach($this->bind as $k => $v) {
-			$record[$k] = $this->fields[$v];
+			if( isset( $this->fields[$v] ) ) {
+				$record[$k] = $this->fields[$v];
+			} else if (isset($this->fields[$k])) {
+				$record[$k] = $this->fields[$k];
+			} else
+				$record[$k] = $this->fields[$v];
 		}
-
 		return $record;
 	}
-	
 	
 	/**
 	 * Clean up recordset

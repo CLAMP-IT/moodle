@@ -1,9 +1,18 @@
 M.mod_scormform = {};
 M.mod_scormform.init = function(Y) {
-    var scormform = Y.one('#scormviewform');
+    var scormform = document.getElementById('scormviewform');
     var cwidth = scormplayerdata.cwidth;
     var cheight = scormplayerdata.cheight;
     var poptions = scormplayerdata.popupoptions;
+    var launch = scormplayerdata.launch;
+    var currentorg = scormplayerdata.currentorg;
+    var sco = scormplayerdata.sco;
+    var scorm = scormplayerdata.scorm;
+    var launch_url = M.cfg.wwwroot+"/mod/scorm/player.php?a="+scorm+"&currentorg="+currentorg+"&scoid="+sco+"&sesskey="+M.cfg.sesskey;
+    var course_url = scormplayerdata.courseurl;
+
+    poptions = poptions + ',resizable=yes'; // Added for IE (MDL-32506).
+
     if ((cwidth==100) && (cheight==100)) {
         poptions = poptions+',width='+screen.availWidth+',height='+screen.availHeight+',left=0,top=0';
     } else {
@@ -15,5 +24,11 @@ M.mod_scormform.init = function(Y) {
         }
         poptions = poptions+',width='+cwidth+',height='+cheight;
     }
-    scormform.setAttribute('onsubmit', "window.open('','Popup','"+poptions+"'); this.target='Popup';");
+
+    if (launch == true) {
+        launch_url = launch_url+"&display=popup";
+        window.open(launch_url,'Popup', poptions);
+        parent.window.location = course_url;
+    }
+    scormform.onsubmit = function() {window.open('', 'Popup', poptions); this.target='Popup'; parent.window.location = course_url;};
 }

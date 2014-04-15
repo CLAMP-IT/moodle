@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,4 +22,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['calendar_month:addinstance'] = 'Add a new calendar block';
+$string['calendar_month:myaddinstance'] = 'Add a new calendar block to My home';
 $string['pluginname'] = 'Calendar';

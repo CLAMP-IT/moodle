@@ -6,7 +6,7 @@ html, body {
     font-family:Arial, Verdana, Helvetica, sans-serif;
     margin:0;
     padding:0;
-    background-color:#EFEFEF;
+    background-color:[[setting:pagebackground]];
     font-size:[[setting:fontsizereference]];
 }
 
@@ -22,32 +22,67 @@ h3 {font-size:120%;}
 h4 {font-weight:bold;}
 
 h1.headerheading {margin:14px 11px 8px 11px;float:left;font-size:200%;}
-h2.main, h3.main, h4.main {margin:1em;padding:0;text-align:center;}
-
-p {margin:0}
+h2, h3, h4 {padding:0;}
 
 /* page-header */
-#page-header{line-height:0;overflow:hidden;}
+#page-header{
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    width: 100%;
+}
 
 /* headerlogo */
-#headerlogo {position:relative;margin:0;}
-  /* if I use: position:absolute; I even need height:105px; in #page-header */
-  /* if I use: position:relative; z-index doesn't work*/
+#headerlogo {
+    float: left;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    width: auto;
+    line-height: 0;
+}
+
+.dir-rtl #headerlogo {
+    float: right;
+}
 
 /* headermenu */
-.headermenu {position:absolute;text-align:right;line-height:1.7em;font-size:90%;margin:0.5em;right:[[calculated:headermenuright]];top:15px;}
-.langmenu {margin-right:0.4em}
+.headermenu {
+    font-size: 90%;
+    line-height: 1.7em;
+    position: absolute;
+    top: 0;
+}
+
+.dir-ltr .headermenu {
+     float: right;
+     margin: 1.7em [[calculated:headermenumargin]] 0 0;
+     right: 0;
+     text-align: right;
+ }
+
+.dir-rtl .headermenu {
+    float: left;
+    margin: 1.7em 0 0 [[calculated:headermenumargin]];
+    left: 0;
+    text-align: left;
+}
+
+.langmenu {
+    margin-right: 0.1em;
+}
 
 #dock {background-color:[[setting:blockcontentbgc]];border-right:1px dashed #000;}
 #dock .dockeditem_container {margin-top: 10px;}
-#dock #dockeditempanel .dockeditempanel_hd {background-image:url([[pix:theme|gradient_h]]);background-repeat:repeat-x;text-align:left;height:1.8em;background-color:#E3DFD4;}
+#dock #dockeditempanel .dockeditempanel_hd {background-image:url([[pix:theme|trend/__setting_trendcolor__/gradient_h]]);background-color:[[setting:blockheaderbackground]];background-repeat:repeat-x;text-align:left;height:1.8em;}
 #dock #dockeditempanel .dockeditempanel_hd h2 {display:block;padding-left:0.3em;margin-top:0;text-align:left;}
 #dock #dockeditempanel .dockeditempanel_hd .commands {position:absolute;right:0.3em;top:0.25em;}
 
 /* navbar */
-.navbar {width:auto;padding-top:0.35em;padding-bottom:0.15em;background-image:url([[pix:theme|bg_bread]]);background-color:#AB9D80;}
-.navbar li span {color:#E3DFD4;}
-.navbar li a:link, .navbar li a:visited {color:white;}
+.navbar {width:auto;background-image:url([[pix:theme|trend/__setting_trendcolor__/bg_bread]]);background-repeat:repeat-x;line-height:29px;} /* 30 pixel is the height if bg_bread */
+.navbar li span.arrow {color:black;font-size:50%;}
+.navbar li span {color:white;}
+.navbar li a:link, .navbar li a:visited {color:black;}
 
 #page-content {
     /* min-width here is useless until min-width in frame.css/#frametop is gretaer enought to hold this #page-content min-width */
@@ -87,8 +122,8 @@ p {margin:0}
 .editcourse td,
 .generaltable th,
 .generaltable td,
-#page-admin-course-category .generalbox th,
-#page-admin-course-category .generalbox td,
+#page-admin-course-manage .generalbox th,
+#page-admin-course-manage .generalbox td,
 #attempts th,
 #attempts td,
 .plugincompattable th,
@@ -109,10 +144,10 @@ p {margin:0}
 th.header,
 .formtable tbody th,
 .generalbox th,
-.generaltable th.header {background-image:url([[pix:theme|gradient_h]]);background-repeat:repeat-x;border-top:1px solid #C6BDA8;background-color:#E3DFD4;}
-/*#modules, .compatibleblockstable {margin-left:auto; margin-right:auto;} waiting for MDL-26760*/
-table.flexible .r0, table.generaltable .r0 {background-color: #F0F0F0;}
-table.flexible .r1, table.generaltable .r1 {background-color: #FAFAFA;}
+.generaltable th.header {background-image:url([[pix:theme|trend/__setting_trendcolor__/gradient_h]]);background-color:[[setting:blockheaderbackground]];background-repeat:repeat-x;border-top:1px solid #C6BDA8;}
+#modules, #compatibleblockstable {margin-left:auto; margin-right:auto;}
+table.flexible > tbody > tr:nth-of-type(odd), table.generaltable > tbody > tr:nth-of-type(odd) {background-color: #F0F0F0;}
+table.flexible > tbody > tr:nth-of-type(even), table.generaltable > tbody > tr:nth-of-type(even) {background-color: #FAFAFA;}
 
 /* admin pages */
 div#chooseuser {border:0 transparent none;}
@@ -120,13 +155,13 @@ table.groupmanagementtable,
 table.groupmanagementtable tr,
 table.groupmanagementtable td {border-width:0px;}
 table.groupmanagementtable td#buttonscell {vertical-align:middle;text-align:center;}
-table#defineroletable tr.rolecapheading {background-image:url([[pix:theme|gradient_h]]);background-repeat:repeat-x;background-color:#E3DFD4;}
+table#defineroletable tr.rolecapheading {background-image:url([[pix:theme|trend/__setting_trendcolor__/gradient_h]]);background-color:[[setting:blockheaderbackground]];background-repeat:repeat-x;}
 /*table#defineroletable tr.rolecap {border-top:1px dashed #F30;}*/
 tr.rolecap {border-top:1px dashed #F30;}
 tr.rolecapheading + tr.rolecap {border-top:none;}
 
 /* course categories */
-#page-admin-course-index .editcourse td div.singleselect {text-align:left;}
+#page-admin-course-manage .editcourse td div.singleselect {text-align:left;}
 
 /* course */
 /* ul.topics .section span.commands {float:right;} /* distanza dei comandi dagli elementi del corso */
@@ -153,10 +188,7 @@ table td.cell p {margin:0;}
 .noframefooter {background-color:#FFF;clear: both;float: left;width:100%;}
 #page-footer-content {text-align:center;border:7px double #E3DFD4;margin:0;padding:0.5em;}
 #page-footer .logininfo {padding:0.3em 0 0.7em 0;}
-#page-footer .moodledocs {text-align:center;background-color:#EFEFEF;padding:0.7em 0 0.8em 0;}
-
-/* js help messages */
-#helppopupbox .helpheading {margin-top:1em;}
+#page-footer .moodledocs {text-align:center;padding:0.7em 0 0.8em 0;}
 
 /* pre, code, tt */
 pre, code, tt {
@@ -170,15 +202,15 @@ pre, code, tt {
     color:grey;
 }
 
-#listdirectories tr.r0,
-#listtables tr.r0,
-#listfields tr.r0 {
+#listdirectories > tbody > tr:nth-of-type(odd)
+#listtables > tbody > tr:nth-of-type(odd),
+#listfields > tbody > tr:nth-of-type(odd) {
     background: none repeat scroll 0 0 #F0F0F0;
 }
 
-#listdirectories tr.r1,
-#listtables tr.r1,
-#listfields tr.r1 {
+#listdirectories > tbody > tr:nth-of-type(even),
+#listtables > tbody > tr:nth-of-type(even),
+#listfields > tbody > tr:nth-of-type(even) {
     background: none repeat scroll 0 0 #FAFAFA;
 }
 
@@ -193,7 +225,11 @@ pre, code, tt {
 }
 
 /* MDL-29403 */
-.capdefault {background-image:url([[pix:theme|gradient_h]]);background-repeat:repeat-x;background-color:#E3DFD4;}
+.capdefault {
+    background-image:url([[pix:theme|trend/__setting_trendcolor__/gradient_h]]);
+    background-color:[[setting:blockheaderbackground]];
+    background-repeat:repeat-x;
+}
 table#defineroletable th {border-top:none;}
 
 form.loginform .rememberusername {
@@ -205,14 +241,9 @@ form.loginform #rememberusername {
     margin-right:0;
 }
 
-/* RSS - MDL-29367 */
-.block_rss_client .list li:first-child {
-    border-top-width: 0;
-}
-
+/* RSS - MDL-28561 */
 .block_rss_client .list li {
-    border-top: 1px solid #DDDDDD;
-    padding: 5px;
+    border-top-color: #DDD;
 }
 
 /* Upcoming events - MDL-29367 */

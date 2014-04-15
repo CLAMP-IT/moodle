@@ -17,9 +17,9 @@
 /**
  * This file contains all necessary code to define a wiki editor
  *
- * @package mod-wiki-2.0
- * @copyrigth 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
- * @copyrigth 2009 Universitat Politecnica de Catalunya http://www.upc.edu
+ * @package mod_wiki
+ * @copyright 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
+ * @copyright 2009 Universitat Politecnica de Catalunya http://www.upc.edu
  *
  * @author Josep Arus
  *
@@ -120,7 +120,8 @@ class MoodleQuickForm_wikieditor extends MoodleQuickForm_textarea {
             $html .= html_writer::empty_tag('img', array('alt' => $button[1], 'src' => $CFG->wwwroot . '/mod/wiki/editors/wiki/images/' . $button[0]));
             $html .= "</a>";
         }
-        $html .= "<select onchange=\"insertTags('{$imagetag[0]}', '{$imagetag[1]}', this.value)\">";
+        $html .= "<label class='accesshide' for='addtags'>" . get_string('insertimage', 'wiki')  . "</label>";
+        $html .= "<select id='addtags' onchange=\"insertTags('{$imagetag[0]}', '{$imagetag[1]}', this.value)\">";
         $html .= "<option value='" . s(get_string('wikiimage', 'wiki')) . "'>" . get_string('insertimage', 'wiki') . '</option>';
         foreach ($this->files as $filename) {
             $html .= "<option value='".s($filename)."'>";

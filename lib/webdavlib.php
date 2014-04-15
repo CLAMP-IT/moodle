@@ -44,6 +44,7 @@ class webdav_client {
     private $_server;
     private $_protocol = 'HTTP/1.1';
     private $_port = 80;
+    private $_socket = '';
     private $_path ='/';
     private $_auth = false;
     private $_user;
@@ -57,6 +58,7 @@ class webdav_client {
     private $_req;
     private $_resp_status;
     private $_parser;
+    private $_parserid;
     private $_xmltree;
     private $_tree;
     private $_ls = array();
@@ -73,13 +75,16 @@ class webdav_client {
     private $_body='';
     private $_connection_closed = false;
     private $_maxheaderlenth = 1000;
+    private $_digestchallenge = null;
+    private $_cnonce = '';
+    private $_nc = 0;
 
     /**#@-*/
 
     /**
      * Constructor - Initialise class variables
      */
-    function __construct($server = '', $user = '', $pass = '', $auth = false) {
+    function __construct($server = '', $user = '', $pass = '', $auth = false, $socket = '') {
         if (!empty($server)) {
             $this->_server = $server;
         }
@@ -88,6 +93,7 @@ class webdav_client {
             $this->pass = $pass;
         }
         $this->_auth = $auth;
+        $this->_socket = $socket;
     }
     public function __set($key, $value) {
         $property = '_' . $key;
@@ -154,8 +160,8 @@ class webdav_client {
     function open() {
         // let's try to open a socket
         $this->_error_log('open a socket connection');
-        $this->sock = fsockopen($this->_server, $this->_port, $this->_errno, $this->_errstr, $this->_socket_timeout);
-        set_time_limit(30);
+        $this->sock = fsockopen($this->_socket . $this->_server, $this->_port, $this->_errno, $this->_errstr, $this->_socket_timeout);
+        core_php_time_limit::raise(30);
         if (is_resource($this->sock)) {
             socket_set_blocking($this->sock, true);
             $this->_connection_closed = false;
@@ -223,7 +229,7 @@ class webdav_client {
      *
      * Creates a new collection/directory on a webdav server
      * @param string path
-     * @return int status code received as reponse from webdav server (see rfc 2518)
+     * @return int status code received as response from webdav server (see rfc 2518)
      */
     function mkcol($path) {
         $this->_path = $this->translate_uri($path);
@@ -259,15 +265,17 @@ class webdav_client {
      * Public method get
      *
      * Gets a file from a webdav collection.
-     * @param string path, string &buffer
-     * @return status code and &$buffer (by reference) with response data from server on success. False on error.
+     * @param string $path the path to the file on the webdav server
+     * @param string &$buffer the buffer to store the data in
+     * @param resource $fp optional if included, the data is written directly to this resource and not to the buffer
+     * @return string|bool status code and &$buffer (by reference) with response data from server on success. False on error.
      */
-    function get($path, &$buffer) {
+    function get($path, &$buffer, $fp = null) {
         $this->_path = $this->translate_uri($path);
         $this->header_unset();
         $this->create_basic_request('GET');
         $this->send_request();
-        $this->get_respond();
+        $this->get_respond($fp);
         $response = $this->process_respond();
 
         $http_version = $response['status']['http-version'];
@@ -277,8 +285,13 @@ class webdav_client {
                 // seems to be http ... proceed
                 // We expect a 200 code
                 if ($response['status']['status-code'] == 200 ) {
-                    $this->_error_log('returning buffer with ' . strlen($response['body']) . ' bytes.');
-                    $buffer = $response['body'];
+                    if (!is_null($fp)) {
+                        $stat = fstat($fp);
+                        $this->_error_log('file created with ' . $stat['size'] . ' bytes.');
+                    } else {
+                        $this->_error_log('returning buffer with ' . strlen($response['body']) . ' bytes.');
+                        $buffer = $response['body'];
+                    }
                 }
                 return $response['status']['status-code'];
             }
@@ -381,27 +394,24 @@ class webdav_client {
      * Gets a file from a collection into local filesystem.
      *
      * fopen() is used.
-     * @param string srcpath, string localpath
-     * @return true on success. false on error.
+     * @param string $srcpath
+     * @param string $localpath
+     * @return bool true on success. false on error.
      */
     function get_file($srcpath, $localpath) {
 
-        if ($this->get($srcpath, $buffer)) {
-            // convert utf-8 filename to iso-8859-1
+        $localpath = $this->utf_decode_path($localpath);
 
-            $localpath = $this->utf_decode_path($localpath);
-
-            $handle = fopen ($localpath, 'w');
-            if ($handle) {
-                fwrite($handle, $buffer);
-                fclose($handle);
+        $handle = fopen($localpath, 'wb');
+        if ($handle) {
+            $unused = '';
+            $ret = $this->get($srcpath, $unused, $handle);
+            fclose($handle);
+            if ($ret) {
                 return true;
-            } else {
-                return false;
             }
-        } else {
-            return false;
         }
+        return false;
     }
 
     /**
@@ -612,9 +622,10 @@ class webdav_client {
                     if (strcmp($response['header']['Content-Type'], 'text/xml; charset="utf-8"') == 0) {
                         // ok let's get the content of the xml stuff
                         $this->_parser = xml_parser_create_ns();
+                        $this->_parserid = (int) $this->_parser;
                         // forget old data...
-                        unset($this->_lock[$this->_parser]);
-                        unset($this->_xmltree[$this->_parser]);
+                        unset($this->_lock[$this->_parserid]);
+                        unset($this->_xmltree[$this->_parserid]);
                         xml_parser_set_option($this->_parser,XML_OPTION_SKIP_WHITE,0);
                         xml_parser_set_option($this->_parser,XML_OPTION_CASE_FOLDING,0);
                         xml_set_object($this->_parser, $this);
@@ -630,8 +641,8 @@ class webdav_client {
                         // Free resources
                         xml_parser_free($this->_parser);
                         // add status code to array
-                        $this->_lock[$this->_parser]['status'] = 200;
-                        return $this->_lock[$this->_parser];
+                        $this->_lock[$this->_parserid]['status'] = 200;
+                        return $this->_lock[$this->_parserid];
 
                     } else {
                         print 'Missing Content-Type: text/xml header in response.<br>';
@@ -709,9 +720,10 @@ class webdav_client {
                     if (strcmp($response['header']['Content-Type'], 'text/xml; charset="utf-8"') == 0) {
                         // ok let's get the content of the xml stuff
                         $this->_parser = xml_parser_create_ns();
+                        $this->_parserid = (int) $this->_parser;
                         // forget old data...
-                        unset($this->_delete[$this->_parser]);
-                        unset($this->_xmltree[$this->_parser]);
+                        unset($this->_delete[$this->_parserid]);
+                        unset($this->_xmltree[$this->_parserid]);
                         xml_parser_set_option($this->_parser,XML_OPTION_SKIP_WHITE,0);
                         xml_parser_set_option($this->_parser,XML_OPTION_CASE_FOLDING,0);
                         xml_set_object($this->_parser, $this);
@@ -728,8 +740,8 @@ class webdav_client {
 
                         // Free resources
                         xml_parser_free($this->_parser);
-                        $this->_delete[$this->_parser]['status'] = $response['status']['status-code'];
-                        return $this->_delete[$this->_parser];
+                        $this->_delete[$this->_parserid]['status'] = $response['status']['status-code'];
+                        return $this->_delete[$this->_parserid];
 
                     } else {
                         print 'Missing Content-Type: text/xml header in response.<br>';
@@ -800,9 +812,10 @@ EOD;
                     if (preg_match('#(application|text)/xml;\s?charset=[\'\"]?utf-8[\'\"]?#i', $response['header']['Content-Type'])) {
                         // ok let's get the content of the xml stuff
                         $this->_parser = xml_parser_create_ns('UTF-8');
+                        $this->_parserid = (int) $this->_parser;
                         // forget old data...
-                        unset($this->_ls[$this->_parser]);
-                        unset($this->_xmltree[$this->_parser]);
+                        unset($this->_ls[$this->_parserid]);
+                        unset($this->_xmltree[$this->_parserid]);
                         xml_parser_set_option($this->_parser,XML_OPTION_SKIP_WHITE,0);
                         xml_parser_set_option($this->_parser,XML_OPTION_CASE_FOLDING,0);
                         // xml_parser_set_option($this->_parser,XML_OPTION_TARGET_ENCODING,'UTF-8');
@@ -819,7 +832,7 @@ EOD;
 
                         // Free resources
                         xml_parser_free($this->_parser);
-                        $arr = $this->_ls[$this->_parser];
+                        $arr = $this->_ls[$this->_parserid];
                         return $arr;
                     } else {
                         $this->_error_log('Missing Content-Type: text/xml header in response!!');
@@ -1038,7 +1051,8 @@ EOD;
 
     private function _endElement($parser, $name) {
         // end tag was found...
-        $this->_xmltree[$parser] = substr($this->_xmltree[$parser],0, strlen($this->_xmltree[$parser]) - (strlen($name) + 1));
+        $parserid = (int) $parser;
+        $this->_xmltree[$parserid] = substr($this->_xmltree[$parserid],0, strlen($this->_xmltree[$parserid]) - (strlen($name) + 1));
     }
 
     /**
@@ -1053,19 +1067,20 @@ EOD;
      */
     private function _propfind_startElement($parser, $name, $attrs) {
         // lower XML Names... maybe break a RFC, don't know ...
+        $parserid = (int) $parser;
 
         $propname = strtolower($name);
-        if (!empty($this->_xmltree[$parser])) {
-            $this->_xmltree[$parser] .= $propname . '_';
+        if (!empty($this->_xmltree[$parserid])) {
+            $this->_xmltree[$parserid] .= $propname . '_';
         } else {
-            $this->_xmltree[$parser] = $propname . '_';
+            $this->_xmltree[$parserid] = $propname . '_';
         }
 
         // translate xml tree to a flat array ...
-        switch($this->_xmltree[$parser]) {
+        switch($this->_xmltree[$parserid]) {
         case 'dav::multistatus_dav::response_':
             // new element in mu
-            $this->_ls_ref =& $this->_ls[$parser][];
+            $this->_ls_ref =& $this->_ls[$parserid][];
             break;
         case 'dav::multistatus_dav::response_dav::href_':
             $this->_ls_ref_cdata = &$this->_ls_ref['href'];
@@ -1113,7 +1128,7 @@ EOD;
 
         default:
             // handle unknown xml elements...
-            $this->_ls_ref_cdata = &$this->_ls_ref[$this->_xmltree[$parser]];
+            $this->_ls_ref_cdata = &$this->_ls_ref[$this->_xmltree[$parserid]];
         }
     }
 
@@ -1148,14 +1163,15 @@ EOD;
      */
     private function _delete_startElement($parser, $name, $attrs) {
         // lower XML Names... maybe break a RFC, don't know ...
+        $parserid = (int) $parser;
         $propname = strtolower($name);
-        $this->_xmltree[$parser] .= $propname . '_';
+        $this->_xmltree[$parserid] .= $propname . '_';
 
         // translate xml tree to a flat array ...
-        switch($this->_xmltree[$parser]) {
+        switch($this->_xmltree[$parserid]) {
         case 'dav::multistatus_dav::response_':
             // new element in mu
-            $this->_delete_ref =& $this->_delete[$parser][];
+            $this->_delete_ref =& $this->_delete[$parserid][];
             break;
         case 'dav::multistatus_dav::response_dav::href_':
             $this->_delete_ref_cdata = &$this->_ls_ref['href'];
@@ -1163,7 +1179,7 @@ EOD;
 
         default:
             // handle unknown xml elements...
-            $this->_delete_cdata = &$this->_delete_ref[$this->_xmltree[$parser]];
+            $this->_delete_cdata = &$this->_delete_ref[$this->_xmltree[$parserid]];
         }
     }
 
@@ -1199,8 +1215,9 @@ EOD;
      */
     private function _lock_startElement($parser, $name, $attrs) {
         // lower XML Names... maybe break a RFC, don't know ...
+        $parserid = (int) $parser;
         $propname = strtolower($name);
-        $this->_xmltree[$parser] .= $propname . '_';
+        $this->_xmltree[$parserid] .= $propname . '_';
 
         // translate xml tree to a flat array ...
         /*
@@ -1209,10 +1226,10 @@ EOD;
         dav::prop_dav::lockdiscovery_dav::activelock_dav::timeout_=
         dav::prop_dav::lockdiscovery_dav::activelock_dav::locktoken_dav::href_=
          */
-        switch($this->_xmltree[$parser]) {
+        switch($this->_xmltree[$parserid]) {
         case 'dav::prop_dav::lockdiscovery_dav::activelock_':
             // new element
-            $this->_lock_ref =& $this->_lock[$parser][];
+            $this->_lock_ref =& $this->_lock[$parserid][];
             break;
         case 'dav::prop_dav::lockdiscovery_dav::activelock_dav::locktype_dav::write_':
             $this->_lock_ref_cdata = &$this->_lock_ref['locktype'];
@@ -1238,7 +1255,7 @@ EOD;
             break;
         default:
             // handle unknown xml elements...
-            $this->_lock_cdata = &$this->_lock_ref[$this->_xmltree[$parser]];
+            $this->_lock_cdata = &$this->_lock_ref[$this->_xmltree[$parserid]];
 
         }
     }
@@ -1254,8 +1271,9 @@ EOD;
      * @access private
      */
     private function _lock_cData($parser, $cdata) {
+        $parserid = (int) $parser;
         if (trim($cdata) <> '') {
-            // $this->_error_log(($this->_xmltree[$parser]) . '='. htmlentities($cdata));
+            // $this->_error_log(($this->_xmltree[$parserid]) . '='. htmlentities($cdata));
             $this->_lock_ref_cdata .= $cdata;
         } else {
             // do nothing
@@ -1293,7 +1311,6 @@ EOD;
      * @access private
      */
     private function create_basic_request($method) {
-        $request = '';
         $this->header_add(sprintf('%s %s %s', $method, $this->_path, $this->_protocol));
         $this->header_add(sprintf('Host: %s:%s', $this->_server, $this->_port));
         //$request .= sprintf('Connection: Keep-Alive');
@@ -1302,7 +1319,102 @@ EOD;
         $this->header_add('TE: Trailers');
         if ($this->_auth == 'basic') {
             $this->header_add(sprintf('Authorization: Basic %s', base64_encode("$this->_user:$this->_pass")));
+        } else if ($this->_auth == 'digest') {
+            if ($signature = $this->digest_signature($method)){
+                $this->header_add($signature);
+            }
         }
+    }
+
+    /**
+     * Reads the header, stores the challenge information
+     *
+     * @return void
+     */
+    private function digest_auth() {
+
+        $headers = array();
+        $headers[] = sprintf('%s %s %s', 'HEAD', $this->_path, $this->_protocol);
+        $headers[] = sprintf('Host: %s:%s', $this->_server, $this->_port);
+        $headers[] = sprintf('User-Agent: %s', $this->_user_agent);
+        $headers = implode("\r\n", $headers);
+        $headers .= "\r\n\r\n";
+        fputs($this->sock, $headers);
+
+        // Reads the headers.
+        $i = 0;
+        $header = '';
+        do {
+            $header .= fread($this->sock, 1);
+            $i++;
+        } while (!preg_match('/\\r\\n\\r\\n$/', $header, $matches) && $i < $this->_maxheaderlenth);
+
+        // Analyse the headers.
+        $digest = array();
+        $splitheaders = explode("\r\n", $header);
+        foreach ($splitheaders as $line) {
+            if (!preg_match('/^WWW-Authenticate: Digest/', $line)) {
+                continue;
+            }
+            $line = substr($line, strlen('WWW-Authenticate: Digest '));
+            $params = explode(',', $line);
+            foreach ($params as $param) {
+                list($key, $value) = explode('=', trim($param), 2);
+                $digest[$key] = trim($value, '"');
+            }
+            break;
+        }
+
+        $this->_digestchallenge = $digest;
+    }
+
+    /**
+     * Generates the digest signature
+     *
+     * @return string signature to add to the headers
+     * @access private
+     */
+    private function digest_signature($method) {
+        if (!$this->_digestchallenge) {
+            $this->digest_auth();
+        }
+
+        $signature = array();
+        $signature['username'] = '"' . $this->_user . '"';
+        $signature['realm'] = '"' . $this->_digestchallenge['realm'] . '"';
+        $signature['nonce'] = '"' . $this->_digestchallenge['nonce'] . '"';
+        $signature['uri'] = '"' . $this->_path . '"';
+
+        if (isset($this->_digestchallenge['algorithm']) && $this->_digestchallenge['algorithm'] != 'MD5') {
+            $this->_error_log('Algorithm other than MD5 are not supported');
+            return false;
+        }
+
+        $a1 = $this->_user . ':' . $this->_digestchallenge['realm'] . ':' . $this->_pass;
+        $a2 = $method . ':' . $this->_path;
+
+        if (!isset($this->_digestchallenge['qop'])) {
+            $signature['response'] = '"' . md5(md5($a1) . ':' . $this->_digestchallenge['nonce'] . ':' . md5($a2)) . '"';
+        } else {
+            // Assume QOP is auth
+            if (empty($this->_cnonce)) {
+                $this->_cnonce = random_string();
+                $this->_nc = 0;
+            }
+            $this->_nc++;
+            $nc = sprintf('%08d', $this->_nc);
+            $signature['cnonce'] = '"' . $this->_cnonce . '"';
+            $signature['nc'] = '"' . $nc . '"';
+            $signature['qop'] = '"' . $this->_digestchallenge['qop'] . '"';
+            $signature['response'] = '"' . md5(md5($a1) . ':' . $this->_digestchallenge['nonce'] . ':' .
+                    $nc . ':' . $this->_cnonce . ':' . $this->_digestchallenge['qop'] . ':' . md5($a2)) . '"';
+        }
+
+        $response = array();
+        foreach ($signature as $key => $value) {
+            $response[] = "$key=$value";
+        }
+        return 'Authorization: Digest ' . implode(', ', $response);
     }
 
     /**
@@ -1332,15 +1444,16 @@ EOD;
     /**
      * Private method get_respond
      *
-     * Reads the reponse from the webdav server.
+     * Reads the response from the webdav server.
      *
      * Stores data into class vars _header for the header data and
      * _body for the rest of the response.
      * This routine is the weakest part of this class, because it very depends how php does handle a socket stream.
      * If the stream is blocked for some reason php is blocked as well.
      * @access private
+     * @param resource $fp optional the file handle to write the body content to (stored internally in the '_body' if not set)
      */
-    private function get_respond() {
+    private function get_respond($fp = null) {
         $this->_error_log('get_respond()');
         // init vars (good coding style ;-)
         $buffer = '';
@@ -1373,7 +1486,10 @@ EOD;
             // Therefore we need to reopen the socket, before are sending the next request...
             $this->_error_log('Connection: close found');
             $this->_connection_closed = true;
+        } else if (preg_match('@^HTTP/1\.(1|0) 401 @', $header)) {
+            $this->_error_log('The server requires an authentication');
         }
+
         // check how to get the data on socket stream
         // chunked or content-length (HTTP/1.1) or
         // one block until feof is received (HTTP/1.0)
@@ -1395,7 +1511,13 @@ EOD;
                 fread($this->sock, 1);                           // also drop off the Line Feed
                 $chunk_size=hexdec($chunk_size);                // convert to a number in decimal system
                 if ($chunk_size > 0) {
-                    $buffer .= fread($this->sock,$chunk_size);
+                    $read = 0;
+                    // Reading the chunk in one bite is not secure, we read it byte by byte.
+                    while ($read < $chunk_size) {
+                        $chunk = fread($this->sock, 1);
+                        self::update_file_or_buffer($chunk, $fp, $buffer);
+                        $read++;
+                    }
                 }
                 fread($this->sock, 2);                            // ditch the CRLF that trails the chunk
             } while ($chunk_size);                            // till we reach the 0 length chunk (end marker)
@@ -1409,21 +1531,20 @@ EOD;
             if ($matches[1] <= $max_chunk_size ) {
                 // only read something if Content-Length is bigger than 0
                 if ($matches[1] > 0 ) {
-                    $buffer = fread($this->sock, $matches[1]);
-                    $loadsize = strlen($buffer);
+                    $chunk = fread($this->sock, $matches[1]);
+                    $loadsize = strlen($chunk);
                     //did we realy get the full length?
                     if ($loadsize < $matches[1]) {
                         $max_chunk_size = $loadsize;
                         do {
-                            $mod = $max_chunk_size % ($matches[1] - strlen($buffer));
-                            $chunk_size = ($mod == $max_chunk_size ? $max_chunk_size : $matches[1] - strlen($buffer));
-                            $buffer .= fread($this->sock, $chunk_size);
-                            $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunk_size . ' total: ' . strlen($buffer));
+                            $mod = $max_chunk_size % ($matches[1] - strlen($chunk));
+                            $chunk_size = ($mod == $max_chunk_size ? $max_chunk_size : $matches[1] - strlen($chunk));
+                            $chunk .= fread($this->sock, $chunk_size);
+                            $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunk_size . ' total: ' . strlen($chunk));
                         } while ($mod == $max_chunk_size);
-                        break;
-                    } else {
-                        break;
                     }
+                    self::update_file_or_buffer($chunk, $fp, $buffer);
+                    break;
                 } else {
                     $buffer = '';
                     break;
@@ -1432,20 +1553,23 @@ EOD;
 
             // data is to big to handle it as one. Get it chunk per chunk...
             //trying to get the full length of max_chunk_size
-            $buffer = fread($this->sock, $max_chunk_size);
-            $loadsize = strlen($buffer);
+            $chunk = fread($this->sock, $max_chunk_size);
+            $loadsize = strlen($chunk);
+            self::update_file_or_buffer($chunk, $fp, $buffer);
             if ($loadsize < $max_chunk_size) {
                 $max_chunk_size = $loadsize;
             }
             do {
-                $mod = $max_chunk_size % ($matches[1] - strlen($buffer));
-                $chunk_size = ($mod == $max_chunk_size ? $max_chunk_size : $matches[1] - strlen($buffer));
-                $buffer .= fread($this->sock, $chunk_size);
-                $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunk_size . ' total: ' . strlen($buffer));
+                $mod = $max_chunk_size % ($matches[1] - $loadsize);
+                $chunk_size = ($mod == $max_chunk_size ? $max_chunk_size : $matches[1] - $loadsize);
+                $chunk = fread($this->sock, $chunk_size);
+                self::update_file_or_buffer($chunk, $fp, $buffer);
+                $loadsize += strlen($chunk);
+                $this->_error_log('mod: ' . $mod . ' chunk: ' . $chunk_size . ' total: ' . $loadsize);
             } while ($mod == $max_chunk_size);
-            $loadsize = strlen($buffer);
             if ($loadsize < $matches[1]) {
-                $buffer .= fread($this->sock, $matches[1] - $loadsize);
+                $chunk = fread($this->sock, $matches[1] - $loadsize);
+                self::update_file_or_buffer($chunk, $fp, $buffer);
             }
             break;
 
@@ -1461,7 +1585,8 @@ EOD;
             $this->_error_log('reading until feof...' . $header);
             socket_set_timeout($this->sock, 0, 0);
             while (!feof($this->sock)) {
-                $buffer .= fread($this->sock, 4096);
+                $chunk = fread($this->sock, 4096);
+                self::update_file_or_buffer($chunk, $fp, $buffer);
             }
             // renew the socket timeout...does it do something ???? Is it needed. More debugging needed...
             socket_set_timeout($this->sock, $this->_socket_timeout, 0);
@@ -1472,8 +1597,22 @@ EOD;
         // $this->_buffer = $header . "\r\n\r\n" . $buffer;
         $this->_error_log($this->_header);
         $this->_error_log($this->_body);
+
     }
 
+    /**
+     * Write the chunk to the file if $fp is set, otherwise append the data to the buffer
+     * @param string $chunk the data to add
+     * @param resource $fp the file handle to write to (or null)
+     * @param string &$buffer the buffer to append to (if $fp is null)
+     */
+    static private function update_file_or_buffer($chunk, $fp, &$buffer) {
+        if ($fp) {
+            fwrite($fp, $chunk);
+        } else {
+            $buffer .= $chunk;
+        }
+    }
 
     /**
      * Private method process_respond

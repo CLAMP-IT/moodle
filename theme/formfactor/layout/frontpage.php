@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * The frontpage layout for the FormFactor theme.
+ *
+ * @package   theme_formfactor
+ * @copyright 2010 Patrick Malley
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 $hassidepre = $PAGE->blocks->region_has_content('side-pre', $OUTPUT);
 $hassidepost = $PAGE->blocks->region_has_content('side-post', $OUTPUT);
@@ -31,16 +53,16 @@ echo $OUTPUT->doctype() ?>
 <!-- START OF HEADER -->
 
     <div id="page-header" class="clearfix">
-		<div id="page-header-wrapper">
-	        <h1 class="headermain"><?php echo $PAGE->heading ?></h1>
-    	    <div class="headermenu">
-        		<?php
-	        	    echo $OUTPUT->login_info();
-    	        	echo $OUTPUT->lang_menu();
-	        	    echo $PAGE->headingmenu;
-		        ?>
-	    	</div>
-	    </div>
+        <div id="page-header-wrapper">
+            <h1 class="headermain"><?php echo $PAGE->heading ?></h1>
+            <div class="headermenu">
+                <?php
+                    echo $OUTPUT->login_info();
+                    echo $OUTPUT->lang_menu();
+                    echo $PAGE->headingmenu;
+                ?>
+            </div>
+        </div>
     </div>
 
     <?php if ($hascustommenu) { ?>
@@ -49,7 +71,7 @@ echo $OUTPUT->doctype() ?>
       <ul id="page-navigation" class="clearfix">
         <li>&nbsp;</li>
       </ul>
-  	<?php } ?>
+    <?php } ?>
 
 <!-- END OF HEADER -->
 
@@ -69,7 +91,7 @@ echo $OUTPUT->doctype() ?>
                 </div>
 
                 <?php if ($hassidepre) { ?>
-                <div id="region-pre">
+                <div id="region-pre" class="block-region">
                     <div class="region-content">
                         <?php echo $OUTPUT->blocks_for_region('side-pre') ?>
                     </div>
@@ -77,7 +99,7 @@ echo $OUTPUT->doctype() ?>
                 <?php } ?>
 
                 <?php if ($hassidepost) { ?>
-                <div id="region-post">
+                <div id="region-post" class="block-region">
                     <div class="region-content">
                         <?php echo $OUTPUT->blocks_for_region('side-post') ?>
                     </div>

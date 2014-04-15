@@ -1,5 +1,32 @@
-#!/usr/bin/php -q
 <?php
+
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Chat daemon
+ *
+ * @package    mod_chat
+ * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+define('CLI_SCRIPT', true);
+
+require(dirname(dirname(dirname(__FILE__))).'/config.php');
+require_once($CFG->dirroot . '/mod/chat/lib.php');
 
 // Browser quirks
 define('QUIRK_CHUNK_UPDATE', 0x0001);
@@ -27,30 +54,10 @@ $_SERVER['PHP_SELF']        = 'dummy';
 $_SERVER['SERVER_NAME']     = 'dummy';
 $_SERVER['HTTP_USER_AGENT'] = 'dummy';
 
-define('NO_MOODLE_COOKIES', true); // session not used here
-
-include('../../config.php');
-include('lib.php');
-
 $_SERVER['SERVER_NAME'] = $CFG->chat_serverhost;
 $_SERVER['PHP_SELF']    = "http://$CFG->chat_serverhost:$CFG->chat_serverport/mod/chat/chatd.php";
 
-$safemode = ini_get('safe_mode');
-
-if($phpversion < '4.3') {
-    die("Error: The Moodle chat daemon requires at least PHP version 4.3 to run.\n       Since your version is $phpversion, you have to upgrade.\n\n");
-}
-if(!empty($safemode)) {
-    die("Error: Cannot run with PHP safe_mode = On. Turn off safe_mode in php.ini.\n");
-}
-
-$passref = ini_get('allow_call_time_pass_reference');
-if(empty($passref)) {
-    die("Error: Cannot run with PHP allow_call_time_pass_reference = Off. Turn on allow_call_time_pass_reference in php.ini.\n");
-}
-
-@set_time_limit (0);
-set_magic_quotes_runtime(0);
+core_php_time_limit::raise(0);
 error_reporting(E_ALL);
 
 function chat_empty_connection() {
@@ -194,7 +201,9 @@ class ChatDaemon {
         // if this is needed, as we have a nonblocking socket anyway.
         // If trouble starts to creep up, we 'll restore this.
 //        $check_socket = array($connection);
-//        $socket_changed = socket_select($read = NULL, $check_socket, $except = NULL, 0, 0);
+//        $read = null;
+//        $except = null;
+//        $socket_changed = socket_select($read, $check_socket, $except, 0, 0);
 //        if($socket_changed > 0) {
 //
 //            // ABOVE CODE GOES HERE
@@ -225,12 +234,11 @@ class ChatDaemon {
     }
 
     function get_user_window($sessionid) {
-        global $CFG, $PAGE, $OUTPUT;
+        global $CFG, $OUTPUT;
 
         static $str;
 
         $info = &$this->sets_info[$sessionid];
-        $PAGE->set_course($info['course']);
 
         $timenow = time();
 
@@ -334,6 +342,7 @@ EOD;
 
         switch($type) {
             case CHAT_SIDEKICK_BEEP:
+
                 // Incoming beep
                 $msg = New stdClass;
                 $msg->chatid    = $this->sets_info[$sessionid]['chatid'];
@@ -344,8 +353,8 @@ EOD;
                 $msg->timestamp = time();
 
                 // Commit to DB
-                $DB->insert_record('chat_messages', $msg, false);
-                $DB->insert_record('chat_messages_current', $msg, false);
+                chat_send_chatmessage($this->sets_info[$sessionid]['chatuser'], $msg->message, false,
+                    $this->sets_info[$sessionid]['cm']);
 
                 // OK, now push it out to all users
                 $this->message_broadcast($msg, $this->sets_info[$sessionid]['user']);
@@ -439,8 +448,8 @@ EOD;
                 $msg->message = $msg->message;
 
                 // Commit to DB
-                $DB->insert_record('chat_messages', $msg, false);
-                $DB->insert_record('chat_messages_current', $msg, false);
+                chat_send_chatmessage($this->sets_info[$sessionid]['chatuser'], $msg->message, false,
+                    $this->sets_info[$sessionid]['cm']);
 
                 // Undo the hack
                 $msg->message = $origmsg;
@@ -506,6 +515,10 @@ EOD;
             $this->dismiss_half($sessionid);
             return false;
         }
+        if (!($cm = get_coursemodule_from_instance('chat', $chat->id, $course->id))) {
+            $this->dismiss_half($sessionid);
+            return false;
+        }
 
         global $CHAT_HTMLHEAD_JS, $CFG;
 
@@ -520,6 +533,7 @@ EOD;
             'courseid'  => $course->id,
             'chatuser'  => $chatuser,
             'chatid'    => $chat->id,
+            'cm'        => $cm,
             'user'      => $user,
             'userid'    => $user->id,
             'groupid'   => $chatuser->groupid,
@@ -538,8 +552,18 @@ EOD;
 
         // $this->trace('QUIRKS value for this connection is '.$customdata['quirks']);
 
+        $header  = "HTTP/1.1 200 OK\n";
+        $header .= "Connection: close\n";
+        $header .= "Date: ".date('r')."\n";
+        $header .= "Server: Moodle\n";
+        $header .= "Content-Type: text/html; charset=utf-8\n";
+        $header .= "Last-Modified: ".gmdate("D, d M Y H:i:s")." GMT\n";
+        $header .= "Cache-Control: no-cache, must-revalidate\n";
+        $header .= "Expires: Wed, 4 Oct 1978 09:32:45 GMT\n";
+        $header .= "\n";
+
         $this->dismiss_half($sessionid, false);
-        $this->write_data($this->conn_sets[$sessionid][CHAT_CONNECTION_CHANNEL], $CHAT_HTMLHEAD_JS);
+        $this->write_data($this->conn_sets[$sessionid][CHAT_CONNECTION_CHANNEL], $header . $CHAT_HTMLHEAD_JS);
         $this->trace('Connection accepted: '.$this->conn_sets[$sessionid][CHAT_CONNECTION_CHANNEL].', SID: '.$sessionid.' UID: '.$chatuser->userid.' GID: '.$chatuser->groupid, E_USER_WARNING);
 
         // Finally, broadcast the "entered the chat" message
@@ -552,8 +576,7 @@ EOD;
         $msg->message = 'enter';
         $msg->timestamp = time();
 
-        $DB->insert_record('chat_messages', $msg, false);
-        $DB->insert_record('chat_messages_current', $msg, false);
+        chat_send_chatmessage($chatuser, $msg->message, true);
         $this->message_broadcast($msg, $this->sets_info[$sessionid]['user']);
 
         return true;
@@ -670,7 +693,9 @@ EOD;
 
     function conn_accept() {
         $read_socket = array($this->listen_socket);
-        $changed = socket_select($read_socket, $write = NULL, $except = NULL, 0, 0);
+        $write = null;
+        $except = null;
+        $changed = socket_select($read_socket, $write, $except, 0, 0);
 
         if(!$changed) {
             return false;
@@ -700,14 +725,15 @@ EOD;
             return 0;
         }
 
-        $retval = socket_select($monitor, $a = NULL, $b = NULL, NULL);
+        $a = null;
+        $b = null;
+        $retval = socket_select($monitor, $a, $b, null);
         $handles = $monitor;
 
         return $retval;
     }
 
     function message_broadcast($message, $sender) {
-        global $PAGE;
 
         if(empty($this->conn_sets)) {
             return true;
@@ -725,7 +751,6 @@ EOD;
             {
 
                 // Simply give them the message
-                $PAGE->set_course($info['course']);
                 $output = chat_format_message_manually($message, $info['courseid'], $sender, $info['user']);
                 $this->trace('Delivering message "'.$output->text.'" to '.$this->conn_sets[$sessionid][CHAT_CONNECTION_CHANNEL]);
 
@@ -762,8 +787,7 @@ EOD;
         $msg->timestamp = time();
 
         $this->trace('User has disconnected, destroying uid '.$info['userid'].' with SID '.$sessionid, E_USER_WARNING);
-        $DB->insert_record('chat_messages', $msg, false);
-        $DB->insert_record('chat_messages_current', $msg, false);
+        chat_send_chatmessage($info['chatuser'], $msg->message, true);
 
         // *************************** IMPORTANT
         //
@@ -815,7 +839,7 @@ EOD;
 
         // [pj]: I really must have a good read on sockets. What exactly does this do?
         // http://www.unixguide.net/network/socketfaq/4.5.shtml is still not enlightening enough for me.
-        socket_setopt($this->listen_socket, SOL_SOCKET, SO_REUSEADDR, 1);
+        socket_set_option($this->listen_socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_set_nonblock($this->listen_socket);
     }
 
@@ -915,8 +939,8 @@ if(!$DAEMON->query_start()) {
     die();
 }
 
-if (!function_exists('socket_setopt')) {
-    echo "Error: Function socket_setopt() does not exist.\n";
+if (!function_exists('socket_set_option')) {
+    echo "Error: Function socket_set_option() does not exist.\n";
     echo "Possibly PHP has not been compiled with --enable-sockets.\n\n";
     die();
 }
@@ -985,7 +1009,9 @@ while(true) {
     if($DAEMON->conn_activity_ufo($active)) {
         foreach($active as $handle) {
             $read_socket = array($handle);
-            $changed = socket_select($read_socket, $write = NULL, $except = NULL, 0, 0);
+            $write = null;
+            $except = null;
+            $changed = socket_select($read_socket, $write, $except, 0, 0);
 
             if($changed > 0) {
                 // Let's see what it has to say

@@ -157,7 +157,7 @@ foreach ($courses as $type => $infos) {
     if (!empty($infos)) {
 
         echo '<h1 align="center">'.get_string($type, 'report_completion').'</h1>';
-        echo '<table class="generalbox boxaligncenter">';
+        echo '<table class="generaltable boxaligncenter">';
         echo '<tr class="ccheader">';
         echo '<th class="c0 header" scope="col">'.get_string('course').'</th>';
         echo '<th class="c1 header" scope="col">'.get_string('requiredcriteria', 'completion').'</th>';
@@ -175,7 +175,7 @@ foreach ($courses as $type => $infos) {
 
             // Get course info
             $c_course = $DB->get_record('course', array('id' => $c_info->course_id));
-            $course_context = get_context_instance(CONTEXT_COURSE, $c_course->id, MUST_EXIST);
+            $course_context = context_course::instance($c_course->id, MUST_EXIST);
             $course_name = format_string($c_course->fullname, true, array('context' => $course_context));
 
             // Get completions

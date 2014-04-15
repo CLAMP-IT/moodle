@@ -1,5 +1,32 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Moodle's formal_white theme
+ *
+ * DO NOT MODIFY THIS THEME!
+ * COPY IT FIRST, THEN RENAME THE COPY AND MODIFY IT INSTEAD.
+ *
+ * For full information about creating Moodle themes, see:
+ * http://docs.moodle.org/dev/Themes_2.0
+ *
+ * @package   theme_formal_white
+ * @copyright 2013 Mediatouch 2000, mediatouch.it
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 defined('MOODLE_INTERNAL') || die();
 
 $hasheading = $PAGE->heading;
@@ -30,9 +57,9 @@ if ($hascustommenu) {
 
 /************************************************************************************************/
 if (!empty($PAGE->theme->settings->frontpagelogourl)) {
-    $logourl = $PAGE->theme->settings->frontpagelogourl;
+    $logourl = $PAGE->theme->setting_file_url('frontpagelogourl', 'frontpagelogourl');
 } else if (!empty($PAGE->theme->settings->customlogourl)) {
-    $logourl = $PAGE->theme->settings->customlogourl;
+    $logourl = $PAGE->theme->setting_file_url('customlogourl', 'customlogourl');
 } else {
     $logourl = $OUTPUT->pix_url('logo', 'theme');
 }
@@ -62,21 +89,14 @@ echo $OUTPUT->doctype() ?>
                 <div id="frameleft">
                     <div id="frameright">
                         <div id="wrapper">
-<?php } ?>
+    <?php } ?>
 
 <!-- begin of page-header -->
                             <?php if ($hasheading) { ?>
                             <div id="page-header">
-                            <?php if ($displaylogo) { ?>
-                                <div id="headerlogo">
-                                    <img src="<?php echo $logourl ?>" alt="Custom logo here" />
-                                </div>
-                            <?php } else { ?>
-                                <h1 class="headerheading"><?php echo $PAGE->heading ?></h1>
-                            <?php } ?>
 
                                 <div class="headermenu">
-                                    <?php
+                                <?php
                                     echo $OUTPUT->login_info();
                                     if (($CFG->langmenu) && (!empty($PAGE->layout_options['langmenu']))) {
                                         echo $OUTPUT->lang_menu();
@@ -84,6 +104,15 @@ echo $OUTPUT->doctype() ?>
                                     echo $PAGE->headingmenu;
                                 ?>
                                 </div>
+
+                                <?php if ($displaylogo) { ?>
+                                    <div id="headerlogo">
+                                        <img src="<?php echo $logourl ?>" alt="Custom logo here" />
+                                    </div>
+                                <?php } else { ?>
+                                    <h1 class="headerheading"><?php echo $PAGE->heading ?></h1>
+                                <?php } ?>
+
                             </div>
                             <?php } ?>
 <!-- end of page-header -->
@@ -185,7 +214,7 @@ if ($hasfooter) {
                 </div> <!-- </footerframebottom> -->
             </div> <!-- </footerframetop> -->
             <?php }
-            //one more div is waiting to be closed
+            // one more div is waiting to be closed
 
     } else { ?>
 
@@ -201,7 +230,7 @@ if ($hasfooter) {
 
             </div> <!-- </page-footer-content> -->
             <?php }
-            //one more div is waiting to be closed
+            // one more div is waiting to be closed
 
     } ?>
 
@@ -218,7 +247,7 @@ if ($hasfooter) {
                 <?php echo page_doc_link(get_string('moodledocslink')); ?>
             </div>
         </div> <!-- </page-footer> -->
-    </div> <!-- </page"> -->
+    </div> <!-- </page> -->
 
     <div class="clearfix"></div>
 

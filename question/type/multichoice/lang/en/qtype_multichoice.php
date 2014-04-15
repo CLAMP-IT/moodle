@@ -23,7 +23,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['addmorechoiceblanks'] = 'Blanks for {no} more choices';
 $string['answerhowmany'] = 'One or multiple answers?';
 $string['answernumbering'] = 'Number the choices?';
 $string['answernumbering123'] = '1., 2., 3., ...';
@@ -37,7 +36,7 @@ $string['answersingleyes'] = 'One answer only';
 $string['choiceno'] = 'Choice {$a}';
 $string['choices'] = 'Available choices';
 $string['clozeaid'] = 'Enter missing word';
-$string['correctansweris'] = 'The correct answer is: {$a}.';
+$string['correctansweris'] = 'The correct answer is: {$a}';
 $string['correctfeedback'] = 'For any correct response';
 $string['errgradesetanswerblank'] = 'Grade set, but the Answer is blank';
 $string['errfractionsaddwrong'] = 'The positive grades you have chosen do not add up to 100%<br />Instead, they add up to {$a}%';

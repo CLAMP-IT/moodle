@@ -36,7 +36,7 @@ if (empty($CFG->usetags)) {
 }
 
 //Editing a tag requires moodle/tag:edit capability
-$systemcontext   = get_context_instance(CONTEXT_SYSTEM);
+$systemcontext   = context_system::instance();
 require_capability('moodle/tag:edit', $systemcontext);
 
 if ($tag_name) {
@@ -55,25 +55,18 @@ $PAGE->set_context($systemcontext);
 $PAGE->set_blocks_editing_capability('moodle/tag:editblocks');
 $PAGE->set_pagelayout('base');
 
-$PAGE->requires->yui2_lib('connection');
-$PAGE->requires->yui2_lib('animation');
-$PAGE->requires->yui2_lib('datasource');
-$PAGE->requires->yui2_lib('autocomplete');
-
 $tagname = tag_display_name($tag);
 
 // set the relatedtags field of the $tag object that will be passed to the form
 $tag->relatedtags = tag_get_related_tags_csv(tag_get_related_tags($tag->id, TAG_RELATED_MANUAL), TAG_RETURN_TEXT);
 
-if (can_use_html_editor()) {
-    $options = new stdClass();
-    $options->smiley = false;
-    $options->filter = false;
+$options = new stdClass();
+$options->smiley = false;
+$options->filter = false;
 
-    // convert and remove any XSS
-    $tag->description       = format_text($tag->description, $tag->descriptionformat, $options);
-    $tag->descriptionformat = FORMAT_HTML;
-}
+// convert and remove any XSS
+$tag->description       = format_text($tag->description, $tag->descriptionformat, $options);
+$tag->descriptionformat = FORMAT_HTML;
 
 $errorstring = '';
 
@@ -81,7 +74,8 @@ $editoroptions = array(
     'maxfiles'  => EDITOR_UNLIMITED_FILES,
     'maxbytes'  => $CFG->maxbytes,
     'trusttext' => false,
-    'context'   => $systemcontext
+    'context'   => $systemcontext,
+    'subdirs'   => file_area_contains_subdirs($systemcontext, 'tag', 'description', $tag->id),
 );
 $tag = file_prepare_standard_editor($tag, 'description', $editoroptions, $systemcontext, 'tag', 'description', $tag->id);
 
@@ -111,7 +105,8 @@ if ($tagnew = $tagform->get_data()) {
         unset($tagnew->rawname);
 
     } else {  // They might be trying to change the rawname, make sure it's a change that doesn't affect name
-        $tagnew->name = array_shift(tag_normalize($tagnew->rawname, TAG_CASE_LOWER));
+        $norm = tag_normalize($tagnew->rawname, TAG_CASE_LOWER);
+        $tagnew->name = array_shift($norm);
 
         if ($tag->name != $tagnew->name) {  // The name has changed, let's make sure it's not another existing tag
             if (tag_get_id($tagnew->name)) {   // Something exists already, so flag an error

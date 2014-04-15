@@ -29,8 +29,8 @@ require(dirname(dirname(dirname(dirname(__FILE__)))) . '/config.php');
 require_once($CFG->dirroot.'/'.$CFG->admin.'/tool/customlang/locallib.php');
 require_once($CFG->libdir.'/adminlib.php');
 
-require_login(SITEID, false);
-require_capability('tool/customlang:view', get_system_context());
+require_login(null, false);
+require_capability('tool/customlang:view', context_system::instance());
 
 $action  = optional_param('action', '', PARAM_ALPHA);
 $confirm = optional_param('confirm', false, PARAM_BOOL);
@@ -42,7 +42,7 @@ $langs = get_string_manager()->get_list_of_translations();
 // pre-output actions
 if ($action === 'checkout') {
     require_sesskey();
-    require_capability('tool/customlang:edit', get_system_context());
+    require_capability('tool/customlang:edit', context_system::instance());
     if (empty($lng)) {
         print_error('missingparameter');
     }
@@ -55,7 +55,7 @@ if ($action === 'checkout') {
     $progressbar->create();         // prints the HTML code of the progress bar
 
     // we may need a bit of extra execution time and memory here
-    @set_time_limit(HOURSECS);
+    core_php_time_limit::raise(HOURSECS);
     raise_memory_limit(MEMORY_EXTRA);
     tool_customlang_utils::checkout($lng, $progressbar);
 
@@ -66,7 +66,7 @@ if ($action === 'checkout') {
 
 if ($action === 'checkin') {
     require_sesskey();
-    require_capability('tool/customlang:edit', get_system_context());
+    require_capability('tool/customlang:edit', context_system::instance());
     if (empty($lng)) {
         print_error('missingparameter');
     }
@@ -119,7 +119,7 @@ if ($numofmodified != 0) {
 }
 
 $menu = array();
-if (has_capability('tool/customlang:edit', get_system_context())) {
+if (has_capability('tool/customlang:edit', context_system::instance())) {
     $menu['checkout'] = array(
         'title'     => get_string('checkout', 'tool_customlang'),
         'url'       => new moodle_url($PAGE->url, array('action' => 'checkout', 'lng' => $lng)),

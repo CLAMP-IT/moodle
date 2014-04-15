@@ -29,6 +29,11 @@ defined('MOODLE_INTERNAL') || die();
  */
 define('BYTESERVING_BOUNDARY', 's1k2o3d4a5k6s7');
 
+/**
+ * Unlimited area size constant
+ */
+define('FILE_AREA_MAX_BYTES_UNLIMITED', -1);
+
 require_once("$CFG->libdir/filestorage/file_exceptions.php");
 require_once("$CFG->libdir/filestorage/file_storage.php");
 require_once("$CFG->libdir/filestorage/zip_packer.php");
@@ -73,6 +78,31 @@ function file_encode_url($urlbase, $path, $forcedownload=false, $https=false) {
     }
 
     return $return;
+}
+
+/**
+ * Detects if area contains subdirs,
+ * this is intended for file areas that are attached to content
+ * migrated from 1.x where subdirs were allowed everywhere.
+ *
+ * @param context $context
+ * @param string $component
+ * @param string $filearea
+ * @param string $itemid
+ * @return bool
+ */
+function file_area_contains_subdirs(context $context, $component, $filearea, $itemid) {
+    global $DB;
+
+    if (!isset($itemid)) {
+        // Not initialised yet.
+        return false;
+    }
+
+    // Detect if any directories are already present, this is necessary for content upgraded from 1.x.
+    $select = "contextid = :contextid AND component = :component AND filearea = :filearea AND itemid = :itemid AND filepath <> '/' AND filename = '.'";
+    $params = array('contextid'=>$context->id, 'component'=>$component, 'filearea'=>$filearea, 'itemid'=>$itemid);
+    return $DB->record_exists_select('files', $select, $params);
 }
 
 /**
@@ -318,7 +348,7 @@ function file_get_unused_draft_itemid() {
         print_error('noguest');
     }
 
-    $contextid = get_context_instance(CONTEXT_USER, $USER->id)->id;
+    $contextid = context_user::instance($USER->id)->id;
 
     $fs = get_file_storage();
     $draftitemid = rand(1, 999999999);
@@ -357,7 +387,7 @@ function file_prepare_draft_area(&$draftitemid, $contextid, $component, $fileare
         $options['forcehttps'] = false;
     }
 
-    $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+    $usercontext = context_user::instance($USER->id);
     $fs = get_file_storage();
 
     if (empty($draftitemid)) {
@@ -458,27 +488,73 @@ function file_rewrite_pluginfile_urls($text, $file, $contextid, $component, $fil
  * @global stdClass $CFG
  * @global stdClass $USER
  * @param int $draftitemid the draft area item id.
+ * @param string $filepath path to the directory from which the information have to be retrieved.
  * @return array with the following entries:
  *      'filecount' => number of files in the draft area.
+ *      'filesize' => total size of the files in the draft area.
+ *      'foldercount' => number of folders in the draft area.
+ *      'filesize_without_references' => total size of the area excluding file references.
  * (more information will be added as needed).
  */
-function file_get_draft_area_info($draftitemid) {
+function file_get_draft_area_info($draftitemid, $filepath = '/') {
     global $CFG, $USER;
 
-    $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+    $usercontext = context_user::instance($USER->id);
     $fs = get_file_storage();
 
-    $results = array();
+    $results = array(
+        'filecount' => 0,
+        'foldercount' => 0,
+        'filesize' => 0,
+        'filesize_without_references' => 0
+    );
 
-    // The number of files
-    $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftitemid, 'id', false);
-    $results['filecount'] = count($draftfiles);
-    $results['filesize'] = 0;
+    if ($filepath != '/') {
+        $draftfiles = $fs->get_directory_files($usercontext->id, 'user', 'draft', $draftitemid, $filepath, true, true);
+    } else {
+        $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftitemid, 'id', true);
+    }
     foreach ($draftfiles as $file) {
-        $results['filesize'] += $file->get_filesize();
+        if ($file->is_directory()) {
+            $results['foldercount'] += 1;
+        } else {
+            $results['filecount'] += 1;
+        }
+
+        $filesize = $file->get_filesize();
+        $results['filesize'] += $filesize;
+        if (!$file->is_external_file()) {
+            $results['filesize_without_references'] += $filesize;
+        }
     }
 
     return $results;
+}
+
+/**
+ * Returns whether a draft area has exceeded/will exceed its size limit.
+ *
+ * Please note that the unlimited value for $areamaxbytes is -1 {@link FILE_AREA_MAX_BYTES_UNLIMITED}, not 0.
+ *
+ * @param int $draftitemid the draft area item id.
+ * @param int $areamaxbytes the maximum size allowed in this draft area.
+ * @param int $newfilesize the size that would be added to the current area.
+ * @param bool $includereferences true to include the size of the references in the area size.
+ * @return bool true if the area will/has exceeded its limit.
+ * @since 2.4
+ */
+function file_is_draft_area_limit_reached($draftitemid, $areamaxbytes, $newfilesize = 0, $includereferences = false) {
+    if ($areamaxbytes != FILE_AREA_MAX_BYTES_UNLIMITED) {
+        $draftinfo = file_get_draft_area_info($draftitemid);
+        $areasize = $draftinfo['filesize_without_references'];
+        if ($includereferences) {
+            $areasize = $draftinfo['filesize'];
+        }
+        if ($areasize + $newfilesize > $areamaxbytes) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -490,7 +566,7 @@ function file_get_draft_area_info($draftitemid) {
 function file_get_user_used_space() {
     global $DB, $USER;
 
-    $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+    $usercontext = context_user::instance($USER->id);
     $sql = "SELECT SUM(files1.filesize) AS totalbytes FROM {files} files1
             JOIN (SELECT contenthash, filename, MAX(id) AS id
             FROM {files}
@@ -507,11 +583,11 @@ function file_get_user_used_space() {
  * @param string $str
  * @return string path
  */
-function file_correct_filepath($str) { //TODO: what is this? (skodak)
+function file_correct_filepath($str) { //TODO: what is this? (skodak) - No idea (Fred)
     if ($str == '/' or empty($str)) {
         return '/';
     } else {
-        return '/'.trim($str, './@#$ ').'/';
+        return '/'.trim($str, '/').'/';
     }
 }
 
@@ -526,7 +602,7 @@ function file_correct_filepath($str) { //TODO: what is this? (skodak)
 function file_get_drafarea_folders($draftitemid, $filepath, &$data) {
     global $USER, $OUTPUT, $CFG;
     $data->children = array();
-    $context = get_context_instance(CONTEXT_USER, $USER->id);
+    $context = context_user::instance($USER->id);
     $fs = get_file_storage();
     if ($files = $fs->get_directory_files($context->id, 'user', 'draft', $draftitemid, $filepath, false)) {
         foreach ($files as $file) {
@@ -558,7 +634,7 @@ function file_get_drafarea_folders($draftitemid, $filepath, &$data) {
 function file_get_drafarea_files($draftitemid, $filepath = '/') {
     global $USER, $OUTPUT, $CFG;
 
-    $context = get_context_instance(CONTEXT_USER, $USER->id);
+    $context = context_user::instance($USER->id);
     $fs = get_file_storage();
 
     $data = new stdClass();
@@ -675,6 +751,9 @@ function file_get_submitted_draft_itemid($elname) {
 /**
  * Restore the original source field from draft files
  *
+ * Do not use this function because it makes field files.source inconsistent
+ * for draft area files. This function will be deprecated in 2.6
+ *
  * @param stored_file $storedfile This only works with draft files
  * @return stored_file
  */
@@ -711,7 +790,7 @@ function file_restore_source_field_from_draft_file($storedfile) {
 function file_save_draft_area_files($draftitemid, $contextid, $component, $filearea, $itemid, array $options=null, $text=null, $forcehttps=false) {
     global $USER;
 
-    $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+    $usercontext = context_user::instance($USER->id);
     $fs = get_file_storage();
 
     $options = (array)$options;
@@ -721,62 +800,61 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
     if (!isset($options['maxfiles'])) {
         $options['maxfiles'] = -1; // unlimited
     }
-    if (!isset($options['maxbytes'])) {
+    if (!isset($options['maxbytes']) || $options['maxbytes'] == USER_CAN_IGNORE_FILE_SIZE_LIMITS) {
         $options['maxbytes'] = 0; // unlimited
+    }
+    if (!isset($options['areamaxbytes'])) {
+        $options['areamaxbytes'] = FILE_AREA_MAX_BYTES_UNLIMITED; // Unlimited.
+    }
+    $allowreferences = true;
+    if (isset($options['return_types']) && !($options['return_types'] & FILE_REFERENCE)) {
+        // we assume that if $options['return_types'] is NOT specified, we DO allow references.
+        // this is not exactly right. BUT there are many places in code where filemanager options
+        // are not passed to file_save_draft_area_files()
+        $allowreferences = false;
+    }
+
+    // Check if the draft area has exceeded the authorised limit. This should never happen as validation
+    // should have taken place before, unless the user is doing something nauthly. If so, let's just not save
+    // anything at all in the next area.
+    if (file_is_draft_area_limit_reached($draftitemid, $options['areamaxbytes'])) {
+        return null;
     }
 
     $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftitemid, 'id');
     $oldfiles   = $fs->get_area_files($contextid, $component, $filearea, $itemid, 'id');
 
-    if (count($draftfiles) < 2) {
-        // means there are no files - one file means root dir only ;-)
-        $fs->delete_area_files($contextid, $component, $filearea, $itemid);
-
-    } else if (count($oldfiles) < 2) {
-        $filecount = 0;
-        // there were no files before - one file means root dir only ;-)
-        foreach ($draftfiles as $file) {
-            $file_record = array('contextid'=>$contextid, 'component'=>$component, 'filearea'=>$filearea, 'itemid'=>$itemid);
-            if (!$options['subdirs']) {
-                if ($file->get_filepath() !== '/' or $file->is_directory()) {
-                    continue;
-                }
-            }
-            if ($options['maxbytes'] and $options['maxbytes'] < $file->get_filesize()) {
-                // oversized file - should not get here at all
-                continue;
-            }
-            if ($options['maxfiles'] != -1 and $options['maxfiles'] <= $filecount) {
-                // more files - should not get here at all
-                break;
-            }
-            if (!$file->is_directory()) {
-                $filecount++;
-            }
-
-            if ($file->is_external_file()) {
-                $repoid = $file->get_repository_id();
-                if (!empty($repoid)) {
-                    $file_record['repositoryid'] = $repoid;
-                    $file_record['reference'] = $file->get_reference();
-                }
-            }
-            file_restore_source_field_from_draft_file($file);
-
-            $fs->create_file_from_storedfile($file_record, $file);
-        }
-
-    } else {
+    // One file in filearea means it is empty (it has only top-level directory '.').
+    if (count($draftfiles) > 1 || count($oldfiles) > 1) {
         // we have to merge old and new files - we want to keep file ids for files that were not changed
         // we change time modified for all new and changed files, we keep time created as is
 
         $newhashes = array();
+        $filecount = 0;
         foreach ($draftfiles as $file) {
+            if (!$options['subdirs'] && $file->get_filepath() !== '/') {
+                continue;
+            }
+            if (!$allowreferences && $file->is_external_file()) {
+                continue;
+            }
+            if (!$file->is_directory()) {
+                if ($options['maxbytes'] and $options['maxbytes'] < $file->get_filesize()) {
+                    // oversized file - should not get here at all
+                    continue;
+                }
+                if ($options['maxfiles'] != -1 and $options['maxfiles'] <= $filecount) {
+                    // more files - should not get here at all
+                    continue;
+                }
+                $filecount++;
+            }
             $newhash = $fs->get_pathname_hash($contextid, $component, $filearea, $itemid, $file->get_filepath(), $file->get_filename());
-            file_restore_source_field_from_draft_file($file);
             $newhashes[$newhash] = $file;
         }
-        $filecount = 0;
+
+        // Loop through oldfiles and decide which we need to delete and which to update.
+        // After this cycle the array $newhashes will only contain the files that need to be added.
         foreach ($oldfiles as $oldfile) {
             $oldhash = $oldfile->get_pathnamehash();
             if (!isset($newhashes[$oldhash])) {
@@ -786,6 +864,25 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
             }
 
             $newfile = $newhashes[$oldhash];
+            // Now we know that we have $oldfile and $newfile for the same path.
+            // Let's check if we can update this file or we need to delete and create.
+            if ($newfile->is_directory()) {
+                // Directories are always ok to just update.
+            } else if (($source = @unserialize($newfile->get_source())) && isset($source->original)) {
+                // File has the 'original' - we need to update the file (it may even have not been changed at all).
+                $original = file_storage::unpack_reference($source->original);
+                if ($original['filename'] !== $oldfile->get_filename() || $original['filepath'] !== $oldfile->get_filepath()) {
+                    // Very odd, original points to another file. Delete and create file.
+                    $oldfile->delete();
+                    continue;
+                }
+            } else {
+                // The same file name but absence of 'original' means that file was deteled and uploaded again.
+                // By deleting and creating new file we properly manage all existing references.
+                $oldfile->delete();
+                continue;
+            }
+
             // status changed, we delete old file, and create a new one
             if ($oldfile->get_status() != $newfile->get_status()) {
                 // file was changed, use updated with new timemodified data
@@ -794,10 +891,6 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
                 continue;
             }
 
-            // Replaced file content
-            if ($oldfile->get_contenthash() != $newfile->get_contenthash()) {
-                $oldfile->replace_content_with($newfile);
-            }
             // Updated author
             if ($oldfile->get_author() != $newfile->get_author()) {
                 $oldfile->set_author($newfile->get_author());
@@ -808,8 +901,14 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
             }
 
             // Updated file source
-            if ($oldfile->get_source() != $newfile->get_source()) {
-                $oldfile->set_source($newfile->get_source());
+            // Field files.source for draftarea files contains serialised object with source and original information.
+            // We only store the source part of it for non-draft file area.
+            $newsource = $newfile->get_source();
+            if ($source = @unserialize($newfile->get_source())) {
+                $newsource = $source->source;
+            }
+            if ($oldfile->get_source() !== $newsource) {
+                $oldfile->set_source($newsource);
             }
 
             // Updated sort order
@@ -817,42 +916,32 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
                 $oldfile->set_sortorder($newfile->get_sortorder());
             }
 
-            // Update file size
-            if ($oldfile->get_filesize() != $newfile->get_filesize()) {
-                $oldfile->set_filesize($newfile->get_filesize());
-            }
-
             // Update file timemodified
             if ($oldfile->get_timemodified() != $newfile->get_timemodified()) {
                 $oldfile->set_timemodified($newfile->get_timemodified());
             }
 
+            // Replaced file content
+            if (!$oldfile->is_directory() &&
+                    ($oldfile->get_contenthash() != $newfile->get_contenthash() ||
+                    $oldfile->get_filesize() != $newfile->get_filesize() ||
+                    $oldfile->get_referencefileid() != $newfile->get_referencefileid() ||
+                    $oldfile->get_userid() != $newfile->get_userid())) {
+                $oldfile->replace_file_with($newfile);
+            }
+
             // unchanged file or directory - we keep it as is
             unset($newhashes[$oldhash]);
-            if (!$oldfile->is_directory()) {
-                $filecount++;
-            }
         }
 
         // Add fresh file or the file which has changed status
         // the size and subdirectory tests are extra safety only, the UI should prevent it
         foreach ($newhashes as $file) {
             $file_record = array('contextid'=>$contextid, 'component'=>$component, 'filearea'=>$filearea, 'itemid'=>$itemid, 'timemodified'=>time());
-            if (!$options['subdirs']) {
-                if ($file->get_filepath() !== '/' or $file->is_directory()) {
-                    continue;
-                }
-            }
-            if ($options['maxbytes'] and $options['maxbytes'] < $file->get_filesize()) {
-                // oversized file - should not get here at all
-                continue;
-            }
-            if ($options['maxfiles'] != -1 and $options['maxfiles'] <= $filecount) {
-                // more files - should not get here at all
-                break;
-            }
-            if (!$file->is_directory()) {
-                $filecount++;
+            if ($source = @unserialize($file->get_source())) {
+                // Field files.source for draftarea files contains serialised object with source and original information.
+                // We only store the source part of it for non-draft file area.
+                $file_record['source'] = $source->source;
             }
 
             if ($file->is_external_file()) {
@@ -892,7 +981,7 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
 function file_rewrite_urls_to_pluginfile($text, $draftitemid, $forcehttps = false) {
     global $CFG, $USER;
 
-    $usercontext = get_context_instance(CONTEXT_USER, $USER->id);
+    $usercontext = context_user::instance($USER->id);
 
     $wwwroot = $CFG->wwwroot;
     if ($forcehttps) {
@@ -1060,7 +1149,6 @@ function format_postdata_for_curlcall($postdata) {
  * Fetches content of file from Internet (using proxy if defined). Uses cURL extension if present.
  * Due to security concerns only downloads from http(s) sources are supported.
  *
- * @todo MDL-31073 add version test for '7.10.5'
  * @category files
  * @param string $url file url starting with http(s)://
  * @param array $headers http headers, null if none. If set, should be an
@@ -1083,14 +1171,7 @@ function format_postdata_for_curlcall($postdata) {
 function download_file_content($url, $headers=null, $postdata=null, $fullresponse=false, $timeout=300, $connecttimeout=20, $skipcertverify=false, $tofile=NULL, $calctimeout=false) {
     global $CFG;
 
-    // some extra security
-    $newlines = array("\r", "\n");
-    if (is_array($headers) ) {
-        foreach ($headers as $key => $value) {
-            $headers[$key] = str_replace($newlines, '', $value);
-        }
-    }
-    $url = str_replace($newlines, '', $url);
+    // Only http and https links supported.
     if (!preg_match('|^https?://|i', $url)) {
         if ($fullresponse) {
             $response = new stdClass();
@@ -1105,222 +1186,168 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
         }
     }
 
-    // check if proxy (if used) should be bypassed for this url
-    $proxybypass = is_proxybypass($url);
+    $options = array();
 
-    if (!$ch = curl_init($url)) {
-        debugging('Can not init curl.');
-        return false;
-    }
-
-    // set extra headers
-    if (is_array($headers) ) {
-        $headers2 = array();
+    $headers2 = array();
+    if (is_array($headers)) {
         foreach ($headers as $key => $value) {
-            $headers2[] = "$key: $value";
+            if (is_numeric($key)) {
+                $headers2[] = $value;
+            } else {
+                $headers2[] = "$key: $value";
+            }
         }
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers2);
     }
 
     if ($skipcertverify) {
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $options['CURLOPT_SSL_VERIFYPEER'] = false;
+    } else {
+        $options['CURLOPT_SSL_VERIFYPEER'] = true;
     }
 
-    // use POST if requested
+    $options['CURLOPT_CONNECTTIMEOUT'] = $connecttimeout;
+
+    $options['CURLOPT_FOLLOWLOCATION'] = 1;
+    $options['CURLOPT_MAXREDIRS'] = 5;
+
+    // Use POST if requested.
     if (is_array($postdata)) {
         $postdata = format_postdata_for_curlcall($postdata);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
+    } else if (empty($postdata)) {
+        $postdata = null;
     }
 
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HEADER, false);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connecttimeout);
-
-    if (!ini_get('open_basedir') and !ini_get('safe_mode')) {
-        // TODO: add version test for '7.10.5'
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-    }
-
-    if (!empty($CFG->proxyhost) and !$proxybypass) {
-        // SOCKS supported in PHP5 only
-        if (!empty($CFG->proxytype) and ($CFG->proxytype == 'SOCKS5')) {
-            if (defined('CURLPROXY_SOCKS5')) {
-                curl_setopt($ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
-            } else {
-                curl_close($ch);
-                if ($fullresponse) {
-                    $response = new stdClass();
-                    $response->status        = '0';
-                    $response->headers       = array();
-                    $response->response_code = 'SOCKS5 proxy is not supported in PHP4';
-                    $response->results       = '';
-                    $response->error         = 'SOCKS5 proxy is not supported in PHP4';
-                    return $response;
-                } else {
-                    debugging("SOCKS5 proxy is not supported in PHP4.", DEBUG_ALL);
-                    return false;
-                }
-            }
-        }
-
-        curl_setopt($ch, CURLOPT_HTTPPROXYTUNNEL, false);
-
-        if (empty($CFG->proxyport)) {
-            curl_setopt($ch, CURLOPT_PROXY, $CFG->proxyhost);
-        } else {
-            curl_setopt($ch, CURLOPT_PROXY, $CFG->proxyhost.':'.$CFG->proxyport);
-        }
-
-        if (!empty($CFG->proxyuser) and !empty($CFG->proxypassword)) {
-            curl_setopt($ch, CURLOPT_PROXYUSERPWD, $CFG->proxyuser.':'.$CFG->proxypassword);
-            if (defined('CURLOPT_PROXYAUTH')) {
-                // any proxy authentication if PHP 5.1
-                curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC | CURLAUTH_NTLM);
-            }
-        }
-    }
-
-    // set up header and content handlers
-    $received = new stdClass();
-    $received->headers = array(); // received headers array
-    $received->tofile  = $tofile;
-    $received->fh      = null;
-    curl_setopt($ch, CURLOPT_HEADERFUNCTION, partial('download_file_content_header_handler', $received));
-    if ($tofile) {
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, partial('download_file_content_write_handler', $received));
-    }
-
+    // Optionally attempt to get more correct timeout by fetching the file size.
     if (!isset($CFG->curltimeoutkbitrate)) {
-        //use very slow rate of 56kbps as a timeout speed when not set
+        // Use very slow rate of 56kbps as a timeout speed when not set.
         $bitrate = 56;
     } else {
         $bitrate = $CFG->curltimeoutkbitrate;
     }
+    if ($calctimeout and !isset($postdata)) {
+        $curl = new curl();
+        $curl->setHeader($headers2);
 
-    // try to calculate the proper amount for timeout from remote file size.
-    // if disabled or zero, we won't do any checks nor head requests.
-    if ($calctimeout && $bitrate > 0) {
-        //setup header request only options
-        curl_setopt_array ($ch, array(
-            CURLOPT_RETURNTRANSFER => false,
-            CURLOPT_NOBODY         => true)
-        );
+        $curl->head($url, $postdata, $options);
 
-        curl_exec($ch);
-        $info = curl_getinfo($ch);
-        $err = curl_error($ch);
-
-        if ($err === '' && $info['download_content_length'] > 0) { //no curl errors
-            $timeout = max($timeout, ceil($info['download_content_length'] * 8 / ($bitrate * 1024))); //adjust for large files only - take max timeout.
+        $info = $curl->get_info();
+        $error_no = $curl->get_errno();
+        if (!$error_no && $info['download_content_length'] > 0) {
+            // No curl errors - adjust for large files only - take max timeout.
+            $timeout = max($timeout, ceil($info['download_content_length'] * 8 / ($bitrate * 1024)));
         }
-        //reinstate affected curl options
-        curl_setopt_array ($ch, array(
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_NOBODY         => false)
-        );
     }
 
-    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-    $result = curl_exec($ch);
+    $curl = new curl();
+    $curl->setHeader($headers2);
 
-    // try to detect encoding problems
+    $options['CURLOPT_RETURNTRANSFER'] = true;
+    $options['CURLOPT_NOBODY'] = false;
+    $options['CURLOPT_TIMEOUT'] = $timeout;
+
+    if ($tofile) {
+        $fh = fopen($tofile, 'w');
+        if (!$fh) {
+            if ($fullresponse) {
+                $response = new stdClass();
+                $response->status        = 0;
+                $response->headers       = array();
+                $response->response_code = 'Can not write to file';
+                $response->results       = false;
+                $response->error         = 'Can not write to file';
+                return $response;
+            } else {
+                return false;
+            }
+        }
+        $options['CURLOPT_FILE'] = $fh;
+    }
+
+    if (isset($postdata)) {
+        $content = $curl->post($url, $postdata, $options);
+    } else {
+        $content = $curl->get($url, null, $options);
+    }
+
+    if ($tofile) {
+        fclose($fh);
+        @chmod($tofile, $CFG->filepermissions);
+    }
+
+/*
+    // Try to detect encoding problems.
     if ((curl_errno($ch) == 23 or curl_errno($ch) == 61) and defined('CURLOPT_ENCODING')) {
         curl_setopt($ch, CURLOPT_ENCODING, 'none');
         $result = curl_exec($ch);
     }
+*/
 
-    if ($received->fh) {
-        fclose($received->fh);
-    }
+    $info       = $curl->get_info();
+    $error_no   = $curl->get_errno();
+    $rawheaders = $curl->get_raw_response();
 
-    if (curl_errno($ch)) {
-        $error    = curl_error($ch);
-        $error_no = curl_errno($ch);
-        curl_close($ch);
-
-        if ($fullresponse) {
-            $response = new stdClass();
-            if ($error_no == 28) {
-                $response->status    = '-100'; // mimic snoopy
-            } else {
-                $response->status    = '0';
-            }
-            $response->headers       = array();
-            $response->response_code = $error;
-            $response->results       = false;
-            $response->error         = $error;
-            return $response;
-        } else {
+    if ($error_no) {
+        $error = $content;
+        if (!$fullresponse) {
             debugging("cURL request for \"$url\" failed with: $error ($error_no)", DEBUG_ALL);
             return false;
         }
 
+        $response = new stdClass();
+        if ($error_no == 28) {
+            $response->status    = '-100'; // Mimic snoopy.
+        } else {
+            $response->status    = '0';
+        }
+        $response->headers       = array();
+        $response->response_code = $error;
+        $response->results       = false;
+        $response->error         = $error;
+        return $response;
+    }
+
+    if ($tofile) {
+        $content = true;
+    }
+
+    if (empty($info['http_code'])) {
+        // For security reasons we support only true http connections (Location: file:// exploit prevention).
+        $response = new stdClass();
+        $response->status        = '0';
+        $response->headers       = array();
+        $response->response_code = 'Unknown cURL error';
+        $response->results       = false; // do NOT change this, we really want to ignore the result!
+        $response->error         = 'Unknown cURL error';
+
     } else {
-        $info = curl_getinfo($ch);
-        curl_close($ch);
+        $response = new stdClass();
+        $response->status        = (string)$info['http_code'];
+        $response->headers       = $rawheaders;
+        $response->results       = $content;
+        $response->error         = '';
 
-        if (empty($info['http_code'])) {
-            // for security reasons we support only true http connections (Location: file:// exploit prevention)
-            $response = new stdClass();
-            $response->status        = '0';
-            $response->headers       = array();
-            $response->response_code = 'Unknown cURL error';
-            $response->results       = false; // do NOT change this, we really want to ignore the result!
-            $response->error         = 'Unknown cURL error';
-
-        } else {
-            $response = new stdClass();;
-            $response->status        = (string)$info['http_code'];
-            $response->headers       = $received->headers;
-            $response->response_code = $received->headers[0];
-            $response->results       = $result;
-            $response->error         = '';
-        }
-
-        if ($fullresponse) {
-            return $response;
-        } else if ($info['http_code'] != 200) {
-            debugging("cURL request for \"$url\" failed, HTTP response code: ".$response->response_code, DEBUG_ALL);
-            return false;
-        } else {
-            return $response->results;
+        // There might be multiple headers on redirect, find the status of the last one.
+        $firstline = true;
+        foreach ($rawheaders as $line) {
+            if ($firstline) {
+                $response->response_code = $line;
+                $firstline = false;
+            }
+            if (trim($line, "\r\n") === '') {
+                $firstline = true;
+            }
         }
     }
-}
 
-/**
- * internal implementation
- * @param stdClass $received
- * @param resource $ch
- * @param mixed $header
- * @return int header length
- */
-function download_file_content_header_handler($received, $ch, $header) {
-    $received->headers[] = $header;
-    return strlen($header);
-}
+    if ($fullresponse) {
+        return $response;
+    }
 
-/**
- * internal implementation
- * @param stdClass $received
- * @param resource $ch
- * @param mixed $data
- */
-function download_file_content_write_handler($received, $ch, $data) {
-    if (!$received->fh) {
-        $received->fh = fopen($received->tofile, 'w');
-        if ($received->fh === false) {
-            // bad luck, file creation or overriding failed
-            return 0;
-        }
+    if ($info['http_code'] != 200) {
+        debugging("cURL request for \"$url\" failed, HTTP response code: ".$response->response_code, DEBUG_ALL);
+        return false;
     }
-    if (fwrite($received->fh, $data) === false) {
-        // bad luck, write failed, let's abort completely
-        return 0;
-    }
-    return strlen($data);
+    return $response->results;
 }
 
 /**
@@ -1362,6 +1389,7 @@ function &get_mimetypes_array() {
         'xxx'  => array ('type'=>'document/unknown', 'icon'=>'unknown'),
         '3gp'  => array ('type'=>'video/quicktime', 'icon'=>'quicktime', 'groups'=>array('video'), 'string'=>'video'),
         'aac'  => array ('type'=>'audio/aac', 'icon'=>'audio', 'groups'=>array('audio'), 'string'=>'audio'),
+        'accdb'  => array ('type'=>'application/msaccess', 'icon'=>'base'),
         'ai'   => array ('type'=>'application/postscript', 'icon'=>'eps', 'groups'=>array('image'), 'string'=>'image'),
         'aif'  => array ('type'=>'audio/x-aiff', 'icon'=>'audio', 'groups'=>array('audio'), 'string'=>'audio'),
         'aiff' => array ('type'=>'audio/x-aiff', 'icon'=>'audio', 'groups'=>array('audio'), 'string'=>'audio'),
@@ -1392,9 +1420,14 @@ function &get_mimetypes_array() {
         'dir'  => array ('type'=>'application/x-director', 'icon'=>'flash'),
         'dxr'  => array ('type'=>'application/x-director', 'icon'=>'flash'),
         'eps'  => array ('type'=>'application/postscript', 'icon'=>'eps'),
+        'epub' => array ('type'=>'application/epub+zip', 'icon'=>'epub', 'groups'=>array('document')),
         'fdf'  => array ('type'=>'application/pdf', 'icon'=>'pdf'),
         'flv'  => array ('type'=>'video/x-flv', 'icon'=>'flash', 'groups'=>array('video','web_video'), 'string'=>'video'),
         'f4v'  => array ('type'=>'video/mp4', 'icon'=>'flash', 'groups'=>array('video','web_video'), 'string'=>'video'),
+
+        'gallery'           => array ('type'=>'application/x-smarttech-notebook', 'icon'=>'archive'),
+        'galleryitem'       => array ('type'=>'application/x-smarttech-notebook', 'icon'=>'archive'),
+        'gallerycollection' => array ('type'=>'application/x-smarttech-notebook', 'icon'=>'archive'),
         'gif'  => array ('type'=>'image/gif', 'icon'=>'gif', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
         'gtar' => array ('type'=>'application/x-gtar', 'icon'=>'archive', 'groups'=>array('archive'), 'string'=>'archive'),
         'tgz'  => array ('type'=>'application/g-zip', 'icon'=>'archive', 'groups'=>array('archive'), 'string'=>'archive'),
@@ -1405,18 +1438,20 @@ function &get_mimetypes_array() {
         'hqx'  => array ('type'=>'application/mac-binhex40', 'icon'=>'archive', 'groups'=>array('archive'), 'string'=>'archive'),
         'htc'  => array ('type'=>'text/x-component', 'icon'=>'markup'),
         'html' => array ('type'=>'text/html', 'icon'=>'html', 'groups'=>array('web_file')),
-        'xhtml'=> array ('type'=>'application/xhtml+xml', 'icon'=>'markup', 'groups'=>array('web_file')),
+        'xhtml'=> array ('type'=>'application/xhtml+xml', 'icon'=>'html', 'groups'=>array('web_file')),
         'htm'  => array ('type'=>'text/html', 'icon'=>'html', 'groups'=>array('web_file')),
         'ico'  => array ('type'=>'image/vnd.microsoft.icon', 'icon'=>'image', 'groups'=>array('image'), 'string'=>'image'),
         'ics'  => array ('type'=>'text/calendar', 'icon'=>'text'),
         'isf'  => array ('type'=>'application/inspiration', 'icon'=>'isf'),
         'ist'  => array ('type'=>'application/inspiration.template', 'icon'=>'isf'),
         'java' => array ('type'=>'text/plain', 'icon'=>'sourcecode'),
+        'jar'  => array ('type'=>'application/java-archive', 'icon' => 'archive'),
         'jcb'  => array ('type'=>'text/xml', 'icon'=>'markup'),
         'jcl'  => array ('type'=>'text/xml', 'icon'=>'markup'),
         'jcw'  => array ('type'=>'text/xml', 'icon'=>'markup'),
         'jmt'  => array ('type'=>'text/xml', 'icon'=>'markup'),
         'jmx'  => array ('type'=>'text/xml', 'icon'=>'markup'),
+        'jnlp' => array ('type'=>'application/x-java-jnlp-file', 'icon'=>'markup'),
         'jpe'  => array ('type'=>'image/jpeg', 'icon'=>'jpeg', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
         'jpeg' => array ('type'=>'image/jpeg', 'icon'=>'jpeg', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
         'jpg'  => array ('type'=>'image/jpeg', 'icon'=>'jpeg', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
@@ -1425,6 +1460,9 @@ function &get_mimetypes_array() {
         'latex'=> array ('type'=>'application/x-latex', 'icon'=>'text'),
         'm'    => array ('type'=>'text/plain', 'icon'=>'sourcecode'),
         'mbz'  => array ('type'=>'application/vnd.moodle.backup', 'icon'=>'moodle'),
+        'mdb'  => array ('type'=>'application/x-msaccess', 'icon'=>'base'),
+        'mht'  => array ('type'=>'message/rfc822', 'icon'=>'archive'),
+        'mhtml'=> array ('type'=>'message/rfc822', 'icon'=>'archive'),
         'mov'  => array ('type'=>'video/quicktime', 'icon'=>'quicktime', 'groups'=>array('video','web_video'), 'string'=>'video'),
         'movie'=> array ('type'=>'video/x-sgi-movie', 'icon'=>'quicktime', 'groups'=>array('video'), 'string'=>'video'),
         'm3u'  => array ('type'=>'audio/x-mpegurl', 'icon'=>'mp3', 'groups'=>array('audio'), 'string'=>'audio'),
@@ -1435,6 +1473,10 @@ function &get_mimetypes_array() {
         'mpeg' => array ('type'=>'video/mpeg', 'icon'=>'mpeg', 'groups'=>array('video','web_video'), 'string'=>'video'),
         'mpe'  => array ('type'=>'video/mpeg', 'icon'=>'mpeg', 'groups'=>array('video','web_video'), 'string'=>'video'),
         'mpg'  => array ('type'=>'video/mpeg', 'icon'=>'mpeg', 'groups'=>array('video','web_video'), 'string'=>'video'),
+        'mpr'  => array ('type'=>'application/vnd.moodle.profiling', 'icon'=>'moodle'),
+
+        'nbk'       => array ('type'=>'application/x-smarttech-notebook', 'icon'=>'archive'),
+        'notebook'  => array ('type'=>'application/x-smarttech-notebook', 'icon'=>'archive'),
 
         'odt'  => array ('type'=>'application/vnd.oasis.opendocument.text', 'icon'=>'writer', 'groups'=>array('document')),
         'ott'  => array ('type'=>'application/vnd.oasis.opendocument.text-template', 'icon'=>'writer', 'groups'=>array('document')),
@@ -1515,6 +1557,8 @@ function &get_mimetypes_array() {
         'webm'  => array ('type'=>'video/webm', 'icon'=>'video', 'groups'=>array('video'), 'string'=>'video'),
         'wmv'  => array ('type'=>'video/x-ms-wmv', 'icon'=>'wmv', 'groups'=>array('video'), 'string'=>'video'),
         'asf'  => array ('type'=>'video/x-ms-asf', 'icon'=>'wmv', 'groups'=>array('video'), 'string'=>'video'),
+
+        'xbk'  => array ('type'=>'application/x-smarttech-notebook', 'icon'=>'archive'),
         'xdp'  => array ('type'=>'application/pdf', 'icon'=>'pdf'),
         'xfd'  => array ('type'=>'application/pdf', 'icon'=>'pdf'),
         'xfdf' => array ('type'=>'application/pdf', 'icon'=>'pdf'),
@@ -1529,6 +1573,7 @@ function &get_mimetypes_array() {
 
         'xml'  => array ('type'=>'application/xml', 'icon'=>'markup'),
         'xsl'  => array ('type'=>'text/xml', 'icon'=>'markup'),
+
         'zip'  => array ('type'=>'application/zip', 'icon'=>'archive', 'groups'=>array('archive'), 'string'=>'archive')
     );
     return $mimearray;
@@ -1804,10 +1849,14 @@ function get_mimetype_description($obj, $capitalise=false) {
         $a[strtoupper($key)] = strtoupper($value);
         $a[ucfirst($key)] = ucfirst($value);
     }
-    if (get_string_manager()->string_exists($mimetype, 'mimetypes')) {
-        $result = get_string($mimetype, 'mimetypes', (object)$a);
-    } else if (get_string_manager()->string_exists($mimetypestr, 'mimetypes')) {
-        $result = get_string($mimetypestr, 'mimetypes', (object)$a);
+
+    // MIME types may include + symbol but this is not permitted in string ids.
+    $safemimetype = str_replace('+', '_', $mimetype);
+    $safemimetypestr = str_replace('+', '_', $mimetypestr);
+    if (get_string_manager()->string_exists($safemimetype, 'mimetypes')) {
+        $result = get_string($safemimetype, 'mimetypes', (object)$a);
+    } else if (get_string_manager()->string_exists($safemimetypestr, 'mimetypes')) {
+        $result = get_string($safemimetypestr, 'mimetypes', (object)$a);
     } else if (get_string_manager()->string_exists('default', 'mimetypes')) {
         $result = get_string('default', 'mimetypes', (object)$a);
     } else {
@@ -1854,7 +1903,7 @@ function file_get_typegroup($element, $groups) {
         }
         $result = array_merge($result, $cached[$element][$group]);
     }
-    return array_unique($result);
+    return array_values(array_unique($result));
 }
 
 /**
@@ -1910,6 +1959,43 @@ function send_header_404() {
 }
 
 /**
+ * The readfile function can fail when files are larger than 2GB (even on 64-bit
+ * platforms). This wrapper uses readfile for small files and custom code for
+ * large ones.
+ *
+ * @param string $path Path to file
+ * @param int $filesize Size of file (if left out, will get it automatically)
+ * @return int|bool Size read (will always be $filesize) or false if failed
+ */
+function readfile_allow_large($path, $filesize = -1) {
+    // Automatically get size if not specified.
+    if ($filesize === -1) {
+        $filesize = filesize($path);
+    }
+    if ($filesize <= 2147483647) {
+        // If the file is up to 2^31 - 1, send it normally using readfile.
+        return readfile($path);
+    } else {
+        // For large files, read and output in 64KB chunks.
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            return false;
+        }
+        $left = $filesize;
+        while ($left > 0) {
+            $size = min($left, 65536);
+            $buffer = fread($handle, $size);
+            if ($buffer === false) {
+                return false;
+            }
+            echo $buffer;
+            $left -= $size;
+        }
+        return $filesize;
+    }
+}
+
+/**
  * Enhanced readfile() with optional acceleration.
  * @param string|stored_file $file
  * @param string $mimetype
@@ -1930,8 +2016,8 @@ function readfile_accel($file, $mimetype, $accelerate) {
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', $lastmodified) .' GMT');
 
     if (is_object($file)) {
-        header('ETag: ' . $file->get_contenthash());
-        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) and $_SERVER['HTTP_IF_NONE_MATCH'] === $file->get_contenthash()) {
+        header('Etag: "' . $file->get_contenthash() . '"');
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) and trim($_SERVER['HTTP_IF_NONE_MATCH'], '"') === $file->get_contenthash()) {
             header('HTTP/1.1 304 Not Modified');
             return;
         }
@@ -2031,7 +2117,7 @@ function readfile_accel($file, $mimetype, $accelerate) {
     if (is_object($file)) {
         $file->readfile();
     } else {
-        readfile($file);
+        readfile_allow_large($file, $filesize);
     }
 }
 
@@ -2076,7 +2162,7 @@ function readstring_accel($string, $mimetype, $accelerate) {
 function send_temp_file($path, $filename, $pathisstring=false) {
     global $CFG;
 
-    if (check_browser_version('Firefox', '1.5')) {
+    if (core_useragent::is_firefox()) {
         // only FF is known to correctly save to disk before opening...
         $mimetype = mimeinfo('type', $filename);
     } else {
@@ -2084,7 +2170,7 @@ function send_temp_file($path, $filename, $pathisstring=false) {
     }
 
     // close session - not needed anymore
-    session_get_instance()->write_close();
+    \core\session\manager::write_close();
 
     if (!$pathisstring) {
         if (!file_exists($path)) {
@@ -2092,21 +2178,21 @@ function send_temp_file($path, $filename, $pathisstring=false) {
             print_error('filenotfound', 'error', $CFG->wwwroot.'/');
         }
         // executed after normal finish or abort
-        @register_shutdown_function('send_temp_file_finished', $path);
+        core_shutdown_manager::register_function('send_temp_file_finished', array($path));
     }
 
     // if user is using IE, urlencode the filename so that multibyte file name will show up correctly on popup
-    if (check_browser_version('MSIE')) {
+    if (core_useragent::is_ie()) {
         $filename = urlencode($filename);
     }
 
     header('Content-Disposition: attachment; filename="'.$filename.'"');
     if (strpos($CFG->wwwroot, 'https://') === 0) { //https sites - watch out for IE! KB812935 and KB316431
-        header('Cache-Control: max-age=10');
+        header('Cache-Control: private, max-age=10, no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
         header('Pragma: ');
     } else { //normal http - prevent caching at all cost
-        header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0');
+        header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0, no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
         header('Pragma: no-cache');
     }
@@ -2140,7 +2226,7 @@ function send_temp_file_finished($path) {
  * @category files
  * @param string $path Path of file on disk (including real filename), or actual content of file as string
  * @param string $filename Filename to send
- * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+ * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
  * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
  * @param bool $pathisstring If true (default false), $path is the content to send and not the pathname
  * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
@@ -2151,33 +2237,28 @@ function send_temp_file_finished($path) {
  *                        and should not be reopened.
  * @return null script execution stopped unless $dontdie is true
  */
-function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathisstring=false, $forcedownload=false, $mimetype='', $dontdie=false) {
+function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring=false, $forcedownload=false, $mimetype='', $dontdie=false) {
     global $CFG, $COURSE;
 
     if ($dontdie) {
         ignore_user_abort(true);
     }
 
-    // MDL-11789, apply $CFG->filelifetime here
-    if ($lifetime === 'default') {
-        if (!empty($CFG->filelifetime)) {
-            $lifetime = $CFG->filelifetime;
-        } else {
-            $lifetime = 86400;
-        }
+    if ($lifetime === 'default' or is_null($lifetime)) {
+        $lifetime = $CFG->filelifetime;
     }
 
-    session_get_instance()->write_close(); // unlock session during fileserving
+    \core\session\manager::write_close(); // Unlock session during file serving.
 
     // Use given MIME type if specified, otherwise guess it using mimeinfo.
     // IE, Konqueror and Opera open html file directly in browser from web even when directed to save it to disk :-O
     // only Firefox saves all files locally before opening when content-disposition: attachment stated
-    $isFF         = check_browser_version('Firefox', '1.5'); // only FF > 1.5 properly tested
+    $isFF         = core_useragent::is_firefox(); // only FF properly tested
     $mimetype     = ($forcedownload and !$isFF) ? 'application/x-forcedownload' :
                          ($mimetype ? $mimetype : mimeinfo('type', $filename));
 
     // if user is using IE, urlencode the filename so that multibyte file name will show up correctly on popup
-    if (check_browser_version('MSIE')) {
+    if (core_useragent::is_ie()) {
         $filename = rawurlencode($filename);
     }
 
@@ -2188,19 +2269,23 @@ function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathiss
     }
 
     if ($lifetime > 0) {
+        $private = '';
+        if (isloggedin() and !isguestuser()) {
+            $private = ' private,';
+        }
         $nobyteserving = false;
-        header('Cache-Control: max-age='.$lifetime);
+        header('Cache-Control:'.$private.' max-age='.$lifetime.', no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
         header('Pragma: ');
 
     } else { // Do not cache files in proxies and browsers
         $nobyteserving = true;
         if (strpos($CFG->wwwroot, 'https://') === 0) { //https sites - watch out for IE! KB812935 and KB316431
-            header('Cache-Control: max-age=10');
+            header('Cache-Control: private, max-age=10, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: ');
         } else { //normal http - prevent caching at all cost
-            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0');
+            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: no-cache');
         }
@@ -2232,7 +2317,7 @@ function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathiss
             $options = new stdClass();
             $options->newlines = false;
             $options->noclean = true;
-            $text = htmlentities($pathisstring ? $path : implode('', file($path)));
+            $text = htmlentities($pathisstring ? $path : implode('', file($path)), ENT_QUOTES, 'UTF-8');
             $output = '<pre>'. format_text($text, FORMAT_MOODLE, $options, $COURSE->id) .'</pre>';
 
             readstring_accel($output, $mimetype, false);
@@ -2266,13 +2351,13 @@ function send_file($path, $filename, $lifetime = 'default' , $filter=0, $pathiss
  *
  * @category files
  * @param stored_file $stored_file local file object
- * @param int $lifetime Number of seconds before the file should expire from caches (default 24 hours)
+ * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
  * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
  * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
  * @param array $options additional options affecting the file serving
  * @return null script execution stopped unless $options['dontdie'] is true
  */
-function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownload=false, array $options=array()) {
+function send_stored_file($stored_file, $lifetime=null, $filter=0, $forcedownload=false, array $options=array()) {
     global $CFG, $COURSE;
 
     if (empty($options['filename'])) {
@@ -2285,6 +2370,10 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
         $dontdie = false;
     } else {
         $dontdie = true;
+    }
+
+    if ($lifetime === 'default' or is_null($lifetime)) {
+        $lifetime = $CFG->filelifetime;
     }
 
     if (!empty($options['preview'])) {
@@ -2313,7 +2402,7 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
     }
 
     // handle external resource
-    if ($stored_file && $stored_file->is_external_file()) {
+    if ($stored_file && $stored_file->is_external_file() && !isset($options['sendcachedexternalfile'])) {
         $stored_file->send_file($lifetime, $filter, $forcedownload, $options);
         die;
     }
@@ -2330,18 +2419,18 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
         ignore_user_abort(true);
     }
 
-    session_get_instance()->write_close(); // unlock session during fileserving
+    \core\session\manager::write_close(); // Unlock session during file serving.
 
     // Use given MIME type if specified, otherwise guess it using mimeinfo.
     // IE, Konqueror and Opera open html file directly in browser from web even when directed to save it to disk :-O
     // only Firefox saves all files locally before opening when content-disposition: attachment stated
     $filename     = is_null($filename) ? $stored_file->get_filename() : $filename;
-    $isFF         = check_browser_version('Firefox', '1.5'); // only FF > 1.5 properly tested
+    $isFF         = core_useragent::is_firefox(); // only FF properly tested
     $mimetype     = ($forcedownload and !$isFF) ? 'application/x-forcedownload' :
                          ($stored_file->get_mimetype() ? $stored_file->get_mimetype() : mimeinfo('type', $filename));
 
     // if user is using IE, urlencode the filename so that multibyte file name will show up correctly on popup
-    if (check_browser_version('MSIE')) {
+    if (core_useragent::is_ie()) {
         $filename = rawurlencode($filename);
     }
 
@@ -2352,17 +2441,21 @@ function send_stored_file($stored_file, $lifetime=86400 , $filter=0, $forcedownl
     }
 
     if ($lifetime > 0) {
-        header('Cache-Control: max-age='.$lifetime);
+        $private = '';
+        if (isloggedin() and !isguestuser()) {
+            $private = ' private,';
+        }
+        header('Cache-Control:'.$private.' max-age='.$lifetime.', no-transform');
         header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
         header('Pragma: ');
 
     } else { // Do not cache files in proxies and browsers
         if (strpos($CFG->wwwroot, 'https://') === 0) { //https sites - watch out for IE! KB812935 and KB316431
-            header('Cache-Control: max-age=10');
+            header('Cache-Control: private, max-age=10, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: ');
         } else { //normal http - prevent caching at all cost
-            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0');
+            header('Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0, no-transform');
             header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
             header('Pragma: no-cache');
         }
@@ -2519,6 +2612,7 @@ function put_records_csv($file, $records, $table = NULL) {
     }
 
     fclose($fp);
+    @chmod($CFG->tempdir.'/'.$file, $CFG->filepermissions);
     return true;
 }
 
@@ -2578,7 +2672,7 @@ function fulldelete($location) {
  */
 function byteserving_send_file($handle, $mimetype, $ranges, $filesize) {
     // better turn off any kind of compression and buffering
-    @ini_set('zlib.output_compression', 'Off');
+    ini_set('zlib.output_compression', 'Off');
 
     $chunksize = 1*(1024*1024); // 1MB chunks - must be less than 2MB!
     if ($handle === false) {
@@ -2599,7 +2693,7 @@ function byteserving_send_file($handle, $mimetype, $ranges, $filesize) {
 
         fseek($handle, $ranges[0][1]);
         while (!feof($handle) && $length > 0) {
-            @set_time_limit(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
+            core_php_time_limit::raise(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
             $buffer = fread($handle, ($chunksize < $length ? $chunksize : $length));
             echo $buffer;
             flush();
@@ -2628,7 +2722,7 @@ function byteserving_send_file($handle, $mimetype, $ranges, $filesize) {
             echo $range[0];
             fseek($handle, $range[1]);
             while (!feof($handle) && $length > 0) {
-                @set_time_limit(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
+                core_php_time_limit::raise(60*60); //reset time limit to 60 min - should be enough for 1 MB chunk
                 $buffer = fread($handle, ($chunksize < $length ? $chunksize : $length));
                 echo $buffer;
                 flush();
@@ -2661,7 +2755,7 @@ function file_modify_html_header($text) {
     }*/
 
     $ufo = '';
-    if (filter_is_enabled('filter/mediaplugin')) {
+    if (filter_is_enabled('mediaplugin')) {
         // this script is needed by most media filter plugins.
         $attributes = array('type'=>'text/javascript', 'src'=>$CFG->httpswwwroot . '/lib/ufo.js');
         $ufo = html_writer::tag('script', '', $attributes) . "\n";
@@ -2725,18 +2819,24 @@ function file_modify_html_header($text) {
 class curl {
     /** @var bool Caches http request contents */
     public  $cache    = false;
-    /** @var bool Uses proxy */
-    public  $proxy    = false;
+    /** @var bool Uses proxy, null means automatic based on URL */
+    public  $proxy    = null;
     /** @var string library version */
     public  $version  = '0.4 dev';
     /** @var array http's response */
     public  $response = array();
+    /** @var array Raw response headers, needed for BC in download_file_content(). */
+    public $rawresponse = array();
     /** @var array http header */
     public  $header   = array();
     /** @var string cURL information */
     public  $info;
     /** @var string error */
     public  $error;
+    /** @var int error code */
+    public  $errno;
+    /** @var bool use workaround for open_basedir restrictions, to be changed from unit tests only! */
+    public $emulateredirects = null;
 
     /** @var array cURL options */
     private $options;
@@ -2750,36 +2850,45 @@ class curl {
     private $debug    = false;
     /** @var bool|string Path to cookie file */
     private $cookie   = false;
+    /** @var bool tracks multiple headers in response - redirect detection */
+    private $responsefinished = false;
 
     /**
-     * Constructor
+     * Curl constructor.
      *
-     * @global stdClass $CFG
-     * @param array $options
+     * Allowed settings are:
+     *  proxy: (bool) use proxy server, null means autodetect non-local from url
+     *  debug: (bool) use debug output
+     *  cookie: (string) path to cookie file, false if none
+     *  cache: (bool) use cache
+     *  module_cache: (string) type of cache
+     *
+     * @param array $settings
      */
-    public function __construct($options = array()){
+    public function __construct($settings = array()) {
         global $CFG;
         if (!function_exists('curl_init')) {
             $this->error = 'cURL module must be enabled!';
             trigger_error($this->error, E_USER_ERROR);
             return false;
         }
-        // the options of curl should be init here.
+
+        // All settings of this class should be init here.
         $this->resetopt();
-        if (!empty($options['debug'])) {
+        if (!empty($settings['debug'])) {
             $this->debug = true;
         }
-        if(!empty($options['cookie'])) {
-            if($options['cookie'] === true) {
+        if (!empty($settings['cookie'])) {
+            if($settings['cookie'] === true) {
                 $this->cookie = $CFG->dataroot.'/curl_cookie.txt';
             } else {
-                $this->cookie = $options['cookie'];
+                $this->cookie = $settings['cookie'];
             }
         }
-        if (!empty($options['cache'])) {
+        if (!empty($settings['cache'])) {
             if (class_exists('curl_cache')) {
-                if (!empty($options['module_cache'])) {
-                    $this->cache = new curl_cache($options['module_cache']);
+                if (!empty($settings['module_cache'])) {
+                    $this->cache = new curl_cache($settings['module_cache']);
                 } else {
                     $this->cache = new curl_cache('misc');
                 }
@@ -2806,35 +2915,72 @@ class curl {
                 }
                 $this->setopt(array('proxytype'=>$this->proxy_type));
             }
+
+            if (isset($settings['proxy'])) {
+                $this->proxy = $settings['proxy'];
+            }
+        } else {
+            $this->proxy = false;
         }
-        if (!empty($this->proxy_host)) {
-            $this->proxy = array('proxy'=>$this->proxy_host);
+
+        if (!isset($this->emulateredirects)) {
+            $this->emulateredirects = ini_get('open_basedir');
         }
     }
+
     /**
      * Resets the CURL options that have already been set
      */
-    public function resetopt(){
+    public function resetopt() {
         $this->options = array();
         $this->options['CURLOPT_USERAGENT']         = 'MoodleBot/1.0';
         // True to include the header in the output
         $this->options['CURLOPT_HEADER']            = 0;
         // True to Exclude the body from the output
         $this->options['CURLOPT_NOBODY']            = 0;
-        // TRUE to follow any "Location: " header that the server
-        // sends as part of the HTTP header (note this is recursive,
-        // PHP will follow as many "Location: " headers that it is sent,
-        // unless CURLOPT_MAXREDIRS is set).
-        //$this->options['CURLOPT_FOLLOWLOCATION']    = 1;
+        // Redirect ny default.
+        $this->options['CURLOPT_FOLLOWLOCATION']    = 1;
         $this->options['CURLOPT_MAXREDIRS']         = 10;
         $this->options['CURLOPT_ENCODING']          = '';
         // TRUE to return the transfer as a string of the return
         // value of curl_exec() instead of outputting it out directly.
         $this->options['CURLOPT_RETURNTRANSFER']    = 1;
-        $this->options['CURLOPT_BINARYTRANSFER']    = 0;
         $this->options['CURLOPT_SSL_VERIFYPEER']    = 0;
         $this->options['CURLOPT_SSL_VERIFYHOST']    = 2;
         $this->options['CURLOPT_CONNECTTIMEOUT']    = 30;
+
+        if ($cacert = self::get_cacert()) {
+            $this->options['CURLOPT_CAINFO'] = $cacert;
+        }
+    }
+
+    /**
+     * Get the location of ca certificates.
+     * @return string absolute file path or empty if default used
+     */
+    public static function get_cacert() {
+        global $CFG;
+
+        // Bundle in dataroot always wins.
+        if (is_readable("$CFG->dataroot/moodleorgca.crt")) {
+            return realpath("$CFG->dataroot/moodleorgca.crt");
+        }
+
+        // Next comes the default from php.ini
+        $cacert = ini_get('curl.cainfo');
+        if (!empty($cacert) and is_readable($cacert)) {
+            return realpath($cacert);
+        }
+
+        // Windows PHP does not have any certs, we need to use something.
+        if ($CFG->ostype === 'WINDOWS') {
+            if (is_readable("$CFG->libdir/cacert.pem")) {
+                return realpath("$CFG->libdir/cacert.pem");
+            }
+        }
+
+        // Use default, this should work fine on all properly configured *nix systems.
+        return null;
     }
 
     /**
@@ -2853,16 +2999,26 @@ class curl {
     }
 
     /**
-     * Set curl options
+     * Set curl options.
      *
-     * @param array $options If array is null, this function will
-     * reset the options to default value.
+     * Do not use the curl constants to define the options, pass a string
+     * corresponding to that constant. Ie. to set CURLOPT_MAXREDIRS, pass
+     * array('CURLOPT_MAXREDIRS' => 10) or array('maxredirs' => 10) to this method.
+     *
+     * @param array $options If array is null, this function will reset the options to default value.
+     * @return void
+     * @throws coding_exception If an option uses constant value instead of option name.
      */
     public function setopt($options = array()) {
         if (is_array($options)) {
-            foreach($options as $name => $val){
+            foreach ($options as $name => $val) {
+                if (!is_string($name)) {
+                    throw new coding_exception('Curl options should be defined using strings, not constant values.');
+                }
                 if (stripos($name, 'CURLOPT_') === false) {
                     $name = strtoupper('CURLOPT_'.$name);
+                } else {
+                    $name = strtoupper($name);
                 }
                 $this->options[$name] = $val;
             }
@@ -2872,7 +3028,7 @@ class curl {
     /**
      * Reset http method
      */
-    public function cleanopt(){
+    public function cleanopt() {
         unset($this->options['CURLOPT_HTTPGET']);
         unset($this->options['CURLOPT_POST']);
         unset($this->options['CURLOPT_POSTFIELDS']);
@@ -2880,6 +3036,14 @@ class curl {
         unset($this->options['CURLOPT_INFILE']);
         unset($this->options['CURLOPT_INFILESIZE']);
         unset($this->options['CURLOPT_CUSTOMREQUEST']);
+        unset($this->options['CURLOPT_FILE']);
+    }
+
+    /**
+     * Resets the HTTP Request headers (to prepare for the new request)
+     */
+    public function resetHeader() {
+        $this->header = array();
     }
 
     /**
@@ -2888,39 +3052,63 @@ class curl {
      * @param array $header
      */
     public function setHeader($header) {
-        if (is_array($header)){
+        if (is_array($header)) {
             foreach ($header as $v) {
                 $this->setHeader($v);
             }
         } else {
-            $this->header[] = $header;
+            // Remove newlines, they are not allowed in headers.
+            $this->header[] = preg_replace('/[\r\n]/', '', $header);
         }
     }
 
     /**
-     * Set HTTP Response Header
-     *
+     * Get HTTP Response Headers
+     * @return array of arrays
      */
-    public function getResponse(){
+    public function getResponse() {
         return $this->response;
+    }
+
+    /**
+     * Get raw HTTP Response Headers
+     * @return array of strings
+     */
+    public function get_raw_response() {
+        return $this->rawresponse;
     }
 
     /**
      * private callback function
      * Formatting HTTP Response Header
      *
+     * We only keep the last headers returned. For example during a redirect the
+     * redirect headers will not appear in {@link self::getResponse()}, if you need
+     * to use those headers, refer to {@link self::get_raw_response()}.
+     *
      * @param resource $ch Apparently not used
      * @param string $header
      * @return int The strlen of the header
      */
-    private function formatHeader($ch, $header)
-    {
-        $this->count++;
+    private function formatHeader($ch, $header) {
+        $this->rawresponse[] = $header;
+
+        if (trim($header, "\r\n") === '') {
+            // This must be the last header.
+            $this->responsefinished = true;
+        }
+
         if (strlen($header) > 2) {
+            if ($this->responsefinished) {
+                // We still have headers after the supposedly last header, we must be
+                // in a redirect so let's empty the response to keep the last headers.
+                $this->responsefinished = false;
+                $this->response = array();
+            }
             list($key, $value) = explode(" ", rtrim($header, "\r\n"), 2);
             $key = rtrim($key, ':');
             if (!empty($this->response[$key])) {
-                if (is_array($this->response[$key])){
+                if (is_array($this->response[$key])) {
                     $this->response[$key][] = $value;
                 } else {
                     $tmp = $this->response[$key];
@@ -2944,6 +3132,14 @@ class curl {
      * @return resource The curl handle
      */
     private function apply_opt($curl, $options) {
+        // Some more security first.
+        if (defined('CURLOPT_PROTOCOLS')) {
+            $this->options['CURLOPT_PROTOCOLS'] = (CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+        if (defined('CURLOPT_REDIR_PROTOCOLS')) {
+            $this->options['CURLOPT_REDIR_PROTOCOLS'] = (CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+
         // Clean up
         $this->cleanopt();
         // set cookie
@@ -2953,15 +3149,29 @@ class curl {
                              ));
         }
 
-        // set proxy
-        if (!empty($this->proxy) || !empty($options['proxy'])) {
-            $this->setopt($this->proxy);
+        // Bypass proxy if required.
+        if ($this->proxy === null) {
+            if (!empty($this->options['CURLOPT_URL']) and is_proxybypass($this->options['CURLOPT_URL'])) {
+                $proxy = false;
+            } else {
+                $proxy = true;
+            }
+        } else {
+            $proxy = (bool)$this->proxy;
         }
+
+        // Set proxy.
+        if ($proxy) {
+            $options['CURLOPT_PROXY'] = $this->proxy_host;
+        } else {
+            unset($this->options['CURLOPT_PROXY']);
+        }
+
         $this->setopt($options);
         // reset before set options
         curl_setopt($curl, CURLOPT_HEADERFUNCTION, array(&$this,'formatHeader'));
         // set headers
-        if (empty($this->header)){
+        if (empty($this->header)) {
             $this->setHeader(array(
                 'User-Agent: MoodleBot/1.0',
                 'Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7',
@@ -2970,20 +3180,42 @@ class curl {
         }
         curl_setopt($curl, CURLOPT_HTTPHEADER, $this->header);
 
-        if ($this->debug){
+        if ($this->debug) {
             echo '<h1>Options</h1>';
             var_dump($this->options);
             echo '<h1>Header</h1>';
             var_dump($this->header);
         }
 
-        // set options
+        // Do not allow infinite redirects.
+        if (!isset($this->options['CURLOPT_MAXREDIRS'])) {
+            $this->options['CURLOPT_MAXREDIRS'] = 0;
+        } else if ($this->options['CURLOPT_MAXREDIRS'] > 100) {
+            $this->options['CURLOPT_MAXREDIRS'] = 100;
+        } else {
+            $this->options['CURLOPT_MAXREDIRS'] = (int)$this->options['CURLOPT_MAXREDIRS'];
+        }
+
+        // Make sure we always know if redirects expected.
+        if (!isset($this->options['CURLOPT_FOLLOWLOCATION'])) {
+            $this->options['CURLOPT_FOLLOWLOCATION'] = 0;
+        }
+
+        // Set options.
         foreach($this->options as $name => $val) {
-            if (is_string($name)) {
-                $name = constant(strtoupper($name));
+            if ($name === 'CURLOPT_PROTOCOLS' or $name === 'CURLOPT_REDIR_PROTOCOLS') {
+                // These can not be changed, sorry.
+                continue;
             }
+            if ($name === 'CURLOPT_FOLLOWLOCATION' and $this->emulateredirects) {
+                // The redirects are emulated elsewhere.
+                curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 0);
+                continue;
+            }
+            $name = constant($name);
             curl_setopt($curl, $name, $val);
         }
+
         return $curl;
     }
 
@@ -2993,25 +3225,46 @@ class curl {
      * Calls {@link multi()} with specific download headers
      *
      * <code>
-     * $c = new curl;
+     * $c = new curl();
+     * $file1 = fopen('a', 'wb');
+     * $file2 = fopen('b', 'wb');
      * $c->download(array(
-     *              array('url'=>'http://localhost/', 'file'=>fopen('a', 'wb')),
-     *              array('url'=>'http://localhost/20/', 'file'=>fopen('b', 'wb'))
+     *     array('url'=>'http://localhost/', 'file'=>$file1),
+     *     array('url'=>'http://localhost/20/', 'file'=>$file2)
+     * ));
+     * fclose($file1);
+     * fclose($file2);
+     * </code>
+     *
+     * or
+     *
+     * <code>
+     * $c = new curl();
+     * $c->download(array(
+     *              array('url'=>'http://localhost/', 'filepath'=>'/tmp/file1.tmp'),
+     *              array('url'=>'http://localhost/20/', 'filepath'=>'/tmp/file2.tmp')
      *              ));
      * </code>
      *
-     * @param array $requests An array of files to request
+     * @param array $requests An array of files to request {
+     *                  url => url to download the file [required]
+     *                  file => file handler, or
+     *                  filepath => file path
+     * }
+     * If 'file' and 'filepath' parameters are both specified in one request, the
+     * open file handle in the 'file' parameter will take precedence and 'filepath'
+     * will be ignored.
+     *
      * @param array $options An array of options to set
      * @return array An array of results
      */
     public function download($requests, $options = array()) {
-        $options['CURLOPT_BINARYTRANSFER'] = 1;
         $options['RETURNTRANSFER'] = false;
         return $this->multi($requests, $options);
     }
 
     /**
-     * Mulit HTTP Requests
+     * Multi HTTP Requests
      * This function could run multi-requests in parallel.
      *
      * @param array $requests An array of files to request
@@ -3024,11 +3277,15 @@ class curl {
         $results = array();
         $main    = curl_multi_init();
         for ($i = 0; $i < $count; $i++) {
-            $url = $requests[$i];
-            foreach($url as $n=>$v){
-                $options[$n] = $url[$n];
+            if (!empty($requests[$i]['filepath']) and empty($requests[$i]['file'])) {
+                // open file
+                $requests[$i]['file'] = fopen($requests[$i]['filepath'], 'w');
+                $requests[$i]['auto-handle'] = true;
             }
-            $handles[$i] = curl_init($url['url']);
+            foreach($requests[$i] as $n=>$v) {
+                $options[$n] = $v;
+            }
+            $handles[$i] = curl_init($requests[$i]['url']);
             $this->apply_opt($handles[$i], $options);
             curl_multi_add_handle($main, $handles[$i]);
         }
@@ -3045,6 +3302,13 @@ class curl {
             curl_multi_remove_handle($main, $handles[$i]);
         }
         curl_multi_close($main);
+
+        for ($i = 0; $i < $count; $i++) {
+            if (!empty($requests[$i]['filepath']) and !empty($requests[$i]['auto-handle'])) {
+                // close file handler if file is opened in this function
+                fclose($requests[$i]['file']);
+            }
+        }
         return $results;
     }
 
@@ -3055,24 +3319,124 @@ class curl {
      * @param array $options
      * @return bool
      */
-    protected function request($url, $options = array()){
-        // create curl instance
-        $curl = curl_init($url);
-        $options['url'] = $url;
+    protected function request($url, $options = array()) {
+        // Set the URL as a curl option.
+        $this->setopt(array('CURLOPT_URL' => $url));
+
+        // Create curl instance.
+        $curl = curl_init();
+
+        // Reset here so that the data is valid when result returned from cache.
+        $this->info             = array();
+        $this->error            = '';
+        $this->errno            = 0;
+        $this->response         = array();
+        $this->rawresponse      = array();
+        $this->responsefinished = false;
+
         $this->apply_opt($curl, $options);
         if ($this->cache && $ret = $this->cache->get($this->options)) {
             return $ret;
-        } else {
-            $ret = curl_exec($curl);
-            if ($this->cache) {
-                $this->cache->set($this->options, $ret);
+        }
+
+        $ret = curl_exec($curl);
+        $this->info  = curl_getinfo($curl);
+        $this->error = curl_error($curl);
+        $this->errno = curl_errno($curl);
+        // Note: $this->response and $this->rawresponse are filled by $hits->formatHeader callback.
+
+        if ($this->emulateredirects and $this->options['CURLOPT_FOLLOWLOCATION'] and $this->info['http_code'] != 200) {
+            $redirects = 0;
+
+            while($redirects <= $this->options['CURLOPT_MAXREDIRS']) {
+
+                if ($this->info['http_code'] == 301) {
+                    // Moved Permanently - repeat the same request on new URL.
+
+                } else if ($this->info['http_code'] == 302) {
+                    // Found - the standard redirect - repeat the same request on new URL.
+
+                } else if ($this->info['http_code'] == 303) {
+                    // 303 See Other - repeat only if GET, do not bother with POSTs.
+                    if (empty($this->options['CURLOPT_HTTPGET'])) {
+                        break;
+                    }
+
+                } else if ($this->info['http_code'] == 307) {
+                    // Temporary Redirect - must repeat using the same request type.
+
+                } else if ($this->info['http_code'] == 308) {
+                    // Permanent Redirect - must repeat using the same request type.
+
+                } else {
+                    // Some other http code means do not retry!
+                    break;
+                }
+
+                $redirects++;
+
+                $redirecturl = null;
+                if (isset($this->info['redirect_url'])) {
+                    if (preg_match('|^https?://|i', $this->info['redirect_url'])) {
+                        $redirecturl = $this->info['redirect_url'];
+                    }
+                }
+                if (!$redirecturl) {
+                    foreach ($this->response as $k => $v) {
+                        if (strtolower($k) === 'location') {
+                            $redirecturl = $v;
+                            break;
+                        }
+                    }
+                    if (preg_match('|^https?://|i', $redirecturl)) {
+                        // Great, this is the correct location format!
+
+                    } else if ($redirecturl) {
+                        $current = curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
+                        if (strpos($redirecturl, '/') === 0) {
+                            // Relative to server root - just guess.
+                            $pos = strpos('/', $current, 8);
+                            if ($pos === false) {
+                                $redirecturl = $current.$redirecturl;
+                            } else {
+                                $redirecturl = substr($current, 0, $pos).$redirecturl;
+                            }
+                        } else {
+                            // Relative to current script.
+                            $redirecturl = dirname($current).'/'.$redirecturl;
+                        }
+                    }
+                }
+
+                curl_setopt($curl, CURLOPT_URL, $redirecturl);
+                $ret = curl_exec($curl);
+
+                $this->info  = curl_getinfo($curl);
+                $this->error = curl_error($curl);
+                $this->errno = curl_errno($curl);
+
+                $this->info['redirect_count'] = $redirects;
+
+                if ($this->info['http_code'] === 200) {
+                    // Finally this is what we wanted.
+                    break;
+                }
+                if ($this->errno != CURLE_OK) {
+                    // Something wrong is going on.
+                    break;
+                }
+            }
+            if ($redirects > $this->options['CURLOPT_MAXREDIRS']) {
+                $this->errno = CURLE_TOO_MANY_REDIRECTS;
+                $this->error = 'Maximum ('.$this->options['CURLOPT_MAXREDIRS'].') redirects followed';
             }
         }
 
-        $this->info  = curl_getinfo($curl);
-        $this->error = curl_error($curl);
+        if ($this->cache) {
+            $this->cache->set($this->options, $ret);
+        }
 
-        if ($this->debug){
+        if ($this->debug) {
             echo '<h1>Return Data</h1>';
             var_dump($ret);
             echo '<h1>Info</h1>';
@@ -3083,7 +3447,7 @@ class curl {
 
         curl_close($curl);
 
-        if (empty($this->error)){
+        if (empty($this->error)) {
             return $ret;
         } else {
             return $this->error;
@@ -3101,7 +3465,7 @@ class curl {
      * @param array $options
      * @return bool
      */
-    public function head($url, $options = array()){
+    public function head($url, $options = array()) {
         $options['CURLOPT_HTTPGET'] = 0;
         $options['CURLOPT_HEADER']  = 1;
         $options['CURLOPT_NOBODY']  = 1;
@@ -3116,7 +3480,7 @@ class curl {
      * @param array $options
      * @return bool
      */
-    public function post($url, $params = '', $options = array()){
+    public function post($url, $params = '', $options = array()) {
         $options['CURLOPT_POST']       = 1;
         if (is_array($params)) {
             $this->_tmp_file_post_params = array();
@@ -3144,14 +3508,69 @@ class curl {
      * @param array $options
      * @return bool
      */
-    public function get($url, $params = array(), $options = array()){
+    public function get($url, $params = array(), $options = array()) {
         $options['CURLOPT_HTTPGET'] = 1;
 
-        if (!empty($params)){
+        if (!empty($params)) {
             $url .= (stripos($url, '?') !== false) ? '&' : '?';
             $url .= http_build_query($params, '', '&');
         }
         return $this->request($url, $options);
+    }
+
+    /**
+     * Downloads one file and writes it to the specified file handler
+     *
+     * <code>
+     * $c = new curl();
+     * $file = fopen('savepath', 'w');
+     * $result = $c->download_one('http://localhost/', null,
+     *   array('file' => $file, 'timeout' => 5, 'followlocation' => true, 'maxredirs' => 3));
+     * fclose($file);
+     * $download_info = $c->get_info();
+     * if ($result === true) {
+     *   // file downloaded successfully
+     * } else {
+     *   $error_text = $result;
+     *   $error_code = $c->get_errno();
+     * }
+     * </code>
+     *
+     * <code>
+     * $c = new curl();
+     * $result = $c->download_one('http://localhost/', null,
+     *   array('filepath' => 'savepath', 'timeout' => 5, 'followlocation' => true, 'maxredirs' => 3));
+     * // ... see above, no need to close handle and remove file if unsuccessful
+     * </code>
+     *
+     * @param string $url
+     * @param array|null $params key-value pairs to be added to $url as query string
+     * @param array $options request options. Must include either 'file' or 'filepath'
+     * @return bool|string true on success or error string on failure
+     */
+    public function download_one($url, $params, $options = array()) {
+        $options['CURLOPT_HTTPGET'] = 1;
+        if (!empty($params)) {
+            $url .= (stripos($url, '?') !== false) ? '&' : '?';
+            $url .= http_build_query($params, '', '&');
+        }
+        if (!empty($options['filepath']) && empty($options['file'])) {
+            // open file
+            if (!($options['file'] = fopen($options['filepath'], 'w'))) {
+                $this->errno = 100;
+                return get_string('cannotwritefile', 'error', $options['filepath']);
+            }
+            $filepath = $options['filepath'];
+        }
+        unset($options['filepath']);
+        $result = $this->request($url, $options);
+        if (isset($filepath)) {
+            fclose($options['file']);
+            if ($result !== true) {
+                unlink($filepath);
+            }
+        }
+        return $result;
     }
 
     /**
@@ -3162,9 +3581,9 @@ class curl {
      * @param array $options
      * @return bool
      */
-    public function put($url, $params = array(), $options = array()){
+    public function put($url, $params = array(), $options = array()) {
         $file = $params['file'];
-        if (!is_file($file)){
+        if (!is_file($file)) {
             return null;
         }
         $fp   = fopen($file, 'r');
@@ -3172,7 +3591,7 @@ class curl {
         $options['CURLOPT_PUT']        = 1;
         $options['CURLOPT_INFILESIZE'] = $size;
         $options['CURLOPT_INFILE']     = $fp;
-        if (!isset($this->options['CURLOPT_USERPWD'])){
+        if (!isset($this->options['CURLOPT_USERPWD'])) {
             $this->setopt(array('CURLOPT_USERPWD'=>'anonymous: noreply@moodle.org'));
         }
         $ret = $this->request($url, $options);
@@ -3188,7 +3607,7 @@ class curl {
      * @param array $options
      * @return bool
      */
-    public function delete($url, $param = array(), $options = array()){
+    public function delete($url, $param = array(), $options = array()) {
         $options['CURLOPT_CUSTOMREQUEST'] = 'DELETE';
         if (!isset($options['CURLOPT_USERPWD'])) {
             $options['CURLOPT_USERPWD'] = 'anonymous: noreply@moodle.org';
@@ -3204,7 +3623,7 @@ class curl {
      * @param array $options
      * @return bool
      */
-    public function trace($url, $options = array()){
+    public function trace($url, $options = array()) {
         $options['CURLOPT_CUSTOMREQUEST'] = 'TRACE';
         $ret = $this->request($url, $options);
         return $ret;
@@ -3217,7 +3636,7 @@ class curl {
      * @param array $options
      * @return bool
      */
-    public function options($url, $options = array()){
+    public function options($url, $options = array()) {
         $options['CURLOPT_CUSTOMREQUEST'] = 'OPTIONS';
         $ret = $this->request($url, $options);
         return $ret;
@@ -3230,6 +3649,54 @@ class curl {
      */
     public function get_info() {
         return $this->info;
+    }
+
+    /**
+     * Get curl error code
+     *
+     * @return int
+     */
+    public function get_errno() {
+        return $this->errno;
+    }
+
+    /**
+     * When using a proxy, an additional HTTP response code may appear at
+     * the start of the header. For example, when using https over a proxy
+     * there may be 'HTTP/1.0 200 Connection Established'. Other codes are
+     * also possible and some may come with their own headers.
+     *
+     * If using the return value containing all headers, this function can be
+     * called to remove unwanted doubles.
+     *
+     * Note that it is not possible to distinguish this situation from valid
+     * data unless you know the actual response part (below the headers)
+     * will not be included in this string, or else will not 'look like' HTTP
+     * headers. As a result it is not safe to call this function for general
+     * data.
+     *
+     * @param string $input Input HTTP response
+     * @return string HTTP response with additional headers stripped if any
+     */
+    public static function strip_double_headers($input) {
+        // I have tried to make this regular expression as specific as possible
+        // to avoid any case where it does weird stuff if you happen to put
+        // HTTP/1.1 200 at the start of any line in your RSS file. This should
+        // also make it faster because it can abandon regex processing as soon
+        // as it hits something that doesn't look like an http header. The
+        // header definition is taken from RFC 822, except I didn't support
+        // folding which is never used in practice.
+        $crlf = "\r\n";
+        return preg_replace(
+                // HTTP version and status code (ignore value of code).
+                '~^HTTP/1\..*' . $crlf .
+                // Header name: character between 33 and 126 decimal, except colon.
+                // Colon. Header value: any character except \r and \n. CRLF.
+                '(?:[\x21-\x39\x3b-\x7e]+:[^' . $crlf . ']+' . $crlf . ')*' .
+                // Headers are terminated by another CRLF (blank line).
+                $crlf .
+                // Second HTTP status code, this time must be 200.
+                '(HTTP/1.[01] 200 )~', '$1', $input);
     }
 }
 
@@ -3321,6 +3788,7 @@ class curl_cache {
         $fp = fopen($this->dir.$filename, 'w');
         fwrite($fp, serialize($val));
         fclose($fp);
+        @chmod($this->dir.$filename, $CFG->filepermissions);
     }
 
     /**
@@ -3403,7 +3871,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
             send_file_not_found();
         }
 
-        if (empty($CFG->bloglevel)) {
+        if (empty($CFG->enableblogs)) {
             print_error('siteblogdisable', 'blog');
         }
 
@@ -3423,15 +3891,15 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
             }
         }
 
-        if ('publishstate' === 'public') {
+        if ($entry->publishstate === 'public') {
             if ($CFG->forcelogin) {
                 require_login();
             }
 
-        } else if ('publishstate' === 'site') {
+        } else if ($entry->publishstate === 'site') {
             require_login();
             //ok
-        } else if ('publishstate' === 'draft') {
+        } else if ($entry->publishstate === 'draft') {
             require_login();
             if ($USER->id != $entry->userid) {
                 send_file_not_found();
@@ -3461,7 +3929,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'feedback' and $context->contextlevel == CONTEXT_COURSE) {
@@ -3478,7 +3946,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
         } else {
             send_file_not_found();
@@ -3499,13 +3967,38 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, true, array('preview' => $preview));
 
         } else {
             send_file_not_found();
         }
+    // ========================================================================================================================
+    } else if ($component === 'badges') {
+        require_once($CFG->libdir . '/badgeslib.php');
 
+        $badgeid = (int)array_shift($args);
+        $badge = new badge($badgeid);
+        $filename = array_pop($args);
+
+        if ($filearea === 'badgeimage') {
+            if ($filename !== 'f1' && $filename !== 'f2') {
+                send_file_not_found();
+            }
+            if (!$file = $fs->get_file($context->id, 'badges', 'badgeimage', $badge->id, '/', $filename.'.png')) {
+                send_file_not_found();
+            }
+
+            \core\session\manager::write_close();
+            send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
+        } else if ($filearea === 'userbadge'  and $context->contextlevel == CONTEXT_USER) {
+            if (!$file = $fs->get_file($context->id, 'badges', 'userbadge', $badge->id, '/', $filename.'.png')) {
+                send_file_not_found();
+            }
+
+            \core\session\manager::write_close();
+            send_stored_file($file, 60*60, 0, true, array('preview' => $preview));
+        }
     // ========================================================================================================================
     } else if ($component === 'calendar') {
         if ($filearea === 'event_description'  and $context->contextlevel == CONTEXT_SYSTEM) {
@@ -3522,7 +4015,6 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
             if (!$event = $DB->get_record('event', array('id'=>(int)$eventid, 'eventtype'=>'site'))) {
                 send_file_not_found();
             }
-            // Check that we got an event and that it's userid is that of the user
 
             // Get the file and serve if successful
             $filename = array_pop($args);
@@ -3531,7 +4023,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'event_description' and $context->contextlevel == CONTEXT_USER) {
@@ -3559,7 +4051,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'event_description' and $context->contextlevel == CONTEXT_COURSE) {
@@ -3570,8 +4062,8 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 require_login($course);
             }
 
-            // Must be able to at least view the course
-            if (!is_enrolled($context) and !is_viewing($context)) {
+            // Must be able to at least view the course. This does not apply to the front page.
+            if ($course->id != SITEID && (!is_enrolled($context)) && (!is_viewing($context))) {
                 //TODO: hmm, do we really want to block guests here?
                 send_file_not_found();
             }
@@ -3592,10 +4084,10 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 if (!has_capability('moodle/site:accessallgroups', $context) && !groups_is_member($event->groupid, $USER->id)) {
                     send_file_not_found();
                 }
-            } else if ($event->eventtype === 'course') {
-                //ok
+            } else if ($event->eventtype === 'course' || $event->eventtype === 'site') {
+                // Ok. Please note that the event type 'site' still uses a course context.
             } else {
-                // some other type
+                // Some other type.
                 send_file_not_found();
             }
 
@@ -3606,7 +4098,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -3657,7 +4149,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 }
                 // no redirect here because it is not cached
                 $theme = theme_config::load($themename);
-                $imagefile = $theme->resolve_image_location('u/'.$filename, 'moodle');
+                $imagefile = $theme->resolve_image_location('u/'.$filename, 'moodle', null);
                 send_file($imagefile, basename($imagefile), 60*60*24*14);
             }
 
@@ -3680,7 +4172,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else if ($filearea === 'profile' and $context->contextlevel == CONTEXT_USER) {
@@ -3715,7 +4207,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
 
                 while (!$canview && count($courses) > 0) {
                     $course = array_shift($courses);
-                    if (has_capability('moodle/user:viewdetails', get_context_instance(CONTEXT_COURSE, $course->id))) {
+                    if (has_capability('moodle/user:viewdetails', context_course::instance($course->id))) {
                         $canview = true;
                     }
                 }
@@ -3727,12 +4219,12 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else if ($filearea === 'profile' and $context->contextlevel == CONTEXT_COURSE) {
             $userid = (int)array_shift($args);
-            $usercontext = get_context_instance(CONTEXT_USER, $userid);
+            $usercontext = context_user::instance($userid);
 
             if ($CFG->forcelogin) {
                 require_login();
@@ -3765,7 +4257,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else if ($filearea === 'backup' and $context->contextlevel == CONTEXT_USER) {
@@ -3786,7 +4278,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, true, array('preview' => $preview)); // must force download - security!
 
         } else {
@@ -3811,7 +4303,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
         } else {
             send_file_not_found();
@@ -3823,18 +4315,18 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
             send_file_not_found();
         }
 
-        if ($filearea === 'summary') {
+        if ($filearea === 'summary' || $filearea === 'overviewfiles') {
             if ($CFG->forcelogin) {
                 require_login();
             }
 
             $filename = array_pop($args);
             $filepath = $args ? '/'.implode('/', $args).'/' : '/';
-            if (!$file = $fs->get_file($context->id, 'course', 'summary', 0, $filepath, $filename) or $file->is_directory()) {
+            if (!$file = $fs->get_file($context->id, 'course', $filearea, 0, $filepath, $filename) or $file->is_directory()) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'section') {
@@ -3850,20 +4342,13 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            if ($course->numsections < $section->section) {
-                if (!has_capability('moodle/course:update', $context)) {
-                    // block access to unavailable sections if can not edit course
-                    send_file_not_found();
-                }
-            }
-
             $filename = array_pop($args);
             $filepath = $args ? '/'.implode('/', $args).'/' : '/';
             if (!$file = $fs->get_file($context->id, 'course', 'section', $sectionid, $filepath, $filename) or $file->is_directory()) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -3895,7 +4380,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'icon') {
@@ -3910,7 +4395,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 }
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, false, array('preview' => $preview));
 
         } else {
@@ -3935,7 +4420,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -3954,7 +4439,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'section' and $context->contextlevel == CONTEXT_COURSE) {
@@ -3969,7 +4454,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close();
+            \core\session\manager::write_close();
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'activity' and $context->contextlevel == CONTEXT_MODULE) {
@@ -3982,7 +4467,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close();
+            \core\session\manager::write_close();
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
 
         } else if ($filearea === 'automated' and $context->contextlevel == CONTEXT_COURSE) {
@@ -3997,7 +4482,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 0, 0, $forcedownload, array('preview' => $preview));
 
         } else {
@@ -4043,7 +4528,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            session_get_instance()->write_close(); // unlock session during fileserving
+            \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, array('preview' => $preview));
         }
 
@@ -4075,10 +4560,8 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            $lifetime = isset($CFG->filelifetime) ? $CFG->filelifetime : 86400;
-
             // finally send the file
-            send_stored_file($file, $lifetime, 0, false, array('preview' => $preview));
+            send_stored_file($file, null, 0, false, array('preview' => $preview));
         }
 
         $filefunction = $component.'_pluginfile';
@@ -4109,7 +4592,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
                 send_file_not_found();
             }
 
-            $bprecord = $DB->get_record('block_positions', array('blockinstanceid' => $context->instanceid), 'visible');
+            $bprecord = $DB->get_record('block_positions', array('contextid' => $context->id, 'blockinstanceid' => $context->instanceid));
             // User can't access file, if block is hidden or doesn't have block:view capability
             if (($bprecord && !$bprecord->visible) || !has_capability('moodle/block:view', $context)) {
                  send_file_not_found();
@@ -4133,7 +4616,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
 
     } else {
         // try to serve general plugin file in arbitrary context
-        $dir = get_component_directory($component);
+        $dir = core_component::get_component_directory($component);
         if (!file_exists("$dir/lib.php")) {
             send_file_not_found();
         }
@@ -4148,171 +4631,4 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null) {
         send_file_not_found();
     }
 
-}
-
-/**
- * Universe file cacheing class
- *
- * @package    core_files
- * @category   files
- * @copyright  2012 Dongsheng Cai {@link http://dongsheng.org}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class cache_file {
-    /** @var string */
-    public $cachedir = '';
-
-    /**
-     * static method to create cache_file class instance
-     *
-     * @param array $options caching ooptions
-     */
-    public static function get_instance($options = array()) {
-        return new cache_file($options);
-    }
-
-    /**
-     * Constructor
-     *
-     * @param array $options
-     */
-    private function __construct($options = array()) {
-        global $CFG;
-
-        // Path to file caches.
-        if (isset($options['cachedir'])) {
-            $this->cachedir = $options['cachedir'];
-        } else {
-            $this->cachedir = $CFG->cachedir . '/filedir';
-        }
-
-        // Create cache directory.
-        if (!file_exists($this->cachedir)) {
-            mkdir($this->cachedir, $CFG->directorypermissions, true);
-        }
-
-        // When use cache_file::get, it will check ttl.
-        if (isset($options['ttl']) && is_numeric($options['ttl'])) {
-            $this->ttl = $options['ttl'];
-        } else {
-            // One day.
-            $this->ttl = 60 * 60 * 24;
-        }
-    }
-
-    /**
-     * Get cached file, false if file expires
-     *
-     * @param mixed $param
-     * @param array $options caching options
-     * @return bool|string
-     */
-    public static function get($param, $options = array()) {
-        $instance = self::get_instance($options);
-        $filepath = $instance->generate_filepath($param);
-        if (file_exists($filepath)) {
-            $lasttime = filemtime($filepath);
-            if (time() - $lasttime > $instance->ttl) {
-                // Remove cache file.
-                unlink($filepath);
-                return false;
-            } else {
-                return $filepath;
-            }
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Static method to create cache from a file
-     *
-     * @param mixed $ref
-     * @param string $srcfile
-     * @param array $options
-     * @return string cached file path
-     */
-    public static function create_from_file($ref, $srcfile, $options = array()) {
-        $instance = self::get_instance($options);
-        $cachedfilepath = $instance->generate_filepath($ref);
-        copy($srcfile, $cachedfilepath);
-        return $cachedfilepath;
-    }
-
-    /**
-     * Static method to create cache from url
-     *
-     * @param mixed $ref file reference
-     * @param string $url file url
-     * @param array $options options
-     * @return string cached file path
-     */
-    public static function create_from_url($ref, $url, $options = array()) {
-        $instance = self::get_instance($options);
-        $cachedfilepath = $instance->generate_filepath($ref);
-        $fp = fopen($cachedfilepath, 'w');
-        $curl = new curl;
-        $curl->download(array(array('url'=>$url, 'file'=>$fp)));
-        // Must close file handler.
-        fclose($fp);
-        return $cachedfilepath;
-    }
-
-    /**
-     * Static method to create cache from string
-     *
-     * @param mixed $ref file reference
-     * @param string $url file url
-     * @param array $options options
-     * @return string cached file path
-     */
-    public static function create_from_string($ref, $string, $options = array()) {
-        $instance = self::get_instance($options);
-        $cachedfilepath = $instance->generate_filepath($ref);
-        $fp = fopen($cachedfilepath, 'w');
-        fwrite($fp, $string);
-        // Must close file handler.
-        fclose($fp);
-        return $cachedfilepath;
-    }
-
-    /**
-     * Build path to cache file
-     *
-     * @param mixed $ref
-     * @return string
-     */
-    private function generate_filepath($ref) {
-        global $CFG;
-        $hash = sha1(serialize($ref));
-        $l1 = $hash[0].$hash[1];
-        $l2 = $hash[2].$hash[3];
-        $dir = $this->cachedir . "/$l1/$l2";
-        if (!file_exists($dir)) {
-            mkdir($dir, $CFG->directorypermissions, true);
-        }
-        return "$dir/$hash";
-    }
-
-    /**
-     * Remove cache files
-     *
-     * @param array $options options
-     * @param int $expire The number of seconds before expiry
-     */
-    public static function cleanup($options = array(), $expire) {
-        global $CFG;
-        $instance = self::get_instance($options);
-        if ($dir = opendir($instance->cachedir)) {
-            while (($file = readdir($dir)) !== false) {
-                if (!is_dir($file) && $file != '.' && $file != '..') {
-                    $lasttime = @filemtime($instance->cachedir . $file);
-                    if(time() - $lasttime > $expire){
-                        @unlink($instance->cachedir . $file);
-                    }
-                }
-            }
-            closedir($dir);
-        }
-    }
 }

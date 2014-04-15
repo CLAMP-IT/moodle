@@ -22,8 +22,12 @@ class mod_chat_mod_form extends moodleform_mod {
             $mform->setType('name', PARAM_CLEANHTML);
         }
         $mform->addRule('name', null, 'required', null, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         $this->add_intro_editor(true, get_string('chatintro', 'chat'));
+
+        // Chat sessions.
+        $mform->addElement('header', 'sessionshdr', get_string('sessions', 'chat'));
 
         $mform->addElement('date_time_selector', 'chattime', get_string('chattime', 'chat'));
 
@@ -33,7 +37,6 @@ class mod_chat_mod_form extends moodleform_mod {
         $options[2]  = get_string('repeatdaily', 'chat');
         $options[3]  = get_string('repeatweekly', 'chat');
         $mform->addElement('select', 'schedule', get_string('repeattimes', 'chat'), $options);
-
 
         $options=array();
         $options[0]    = get_string('neverdeletemessages', 'chat');

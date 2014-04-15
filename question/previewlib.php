@@ -44,7 +44,7 @@ class preview_options_form extends moodleform {
             question_display_options::VISIBLE => get_string('shown', 'question'),
         );
 
-        $mform->addElement('header', 'optionsheader', get_string('changeoptions', 'question'));
+        $mform->addElement('header', 'optionsheader', get_string('attemptoptions', 'question'));
 
         $behaviours = question_engine::get_behaviour_options(
                 $this->_customdata['quba']->get_preferred_behaviour());
@@ -62,6 +62,11 @@ class preview_options_form extends moodleform {
                     array_combine($variants, $variants));
         }
         $mform->setType('variant', PARAM_INT);
+
+        $mform->addElement('submit', 'saverestart',
+                get_string('restartwiththeseoptions', 'question'));
+
+        $mform->addElement('header', 'optionsheader', get_string('displayoptions', 'question'));
 
         $mform->addElement('select', 'correctness', get_string('whethercorrect', 'question'),
                 $hiddenofvisible);
@@ -88,8 +93,8 @@ class preview_options_form extends moodleform {
         $mform->addElement('select', 'history',
                 get_string('responsehistory', 'question'), $hiddenofvisible);
 
-        $mform->addElement('submit', 'submit',
-                get_string('restartwiththeseoptions', 'question'));
+        $mform->addElement('submit', 'saveupdate',
+                get_string('updatedisplayoptions', 'question'));
     }
 }
 
@@ -118,7 +123,6 @@ class question_preview_options extends question_display_options {
      * Constructor.
      */
     public function __construct($question) {
-        global $CFG;
         $this->behaviour = 'deferredfeedback';
         $this->maxmark = $question->defaultmark;
         $this->variant = null;
@@ -148,7 +152,7 @@ class question_preview_options extends question_display_options {
     protected function get_field_types() {
         return array(
             'behaviour' => PARAM_ALPHA,
-            'maxmark' => PARAM_NUMBER,
+            'maxmark' => PARAM_FLOAT,
             'variant' => PARAM_INT,
             'correctness' => PARAM_BOOL,
             'marks' => PARAM_INT,
@@ -164,9 +168,10 @@ class question_preview_options extends question_display_options {
      * Load the value of the options from the user_preferences table.
      */
     public function load_user_defaults() {
+        $defaults = get_config('question_preview');
         foreach ($this->get_user_pref_fields() as $field) {
             $this->$field = get_user_preferences(
-                    self::OPTIONPREFIX . $field, $this->$field);
+                    self::OPTIONPREFIX . $field, $defaults->$field);
         }
         $this->numpartscorrect = $this->feedback;
     }
@@ -231,6 +236,9 @@ function question_preview_question_pluginfile($course, $context, $component,
         $filearea, $qubaid, $slot, $args, $forcedownload, $fileoptions) {
     global $USER, $DB, $CFG;
 
+    list($context, $course, $cm) = get_context_info_array($context->id);
+    require_login($course, false, $cm);
+
     $quba = question_engine::load_questions_usage_by_activity($qubaid);
 
     if (!question_has_capability_on($quba->get_question($slot), 'use')) {
@@ -283,10 +291,10 @@ function question_preview_action_url($questionid, $qubaid,
 /**
  * The the URL to use for actions relating to this preview.
  * @param int $questionid the question being previewed.
- * @param int $qubaid the id of the question usage for this preview.
- * @param question_preview_options $options the options in use.
+ * @param context $context the current moodle context.
+ * @param int $previewid optional previewid to sign post saved previewed answers.
  */
-function question_preview_form_url($questionid, $context) {
+function question_preview_form_url($questionid, $context, $previewid = null) {
     $params = array(
         'id' => $questionid,
     );
@@ -294,6 +302,9 @@ function question_preview_form_url($questionid, $context) {
         $params['cmid'] = $context->instanceid;
     } else if ($context->contextlevel == CONTEXT_COURSE) {
         $params['courseid'] = $context->instanceid;
+    }
+    if ($previewid) {
+        $params['previewid'] = $previewid;
     }
     return new moodle_url('/question/preview.php', $params);
 }
@@ -315,4 +326,33 @@ function restart_preview($previewid, $questionid, $displayoptions, $context) {
     }
     redirect(question_preview_url($questionid, $displayoptions->behaviour,
             $displayoptions->maxmark, $displayoptions, $displayoptions->variant, $context));
+}
+
+/**
+ * Scheduled tasks relating to question preview. Specifically, delete any old
+ * previews that are left over in the database.
+ */
+function question_preview_cron() {
+    $maxage = 24*60*60; // We delete previews that have not been touched for 24 hours.
+    $lastmodifiedcutoff = time() - $maxage;
+
+    mtrace("\n  Cleaning up old question previews...", '');
+    $oldpreviews = new qubaid_join('{question_usages} quba', 'quba.id',
+            'quba.component = :qubacomponent
+                    AND NOT EXISTS (
+                        SELECT 1
+                          FROM {question_attempts}      subq_qa
+                          JOIN {question_attempt_steps} subq_qas ON subq_qas.questionattemptid = subq_qa.id
+                          JOIN {question_usages}        subq_qu  ON subq_qu.id = subq_qa.questionusageid
+                         WHERE subq_qa.questionusageid = quba.id
+                           AND subq_qu.component = :qubacomponent2
+                           AND (subq_qa.timemodified > :qamodifiedcutoff
+                                    OR subq_qas.timecreated > :stepcreatedcutoff)
+                    )
+            ',
+            array('qubacomponent' => 'core_question_preview', 'qubacomponent2' => 'core_question_preview',
+                'qamodifiedcutoff' => $lastmodifiedcutoff, 'stepcreatedcutoff' => $lastmodifiedcutoff));
+
+    question_engine::delete_questions_usage_by_activities($oldpreviews);
+    mtrace('done.');
 }

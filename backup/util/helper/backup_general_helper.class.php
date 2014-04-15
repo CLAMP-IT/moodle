@@ -22,6 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Non instantiable helper class providing general helper methods for backup/restore
  *
@@ -70,7 +72,7 @@ abstract class backup_general_helper extends backup_helper {
 
         static $availableblocks = array(); // Get and cache available blocks
         if (empty($availableblocks)) {
-            $availableblocks = array_keys(get_plugin_list('block'));
+            $availableblocks = array_keys(core_component::get_plugin_list('block'));
         }
 
         $path = $path . '/blocks'; // Always look under blocks subdir
@@ -153,6 +155,12 @@ abstract class backup_general_helper extends backup_helper {
         } else {
             $info->include_file_references_to_external_content = 0;
         }
+        // include_files is a new setting in 2.6.
+        if (isset($infoarr['include_files'])) {
+            $info->include_files = $infoarr['include_files'];
+        } else {
+            $info->include_files = 1;
+        }
         $info->type   =  $infoarr['details']['detail'][0]['type'];
         $info->format =  $infoarr['details']['detail'][0]['format'];
         $info->mode   =  $infoarr['details']['detail'][0]['mode'];
@@ -213,6 +221,39 @@ abstract class backup_general_helper extends backup_helper {
             }
         }
 
+        return $info;
+    }
+
+    /**
+     * Load and format all the needed information from a backup file.
+     *
+     * This will only extract the moodle_backup.xml file from an MBZ
+     * file and then call {@link self::get_backup_information()}.
+     *
+     * @param string $filepath absolute path to the MBZ file.
+     * @return stdClass containing information.
+     * @since 2.4
+     */
+    public static function get_backup_information_from_mbz($filepath) {
+        global $CFG;
+        if (!is_readable($filepath)) {
+            throw new backup_helper_exception('missing_moodle_backup_file', $filepath);
+        }
+
+        // Extract moodle_backup.xml.
+        $tmpname = 'info_from_mbz_' . time() . '_' . random_string(4);
+        $tmpdir = $CFG->tempdir . '/backup/' . $tmpname;
+        $fp = get_file_packer('application/vnd.moodle.backup');
+
+        $extracted = $fp->extract_to_pathname($filepath, $tmpdir, array('moodle_backup.xml'));
+        $moodlefile =  $tmpdir . '/' . 'moodle_backup.xml';
+        if (!$extracted || !is_readable($moodlefile)) {
+            throw new backup_helper_exception('missing_moodle_backup_xml_file', $moodlefile);
+        }
+
+        // Read the information and delete the temporary directory.
+        $info = self::get_backup_information($tmpname);
+        remove_dir($tmpdir);
         return $info;
     }
 

@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * The default layout.
+ *
+ * @package    theme_fusion
+ * @copyright  2010 Patrick Malley (http://newschoollearning.com/)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 $hasheading = ($PAGE->heading);
 $hasnavbar = (empty($PAGE->layout_options['nonavbar']) && $PAGE->has_navbar());
@@ -9,6 +31,16 @@ $showsidepost = ($hassidepost && !$PAGE->blocks->region_completely_docked('side-
 
 $custommenu = $OUTPUT->custom_menu();
 $hascustommenu = (empty($PAGE->layout_options['nocustommenu']) && !empty($custommenu));
+
+$courseheader = $coursecontentheader = $coursecontentfooter = $coursefooter = '';
+if (empty($PAGE->layout_options['nocourseheaderfooter'])) {
+    $courseheader = $OUTPUT->course_header();
+    $coursecontentheader = $OUTPUT->course_content_header();
+    if (empty($PAGE->layout_options['nocoursefooter'])) {
+        $coursecontentfooter = $OUTPUT->course_content_footer();
+        $coursefooter = $OUTPUT->course_footer();
+    }
+}
 
 $bodyclasses = array();
   if ($showsidepost) {
@@ -77,6 +109,10 @@ echo $OUTPUT->doctype() ?>
 
 	<?php } ?>
 
+    <?php if (!empty($courseheader)) { ?>
+    <div id="course-header"><?php echo $courseheader; ?></div>
+    <?php } ?>
+
 
 <!-- START OF CONTENT -->
 
@@ -106,7 +142,9 @@ echo $OUTPUT->doctype() ?>
 							    	    </div>
 						        	<?php } ?>
 
+                                    <?php echo $coursecontentheader; ?>
             	            	    <?php echo $OUTPUT->main_content() ?>
+                                    <?php echo $coursecontentfooter; ?>
 	                	        </div>
     	                	</div>
 	    	            </div>
@@ -129,6 +167,10 @@ echo $OUTPUT->doctype() ?>
     	</div>
 
 <!-- END OF CONTENT -->
+
+    <?php if (!empty($coursefooter)) { ?>
+    <div id="course-footer"><?php echo $coursefooter; ?></div>
+    <?php } ?>
 
 	<?php if ($hasheading || $hasnavbar) { ?>
 		</div>

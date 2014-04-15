@@ -36,12 +36,6 @@ define('NO_DEBUG_DISPLAY', true);
 require_once('config.php');
 require_once('lib/filelib.php');
 
-if (!isset($CFG->filelifetime)) {
-    $lifetime = 86400;     // Seconds for files to remain in caches
-} else {
-    $lifetime = $CFG->filelifetime;
-}
-
 $relativepath  = get_file_argument();
 $forcedownload = optional_param('forcedownload', 0, PARAM_BOOL);
 
@@ -83,7 +77,7 @@ if ($course->id != SITEID) {
     }
 }
 
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 
 $fs = get_file_storage();
 
@@ -111,7 +105,7 @@ if ($file->get_filename() == '.') {
 // ========================================
 // finally send the file
 // ========================================
-session_get_instance()->write_close(); // unlock session during fileserving
-send_stored_file($file, $lifetime, $CFG->filteruploadedfiles, $forcedownload);
+\core\session\manager::write_close(); // Unlock session during file serving.
+send_stored_file($file, null, $CFG->filteruploadedfiles, $forcedownload);
 
 

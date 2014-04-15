@@ -165,9 +165,9 @@ class repository_alfresco extends repository {
             $file_filter = "{http://www.alfresco.org/model/content/1.0}content";
 
             // top level sites folder
-            $sites_filter = "{http://www.alfresco.org/model/content/1.0}sites";
+            $sites_filter = "{http://www.alfresco.org/model/site/1.0}sites";
             // individual site
-            $site_filter = "{http://www.alfresco.org/model/content/1.0}site";
+            $site_filter = "{http://www.alfresco.org/model/site/1.0}site";
 
             foreach ($this->current_node->children as $child)
             {
@@ -202,11 +202,7 @@ class repository_alfresco extends repository {
     public function get_file($uuid, $file = '') {
         $node = $this->user_session->getNode($this->store, $uuid);
         $url = $this->get_url($node);
-        $path = $this->prepare_file($file);
-        $fp = fopen($path, 'w');
-        $c = new curl;
-        $c->download(array(array('url'=>$url, 'file'=>$fp)));
-        return array('path'=>$path, 'url'=>$url);
+        return parent::get_file($url, $file);
     }
 
     /**
@@ -223,7 +219,9 @@ class repository_alfresco extends repository {
 
     public function print_search() {
         $str = parent::print_search();
-        $str .= '<label>Space: </label><br /><select name="space">';
+        $str .= html_writer::label(get_string('space', 'repository_alfresco'), 'space', false, array('class' => 'accesshide'));
+        $str .= html_writer::empty_tag('br');
+        $str .= '<select id="space" name="space">';
         foreach ($this->user_session->stores as $v) {
             $str .= '<option ';
             if ($v->__toString() === 'workspace://SpacesStore') {
@@ -276,6 +274,7 @@ class repository_alfresco extends repository {
             return false;
         }
         $mform->addElement('text', 'alfresco_url', get_string('alfresco_url', 'repository_alfresco'), array('size' => '40'));
+        $mform->setType('alfresco_url', PARAM_URL);
         $mform->addElement('static', 'alfreco_url_intro', '', get_string('alfrescourltext', 'repository_alfresco'));
         $mform->addRule('alfresco_url', get_string('required'), 'required', null, 'client');
         return true;

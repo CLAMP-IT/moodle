@@ -46,6 +46,236 @@ class core_enrol_external extends external_api {
      * Returns description of method parameters
      *
      * @return external_function_parameters
+     * @since Moodle 2.4
+     */
+    public static function get_enrolled_users_with_capability_parameters() {
+        return new external_function_parameters(
+            array (
+                'coursecapabilities' => new external_multiple_structure(
+                    new external_single_structure(
+                        array (
+                            'courseid' => new external_value(PARAM_INT, 'Course ID number in the Moodle course table'),
+                            'capabilities' => new external_multiple_structure(
+                                new external_value(PARAM_CAPABILITY, 'Capability name, such as mod/forum:viewdiscussion')),
+                        )
+                    )
+                , 'course id and associated capability name'),
+                 'options'  => new external_multiple_structure(
+                    new external_single_structure(
+                        array(
+                            'name'  => new external_value(PARAM_ALPHANUMEXT, 'option name'),
+                            'value' => new external_value(PARAM_RAW, 'option value')
+                        )
+                    ), 'Option names:
+                            * groupid (integer) return only users in this group id. Requires \'moodle/site:accessallgroups\' .
+                            * onlyactive (integer) only users with active enrolments. Requires \'moodle/course:enrolreview\' .
+                            * userfields (\'string, string, ...\') return only the values of these user fields.
+                            * limitfrom (integer) sql limit from.
+                            * limitnumber (integer) max number of users per course and capability.', VALUE_DEFAULT, array())
+            )
+        );
+    }
+
+    /**
+     * Return users that have the capabilities for each course specified. For each course and capability specified,
+     * a list of the users that are enrolled in the course and have that capability are returned.
+     *
+     * @param array $coursecapabilities array of course ids and associated capability names {courseid, {capabilities}}
+     * @return array An array of arrays describing users for each associated courseid and capability
+     * @since  Moodle 2.4
+     */
+    public static function get_enrolled_users_with_capability($coursecapabilities, $options) {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . "/user/lib.php");
+
+        if (empty($coursecapabilities)) {
+            throw new invalid_parameter_exception('Parameter can not be empty');
+        }
+        $params = self::validate_parameters(self::get_enrolled_users_with_capability_parameters(),
+            array ('coursecapabilities' => $coursecapabilities,  'options'=>$options));
+        $result = array();
+        $userlist = array();
+        $groupid        = 0;
+        $onlyactive     = false;
+        $userfields     = array();
+        $limitfrom = 0;
+        $limitnumber = 0;
+        foreach ($params['options'] as $option) {
+            switch ($option['name']) {
+                case 'groupid':
+                    $groupid = (int)$option['value'];
+                    break;
+                case 'onlyactive':
+                    $onlyactive = !empty($option['value']);
+                    break;
+                case 'userfields':
+                    $thefields = explode(',', $option['value']);
+                    foreach ($thefields as $f) {
+                        $userfields[] = clean_param($f, PARAM_ALPHANUMEXT);
+                    }
+                    break;
+                case 'limitfrom' :
+                    $limitfrom = clean_param($option['value'], PARAM_INT);
+                    break;
+                case 'limitnumber' :
+                    $limitnumber = clean_param($option['value'], PARAM_INT);
+                    break;
+            }
+        }
+
+        foreach ($params['coursecapabilities'] as $coursecapability) {
+            $courseid = $coursecapability['courseid'];
+            $course = $DB->get_record('course', array('id'=>$courseid), '*', MUST_EXIST);
+            $coursecontext = context_course::instance($courseid);
+            if (!$coursecontext) {
+                throw new moodle_exception('cannotfindcourse', 'error', '', null,
+                        'The course id ' . $courseid . ' doesn\'t exist.');
+            }
+            if ($courseid == SITEID) {
+                $context = context_system::instance();
+            } else {
+                $context = $coursecontext;
+            }
+            try {
+                self::validate_context($context);
+            } catch (Exception $e) {
+                $exceptionparam = new stdClass();
+                $exceptionparam->message = $e->getMessage();
+                $exceptionparam->courseid = $params['courseid'];
+                throw new moodle_exception(get_string('errorcoursecontextnotvalid' , 'webservice', $exceptionparam));
+            }
+
+            if ($courseid == SITEID) {
+                require_capability('moodle/site:viewparticipants', $context);
+            } else {
+                require_capability('moodle/course:viewparticipants', $context);
+            }
+            // The accessallgroups capability is needed to use this option.
+            if (!empty($groupid) && groups_is_member($groupid)) {
+                require_capability('moodle/site:accessallgroups', $coursecontext);
+            }
+            // The course:enrolereview capability is needed to use this option.
+            if ($onlyactive) {
+                require_capability('moodle/course:enrolreview', $coursecontext);
+            }
+
+            // To see the permissions of others role:review capability is required.
+            require_capability('moodle/role:review', $coursecontext);
+            foreach ($coursecapability['capabilities'] as $capability) {
+                $courseusers['courseid'] = $courseid;
+                $courseusers['capability'] = $capability;
+
+                list($enrolledsql, $enrolledparams) = get_enrolled_sql($coursecontext, $capability, $groupid, $onlyactive);
+
+                $sql = "SELECT u.* FROM {user} u WHERE u.id IN ($enrolledsql) ORDER BY u.id ASC";
+
+                $enrolledusers = $DB->get_recordset_sql($sql, $enrolledparams, $limitfrom, $limitnumber);
+                $users = array();
+                foreach ($enrolledusers as $courseuser) {
+                    if ($userdetails = user_get_user_details($courseuser, $course, $userfields)) {
+                        $users[] = $userdetails;
+                    }
+                }
+                $enrolledusers->close();
+                $courseusers['users'] = $users;
+                $result[] = $courseusers;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Returns description of method result value
+     *
+     * @return external_multiple_structure
+     * @since Moodle 2.4
+     */
+    public static function get_enrolled_users_with_capability_returns() {
+        return  new external_multiple_structure( new external_single_structure (
+                array (
+                    'courseid' => new external_value(PARAM_INT, 'Course ID number in the Moodle course table'),
+                    'capability' => new external_value(PARAM_CAPABILITY, 'Capability name'),
+                    'users' => new external_multiple_structure(
+                        new external_single_structure(
+                array(
+                    'id'    => new external_value(PARAM_INT, 'ID of the user'),
+                    'username'    => new external_value(PARAM_RAW, 'Username', VALUE_OPTIONAL),
+                    'firstname'   => new external_value(PARAM_NOTAGS, 'The first name(s) of the user', VALUE_OPTIONAL),
+                    'lastname'    => new external_value(PARAM_NOTAGS, 'The family name of the user', VALUE_OPTIONAL),
+                    'fullname'    => new external_value(PARAM_NOTAGS, 'The fullname of the user'),
+                    'email'       => new external_value(PARAM_TEXT, 'Email address', VALUE_OPTIONAL),
+                    'address'     => new external_value(PARAM_MULTILANG, 'Postal address', VALUE_OPTIONAL),
+                    'phone1'      => new external_value(PARAM_NOTAGS, 'Phone 1', VALUE_OPTIONAL),
+                    'phone2'      => new external_value(PARAM_NOTAGS, 'Phone 2', VALUE_OPTIONAL),
+                    'icq'         => new external_value(PARAM_NOTAGS, 'icq number', VALUE_OPTIONAL),
+                    'skype'       => new external_value(PARAM_NOTAGS, 'skype id', VALUE_OPTIONAL),
+                    'yahoo'       => new external_value(PARAM_NOTAGS, 'yahoo id', VALUE_OPTIONAL),
+                    'aim'         => new external_value(PARAM_NOTAGS, 'aim id', VALUE_OPTIONAL),
+                    'msn'         => new external_value(PARAM_NOTAGS, 'msn number', VALUE_OPTIONAL),
+                    'department'  => new external_value(PARAM_TEXT, 'department', VALUE_OPTIONAL),
+                    'institution' => new external_value(PARAM_TEXT, 'institution', VALUE_OPTIONAL),
+                    'interests'   => new external_value(PARAM_TEXT, 'user interests (separated by commas)', VALUE_OPTIONAL),
+                    'firstaccess' => new external_value(PARAM_INT, 'first access to the site (0 if never)', VALUE_OPTIONAL),
+                    'lastaccess'  => new external_value(PARAM_INT, 'last access to the site (0 if never)', VALUE_OPTIONAL),
+                    'description' => new external_value(PARAM_RAW, 'User profile description', VALUE_OPTIONAL),
+                    'descriptionformat' => new external_value(PARAM_INT, 'User profile description format', VALUE_OPTIONAL),
+                    'city'        => new external_value(PARAM_NOTAGS, 'Home city of the user', VALUE_OPTIONAL),
+                    'url'         => new external_value(PARAM_URL, 'URL of the user', VALUE_OPTIONAL),
+                    'country'     => new external_value(PARAM_ALPHA, 'Country code of the user, such as AU or CZ', VALUE_OPTIONAL),
+                    'profileimageurlsmall' => new external_value(PARAM_URL, 'User image profile URL - small', VALUE_OPTIONAL),
+                    'profileimageurl' => new external_value(PARAM_URL, 'User image profile URL - big', VALUE_OPTIONAL),
+                    'customfields' => new external_multiple_structure(
+                        new external_single_structure(
+                            array(
+                                'type'  => new external_value(PARAM_ALPHANUMEXT, 'The type of the custom field'),
+                                'value' => new external_value(PARAM_RAW, 'The value of the custom field'),
+                                'name' => new external_value(PARAM_RAW, 'The name of the custom field'),
+                                'shortname' => new external_value(PARAM_RAW, 'The shortname of the custom field'),
+                            )
+                        ), 'User custom fields (also known as user profil fields)', VALUE_OPTIONAL),
+                    'groups' => new external_multiple_structure(
+                        new external_single_structure(
+                            array(
+                                'id'  => new external_value(PARAM_INT, 'group id'),
+                                'name' => new external_value(PARAM_RAW, 'group name'),
+                                'description' => new external_value(PARAM_RAW, 'group description'),
+                            )
+                        ), 'user groups', VALUE_OPTIONAL),
+                    'roles' => new external_multiple_structure(
+                        new external_single_structure(
+                            array(
+                                'roleid'       => new external_value(PARAM_INT, 'role id'),
+                                'name'         => new external_value(PARAM_RAW, 'role name'),
+                                'shortname'    => new external_value(PARAM_ALPHANUMEXT, 'role shortname'),
+                                'sortorder'    => new external_value(PARAM_INT, 'role sortorder')
+                            )
+                        ), 'user roles', VALUE_OPTIONAL),
+                    'preferences' => new external_multiple_structure(
+                        new external_single_structure(
+                            array(
+                                'name'  => new external_value(PARAM_ALPHANUMEXT, 'The name of the preferences'),
+                                'value' => new external_value(PARAM_RAW, 'The value of the custom field'),
+                            )
+                    ), 'User preferences', VALUE_OPTIONAL),
+                    'enrolledcourses' => new external_multiple_structure(
+                        new external_single_structure(
+                            array(
+                                'id'  => new external_value(PARAM_INT, 'Id of the course'),
+                                'fullname' => new external_value(PARAM_RAW, 'Fullname of the course'),
+                                'shortname' => new external_value(PARAM_RAW, 'Shortname of the course')
+                            )
+                    ), 'Courses where the user is enrolled - limited by which courses the user is able to see', VALUE_OPTIONAL)
+                )
+                        ), 'List of users that are enrolled in the course and have the specified capability'),
+                    )
+                )
+            );
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
      */
     public static function get_users_courses_parameters() {
         return new external_function_parameters(
@@ -73,7 +303,7 @@ class core_enrol_external extends external_api {
         $result = array();
 
         foreach ($courses as $course) {
-            $context = get_context_instance(CONTEXT_COURSE, $course->id);
+            $context = context_course::instance($course->id, IGNORE_MISSING);
             try {
                 self::validate_context($context);
             } catch (Exception $e) {
@@ -87,7 +317,7 @@ class core_enrol_external extends external_api {
             }
 
             list($enrolledsqlselect, $enrolledparams) = get_enrolled_sql($context);
-            $enrolledsql = "SELECT COUNT(*) FROM ($enrolledsqlselect) AS enrolleduserids";
+            $enrolledsql = "SELECT COUNT('x') FROM ($enrolledsqlselect) enrolleduserids";
             $enrolledusercount = $DB->count_records_sql($enrolledsql, $enrolledparams);
 
             $result[] = array('id'=>$course->id, 'shortname'=>$course->shortname, 'fullname'=>$course->fullname, 'idnumber'=>$course->idnumber,'visible'=>$course->visible, 'enrolledusercount'=>$enrolledusercount);
@@ -185,6 +415,7 @@ class core_enrol_external extends external_api {
                 foreach ($thefields as $f) {
                     $userfields[] = clean_param($f, PARAM_ALPHANUMEXT);
                 }
+                break;
             case 'limitfrom' :
                 $limitfrom = clean_param($option['value'], PARAM_INT);
                 break;
@@ -195,9 +426,9 @@ class core_enrol_external extends external_api {
         }
 
         $course = $DB->get_record('course', array('id'=>$courseid), '*', MUST_EXIST);
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $courseid);
+        $coursecontext = context_course::instance($courseid, IGNORE_MISSING);
         if ($courseid == SITEID) {
-            $context = get_system_context();
+            $context = context_system::instance();
         } else {
             $context = $coursecontext;
         }
@@ -229,8 +460,9 @@ class core_enrol_external extends external_api {
         }
 
         list($enrolledsql, $enrolledparams) = get_enrolled_sql($coursecontext, $withcapability, $groupid, $onlyactive);
-        list($ctxselect, $ctxjoin) = context_instance_preload_sql('u.id', CONTEXT_USER, 'ctx');
-        $sqlparams['courseid'] = $courseid;
+        $ctxselect = ', ' . context_helper::get_preload_record_columns_sql('ctx');
+        $ctxjoin = "LEFT JOIN {context} ctx ON (ctx.instanceid = u.id AND ctx.contextlevel = :contextlevel)";
+        $enrolledparams['contextlevel'] = CONTEXT_USER;
         $sql = "SELECT u.* $ctxselect
                   FROM {user} u $ctxjoin
                  WHERE u.id IN ($enrolledsql)
@@ -238,7 +470,7 @@ class core_enrol_external extends external_api {
         $enrolledusers = $DB->get_recordset_sql($sql, $enrolledparams, $limitfrom, $limitnumber);
         $users = array();
         foreach ($enrolledusers as $user) {
-            context_instance_preload($user);
+            context_helper::preload_from_record($user);
             if ($userdetails = user_get_user_details($user, $course, $userfields)) {
                 $users[] = $userdetails;
             }
@@ -257,13 +489,13 @@ class core_enrol_external extends external_api {
         return new external_multiple_structure(
             new external_single_structure(
                 array(
-                    'id'    => new external_value(PARAM_NUMBER, 'ID of the user'),
+                    'id'    => new external_value(PARAM_INT, 'ID of the user'),
                     'username'    => new external_value(PARAM_RAW, 'Username policy is defined in Moodle security config', VALUE_OPTIONAL),
                     'firstname'   => new external_value(PARAM_NOTAGS, 'The first name(s) of the user', VALUE_OPTIONAL),
                     'lastname'    => new external_value(PARAM_NOTAGS, 'The family name of the user', VALUE_OPTIONAL),
                     'fullname'    => new external_value(PARAM_NOTAGS, 'The fullname of the user'),
                     'email'       => new external_value(PARAM_TEXT, 'An email address - allow email as root@localhost', VALUE_OPTIONAL),
-                    'address'     => new external_value(PARAM_MULTILANG, 'Postal address', VALUE_OPTIONAL),
+                    'address'     => new external_value(PARAM_TEXT, 'Postal address', VALUE_OPTIONAL),
                     'phone1'      => new external_value(PARAM_NOTAGS, 'Phone 1', VALUE_OPTIONAL),
                     'phone2'      => new external_value(PARAM_NOTAGS, 'Phone 2', VALUE_OPTIONAL),
                     'icq'         => new external_value(PARAM_NOTAGS, 'icq number', VALUE_OPTIONAL),
@@ -273,6 +505,7 @@ class core_enrol_external extends external_api {
                     'msn'         => new external_value(PARAM_NOTAGS, 'msn number', VALUE_OPTIONAL),
                     'department'  => new external_value(PARAM_TEXT, 'department', VALUE_OPTIONAL),
                     'institution' => new external_value(PARAM_TEXT, 'institution', VALUE_OPTIONAL),
+                    'idnumber'    => new external_value(PARAM_RAW, 'An arbitrary ID code number perhaps from the institution', VALUE_OPTIONAL),
                     'interests'   => new external_value(PARAM_TEXT, 'user interests (separated by commas)', VALUE_OPTIONAL),
                     'firstaccess' => new external_value(PARAM_INT, 'first access to the site (0 if never)', VALUE_OPTIONAL),
                     'lastaccess'  => new external_value(PARAM_INT, 'last access to the site (0 if never)', VALUE_OPTIONAL),
@@ -330,6 +563,64 @@ class core_enrol_external extends external_api {
         );
     }
 
+    /**
+     * Returns description of get_course_enrolment_methods() parameters
+     *
+     * @return external_function_parameters
+     */
+    public static function get_course_enrolment_methods_parameters() {
+        return new external_function_parameters(
+            array(
+                'courseid' => new external_value(PARAM_INT, 'Course id')
+            )
+        );
+    }
+
+    /**
+     * Get list of active course enrolment methods for current user.
+     *
+     * @param int $courseid
+     * @return array of course enrolment methods
+     */
+    public static function get_course_enrolment_methods($courseid) {
+
+        $params = self::validate_parameters(self::get_course_enrolment_methods_parameters(), array('courseid' => $courseid));
+
+        $coursecontext = context_course::instance($params['courseid']);
+        $categorycontext = $coursecontext->get_parent_context();
+        self::validate_context($categorycontext);
+
+        $result = array();
+        $enrolinstances = enrol_get_instances($params['courseid'], true);
+        foreach ($enrolinstances as $enrolinstance) {
+            if ($enrolplugin = enrol_get_plugin($enrolinstance->enrol)) {
+                if ($instanceinfo = $enrolplugin->get_enrol_info($enrolinstance)) {
+                    $result[] = (array) $instanceinfo;
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Returns description of get_course_enrolment_methods() result value
+     *
+     * @return external_description
+     */
+    public static function get_course_enrolment_methods_returns() {
+        return new external_multiple_structure(
+            new external_single_structure(
+                array(
+                    'id' => new external_value(PARAM_INT, 'id of course enrolment instance'),
+                    'courseid' => new external_value(PARAM_INT, 'id of course'),
+                    'type' => new external_value(PARAM_PLUGIN, 'type of enrolment plugin'),
+                    'name' => new external_value(PARAM_RAW, 'name of enrolment plugin'),
+                    'status' => new external_value(PARAM_RAW, 'status of enrolment plugin'),
+                    'wsfunction' => new external_value(PARAM_ALPHANUMEXT, 'webservice function to get more information', VALUE_OPTIONAL),
+                )
+            )
+        );
+    }
 }
 
 /**
@@ -356,7 +647,10 @@ class core_role_external extends external_api {
                         array(
                             'roleid'    => new external_value(PARAM_INT, 'Role to assign to the user'),
                             'userid'    => new external_value(PARAM_INT, 'The user that is going to be assigned'),
-                            'contextid' => new external_value(PARAM_INT, 'The context to assign the user role in'),
+                            'contextid' => new external_value(PARAM_INT, 'The context to assign the user role in', VALUE_OPTIONAL),
+                            'contextlevel' => new external_value(PARAM_ALPHA, 'The context level to assign the user role in
+                                    (block, course, coursecat, system, user, module)', VALUE_OPTIONAL),
+                            'instanceid' => new external_value(PARAM_INT, 'The Instance id of item where the role needs to be assigned', VALUE_OPTIONAL),
                         )
                     )
                 )
@@ -379,19 +673,21 @@ class core_role_external extends external_api {
         $transaction = $DB->start_delegated_transaction();
 
         foreach ($params['assignments'] as $assignment) {
-            // Ensure the current user is allowed to run this function in the enrolment context
-            $context = get_context_instance_by_id($assignment['contextid']);
+            // Ensure correct context level with a instance id or contextid is passed.
+            $context = self::get_context_from_params($assignment);
+
+            // Ensure the current user is allowed to run this function in the enrolment context.
             self::validate_context($context);
             require_capability('moodle/role:assign', $context);
 
             // throw an exception if user is not able to assign the role in this context
             $roles = get_assignable_roles($context, ROLENAME_SHORT);
 
-            if (!key_exists($assignment['roleid'], $roles)) {
+            if (!array_key_exists($assignment['roleid'], $roles)) {
                 throw new invalid_parameter_exception('Can not assign roleid='.$assignment['roleid'].' in contextid='.$assignment['contextid']);
             }
 
-            role_assign($assignment['roleid'], $assignment['userid'], $assignment['contextid']);
+            role_assign($assignment['roleid'], $assignment['userid'], $context->id);
         }
 
         $transaction->allow_commit();
@@ -420,7 +716,10 @@ class core_role_external extends external_api {
                         array(
                             'roleid'    => new external_value(PARAM_INT, 'Role to assign to the user'),
                             'userid'    => new external_value(PARAM_INT, 'The user that is going to be assigned'),
-                            'contextid' => new external_value(PARAM_INT, 'The context to unassign the user role from'),
+                            'contextid' => new external_value(PARAM_INT, 'The context to unassign the user role from', VALUE_OPTIONAL),
+                            'contextlevel' => new external_value(PARAM_ALPHA, 'The context level to unassign the user role in
++                                    (block, course, coursecat, system, user, module)', VALUE_OPTIONAL),
+                            'instanceid' => new external_value(PARAM_INT, 'The Instance id of item where the role needs to be unassigned', VALUE_OPTIONAL),
                         )
                     )
                 )
@@ -444,17 +743,17 @@ class core_role_external extends external_api {
 
         foreach ($params['unassignments'] as $unassignment) {
             // Ensure the current user is allowed to run this function in the unassignment context
-            $context = get_context_instance_by_id($unassignment['contextid']);
+            $context = self::get_context_from_params($unassignment);
             self::validate_context($context);
             require_capability('moodle/role:assign', $context);
 
             // throw an exception if user is not able to unassign the role in this context
             $roles = get_assignable_roles($context, ROLENAME_SHORT);
-            if (!key_exists($unassignment['roleid'], $roles)) {
+            if (!array_key_exists($unassignment['roleid'], $roles)) {
                 throw new invalid_parameter_exception('Can not unassign roleid='.$unassignment['roleid'].' in contextid='.$unassignment['contextid']);
             }
 
-            role_unassign($unassignment['roleid'], $unassignment['userid'], $unassignment['contextid']);
+            role_unassign($unassignment['roleid'], $unassignment['userid'], $context->id);
         }
 
         $transaction->allow_commit();
@@ -479,7 +778,6 @@ class core_role_external extends external_api {
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since Moodle 2.0
  * @deprecated Moodle 2.2 MDL-29106 - Please do not use this class any more.
- * @todo MDL-31194 This will be deleted in Moodle 2.5.
  * @see core_enrol_external
  * @see core_role_external
  */
@@ -492,7 +790,6 @@ class moodle_enrol_external extends external_api {
      * @return external_function_parameters
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_enrol_external::get_enrolled_users_parameters()
      */
     public static function get_enrolled_users_parameters() {
@@ -516,7 +813,6 @@ class moodle_enrol_external extends external_api {
      * @return array of course participants
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_enrol_external::get_enrolled_users()
      */
     public static function get_enrolled_users($courseid, $withcapability = null, $groupid = null, $onlyactive = false) {
@@ -531,9 +827,9 @@ class moodle_enrol_external extends external_api {
             'onlyactive'=>$onlyactive)
         );
 
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $params['courseid']);
+        $coursecontext = context_course::instance($params['courseid'], IGNORE_MISSING);
         if ($courseid == SITEID) {
-            $context = get_context_instance(CONTEXT_SYSTEM);
+            $context = context_system::instance();
         } else {
             $context = $coursecontext;
         }
@@ -607,7 +903,6 @@ class moodle_enrol_external extends external_api {
      * @return external_description
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_enrol_external::get_enrolled_users_returns()
      */
     public static function get_enrolled_users_returns() {
@@ -633,7 +928,6 @@ class moodle_enrol_external extends external_api {
      * @return external_function_parameters
      * @since Moodle 2.1
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_enrol_external::get_users_courses_parameters()
      */
     public static function get_users_courses_parameters() {
@@ -648,7 +942,6 @@ class moodle_enrol_external extends external_api {
      * @return array of courses
      * @since Moodle 2.1
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see use core_enrol_external::get_users_courses()
      */
     public static function get_users_courses($userid) {
@@ -661,7 +954,6 @@ class moodle_enrol_external extends external_api {
      * @return external_description
      * @since Moodle 2.1
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_enrol_external::get_users_courses_returns()
      */
     public static function get_users_courses_returns() {
@@ -675,7 +967,6 @@ class moodle_enrol_external extends external_api {
      * @return external_function_parameters
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_role_external::assign_roles_parameters()
      */
     public static function role_assign_parameters() {
@@ -688,7 +979,6 @@ class moodle_enrol_external extends external_api {
      * @param array $assignments An array of manual role assignment
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_role_external::assign_roles()
      */
     public static function role_assign($assignments) {
@@ -701,7 +991,6 @@ class moodle_enrol_external extends external_api {
      * @return null
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_role_external::assign_roles_returns()
      */
     public static function role_assign_returns() {
@@ -715,7 +1004,6 @@ class moodle_enrol_external extends external_api {
      * @return external_function_parameters
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_role_external::unassign_roles_parameters()
      */
     public static function role_unassign_parameters() {
@@ -728,7 +1016,6 @@ class moodle_enrol_external extends external_api {
      * @param array $unassignments An array of unassignment
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_role_external::unassign_roles()
      */
     public static function role_unassign($unassignments) {
@@ -741,7 +1028,6 @@ class moodle_enrol_external extends external_api {
      * @return null
      * @since Moodle 2.0
      * @deprecated Moodle 2.2 MDL-29106 - Please do not call this function any more.
-     * @todo MDL-31194 This will be deleted in Moodle 2.5.
      * @see core_role_external::unassign_roles_returns()
      */
     public static function role_unassign_returns() {

@@ -89,7 +89,6 @@ class qtype_calculatedmulti_attempt_upgrader_test extends question_attempt_upgra
             'timemodified' => '1305830656',
             'layout' => '16,0,17,0,18,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '17',
@@ -231,6 +230,7 @@ class qtype_calculatedmulti_attempt_upgrader_test extends question_attempt_upgra
             'variant' => 3,
             'maxmark' => 1.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'What is 4.3 + 5.4?',
             'rightanswer' => '9.7',
@@ -310,7 +310,6 @@ class qtype_calculatedmulti_attempt_upgrader_test extends question_attempt_upgra
             'timemodified' => '1305830729',
             'layout' => '16,0,17,0,18,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '17',
@@ -464,6 +463,7 @@ class qtype_calculatedmulti_attempt_upgrader_test extends question_attempt_upgra
             'variant' => 8,
             'maxmark' => 1.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'What is 3.7 + 6.0?',
             'rightanswer' => '9.7',
@@ -551,7 +551,6 @@ class qtype_calculatedmulti_attempt_upgrader_test extends question_attempt_upgra
             'timemodified' => '1305830792',
             'layout' => '16,0,17,0,18,0',
             'preview' => '0',
-            'needsupgradetonewqe' => 1,
         );
         $question = (object) array(
             'id' => '17',
@@ -741,6 +740,7 @@ class qtype_calculatedmulti_attempt_upgrader_test extends question_attempt_upgra
             'variant' => 7,
             'maxmark' => 1.0000000,
             'minfraction' => 0,
+            'maxfraction' => 1,
             'flagged' => 0,
             'questionsummary' => 'What is 4.4 + 8.2?',
             'rightanswer' => '12.6',

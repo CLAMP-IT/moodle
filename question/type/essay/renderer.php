@@ -42,6 +42,12 @@ class qtype_essay_renderer extends qtype_renderer {
 
         // Answer field.
         $step = $qa->get_last_step_with_qt_var('answer');
+
+        if (!$step->has_qt_var('answer') && empty($options->readonly)) {
+            // Question has never been answered, fill it with response template.
+            $step = new question_attempt_step(array('answer'=>$question->responsetemplate));
+        }
+
         if (empty($options->readonly)) {
             $answer = $responseoutput->response_area_input('answer', $qa,
                     $step, $question->responsefieldlines, $options->context);
@@ -172,6 +178,28 @@ abstract class qtype_essay_format_renderer_base extends plugin_renderer_base {
     protected abstract function class_name();
 }
 
+/**
+ * An essay format renderer for essays where the student should not enter
+ * any inline response.
+ *
+ * @copyright  2013 Binghamton University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class qtype_essay_format_noinline_renderer extends plugin_renderer_base {
+
+    protected function class_name() {
+        return 'qtype_essay_noinline';
+    }
+
+    public function response_area_read_only($name, $qa, $step, $lines, $context) {
+        return '';
+    }
+
+    public function response_area_input($name, $qa, $step, $lines, $context) {
+        return '';
+    }
+
+}
 
 /**
  * An essay format renderer for essays where the student should use the HTML
@@ -205,7 +233,7 @@ class qtype_essay_format_editor_renderer extends plugin_renderer_base {
             $formats[$fid] = $strformats[$fid];
         }
 
-        list($draftitemid, $reponse) = $this->prepare_response_for_editing(
+        list($draftitemid, $response) = $this->prepare_response_for_editing(
                 $name, $step, $context);
 
         $editor->use_editor($id, $this->get_editor_options($context),
@@ -215,16 +243,18 @@ class qtype_essay_format_editor_renderer extends plugin_renderer_base {
         $output .= html_writer::start_tag('div', array('class' =>
                 $this->class_name() . ' qtype_essay_response'));
 
-        $output .= html_writer::tag('div', html_writer::tag('textarea', s($reponse),
+        $output .= html_writer::tag('div', html_writer::tag('textarea', s($response),
                 array('id' => $id, 'name' => $inputname, 'rows' => $lines, 'cols' => 60)));
 
         $output .= html_writer::start_tag('div');
-        if (count($formats == 1)) {
+        if (count($formats) == 1) {
             reset($formats);
             $output .= html_writer::empty_tag('input', array('type' => 'hidden',
                     'name' => $inputname . 'format', 'value' => key($formats)));
 
         } else {
+            $output .= html_writer::label(get_string('format'), 'menu' . $inputname . 'format', false);
+            $output .= ' ';
             $output .= html_writer::select($formats, $inputname . 'format', $responseformat, '');
         }
         $output .= html_writer::end_tag('div');

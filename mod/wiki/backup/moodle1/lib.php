@@ -19,8 +19,7 @@
  * Provides support for the conversion of moodle1 backup to the moodle2 format
  * Based off of a template @ http://docs.moodle.org/dev/Backup_1.9_conversion_for_developers
  *
- * @package    mod
- * @subpackage wiki
+ * @package    mod_wiki
  * @copyright  2011 Aparup Banerjee <aparup@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -135,6 +134,8 @@ class moodle1_mod_wiki_handler extends moodle1_mod_handler {
      * data available
      */
     public function process_wiki($data) {
+        global $CFG;    // We need to check a config setting.
+
         if (!empty($data['initialcontent'])) {
             //convert file in <INITIALCONTENT>filename</INITIALCONTENT> into a subwiki page if no entry created.
             $temppath = $this->converter->get_tempdir_path();
@@ -167,6 +168,12 @@ class moodle1_mod_wiki_handler extends moodle1_mod_handler {
         $this->fileman->filearea = 'intro';
         $this->fileman->itemid   = 0;
         $data['intro'] = moodle1_converter::migrate_referenced_files($data['intro'], $this->fileman);
+
+        // convert the introformat if necessary
+        if ($CFG->texteditors !== 'textarea') {
+            $data['intro'] = text_to_html($data['intro'], false, false, true);
+            $data['introformat'] = FORMAT_HTML;
+        }
 
         // we now have all information needed to start writing into the file
         $this->open_xml_writer("activities/wiki_{$this->moduleid}/wiki.xml");

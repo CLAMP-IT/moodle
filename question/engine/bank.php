@@ -51,8 +51,6 @@ abstract class question_bank {
     /** @var array question type name => 1. Records which question definitions have been loaded. */
     private static $loadedqdefs = array();
 
-    protected static $questionfinder = null;
-
     /** @var boolean nasty hack to allow unit tests to call {@link load_question()}. */
     private static $testmode = false;
     private static $testdata = array();
@@ -75,7 +73,7 @@ abstract class question_bank {
      * @return bool whether that question type is installed in this Moodle.
      */
     public static function is_qtype_installed($qtypename) {
-        $plugindir = get_plugin_directory('qtype', $qtypename);
+        $plugindir = core_component::get_plugin_directory('qtype', $qtypename);
         return $plugindir && is_readable($plugindir . '/questiontype.php');
     }
 
@@ -91,7 +89,7 @@ abstract class question_bank {
         if (isset(self::$questiontypes[$qtypename])) {
             return self::$questiontypes[$qtypename];
         }
-        $file = get_plugin_directory('qtype', $qtypename) . '/questiontype.php';
+        $file = core_component::get_plugin_directory('qtype', $qtypename) . '/questiontype.php';
         if (!is_readable($file)) {
             if ($mustexist || $qtypename == 'missingtype') {
                 throw new coding_exception('Unknown question type ' . $qtypename);
@@ -135,7 +133,7 @@ abstract class question_bank {
      * @return bool whether this question type exists.
      */
     public static function qtype_exists($qtypename) {
-        return array_key_exists($qtypename, get_plugin_list('qtype'));
+        return array_key_exists($qtypename, core_component::get_plugin_list('qtype'));
     }
 
     /**
@@ -151,7 +149,7 @@ abstract class question_bank {
      */
     public static function get_all_qtypes() {
         $qtypes = array();
-        foreach (get_plugin_list('qtype') as $plugin => $notused) {
+        foreach (core_component::get_plugin_list('qtype') as $plugin => $notused) {
             try {
                 $qtypes[$plugin] = self::get_qtype($plugin);
             } catch (coding_exception $e) {
@@ -185,7 +183,7 @@ abstract class question_bank {
         }
 
         ksort($sortorder);
-        collatorlib::asort($otherqtypes);
+        core_collator::asort($otherqtypes);
 
         $sortedqtypes = array();
         foreach ($sortorder as $name) {
@@ -241,6 +239,23 @@ abstract class question_bank {
     }
 
     /**
+     * This method needs to be called whenever a question is edited.
+     */
+    public static function notify_question_edited($questionid) {
+        question_finder::get_instance()->uncache_question($questionid);
+    }
+
+    /**
+     * Load a question definition data from the database. The data will be
+     * returned as a plain stdClass object.
+     * @param int $questionid the id of the question to load.
+     * @return object question definition loaded from the database.
+     */
+    public static function load_question_data($questionid) {
+        return question_finder::get_instance()->load_question_data($questionid);
+    }
+
+    /**
      * Load a question definition from the database. The object returned
      * will actually be of an appropriate {@link question_definition} subclass.
      * @param int $questionid the id of the question to load.
@@ -256,12 +271,8 @@ abstract class question_bank {
             return self::return_test_question_data($questionid);
         }
 
-        $questiondata = $DB->get_record_sql('
-                SELECT q.*, qc.contextid
-                FROM {question} q
-                JOIN {question_categories} qc ON q.category = qc.id
-                WHERE q.id = :id', array('id' => $questionid), MUST_EXIST);
-        get_question_options($questiondata);
+        $questiondata = self::load_question_data($questionid);
+
         if (!$allowshuffle) {
             $questiondata->options->shuffleanswers = false;
         }
@@ -282,6 +293,7 @@ abstract class question_bank {
      * @return question_finder a question finder.
      */
     public static function get_finder() {
+        return question_finder::get_instance();
         if (is_null(self::$questionfinder)) {
             self::$questionfinder = new question_finder();
         }
@@ -368,14 +380,15 @@ abstract class question_bank {
 
         // The the positive grades in descending order.
         foreach ($rawfractions as $fraction) {
-            $percentage = (100 * $fraction) . '%';
+            $percentage = format_float(100 * $fraction, 5, true, true) . '%';
             self::$fractionoptions["$fraction"] = $percentage;
             self::$fractionoptionsfull["$fraction"] = $percentage;
         }
 
         // The the negative grades in descending order.
         foreach (array_reverse($rawfractions) as $fraction) {
-            self::$fractionoptionsfull['' . (-$fraction)] = (-100 * $fraction) . '%';
+            self::$fractionoptionsfull['' . (-$fraction)] =
+                    format_float(-100 * $fraction, 5, true, true) . '%';
         }
 
         self::$fractionoptionsfull['-1.0'] = '-100%';
@@ -398,6 +411,21 @@ abstract class question_bank {
         self::ensure_fraction_options_initialised();
         return self::$fractionoptionsfull;
     }
+
+    /**
+     * Perform scheduled maintenance tasks relating to the question bank.
+     */
+    public static function cron() {
+        global $CFG;
+
+        // Delete any old question preview that got left in the database.
+        require_once($CFG->dirroot . '/question/previewlib.php');
+        question_preview_cron();
+
+        // Clear older calculated stats from cache.
+        require_once($CFG->dirroot . '/question/engine/statisticslib.php');
+        question_usage_statistics_cron();
+    }
 }
 
 
@@ -407,7 +435,50 @@ abstract class question_bank {
  * @copyright  2009 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class question_finder {
+class question_finder implements cache_data_source {
+    /** @var question_finder the singleton instance of this class. */
+    protected static $questionfinder = null;
+
+    /**
+     * @return question_finder a question finder.
+     */
+    public static function get_instance() {
+        if (is_null(self::$questionfinder)) {
+            self::$questionfinder = new question_finder();
+        }
+        return self::$questionfinder;
+    }
+
+    /* See cache_data_source::get_instance_for_cache. */
+    public static function get_instance_for_cache(cache_definition $definition) {
+        return self::get_instance();
+    }
+
+    /**
+     * @return get the question definition cache we are using.
+     */
+    protected function get_data_cache() {
+        // Do not double cache here because it may break cache resetting.
+        return cache::make('core', 'questiondata');
+    }
+
+    /**
+     * This method needs to be called whenever a question is edited.
+     */
+    public function uncache_question($questionid) {
+        $this->get_data_cache()->delete($questionid);
+    }
+
+    /**
+     * Load a question definition data from the database. The data will be
+     * returned as a plain stdClass object.
+     * @param int $questionid the id of the question to load.
+     * @return object question definition loaded from the database.
+     */
+    public function load_question_data($questionid) {
+        return $this->get_data_cache()->get($questionid);
+    }
+
     /**
      * Get the ids of all the questions in a list of categoryies.
      * @param array $categoryids either a categoryid, or a comma-separated list
@@ -432,5 +503,36 @@ class question_finder {
                  AND parent = 0
                  AND hidden = 0
                  $extraconditions", $qcparams + $extraparams, '', 'id,id AS id2');
+    }
+
+    /* See cache_data_source::load_for_cache. */
+    public function load_for_cache($questionid) {
+        global $DB;
+        $questiondata = $DB->get_record_sql('
+                                    SELECT q.*, qc.contextid
+                                    FROM {question} q
+                                    JOIN {question_categories} qc ON q.category = qc.id
+                                    WHERE q.id = :id', array('id' => $questionid), MUST_EXIST);
+        get_question_options($questiondata);
+        return $questiondata;
+    }
+
+    /* See cache_data_source::load_many_for_cache. */
+    public function load_many_for_cache(array $questionids) {
+        global $DB;
+        list($idcondition, $params) = $DB->get_in_or_equal($questionids);
+        $questiondata = $DB->get_records_sql('
+                                            SELECT q.*, qc.contextid
+                                            FROM {question} q
+                                            JOIN {question_categories} qc ON q.category = qc.id
+                                            WHERE q.id ' . $idcondition, $params);
+
+        foreach ($questionids as $id) {
+            if (!array_key_exists($id, $questionids)) {
+                throw new dml_missing_record_exception('question', '', array('id' => $id));
+            }
+            get_question_options($questiondata[$id]);
+        }
+        return $questiondata;
     }
 }

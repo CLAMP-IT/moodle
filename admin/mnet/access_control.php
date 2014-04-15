@@ -16,13 +16,11 @@ require_login();
 
 admin_externalpage_setup('ssoaccesscontrol');
 
-echo $OUTPUT->header();
-
 if (!extension_loaded('openssl')) {
     print_error('requiresopenssl', 'mnet');
 }
 
-$sitecontext = get_context_instance(CONTEXT_SYSTEM);
+$sitecontext = context_system::instance();
 $sesskey = sesskey();
 $formerror = array();
 
@@ -65,9 +63,11 @@ if (!empty($action) and confirm_sesskey()) {
 
             if (mnet_update_sso_access_control($idrec->username, $idrec->mnet_host_id, $accessctrl)) {
                 if ($accessctrl == 'allow') {
-                    redirect('access_control.php', get_string('ssl_acl_allow','mnet', array('uset'=>$idrec->username, 'host'=>$mnethosts[$idrec->mnet_host_id])));
-                } elseif ($accessctrl == 'deny') {
-                    redirect('access_control.php', get_string('ssl_acl_deny','mnet', array('user'=>$idrec->username, 'host'=>$mnethosts[$idrec->mnet_host_id])));
+                    redirect('access_control.php', get_string('ssl_acl_allow','mnet', array('user' => $idrec->username,
+                        'host' => $mnethosts[$idrec->mnet_host_id])));
+                } else if ($accessctrl == 'deny') {
+                    redirect('access_control.php', get_string('ssl_acl_deny','mnet', array('user' => $idrec->username,
+                        'host' => $mnethosts[$idrec->mnet_host_id])));
                 }
             }
             break;
@@ -103,7 +103,7 @@ if ($form = data_submitted() and confirm_sesskey()) {
         $usernames = explode(',', $form->username);
 
         foreach ($usernames as $username) {
-            $username = trim(textlib::strtolower($username));
+            $username = trim(core_text::strtolower($username));
             if (!empty($username)) {
                 if (mnet_update_sso_access_control($username, $form->mnet_host_id, $form->accessctrl)) {
                     if ($form->accessctrl == 'allow') {
@@ -117,6 +117,8 @@ if ($form = data_submitted() and confirm_sesskey()) {
     }
     exit;
 }
+
+echo $OUTPUT->header();
 
 // Explain
 echo $OUTPUT->box(get_string('ssoacldescr','mnet'));
@@ -203,17 +205,18 @@ echo get_string('username') . ":\n";
 if (!empty($formerror['username'])) {
     echo '<span class="error"> * </span>';
 }
-echo '<input type="text" name="username" size="20" maxlength="100" />';
+echo html_writer::label(get_string('username'), 'menuusername', false, array('class' => 'accesshide'));
+echo '<input id="menuusername" type="text" name="username" size="20" maxlength="100" />';
 
 // choose a remote host
-echo " " . get_string('remotehost', 'mnet') . ":\n";
+echo " " . html_writer::label(get_string('remotehost', 'mnet'), 'menumnet_host_id') . ":\n";
 if (!empty($formerror['mnet_host_id'])) {
     echo '<span class="error"> * </span>';
 }
 echo html_writer::select($mnethosts, 'mnet_host_id');
 
 // choose an access level
-echo " " . get_string('accesslevel', 'mnet') . ":\n";
+echo " " . html_writer::label(get_string('accesslevel', 'mnet'), 'menuaccessctrl') . ":\n";
 if (!empty($formerror['accessctrl'])) {
     echo '<span class="error"> * </span>';
 }

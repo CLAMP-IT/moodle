@@ -64,20 +64,38 @@ class restore_course_task extends restore_task {
     public function build() {
 
         // Define the task contextid (the course one)
-        $this->contextid = get_context_instance(CONTEXT_COURSE, $this->get_courseid())->id;
+        $this->contextid = context_course::instance($this->get_courseid())->id;
 
         // Executed conditionally if restoring to new course or if overwrite_conf setting is enabled
         if ($this->get_target() == backup::TARGET_NEW_COURSE || $this->get_setting_value('overwrite_conf') == true) {
             $this->add_step(new restore_course_structure_step('course_info', 'course.xml'));
         }
 
-        // Restore course role assignments and overrides (internally will observe the role_assignments setting)
-        $this->add_step(new restore_ras_and_caps_structure_step('course_ras_and_caps', 'roles.xml'));
+        $this->add_step(new restore_course_legacy_files_step('legacy_files'));
 
-        // Restore course enrolments (plugins and membership). Conditionally prevented for any IMPORT/HUB operation
-        if ($this->plan->get_mode() != backup::MODE_IMPORT && $this->plan->get_mode() != backup::MODE_HUB) {
+        // Deal with enrolment methods and user enrolments.
+        if ($this->plan->get_mode() == backup::MODE_IMPORT) {
+            // No need to do anything with enrolments.
+
+        } else if (!$this->get_setting_value('users') or $this->plan->get_mode() == backup::MODE_HUB) {
+            if ($this->get_target() == backup::TARGET_CURRENT_ADDING or $this->get_target() == backup::TARGET_EXISTING_ADDING) {
+                // Keep current enrolments unchanged.
+            } else {
+                // If no instances yet add default enrol methods the same way as when creating new course in UI.
+                $this->add_step(new restore_default_enrolments_step('default_enrolments'));
+            }
+
+        } else {
+            // Restore course enrolment data.
             $this->add_step(new restore_enrolments_structure_step('course_enrolments', 'enrolments.xml'));
         }
+
+        // Populate groups, this must be done after enrolments because only enrolled users may be in groups.
+        $this->add_step(new restore_groups_members_structure_step('create_groups_members', '../groups.xml'));
+
+        // Restore course role assignments and overrides (internally will observe the role_assignments setting),
+        // this must be done after all users are enrolled.
+        $this->add_step(new restore_ras_and_caps_structure_step('course_ras_and_caps', 'roles.xml'));
 
         // Restore course filters (conditionally)
         if ($this->get_setting_value('filters')) {
@@ -106,6 +124,7 @@ class restore_course_task extends restore_task {
         $contents = array();
 
         $contents[] = new restore_decode_content('course', 'summary');
+        $contents[] = new restore_decode_content('event', 'description');
 
         return $contents;
     }
@@ -117,10 +136,17 @@ class restore_course_task extends restore_task {
     static public function define_decode_rules() {
         $rules = array();
 
-        $rules[] = new restore_decode_rule('COURSEVIEWBYID', '/course/view.php?id=$1', 'course');
+        // Link to the course main page (it also covers "&topic=xx" and "&week=xx"
+        // because they don't become transformed (section number) in backup/restore.
+        $rules[] = new restore_decode_rule('COURSEVIEWBYID',       '/course/view.php?id=$1',        'course');
+
+        // A few other key course links.
+        $rules[] = new restore_decode_rule('GRADEINDEXBYID',       '/grade/index.php?id=$1',        'course');
+        $rules[] = new restore_decode_rule('GRADEREPORTINDEXBYID', '/grade/report/index.php?id=$1', 'course');
+        $rules[] = new restore_decode_rule('BADGESVIEWBYID',       '/badges/view.php?type=2&id=$1', 'course');
+        $rules[] = new restore_decode_rule('USERINDEXVIEWBYID',    '/user/index.php?id=$1',         'course');
 
         return $rules;
-
     }
 
 // Protected API starts here

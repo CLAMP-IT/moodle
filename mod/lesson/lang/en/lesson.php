@@ -18,8 +18,7 @@
 /**
  * Strings for component 'lesson', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,9 +31,10 @@ $string['actionaftercorrectanswer_help'] = 'After answering a question correctly
 * Show an unseen page - Pages are shown in a random order with no page shown twice
 * Show an unanswered page - Pages are shown in a random order, with pages containing unanswered questions shown again';
 $string['actions'] = 'Actions';
-$string['activitylink'] = 'Link to an activity';
+$string['activitylink'] = 'Link to next activity';
 $string['activitylink_help'] = 'To provide a link at the end of the lesson to another activity in the course, select the activity from the dropdown list.';
 $string['activitylinkname'] = 'Go to {$a}';
+$string['activityoverview'] = 'You have lessons that are due';
 $string['addabranchtable'] = 'Add a content page';
 $string['addanendofbranch'] = 'Add an end of branch';
 $string['addanewpage'] = 'Add a new page';
@@ -113,11 +113,12 @@ $string['continuetonextpage'] = 'Continue to next page.';
 $string['correctanswerjump'] = 'Correct answer jump';
 $string['correctanswerscore'] = 'Correct answer score';
 $string['correctresponse'] = 'Correct response';
+$string['createaquestionpage'] = 'Create a question page';
 $string['credit'] = 'Credit';
 $string['customscoring'] = 'Custom scoring';
 $string['customscoring_help'] = 'If enabled, then each answer may be given a numerical point value (positive or negative).';
 $string['deadline'] = 'Deadline';
-$string['defaultessayresponse'] = 'Your essay will be graded by the course instructor.';
+$string['defaultessayresponse'] = 'Your essay will be graded by your teacher.';
 $string['deleteallattempts'] = 'Delete all lesson attempts';
 $string['deletedefaults'] = 'Deleted {$a} x lesson default';
 $string['deletedpage'] = 'Deleted page';
@@ -129,18 +130,20 @@ $string['description'] = 'Description';
 $string['detailedstats'] = 'Detailed statistics';
 $string['didnotanswerquestion'] = 'Did not answer this question.';
 $string['didnotreceivecredit'] = 'Did not receive credit';
-$string['displaydefaultfeedback'] = 'Display default feedback';
+$string['displaydefaultfeedback'] = 'Use default feedback';
 $string['displaydefaultfeedback_help'] = 'If enabled, when a response is not found for a particular question, the default response of "That\'s the correct answer" or "That\'s the wrong answer" will be shown.';
 $string['displayhighscores'] = 'Display high scores';
 $string['displayinleftmenu'] = 'Display in left menu?';
-$string['displayleftif'] = 'Display left menu only if grade greater than';
+$string['displayleftif'] = 'Minimum grade to display menu';
 $string['displayleftif_help'] = 'This setting determines whether a student must obtain a certain grade before viewing the left menu. This forces the student to go through the entire lesson on their first attempt, then after obtaining the required grade they can use the left menu for review.';
 $string['displayleftmenu'] = 'Display left menu';
 $string['displayleftmenu_help'] = 'If enabled, a list of pages is displayed.';
 $string['displayofgrade'] = 'Display of grade (for students only)';
 $string['displayreview'] = 'Provide option to try a question again';
 $string['displayreview_help'] = 'If enabled, when a question is answered incorrectly, the student is given the option to try it again for no point credit, or continue with the lesson.';
-$string['displayscorewithessays'] = 'You earned {$a->score} out of {$a->tempmaxgrade} for the automatically graded questions.<br />Your {$a->essayquestions} essay question(s) will be graded and added<br />into your final score at a later date.<br /><br />Your current grade without the essay question(s) is {$a->score} out of {$a->grade}';
+$string['displayscorewithessays'] = '<p>You earned {$a->score} out of {$a->tempmaxgrade} for the automatically graded questions.</p>
+<p>Your {$a->essayquestions} essay question(s) will be graded and added into your final score at a later date.</p>
+<p>Your current grade without the essay question(s) is {$a->score} out of {$a->grade}.</p>';
 $string['displayscorewithoutessays'] = 'Your score is {$a->score} (out of {$a->grade}).';
 $string['edit'] = 'Edit';
 $string['editingquestionpage'] = 'Editing {$a} question page';
@@ -167,6 +170,12 @@ $string['essayemailmessage2'] = '<p>Essay prompt:<blockquote>{$a->question}</blo
 $string['essayemailsubject'] = 'Your grade for {$a} question';
 $string['essays'] = 'Essays';
 $string['essayscore'] = 'Essay score';
+$string['eventessayassessed'] = 'Essay assessed';
+$string['eventessayattemptviewed'] = 'Essay attempt viewed';
+$string['eventhighscoreadded'] = 'Highscore added';
+$string['eventhighscoresviewed'] = 'Highscores viewed';
+$string['eventlessonended'] = 'Lesson ended';
+$string['eventlessonstarted'] = 'Lesson started';
 $string['fileformat'] = 'File format';
 $string['finish'] = 'Finish';
 $string['firstanswershould'] = 'First answer should jump to the "Correct" page';
@@ -193,8 +202,6 @@ $string['checkedthisone'] = 'Checked this one.';
 $string['checknavigation'] = 'Check navigation';
 $string['checkquestion'] = 'Check question';
 $string['importcount'] = 'Importing {$a} questions';
-$string['importppt'] = 'Import PowerPoint';
-$string['importppt_help'] = 'This feature enables a zip file of PowerPoint 2003 slides saved as web pages to be imported into the lesson.';
 $string['importquestions'] = 'Import questions';
 $string['importquestions_help'] = 'This feature enables questions in a variety of formats to be imported via text file.';
 $string['insertedpage'] = 'Inserted page';
@@ -206,6 +213,7 @@ $string['jump'] = 'Jump';
 $string['jumps'] = 'Jumps';
 $string['jumps_help'] = 'Each answer (for questions) or description (for content pages) has a corresponding jump. The jump can be relative, such as this page or next page, or absolute, specifying any one of the pages in the lesson.';
 $string['jumpsto'] = 'Jumps to <em>{$a}</em>';
+$string['leftduringtimedsession'] = 'You have left during a timed lesson.';
 $string['leftduringtimed'] = 'You have left during a timed lesson.<br />Please click on Continue to restart the lesson.';
 $string['leftduringtimednoretake'] = 'You have left during a timed lesson and you are<br />not allowed to retake or continue the lesson.';
 $string['lesson:addinstance'] = 'Add a new lesson';
@@ -235,14 +243,14 @@ $string['maxgrade'] = 'Maximum grade';
 $string['maxgrade_help'] = 'This setting specifies the maximum grade for the lesson. If set to 0, the lesson does not appear in the grades pages.';
 $string['maxhighscores'] = 'Number of high scores displayed';
 $string['maximumnumberofanswersbranches'] = 'Maximum number of answers';
-$string['maximumnumberofanswersbranches_help'] = 'This setting specifies the maximum number of answers that may be used in the lesson. If only true/false questions are used, it can be set to 2. The setting may be changed at any time, since it only effects what the teacher sees, not the data.';
+$string['maximumnumberofanswersbranches_help'] = 'This setting specifies the maximum number of answers that may be used in the lesson. If only true/false questions are used, it can be set to 2. The setting may be changed at any time, since it only affects what the teacher sees, not the data.';
 $string['maximumnumberofattempts'] = 'Maximum number of attempts';
 $string['maximumnumberofattempts_help'] = 'This setting specifies the maximum number of attempts allowed for each question. If answered incorrectly repeatedly, when the maximum is reached, the next page of the lesson is displayed.';
 $string['maximumnumberofattemptsreached'] = 'Maximum number of attempts reached - Moving to next page';
 $string['maxtime'] = 'Time limit (minutes)';
 $string['maxtimewarning'] = 'You have {$a} minute(s) to finish the lesson.';
 $string['mediaclose'] = 'Show close button:';
-$string['mediafile'] = 'Pop-up to file or web page';
+$string['mediafile'] = 'File pop-up';
 $string['mediafile_help'] = 'To include a pop-up window at the beginning of a lesson, choose the appropriate file to display. Every lesson page will include a link to re-open the pop-up if necessary.';
 $string['mediafilepopup'] = 'Click here to view';
 $string['mediaheight'] = 'Popup window height:';
@@ -280,7 +288,7 @@ $string['nameapproved'] = 'Name approved';
 $string['namereject'] = 'Sorry, your name has been rejected by the filter.<br />Please try another name.';
 $string['new'] = 'new';
 $string['nextpage'] = 'Next page';
-$string['noanswer'] = 'No answer given.  Please go back and submit an answer.';
+$string['noanswer'] = 'One or more questions have no answer given.  Please go back and submit an answer.';
 $string['noattemptrecordsfound'] = 'No attempt records found: no grade given';
 $string['nobranchtablefound'] = 'No content page found';
 $string['nocommentyet'] = 'No comment yet.';
@@ -338,10 +346,10 @@ $string['pluginname'] = 'Lesson';
 $string['pointsearned'] = 'Points earned';
 $string['postprocesserror'] = 'Error occurred during post-processing!';
 $string['postsuccess'] = 'Post successful';
-$string['pptsuccessfullimport'] = 'Successfully imported pages from the uploaded PowerPoint Presentation';
 $string['practice'] = 'Practice lesson';
 $string['practice_help'] = 'A practice lesson does not appear in the gradebook.';
 $string['preprocesserror'] = 'Error occurred during pre-processing!';
+$string['prerequisitelesson'] = 'Prerequisite lesson';
 $string['preview'] = 'Preview';
 $string['previewlesson'] = 'Preview {$a}';
 $string['previouspage'] = 'Previous page';

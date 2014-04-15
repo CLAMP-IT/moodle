@@ -43,7 +43,7 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
 }
 
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 require_capability('moodle/grade:manage', $context);
 
 // default return url
@@ -97,6 +97,7 @@ if ($parent_category->aggregation == GRADE_AGGREGATE_SUM or $parent_category->ag
 } else {
     $item->aggregationcoef = format_float($item->aggregationcoef, 4);
 }
+$item->cancontrolvisibility = $grade_item->can_control_visibility();
 
 $mform = new edit_item_form(null, array('current'=>$item, 'gpr'=>$gpr));
 

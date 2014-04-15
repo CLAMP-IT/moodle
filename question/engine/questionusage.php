@@ -63,7 +63,7 @@ class question_usage_by_activity {
      */
     protected $preferredbehaviour = null;
 
-    /** @var object the context this usage belongs to. */
+    /** @var context the context this usage belongs to. */
     protected $context;
 
     /** @var string plugin name of the plugin this usage belongs to. */
@@ -104,7 +104,7 @@ class question_usage_by_activity {
         return $this->preferredbehaviour;
     }
 
-    /** @return object the context this usage belongs to. */
+    /** @return context the context this usage belongs to. */
     public function get_owning_context() {
         return $this->context;
     }
@@ -166,15 +166,17 @@ class question_usage_by_activity {
      */
     public function add_question(question_definition $question, $maxmark = null) {
         $qa = new question_attempt($question, $this->get_id(), $this->observer, $maxmark);
-        if (count($this->questionattempts) == 0) {
-            $this->questionattempts[1] = $qa;
-        } else {
-            $this->questionattempts[] = $qa;
-        }
-        end($this->questionattempts); // Ready to get the last key on the next line.
-        $qa->set_slot(key($this->questionattempts));
+        $qa->set_slot($this->next_slot_number());
+        $this->questionattempts[$this->next_slot_number()] = $qa;
         $this->observer->notify_attempt_added($qa);
         return $qa->get_slot();
+    }
+
+    /**
+     * The slot number that will be allotted to the next question added.
+     */
+    public function next_slot_number() {
+        return count($this->questionattempts) + 1;
     }
 
     /**
@@ -322,6 +324,27 @@ class question_usage_by_activity {
             $mark += $qa->get_mark();
         }
         return $mark;
+    }
+
+    /**
+     * Get summary information about this usage.
+     *
+     * Some behaviours may be able to provide interesting summary information
+     * about the attempt as a whole, and this method provides access to that data.
+     * To see how this works, try setting a quiz to one of the CBM behaviours,
+     * and then look at the extra information displayed at the top of the quiz
+     * review page once you have sumitted an attempt.
+     *
+     * In the return value, the array keys are identifiers of the form
+     * qbehaviour_behaviourname_meaningfullkey. For qbehaviour_deferredcbm_highsummary.
+     * The values are arrays with two items, title and content. Each of these
+     * will be either a string, or a renderable.
+     *
+     * @return array as described above.
+     */
+    public function get_summary_information(question_display_options $options) {
+        return question_engine::get_behaviour_type($this->preferredbehaviour)
+                ->summarise_usage($this, $options);
     }
 
     /**
@@ -511,7 +534,49 @@ class question_usage_by_activity {
      * instead of the data from $_POST.
      */
     public function process_all_actions($timestamp = null, $postdata = null) {
-        // note: we must not use "question_attempt::get_submitted_var()" because there is no attempt instance!!!
+        foreach ($this->get_slots_in_request($postdata) as $slot) {
+            if (!$this->validate_sequence_number($slot, $postdata)) {
+                continue;
+            }
+            $submitteddata = $this->extract_responses($slot, $postdata);
+            $this->process_action($slot, $submitteddata, $timestamp);
+        }
+        $this->update_question_flags($postdata);
+    }
+
+    /**
+     * Process all the question autosave data in the current request.
+     *
+     * If there is a parameter slots included in the post data, then only
+     * those question numbers will be processed, otherwise all questions in this
+     * useage will be.
+     *
+     * This function also does {@link update_question_flags()}.
+     *
+     * @param int $timestamp optional, use this timestamp as 'now'.
+     * @param array $postdata optional, only intended for testing. Use this data
+     * instead of the data from $_POST.
+     */
+    public function process_all_autosaves($timestamp = null, $postdata = null) {
+        foreach ($this->get_slots_in_request($postdata) as $slot) {
+            if (!$this->is_autosave_required($slot, $postdata)) {
+                continue;
+            }
+            $submitteddata = $this->extract_responses($slot, $postdata);
+            $this->process_autosave($slot, $submitteddata, $timestamp);
+        }
+        $this->update_question_flags($postdata);
+    }
+
+    /**
+     * Get the list of slot numbers that should be processed as part of processing
+     * the current request.
+     * @param array $postdata optional, only intended for testing. Use this data
+     * instead of the data from $_POST.
+     * @return array of slot numbers.
+     */
+    protected function get_slots_in_request($postdata = null) {
+        // Note: we must not use "question_attempt::get_submitted_var()" because there is no attempt instance!!!
         if (is_null($postdata)) {
             $slots = optional_param('slots', null, PARAM_SEQUENCE);
         } else if (array_key_exists('slots', $postdata)) {
@@ -526,14 +591,7 @@ class question_usage_by_activity {
         } else {
             $slots = explode(',', $slots);
         }
-        foreach ($slots as $slot) {
-            if (!$this->validate_sequence_number($slot, $postdata)) {
-                continue;
-            }
-            $submitteddata = $this->extract_responses($slot, $postdata);
-            $this->process_action($slot, $submitteddata, $timestamp);
-        }
-        $this->update_question_flags($postdata);
+        return $slots;
     }
 
     /**
@@ -550,6 +608,50 @@ class question_usage_by_activity {
     }
 
     /**
+     * Transform an array of response data for slots to an array of post data as you would get from quiz attempt form.
+     *
+     * @param $simulatedresponses array keys are slot nos => contains arrays representing student
+     *                                   responses which will be passed to question_definition::prepare_simulated_post_data method
+     *                                   and then have the appropriate prefix added.
+     * @return array simulated post data
+     */
+    public function prepare_simulated_post_data($simulatedresponses) {
+        $simulatedpostdata = array();
+        $simulatedpostdata['slots'] = implode(',', array_keys($simulatedresponses));
+        foreach ($simulatedresponses as $slot => $responsedata) {
+            $slotresponse = array();
+
+            // Behaviour vars should not be processed by question type, just add prefix.
+            $behaviourvars = $this->get_question_attempt($slot)->get_behaviour()->get_expected_data();
+            foreach (array_keys($responsedata) as $responsedatakey) {
+                if ($responsedatakey{0} === '-') {
+                    $behaviourvarname = substr($responsedatakey, 1);
+                    if (isset($behaviourvars[$behaviourvarname])) {
+                        // Expected behaviour var found.
+                        if ($responsedata[$responsedatakey]) {
+                            // Only set the behaviour var if the column value from the cvs file is non zero.
+                            // The behaviours only look at whether the var is set or not they don't look at the value.
+                            $slotresponse[$responsedatakey] = $responsedata[$responsedatakey];
+                        }
+                    }
+                    // Remove both expected and unexpected vars from data passed to question type.
+                    unset($responsedata[$responsedatakey]);
+                }
+            }
+
+            $slotresponse += $this->get_question($slot)->prepare_simulated_post_data($responsedata);
+            $slotresponse[':sequencecheck'] = $this->get_question_attempt($slot)->get_sequence_check_count();
+
+            // Add this slot's prefix to slot data.
+            $prefix = $this->get_field_prefix($slot);
+            foreach ($slotresponse as $key => $value) {
+                $simulatedpostdata[$prefix.$key] = $value;
+            }
+        }
+        return $simulatedpostdata;
+    }
+
+    /**
      * Process a specific action on a specific question.
      * @param int $slot the number used to identify this question within this usage.
      * @param $submitteddata the submitted data that constitutes the action.
@@ -558,6 +660,18 @@ class question_usage_by_activity {
         $qa = $this->get_question_attempt($slot);
         $qa->process_action($submitteddata, $timestamp);
         $this->observer->notify_attempt_modified($qa);
+    }
+
+    /**
+     * Process an autosave action on a specific question.
+     * @param int $slot the number used to identify this question within this usage.
+     * @param $submitteddata the submitted data that constitutes the action.
+     */
+    public function process_autosave($slot, $submitteddata, $timestamp = null) {
+        $qa = $this->get_question_attempt($slot);
+        if ($qa->process_autosave($submitteddata, $timestamp)) {
+            $this->observer->notify_attempt_modified($qa);
+        }
     }
 
     /**
@@ -576,12 +690,32 @@ class question_usage_by_activity {
                 $qa->get_control_field_name('sequencecheck'), PARAM_INT, $postdata);
         if (is_null($sequencecheck)) {
             return false;
-        } else if ($sequencecheck != $qa->get_num_steps()) {
+        } else if ($sequencecheck != $qa->get_sequence_check_count()) {
             throw new question_out_of_sequence_exception($this->id, $slot, $postdata);
         } else {
             return true;
         }
     }
+
+    /**
+     * Check, based on the sequence number, whether this auto-save is still required.
+     * @param int $slot the number used to identify this question within this usage.
+     * @param array $submitteddata the submitted data that constitutes the action.
+     * @return bool true if the check variable is present and correct, otherwise false.
+     */
+    public function is_autosave_required($slot, $postdata = null) {
+        $qa = $this->get_question_attempt($slot);
+        $sequencecheck = $qa->get_submitted_var(
+                $qa->get_control_field_name('sequencecheck'), PARAM_INT, $postdata);
+        if (is_null($sequencecheck)) {
+            return false;
+        } else if ($sequencecheck != $qa->get_sequence_check_count()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     /**
      * Update the flagged state for all question_attempts in this usage, if their
      * flagged state was changed in the request.
@@ -646,10 +780,11 @@ class question_usage_by_activity {
      * @param string $comment the comment being added to the question attempt.
      * @param number $mark the mark that is being assigned. Can be null to just
      * add a comment.
+     * @param int $commentformat one of the FORMAT_... constants. The format of $comment.
      */
-    public function manual_grade($slot, $comment, $mark) {
+    public function manual_grade($slot, $comment, $mark, $commentformat = null) {
         $qa = $this->get_question_attempt($slot);
-        $qa->manual_grade($comment, $mark);
+        $qa->manual_grade($comment, $mark, $commentformat);
         $this->observer->notify_attempt_modified($qa);
     }
 
@@ -708,11 +843,19 @@ class question_usage_by_activity {
         }
 
         $quba = new question_usage_by_activity($record->component,
-            get_context_instance_by_id($record->contextid));
+            context::instance_by_id($record->contextid, IGNORE_MISSING));
         $quba->set_id_from_database($record->qubaid);
         $quba->set_preferred_behaviour($record->preferredbehaviour);
 
         $quba->observer = new question_engine_unit_of_work($quba);
+
+        // If slot is null then the current pointer in $records will not be
+        // advanced in the while loop below, and we get stuck in an infinite loop,
+        // since this method is supposed to always consume at least one record.
+        // Therefore, in this case, advance the record here.
+        if (is_null($record->slot)) {
+            $records->next();
+        }
 
         while ($record && $record->qubaid == $qubaid && !is_null($record->slot)) {
             $quba->questionattempts[$record->slot] =

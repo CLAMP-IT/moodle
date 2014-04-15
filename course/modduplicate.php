@@ -34,18 +34,18 @@ require_once($CFG->libdir . '/filelib.php');
 
 $cmid           = required_param('cmid', PARAM_INT);
 $courseid       = required_param('course', PARAM_INT);
-$sectionreturn  = optional_param('sr', 0, PARAM_INT);
+$sectionreturn  = optional_param('sr', null, PARAM_INT);
 
 $course     = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
 $cm         = get_coursemodule_from_id('', $cmid, $course->id, true, MUST_EXIST);
-$cmcontext  = get_context_instance(CONTEXT_MODULE, $cm->id);
-$context    = get_context_instance(CONTEXT_COURSE, $courseid);
+$cmcontext  = context_module::instance($cm->id);
+$context    = context_course::instance($courseid);
 $section    = $DB->get_record('course_sections', array('id' => $cm->section, 'course' => $cm->course));
 
 require_login($course);
 require_sesskey();
 require_capability('moodle/course:manageactivities', $context);
-// Require both target import caps to be able to duplicate, see make_editing_buttons()
+// Require both target import caps to be able to duplicate, see course_get_cm_edit_actions()
 require_capability('moodle/backup:backuptargetimport', $context);
 require_capability('moodle/restore:restoretargetimport', $context);
 
@@ -55,6 +55,15 @@ $PAGE->set_url(new moodle_url('/course/modduplicate.php', array('cmid' => $cm->i
 $PAGE->set_pagelayout('incourse');
 
 $output = $PAGE->get_renderer('core', 'backup');
+
+$a          = new stdClass();
+$a->modtype = get_string('modulename', $cm->modname);
+$a->modname = format_string($cm->name);
+
+if (!plugin_supports('mod', $cm->modname, FEATURE_BACKUP_MOODLE2)) {
+    $url = course_get_url($course, $cm->sectionnum, array('sr' => $sectionreturn));
+    print_error('duplicatenosupport', 'error', $url, $a);
+}
 
 // backup the activity
 
@@ -82,7 +91,8 @@ if (!$rc->execute_precheck()) {
 
         echo $output->header();
         echo $output->precheck_notices($precheckresults);
-        echo $output->continue_button(new moodle_url('/course/view.php', array('id' => $course->id)));
+        $url = course_get_url($course, $cm->sectionnum, array('sr' => $sectionreturn));
+        echo $output->continue_button($url);
         echo $output->footer();
         die();
     }
@@ -118,28 +128,24 @@ if (empty($CFG->keeptempdirectoriesonbackup)) {
     fulldelete($backupbasepath);
 }
 
-$a          = new stdClass();
-$a->modtype = get_string('modulename', $cm->modname);
-$a->modname = format_string($cm->name);
-
 echo $output->header();
 
 if ($newcmid) {
     echo $output->confirm(
         get_string('duplicatesuccess', 'core', $a),
         new single_button(
-            new moodle_url('/course/modedit.php', array('update' => $newcmid)),
+            new moodle_url('/course/modedit.php', array('update' => $newcmid, 'sr' => $sectionreturn)),
             get_string('duplicatecontedit'),
             'get'),
         new single_button(
-            course_get_url($course, $sectionreturn),
+            course_get_url($course, $cm->sectionnum, array('sr' => $sectionreturn)),
             get_string('duplicatecontcourse'),
             'get')
     );
 
 } else {
     echo $output->notification(get_string('duplicatesuccess', 'core', $a), 'notifysuccess');
-    echo $output->continue_button(course_get_url($course, $sectionreturn));
+    echo $output->continue_button(course_get_url($course, $cm->sectionnum, array('sr' => $sectionreturn)));
 }
 
 echo $output->footer();

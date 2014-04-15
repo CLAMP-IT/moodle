@@ -18,8 +18,7 @@
 /**
  * Essay
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  2009 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -131,7 +130,8 @@ class lesson_page_type_essay extends lesson_page {
         $answers  = $this->get_answers();
         $properties->id = $this->properties->id;
         $properties->lessonid = $this->lesson->id;
-        $properties = file_postupdate_standard_editor($properties, 'contents', array('noclean'=>true, 'maxfiles'=>EDITOR_UNLIMITED_FILES, 'maxbytes'=>$PAGE->course->maxbytes), get_context_instance(CONTEXT_MODULE, $PAGE->cm->id), 'mod_lesson', 'page_contents', $properties->id);
+        $properties->timemodified = time();
+        $properties = file_postupdate_standard_editor($properties, 'contents', array('noclean'=>true, 'maxfiles'=>EDITOR_UNLIMITED_FILES, 'maxbytes'=>$PAGE->course->maxbytes), context_module::instance($PAGE->cm->id), 'mod_lesson', 'page_contents', $properties->id);
         $DB->update_record("lesson_pages", $properties);
 
         if (!array_key_exists(0, $this->answers)) {
@@ -184,9 +184,9 @@ class lesson_page_type_essay extends lesson_page {
         $formattextdefoptions->context = $answerpage->context;
 
         foreach ($answers as $answer) {
-            if ($useranswer != NULL) {
+            if ($useranswer != null) {
                 $essayinfo = unserialize($useranswer->useranswer);
-                if ($essayinfo->response == NULL) {
+                if ($essayinfo->response == null) {
                     $answerdata->response = get_string("nocommentyet", "lesson");
                 } else {
                     $answerdata->response = s($essayinfo->response);
@@ -213,6 +213,7 @@ class lesson_page_type_essay extends lesson_page {
             } else {
                 $essayinfo = new stdClass();
                 $essayinfo->answer = get_string("didnotanswerquestion", "lesson");
+                $essayinfo->answerformat = null;
             }
 
             if (isset($pagestats[$this->properties->id])) {

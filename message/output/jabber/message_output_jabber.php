@@ -43,14 +43,19 @@ class message_output_jabber extends message_output {
     function send_message($eventdata){
         global $CFG;
 
-        if (!empty($CFG->noemailever)) {
-            // hidden setting for development sites, set in config.php if needed
-            debugging('$CFG->noemailever active, no jabber message sent.', DEBUG_MINIMAL);
+        // Skip any messaging of suspended and deleted users.
+        if ($eventdata->userto->auth === 'nologin' or $eventdata->userto->suspended or $eventdata->userto->deleted) {
             return true;
         }
 
-        // skip any messaging suspended and deleted users
-        if ($eventdata->userto->auth === 'nologin' or $eventdata->userto->suspended or $eventdata->userto->deleted) {
+        if (!empty($CFG->noemailever)) {
+            // hidden setting for development sites, set in config.php if needed
+            debugging('$CFG->noemailever is active, no jabber message sent.', DEBUG_MINIMAL);
+            return true;
+        }
+
+        if (PHPUNIT_TEST) {
+            // No connection to external servers allowed in phpunit tests.
             return true;
         }
 
@@ -72,6 +77,9 @@ class message_output_jabber extends message_output {
         $jabbermessage .= "\n(".get_string('noreply','message').')';
 
         $conn = new XMPPHP_XMPP($CFG->jabberhost,$CFG->jabberport,$CFG->jabberusername,$CFG->jabberpassword,'moodle',$CFG->jabberserver);
+
+        // No need to track the presence during the sending message process.
+        $conn->track_presence = false;
 
         try {
             //$conn->useEncryption(false);

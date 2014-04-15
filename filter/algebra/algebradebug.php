@@ -7,7 +7,7 @@
 
     require_once("../../config.php");
 
-    if (!filter_is_enabled('filter/algebra')) {
+    if (!filter_is_enabled('algebra')) {
         print_error('filternotenabled');
     }
 
@@ -15,7 +15,7 @@
     require_once($CFG->dirroot.'/filter/tex/lib.php');
 
     require_login();
-    require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
+    require_capability('moodle/site:config', context_system::instance());
 
     $query = urldecode($_SERVER['QUERY_STRING']);
 
@@ -280,7 +280,8 @@ function slasharguments($texexp, $md5) {
           <form action="algebradebug.php" method="get"
            target="inlineframe">
             <center>
-             <input type="text" name="algebra" size="50"
+             <label for="algebra" class="accesshide"><?php print_string('algebraicexpression', 'filter_algebra'); ?></label>
+             <input type="text" id="algebra" name="algebra" size="50"
                     value="sin(z)/(x^2+y^2)" />
             </center>
            <ol>

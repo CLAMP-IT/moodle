@@ -758,7 +758,7 @@ function grade_format_gradevalue_percentage($value, $grade_item, $decimals, $loc
  * @return string
  */
 function grade_format_gradevalue_letter($value, $grade_item) {
-    $context = get_context_instance(CONTEXT_COURSE, $grade_item->courseid);
+    $context = context_course::instance($grade_item->courseid, IGNORE_MISSING);
     if (!$letters = grade_get_letters($context)) {
         return ''; // no letters??
     }
@@ -808,7 +808,7 @@ function grade_get_categories_menu($courseid, $includenew=false) {
     foreach ($categories as $category) {
         $cats[$category->id] = $category->get_name();
     }
-    collatorlib::asort($cats);
+    core_collator::asort($cats);
 
     return ($result+$cats);
 }
@@ -839,7 +839,7 @@ function grade_get_letters($context=null) {
 
     $letters = array();
 
-    $contexts = get_parent_contexts($context);
+    $contexts = $context->get_parent_context_ids();
     array_unshift($contexts, $context->id);
 
     foreach ($contexts as $ctxid) {
@@ -939,7 +939,7 @@ function grade_recover_history_grades($userid, $courseid) {
     //Check the user is enrolled in this course
     //Dont bother checking if they have a gradeable role. They may get one later so recover
     //whatever grades they have now just in case.
-    $course_context = get_context_instance(CONTEXT_COURSE, $courseid);
+    $course_context = context_course::instance($courseid);
     if (!is_enrolled($course_context, $userid)) {
         debugging('Attempting to recover the grades of a user who is deleted or not enrolled. Skipping recover.');
         return false;
@@ -1097,9 +1097,9 @@ function grade_regrade_final_grades($courseid, $userid=null, $updated_item=null)
                     continue; // this one is ok
                 }
                 $grade_items[$gid]->force_regrading();
-                $errors[$grade_items[$gid]->id] = 'Probably circular reference or broken calculation formula'; // TODO: localize
+                $errors[$grade_items[$gid]->id] = get_string('errorcalculationbroken', 'grades');
             }
-            break; // oki, found error
+            break; // Found error.
         }
     }
 
@@ -1138,7 +1138,7 @@ function grade_grab_course_grades($courseid, $modname=null, $userid=0) {
         return;
     }
 
-    if (!$mods = get_plugin_list('mod') ) {
+    if (!$mods = core_component::get_plugin_list('mod') ) {
         print_error('nomodules', 'debug');
     }
 
@@ -1190,7 +1190,7 @@ function grade_update_mod_grades($modinstance, $userid=0) {
         $updategradesfunc($modinstance, $userid);
 
     } else {
-        // mudule does not support grading??
+        // Module does not support grading?
     }
 
     return true;
@@ -1228,7 +1228,7 @@ function remove_course_grades($courseid, $showfeedback) {
 
     $course_category = grade_category::fetch_course_category($courseid);
     $course_category->delete('coursedelete');
-    $fs->delete_area_files(get_context_instance(CONTEXT_COURSE, $courseid)->id, 'grade', 'feedback');
+    $fs->delete_area_files(context_course::instance($courseid)->id, 'grade', 'feedback');
     if ($showfeedback) {
         echo $OUTPUT->notification($strdeleted.' - '.get_string('grades', 'grades').', '.get_string('items', 'grades').', '.get_string('categories', 'grades'), 'notifysuccess');
     }
@@ -1269,7 +1269,7 @@ function remove_course_grades($courseid, $showfeedback) {
 function grade_course_category_delete($categoryid, $newparentid, $showfeedback) {
     global $DB;
 
-    $context = get_context_instance(CONTEXT_COURSECAT, $categoryid);
+    $context = context_coursecat::instance($categoryid);
     $DB->delete_records('grade_letters', array('contextid'=>$context->id));
 }
 

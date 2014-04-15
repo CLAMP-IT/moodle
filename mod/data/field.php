@@ -20,7 +20,7 @@
  *
  * @copyright 2005 Martin Dougiamas  http://dougiamas.com
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package mod-data
+ * @package mod_data
  */
 
 require_once('../../config.php');
@@ -88,7 +88,7 @@ if ($id) {
 
 require_login($course, true, $cm);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 require_capability('mod/data:managetemplates', $context);
 
 /************************************
@@ -120,9 +120,6 @@ switch ($mode) {
 
             /// Update some templates
                 data_append_new_field_to_templates($data, $fieldinput->name);
-
-                add_to_log($course->id, 'data', 'fields add',
-                           "field.php?d=$data->id&amp;mode=display&amp;fid=$fid", $fid, $cm->id);
 
                 $displaynoticegood = get_string('fieldadded','data');
             }
@@ -163,9 +160,6 @@ switch ($mode) {
             /// Update the templates.
                 data_replace_field_in_templates($data, $oldfieldname, $field->field->name);
 
-                add_to_log($course->id, 'data', 'fields update',
-                           "field.php?d=$data->id&amp;mode=display&amp;fid=$fid", $fid, $cm->id);
-
                 $displaynoticegood = get_string('fieldupdated','data');
             }
         }
@@ -193,9 +187,6 @@ switch ($mode) {
                         $rec->defaultsortdir = 0;
                         $DB->update_record('data', $rec);
                     }
-
-                    add_to_log($course->id, 'data', 'fields delete',
-                               "field.php?d=$data->id", $field->field->name, $cm->id);
 
                     $displaynoticegood = get_string('fielddeleted', 'data');
                 }
@@ -240,11 +231,11 @@ switch ($mode) {
 /// Print the browsing interface
 
 ///get the list of possible fields (plugins)
-$directories = get_list_of_plugins('mod/data/field/');
+$plugins = core_component::get_plugin_list('datafield');
 $menufield = array();
 
-foreach ($directories as $directory){
-    $menufield[$directory] = get_string($directory,'data');    //get from language files
+foreach ($plugins as $plugin=>$fulldir){
+    $menufield[$plugin] = get_string('pluginname', 'datafield_'.$plugin);    //get from language files
 }
 asort($menufield);    //sort in alphabetical order
 $PAGE->set_title(get_string('course') . ': ' . $course->fullname);
@@ -305,10 +296,9 @@ if (($mode == 'new') && (!empty($newtype)) && confirm_sesskey()) {          /// 
 
 
     echo '<div class="fieldadd">';
-    echo '<label for="fieldform_jump">'.get_string('newfield','data').'</label>';
+    echo '<label for="fieldform_jump">'.get_string('newfield','data').$OUTPUT->help_icon('newfield', 'data').'</label>';
     $popupurl = $CFG->wwwroot.'/mod/data/field.php?d='.$data->id.'&mode=new&sesskey='.  sesskey();
     echo $OUTPUT->single_select(new moodle_url($popupurl), 'newtype', $menufield, null, array(''=>'choosedots'), 'fieldform');
-    echo $OUTPUT->help_icon('newfield', 'data');
     echo '</div>';
 
     echo '<div class="sortdefault">';
@@ -352,6 +342,7 @@ if (($mode == 'new') && (!empty($newtype)) && confirm_sesskey()) {          /// 
 
     $options = array(0 => get_string('ascending', 'data'),
                      1 => get_string('descending', 'data'));
+    echo html_writer::label(get_string('sortby'), 'menudefaultsortdir', false, array('class' => 'accesshide'));
     echo html_writer::select($options, 'defaultsortdir', $data->defaultsortdir, false);
     echo '<input type="submit" value="'.get_string('save', 'data').'" />';
     echo '</div>';

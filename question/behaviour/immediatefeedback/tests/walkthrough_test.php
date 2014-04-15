@@ -116,14 +116,14 @@ class qbehaviour_immediatefeedback_walkthrough_test extends qbehaviour_walkthrou
                 $this->get_contains_correct_expectation());
 
         // Process a manual comment.
-        $this->manual_grade('Not good enough!', 0.5);
+        $this->manual_grade('Not good enough!', 0.5, FORMAT_HTML);
 
         // Verify.
         $this->check_current_state(question_state::$mangrpartial);
         $this->check_current_mark(0.5);
         $this->check_current_output(
                 $this->get_contains_partcorrect_expectation(),
-                new question_pattern_expectation('/' . preg_quote('Not good enough!') . '/'));
+                new question_pattern_expectation('/' . preg_quote('Not good enough!', '/') . '/'));
 
         // Now change the correct answer to the question, and regrade.
         $mc->answers[13]->fraction = -0.33333333;
@@ -185,14 +185,14 @@ class qbehaviour_immediatefeedback_walkthrough_test extends qbehaviour_walkthrou
                 $this->get_contains_mc_radio_expectation(2, false, false));
 
         // Process a manual comment.
-        $this->manual_grade('Not good enough!', 0.5);
+        $this->manual_grade('Not good enough!', 0.5, FORMAT_HTML);
 
         // Verify.
         $this->check_current_state(question_state::$mangrpartial);
         $this->check_current_mark(0.5);
         $this->check_current_output(
                 $this->get_contains_partcorrect_expectation(),
-                new question_pattern_expectation('/' . preg_quote('Not good enough!') . '/'));
+                new question_pattern_expectation('/' . preg_quote('Not good enough!', '/') . '/'));
     }
 
     public function test_immediatefeedback_feedback_multichoice_wrong_on_finish() {

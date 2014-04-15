@@ -19,6 +19,7 @@
  *         div.left
  *         div.options
  *             div.commands
+ *             div.post-word-count
  *             div.forum-post-rating
  *             div.link
  *             div.footer
@@ -40,6 +41,8 @@
 .forumpost .options .forum-post-rating {float:left;}
 .forumpost .content .posting {overflow:auto;max-width:100%;}
 .forumpost .content .attachedimages img {max-width:100%;}
+.forumpost .post-word-count { font-size: .85em; font-style: italic; }
+.forumpost .shortenedpost .post-word-count { display: inline; padding: 0 .3em; }
 
 .dir-rtl .forumpost .row .topic,
 .dir-rtl .forumpost .row .content-mask,
@@ -52,6 +55,7 @@
 .path-mod-forum .indent {margin-left: 30px;}
 .path-mod-forum .forumheaderlist {width: 100%;border-width:1px;border-style:solid;border-collapse:separate;margin-top: 10px;}
 .path-mod-forum .forumheaderlist td {border-width:1px 0px 0px 1px;border-style:solid;}
+.path-mod-forum .forumheaderlist th.header.replies .iconsmall { margin: 0 .3em;}
 .path-mod-forum .forumheaderlist .picture {width: 35px;}
 .path-mod-forum .forumheaderlist .discussion .starter {vertical-align: middle;}
 .path-mod-forum .forumheaderlist .discussion .lastpost {white-space: nowrap;text-align: right;}
@@ -88,6 +92,20 @@
 #page-mod-forum-view .unread a:first-child {padding-right: 10px;}
 #page-mod-forum-index .unread img,
 #page-mod-forum-view .unread img {margin-left: 5px;}
+#page-mod-forum-view .unread img {margin-left: 5px;}
+.dir-rtl#page-mod-forum-view .unread img {margin-right: 5px; margin-left: 0; }
 
 /** Unknown Styles ??? */
 #email .unsubscribelink {margin-top:20px;}
+
+/* Forumpost unread
+-------------------------*/
+#page-mod-forum-view .unread,
+.forumpost.unread .row.header,
+.path-course-view .unread,
+span.unread {
+    background-color: #FFD;
+}
+.forumpost.unread .row.header {
+    border-bottom: 1px solid #DDD;
+}

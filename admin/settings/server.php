@@ -7,9 +7,7 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
 
 // "systempaths" settingpage
 $temp = new admin_settingpage('systempaths', new lang_string('systempaths','admin'));
-$temp->add(new admin_setting_configselect('gdversion', new lang_string('gdversion','admin'), new lang_string('configgdversion', 'admin'), check_gd_version(), array('0' => new lang_string('gdnot'),
-                                                                                                                                                          '1' => new lang_string('gd1'),
-                                                                                                                                                          '2' => new lang_string('gd2'))));
+
 $temp->add(new admin_setting_configexecutable('pathtodu', new lang_string('pathtodu', 'admin'), new lang_string('configpathtodu', 'admin'), ''));
 $temp->add(new admin_setting_configexecutable('aspellpath', new lang_string('aspellpath', 'admin'), new lang_string('edhelpaspellpath'), ''));
 $temp->add(new admin_setting_configexecutable('pathtodot', new lang_string('pathtodot', 'admin'), new lang_string('pathtodot_help', 'admin'), ''));
@@ -37,7 +35,9 @@ $ADMIN->add('server', $temp);
 
 // "sessionhandling" settingpage
 $temp = new admin_settingpage('sessionhandling', new lang_string('sessionhandling', 'admin'));
-$temp->add(new admin_setting_configcheckbox('dbsessions', new lang_string('dbsessions', 'admin'), new lang_string('configdbsessions', 'admin'), 1));
+if (empty($CFG->session_handler_class) and $DB->session_lock_supported()) {
+    $temp->add(new admin_setting_configcheckbox('dbsessions', new lang_string('dbsessions', 'admin'), new lang_string('configdbsessions', 'admin'), 0));
+}
 $temp->add(new admin_setting_configselect('sessiontimeout', new lang_string('sessiontimeout', 'admin'), new lang_string('configsessiontimeout', 'admin'), 7200, array(14400 => new lang_string('numhours', '', 4),
                                                                                                                                                       10800 => new lang_string('numhours', '', 3),
                                                                                                                                                       7200 => new lang_string('numhours', '', 2),
@@ -93,6 +93,7 @@ $options = array(
     GETREMOTEADDR_SKIP_HTTP_X_FORWARDED_FOR => 'HTTP_CLIENT, REMOTE_ADDR',
     GETREMOTEADDR_SKIP_HTTP_X_FORWARDED_FOR|GETREMOTEADDR_SKIP_HTTP_CLIENT_IP => 'REMOTE_ADDR');
 $temp->add(new admin_setting_configselect('getremoteaddrconf', new lang_string('getremoteaddrconf', 'admin'), new lang_string('configgetremoteaddrconf', 'admin'), 0, $options));
+
 $temp->add(new admin_setting_heading('webproxy', new lang_string('webproxy', 'admin'), new lang_string('webproxyinfo', 'admin')));
 $temp->add(new admin_setting_configtext('proxyhost', new lang_string('proxyhost', 'admin'), new lang_string('configproxyhost', 'admin'), '', PARAM_HOST));
 $temp->add(new admin_setting_configtext('proxyport', new lang_string('proxyport', 'admin'), new lang_string('configproxyport', 'admin'), 0, PARAM_INT));
@@ -177,45 +178,33 @@ $ADMIN->add('server', new admin_externalpage('phpinfo', new lang_string('phpinfo
 // "performance" settingpage
 $temp = new admin_settingpage('performance', new lang_string('performance', 'admin'));
 
-$temp->add(new admin_setting_configtext('numcoursesincombo', new lang_string('numcoursesincombo', 'admin'), new lang_string('numcoursesincombo_help', 'admin'), 500));
+// Memory limit options for large administration tasks.
+$memoryoptions = array(
+    '64M' => '64M',
+    '128M' => '128M',
+    '256M' => '256M',
+    '512M' => '512M',
+    '1024M' => '1024M',
+    '2048M' => '2048M');
+
+// Allow larger memory usage for 64-bit sites only.
+if (PHP_INT_SIZE === 8) {
+    $memoryoptions['3072M'] = '3072M';
+    $memoryoptions['4096M'] = '4096M';
+}
 
 $temp->add(new admin_setting_configselect('extramemorylimit', new lang_string('extramemorylimit', 'admin'),
                                           new lang_string('configextramemorylimit', 'admin'), '512M',
-                                          // if this option is set to 0, default 128M will be used
-                                          array( '64M' => '64M',
-                                                 '128M' => '128M',
-                                                 '256M' => '256M',
-                                                 '512M' => '512M',
-                                                 '1024M' => '1024M'
-                                             )));
+                                          $memoryoptions));
+$temp->add(new admin_setting_configtext('maxtimelimit', new lang_string('maxtimelimit', 'admin'),
+        new lang_string('maxtimelimit_desc', 'admin'), 0, PARAM_INT));
+
 $temp->add(new admin_setting_configtext('curlcache', new lang_string('curlcache', 'admin'),
                                         new lang_string('configcurlcache', 'admin'), 120, PARAM_INT));
 
 $temp->add(new admin_setting_configtext('curltimeoutkbitrate', new lang_string('curltimeoutkbitrate', 'admin'),
                                         new lang_string('curltimeoutkbitrate_help', 'admin'), 56, PARAM_INT));
-/* //TODO: we need to fix code instead of relying on slow rcache, enable this once we have some code that is actually using it
-$temp->add(new admin_setting_special_selectsetup('cachetype', new lang_string('cachetype', 'admin'),
-                                          new lang_string('configcachetype', 'admin'), '',
-                                          array( '' => new lang_string('none'),
-                                                 'internal' => 'internal',
-                                                 'memcached' => 'memcached',
-                                                 'eaccelerator' => 'eaccelerator')));
-// NOTE: $CFG->rcache is forced to bool in lib/setup.php
-$temp->add(new admin_setting_special_selectsetup('rcache', new lang_string('rcache', 'admin'),
-                                          new lang_string('configrcache', 'admin'), 0,
-                                          array( '0' => new lang_string('no'),
-                                                 '1' => new lang_string('yes'))));
-$temp->add(new admin_setting_configtext('rcachettl', new lang_string('rcachettl', 'admin'),
-                                        new lang_string('configrcachettl', 'admin'), 10));
-$temp->add(new admin_setting_configtext('intcachemax', new lang_string('intcachemax', 'admin'),
-                                        new lang_string('configintcachemax', 'admin'), 10));
-$temp->add(new admin_setting_configtext('memcachedhosts', new lang_string('memcachedhosts', 'admin'),
-                                        new lang_string('configmemcachedhosts', 'admin'), ''));
-$temp->add(new admin_setting_configselect('memcachedpconn', new lang_string('memcachedpconn', 'admin'),
-                                          new lang_string('configmemcachedpconn', 'admin'), 0,
-                                          array( '0' => new lang_string('no'),
-                                                 '1' => new lang_string('yes'))));
-*/
+
 $ADMIN->add('server', $temp);
 
 
@@ -227,6 +216,10 @@ if (empty($CFG->disableupdatenotifications)) {
     $temp = new admin_settingpage('updatenotifications', new lang_string('updatenotifications', 'core_admin'));
     $temp->add(new admin_setting_configcheckbox('updateautocheck', new lang_string('updateautocheck', 'core_admin'),
                                                 new lang_string('updateautocheck_desc', 'core_admin'), 1));
+    if (empty($CFG->disableupdateautodeploy)) {
+        $temp->add(new admin_setting_configcheckbox('updateautodeploy', new lang_string('updateautodeploy', 'core_admin'),
+                                                    new lang_string('updateautodeploy_desc', 'core_admin'), 0));
+    }
     $temp->add(new admin_setting_configselect('updateminmaturity', new lang_string('updateminmaturity', 'core_admin'),
                                               new lang_string('updateminmaturity_desc', 'core_admin'), MATURITY_STABLE,
                                               array(

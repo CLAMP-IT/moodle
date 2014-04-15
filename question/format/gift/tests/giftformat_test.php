@@ -17,8 +17,7 @@
 /**
  * Unit tests for the Moodle GIFT format.
  *
- * @package    qformat
- * @subpackage gift
+ * @package    qformat_gift
  * @copyright  2010 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -673,6 +672,62 @@ class qformat_gift_test extends question_testcase {
         $this->assert(new question_check_specified_fields_expectation($expectedq), $q);
     }
 
+    public function test_import_shortanswer_with_general_feedback() {
+        $gift = "
+// question: 666  name: Shortanswer
+::Shortanswer::Which is the best animal?{
+    =Frog#Good!
+    =%50%Cat#What is it with Moodlers and cats?
+    =%0%*#Completely wrong
+    ####[html]Here is some general feedback!
+}";
+        $lines = preg_split('/[\\n\\r]/', str_replace("\r\n", "\n", $gift));
+
+        $importer = new qformat_gift();
+        $q = $importer->readquestion($lines);
+
+        $expectedq = (object) array(
+            'name' => 'Shortanswer',
+            'questiontext' => "Which is the best animal?",
+            'questiontextformat' => FORMAT_MOODLE,
+            'generalfeedback' => 'Here is some general feedback!',
+            'generalfeedbackformat' => FORMAT_HTML,
+            'qtype' => 'shortanswer',
+            'defaultmark' => 1,
+            'penalty' => 0.3333333,
+            'length' => 1,
+            'answer' => array(
+                'Frog',
+                'Cat',
+                '*',
+            ),
+            'fraction' => array(1, 0.5, 0),
+            'feedback' => array(
+                0 => array(
+                    'text' => 'Good!',
+                    'format' => FORMAT_MOODLE,
+                    'files' => array(),
+                ),
+                1 => array(
+                    'text' => "What is it with Moodlers and cats?",
+                    'format' => FORMAT_MOODLE,
+                    'files' => array(),
+                ),
+                2 => array(
+                    'text' => "Completely wrong",
+                    'format' => FORMAT_MOODLE,
+                    'files' => array(),
+                ),
+            ),
+        );
+
+        // Repeated test for better failure messages.
+        $this->assertEquals($expectedq->answer, $q->answer);
+        $this->assertEquals($expectedq->fraction, $q->fraction);
+        $this->assertEquals($expectedq->feedback, $q->feedback);
+        $this->assert(new question_check_specified_fields_expectation($expectedq), $q);
+    }
+
     public function test_export_shortanswer() {
         $qdata = (object) array(
             'id' => 666 ,
@@ -687,7 +742,7 @@ class qformat_gift_test extends question_testcase {
             'qtype' => 'shortanswer',
             'options' => (object) array(
                 'id' => 123,
-                'question' => 666,
+                'questionid' => 666,
                 'usecase' => 1,
                 'answers' => array(
                     1 => (object) array(
@@ -726,6 +781,67 @@ class qformat_gift_test extends question_testcase {
 \t=%100%Frog#Good!
 \t=%50%Cat#What is it with Moodlers and cats?
 \t=%0%*#Completely wrong
+}
+
+";
+
+        $this->assert_same_gift($expectedgift, $gift);
+    }
+
+    public function test_export_shortanswer_with_general_feedback() {
+        $qdata = (object) array(
+            'id' => 666 ,
+            'name' => 'Shortanswer',
+            'questiontext' => "Which is the best animal?",
+            'questiontextformat' => FORMAT_MOODLE,
+            'generalfeedback' => 'Here is some general feedback!',
+            'generalfeedbackformat' => FORMAT_HTML,
+            'defaultmark' => 1,
+            'penalty' => 1,
+            'length' => 1,
+            'qtype' => 'shortanswer',
+            'options' => (object) array(
+                'id' => 123,
+                'questionid' => 666,
+                'usecase' => 1,
+                'answers' => array(
+                    1 => (object) array(
+                        'id' => 1,
+                        'answer' => 'Frog',
+                        'answerformat' => 0,
+                        'fraction' => 1,
+                        'feedback' => 'Good!',
+                        'feedbackformat' => FORMAT_MOODLE,
+                    ),
+                    2 => (object) array(
+                        'id' => 2,
+                        'answer' => 'Cat',
+                        'answerformat' => 0,
+                        'fraction' => 0.5,
+                        'feedback' => "What is it with Moodlers and cats?",
+                        'feedbackformat' => FORMAT_MOODLE,
+                    ),
+                    3 => (object) array(
+                        'id' => 3,
+                        'answer' => '*',
+                        'answerformat' => 0,
+                        'fraction' => 0,
+                        'feedback' => "Completely wrong",
+                        'feedbackformat' => FORMAT_MOODLE,
+                    ),
+                ),
+            ),
+        );
+
+        $exporter = new qformat_gift();
+        $gift = $exporter->writequestion($qdata);
+
+        $expectedgift = "// question: 666  name: Shortanswer
+::Shortanswer::Which is the best animal?{
+\t=%100%Frog#Good!
+\t=%50%Cat#What is it with Moodlers and cats?
+\t=%0%*#Completely wrong
+\t####[html]Here is some general feedback!
 }
 
 ";
@@ -884,5 +1000,74 @@ FALSE#42 is the Ultimate Answer.#You gave the right answer.}";
 ";
 
         $this->assert_same_gift($expectedgift, $gift);
+    }
+
+    public function test_export_backslash() {
+        // There was a bug (MDL-34171) where \\ was getting exported as \\, not
+        // \\\\, and on import, \\ in converted to \.
+        // We need \\\\ in the test code, because of PHPs string escaping rules.
+        $qdata = (object) array(
+            'id' => 666 ,
+            'name' => 'backslash',
+            'questiontext' => 'A \\ B \\\\ C',
+            'questiontextformat' => FORMAT_MOODLE,
+            'generalfeedback' => '',
+            'generalfeedbackformat' => FORMAT_MOODLE,
+            'defaultmark' => 1,
+            'penalty' => 0.3333333,
+            'length' => 1,
+            'qtype' => 'essay',
+            'options' => (object) array(
+                'responseformat' => 'editor',
+                'responsefieldlines' => 15,
+                'attachments' => 0,
+                'graderinfo' => '',
+                'graderinfoformat' => FORMAT_HTML,
+            ),
+        );
+
+        $exporter = new qformat_gift();
+        $gift = $exporter->writequestion($qdata);
+
+        $expectedgift = "// question: 666  name: backslash
+::backslash::A \\\\ B \\\\\\\\ C{}
+
+";
+
+        $this->assert_same_gift($expectedgift, $gift);
+    }
+
+    public function test_import_backslash() {
+        // There was a bug (MDL-34171) where \\ in the import was getting changed
+        // to \. This test checks for that.
+        // We need \\\\ in the test code, because of PHPs string escaping rules.
+        $gift = '
+// essay
+::double backslash:: A \\\\ B \\\\\\\\ C{}';
+        $lines = preg_split('/[\\n\\r]/', str_replace("\r\n", "\n", $gift));
+
+        $importer = new qformat_gift();
+        $q = $importer->readquestion($lines);
+
+        $expectedq = (object) array(
+            'name' => 'double backslash',
+            'questiontext' => 'A \\ B \\\\ C',
+            'questiontextformat' => FORMAT_MOODLE,
+            'generalfeedback' => '',
+            'generalfeedbackformat' => FORMAT_MOODLE,
+            'qtype' => 'essay',
+            'defaultmark' => 1,
+            'penalty' => 0.3333333,
+            'length' => 1,
+            'responseformat' => 'editor',
+            'responsefieldlines' => 15,
+            'attachments' => 0,
+            'graderinfo' => array(
+                'text' => '',
+                'format' => FORMAT_HTML,
+                'files' => array()),
+        );
+
+        $this->assert(new question_check_specified_fields_expectation($expectedq), $q);
     }
 }

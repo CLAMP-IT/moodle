@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package   mod-choice
+ * @package   mod_choice
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -200,7 +200,7 @@ function choice_prepare_options($choice, $user, $coursemodule, $allresponses) {
     $cdisplay = array('options'=>array());
 
     $cdisplay['limitanswers'] = true;
-    $context = get_context_instance(CONTEXT_MODULE, $coursemodule->id);
+    $context = context_module::instance($coursemodule->id);
 
     foreach ($choice->option as $optionid => $text) {
         if (isset($text)) { //make sure there are no dud entries in the db with blank text values.
@@ -248,7 +248,7 @@ function choice_user_submit_response($formanswer, $choice, $userid, $course, $cm
     require_once($CFG->libdir.'/completionlib.php');
 
     $current = $DB->get_record('choice_answers', array('choiceid' => $choice->id, 'userid' => $userid));
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
 
     $countanswers=0;
     if($choice->limitanswers) {
@@ -293,21 +293,49 @@ WHERE
             $newanswer->optionid = $formanswer;
             $newanswer->timemodified = time();
             $DB->update_record("choice_answers", $newanswer);
-            add_to_log($course->id, "choice", "choose again", "view.php?id=$cm->id", $choice->id, $cm->id);
+
+            $eventdata = array();
+            $eventdata['context'] = $context;
+            $eventdata['objectid'] = $newanswer->id;
+            $eventdata['userid'] = $userid;
+            $eventdata['courseid'] = $course->id;
+            $eventdata['other'] = array();
+            $eventdata['other']['choiceid'] = $choice->id;
+            $eventdata['other']['optionid'] = $formanswer;
+
+            $event = \mod_choice\event\answer_updated::create($eventdata);
+            $event->add_record_snapshot('choice_answers', $newanswer);
+            $event->add_record_snapshot('course', $course);
+            $event->add_record_snapshot('course_modules', $cm);
+            $event->trigger();
         } else {
             $newanswer = new stdClass();
             $newanswer->choiceid = $choice->id;
             $newanswer->userid = $userid;
             $newanswer->optionid = $formanswer;
             $newanswer->timemodified = time();
-            $DB->insert_record("choice_answers", $newanswer);
+            $newanswer->id = $DB->insert_record("choice_answers", $newanswer);
 
             // Update completion state
             $completion = new completion_info($course);
             if ($completion->is_enabled($cm) && $choice->completionsubmit) {
                 $completion->update_state($cm, COMPLETION_COMPLETE);
             }
-            add_to_log($course->id, "choice", "choose", "view.php?id=$cm->id", $choice->id, $cm->id);
+
+            $eventdata = array();
+            $eventdata['context'] = $context;
+            $eventdata['objectid'] = $newanswer->id;
+            $eventdata['userid'] = $userid;
+            $eventdata['courseid'] = $course->id;
+            $eventdata['other'] = array();
+            $eventdata['other']['choiceid'] = $choice->id;
+            $eventdata['other']['optionid'] = $formanswer;
+
+            $event = \mod_choice\event\answer_submitted::create($eventdata);
+            $event->add_record_snapshot('choice_answers', $newanswer);
+            $event->add_record_snapshot('course', $course);
+            $event->add_record_snapshot('course_modules', $cm);
+            $event->trigger();
         }
     } else {
         if (!($current->optionid==$formanswer)) { //check to see if current choice already selected - if not display error
@@ -368,13 +396,13 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses, $forc
     unset($display->maxanswers);
 
     $display->numberofuser = $totaluser;
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $display->viewresponsecapability = has_capability('mod/choice:readresponses', $context);
     $display->deleterepsonsecapability = has_capability('mod/choice:deleteresponses',$context);
     $display->fullnamecapability = has_capability('moodle/site:viewfullnames', $context);
 
     if (empty($allresponses)) {
-        echo $OUTPUT->heading(get_string("nousersyet"));
+        echo $OUTPUT->heading(get_string("nousersyet"), 3, null);
         return false;
     }
 
@@ -385,8 +413,6 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses, $forc
             $totalresponsecount += count($userlist);
         }
     }
-
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
     $hascapfullnames = has_capability('moodle/site:viewfullnames', $context);
 
@@ -501,8 +527,11 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses, $forc
                 echo '<a href="javascript:deselect_all_in(\'DIV\',null,\'tablecontainer\');">'.get_string('deselectall').'</a> ';
                 echo '&nbsp;&nbsp;';
                 echo html_writer::label(get_string('withselected', 'choice'), 'menuaction');
-                echo html_writer::select(array('delete' => get_string('delete')), 'action', '', array(''=>get_string('withselectedusers')), array('id'=>'menuaction'));
-                $PAGE->requires->js_init_call('M.util.init_select_autosubmit', array('attemptsform', 'menuaction', ''));
+                echo html_writer::select(array('delete' => get_string('delete')), 'action', '', array(''=>get_string('withselectedusers')), array('id'=>'menuaction', 'class' => 'autosubmit'));
+                $PAGE->requires->yui_module('moodle-core-formautosubmit',
+                    'M.core.init_formautosubmit',
+                    array(array('selectid' => 'menuaction'))
+                );
                 echo '<noscript id="noscriptmenuaction" style="display:inline">';
                 echo '<div>';
                 echo '<input type="submit" value="'.get_string('go').'" /></div></noscript>';
@@ -708,7 +737,7 @@ function choice_reset_userdata($data) {
 function choice_get_response_data($choice, $cm, $groupmode) {
     global $CFG, $USER, $DB;
 
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
 
 /// Get the current group
     if ($groupmode > 0) {
@@ -722,7 +751,7 @@ function choice_get_response_data($choice, $cm, $groupmode) {
 
 /// First get all the users who have access here
 /// To start with we assume they are all "unanswered" then move them later
-    $allresponses[0] = get_enrolled_users($context, 'mod/choice:choose', $currentgroup, user_picture::fields('u', array('idnumber')), 'u.lastname ASC,u.firstname ASC');
+    $allresponses[0] = get_enrolled_users($context, 'mod/choice:choose', $currentgroup, user_picture::fields('u', array('idnumber')));
 
 /// Get all the recorded responses for this choice
     $rawresponses = $DB->get_records('choice_answers', array('choiceid' => $choice->id));

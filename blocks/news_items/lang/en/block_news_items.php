@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,4 +22,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['news_items:addinstance'] = 'Add a new latest news block';
+$string['news_items:myaddinstance'] = 'Add a new latest news block to My home';
 $string['pluginname'] = 'Latest news';

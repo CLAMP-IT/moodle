@@ -18,8 +18,7 @@
 /**
  * Short answer
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  2009 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -273,7 +272,7 @@ class lesson_page_type_shortanswer extends lesson_page {
                 $answerdata->answers[] = array($data, $percent);
 
                 if ($answer->id == $useranswer->answerid) {
-                    if ($answer->response == NULL) {
+                    if ($answer->response == null) {
                         if ($useranswer->correct) {
                             $answerdata->response = get_string("thatsthecorrectanswer", "lesson");
                         } else {
@@ -289,6 +288,9 @@ class lesson_page_type_shortanswer extends lesson_page {
                     } else {
                         $answerdata->score = get_string("didnotreceivecredit", "lesson");
                     }
+                    // We have found the correct answer, do not process any more answers.
+                    $answerpage->answerdata = $answerdata;
+                    break;
                 } else {
                     $answerdata->response = get_string("thatsthewronganswer", "lesson");
                     if ($this->lesson->custom) {
@@ -319,7 +321,7 @@ class lesson_add_page_form_shortanswer extends lesson_add_page_form_base {
             $this->_form->addElement('header', 'answertitle'.$i, get_string('answer').' '.($i+1));
             $this->add_answer($i);
             $this->add_response($i);
-            $this->add_jumpto($i, NULL, ($i == 0 ? LESSON_NEXTPAGE : LESSON_THISPAGE));
+            $this->add_jumpto($i, null, ($i == 0 ? LESSON_NEXTPAGE : LESSON_THISPAGE));
             $this->add_score($i, null, ($i===0)?1:0);
         }
     }

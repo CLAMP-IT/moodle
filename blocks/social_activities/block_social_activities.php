@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Social activities block.
+ *
+ * @package    block_social_activities
+ * @copyright  1999 onwards Martin Dougiamas (http://dougiamas.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 class block_social_activities extends block_list {
     function init(){
@@ -29,7 +51,7 @@ class block_social_activities extends block_list {
 
         require_once($CFG->dirroot.'/course/lib.php');
 
-        $context = get_context_instance(CONTEXT_COURSE, $course->id);
+        $context = context_course::instance($course->id);
         $isediting = $this->page->user_is_editing() && has_capability('moodle/course:manageactivities', $context);
         $modinfo = get_fast_modinfo($course);
 
@@ -43,10 +65,10 @@ class block_social_activities extends block_list {
                         continue;
                     }
 
-                    list($content, $instancename) =
-                            get_print_section_cm_text($cm, $course);
+                    $content = $cm->get_formatted_content(array('overflowdiv' => true, 'noclean' => true));
+                    $instancename = $cm->get_formatted_name();
 
-                    if (!($url = $cm->get_url())) {
+                    if (!($url = $cm->url)) {
                         $this->content->items[] = $content;
                         $this->content->icons[] = '';
                     } else {
@@ -62,28 +84,21 @@ class block_social_activities extends block_list {
         }
 
 
-/// slow & hacky editing mode
+        // Slow & hacky editing mode.
+        /** @var core_course_renderer $courserenderer */
+        $courserenderer = $this->page->get_renderer('core', 'course');
         $ismoving = ismoving($course->id);
-        $sections = get_all_sections($course->id);
-
-        if(!empty($sections) && isset($sections[0])) {
-            $section = $sections[0];
-        }
-
-        if (!empty($section)) {
-            get_all_mods($course->id, $mods, $modnames, $modnamesplural, $modnamesused);
-        }
-
-        $groupbuttons = $course->groupmode;
-        $groupbuttonslink = (!$course->groupmodeforce);
+        $modinfo = get_fast_modinfo($course);
+        $section = $modinfo->get_section_info(0);
 
         if ($ismoving) {
             $strmovehere = get_string('movehere');
             $strmovefull = strip_tags(get_string('movefull', '', "'$USER->activitycopyname'"));
             $strcancel= get_string('cancel');
             $stractivityclipboard = $USER->activitycopyname;
+        } else {
+            $strmove = get_string('move');
         }
-    /// Casting $course->modinfo to string prevents one notice when the field is null
         $editbuttons = '';
 
         if ($ismoving) {
@@ -91,24 +106,27 @@ class block_social_activities extends block_list {
             $this->content->items[] = $USER->activitycopyname.'&nbsp;(<a href="'.$CFG->wwwroot.'/course/mod.php?cancelcopy=true&amp;sesskey='.sesskey().'">'.$strcancel.'</a>)';
         }
 
-        if (!empty($section) && !empty($section->sequence)) {
-            $sectionmods = explode(',', $section->sequence);
+        if (!empty($modinfo->sections[0])) {
             $options = array('overflowdiv'=>true);
-            foreach ($sectionmods as $modnumber) {
-                if (empty($mods[$modnumber])) {
+            foreach ($modinfo->sections[0] as $modnumber) {
+                $mod = $modinfo->cms[$modnumber];
+                if (!$mod->uservisible) {
                     continue;
                 }
-                $mod = $mods[$modnumber];
                 if (!$ismoving) {
-                    if ($groupbuttons) {
-                        if (! $mod->groupmodelink = $groupbuttonslink) {
-                            $mod->groupmode = $course->groupmode;
-                        }
+                    $actions = course_get_cm_edit_actions($mod, -1);
 
-                    } else {
-                        $mod->groupmode = false;
-                    }
-                    $editbuttons = '<br />'.make_editing_buttons($mod, true, true);
+                    // Prepend list of actions with the 'move' action.
+                    $actions = array('move' => new action_menu_link_primary(
+                        new moodle_url('/course/mod.php', array('sesskey' => sesskey(), 'copy' => $mod->id)),
+                        new pix_icon('t/move', $strmove, 'moodle', array('class' => 'iconsmall', 'title' => '')),
+                        $strmove
+                    )) + $actions;
+
+                    $editbuttons = html_writer::tag('div',
+                        $courserenderer->course_section_cm_edit_actions($actions, $mod, array('donotenhance' => true)),
+                        array('class' => 'buttons')
+                    );
                 } else {
                     $editbuttons = '';
                 }
@@ -121,12 +139,12 @@ class block_social_activities extends block_list {
                             '<img style="height:16px; width:80px; border:0px" src="'.$OUTPUT->pix_url('movehere') . '" alt="'.$strmovehere.'" /></a>';
                         $this->content->icons[] = '';
                     }
-                    list($content, $instancename) =
-                                get_print_section_cm_text($modinfo->cms[$modnumber], $course);
+                    $content = $mod->get_formatted_content(array('overflowdiv' => true, 'noclean' => true));
+                    $instancename = $mod->get_formatted_name();
 
                     $linkcss = $mod->visible ? '' : ' class="dimmed" ';
 
-                    if (!($url = $mod->get_url())) {
+                    if (!($url = $mod->url)) {
                         $this->content->items[] = $content . $editbuttons;
                         $this->content->icons[] = '';
                     } else {
@@ -145,11 +163,8 @@ class block_social_activities extends block_list {
             $this->content->icons[] = '';
         }
 
-        if ($modnames) {
-            $this->content->footer = print_section_add_menus($course, 0, $modnames, true, true);
-        } else {
-            $this->content->footer = '';
-        }
+        $this->content->footer = $courserenderer->course_section_add_cm_control($course,
+                0, null, array('inblock' => true));
 
         return $this->content;
     }

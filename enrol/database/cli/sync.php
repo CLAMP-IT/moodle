@@ -26,18 +26,17 @@
  *   - you need to change the "www-data" to match the apache user account
  *   - use "su" if "sudo" not available
  *
- * @package    enrol
- * @subpackage database
+ * @package    enrol_database
  * @copyright  2010 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 define('CLI_SCRIPT', true);
 
-require(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
-require_once($CFG->libdir.'/clilib.php');
+require(__DIR__.'/../../../config.php');
+require_once("$CFG->libdir/clilib.php");
 
-// now get cli options
+// Now get cli options.
 list($options, $unrecognized) = cli_get_params(array('verbose'=>false, 'help'=>false), array('v'=>'verbose', 'h'=>'help'));
 
 if ($unrecognized) {
@@ -51,15 +50,15 @@ if ($options['help']) {
 The enrol_database plugin must be enabled and properly configured.
 
 Options:
--v, --verbose         Print verbose progess information
+-v, --verbose         Print verbose progress information
 -h, --help            Print out this help
 
 Example:
-\$sudo -u www-data /usr/bin/php enrol/database/cli/sync.php
+\$ sudo -u www-data /usr/bin/php enrol/database/cli/sync.php
 
 Sample cron entry:
 # 5 minutes past 4am
-5 4 * * * \$sudo -u www-data /usr/bin/php /var/www/moodle/enrol/database/cli/sync.php
+5 4 * * * sudo -u www-data /usr/bin/php /var/www/moodle/enrol/database/cli/sync.php
 ";
 
     echo $help;
@@ -67,15 +66,20 @@ Sample cron entry:
 }
 
 if (!enrol_is_enabled('database')) {
-    echo('enrol_database plugin is disabled, sync is disabled'."\n");
-    exit(1);
+    cli_error('enrol_database plugin is disabled, synchronisation stopped', 2);
 }
 
-$verbose = !empty($options['verbose']);
+if (empty($options['verbose'])) {
+    $trace = new null_progress_trace();
+} else {
+    $trace = new text_progress_trace();
+}
+
+/** @var enrol_database_plugin $enrol  */
 $enrol = enrol_get_plugin('database');
 $result = 0;
 
-$result = $result | $enrol->sync_courses($verbose);
-$result = $result | $enrol->sync_enrolments($verbose);
+$result = $result | $enrol->sync_courses($trace);
+$result = $result | $enrol->sync_enrolments($trace);
 
 exit($result);

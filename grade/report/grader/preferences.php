@@ -22,10 +22,10 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-set_time_limit(0);
 require_once '../../../config.php';
 require_once $CFG->libdir . '/gradelib.php';
 require_once '../../lib.php';
+core_php_time_limit::raise();
 
 $courseid      = required_param('id', PARAM_INT);
 
@@ -40,8 +40,8 @@ if (!$course = $DB->get_record('course', array('id' => $courseid))) {
 
 require_login($course);
 
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
-$systemcontext = get_context_instance(CONTEXT_SYSTEM);
+$context = context_course::instance($course->id);
+$systemcontext = context_system::instance();
 require_capability('gradereport/grader:view', $context);
 
 require('preferences_form.php');

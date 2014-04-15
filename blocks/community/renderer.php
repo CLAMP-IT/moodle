@@ -22,8 +22,7 @@
 
 /**
  * Block community renderer.
- * @package    blocks
- * @subpackage community
+ * @package   block_community
  * @copyright 2010 Moodle Pty Ltd (http://moodle.com)
  * @author    Jerome Mouneyrac
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -193,8 +192,8 @@ class block_community_renderer extends plugin_renderer_base {
 
 
                 //Create course content html
-                $blocks = get_plugin_list('block');
-                $activities = get_plugin_list('mod');
+                $blocks = core_component::get_plugin_list('block');
+                $activities = core_component::get_plugin_list('mod');
                 if (!empty($course->contents)) {
                     $activitieshtml = '';
                     $blockhtml = '';
@@ -272,7 +271,7 @@ class block_community_renderer extends plugin_renderer_base {
                         'downloadcourseid' => $course->id, 'huburl' => $huburl,
                         'coursefullname' => $course->fullname, 'backupsize' => $course->backupsize);
                     $downloadurl = new moodle_url("/blocks/community/communitycourse.php", $params);
-                    $downloadbuttonhtml = html_writer::tag('a', get_string('download', 'block_community'),
+                    $downloadbuttonhtml = html_writer::tag('a', get_string('install', 'block_community'),
                                     array('href' => $downloadurl, 'class' => 'centeredbutton, hubcoursedownload'));
                 }
 

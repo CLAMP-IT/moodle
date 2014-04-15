@@ -36,7 +36,7 @@ $cm = get_coursemodule_from_id('scorm', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id'=>$cm->course), '*', MUST_EXIST);
 $scorm = $DB->get_record('scorm', array('id'=>$cm->instance), '*', MUST_EXIST);
 
-$contextmodule = get_context_instance(CONTEXT_MODULE, $cm->id);
+$contextmodule = context_module::instance($cm->id);
 $reportlist = scorm_report_list($contextmodule);
 
 $url = new moodle_url('/mod/scorm/report.php');
@@ -59,7 +59,16 @@ if (count($reportlist) < 1) {
     print_error('erroraccessingreport', 'scorm');
 }
 
-add_to_log($course->id, 'scorm', 'report', 'report.php?id='.$cm->id, $scorm->id, $cm->id);
+// Trigger a report viewed event.
+$event = \mod_scorm\event\report_viewed::create(array(
+    'objectid' => $scorm->id,
+    'context' => $contextmodule,
+    'other' => array('mode' => $mode)
+));
+$event->add_record_snapshot('course_modules', $cm);
+$event->add_record_snapshot('scorm', $scorm);
+$event->trigger();
+
 $userdata = null;
 if (!empty($download)) {
     $noheader = true;
@@ -74,9 +83,9 @@ if (empty($noheader)) {
     $PAGE->navbar->add($strreport, new moodle_url('/mod/scorm/report.php', array('id'=>$cm->id)));
 
     echo $OUTPUT->header();
+    echo $OUTPUT->heading(format_string($scorm->name));
     $currenttab = 'reports';
     require($CFG->dirroot . '/mod/scorm/tabs.php');
-    echo $OUTPUT->heading(format_string($scorm->name));
 }
 
 // Open the selected Scorm report and display it

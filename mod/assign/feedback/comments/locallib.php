@@ -17,16 +17,15 @@
 /**
  * This file contains the definition for the library class for comment feedback plugin
  *
- *
  * @package   assignfeedback_comments
  * @copyright 2012 NetSpot {@link http://www.netspot.com.au}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die();
 
 /**
- * library class for comment feedback plugin extending feedback plugin base class
+ * Library class for comment feedback plugin extending feedback plugin base class.
  *
  * @package   assignfeedback_comments
  * @copyright 2012 NetSpot {@link http://www.netspot.com.au}
@@ -34,19 +33,20 @@
  */
 class assign_feedback_comments extends assign_feedback_plugin {
 
-   /**
-    * Get the name of the online comment feedback plugin
-    * @return string
-    */
+    /**
+     * Get the name of the online comment feedback plugin.
+     * @return string
+     */
     public function get_name() {
         return get_string('pluginname', 'assignfeedback_comments');
     }
 
     /**
-     * Get the feedback comment from the database
+     * Get the feedback comment from the database.
      *
      * @param int $gradeid
-     * @return stdClass|false The feedback comments for the given grade if it exists. False if it doesn't.
+     * @return stdClass|false The feedback comments for the given grade if it exists.
+     *                        False if it doesn't.
      */
     public function get_feedback_comments($gradeid) {
         global $DB;
@@ -54,7 +54,7 @@ class assign_feedback_comments extends assign_feedback_plugin {
     }
 
     /**
-     * Get quickgrading form elements as html
+     * Get quickgrading form elements as html.
      *
      * @param int $userid The user id in the table this quickgrading element relates to
      * @param mixed $grade - The grade data - may be null if there are no grades for this user (yet)
@@ -69,8 +69,14 @@ class assign_feedback_comments extends assign_feedback_plugin {
             }
         }
 
-        return html_writer::tag('textarea', $commenttext, array('name'=>'quickgrade_comments_' . $userid,
-                                                                'class'=>'quickgrade'));
+        $pluginname = get_string('pluginname', 'assignfeedback_comments');
+        $labeloptions = array('for'=>'quickgrade_comments_' . $userid,
+                              'class'=>'accesshide');
+        $textareaoptions = array('name'=>'quickgrade_comments_' . $userid,
+                                 'id'=>'quickgrade_comments_' . $userid,
+                                 'class'=>'quickgrade');
+        return html_writer::tag('label', $pluginname, $labeloptions) .
+               html_writer::tag('textarea', $commenttext, $textareaoptions);
     }
 
     /**
@@ -88,12 +94,15 @@ class assign_feedback_comments extends assign_feedback_plugin {
                 $commenttext = $feedbackcomments->commenttext;
             }
         }
-        return optional_param('quickgrade_comments_' . $userid, '', PARAM_TEXT) != $commenttext;
+        // Note that this handles the difference between empty and not in the quickgrading
+        // form at all (hidden column).
+        $newvalue = optional_param('quickgrade_comments_' . $userid, false, PARAM_TEXT);
+        return ($newvalue !== false) && ($newvalue != $commenttext);
     }
 
 
     /**
-     * Override to indicate a plugin supports quickgrading
+     * Override to indicate a plugin supports quickgrading.
      *
      * @return boolean - True if the plugin supports quickgrading
      */
@@ -102,7 +111,63 @@ class assign_feedback_comments extends assign_feedback_plugin {
     }
 
     /**
-     * Save quickgrading changes
+     * Return a list of the text fields that can be imported/exported by this plugin.
+     *
+     * @return array An array of field names and descriptions. (name=>description, ...)
+     */
+    public function get_editor_fields() {
+        return array('comments' => get_string('pluginname', 'assignfeedback_comments'));
+    }
+
+    /**
+     * Get the saved text content from the editor.
+     *
+     * @param string $name
+     * @param int $gradeid
+     * @return string
+     */
+    public function get_editor_text($name, $gradeid) {
+        if ($name == 'comments') {
+            $feedbackcomments = $this->get_feedback_comments($gradeid);
+            if ($feedbackcomments) {
+                return $feedbackcomments->commenttext;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Get the saved text content from the editor.
+     *
+     * @param string $name
+     * @param string $value
+     * @param int $gradeid
+     * @return string
+     */
+    public function set_editor_text($name, $value, $gradeid) {
+        global $DB;
+
+        if ($name == 'comments') {
+            $feedbackcomment = $this->get_feedback_comments($gradeid);
+            if ($feedbackcomment) {
+                $feedbackcomment->commenttext = $value;
+                return $DB->update_record('assignfeedback_comments', $feedbackcomment);
+            } else {
+                $feedbackcomment = new stdClass();
+                $feedbackcomment->commenttext = $value;
+                $feedbackcomment->commentformat = FORMAT_HTML;
+                $feedbackcomment->grade = $gradeid;
+                $feedbackcomment->assignment = $this->assignment->get_instance()->id;
+                return $DB->insert_record('assignfeedback_comments', $feedbackcomment) > 0;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Save quickgrading changes.
      *
      * @param int $userid The user id in the table this quickgrading element relates to
      * @param stdClass $grade The grade
@@ -111,6 +176,11 @@ class assign_feedback_comments extends assign_feedback_plugin {
     public function save_quickgrading_changes($userid, $grade) {
         global $DB;
         $feedbackcomment = $this->get_feedback_comments($grade->id);
+        $feedbackpresent = optional_param('quickgrade_comments_' . $userid, false, PARAM_TEXT) !== false;
+        if (!$feedbackpresent) {
+            // Nothing to save (e.g. hidden column).
+            return true;
+        }
         if ($feedbackcomment) {
             $feedbackcomment->commenttext = optional_param('quickgrade_comments_' . $userid, '', PARAM_TEXT);
             return $DB->update_record('assignfeedback_comments', $feedbackcomment);
@@ -125,6 +195,70 @@ class assign_feedback_comments extends assign_feedback_plugin {
     }
 
     /**
+     * Save the settings for feedback comments plugin
+     *
+     * @param stdClass $data
+     * @return bool
+     */
+    public function save_settings(stdClass $data) {
+        $this->set_config('commentinline', !empty($data->assignfeedback_comments_commentinline));
+        return true;
+    }
+
+    /**
+     * Get the default setting for feedback comments plugin
+     *
+     * @param MoodleQuickForm $mform The form to add elements to
+     * @return void
+     */
+    public function get_settings(MoodleQuickForm $mform) {
+        $default = $this->get_config('commentinline');
+        $mform->addElement('selectyesno',
+                           'assignfeedback_comments_commentinline',
+                           get_string('commentinline', 'assignfeedback_comments'));
+        $mform->addHelpButton('assignfeedback_comments_commentinline', 'commentinline', 'assignfeedback_comments');
+        $mform->setDefault('assignfeedback_comments_commentinline', $default);
+        // Disable comment online if comment feedback plugin is disabled.
+        $mform->disabledIf('assignfeedback_comments_commentinline', 'assignfeedback_comments_enabled', 'notchecked');
+   }
+
+    /**
+     * Convert the text from any submission plugin that has an editor field to
+     * a format suitable for inserting in the feedback text field.
+     *
+     * @param stdClass $submission
+     * @param stdClass $data - Form data to be filled with the converted submission text and format.
+     * @return boolean - True if feedback text was set.
+     */
+    protected function convert_submission_text_to_feedback($submission, $data) {
+        $format = false;
+        $text = '';
+
+        foreach ($this->assignment->get_submission_plugins() as $plugin) {
+            $fields = $plugin->get_editor_fields();
+            if ($plugin->is_enabled() && $plugin->is_visible() && !empty($fields)) {
+                foreach ($fields as $key => $description) {
+                    $rawtext = strip_pluginfile_content($plugin->get_editor_text($key, $submission->id));
+
+                    $newformat = $plugin->get_editor_format($key, $submission->id);
+
+                    if ($format !== false && $newformat != $format) {
+                        // There are 2 or more editor fields using different formats, set to plain as a fallback.
+                        $format = FORMAT_PLAIN;
+                    } else {
+                        $format = $newformat;
+                    }
+                    $text .= $rawtext;
+                }
+            }
+        }
+
+        $data->assignfeedbackcomments_editor['text'] = $text;
+        $data->assignfeedbackcomments_editor['format'] = $format;
+        return true;
+    }
+
+    /**
      * Get form elements for the grading page
      *
      * @param stdClass|null $grade
@@ -132,21 +266,32 @@ class assign_feedback_comments extends assign_feedback_plugin {
      * @param stdClass $data
      * @return bool true if elements were added to the form
      */
-    public function get_form_elements($grade, MoodleQuickForm $mform, stdClass $data) {
+    public function get_form_elements_for_user($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
+        $commentinlinenabled = $this->get_config('commentinline');
+        $submission = $this->assignment->get_user_submission($userid, false);
+        $feedbackcomments = false;
+
         if ($grade) {
             $feedbackcomments = $this->get_feedback_comments($grade->id);
-            if ($feedbackcomments) {
-                $data->assignfeedbackcomments_editor['text'] = $feedbackcomments->commenttext;
-                $data->assignfeedbackcomments_editor['format'] = $feedbackcomments->commentformat;
+        }
+
+        if ($feedbackcomments && !empty($feedbackcomments->commenttext)) {
+            $data->assignfeedbackcomments_editor['text'] = $feedbackcomments->commenttext;
+            $data->assignfeedbackcomments_editor['format'] = $feedbackcomments->commentformat;
+        } else {
+            // No feedback given yet - maybe we need to copy the text from the submission?
+            if (!empty($commentinlinenabled) && $submission) {
+                $this->convert_submission_text_to_feedback($submission, $data);
             }
         }
 
-        $mform->addElement('editor', 'assignfeedbackcomments_editor', '', null, null);
+        $mform->addElement('editor', 'assignfeedbackcomments_editor', $this->get_name(), null, null);
+
         return true;
     }
 
     /**
-     * Saving the comment content into dtabase
+     * Saving the comment content into database.
      *
      * @param stdClass $grade
      * @param stdClass $data
@@ -170,7 +315,7 @@ class assign_feedback_comments extends assign_feedback_plugin {
     }
 
     /**
-     * display the comment in the feedback table
+     * Display the comment in the feedback table.
      *
      * @param stdClass $grade
      * @param bool $showviewlink Set to true to show a link to view the full feedback
@@ -179,10 +324,12 @@ class assign_feedback_comments extends assign_feedback_plugin {
     public function view_summary(stdClass $grade, & $showviewlink) {
         $feedbackcomments = $this->get_feedback_comments($grade->id);
         if ($feedbackcomments) {
-            $text = format_text($feedbackcomments->commenttext, $feedbackcomments->commentformat, array('context' => $this->assignment->get_context()));
+            $text = format_text($feedbackcomments->commenttext,
+                                $feedbackcomments->commentformat,
+                                array('context' => $this->assignment->get_context()));
             $short = shorten_text($text, 140);
 
-            // show the view all link if the text has been shortened
+            // Show the view all link if the text has been shortened.
             $showviewlink = $short != $text;
             return $short;
         }
@@ -190,7 +337,7 @@ class assign_feedback_comments extends assign_feedback_plugin {
     }
 
     /**
-     * display the comment in the feedback table
+     * Display the comment in the feedback table.
      *
      * @param stdClass $grade
      * @return string
@@ -198,7 +345,9 @@ class assign_feedback_comments extends assign_feedback_plugin {
     public function view(stdClass $grade) {
         $feedbackcomments = $this->get_feedback_comments($grade->id);
         if ($feedbackcomments) {
-            return format_text($feedbackcomments->commenttext, $feedbackcomments->commentformat, array('context' => $this->assignment->get_context()));
+            return format_text($feedbackcomments->commenttext,
+                               $feedbackcomments->commentformat,
+                               array('context' => $this->assignment->get_context()));
         }
         return '';
     }
@@ -213,7 +362,8 @@ class assign_feedback_comments extends assign_feedback_plugin {
      */
     public function can_upgrade($type, $version) {
 
-        if (($type == 'upload' || $type == 'uploadsingle') && $version >= 2011112900) {
+        if (($type == 'upload' || $type == 'uploadsingle' ||
+             $type == 'online' || $type == 'offline') && $version >= 2011112900) {
             return true;
         }
         return false;
@@ -228,7 +378,10 @@ class assign_feedback_comments extends assign_feedback_plugin {
      * @return bool was it a success? (false will trigger a rollback)
      */
     public function upgrade_settings(context $oldcontext, stdClass $oldassignment, & $log) {
-        // first upgrade settings (nothing to do)
+        if ($oldassignment->assignmenttype == 'online') {
+            $this->set_config('commentinline', $oldassignment->var1);
+            return true;
+        }
         return true;
     }
 
@@ -242,7 +395,11 @@ class assign_feedback_comments extends assign_feedback_plugin {
      * @param string $log Record upgrade messages in the log
      * @return bool true or false - false will trigger a rollback
      */
-    public function upgrade(context $oldcontext, stdClass $oldassignment, stdClass $oldsubmission, stdClass $grade, & $log) {
+    public function upgrade(context $oldcontext,
+                            stdClass $oldassignment,
+                            stdClass $oldsubmission,
+                            stdClass $grade,
+                            & $log) {
         global $DB;
 
         $feedbackcomments = new stdClass();
@@ -302,13 +459,14 @@ class assign_feedback_comments extends assign_feedback_plugin {
      */
     public function delete_instance() {
         global $DB;
-        // will throw exception on failure
-        $DB->delete_records('assignfeedback_comments', array('assignment'=>$this->assignment->get_instance()->id));
+        // Will throw exception on failure.
+        $DB->delete_records('assignfeedback_comments',
+                            array('assignment'=>$this->assignment->get_instance()->id));
         return true;
     }
 
     /**
-     * Returns true if there are no feedback comments for the given grade
+     * Returns true if there are no feedback comments for the given grade.
      *
      * @param stdClass $grade
      * @return bool
@@ -316,4 +474,17 @@ class assign_feedback_comments extends assign_feedback_plugin {
     public function is_empty(stdClass $grade) {
         return $this->view($grade) == '';
     }
+
+    /**
+     * Return a description of external params suitable for uploading an feedback comment from a webservice.
+     *
+     * @return external_description|null
+     */
+    public function get_external_parameters() {
+        $editorparams = array('text' => new external_value(PARAM_TEXT, 'The text for this feedback.'),
+                              'format' => new external_value(PARAM_INT, 'The format for this feedback'));
+        $editorstructure = new external_single_structure($editorparams);
+        return array('assignfeedbackcomments_editor' => $editorstructure);
+    }
+
 }

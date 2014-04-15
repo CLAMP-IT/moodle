@@ -42,21 +42,27 @@ redirect_if_major_upgrade_required();
 
 // TODO Add sesskey check to edit
 $edit   = optional_param('edit', null, PARAM_BOOL);    // Turn editing on and off
+$reset  = optional_param('reset', null, PARAM_BOOL);
 
 require_login();
 
 $strmymoodle = get_string('myhome');
 
 if (isguestuser()) {  // Force them to see system default, no editing allowed
-    $userid = NULL; 
+    // If guests are not allowed my moodle, send them to front page.
+    if (empty($CFG->allowguestmymoodle)) {
+        redirect(new moodle_url('/', array('redirect' => 0)));
+    }
+
+    $userid = null;
     $USER->editing = $edit = 0;  // Just in case
-    $context = get_context_instance(CONTEXT_SYSTEM);
+    $context = context_system::instance();
     $PAGE->set_blocks_editing_capability('moodle/my:configsyspages');  // unlikely :)
     $header = "$SITE->shortname: $strmymoodle (GUEST)";
 
 } else {        // We are trying to view or edit our own My Moodle page
     $userid = $USER->id;  // Owner of the page
-    $context = get_context_instance(CONTEXT_USER, $USER->id);
+    $context = context_user::instance($USER->id);
     $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
     $header = "$SITE->shortname: $strmymoodle";
 }
@@ -67,7 +73,7 @@ if (!$currentpage = my_get_page($userid, MY_PAGE_PRIVATE)) {
 }
 
 if (!$currentpage->userid) {
-    $context = get_context_instance(CONTEXT_SYSTEM);  // So we even see non-sticky blocks
+    $context = context_system::instance();  // So we even see non-sticky blocks
 }
 
 // Start setting up the page
@@ -81,17 +87,27 @@ $PAGE->set_subpage($currentpage->id);
 $PAGE->set_title($header);
 $PAGE->set_heading($header);
 
-if (get_home_page() != HOMEPAGE_MY) {
-    if (optional_param('setdefaulthome', false, PARAM_BOOL)) {
-        set_user_preference('user_home_page_preference', HOMEPAGE_MY);
-    } else if (!empty($CFG->defaulthomepage) && $CFG->defaulthomepage == HOMEPAGE_USER) {
-        $PAGE->settingsnav->get('usercurrentsettings')->add(get_string('makethismyhome'), new moodle_url('/my/', array('setdefaulthome'=>true)), navigation_node::TYPE_SETTING);
+if (!isguestuser()) {   // Skip default home page for guests
+    if (get_home_page() != HOMEPAGE_MY) {
+        if (optional_param('setdefaulthome', false, PARAM_BOOL)) {
+            set_user_preference('user_home_page_preference', HOMEPAGE_MY);
+        } else if (!empty($CFG->defaulthomepage) && $CFG->defaulthomepage == HOMEPAGE_USER) {
+            $PAGE->settingsnav->get('usercurrentsettings')->add(get_string('makethismyhome'), new moodle_url('/my/', array('setdefaulthome'=>true)), navigation_node::TYPE_SETTING);
+        }
     }
 }
 
 // Toggle the editing state and switches
 if ($PAGE->user_allowed_editing()) {
-    if ($edit !== null) {             // Editing state was specified
+    if ($reset !== null) {
+        if (!is_null($userid)) {
+            require_sesskey();
+            if(!$currentpage = my_reset_page($userid, MY_PAGE_PRIVATE)){
+                print_error('reseterror', 'my');
+            }
+            redirect(new moodle_url('/my'));
+        }
+    } else if ($edit !== null) {             // Editing state was specified
         $USER->editing = $edit;       // Change editing state
         if (!$currentpage->userid && $edit) {
             // If we are viewing a system page as ordinary user, and the user turns
@@ -100,7 +116,7 @@ if ($PAGE->user_allowed_editing()) {
             if (!$currentpage = my_copy_page($USER->id, MY_PAGE_PRIVATE)) {
                 print_error('mymoodlesetup');
             }
-            $context = get_context_instance(CONTEXT_USER, $USER->id);
+            $context = context_user::instance($USER->id);
             $PAGE->set_context($context);
             $PAGE->set_subpage($currentpage->id);
         }
@@ -119,6 +135,10 @@ if ($PAGE->user_allowed_editing()) {
     // Add button for editing page
     $params = array('edit' => !$edit);
 
+    $resetbutton = '';
+    $resetstring = get_string('resetpage', 'my');
+    $reseturl = new moodle_url("$CFG->wwwroot/my/index.php", array('edit' => 1, 'reset' => 1));
+
     if (!$currentpage->userid) {
         // viewing a system page -- let the user customise it
         $editstring = get_string('updatemymoodleon');
@@ -127,11 +147,12 @@ if ($PAGE->user_allowed_editing()) {
         $editstring = get_string('updatemymoodleon');
     } else {
         $editstring = get_string('updatemymoodleoff');
+        $resetbutton = $OUTPUT->single_button($reseturl, $resetstring);
     }
 
     $url = new moodle_url("$CFG->wwwroot/my/index.php", $params);
     $button = $OUTPUT->single_button($url, $editstring);
-    $PAGE->set_button($button);
+    $PAGE->set_button($resetbutton . $button);
 
 } else {
     $USER->editing = $edit = 0;

@@ -21,9 +21,9 @@
  * It contains the great majority of functions defined by Moodle
  * that are mandatory to develop a module.
  *
- * @package mod-wiki-2.0
- * @copyrigth 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
- * @copyrigth 2009 Universitat Politecnica de Catalunya http://www.upc.edu
+ * @package mod_wiki
+ * @copyright 2009 Marc Alier, Jordi Piguillem marc.alier@upc.edu
+ * @copyright 2009 Universitat Politecnica de Catalunya http://www.upc.edu
  *
  * @author Jordi Piguillem
  * @author Marc Alier
@@ -161,7 +161,7 @@ function wiki_reset_userdata($data) {
             if (!$cm = get_coursemodule_from_instance('wiki', $wiki->id)) {
                 continue;
             }
-            $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+            $context = context_module::instance($cm->id);
             $DB->delete_records_select('comments', "contextid = ? AND commentarea='wiki_page'", array($context->id));
             $status[] = array('component'=>$componentstr, 'item'=>get_string('deleteallcomments'), 'error'=>false);
         }
@@ -279,10 +279,12 @@ function wiki_supports($feature) {
 function wiki_print_recent_activity($course, $viewfullnames, $timestart) {
     global $CFG, $DB, $OUTPUT;
 
-    $sql = "SELECT p.*, w.id as wikiid, sw.groupid
+    $usernamefields = get_all_user_name_fields(true, 'u');
+    $sql = "SELECT p.*, w.id as wikiid, sw.groupid, $usernamefields
             FROM {wiki_pages} p
                 JOIN {wiki_subwikis} sw ON sw.id = p.subwikiid
                 JOIN {wiki} w ON w.id = sw.wikiid
+                JOIN {user} u ON u.id = sw.userid
             WHERE p.timemodified > ? AND w.course = ?
             ORDER BY p.timemodified ASC";
     if (!$pages = $DB->get_records_sql($sql, array($timestart, $course->id))) {
@@ -303,7 +305,7 @@ function wiki_print_recent_activity($course, $viewfullnames, $timestart) {
         if (!$cm->uservisible) {
             continue;
         }
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context = context_module::instance($cm->id);
 
         if (!has_capability('mod/wiki:viewpage', $context)) {
             continue;
@@ -462,9 +464,7 @@ function wiki_pluginfile($course, $cm, $context, $filearea, $args, $forcedownloa
             return false;
         }
 
-        $lifetime = isset($CFG->filelifetime) ? $CFG->filelifetime : 86400;
-
-        send_stored_file($file, $lifetime, 0, $options);
+        send_stored_file($file, null, 0, $options);
     }
 }
 
@@ -474,7 +474,9 @@ function wiki_search_form($cm, $search = '') {
     $output = '<div class="wikisearch">';
     $output .= '<form method="post" action="' . $CFG->wwwroot . '/mod/wiki/search.php" style="display:inline">';
     $output .= '<fieldset class="invisiblefieldset">';
-    $output .= '<input name="searchstring" type="text" size="18" value="' . s($search, true) . '" alt="search" />';
+    $output .= '<legend class="accesshide">'. get_string('searchwikis', 'wiki') .'</legend>';
+    $output .= '<label class="accesshide" for="searchwiki">' . get_string("searchterms", "wiki") . '</label>';
+    $output .= '<input id="searchwiki" name="searchstring" type="text" size="18" value="' . s($search, true) . '" alt="search" />';
     $output .= '<input name="courseid" type="hidden" value="' . $cm->course . '" />';
     $output .= '<input name="cmid" type="hidden" value="' . $cm->id . '" />';
     $output .= '<input name="searchwikicontent" type="hidden" value="1" />';
@@ -490,7 +492,7 @@ function wiki_extend_navigation(navigation_node $navref, $course, $module, $cm) 
 
     require_once($CFG->dirroot . '/mod/wiki/locallib.php');
 
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $url = $PAGE->url;
     $userid = 0;
     if ($module->wikimode == 'individual') {
@@ -530,7 +532,7 @@ function wiki_extend_navigation(navigation_node $navref, $course, $module, $cm) 
             $node = $navref->add(get_string('view', 'wiki'), $link, navigation_node::TYPE_SETTING);
         }
 
-        if (has_capability('mod/wiki:editpage', $context)) {
+        if (wiki_user_can_edit($subwiki)) {
             $link = new moodle_url('/mod/wiki/edit.php', array('pageid' => $pageid));
             $node = $navref->add(get_string('edit', 'wiki'), $link, navigation_node::TYPE_SETTING);
         }
@@ -633,7 +635,7 @@ function wiki_comment_validate($comment_param) {
     if (!$cm = get_coursemodule_from_instance('wiki', $wiki->id, $course->id)) {
         throw new comment_exception('invalidcoursemodule');
     }
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     // group access
     if ($subwiki->groupid) {
         $groupmode = groups_get_activity_groupmode($cm, $course);

@@ -44,9 +44,9 @@ a:active, a:hover, a:focus {
     border-right: 2px solid #5ea4dc;
     border-bottom: 2px solid #5ea4dc;
     filter:alpha(opacity=90);
-    -moz-opacity:0.9;
     -khtml-opacity: 0.9;
-    opacity: 0.9;
+      -moz-opacity: 0.9;
+           opacity: 0.9;
 }
 #newmessageoverlay #newmessagelinks {
     border-top: 1px dashed #ccc;
@@ -66,6 +66,12 @@ a:active, a:hover, a:focus {
     margin-bottom: 0px;
     height: 80px;
     border-bottom: 1px solid #fff;
+    width: 100%;
+}
+.dir-rtl #page-header {
+    background-image: url([[pix:theme|header-rtl]]);
+    background-repeat: no-repeat;
+    background-position: left top;
 }
 .logo {
     height: 50px;
@@ -178,7 +184,10 @@ p.helplink a {
 
 /* @group Course */
 
-.headingblock {
+#site-news-forum h2,
+#frontpage-course-list h2,
+#frontpage-category-names h2,
+#frontpage-category-combo h2 {
     border: 0px none;
     border-bottom: 1px solid #98bcd6;
     padding-bottom: 0px;
@@ -273,6 +282,11 @@ body.has_dock {
     height: 75px;
     text-align: left;
 }
+.dir-rtl #page-footer-inner {
+    background-image: url([[pix:theme|footer-rtl]]);
+    background-repeat: no-repeat;
+    background-position: left top;
+}
 #page-footer .footnote {
     float: left;
     padding-top: 80px;
@@ -326,3 +340,12 @@ body.has_dock {
     padding:4px;
 }
 /* @end */
+
+.mform .btn-cancel {
+    color: #003466;
+    text-decoration: none;
+}
+.mform .btn-cancel:hover, .mform .btn-cancel:focus {
+    color: #4785ac;
+    text-decoration: none;
+}

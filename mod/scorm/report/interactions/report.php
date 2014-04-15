@@ -35,7 +35,8 @@ class scorm_interactions_report extends scorm_default_report {
      */
     function display($scorm, $cm, $course, $download) {
         global $CFG, $DB, $OUTPUT, $PAGE;
-        $contextmodule = get_context_instance(CONTEXT_MODULE, $cm->id);
+
+        $contextmodule = context_module::instance($cm->id);
         $action = optional_param('action', '', PARAM_ALPHA);
         $attemptids = optional_param_array('attemptid', array(), PARAM_RAW);
         $attemptsmode = optional_param('attemptsmode', SCORM_REPORT_ATTEMPTS_ALL_STUDENTS, PARAM_INT);
@@ -43,7 +44,6 @@ class scorm_interactions_report extends scorm_default_report {
 
         if ($action == 'delete' && has_capability('mod/scorm:deleteresponses', $contextmodule) && confirm_sesskey()) {
             if (scorm_delete_responses($attemptids, $scorm)) { //delete responses.
-                add_to_log($course->id, 'scorm', 'delete attempts', 'report.php?id=' . $cm->id, implode(",", $attemptids), $cm->id);
                 echo $OUTPUT->notification(get_string('scormresponsedeleted', 'scorm'), 'notifysuccess');
             }
         }
@@ -84,7 +84,7 @@ class scorm_interactions_report extends scorm_default_report {
                 groups_print_activity_menu($cm, new moodle_url($PAGE->url, $displayoptions));
             }
         }
-        $formattextoptions = array('context' => get_context_instance(CONTEXT_COURSE, $course->id));
+        $formattextoptions = array('context' => context_course::instance($course->id));
 
         // We only want to show the checkbox to delete attempts
         // if the user has permissions and if the report mode is showing attempts.
@@ -95,21 +95,23 @@ class scorm_interactions_report extends scorm_default_report {
 
         if (empty($currentgroup)) {
             // all users who can attempt scoes
-            if (!$students = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', '', '', '', '', '', '', false)) {
+            if (!$students = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', 'u.id', '', '', '', '', '', false)) {
                 echo $OUTPUT->notification(get_string('nostudentsyet'));
                 $nostudents = true;
                 $allowedlist = '';
             } else {
                 $allowedlist = array_keys($students);
             }
+            unset($students);
         } else {
             // all users who can attempt scoes and who are in the currently selected group
-            if (!$groupstudents = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', '', '', '', '', $currentgroup, '', false)) {
+            if (!$groupstudents = get_users_by_capability($contextmodule, 'mod/scorm:savetrack', 'u.id', '', '', '', $currentgroup, '', false)) {
                 echo $OUTPUT->notification(get_string('nostudentsingroup'));
                 $nostudents = true;
                 $groupstudents = array();
             }
             $allowedlist = array_keys($groupstudents);
+            unset($groupstudents);
         }
         if ( !$nostudents ) {
             // Now check if asked download of data
@@ -145,7 +147,7 @@ class scorm_interactions_report extends scorm_default_report {
             $headers[] = get_string('last', 'scorm');
             $columns[] = 'score';
             $headers[] = get_string('score', 'scorm');
-            $scoes = $DB->get_records('scorm_scoes', array("scorm"=>$scorm->id), 'id');
+            $scoes = $DB->get_records('scorm_scoes', array("scorm" => $scorm->id), 'sortorder, id');
             foreach ($scoes as $sco) {
                 if ($sco->launch != '') {
                     $columns[] = 'scograde'.$sco->id;
@@ -155,11 +157,11 @@ class scorm_interactions_report extends scorm_default_report {
 
             $params = array();
             list($usql, $params) = $DB->get_in_or_equal($allowedlist, SQL_PARAMS_NAMED);
-                                    // Construct the SQL
+            // Construct the SQL
             $select = 'SELECT DISTINCT '.$DB->sql_concat('u.id', '\'#\'', 'COALESCE(st.attempt, 0)').' AS uniqueid, ';
             $select .= 'st.scormid AS scormid, st.attempt AS attempt, ' .
-                    'u.id AS userid, u.idnumber, u.firstname, u.lastname, u.picture, u.imagealt, u.email'.
-                    get_extra_user_fields_sql($coursecontext, 'u', '', array('idnumber')) . ' ';
+                    user_picture::fields('u', array('idnumber'), 'userid') .
+                    get_extra_user_fields_sql($coursecontext, 'u', '', array('email', 'idnumber')) . ' ';
 
             // This part is the same for all cases - join users and scorm_scoes_track tables
             $from = 'FROM {user} u ';
@@ -183,8 +185,8 @@ class scorm_interactions_report extends scorm_default_report {
             $countsql .= 'COUNT(DISTINCT('.$DB->sql_concat('u.id', '\'#\'', 'st.attempt').')) AS nbattempts, ';
             $countsql .= 'COUNT(DISTINCT(u.id)) AS nbusers ';
             $countsql .= $from.$where;
-            $attempts = $DB->get_records_sql($select.$from.$where, $params);
             $questioncount = get_scorm_question_count($scorm->id);
+            $nbmaincolumns = count($columns);
             for($id = 0; $id < $questioncount; $id++) {
                 if ($displayoptions['qtext']) {
                     $columns[] = 'question' . $id;
@@ -221,6 +223,18 @@ class scorm_interactions_report extends scorm_default_report {
                 $table->no_sorting('finish');
                 $table->no_sorting('score');
 
+                for($id = 0; $id < $questioncount; $id++) {
+                    if ($displayoptions['qtext']) {
+                        $table->no_sorting('question'.$id);
+                    }
+                    if ($displayoptions['resp']) {
+                        $table->no_sorting('response'.$id);
+                    }
+                    if ($displayoptions['right']) {
+                        $table->no_sorting('right'.$id);
+                    }
+                }
+
                 foreach ($scoes as $sco) {
                     if ($sco->launch != '') {
                         $table->no_sorting('scograde'.$sco->id);
@@ -247,24 +261,24 @@ class scorm_interactions_report extends scorm_default_report {
                 $workbook->send($filename);
                 // Creating the first worksheet
                 $sheettitle = get_string('report', 'scorm');
-                $myxls =& $workbook->add_worksheet($sheettitle);
+                $myxls = $workbook->add_worksheet($sheettitle);
                 // format types
-                $format =& $workbook->add_format();
+                $format = $workbook->add_format();
                 $format->set_bold(0);
-                $formatbc =& $workbook->add_format();
+                $formatbc = $workbook->add_format();
                 $formatbc->set_bold(1);
                 $formatbc->set_align('center');
-                $formatb =& $workbook->add_format();
+                $formatb = $workbook->add_format();
                 $formatb->set_bold(1);
-                $formaty =& $workbook->add_format();
+                $formaty = $workbook->add_format();
                 $formaty->set_bg_color('yellow');
-                $formatc =& $workbook->add_format();
+                $formatc = $workbook->add_format();
                 $formatc->set_align('center');
-                $formatr =& $workbook->add_format();
+                $formatr = $workbook->add_format();
                 $formatr->set_bold(1);
                 $formatr->set_color('red');
                 $formatr->set_align('center');
-                $formatg =& $workbook->add_format();
+                $formatg = $workbook->add_format();
                 $formatg->set_bold(1);
                 $formatg->set_color('green');
                 $formatg->set_align('center');
@@ -286,24 +300,24 @@ class scorm_interactions_report extends scorm_default_report {
                 $workbook->send($filename);
                 // Creating the first worksheet
                 $sheettitle = get_string('report', 'scorm');
-                $myxls =& $workbook->add_worksheet($sheettitle);
+                $myxls = $workbook->add_worksheet($sheettitle);
                 // format types
-                $format =& $workbook->add_format();
+                $format = $workbook->add_format();
                 $format->set_bold(0);
-                $formatbc =& $workbook->add_format();
+                $formatbc = $workbook->add_format();
                 $formatbc->set_bold(1);
                 $formatbc->set_align('center');
-                $formatb =& $workbook->add_format();
+                $formatb = $workbook->add_format();
                 $formatb->set_bold(1);
-                $formaty =& $workbook->add_format();
+                $formaty = $workbook->add_format();
                 $formaty->set_bg_color('yellow');
-                $formatc =& $workbook->add_format();
+                $formatc = $workbook->add_format();
                 $formatc->set_align('center');
-                $formatr =& $workbook->add_format();
+                $formatr = $workbook->add_format();
                 $formatr->set_bold(1);
                 $formatr->set_color('red');
                 $formatr->set_align('center');
-                $formatg =& $workbook->add_format();
+                $formatg = $workbook->add_format();
                 $formatg->set_bold(1);
                 $formatg->set_color('green');
                 $formatg->set_align('center');
@@ -315,13 +329,9 @@ class scorm_interactions_report extends scorm_default_report {
                 }
                 $rownum = 1;
             } else if ($download == 'CSV') {
-                $filename .= ".txt";
-                header("Content-Type: application/download\n");
-                header("Content-Disposition: attachment; filename=\"$filename\"");
-                header("Expires: 0");
-                header("Cache-Control: must-revalidate,post-check=0,pre-check=0");
-                header("Pragma: public");
-                echo implode("\t", $headers)." \n";
+                $csvexport = new csv_export_writer("tab");
+                $csvexport->set_filename($filename, ".txt");
+                $csvexport->add_data($headers);
             }
 
             if (!$download) {
@@ -404,13 +414,10 @@ class scorm_interactions_report extends scorm_default_report {
                         }
                     }
                     if (in_array('picture', $columns)) {
-                        $user = (object)array(
-                                    'id'=>$scouser->userid,
-                                    'picture'=>$scouser->picture,
-                                    'imagealt'=>$scouser->imagealt,
-                                    'email'=>$scouser->email,
-                                    'firstname'=>$scouser->firstname,
-                                    'lastname'=>$scouser->lastname);
+                        $user = new stdClass();
+                        $additionalfields = explode(',', user_picture::fields());
+                        $user = username_load_fields_from_object($user, $scouser, null, $additionalfields);
+                        $user->id = $scouser->userid;
                         $row[] = $OUTPUT->user_picture($user, array('courseid'=>$course->id));
                     }
                     if (!$download) {
@@ -428,7 +435,8 @@ class scorm_interactions_report extends scorm_default_report {
                         $row[] = '-';
                     } else {
                         if (!$download) {
-                            $row[] = '<a href="userreport.php?a='.$scorm->id.'&amp;user='.$scouser->userid.'&amp;attempt='.$scouser->attempt.'">'.$scouser->attempt.'</a>';
+                            $row[] = '<a href="'.$CFG->wwwroot.'/mod/scorm/report/userreport.php?id='.$cm->id.
+                                     '&amp;user='.$scouser->userid.'&amp;attempt='.$scouser->attempt.'">'.$scouser->attempt.'</a>';
                         } else {
                             $row[] = $scouser->attempt;
                         }
@@ -456,13 +464,8 @@ class scorm_interactions_report extends scorm_default_report {
                                 if ($trackdata->score_raw != '') {
                                     $score = $trackdata->score_raw;
                                     // add max score if it exists
-                                    if ($scorm->version == 'SCORM_1.3') {
-                                        $maxkey = 'cmi.score.max';
-                                    } else {
-                                        $maxkey = 'cmi.core.score.max';
-                                    }
-                                    if (isset($trackdata->$maxkey)) {
-                                        $score .= '/'.$trackdata->$maxkey;
+                                    if (isset($trackdata->score_max)) {
+                                        $score .= '/'.$trackdata->score_max;
                                     }
                                 // else print out status
                                 } else {
@@ -470,15 +473,13 @@ class scorm_interactions_report extends scorm_default_report {
                                 }
                                 if (!$download) {
                                     $row[] = '<img src="'.$OUTPUT->pix_url($trackdata->status, 'scorm').'" alt="'.$strstatus.'" title="'.$strstatus.'" /><br/>
-                                            <a href="userreport.php?b='.$sco->id.'&amp;user='.$scouser->userid.'&amp;attempt='.$scouser->attempt.
-                                            '" title="'.get_string('details', 'scorm').'">'.$score.'</a>';
+                                            <a href="'.$CFG->wwwroot.'/mod/scorm/report/userreporttracks.php?id='.$cm->id.'&amp;scoid='.$sco->id.'&amp;user='.$scouser->userid.
+                                            '&amp;attempt='.$scouser->attempt.'" title="'.get_string('details', 'scorm').'">'.$score.'</a>';
                                 } else {
                                     $row[] = $score;
                                 }
                                 // interaction data
-                                $i=0;
-                                $element='cmi.interactions_'.$i.'.id';
-                                while(isset($trackdata->$element)) {
+                                for ($i=0; $i < $questioncount; $i++) {
                                     if ($displayoptions['qtext']) {
                                         $element='cmi.interactions_'.$i.'.id';
                                         if (isset($trackdata->$element)) {
@@ -513,8 +514,6 @@ class scorm_interactions_report extends scorm_default_report {
                                             $row[] = '&nbsp;';
                                         }
                                     }
-                                    $i++;
-                                    $element = 'cmi.interactions_'.$i.'.id';
                                 }
                             //---end of interaction data*/
                             } else {
@@ -524,6 +523,10 @@ class scorm_interactions_report extends scorm_default_report {
                                     $row[] = '<img src="'.$OUTPUT->pix_url('notattempted', 'scorm').'" alt="'.$strstatus.'" title="'.$strstatus.'" /><br/>'.$strstatus;
                                 } else {
                                     $row[] = $strstatus;
+                                }
+                                // complete the empty cells
+                                for ($i=0; $i < count($columns) - $nbmaincolumns; $i++) {
+                                    $row[] = '&nbsp;';
                                 }
                             }
                         }
@@ -539,8 +542,7 @@ class scorm_interactions_report extends scorm_default_report {
                         }
                         $rownum++;
                     } else if ($download == 'CSV') {
-                        $text = implode("\t", $row);
-                        echo $text." \n";
+                        $csvexport->add_data($row);
                     }
                 }
                 if (!$download) {
@@ -599,6 +601,7 @@ class scorm_interactions_report extends scorm_default_report {
                 $workbook->close();
                 exit;
             } else if ($download == 'CSV') {
+                $csvexport->download_file();
                 exit;
             }
         } else {

@@ -394,14 +394,6 @@ class xmldb_field extends xmldb_object {
             $this->comment = trim($xmlarr['@']['COMMENT']);
         }
 
-        if (isset($xmlarr['@']['PREVIOUS'])) {
-            $this->previous = trim($xmlarr['@']['PREVIOUS']);
-        }
-
-        if (isset($xmlarr['@']['NEXT'])) {
-            $this->next = trim($xmlarr['@']['NEXT']);
-        }
-
         // Set some attributes
         if ($result) {
             $this->loaded = true;
@@ -493,9 +485,10 @@ class xmldb_field extends xmldb_object {
         if (!$this->loaded) {
             $this->hash = null;
         } else {
+            $defaulthash = is_null($this->default) ? '' : sha1($this->default);
             $key = $this->name . $this->type . $this->length .
                    $this->notnull . $this->sequence .
-                   $this->decimals . $this->comment;
+                   $this->decimals . $this->comment . $defaulthash;
             $this->hash = md5($key);
         }
     }
@@ -531,12 +524,6 @@ class xmldb_field extends xmldb_object {
         }
         if ($this->comment) {
             $o.= ' COMMENT="' . htmlspecialchars($this->comment) . '"';
-        }
-        if ($this->previous) {
-            $o.= ' PREVIOUS="' . $this->previous . '"';
-        }
-        if ($this->next) {
-            $o.= ' NEXT="' . $this->next . '"';
         }
         $o.= '/>' . "\n";
 

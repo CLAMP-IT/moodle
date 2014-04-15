@@ -64,7 +64,7 @@ if (!$cm = get_coursemodule_from_instance('wiki', $wiki->id)) {
 
 $groups = new stdClass();
 if (groups_get_activity_groupmode($cm)) {
-    $modulecontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $modulecontext = context_module::instance($cm->id);
     $canaccessgroups = has_capability('moodle/site:accessallgroups', $modulecontext);
     if ($canaccessgroups) {
         $groups->availablegroups = groups_get_all_groups($cm->course);
@@ -107,18 +107,16 @@ $wikipage->set_action($action);
 switch ($action) {
 case 'create':
     $newpageid = $wikipage->create_page($title);
-    add_to_log($course->id, 'wiki', 'add page', "view.php?pageid=".$newpageid, $newpageid, $cm->id);
     redirect($CFG->wwwroot . '/mod/wiki/edit.php?pageid='.$newpageid);
     break;
 case 'new':
-    if ((int)$wiki->forceformat == 1 && !empty($title)) {
+    // Go straight to editing if we know the page title and we're in force format mode.
+    if ((int)$wiki->forceformat == 1 && $title != get_string('newpage', 'wiki')) {
         $newpageid = $wikipage->create_page($title);
-        add_to_log($course->id, 'wiki', 'add page', "view.php?pageid=".$newpageid, $newpageid, $cm->id);
         redirect($CFG->wwwroot . '/mod/wiki/edit.php?pageid='.$newpageid);
     } else {
-        // create link from moodle navigation block without pagetitle
         $wikipage->print_header();
-        // new page without page title
+        // Create a new page.
         $wikipage->print_content($title);
     }
     $wikipage->print_footer();

@@ -21,8 +21,7 @@
  * All the functions neeeded by Moodle core, gradebook, file subsystem etc
  * are placed here.
  *
- * @package    mod
- * @subpackage workshop
+ * @package    mod_workshop
  * @copyright  2009 David Mudrak <david.mudrak@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -53,6 +52,7 @@ function workshop_supports($feature) {
         case FEATURE_COMPLETION_TRACKS_VIEWS:
             return true;
         case FEATURE_SHOW_DESCRIPTION:  return true;
+        case FEATURE_PLAGIARISM:        return true;
         default:                        return null;
     }
 }
@@ -76,7 +76,7 @@ function workshop_add_instance(stdclass $workshop) {
     $workshop->timecreated           = time();
     $workshop->timemodified          = $workshop->timecreated;
     $workshop->useexamples           = (int)!empty($workshop->useexamples);
-    $workshop->usepeerassessment     = (int)!empty($workshop->usepeerassessment);
+    $workshop->usepeerassessment     = 1;
     $workshop->useselfassessment     = (int)!empty($workshop->useselfassessment);
     $workshop->latesubmissions       = (int)!empty($workshop->latesubmissions);
     $workshop->phaseswitchassessment = (int)!empty($workshop->phaseswitchassessment);
@@ -88,7 +88,7 @@ function workshop_add_instance(stdclass $workshop) {
     // we need to use context now, so we need to make sure all needed info is already in db
     $cmid = $workshop->coursemodule;
     $DB->set_field('course_modules', 'instance', $workshop->id, array('id' => $cmid));
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
+    $context = context_module::instance($cmid);
 
     // process the custom wysiwyg editors
     if ($draftitemid = $workshop->instructauthorseditor['itemid']) {
@@ -101,6 +101,12 @@ function workshop_add_instance(stdclass $workshop) {
         $workshop->instructreviewers = file_save_draft_area_files($draftitemid, $context->id, 'mod_workshop', 'instructreviewers',
                 0, workshop::instruction_editors_options($context), $workshop->instructreviewerseditor['text']);
         $workshop->instructreviewersformat = $workshop->instructreviewerseditor['format'];
+    }
+
+    if ($draftitemid = $workshop->conclusioneditor['itemid']) {
+        $workshop->conclusion = file_save_draft_area_files($draftitemid, $context->id, 'mod_workshop', 'conclusion',
+                0, workshop::instruction_editors_options($context), $workshop->conclusioneditor['text']);
+        $workshop->conclusionformat = $workshop->conclusioneditor['format'];
     }
 
     // re-save the record with the replaced URLs in editor fields
@@ -131,17 +137,15 @@ function workshop_update_instance(stdclass $workshop) {
     $workshop->timemodified          = time();
     $workshop->id                    = $workshop->instance;
     $workshop->useexamples           = (int)!empty($workshop->useexamples);
-    $workshop->usepeerassessment     = (int)!empty($workshop->usepeerassessment);
+    $workshop->usepeerassessment     = 1;
     $workshop->useselfassessment     = (int)!empty($workshop->useselfassessment);
     $workshop->latesubmissions       = (int)!empty($workshop->latesubmissions);
     $workshop->phaseswitchassessment = (int)!empty($workshop->phaseswitchassessment);
-    $workshop->evaluation            = 'best';
 
-    // todo - if the grading strategy is being changed, we must replace all aggregated peer grades with nulls
-    // todo - if maximum grades are being changed, we should probably recalculate or invalidate them
+    // todo - if the grading strategy is being changed, we may want to replace all aggregated peer grades with nulls
 
     $DB->update_record('workshop', $workshop);
-    $context = get_context_instance(CONTEXT_MODULE, $workshop->coursemodule);
+    $context = context_module::instance($workshop->coursemodule);
 
     // process the custom wysiwyg editors
     if ($draftitemid = $workshop->instructauthorseditor['itemid']) {
@@ -154,6 +158,12 @@ function workshop_update_instance(stdclass $workshop) {
         $workshop->instructreviewers = file_save_draft_area_files($draftitemid, $context->id, 'mod_workshop', 'instructreviewers',
                 0, workshop::instruction_editors_options($context), $workshop->instructreviewerseditor['text']);
         $workshop->instructreviewersformat = $workshop->instructreviewerseditor['format'];
+    }
+
+    if ($draftitemid = $workshop->conclusioneditor['itemid']) {
+        $workshop->conclusion = file_save_draft_area_files($draftitemid, $context->id, 'mod_workshop', 'conclusion',
+                0, workshop::instruction_editors_options($context), $workshop->conclusioneditor['text']);
+        $workshop->conclusionformat = $workshop->conclusioneditor['format'];
     }
 
     // re-save the record with the replaced URLs in editor fields
@@ -200,21 +210,21 @@ function workshop_delete_instance($id) {
     $DB->delete_records_list('workshop_submissions', 'id', array_keys($submissions));
 
     // call the static clean-up methods of all available subplugins
-    $strategies = get_plugin_list('workshopform');
+    $strategies = core_component::get_plugin_list('workshopform');
     foreach ($strategies as $strategy => $path) {
         require_once($path.'/lib.php');
         $classname = 'workshop_'.$strategy.'_strategy';
         call_user_func($classname.'::delete_instance', $workshop->id);
     }
 
-    $allocators = get_plugin_list('workshopallocation');
+    $allocators = core_component::get_plugin_list('workshopallocation');
     foreach ($allocators as $allocator => $path) {
         require_once($path.'/lib.php');
         $classname = 'workshop_'.$allocator.'_allocator';
         call_user_func($classname.'::delete_instance', $workshop->id);
     }
 
-    $evaluators = get_plugin_list('workshopeval');
+    $evaluators = core_component::get_plugin_list('workshopeval');
     foreach ($evaluators as $evaluator => $path) {
         require_once($path.'/lib.php');
         $classname = 'workshop_'.$evaluator.'_evaluation';
@@ -353,11 +363,12 @@ function workshop_user_complete($course, $user, $mod, $workshop) {
 function workshop_print_recent_activity($course, $viewfullnames, $timestart) {
     global $CFG, $USER, $DB, $OUTPUT;
 
+    $authoramefields = get_all_user_name_fields(true, 'author', null, 'author');
+    $reviewerfields = get_all_user_name_fields(true, 'reviewer', null, 'reviewer');
+
     $sql = "SELECT s.id AS submissionid, s.title AS submissiontitle, s.timemodified AS submissionmodified,
-                   author.id AS authorid, author.lastname AS authorlastname, author.firstname AS authorfirstname,
-                   a.id AS assessmentid, a.timemodified AS assessmentmodified,
-                   reviewer.id AS reviewerid, reviewer.lastname AS reviewerlastname, reviewer.firstname AS reviewerfirstname,
-                   cm.id AS cmid
+                   author.id AS authorid, $authoramefields, a.id AS assessmentid, a.timemodified AS assessmentmodified,
+                   reviewer.id AS reviewerid, $reviewerfields, cm.id AS cmid
               FROM {workshop} w
         INNER JOIN {course_modules} cm ON cm.instance = w.id
         INNER JOIN {modules} md ON md.id = cm.module
@@ -393,19 +404,15 @@ function workshop_print_recent_activity($course, $viewfullnames, $timestart) {
             // remember all user names we can use later
             if (empty($users[$activity->authorid])) {
                 $u = new stdclass();
-                $u->lastname = $activity->authorlastname;
-                $u->firstname = $activity->authorfirstname;
-                $users[$activity->authorid] = $u;
+                $users[$activity->authorid] = username_load_fields_from_object($u, $activity, 'author');
             }
             if ($activity->reviewerid and empty($users[$activity->reviewerid])) {
                 $u = new stdclass();
-                $u->lastname = $activity->reviewerlastname;
-                $u->firstname = $activity->reviewerfirstname;
-                $users[$activity->reviewerid] = $u;
+                $users[$activity->reviewerid] = username_load_fields_from_object($u, $activity, 'reviewer');
             }
         }
 
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context = context_module::instance($cm->id);
         $groupmode = groups_get_activity_groupmode($cm, $course);
 
         if ($activity->submissionmodified > $timestart and empty($submissions[$activity->submissionid])) {
@@ -609,12 +616,14 @@ function workshop_get_recent_mod_activity(&$activities, &$index, $timestart, $co
     $params['submissionmodified'] = $timestart;
     $params['assessmentmodified'] = $timestart;
 
+    $authornamefields = get_all_user_name_fields(true, 'author', null, 'author');
+    $reviewerfields = get_all_user_name_fields(true, 'reviewer', null, 'reviewer');
+
     $sql = "SELECT s.id AS submissionid, s.title AS submissiontitle, s.timemodified AS submissionmodified,
-                   author.id AS authorid, author.lastname AS authorlastname, author.firstname AS authorfirstname,
-                   author.picture AS authorpicture, author.imagealt AS authorimagealt, author.email AS authoremail,
-                   a.id AS assessmentid, a.timemodified AS assessmentmodified,
-                   reviewer.id AS reviewerid, reviewer.lastname AS reviewerlastname, reviewer.firstname AS reviewerfirstname,
-                   reviewer.picture AS reviewerpicture, reviewer.imagealt AS reviewerimagealt, reviewer.email AS revieweremail
+                   author.id AS authorid, $authornamefields, author.picture AS authorpicture, author.imagealt AS authorimagealt,
+                   author.email AS authoremail, a.id AS assessmentid, a.timemodified AS assessmentmodified,
+                   reviewer.id AS reviewerid, $reviewerfields, reviewer.picture AS reviewerpicture,
+                   reviewer.imagealt AS reviewerimagealt, reviewer.email AS revieweremail
               FROM {workshop_submissions} s
         INNER JOIN {workshop} w ON s.workshopid = w.id
         INNER JOIN {user} author ON s.authorid = author.id
@@ -630,7 +639,7 @@ function workshop_get_recent_mod_activity(&$activities, &$index, $timestart, $co
     $rs = $DB->get_recordset_sql($sql, $params);
 
     $groupmode       = groups_get_activity_groupmode($cm, $course);
-    $context         = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context         = context_module::instance($cm->id);
     $grader          = has_capability('moodle/grade:viewall', $context);
     $accessallgroups = has_capability('moodle/site:accessallgroups', $context);
     $viewfullnames   = has_capability('moodle/site:viewfullnames', $context);
@@ -651,22 +660,14 @@ function workshop_get_recent_mod_activity(&$activities, &$index, $timestart, $co
             // remember all user names we can use later
             if (empty($users[$activity->authorid])) {
                 $u = new stdclass();
-                $u->id = $activity->authorid;
-                $u->lastname = $activity->authorlastname;
-                $u->firstname = $activity->authorfirstname;
-                $u->picture = $activity->authorpicture;
-                $u->imagealt = $activity->authorimagealt;
-                $u->email = $activity->authoremail;
+                $additionalfields = explode(',', user_picture::fields());
+                $u = username_load_fields_from_object($u, $activity, 'author', $additionalfields);
                 $users[$activity->authorid] = $u;
             }
             if ($activity->reviewerid and empty($users[$activity->reviewerid])) {
                 $u = new stdclass();
-                $u->id = $activity->reviewerid;
-                $u->lastname = $activity->reviewerlastname;
-                $u->firstname = $activity->reviewerfirstname;
-                $u->picture = $activity->reviewerpicture;
-                $u->imagealt = $activity->reviewerimagealt;
-                $u->email = $activity->revieweremail;
+                $additionalfields = explode(',', user_picture::fields());
+                $u = username_load_fields_from_object($u, $activity, 'reviewer', $additionalfields);
                 $users[$activity->reviewerid] = $u;
             }
         }
@@ -936,7 +937,18 @@ function workshop_cron() {
             $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
             $workshop = new workshop($workshop, $cm, $course);
             $workshop->switch_phase(workshop::PHASE_ASSESSMENT);
-            $workshop->log('update switch phase', $workshop->view_url(), $workshop->phase);
+
+            $params = array(
+                'objectid' => $workshop->id,
+                'context' => $workshop->context,
+                'courseid' => $workshop->course->id,
+                'other' => array(
+                    'workshopphase' => $workshop->phase
+                )
+            );
+            $event = \mod_workshop\event\phase_switched::create($params);
+            $event->trigger();
+
             // disable the automatic switching now so that it is not executed again by accident
             // if the teacher changes the phase back to the submission one
             $DB->set_field('workshop', 'phaseswitchassessment', 0, array('id' => $workshop->id));
@@ -963,7 +975,7 @@ function workshop_cron() {
 function workshop_scale_used($workshopid, $scaleid) {
     global $CFG; // other files included from here
 
-    $strategies = get_plugin_list('workshopform');
+    $strategies = core_component::get_plugin_list('workshopform');
     foreach ($strategies as $strategy => $strategypath) {
         $strategylib = $strategypath . '/lib.php';
         if (is_readable($strategylib)) {
@@ -996,7 +1008,7 @@ function workshop_scale_used($workshopid, $scaleid) {
 function workshop_scale_used_anywhere($scaleid) {
     global $CFG; // other files included from here
 
-    $strategies = get_plugin_list('workshopform');
+    $strategies = core_component::get_plugin_list('workshopform');
     foreach ($strategies as $strategy => $strategypath) {
         $strategylib = $strategypath . '/lib.php';
         if (is_readable($strategylib)) {
@@ -1035,7 +1047,7 @@ function workshop_get_extra_capabilities() {
  * Needed by grade_update_mod_grades() in lib/gradelib.php. Also used by
  * {@link workshop_update_grades()}.
  *
- * @param stdClass $workshop instance object with extra cmidnumber and modname property
+ * @param stdClass $workshop instance object with extra cmidnumber property
  * @param stdClass $submissiongrades data for the first grade item
  * @param stdClass $assessmentgrades data for the second grade item
  * @return void
@@ -1172,6 +1184,9 @@ function workshop_get_file_areas($course, $cm, $context) {
     $areas['instructreviewers']        = get_string('areainstructreviewers', 'workshop');
     $areas['submission_content']       = get_string('areasubmissioncontent', 'workshop');
     $areas['submission_attachment']    = get_string('areasubmissionattachment', 'workshop');
+    $areas['conclusion']               = get_string('areaconclusion', 'workshop');
+    $areas['overallfeedback_content']  = get_string('areaoverallfeedbackcontent', 'workshop');
+    $areas['overallfeedback_attachment'] = get_string('areaoverallfeedbackattachment', 'workshop');
 
     return $areas;
 }
@@ -1182,7 +1197,7 @@ function workshop_get_file_areas($course, $cm, $context) {
  * Apart from module intro (handled by pluginfile.php automatically), workshop files may be
  * media inserted into submission content (like images) and submission attachments. For these two,
  * the fileareas submission_content and submission_attachment are used.
- * Besides that, areas instructauthors and instructreviewers contain the media
+ * Besides that, areas instructauthors, instructreviewers and conclusion contain the media
  * embedded using the mod_form.php.
  *
  * @package  mod_workshop
@@ -1216,13 +1231,10 @@ function workshop_pluginfile($course, $cm, $context, $filearea, array $args, $fo
             send_file_not_found();
         }
 
-        $lifetime = isset($CFG->filelifetime) ? $CFG->filelifetime : 86400;
-
         // finally send the file
-        send_stored_file($file, $lifetime, 0, $forcedownload, $options);
-    }
+        send_stored_file($file, null, 0, $forcedownload, $options);
 
-    if ($filearea === 'instructreviewers') {
+    } else if ($filearea === 'instructreviewers') {
         array_shift($args); // itemid is ignored here
         $relativepath = implode('/', $args);
         $fullpath = "/$context->id/mod_workshop/$filearea/0/$relativepath";
@@ -1232,10 +1244,21 @@ function workshop_pluginfile($course, $cm, $context, $filearea, array $args, $fo
             send_file_not_found();
         }
 
-        $lifetime = isset($CFG->filelifetime) ? $CFG->filelifetime : 86400;
+        // finally send the file
+        send_stored_file($file, null, 0, $forcedownload, $options);
+
+    } else if ($filearea === 'conclusion') {
+        array_shift($args); // itemid is ignored here
+        $relativepath = implode('/', $args);
+        $fullpath = "/$context->id/mod_workshop/$filearea/0/$relativepath";
+
+        $fs = get_file_storage();
+        if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
+            send_file_not_found();
+        }
 
         // finally send the file
-        send_stored_file($file, $lifetime, 0, $forcedownload, $options);
+        send_stored_file($file, null, 0, $forcedownload, $options);
 
     } else if ($filearea === 'submission_content' or $filearea === 'submission_attachment') {
         $itemid = (int)array_shift($args);
@@ -1249,7 +1272,11 @@ function workshop_pluginfile($course, $cm, $context, $filearea, array $args, $fo
         // make sure the user is allowed to see the file
         if (empty($submission->example)) {
             if ($USER->id != $submission->authorid) {
-                if (!$DB->record_exists('workshop_assessments', array('submissionid' => $submission->id, 'reviewerid' => $USER->id))) {
+                if ($submission->published == 1 and $workshop->phase == 50
+                        and has_capability('mod/workshop:viewpublishedsubmissions', $context)) {
+                    // Published submission, we can go (workshop does not take the group mode
+                    // into account in this case yet).
+                } else if (!$DB->record_exists('workshop_assessments', array('submissionid' => $submission->id, 'reviewerid' => $USER->id))) {
                     if (!has_capability('mod/workshop:viewallsubmissions', $context)) {
                         send_file_not_found();
                     } else {
@@ -1270,6 +1297,55 @@ function workshop_pluginfile($course, $cm, $context, $filearea, array $args, $fo
                             }
                         }
                     }
+                }
+            }
+        }
+
+        $fs = get_file_storage();
+        $relativepath = implode('/', $args);
+        $fullpath = "/$context->id/mod_workshop/$filearea/$itemid/$relativepath";
+        if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
+            return false;
+        }
+        // finally send the file
+        // these files are uploaded by students - forcing download for security reasons
+        send_stored_file($file, 0, 0, true, $options);
+
+    } else if ($filearea === 'overallfeedback_content' or $filearea === 'overallfeedback_attachment') {
+        $itemid = (int)array_shift($args);
+        if (!$workshop = $DB->get_record('workshop', array('id' => $cm->instance))) {
+            return false;
+        }
+        if (!$assessment = $DB->get_record('workshop_assessments', array('id' => $itemid))) {
+            return false;
+        }
+        if (!$submission = $DB->get_record('workshop_submissions', array('id' => $assessment->submissionid, 'workshopid' => $workshop->id))) {
+            return false;
+        }
+
+        if ($USER->id == $assessment->reviewerid) {
+            // Reviewers can always see their own files.
+        } else if ($USER->id == $submission->authorid and $workshop->phase == 50) {
+            // Authors can see the feedback once the workshop is closed.
+        } else if (!empty($submission->example) and $assessment->weight == 1) {
+            // Reference assessments of example submissions can be displayed.
+        } else if (!has_capability('mod/workshop:viewallassessments', $context)) {
+            send_file_not_found();
+        } else {
+            $gmode = groups_get_activity_groupmode($cm, $course);
+            if ($gmode == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
+                // Check there is at least one common group with both the $USER
+                // and the submission author.
+                $sql = "SELECT 'x'
+                          FROM {workshop_submissions} s
+                          JOIN {user} a ON (a.id = s.authorid)
+                          JOIN {groups_members} agm ON (a.id = agm.userid)
+                          JOIN {user} u ON (u.id = ?)
+                          JOIN {groups_members} ugm ON (u.id = ugm.userid)
+                         WHERE s.example = 0 AND s.workshopid = ? AND s.id = ? AND agm.groupid = ugm.groupid";
+                $params = array($USER->id, $workshop->id, $submission->id);
+                if (!$DB->record_exists_sql($sql, $params)) {
+                    send_file_not_found();
                 }
             }
         }
@@ -1307,6 +1383,7 @@ function workshop_pluginfile($course, $cm, $context, $filearea, array $args, $fo
  */
 function workshop_get_file_info($browser, $areas, $course, $cm, $context, $filearea, $itemid, $filepath, $filename) {
     global $CFG, $DB, $USER;
+
     /** @var array internal cache for author names */
     static $submissionauthors = array();
 
@@ -1397,7 +1474,61 @@ function workshop_get_file_info($browser, $areas, $course, $cm, $context, $filea
         return new file_info_stored($browser, $context, $storedfile, $urlbase, $topvisiblename, true, true, false, false);
     }
 
-    if ($filearea == 'instructauthors' or $filearea == 'instructreviewers') {
+    if ($filearea === 'overallfeedback_content' or $filearea === 'overallfeedback_attachment') {
+
+        if (!has_capability('mod/workshop:viewallassessments', $context)) {
+            return null;
+        }
+
+        if (is_null($itemid)) {
+            // No itemid (assessmentid) passed, display the list of all assessments.
+            require_once($CFG->dirroot . '/mod/workshop/fileinfolib.php');
+            return new workshop_file_info_overallfeedback_container($browser, $course, $cm, $context, $areas, $filearea);
+        }
+
+        // Make sure the user can see the particular assessment in separate groups mode.
+        $gmode = groups_get_activity_groupmode($cm, $course);
+        if ($gmode == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
+            // Check there is at least one common group with both the $USER
+            // and the submission author.
+            $sql = "SELECT 'x'
+                      FROM {workshop_submissions} s
+                      JOIN {user} a ON (a.id = s.authorid)
+                      JOIN {groups_members} agm ON (a.id = agm.userid)
+                      JOIN {user} u ON (u.id = ?)
+                      JOIN {groups_members} ugm ON (u.id = ugm.userid)
+                     WHERE s.example = 0 AND s.workshopid = ? AND s.id = ? AND agm.groupid = ugm.groupid";
+            $params = array($USER->id, $cm->instance, $itemid);
+            if (!$DB->record_exists_sql($sql, $params)) {
+                return null;
+            }
+        }
+
+        // We are inside a particular assessment container.
+        $filepath = is_null($filepath) ? '/' : $filepath;
+        $filename = is_null($filename) ? '.' : $filename;
+
+        if (!$storedfile = $fs->get_file($context->id, 'mod_workshop', $filearea, $itemid, $filepath, $filename)) {
+            if ($filepath === '/' and $filename === '.') {
+                $storedfile = new virtual_root_file($context->id, 'mod_workshop', $filearea, $itemid);
+            } else {
+                // Not found
+                return null;
+            }
+        }
+
+        // Check to see if the user can manage files or is the owner.
+        if (!has_capability('moodle/course:managefiles', $context) and $storedfile->get_userid() != $USER->id) {
+            return null;
+        }
+
+        $urlbase = $CFG->wwwroot . '/pluginfile.php';
+
+        // Do not allow manual modification of any files.
+        return new file_info_stored($browser, $context, $storedfile, $urlbase, $itemid, true, true, false, false);
+    }
+
+    if ($filearea == 'instructauthors' or $filearea == 'instructreviewers' or $filearea == 'conclusion') {
         // always only itemid 0
 
         $filepath = is_null($filepath) ? '/' : $filepath;
@@ -1433,7 +1564,7 @@ function workshop_get_file_info($browser, $areas, $course, $cm, $context, $filea
 function workshop_extend_navigation(navigation_node $navref, stdclass $course, stdclass $module, cm_info $cm) {
     global $CFG;
 
-    if (has_capability('mod/workshop:submit', get_context_instance(CONTEXT_MODULE, $cm->id))) {
+    if (has_capability('mod/workshop:submit', context_module::instance($cm->id))) {
         $url = new moodle_url('/mod/workshop/submission.php', array('cmid' => $cm->id));
         $mysubmission = $navref->add(get_string('mysubmission', 'workshop'), $url);
         $mysubmission->mainnavonly = true;

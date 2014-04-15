@@ -266,7 +266,7 @@ class entities {
             $fpath = $dpath . DIRECTORY_SEPARATOR . $rfpath;
 
             if (!file_exists($dpath)) {
-                mkdir($dpath);
+                mkdir($dpath, $CFG->directorypermissions, true);
             }
             //copy the folder.gif file
             $folder_gif = "{$CFG->dirroot}/pix/i/files.gif";
@@ -309,7 +309,6 @@ class entities {
             $source = str_split($source, 1);
 
             for ($i = 1; $i <= $length; $i++) {
-                mt_srand((double) microtime() * 1000000);
                 $num = mt_rand(1, count($source));
                 $response .= $source[$num - 1];
             }

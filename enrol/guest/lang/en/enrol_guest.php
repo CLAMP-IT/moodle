@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,16 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'enrol_guest', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'enrol_guest', language 'en'.
  *
- * @package    enrol
- * @subpackage guest
+ * @package    enrol_guest
  * @copyright  2010 onwards Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 $string['allowguests'] = 'This course allows guest users to enter';
 $string['guest:config'] = 'Configure guest access instances';
+$string['guestaccess_withpassword'] = 'Guest access requires password';
+$string['guestaccess_withoutpassword'] = 'Guest access';
 $string['password'] = 'Password';
 $string['password_help'] = 'A password allows guest access to the course to be restricted to only those who know the password. Guests will be required to supply the password each time they access the course.';
 $string['passwordinvalid'] = 'Incorrect access password, please try again';

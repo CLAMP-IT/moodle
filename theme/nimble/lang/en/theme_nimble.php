@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,9 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'theme_nimble', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'theme_nimble', language 'en'.
  *
- * @package   moodlecore
+ * @package   theme_nimble
  * @copyright 2010 Patrick Malley
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -65,11 +64,11 @@ $string['footerline'] = 'Footerline';
 $string['footerlinedesc'] = 'Add some text (copyright info, etc.) to the footer.';
 
 $string['backgroundcolor'] = 'Header background';
-$string['backgroundcolordesc'] = 'Change the background color of the header.';
+$string['backgroundcolordesc'] = 'Change the background colour of the header.';
 
-$string['linkcolor'] = 'Link color';
-$string['linkcolordesc'] = 'Set the color of links in the theme, use html hex code.';
+$string['linkcolor'] = 'Link colour';
+$string['linkcolordesc'] = 'Set the colour of links in the theme. Use html hex code.';
 
-$string['linkhover'] = 'Menu hover color';
-$string['linkhoverdesc'] = 'Set the color of the menu on hover in the theme, use html hex code.';
+$string['linkhover'] = 'Menu hover colour';
+$string['linkhoverdesc'] = 'Set the colour of the menu on hover in the theme. Use html hex code.';
 

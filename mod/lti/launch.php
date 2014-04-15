@@ -35,8 +35,7 @@
 /**
  * This file contains all necessary code to view a lti activity instance
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -58,8 +57,6 @@ $lti = $DB->get_record('lti', array('id' => $cm->instance), '*', MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
 require_login($course);
-
-add_to_log($course->id, "lti", "launch", "launch.php?id=$cm->id", "$lti->id");
 
 $lti->cmid = $cm->id;
 lti_view($lti);

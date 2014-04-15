@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,9 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'theme_arialist', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'theme_arialist', language 'en'.
  *
- * @package   moodlecore
+ * @package   theme_arialist
  * @copyright 2010 Patrick Malley
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -62,8 +61,8 @@ $string['choosereadme'] = '
 	</div>
 </div>';
 
-$string['linkcolor'] = 'Link color';
-$string['linkcolordesc'] = 'This sets the link color for the theme.';
+$string['linkcolor'] = 'Link colour';
+$string['linkcolordesc'] = 'This sets the link colour for the theme.';
 $string['configtitle'] = 'Arialist settings';
 $string['customcss'] = 'Custom CSS';
 $string['customcssdesc'] = 'Any CSS you enter here will be added to every page allowing your to easily customise this theme.';

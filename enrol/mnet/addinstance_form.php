@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,8 +17,7 @@
 /**
  * Form to add an instance of enrol_mnet plugin
  *
- * @package    enrol
- * @subpackage mnet
+ * @package    enrol_mnet
  * @copyright  2010 David Mudrak <david@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -36,7 +34,7 @@ class enrol_mnet_addinstance_form extends moodleform {
         $course  = $this->_customdata['course'];
         $enrol   = $this->_customdata['enrol'];
         $service = $this->_customdata['service'];
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+        $coursecontext = context_course::instance($course->id);
 
         $subscribers = $service->get_remote_subscribers();
         $hosts = array(0 => get_string('remotesubscribersall', 'enrol_mnet'));

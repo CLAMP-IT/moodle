@@ -18,8 +18,7 @@
 /**
  * Provides support for the conversion of moodle1 backup to the moodle2 format
  *
- * @package    mod
- * @subpackage folder
+ * @package    mod_folder
  * @copyright  2011 Andrew Davis <andrew@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -65,7 +64,11 @@ class moodle1_mod_folder_handler extends moodle1_resource_successor_handler {
         // migrate the folder files
         $this->fileman->filearea = 'content';
         $this->fileman->itemid   = 0;
-        $this->fileman->migrate_directory('course_files/'.$data['reference']);
+        if (empty($data['reference'])) {
+            $this->fileman->migrate_directory('course_files');
+        } else {
+            $this->fileman->migrate_directory('course_files/'.$data['reference']);
+        }
 
         // write folder.xml
         $this->open_xml_writer("activities/folder_{$moduleid}/folder.xml");

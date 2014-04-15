@@ -40,7 +40,7 @@
  *
  * TODO: Finish phpdocs
  */
-class backup_controller extends backup implements loggable {
+class backup_controller extends base_controller {
 
     protected $backupid; // Unique identificator for this backup
 
@@ -56,12 +56,12 @@ class backup_controller extends backup implements loggable {
     protected $status; // Current status of the controller (created, planned, configured...)
 
     protected $plan;   // Backup execution plan
+    protected $includefiles; // Whether this backup includes files or not.
 
     protected $execution;     // inmediate/delayed
     protected $executiontime; // epoch time when we want the backup to be executed (requires cron to run)
 
     protected $destination; // Destination chain object (fs_moodle, fs_os, db, email...)
-    protected $logger;      // Logging chain object (moodle, inline, fs, db, syslog)
 
     protected $checksum; // Cache @checksumable results for lighter @is_checksum_correct() uses
 
@@ -107,6 +107,10 @@ class backup_controller extends backup implements loggable {
 
         // Default logger chain (based on interactive/execution)
         $this->logger = backup_factory::get_logger_chain($this->interactive, $this->execution, $this->backupid);
+
+        // By default there is no progress reporter. Interfaces that wish to
+        // display progress must set it.
+        $this->progress = new \core\progress\null();
 
         // Instantiate the output_controller singleton and active it if interactive and inmediate
         $oc = output_controller::get_instance();
@@ -239,6 +243,17 @@ class backup_controller extends backup implements loggable {
         return $this->type;
     }
 
+    /**
+     * Returns the current value of the include_files setting.
+     * This setting is intended to ensure that files are not included in
+     * generated backups.
+     *
+     * @return int Indicates whether files should be included in backups.
+     */
+    public function get_include_files() {
+        return $this->includefiles;
+    }
+
     public function get_operation() {
         return $this->operation;
     }
@@ -286,17 +301,13 @@ class backup_controller extends backup implements loggable {
         return $this->plan;
     }
 
-    public function get_logger() {
-        return $this->logger;
-    }
-
     /**
      * Executes the backup
      * @return void Throws and exception of completes
      */
     public function execute_plan() {
         // Basic/initial prevention against time/memory limits
-        set_time_limit(1 * 60 * 60); // 1 hour for 1 course initially granted
+        core_php_time_limit::raise(1 * 60 * 60); // 1 hour for 1 course initially granted
         raise_memory_limit(MEMORY_EXTRA);
         // If this is not a course backup, inform the plan we are not
         // including all the activities for sure. This will affect any
@@ -311,10 +322,6 @@ class backup_controller extends backup implements loggable {
 
     public function get_results() {
         return $this->plan->get_results();
-    }
-
-    public function log($message, $level, $a = null, $depth = null, $display = false) {
-        backup_helper::log($message, $level, $a, $depth, $display, $this->logger);
     }
 
     /**
@@ -362,6 +369,33 @@ class backup_controller extends backup implements loggable {
         $this->log('applying plan defaults', backup::LOG_DEBUG);
         backup_controller_dbops::apply_config_defaults($this);
         $this->set_status(backup::STATUS_CONFIGURED);
+        $this->set_include_files();
+    }
+
+    /**
+     * Set the initial value for the include_files setting.
+     *
+     * @see backup_controller::get_include_files for further information on the purpose of this setting.
+     * @return int Indicates whether files should be included in backups.
+     */
+    protected function set_include_files() {
+        // We normally include files.
+        $includefiles = true;
+
+        // In an import, we don't need to include files.
+        if ($this->get_mode() === backup::MODE_IMPORT) {
+            $includefiles = false;
+        }
+
+        // When a backup is intended for the same site, we don't need to include the files.
+        // Note, this setting is only used for duplication of an entire course.
+        if ($this->get_mode() === backup::MODE_SAMESITE) {
+            $includefiles = false;
+        }
+
+        $this->includefiles = (int) $includefiles;
+        $this->log("setting file inclusion to {$this->includefiles}", backup::LOG_DEBUG);
+        return $this->includefiles;
     }
 }
 

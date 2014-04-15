@@ -64,7 +64,7 @@ abstract class backup_activity_task extends backup_task {
         $this->sectionid  = $coursemodule->section;
         $this->modulename = $coursemodule->modname;
         $this->activityid = $coursemodule->instance;
-        $this->contextid  = get_context_instance(CONTEXT_MODULE, $this->moduleid)->id;
+        $this->contextid  = context_module::instance($this->moduleid)->id;
 
         parent::__construct($name, $plan);
     }
@@ -246,6 +246,8 @@ abstract class backup_activity_task extends backup_task {
      * Defines the common setting that any backup activity will have
      */
     protected function define_settings() {
+        global $CFG;
+        require_once($CFG->libdir.'/questionlib.php');
 
         // All the settings related to this activity will include this prefix
         $settingprefix = $this->modulename . '_' . $this->moduleid . '_';
@@ -258,11 +260,18 @@ abstract class backup_activity_task extends backup_task {
         // - section_included setting (if exists)
         $settingname = $settingprefix . 'included';
         $activity_included = new backup_activity_generic_setting($settingname, base_setting::IS_BOOLEAN, true);
-        $activity_included->get_ui()->set_icon(new pix_icon('icon', get_string('pluginname', $this->modulename), $this->modulename));
+        $activity_included->get_ui()->set_icon(new pix_icon('icon', get_string('pluginname', $this->modulename),
+            $this->modulename, array('class' => 'iconlarge icon-post')));
         $this->add_setting($activity_included);
         // Look for "activities" root setting
         $activities = $this->plan->get_setting('activities');
         $activities->add_dependency($activity_included);
+
+        if (question_module_uses_questions($this->modulename)) {
+            $questionbank = $this->plan->get_setting('questionbank');
+            $questionbank->add_dependency($activity_included);
+        }
+
         // Look for "section_included" section setting (if exists)
         $settingname = 'section_' . $this->sectionid . '_included';
         if ($this->plan->setting_exists($settingname)) {

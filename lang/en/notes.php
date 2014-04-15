@@ -36,8 +36,11 @@ $string['deleteconfirm'] = 'Delete this note?';
 $string['deletenotes'] = 'Delete all notes';
 $string['editnote'] = 'Edit note';
 $string['enablenotes'] = 'Enable notes';
+$string['eventnotecreated'] = 'Note created';
+$string['eventnoteupdate'] = 'Note updated';
+$string['eventnotedeleted'] = 'Note deleted';
+$string['eventnotesviewed'] = 'Notes viewed';
 $string['groupaddnewnote'] = 'Add a common note';
-$string['invalidcourseid'] = 'Invalid course id: {$a}';
 $string['invalidid'] = 'Invalid note ID specified';
 $string['invaliduserid'] = 'Invalid user id: {$a}';
 $string['nocontent'] = 'Note content can not be empty';
@@ -58,6 +61,7 @@ $string['publishstate_help'] = 'A note\'s context determines who can see the not
 * Personal - The note will be visible only to you
 * Course - The note will be visible to teachers in this course
 * Site - The note will be visible to teachers in all courses';
+$string['selectnotestate'] = "Select note state";
 $string['site'] = 'site';
 $string['sitenotes'] = 'Site notes';
 $string['unknown'] = 'unknown';

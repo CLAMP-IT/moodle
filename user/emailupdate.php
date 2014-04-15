@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -20,18 +19,19 @@
  *
  * @copyright 1999 Martin Dougiamas  http://dougiamas.com
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package user
+ * @package core_user
  */
 
 require_once('../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/user/editlib.php');
+require_once($CFG->dirroot.'/user/lib.php');
 
 $key = required_param('key', PARAM_ALPHANUM);
 $id  = required_param('id', PARAM_INT);
 
-$PAGE->set_url('/user/emailupdate.php', array('id'=>$id, 'key'=>$key));
-$PAGE->set_context(get_context_instance(CONTEXT_SYSTEM));
+$PAGE->set_url('/user/emailupdate.php', array('id' => $id, 'key' => $key));
+$PAGE->set_context(context_system::instance());
 
 if (!$user = $DB->get_record('user', array('id' => $id))) {
     print_error('invaliduserid');
@@ -50,27 +50,26 @@ echo $OUTPUT->header();
 if (empty($preferences['newemailattemptsleft'])) {
     redirect("$CFG->wwwroot/user/view.php?id=$user->id");
 
-} elseif ($preferences['newemailattemptsleft'] < 1) {
+} else if ($preferences['newemailattemptsleft'] < 1) {
     cancel_email_update($user->id);
     $stroutofattempts = get_string('auth_outofnewemailupdateattempts', 'auth');
     echo $OUTPUT->box($stroutofattempts, 'center');
 
-} elseif ($key == $preferences['newemailkey']) {
+} else if ($key == $preferences['newemailkey']) {
     $olduser = clone($user);
     cancel_email_update($user->id);
     $user->email = $preferences['newemail'];
 
-    // Detect duplicate before saving
+    // Detect duplicate before saving.
     if ($DB->get_record('user', array('email' => $user->email))) {
         $stremailnowexists = get_string('emailnowexists', 'auth');
         echo $OUTPUT->box($stremailnowexists, 'center');
         echo $OUTPUT->continue_button("$CFG->wwwroot/user/view.php?id=$user->id");
     } else {
-        // update user email
-        $DB->set_field('user', 'email', $user->email, array('id' => $user->id));
+        // Update user email.
         $authplugin = get_auth_plugin($user->auth);
         $authplugin->user_update($olduser, $user);
-        events_trigger('user_updated', $user);
+        user_update_user($user, false);
         $a->email = $user->email;
         $stremailupdatesuccess = get_string('emailupdatesuccess', 'auth', $a);
         echo $OUTPUT->box($stremailupdatesuccess, 'center');

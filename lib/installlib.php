@@ -93,7 +93,7 @@ function install_init_dataroot($dataroot, $dirpermissions) {
         return false;
     }
 
-    umask(0000);
+    umask(0000); // $CFG->umaskpermissions is not set yet.
     if (!file_exists($dataroot)) {
         if (!mkdir($dataroot, $dirpermissions, true)) {
             // most probably this does not work, but anyway
@@ -192,7 +192,20 @@ function install_db_validate($database, $dbhost, $dbuser, $dbpass, $dbname, $pre
         }
         return '';
     } catch (dml_exception $ex) {
-        return get_string($ex->errorcode, $ex->module, $ex->a).'<br />'.$ex->debuginfo;
+        $stringmanager = get_string_manager();
+        $errorstring = $ex->errorcode.'oninstall';
+        $legacystring = $ex->errorcode;
+        if ($stringmanager->string_exists($errorstring, $ex->module)) {
+            // By using a different string id from the error code we are separating exception handling and output.
+            return $stringmanager->get_string($errorstring, $ex->module, $ex->a).'<br />'.$ex->debuginfo;
+        } else if ($stringmanager->string_exists($legacystring, $ex->module)) {
+            // There are some DML exceptions that may be thrown here as well as during normal operation.
+            // If we have a translated message already we still want to serve it here.
+            // However it is not the preferred way.
+            return $stringmanager->get_string($legacystring, $ex->module, $ex->a).'<br />'.$ex->debuginfo;
+        }
+        // No specific translation. Deliver a generic error message.
+        return $stringmanager->get_string('dmlexceptiononinstall', 'error', $ex);
     }
 }
 
@@ -233,8 +246,6 @@ function install_generate_configphp($database, $cfg) {
     }
     $configphp .= '$CFG->directorypermissions = ' . $chmod . ';' . PHP_EOL . PHP_EOL;
 
-    $configphp .= '$CFG->passwordsaltmain = '.var_export(complex_random_string(), true) . ';' . PHP_EOL . PHP_EOL;
-
     $configphp .= 'require_once(dirname(__FILE__) . \'/lib/setup.php\');' . PHP_EOL . PHP_EOL;
     $configphp .= '// There is no php closing tag in this file,' . PHP_EOL;
     $configphp .= '// it is intentional because it prevents trailing whitespace problems!' . PHP_EOL;
@@ -253,6 +264,7 @@ function install_print_help_page($help) {
     global $CFG, $OUTPUT; //TODO: MUST NOT USE $OUTPUT HERE!!!
 
     @header('Content-Type: text/html; charset=UTF-8');
+    @header('X-UA-Compatible: IE=edge');
     @header('Cache-Control: no-store, no-cache, must-revalidate');
     @header('Cache-Control: post-check=0, pre-check=0', false);
     @header('Pragma: no-cache');
@@ -299,6 +311,7 @@ function install_print_header($config, $stagename, $heading, $stagetext) {
     global $CFG;
 
     @header('Content-Type: text/html; charset=UTF-8');
+    @header('X-UA-Compatible: IE=edge');
     @header('Cache-Control: no-store, no-cache, must-revalidate');
     @header('Cache-Control: post-check=0, pre-check=0', false);
     @header('Pragma: no-cache');
@@ -406,6 +419,7 @@ function install_cli_database(array $options, $interactive) {
     @ini_set('display_errors', '1');
     $CFG->debug = (E_ALL | E_STRICT);
     $CFG->debugdisplay = true;
+    $CFG->debugdeveloper = true;
 
     $CFG->version = '';
     $CFG->release = '';
@@ -476,9 +490,7 @@ function install_cli_database(array $options, $interactive) {
     upgrade_finished();
 
     // log in as admin - we need do anything when applying defaults
-    $admins = get_admins();
-    $admin = reset($admins);
-    session_set_user($admin);
+    \core\session\manager::set_user(get_admin());
 
     // apply all default settings, do it twice to fill all defaults - some settings depend on other setting
     admin_apply_default_settings(NULL, true);

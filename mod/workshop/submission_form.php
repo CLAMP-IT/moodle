@@ -18,8 +18,7 @@
 /**
  * Submit an assignment or edit the already submitted work
  *
- * @package    mod
- * @subpackage workshop
+ * @package    mod_workshop
  * @copyright  2009 David Mudrak <david.mudrak@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -63,7 +62,7 @@ class workshop_submission_form extends moodleform {
         $mform->setType('edit', PARAM_INT);
 
         $mform->addElement('hidden', 'example', 0);
-        $mform->setType('hidden', PARAM_INT);
+        $mform->setType('example', PARAM_INT);
 
         $this->add_action_buttons();
 

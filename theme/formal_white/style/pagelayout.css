@@ -62,6 +62,18 @@
     background-color:#FFF;
 }
 
+.core_media_preview #page-content #region-post-box {
+    margin-left: 0;
+}
+
+.core_media_preview #page-content #region-main-wrap {
+    width: 100%;
+}
+
+.core_media_preview #page-content #region-main {
+    margin-left: 30px;
+}
+
 #page-content #region-post-box {
     margin-left:[[calculated:minusdoubleblockcolumnwidth]];
     /* arrotonadamento angolo in basso a dx */
@@ -113,7 +125,7 @@
     .has_dock.side-post-only .page-middle #region-main {margin-left:[[setting:blockcolumnwidth]];}
 
 /** Report layout **/
-    .pagelayout-report #report-main-content .region-content {margin-left:[[setting:blockcolumnwidth]];}
+    .pagelayout-report #report-main-content .region-content {background-color:white;margin-left:[[setting:blockcolumnwidth]];}
     .pagelayout-report #report-region-pre {width:[[setting:blockcolumnwidth]];}
 
 /** Correct for right to left languages **/

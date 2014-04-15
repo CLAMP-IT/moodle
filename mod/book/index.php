@@ -37,7 +37,6 @@ $PAGE->set_pagelayout('incourse');
 // Get all required strings
 $strbooks        = get_string('modulenameplural', 'mod_book');
 $strbook         = get_string('modulename', 'mod_book');
-$strsectionname  = get_string('sectionname', 'format_'.$course->format);
 $strname         = get_string('name');
 $strintro        = get_string('moduleintro');
 $strlastmodified = get_string('lastmodified');
@@ -48,7 +47,11 @@ $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strbooks);
 echo $OUTPUT->header();
 
-add_to_log($course->id, 'book', 'view all', 'index.php?id='.$course->id, '');
+$params = array(
+    'context' => context_course::instance($course->id)
+);
+$event = \mod_book\event\course_module_instance_list_viewed::create($params);
+$event->trigger();
 
 // Get all the appropriate data
 if (!$books = get_all_instances_in_course('book', $course)) {
@@ -57,14 +60,12 @@ if (!$books = get_all_instances_in_course('book', $course)) {
 }
 
 $usesections = course_format_uses_sections($course->format);
-if ($usesections) {
-    $sections = get_all_sections($course->id);
-}
 
 $table = new html_table();
 $table->attributes['class'] = 'generaltable mod_index';
 
 if ($usesections) {
+    $strsectionname = get_string('sectionname', 'format_'.$course->format);
     $table->head  = array ($strsectionname, $strname, $strintro);
     $table->align = array ('center', 'left', 'left');
 } else {
@@ -80,7 +81,7 @@ foreach ($books as $book) {
         $printsection = '';
         if ($book->section !== $currentsection) {
             if ($book->section) {
-                $printsection = get_section_name($course, $sections[$book->section]);
+                $printsection = get_section_name($course, $book->section);
             }
             if ($currentsection !== '') {
                 $table->data[] = 'hr';

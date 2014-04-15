@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,8 +22,12 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['addmorechoiceblanks'] = 'Blanks for {no} more choices';
 $string['addcategory'] = 'Add category';
 $string['adminreport'] = 'Report on possible problems in your question database.';
+$string['advancedsearchoptions'] = 'Search options';
+$string['alltries'] = 'All tries';
+$string['answers'] = 'Answers';
 $string['availableq'] = 'Available?';
 $string['badbase'] = 'Bad base before **: {$a}**';
 $string['behaviour'] = 'Behaviour';
@@ -35,8 +38,6 @@ $string['cannotcreate'] = 'Could not create new entry in question_attempts table
 $string['cannotcreatepath'] = 'Cannot create path: {$a}';
 $string['cannotdeletebehaviourinuse'] = 'You cannot delete the behaviour \'{$a}\'. It is used by question attempts.';
 $string['cannotdeletecate'] = 'You can\'t delete that category it is the default category for this context.';
-$string['cannotdeletemissingbehaviour'] = 'You cannot uninstall the missing behaviour. It is required by the system.';
-$string['cannotdeletemissingqtype'] = 'You cannot uninstall the missing question type. It is needed by the system.';
 $string['cannotdeleteneededbehaviour'] = 'Cannot delete the question behaviour \'{$a}\'. There are other behaviours installed that rely on it.';
 $string['cannotdeleteqtypeinuse'] = 'You cannot delete the question type \'{$a}\'. There are questions of this type in the question bank.';
 $string['cannotdeleteqtypeneeded'] = 'You cannot delete the question type \'{$a}\'. There are other question types installed that rely on it.';
@@ -90,11 +91,8 @@ affected will continue to work in all existing quizzes until you remove them fro
 $string['cwrqpfsnoprob'] = 'No question categories in your site are affected by the \'Random questions selecting questions from sub categories\' issue.';
 $string['defaultfor'] = 'Default for {$a}';
 $string['defaultinfofor'] = 'The default category for questions shared in context \'{$a}\'.';
-$string['deletebehaviourareyousure'] = 'Delete behaviour {$a}: are you sure?';
-$string['deletebehaviourareyousuremessage'] = 'You are about to completely delete the question behaviour {$a}. This will completely delete everything in the database associated with this question behaviour. Are you SURE you want to continue?';
+$string['defaultmarkmustbepositive'] = 'The default mark must be positive.';
 $string['deletecoursecategorywithquestions'] = 'There are questions in the question bank associated with this course category. If you proceed, they will be deleted. You may wish to move them first, using the question bank interface.';
-$string['deleteqtypeareyousure'] = 'Delete question type {$a}: are you sure?';
-$string['deleteqtypeareyousuremessage'] = 'You are about to completely delete the question type {$a}. This will completely delete everything in the database associated with this question type. Are you SURE you want to continue?';
 $string['deletequestioncheck'] = 'Are you absolutely sure you want to delete \'{$a}\'?';
 $string['deletequestionscheck'] = 'Are you absolutely sure you want to delete the following questions?<br /><br />{$a}';
 $string['deletingbehaviour'] = 'Deleting question behaviour \'{$a}\'';
@@ -110,7 +108,7 @@ Each category has a context which determines where the questions in the category
 
 * Activity context - Questions only available in the activity module
 * Course context - Questions available in all activity modules in the course
-* Course category context - Questions available in all activity modules and courses in the course category 
+* Course category context - Questions available in all activity modules and courses in the course category
 * System context - Questions available in all courses and activities on the site
 
 Categories are also used for random questions, as questions are selected from a particular category.';
@@ -155,6 +153,7 @@ $string['fileformat'] = 'File format';
 $string['filesareacourse'] = 'the course files area';
 $string['filesareasite'] = 'the site files area';
 $string['filestomove'] = 'Move / copy files to {$a}?';
+$string['firsttry'] = 'First try';
 $string['flagged'] = 'Flagged';
 $string['flagthisquestion'] = 'Flag this question';
 $string['formquestionnotinids'] = 'Form contained question that is not in questionids';
@@ -183,13 +182,14 @@ $string['invalidcategoryidforparent'] = 'Invalid category id for parent!';
 $string['invalidcategoryidtomove'] = 'Invalid category id to move!';
 $string['invalidconfirm'] = 'Confirmation string was incorrect';
 $string['invalidcontextinhasanyquestions'] = 'Invalid context passed to question_context_has_any_questions.';
+$string['invalidgrade'] = 'Grades ({$a}) do not match grade options - question skipped.';
 $string['invalidpenalty'] = 'Invalid penalty';
 $string['invalidwizardpage'] = 'Incorrect or no wizard page specified!';
 $string['lastmodifiedby'] = 'Last modified by';
+$string['lasttry'] = 'Last try';
 $string['linkedfiledoesntexist'] = 'Linked file {$a} doesn\'t exist';
 $string['makechildof'] = 'Make child of \'{$a}\'';
 $string['maketoplevelitem'] = 'Move to top level';
-$string['matcherror'] = 'Grades do not match grade options - question skipped';
 $string['matchgrades'] = 'Match grades';
 $string['matchgradeserror'] = 'Error if grade not listed';
 $string['matchgradesnearest'] = 'Nearest grade if not listed';
@@ -230,6 +230,8 @@ $string['novirtualquestiontype'] = 'No virtual question type for question type {
 $string['numqas'] = 'No. question attempts';
 $string['numquestions'] = 'No. questions';
 $string['numquestionsandhidden'] = '{$a->numquestions} (+{$a->numhidden} hidden)';
+$string['orphanedquestionscategory'] = 'Questions saved from deleted categories';
+$string['orphanedquestionscategoryinfo'] = 'Occasionally, typically due to old software bugs, questions can remain in the database even though the corresponding question category has been deleted. Of course, this should not happen, it has happened in the past on this site. This category has been created automatically, and the orphaned questions moved here so that you can manage them. Note that any images or media files used by these questions have probably been lost.';
 $string['page-question-x'] = 'Any question page';
 $string['page-question-edit'] = 'Question editing page';
 $string['page-question-category'] = 'Question category page';
@@ -250,8 +252,6 @@ $string['permissionmove'] = 'Move this question';
 $string['permissionsaveasnew'] = 'Save this as a new question';
 $string['permissionto'] = 'You have permission to :';
 $string['published'] = 'shared';
-$string['qbehaviourdeletefiles'] = 'All data associated with the question behaviour \'{$a->behaviour}\' has been deleted from the database. To complete the deletion (and to prevent the behaviour from re-installing itself), you should now delete this directory from your server: {$a->directory}';
-$string['qtypedeletefiles'] = 'All data associated with the question type \'{$a->qtype}\' has been deleted from the database. To complete the deletion (and to prevent the question type from re-installing itself), you should now delete this directory from your server: {$a->directory}';
 $string['qtypeveryshort'] = 'T';
 $string['questionaffected'] = '<a href="{$a->qurl}">Question "{$a->name}" ({$a->qtype})</a> is in this question category but is also being used in <a href="{$a->qurl}">quiz "{$a->quizname}"</a> in another course "{$a->coursename}".';
 $string['questionbank'] = 'Question bank';
@@ -304,6 +304,8 @@ $string['cannotloadquestion'] = 'Could not load question';
 $string['cannotpreview'] = 'You can\'t preview these questions!';
 $string['category'] = 'Category';
 $string['changeoptions'] = 'Change options';
+$string['attemptoptions'] = 'Attempt options';
+$string['displayoptions'] = 'Display options';
 $string['check'] = 'Check';
 $string['clearwrongparts'] = 'Clear incorrect responses';
 $string['closepreview'] = 'Close preview';
@@ -317,6 +319,7 @@ $string['complete'] = 'Complete';
 $string['contexterror'] = 'You shouldn\'t have got here if you\'re not moving a category to another context.';
 $string['correct'] = 'Correct';
 $string['correctfeedback'] = 'For any correct response';
+$string['correctfeedbackdefault'] = 'Your answer is correct.';
 $string['decimalplacesingrades'] = 'Decimal places in grades';
 $string['defaultmark'] = 'Default mark';
 $string['errorsavingflags'] = 'Error saving the flag state.';
@@ -330,6 +333,7 @@ $string['generalfeedback_help'] = 'General feedback is shown to the student afte
 You can use the general feedback to give students a fully worked answer and perhaps a link to more information they can use if they did not understand the questions.';
 $string['hidden'] = 'Hidden';
 $string['hintn'] = 'Hint {no}';
+$string['hintnoptions'] = 'Hint {no} options';
 $string['hinttext'] = 'Hint text';
 $string['howquestionsbehave'] = 'How questions behave';
 $string['howquestionsbehave_help'] = 'Students can interact with the questions in the quiz in various different ways. For example, you may wish the students to enter an answer to each question and then submit the entire quiz, before anything is graded or they get any feedback. That would be \'Deferred feedback\' mode.
@@ -339,9 +343,10 @@ Alternatively, you may wish for students to submit each question as they go alon
 Those are probably the two most commonly used modes of behaviour. ';
 $string['importfromcoursefiles'] = '... or choose a course file to import.';
 $string['importfromupload'] = 'Select a file to upload ...';
-$string['includesubcategories'] = 'Also show questions from sub-categories';
+$string['includesubcategories'] = 'Also show questions from subcategories';
 $string['incorrect'] = 'Incorrect';
 $string['incorrectfeedback'] = 'For any incorrect response';
+$string['incorrectfeedbackdefault'] = 'Your answer is incorrect.';
 $string['information'] = 'Information';
 $string['invalidanswer'] = 'Incomplete answer';
 $string['makecopy'] = 'Make copy';
@@ -358,13 +363,15 @@ $string['notflagged'] = 'Not flagged';
 $string['notgraded'] = 'Not graded';
 $string['notshown'] = 'Not shown';
 $string['notyetanswered'] = 'Not yet answered';
+$string['notchanged'] = 'Not changed since last attempt';
 $string['notyourpreview'] = 'This preview does not belong to you';
 $string['options'] = 'Options';
 $string['parent'] = 'Parent';
 $string['partiallycorrect'] = 'Partially correct';
 $string['partiallycorrectfeedback'] = 'For any partially correct response';
+$string['partiallycorrectfeedbackdefault'] = 'Your answer is partially correct.';
 $string['penaltyforeachincorrecttry'] = 'Penalty for each incorrect try';
-$string['penaltyforeachincorrecttry_help'] = 'When you run your questions using the \'Interactive with multiple tries\' or \'Adaptive mode\' behaviour, so that the the student will have several tries to get the question right, then this option controls how much they are penalised for each incorrect try.
+$string['penaltyforeachincorrecttry_help'] = 'When questions are run using the \'Interactive with multiple tries\' or \'Adaptive mode\' behaviour, so that the student will have several tries to get the question right, then this option controls how much they are penalised for each incorrect try.
 
 The penalty is a proportion of the total question grade, so if the question is worth three marks, and the penalty is 0.3333333, then the student will score 3 if they get the question right first time, 2 if they get it right second try, and 1 of they get it right on the third try.';
 $string['previewquestion'] = 'Preview question: {$a}';
@@ -375,6 +382,9 @@ $string['questionbehavioursorder'] = 'Question behaviours order';
 $string['questionbehavioursorderexplained'] = 'Enter a comma separated list of behaviours in the order you want them to appear in dropdown menu';
 $string['questionidmismatch'] = 'Question ids mismatch';
 $string['questionname'] = 'Question name';
+$string['questionnamecopy'] = '{$a} (copy)';
+$string['questionpreviewdefaults'] = 'Question preview defaults';
+$string['questionpreviewdefaults_desc'] = 'These defaults are used when a user first previews a question in the question bank. Once a user has previewed a question, their personal preferences are stored as user preferences.';
 $string['questions'] = 'Questions';
 $string['questionx'] = 'Question {$a}';
 $string['questiontext'] = 'Question text';
@@ -382,11 +392,12 @@ $string['requiresgrading'] = 'Requires grading';
 $string['responsehistory'] = 'Response history';
 $string['restart'] = 'Start again';
 $string['restartwiththeseoptions'] = 'Start again with these options';
+$string['updatedisplayoptions'] = 'Update display options';
 $string['rightanswer'] = 'Right answer';
 $string['rightanswer_help'] = 'an automatically generated summary of the correct response. This can be limited, so you may wish to consider explaining the correct solution in the general feedback for the question, and turning this option off.';
 $string['saved'] = 'Saved: {$a}';
 $string['saveflags'] = 'Save the state of the flags';
-$string['settingsformultipletries'] = 'Settings for multiple tries';
+$string['settingsformultipletries'] = 'Multiple tries';
 $string['showhidden'] = 'Also show old questions';
 $string['showmarkandmax'] = 'Show mark and max';
 $string['showmaxmarkonly'] = 'Show max mark only';
@@ -407,15 +418,18 @@ $string['submitted'] = 'Submit: {$a}';
 $string['technicalinfo'] = 'Technical information';
 $string['technicalinfo_help'] = 'This technical information is probably only useful for developers working on new question types. It may also be helpful when trying to diagnose problems with questions.';
 $string['technicalinfominfraction'] = 'Minimum fraction: {$a}';
+$string['technicalinfomaxfraction'] = 'Maximum fraction: {$a}';
 $string['technicalinfoquestionsummary'] = 'Question summary: {$a}';
 $string['technicalinforightsummary'] = 'Right answer summary: {$a}';
 $string['technicalinfostate'] = 'Question state: {$a}';
 $string['unknownbehaviour'] = 'Unknown behaviour: {$a}.';
+$string['unknownorunhandledtype'] = 'Unknown or unhandled question type: {$a}';
 $string['unknownquestion'] = 'Unknown question: {$a}.';
 $string['unknownquestioncatregory'] = 'Unknown question category: {$a}.';
 $string['unknownquestiontype'] = 'Unknown question type: {$a}.';
 $string['whethercorrect'] = 'Whether correct';
 $string['whethercorrect_help'] = 'This covers both the textual description \'Correct\', \'Partially correct\' or \'Incorrect\', and any coloured highlighting that conveys the same information.';
+$string['whichtries'] = 'Which tries';
 $string['withselected'] = 'With selected';
 $string['xoutofmax'] = '{$a->mark} out of {$a->max}';
 $string['yougotnright'] = 'You have correctly selected {$a->num}.';

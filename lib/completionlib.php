@@ -31,10 +31,10 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Include the required completion libraries
  */
-require_once $CFG->libdir.'/completion/completion_aggregation.php';
-require_once $CFG->libdir.'/completion/completion_criteria.php';
-require_once $CFG->libdir.'/completion/completion_completion.php';
-require_once $CFG->libdir.'/completion/completion_criteria_completion.php';
+require_once $CFG->dirroot.'/completion/completion_aggregation.php';
+require_once $CFG->dirroot.'/completion/criteria/completion_criteria.php';
+require_once $CFG->dirroot.'/completion/completion_completion.php';
+require_once $CFG->dirroot.'/completion/completion_criteria_completion.php';
 
 
 /**
@@ -144,6 +144,73 @@ define('COMPLETION_AGGREGATION_ALL', 1);
  * Course completion criteria aggregation method.
  */
 define('COMPLETION_AGGREGATION_ANY', 2);
+
+
+/**
+ * Utility function for checking if the logged in user can view
+ * another's completion data for a particular course
+ *
+ * @access  public
+ * @param   int         $userid     Completion data's owner
+ * @param   mixed       $course     Course object or Course ID (optional)
+ * @return  boolean
+ */
+function completion_can_view_data($userid, $course = null) {
+    global $USER;
+
+    if (!isloggedin()) {
+        return false;
+    }
+
+    if (!is_object($course)) {
+        $cid = $course;
+        $course = new object();
+        $course->id = $cid;
+    }
+
+    // Check if this is the site course
+    if ($course->id == SITEID) {
+        $course = null;
+    }
+
+    // Check if completion is enabled
+    if ($course) {
+        $cinfo = new completion_info($course);
+        if (!$cinfo->is_enabled()) {
+            return false;
+        }
+    } else {
+        if (!completion_info::is_enabled_for_site()) {
+            return false;
+        }
+    }
+
+    // Is own user's data?
+    if ($USER->id == $userid) {
+        return true;
+    }
+
+    // Check capabilities
+    $personalcontext = context_user::instance($userid);
+
+    if (has_capability('moodle/user:viewuseractivitiesreport', $personalcontext)) {
+        return true;
+    } elseif (has_capability('report/completion:view', $personalcontext)) {
+        return true;
+    }
+
+    if ($course->id) {
+        $coursecontext = context_course::instance($course->id);
+    } else {
+        $coursecontext = context_system::instance();
+    }
+
+    if (has_capability('report/completion:view', $coursecontext)) {
+        return true;
+    }
+
+    return false;
+}
 
 
 /**
@@ -259,9 +326,9 @@ class completion_info {
         global $PAGE, $OUTPUT;
         $result = '';
         if ($this->is_enabled() && !$PAGE->user_is_editing() && isloggedin() && !isguestuser()) {
-            $result .= '<span id = "completionprogressid" class="completionprogress">'.get_string('yourprogress','completion').' ';
-            $result .= $OUTPUT->help_icon('completionicons', 'completion');
-            $result .= '</span>';
+            $result .= html_writer::tag('div', get_string('yourprogress','completion') .
+                    $OUTPUT->help_icon('completionicons', 'completion'), array('id' => 'completionprogressid',
+                    'class' => 'completionprogress'));
         }
         return $result;
     }
@@ -616,21 +683,25 @@ class completion_info {
      * @return void
      */
     public function set_module_viewed($cm, $userid=0) {
-        global $PAGE, $UNITTEST;
-        if ($PAGE->headerprinted && empty($UNITTEST->running)) {
+        global $PAGE;
+        if ($PAGE->headerprinted) {
             debugging('set_module_viewed must be called before header is printed',
                     DEBUG_DEVELOPER);
         }
+
         // Don't do anything if view condition is not turned on
         if ($cm->completionview == COMPLETION_VIEW_NOT_REQUIRED || !$this->is_enabled($cm)) {
             return;
         }
+
         // Get current completion state
-        $data = $this->get_data($cm, $userid);
+        $data = $this->get_data($cm, false, $userid);
+
         // If we already viewed it, don't do anything
         if ($data->viewed == COMPLETION_VIEWED) {
             return;
         }
+
         // OK, change state, save it, and update completion
         $data->viewed = COMPLETION_VIEWED;
         $this->internal_set_data($cm, $data);
@@ -709,6 +780,31 @@ class completion_info {
 
         $DB->delete_records('course_completions', array('course' => $this->course_id));
         $DB->delete_records('course_completion_crit_compl', array('course' => $this->course_id));
+    }
+
+    /**
+     * Deletes all activity and course completion data for an entire course
+     * (the below delete_all_state function does this for a single activity).
+     *
+     * Used by course reset page.
+     */
+    public function delete_all_completion_data() {
+        global $DB, $SESSION;
+
+        // Delete from database.
+        $DB->delete_records_select('course_modules_completion',
+                'coursemoduleid IN (SELECT id FROM {course_modules} WHERE course=?)',
+                array($this->course_id));
+
+        // Reset cache for current user.
+        if (isset($SESSION->completioncache) &&
+            array_key_exists($this->course_id, $SESSION->completioncache)) {
+
+            unset($SESSION->completioncache[$this->course_id]);
+        }
+
+        // Wipe course completion data too.
+        $this->delete_course_completion_data();
     }
 
     /**
@@ -940,47 +1036,58 @@ class completion_info {
         }
         $transaction->allow_commit();
 
+        $cmcontext = context_module::instance($data->coursemoduleid, MUST_EXIST);
+        $coursecontext = $cmcontext->get_parent_context();
+
+        // Trigger an event for course module completion changed.
+        $event = \core\event\course_module_completion_updated::create(
+            array('objectid' => $data->id,
+                'userid' => $USER->id,
+                'context' => $cmcontext,
+                'courseid' => $coursecontext->instanceid,
+                'other' => array('relateduserid' => $data->userid)
+                )
+            );
+        $event->add_record_snapshot('course_modules_completion', $data);
+        $event->trigger();
+
         if ($data->userid == $USER->id) {
             $SESSION->completioncache[$cm->course][$cm->id] = $data;
-            $reset = 'reset';
-            get_fast_modinfo($reset);
+            // reset modinfo for user (no need to call rebuild_course_cache())
+            get_fast_modinfo($cm->course, 0, true);
         }
+    }
+
+     /**
+     * Return whether or not the course has activities with completion enabled.
+     *
+     * @return boolean true when there is at least one activity with completion enabled.
+     */
+    public function has_activities() {
+        $modinfo = get_fast_modinfo($this->course);
+        foreach ($modinfo->get_cms() as $cm) {
+            if ($cm->completion != COMPLETION_TRACKING_NONE) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * Obtains a list of activities for which completion is enabled on the
      * course. The list is ordered by the section order of those activities.
      *
-     * @param array $modinfo For unit testing only, supply the value
-     *   here. Otherwise the method calls get_fast_modinfo
-     * @return array Array from $cmid => $cm of all activities with completion enabled,
+     * @return cm_info[] Array from $cmid => $cm of all activities with completion enabled,
      *   empty array if none
      */
-    public function get_activities($modinfo=null) {
-        global $DB;
-
-        // Obtain those activities which have completion turned on
-        $withcompletion = $DB->get_records_select('course_modules', 'course='.$this->course->id.
-          ' AND completion<>'.COMPLETION_TRACKING_NONE);
-        if (!$withcompletion) {
-            return array();
-        }
-
-        // Use modinfo to get section order and also add in names
-        if (empty($modinfo)) {
-            $modinfo = get_fast_modinfo($this->course);
-        }
+    public function get_activities() {
+        $modinfo = get_fast_modinfo($this->course);
         $result = array();
-        foreach ($modinfo->sections as $sectioncms) {
-            foreach ($sectioncms as $cmid) {
-                if (array_key_exists($cmid, $withcompletion)) {
-                    $result[$cmid] = $withcompletion[$cmid];
-                    $result[$cmid]->modname = $modinfo->cms[$cmid]->modname;
-                    $result[$cmid]->name    = $modinfo->cms[$cmid]->name;
-                }
+        foreach ($modinfo->get_cms() as $cm) {
+            if ($cm->completion != COMPLETION_TRACKING_NONE) {
+                $result[$cm->id] = $cm;
             }
         }
-
         return $result;
     }
 
@@ -992,7 +1099,7 @@ class completion_info {
      * @return bool
      */
     public function is_tracked_user($userid) {
-        return is_enrolled(context_course::instance($this->course->id), $userid, '', true);
+        return is_enrolled(context_course::instance($this->course->id), $userid, 'moodle/course:isincompletionreports', true);
     }
 
     /**
@@ -1009,7 +1116,7 @@ class completion_info {
         global $DB;
 
         list($enrolledsql, $enrolledparams) = get_enrolled_sql(
-                context_course::instance($this->course->id), '', $groupid, true);
+                context_course::instance($this->course->id), 'moodle/course:isincompletionreports', $groupid, true);
         $sql  = 'SELECT COUNT(eu.id) FROM (' . $enrolledsql . ') eu JOIN {user} u ON u.id = eu.id';
         if ($where) {
             $sql .= " WHERE $where";
@@ -1040,9 +1147,11 @@ class completion_info {
         global $DB;
 
         list($enrolledsql, $params) = get_enrolled_sql(
-                context_course::instance($this->course->id), '', $groupid, true);
+                context_course::instance($this->course->id),
+                'moodle/course:isincompletionreports', $groupid, true);
 
-        $sql = 'SELECT u.id, u.firstname, u.lastname, u.idnumber';
+        $allusernames = get_all_user_name_fields(true, 'u');
+        $sql = 'SELECT u.id, u.idnumber, ' . $allusernames;
         if ($extracontext) {
             $sql .= get_extra_user_fields_sql($extracontext, 'u', '', array('idnumber'));
         }
@@ -1169,9 +1278,12 @@ class completion_info {
      * @return int Completion state e.g. COMPLETION_INCOMPLETE
      */
     public static function internal_get_grade_state($item, $grade) {
-        if (!$grade) {
+        // If no grade is supplied or the grade doesn't have an actual value, then
+        // this is not complete.
+        if (!$grade || (is_null($grade->finalgrade) && is_null($grade->rawgrade))) {
             return COMPLETION_INCOMPLETE;
         }
+
         // Conditions to show pass/fail:
         // a) Grade has pass mark (default is 0.00000 which is boolean true so be careful)
         // b) Grade is visible (neither hidden nor hidden-until)

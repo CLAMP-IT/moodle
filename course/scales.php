@@ -39,11 +39,11 @@ $PAGE->set_url($url);
 $context = null;
 if ($course = $DB->get_record('course', array('id'=>$id))) {
     require_login($course);
-    $context = get_context_instance(CONTEXT_COURSE, $course->id);
+    $context = context_course::instance($course->id);
 } else {
     //$id will be 0 for site level scales
     require_login();
-    $context = get_context_instance(CONTEXT_SYSTEM);
+    $context = context_system::instance();
 }
 
 $PAGE->set_context($context);
@@ -70,7 +70,8 @@ if ($scaleid) {
             echo $OUTPUT->box_start();
             echo $OUTPUT->heading($scale->name);
             echo "<center>";
-            echo html_writer::select($scalemenu, 'unused');
+            echo html_writer::label(get_string('scales'), 'scaleunused'. $scaleid, false, array('class' => 'accesshide'));
+            echo html_writer::select($scalemenu, 'unused', '', array('' => 'choosedots'), array('id' => 'scaleunused'.$scaleid));
             echo "</center>";
             echo text_to_html($scale->description);
             echo $OUTPUT->box_end();
@@ -81,7 +82,7 @@ if ($scaleid) {
     }
 }
 
-$systemcontext = get_context_instance(CONTEXT_SYSTEM);
+$systemcontext = context_system::instance();
 
 if ($scales = $DB->get_records("scale", array("courseid"=>$course->id), "name ASC")) {
     echo $OUTPUT->heading($strcustomscales);
@@ -101,7 +102,8 @@ if ($scales = $DB->get_records("scale", array("courseid"=>$course->id), "name AS
         echo $OUTPUT->box_start();
         echo $OUTPUT->heading($scale->name);
         echo "<center>";
-        echo html_writer::select($scalemenu, 'unused');
+        echo html_writer::label(get_string('scales'), 'courseunused' . $scale->id, false, array('class' => 'accesshide'));
+        echo html_writer::select($scalemenu, 'unused', '', array('' => 'choosedots'), array('id' => 'courseunused' . $scale->id));
         echo "</center>";
         echo text_to_html($scale->description);
         echo $OUTPUT->box_end();
@@ -127,7 +129,8 @@ if ($scales = $DB->get_records("scale", array("courseid"=>0), "name ASC")) {
         echo $OUTPUT->box_start();
         echo $OUTPUT->heading($scale->name);
         echo "<center>";
-        echo html_writer::select($scalemenu, 'unused');
+        echo html_writer::label(get_string('scales'), 'sitescale' . $scale->id, false, array('class' => 'accesshide'));
+        echo html_writer::select($scalemenu, 'unused', '', array('' => 'choosedots'), array('id' => 'sitescale' . $scale->id));
         echo "</center>";
         echo text_to_html($scale->description);
         echo $OUTPUT->box_end();

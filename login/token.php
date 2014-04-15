@@ -22,6 +22,7 @@
  */
 
 define('AJAX_SCRIPT', true);
+define('REQUIRE_CORRECT_ACCESS', true);
 define('NO_MOODLE_COOKIES', true);
 
 require_once(dirname(dirname(__FILE__)) . '/config.php');
@@ -35,7 +36,7 @@ echo $OUTPUT->header();
 if (!$CFG->enablewebservices) {
     throw new moodle_exception('enablewsdescription', 'webservice');
 }
-$username = trim(textlib::strtolower($username));
+$username = trim(core_text::strtolower($username));
 if (is_restored_user($username)) {
     throw new moodle_exception('restoredaccountresetpassword', 'webservice');
 }
@@ -43,7 +44,7 @@ $user = authenticate_user_login($username, $password);
 if (!empty($user)) {
 
     //Non admin can not authenticate if maintenance mode
-    $hassiteconfig = has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM), $user);
+    $hassiteconfig = has_capability('moodle/site:config', context_system::instance(), $user);
     if (!empty($CFG->maintenance_enabled) and !$hassiteconfig) {
         throw new moodle_exception('sitemaintenance', 'admin');
     }
@@ -67,7 +68,7 @@ if (!empty($user)) {
     enrol_check_plugins($user);
 
     // setup user session to check capability
-    session_set_user($user);
+    \core\session\manager::set_user($user);
 
     //check if the service exists and is enabled
     $service = $DB->get_record('external_services', array('shortname' => $serviceshortname, 'enabled' => 1));
@@ -77,7 +78,7 @@ if (!empty($user)) {
     }
 
     //check if there is any required system capability
-    if ($service->requiredcapability and !has_capability($service->requiredcapability, get_context_instance(CONTEXT_SYSTEM), $user)) {
+    if ($service->requiredcapability and !has_capability($service->requiredcapability, context_system::instance(), $user)) {
         throw new moodle_exception('missingrequiredcapability', 'webservice', '', $service->requiredcapability);
     }
 
@@ -115,8 +116,7 @@ if (!empty($user)) {
         $unsettoken = false;
         //if sid is set then there must be a valid associated session no matter the token type
         if (!empty($token->sid)) {
-            $session = session_get_instance();
-            if (!$session->session_exists($token->sid)){
+            if (!\core\session\manager::session_exists($token->sid)){
                 //this token will never be valid anymore, delete it
                 $DB->delete_records('external_tokens', array('sid'=>$token->sid));
                 $unsettoken = true;
@@ -145,23 +145,33 @@ if (!empty($user)) {
     if (count($tokens) > 0) {
         $token = array_pop($tokens);
     } else {
-        if ( ($serviceshortname == MOODLE_OFFICIAL_MOBILE_SERVICE and has_capability('moodle/webservice:createmobiletoken', get_system_context()))
+        if ( ($serviceshortname == MOODLE_OFFICIAL_MOBILE_SERVICE and has_capability('moodle/webservice:createmobiletoken', context_system::instance()))
                 //Note: automatically token generation is not available to admin (they must create a token manually)
-                or (!is_siteadmin($user) && has_capability('moodle/webservice:createtoken', get_system_context()))) {
+                or (!is_siteadmin($user) && has_capability('moodle/webservice:createtoken', context_system::instance()))) {
             // if service doesn't exist, dml will throw exception
             $service_record = $DB->get_record('external_services', array('shortname'=>$serviceshortname, 'enabled'=>1), '*', MUST_EXIST);
-            // create a new token
+
+            // Create a new token.
             $token = new stdClass;
             $token->token = md5(uniqid(rand(), 1));
             $token->userid = $user->id;
             $token->tokentype = EXTERNAL_TOKEN_PERMANENT;
-            $token->contextid = get_context_instance(CONTEXT_SYSTEM)->id;
+            $token->contextid = context_system::instance()->id;
             $token->creatorid = $user->id;
             $token->timecreated = time();
             $token->externalserviceid = $service_record->id;
-            $tokenid = $DB->insert_record('external_tokens', $token);
-            add_to_log(SITEID, 'webservice', get_string('createtokenforuserauto', 'webservice'), '' , 'User ID: ' . $user->id);
-            $token->id = $tokenid;
+            $token->id = $DB->insert_record('external_tokens', $token);
+
+            $params = array(
+                'objectid' => $token->id,
+                'relateduserid' => $user->id,
+                'other' => array(
+                    'auto' => true
+                )
+            );
+            $event = \core\event\webservice_token_created::create($params);
+            $event->add_record_snapshot('external_tokens', $token);
+            $event->trigger();
         } else {
             throw new moodle_exception('cannotcreatetoken', 'webservice', '', $serviceshortname);
         }
@@ -170,7 +180,12 @@ if (!empty($user)) {
     // log token access
     $DB->set_field('external_tokens', 'lastaccess', time(), array('id'=>$token->id));
 
-    add_to_log(SITEID, 'webservice', 'user request webservice token', '' , 'User ID: ' . $user->id);
+    $params = array(
+        'objectid' => $token->id,
+    );
+    $event = \core\event\webservice_token_sent::create($params);
+    $event->add_record_snapshot('external_tokens', $token);
+    $event->trigger();
 
     $usertoken = new stdClass;
     $usertoken->token = $token->token;

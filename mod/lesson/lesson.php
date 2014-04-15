@@ -23,8 +23,7 @@
  *    delete
  *    move
  *    moveit
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -36,7 +35,7 @@ $id     = required_param('id', PARAM_INT);         // Course Module ID
 $action = required_param('action', PARAM_ALPHA);   // Action
 $pageid = required_param('pageid', PARAM_INT);
 
-$cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);;
+$cm = get_coursemodule_from_id('lesson', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 $lesson = new lesson($DB->get_record('lesson', array('id' => $cm->instance), '*', MUST_EXIST));
 
@@ -45,7 +44,7 @@ require_login($course, false, $cm);
 $url = new moodle_url('/mod/lesson/lesson.php', array('id'=>$id,'action'=>$action));
 $PAGE->set_url($url);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 require_capability('mod/lesson:edit', $context);
 require_sesskey();
 
@@ -58,7 +57,7 @@ switch ($action) {
 
         $thispage = $lesson->load_page($pageid);
 
-        echo $lessonoutput->header($lesson, $cm);
+        echo $lessonoutput->header($lesson, $cm, '', false, null, get_string('deletingpage', 'lesson', format_string($thispage->title)));
         echo $OUTPUT->heading(get_string("deletingpage", "lesson", format_string($thispage->title)));
         // print the jumps to this page
         $params = array("lessonid" => $lesson->id, "pageid" => $pageid);
@@ -80,25 +79,32 @@ switch ($action) {
 
         $title = $DB->get_field("lesson_pages", "title", array("id" => $pageid));
 
-        echo $lessonoutput->header($lesson, $cm);
-        echo $OUTPUT->heading(get_string("moving", "lesson", format_string($title)));
+        echo $lessonoutput->header($lesson, $cm, '', false, null, get_string('moving', 'lesson', format_String($title)));
+        echo $OUTPUT->heading(get_string("moving", "lesson", format_string($title)), 3);
 
         $params = array ("lessonid" => $lesson->id, "prevpageid" => 0);
         if (!$page = $DB->get_record_select("lesson_pages", "lessonid = :lessonid AND prevpageid = :prevpageid", $params)) {
             print_error('cannotfindfirstpage', 'lesson');
         }
 
-        echo "<center><table cellpadding=\"5\" border=\"1\">\n";
-        echo "<tr><td><a href=\"lesson.php?id=$cm->id&amp;sesskey=".sesskey()."&amp;action=moveit&amp;pageid=$pageid&amp;after=0\"><small>".
-            get_string("movepagehere", "lesson")."</small></a></td></tr>\n";
+        echo html_writer::start_tag('div', array('class' => 'move-page'));
+
+        echo html_writer::start_tag('div', array('class' => 'available-position'));
+        $moveurl = "lesson.php?id=$cm->id&sesskey=".sesskey()."&action=moveit&pageid=$pageid&after=0";
+        echo html_writer::link($moveurl, get_string("movepagehere", "lesson"));
+        echo html_writer::end_tag('div');
+
         while (true) {
             if ($page->id != $pageid) {
                 if (!$title = trim(format_string($page->title))) {
                     $title = "<< ".get_string("notitle", "lesson")."  >>";
                 }
-                echo "<tr><td><b>$title</b></td></tr>\n";
-                echo "<tr><td><a href=\"lesson.php?id=$cm->id&amp;sesskey=".sesskey()."&amp;action=moveit&amp;pageid=$pageid&amp;after={$page->id}\"><small>".
-                    get_string("movepagehere", "lesson")."</small></a></td></tr>\n";
+                echo html_writer::tag('div', $title, array('class' => 'page'));
+
+                echo html_writer::start_tag('div', array('class' => 'available-position'));
+                $moveurl = "lesson.php?id=$cm->id&sesskey=".sesskey()."&action=moveit&pageid=$pageid&after={$page->id}";
+                echo html_writer::link($moveurl, get_string("movepagehere", "lesson"));
+                echo html_writer::end_tag('div');
             }
             if ($page->nextpageid) {
                 if (!$page = $DB->get_record("lesson_pages", array("id" => $page->nextpageid))) {
@@ -109,7 +115,7 @@ switch ($action) {
                 break;
             }
         }
-        echo "</table>\n";
+        echo html_writer::end_tag('div');
 
         break;
     case 'delete':

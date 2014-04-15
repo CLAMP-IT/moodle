@@ -16,8 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    mod
- * @subpackage resource
+ * @package    mod_resource
  * @copyright  2009 Petr Skoda  {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -136,7 +135,6 @@ function resource_set_display_options($data) {
         $displayoptions['popupheight'] = $data->popupheight;
     }
     if (in_array($data->display, array(RESOURCELIB_DISPLAY_AUTO, RESOURCELIB_DISPLAY_EMBED, RESOURCELIB_DISPLAY_FRAME))) {
-        $displayoptions['printheading'] = (int)!empty($data->printheading);
         $displayoptions['printintro']   = (int)!empty($data->printintro);
     }
     if (!empty($data->showsize)) {
@@ -225,7 +223,7 @@ function resource_user_complete($course, $user, $mod, $resource) {
  *
  * See {@link get_array_of_activities()} in course/lib.php
  *
- * @param cm_info $coursemodule
+ * @param stdClass $coursemodule
  * @return cached_cm_info info
  */
 function resource_get_coursemodule_info($coursemodule) {
@@ -234,7 +232,7 @@ function resource_get_coursemodule_info($coursemodule) {
     require_once("$CFG->dirroot/mod/resource/locallib.php");
     require_once($CFG->libdir.'/completionlib.php');
 
-    $context = get_context_instance(CONTEXT_MODULE, $coursemodule->id);
+    $context = context_module::instance($coursemodule->id);
 
     if (!$resource = $DB->get_record('resource', array('id'=>$coursemodule->instance),
             'id, name, display, displayoptions, tobemigrated, revision, intro, introformat')) {
@@ -249,14 +247,14 @@ function resource_get_coursemodule_info($coursemodule) {
     }
 
     if ($resource->tobemigrated) {
-        $info->icon ='i/cross_red_big';
+        $info->icon ='i/invalid';
         return $info;
     }
     $fs = get_file_storage();
     $files = $fs->get_area_files($context->id, 'mod_resource', 'content', 0, 'sortorder DESC, id ASC', false); // TODO: this is not very efficient!!
     if (count($files) >= 1) {
         $mainfile = reset($files);
-        $info->icon = file_file_icon($mainfile);
+        $info->icon = file_file_icon($mainfile, 24);
         $resource->mainfile = $mainfile->get_filename();
     }
 
@@ -289,7 +287,7 @@ function resource_get_coursemodule_info($coursemodule) {
  * @param cm_info $cm Course module information
  */
 function resource_cm_info_view(cm_info $cm) {
-    $details = $cm->get_custom_data();
+    $details = $cm->customdata;
     if ($details) {
         $cm->set_after_link(' ' . html_writer::tag('span', $details,
                 array('class' => 'resourcelinkdetails')));
@@ -433,7 +431,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
     }
 
     // finally send the file
-    send_stored_file($file, 86400, $filter, $forcedownload, $options);
+    send_stored_file($file, null, $filter, $forcedownload, $options);
 }
 
 /**
@@ -455,7 +453,7 @@ function resource_page_type_list($pagetype, $parentcontext, $currentcontext) {
 function resource_export_contents($cm, $baseurl) {
     global $CFG, $DB;
     $contents = array();
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $resource = $DB->get_record('resource', array('id'=>$cm->instance), '*', MUST_EXIST);
 
     $fs = get_file_storage();
@@ -510,10 +508,10 @@ function resource_dndupload_handle($uploadinfo) {
     $data->display = $config->display;
     $data->popupheight = $config->popupheight;
     $data->popupwidth = $config->popupwidth;
-    $data->printheading = $config->printheading;
     $data->printintro = $config->printintro;
-    $data->showsize = $config->showsize;
-    $data->showtype = $config->showtype;
+    $data->showsize = (isset($config->showsize)) ? $config->showsize : 0;
+    $data->showtype = (isset($config->showtype)) ? $config->showtype : 0;
+    $data->filterfiles = $config->filterfiles;
 
     return resource_add_instance($data, null);
 }

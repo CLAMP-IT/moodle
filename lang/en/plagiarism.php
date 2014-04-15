@@ -6,4 +6,3 @@ $string['configenableplagiarism'] = 'This will allow administrators to configure
 $string['manageplagiarism'] = 'Manage plagiarism plugins';
 $string['nopluginsinstalled'] = 'No plagiarism plugins are installed.';
 $string['plagiarism'] = 'Plagiarism prevention';
-$string['plagiarismsettings'] = 'Plagiarism settings';

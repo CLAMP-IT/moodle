@@ -56,12 +56,12 @@ if ($id) {
 
 require_course_login($course, true, $cm);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 $PAGE->set_context($context);
 
 // show some info for guests
 if (isguestuser()) {
-    $PAGE->set_title(format_string($chat->name));
+    $PAGE->set_title($chat->name);
     echo $OUTPUT->header();
     echo $OUTPUT->confirm('<p>'.get_string('noguests', 'chat').'</p>'.get_string('liketologin'),
             get_login_url(), $CFG->wwwroot.'/course/view.php?id='.$course->id);
@@ -77,7 +77,7 @@ $stridle         = get_string('idle', 'chat');
 $strcurrentusers = get_string('currentusers', 'chat');
 $strnextsession  = get_string('nextsession', 'chat');
 
-$courseshortname = format_string($course->shortname, true, array('context' => get_context_instance(CONTEXT_COURSE, $course->id)));
+$courseshortname = format_string($course->shortname, true, array('context' => context_course::instance($course->id)));
 $title = $courseshortname . ': ' . format_string($chat->name);
 
 // Mark viewed by user (if required)
@@ -95,24 +95,25 @@ echo $OUTPUT->header();
 /// Check to see if groups are being used here
 $groupmode = groups_get_activity_groupmode($cm);
 $currentgroup = groups_get_activity_group($cm, true);
-groups_print_activity_menu($cm, $CFG->wwwroot . "/mod/chat/view.php?id=$cm->id");
 
 // url parameters
 $params = array();
 if ($currentgroup) {
     $groupselect = " AND groupid = '$currentgroup'";
-    $groupparam = "&amp;groupid=$currentgroup";
+    $groupparam = "_group{$currentgroup}";
     $params['groupid'] = $currentgroup;
 } else {
     $groupselect = "";
     $groupparam = "";
 }
 
-echo $OUTPUT->heading(format_string($chat->name));
+echo $OUTPUT->heading(format_string($chat->name), 2);
 
 if ($chat->intro) {
     echo $OUTPUT->box(format_module_intro('chat', $chat, $cm->id), 'generalbox', 'intro');
 }
+
+groups_print_activity_menu($cm, $CFG->wwwroot . "/mod/chat/view.php?id=$cm->id");
 
 if (has_capability('mod/chat:chat', $context)) {
     /// Print the main part of the page
@@ -126,21 +127,15 @@ if (has_capability('mod/chat:chat', $context)) {
         echo '</p>';
     }
 
-    if (empty($USER->screenreader)) {
-        $params['id'] = $chat->id;
-        $chattarget = new moodle_url("/mod/chat/gui_$CFG->chat_method/index.php", $params);
-        echo '<p>';
-        echo $OUTPUT->action_link($chattarget, $strenterchat, new popup_action('click', $chattarget, "chat$course->id$chat->id$groupparam", array('height' => 500, 'width' => 700)));
-        echo '</p>';
-    }
+    $params['id'] = $chat->id;
+    $chattarget = new moodle_url("/mod/chat/gui_$CFG->chat_method/index.php", $params);
+    echo '<p>';
+    echo $OUTPUT->action_link($chattarget, $strenterchat, new popup_action('click', $chattarget, "chat{$course->id}_{$chat->id}{$groupparam}", array('height' => 500, 'width' => 700)));
+    echo '</p>';
 
-    // if user is using screen reader, then there is no need to display this link again
-    // users with screenreader set, will only see 1 link, to the manual refresh page
-    // for better accessibility
-    // show frame/js-less alternative
     $params['id'] = $chat->id;
     $link = new moodle_url('/mod/chat/gui_basic/index.php', $params);
-    $action = new popup_action('click', $link, "chat{$course->id}{$chat->id}{$groupparam}", array('height' => 500, 'width' => 700));
+    $action = new popup_action('click', $link, "chat{$course->id}_{$chat->id}{$groupparam}", array('height' => 500, 'width' => 700));
     echo '<p>';
     echo $OUTPUT->action_link($link, get_string('noframesjs', 'message'), $action, array('title'=>get_string('modulename', 'chat')));
     echo '</p>';
@@ -167,7 +162,7 @@ chat_delete_old_users();
 if ($chatusers = chat_get_users($chat->id, $currentgroup, $cm->groupingid)) {
     $timenow = time();
     echo $OUTPUT->box_start('generalbox', 'chatcurrentusers');
-    echo $OUTPUT->heading($strcurrentusers, 4);
+    echo $OUTPUT->heading($strcurrentusers, 3);
     echo '<table>';
     foreach ($chatusers as $chatuser) {
         $lastping = $timenow - $chatuser->lastmessageping;

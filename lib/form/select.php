@@ -71,26 +71,19 @@ class MoodleQuickForm_select extends HTML_QuickForm_select{
      * @return string
      */
     function toHtml(){
+        $html = '';
+        if ($this->getMultiple()) {
+            // Adding an hidden field forces the browser to send an empty data even though the user did not
+            // select any element. This value will be cleaned up in self::exportValue() as it will not be part
+            // of the select options.
+            $html .= '<input type="hidden" name="'.$this->getName().'" value="_qf__force_multiselect_submission">';
+        }
         if ($this->_hiddenLabel){
             $this->_generateId();
-            return '<label class="accesshide" for="'.$this->getAttribute('id').'" >'.
-                        $this->getLabel().'</label>'.parent::toHtml();
-        } else {
-             return parent::toHtml();
+            $html .= '<label class="accesshide" for="'.$this->getAttribute('id').'" >'.$this->getLabel().'</label>';
         }
-    }
-
-    /**
-     * set html for help button
-     *
-     * @param array $helpbuttonargs array of arguments to make a help button
-     * @param string $function function name to call to get html
-     * @deprecated since Moodle 2.0. Please do not call this function any more.
-     * @todo MDL-31047 this api will be removed.
-     * @see MoodleQuickForm::setHelpButton()
-     */
-    function setHelpButton($helpbuttonargs, $function='helpbutton'){
-        debugging('component setHelpButton() is not used any more, please use $mform->setHelpButton() instead');
+        $html .= parent::toHtml();
+        return $html;
     }
 
     /**

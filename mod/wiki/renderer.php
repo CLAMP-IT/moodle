@@ -18,7 +18,7 @@
 /**
  * Moodle Wiki 2.0 Renderer
  *
- * @package   mod-wiki
+ * @package   mod_wiki
  * @copyright 2010 Dongsheng Cai <dongsheng@moodle.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -53,12 +53,12 @@ class mod_wiki_renderer extends plugin_renderer_base {
     }
 
     public function search_result($records, $subwiki) {
-        global $CFG, $PAGE;
+        global $CFG;
         $table = new html_table();
-        $context = get_context_instance(CONTEXT_MODULE, $PAGE->cm->id);
+        $context = context_module::instance($this->page->cm->id);
         $strsearchresults = get_string('searchresult', 'wiki');
         $totalcount = count($records);
-        $html = $this->output->heading("$strsearchresults $totalcount");
+        $html = $this->output->heading("$strsearchresults $totalcount", 3);
         foreach ($records as $page) {
             $table->head = array('title' => format_string($page->title) . ' (' . html_writer::link($CFG->wwwroot . '/mod/wiki/view.php?pageid=' . $page->id, get_string('view', 'wiki')) . ')');
             $table->align = array('title' => 'left');
@@ -240,10 +240,8 @@ class mod_wiki_renderer extends plugin_renderer_base {
     }
 
     public function tabs($page, $tabitems, $options) {
-        global $CFG;
         $tabs = array();
-        $baseurl = $CFG->wwwroot . '/mod/wiki/';
-        $context = get_context_instance(CONTEXT_MODULE, $this->page->cm->id);
+        $context = context_module::instance($this->page->cm->id);
 
         $pageid = null;
         if (!empty($page)) {
@@ -281,7 +279,7 @@ class mod_wiki_renderer extends plugin_renderer_base {
             if ($tab == 'admin' && !has_capability('mod/wiki:managewiki', $context)) {
                 continue;
             }
-            $link = $baseurl . $tab . '.php?pageid=' . $pageid;
+            $link = new moodle_url('/mod/wiki/'. $tab. '.php', array('pageid' => $pageid));
             if ($linked == $tab) {
                 $tabs[] = new tabobject($tab, $link, get_string($tab, 'wiki'), '', true);
             } else {
@@ -289,14 +287,14 @@ class mod_wiki_renderer extends plugin_renderer_base {
             }
         }
 
-        return print_tabs(array($tabs), $selected, $inactive, null, true);
+        return $this->tabtree($tabs, $selected, $inactive);
     }
 
     public function prettyview_link($page) {
         $html = '';
         $link = new moodle_url('/mod/wiki/prettyview.php', array('pageid' => $page->id));
         $html .= $this->output->container_start('wiki_right');
-        $html .= $this->output->action_link($link, get_string('prettyprint', 'wiki'), new popup_action('click', $link));
+        $html .= $this->output->action_link($link, get_string('prettyprint', 'wiki'), new popup_action('click', $link), array('class' => 'printicon'));
         $html .= $this->output->container_end();
         return $html;
     }
@@ -315,7 +313,7 @@ class mod_wiki_renderer extends plugin_renderer_base {
         }
 
         $cm = get_coursemodule_from_instance('wiki', $wiki->id);
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context = context_module::instance($cm->id);
         // @TODO: A plenty of duplicated code below this lines.
         // Create private functions.
         switch (groups_get_activity_groupmode($cm)) {
@@ -390,6 +388,9 @@ class mod_wiki_renderer extends plugin_renderer_base {
                     }
                 } else {
                     $group = groups_get_group($subwiki->groupid);
+                    if (!$group) {
+                        return;
+                    }
                     $users = groups_get_members($subwiki->groupid);
                     foreach ($users as $user) {
                         $options[$group->id][$group->name][$group->id . '-' . $user->id] = fullname($user);

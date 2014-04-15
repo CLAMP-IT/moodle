@@ -55,6 +55,7 @@ $targetpath  = optional_param('targetpath', '',    PARAM_PATH);
 $maxfiles    = optional_param('maxfiles', -1, PARAM_INT);    // maxfiles
 $maxbytes    = optional_param('maxbytes',  0, PARAM_INT);    // maxbytes
 $subdirs     = optional_param('subdirs',  0, PARAM_INT);    // maxbytes
+$areamaxbytes = optional_param('areamaxbytes', FILE_AREA_MAX_BYTES_UNLIMITED, PARAM_INT);    // Area maxbytes.
 
 // draft area
 $newdirname  = optional_param('newdirname', '',    PARAM_FILE);
@@ -63,14 +64,14 @@ $newfilename = optional_param('newfilename', '',   PARAM_FILE);
 $draftpath   = optional_param('draftpath', '/',    PARAM_PATH);
 
 // user context
-$user_context = get_context_instance(CONTEXT_USER, $USER->id);
+$user_context = context_user::instance($USER->id);
 
 
 $PAGE->set_context($user_context);
 
 $fs = get_file_storage();
 
-$params = array('ctx_id' => $contextid, 'itemid' => $itemid, 'env' => $env, 'course'=>$courseid, 'maxbytes'=>$maxbytes, 'maxfiles'=>$maxfiles, 'subdirs'=>$subdirs, 'sesskey'=>sesskey());
+$params = array('ctx_id' => $contextid, 'itemid' => $itemid, 'env' => $env, 'course'=>$courseid, 'maxbytes'=>$maxbytes, 'areamaxbytes'=>$areamaxbytes, 'maxfiles'=>$maxfiles, 'subdirs'=>$subdirs, 'sesskey'=>sesskey());
 $PAGE->set_url('/repository/draftfiles_manager.php', $params);
 $filepicker_url = new moodle_url($CFG->httpswwwroot."/repository/filepicker.php", $params);
 
@@ -111,7 +112,8 @@ case 'renameform':
     $home_url->param('draftpath', $draftpath);
     $home_url->param('action', 'rename');
     echo ' <form method="post" action="'.$home_url->out().'">';
-    echo '  <input name="newfilename" type="text" value="'.s($filename).'" />';
+    echo html_writer::label(get_string('enternewname', 'repository'), 'newfilename', array('class' => 'accesshide'));
+    echo '  <input id="newfilename" name="newfilename" type="text" value="'.s($filename).'" />';
     echo '  <input name="filename" type="hidden" value="'.s($filename).'" />';
     echo '  <input name="draftpath" type="hidden" value="'.s($draftpath).'" />';
     echo '  <input type="submit" value="'.s(get_string('rename', 'moodle')).'" />';
@@ -120,14 +122,7 @@ case 'renameform':
     break;
 
 case 'rename':
-
-    if ($fs->file_exists($user_context->id, 'user', 'draft', $itemid, $draftpath, $newfilename)) {
-        print_error('fileexists');
-    } else if ($file = $fs->get_file($user_context->id, 'user', 'draft', $itemid, $draftpath, $filename)) {
-        $newfile = $fs->create_file_from_storedfile(array('filename'=>$newfilename), $file);
-        $file->delete();
-    }
-
+    repository::update_draftfile($itemid, $draftpath, $filename, array('filename' => $newfilename));
     $home_url->param('action', 'browse');
     $home_url->param('draftpath', $draftpath);
     redirect($home_url);
@@ -137,17 +132,17 @@ case 'downloaddir':
     $zipper = new zip_packer();
 
     $file = $fs->get_file($user_context->id, 'user', 'draft', $itemid, $draftpath, '.');
-    if ($file->get_parent_directory()) {
-        $parent_path = $file->get_parent_directory()->get_filepath();
-        $filename = trim($draftpath, '/').'.zip';
-    } else {
-        $parent_path = '/';
+    if ($draftpath === '/') {
         $filename = get_string('files').'.zip';
+    } else {
+        $filename = explode('/', trim($draftpath, '/'));
+        $filename = array_pop($filename) . '.zip';
     }
 
-    if ($newfile = $zipper->archive_to_storage(array($file), $user_context->id, 'user', 'draft', $itemid, $parent_path, $filename, $USER->id)) {
-        $fileurl = moodle_url::make_draftfile_url($itemid, '/', $filename)->out();
-        header('Location: ' . $fileurl );
+    $newdraftitemid = file_get_unused_draft_itemid();
+    if ($newfile = $zipper->archive_to_storage(array('/' => $file), $user_context->id, 'user', 'draft', $newdraftitemid, '/', $filename, $USER->id)) {
+        $fileurl = moodle_url::make_draftfile_url($newdraftitemid, '/', $filename)->out();
+        header('Location: ' . $fileurl);
     } else {
         print_error('cannotdownloaddir', 'repository');
     }
@@ -159,14 +154,17 @@ case 'zip':
     $file = $fs->get_file($user_context->id, 'user', 'draft', $itemid, $draftpath, '.');
     if (!$file->get_parent_directory()) {
         $parent_path = '/';
+        $filepath = '/';
         $filename = get_string('files').'.zip';
     } else {
         $parent_path = $file->get_parent_directory()->get_filepath();
         $filepath = explode('/', trim($file->get_filepath(), '/'));
-        $filename = array_pop($filepath).'.zip';
+        $filepath = array_pop($filepath);
+        $filename = $filepath.'.zip';
     }
 
-    $newfile = $zipper->archive_to_storage(array($file), $user_context->id, 'user', 'draft', $itemid, $parent_path, $filename, $USER->id);
+    $filename = repository::get_unused_filename($itemid, $parent_path, $filename);
+    $newfile = $zipper->archive_to_storage(array($filepath => $file), $user_context->id, 'user', 'draft', $itemid, $parent_path, $filename, $USER->id);
 
     $home_url->param('action', 'browse');
     $home_url->param('draftpath', $parent_path);
@@ -189,15 +187,7 @@ case 'unzip':
 
 case 'movefile':
     if (!empty($targetpath)) {
-        if ($fs->file_exists($user_context->id, 'user', 'draft', $itemid, $targetpath, $filename)) {
-            print_error('cannotmovefile');
-        } else if ($file = $fs->get_file($user_context->id, 'user', 'draft', $itemid, $draftpath, $filename)) {
-            $newfile = $fs->create_file_from_storedfile(array('filepath'=>$targetpath), $file);
-            $file->delete();
-        } else {
-            var_dump('cannot find file');
-            die;
-        }
+        repository::update_draftfile($itemid, $draftpath, $filename, array('filepath' => $targetpath));
         $home_url->param('action', 'browse');
         $home_url->param('draftpath', $targetpath);
         redirect($home_url);
@@ -227,7 +217,8 @@ case 'mkdirform':
     $home_url->param('draftpath', $draftpath);
     $home_url->param('action', 'mkdir');
     echo ' <form method="post" action="'.$home_url->out().'">';
-    echo '  <input name="newdirname" type="text" />';
+    echo html_writer::label(get_string('entername', 'repository'), 'newdirname', array('class' => 'accesshide'));
+    echo '  <input name="newdirname" id="newdirname" type="text" />';
     echo '  <input name="draftpath" type="hidden" value="'.s($draftpath).'" />';
     echo '  <input type="submit" value="'.s(get_string('makeafolder', 'moodle')).'" />';
     echo ' </form>';
@@ -266,7 +257,7 @@ default:
             $path = '/' . trim($draftpath, '/') . '/';
             $parts = explode('/', $path);
             foreach ($parts as $part) {
-                if (!empty($part)) {
+                if ($part != '') {
                     $trail .= ('/'.$part.'/');
                     $data->path[] = array('name'=>$part, 'path'=>$trail);
                     $home_url->param('draftpath', $trail);
@@ -292,8 +283,10 @@ default:
             $home_url->param('action', 'mkdirform');
             echo ' <a href="'.$home_url->out().'">'.get_string('makeafolder', 'moodle').'</a>';
         }
-        $home_url->param('action', 'downloaddir');
-        echo html_writer::link($home_url, get_string('downloadfolder', 'repository'), array('target'=>'_blank'));
+        if (!empty($files->list)) {
+            $home_url->param('action', 'downloaddir');
+            echo ' ' . html_writer::link($home_url, get_string('downloadfolder', 'repository'), array('target'=>'_blank'));
+        }
     }
     echo '</div>';
 

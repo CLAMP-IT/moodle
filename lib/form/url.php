@@ -79,7 +79,7 @@ class MoodleQuickForm_url extends HTML_QuickForm_text{
      * @return string
      */
     function toHtml(){
-        global $CFG, $COURSE, $USER, $PAGE, $OUTPUT;
+        global $PAGE, $OUTPUT;
 
         $id     = $this->_attributes['id'];
         $elname = $this->_attributes['name'];
@@ -94,20 +94,9 @@ class MoodleQuickForm_url extends HTML_QuickForm_text{
         if (empty($this->_options['usefilepicker'])) {
             return $str;
         }
-        $strsaved = get_string('filesaved', 'repository');
-        $straddlink = get_string('choosealink', 'repository');
-        if ($COURSE->id == SITEID) {
-            $context = get_context_instance(CONTEXT_SYSTEM);
-        } else {
-            $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
-        }
+
         $client_id = uniqid();
 
-        $str .= <<<EOD
-<button id="filepicker-button-{$client_id}" style="display:none">
-$straddlink
-</button>
-EOD;
         $args = new stdClass();
         $args->accepted_types = '*';
         $args->return_types = FILE_EXTERNAL;
@@ -117,27 +106,22 @@ EOD;
         $fp = new file_picker($args);
         $options = $fp->options;
 
+        if (count($options->repositories) > 0) {
+            $straddlink = get_string('choosealink', 'repository');
+            $str .= <<<EOD
+<button id="filepicker-button-{$client_id}" class="visibleifjs">
+$straddlink
+</button>
+EOD;
+        }
+
         // print out file picker
         $str .= $OUTPUT->render($fp);
 
         $module = array('name'=>'form_url', 'fullpath'=>'/lib/form/url.js', 'requires'=>array('core_filepicker'));
         $PAGE->requires->js_init_call('M.form_url.init', array($options), true, $module);
-        $PAGE->requires->js_function_call('show_item', array('filepicker-button-'.$client_id));
 
         return $str;
-    }
-
-    /**
-     * set html for help button
-     *
-     * @param array $helpbuttonargs array of arguments to make a help button
-     * @param string $function function name to call to get html
-     * @deprecated since Moodle 2.0. Please do not call this function any more.
-     * @todo MDL-31047 this api will be removed.
-     * @see MoodleQuickForm::setHelpButton()
-     */
-    function setHelpButton($helpbuttonargs, $function='helpbutton'){
-        debugging('component setHelpButton() is not used any more, please use $mform->setHelpButton() instead');
     }
 
     /**

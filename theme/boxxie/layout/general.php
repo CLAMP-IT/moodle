@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * The default layout for the Boxxie theme.
+ *
+ * @package   theme_boxxie
+ * @copyright 2010 Patrick Malley
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 $hasheading = ($PAGE->heading);
 $hasnavbar = (empty($PAGE->layout_options['nonavbar']) && $PAGE->has_navbar());
@@ -22,6 +44,16 @@ if ($hascustommenu) {
     $bodyclasses[] = 'has-custom-menu';
 }
 
+$courseheader = $coursecontentheader = $coursecontentfooter = $coursefooter = '';
+if (empty($PAGE->layout_options['nocourseheaderfooter'])) {
+    $courseheader = $OUTPUT->course_header();
+    $coursecontentheader = $OUTPUT->course_content_header();
+    if (empty($PAGE->layout_options['nocoursefooter'])) {
+        $coursecontentfooter = $OUTPUT->course_content_footer();
+        $coursefooter = $OUTPUT->course_footer();
+    }
+}
+
 echo $OUTPUT->doctype() ?>
 <html <?php echo $OUTPUT->htmlattributes() ?>>
 <head>
@@ -34,7 +66,7 @@ echo $OUTPUT->doctype() ?>
 
 <?php echo $OUTPUT->standard_top_of_body_html() ?>
 
-<?php if ($hasheading || $hasnavbar) { ?>
+<?php if ($hasheading || $hasnavbar || !empty($courseheader) || !empty($coursefooter)) { ?>
 
 <div id="page-wrapper">
   <div id="page" class="clearfix">
@@ -57,6 +89,10 @@ echo $OUTPUT->doctype() ?>
 
  <div class="myclear"></div>
 
+      <?php if (!empty($courseheader)) { ?>
+        <div id="course-header"><?php echo $courseheader; ?></div>
+      <?php } ?>
+
       <?php if ($hasnavbar) { ?>
         <div class="navbar clearfix">
           <div class="breadcrumb"><?php echo $OUTPUT->navbar(); ?></div>
@@ -73,13 +109,15 @@ echo $OUTPUT->doctype() ?>
                 <div id="region-main-wrap">
                     <div id="region-main">
                         <div class="region-content">
+                            <?php echo $coursecontentheader; ?>
                             <?php echo $OUTPUT->main_content() ?>
+                            <?php echo $coursecontentfooter; ?>
                         </div>
                     </div>
                 </div>
 
                 <?php if ($hassidepre) { ?>
-                <div id="region-pre">
+                <div id="region-pre" class="block-region">
                     <div class="region-content">
                         <?php echo $OUTPUT->blocks_for_region('side-pre') ?>
                     </div>
@@ -87,7 +125,7 @@ echo $OUTPUT->doctype() ?>
                 <?php } ?>
 
                 <?php if ($hassidepost) { ?>
-                <div id="region-post">
+                <div id="region-post" class="block-region">
                     <div class="region-content">
                         <?php echo $OUTPUT->blocks_for_region('side-post') ?>
                     </div>
@@ -99,6 +137,9 @@ echo $OUTPUT->doctype() ?>
     </div>
 
     <div class="myclear"></div>
+    <?php if (!empty($coursefooter)) { ?>
+        <div id="course-footer"><?php echo $coursefooter; ?></div>
+    <?php } ?>
 <?php if ($hasfooter) { ?>
 
     <div id="page-footer" class="clearfix">
@@ -108,7 +149,7 @@ echo $OUTPUT->doctype() ?>
 
 <?php }
 
-if ($hasheading || $hasnavbar) { ?>
+if ($hasheading || $hasnavbar || !empty($courseheader) || !empty($coursefooter)) { ?>
    <div class="myclear"></div>
   </div> <!-- END #page -->
 

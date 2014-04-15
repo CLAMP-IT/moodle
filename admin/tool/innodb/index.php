@@ -33,7 +33,7 @@ admin_externalpage_setup('toolinnodb');
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
 require_login();
-require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/site:config', context_system::instance());
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading('Convert all MySQL tables from MYISAM to InnoDB');
@@ -57,7 +57,7 @@ if (data_submitted() and $confirm and confirm_sesskey()) {
 
     echo $OUTPUT->notification('Please be patient and wait for this to complete...', 'notifysuccess');
 
-    set_time_limit(0);
+    core_php_time_limit::raise();
 
     foreach ($rs as $table) {
         $DB->set_debug(true);

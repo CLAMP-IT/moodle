@@ -74,15 +74,15 @@ class qbehaviour_informationitem_walkthrough_test extends qbehaviour_walkthrough
                 $this->get_contains_general_feedback_expectation($description));
 
         // Process a manual comment.
-        $this->manual_grade('Not good enough!', null);
+        $this->manual_grade('Not good enough!', null, FORMAT_HTML);
 
         $this->check_current_state(question_state::$manfinished);
         $this->check_current_mark(null);
         $this->check_current_output(
-                new question_pattern_expectation('/' . preg_quote('Not good enough!') . '/'));
+                new question_pattern_expectation('/' . preg_quote('Not good enough!', '/') . '/'));
 
         // Check that trying to process a manual comment with a grade causes an exception.
         $this->setExpectedException('moodle_exception');
-        $this->manual_grade('Not good enough!', 1);
+        $this->manual_grade('Not good enough!', 1, FORMAT_HTML);
     }
 }

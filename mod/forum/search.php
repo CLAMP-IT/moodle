@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package mod-forum
+ * @package   mod_forum
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -112,7 +112,13 @@ if (!$course = $DB->get_record('course', array('id'=>$id))) {
 
 require_course_login($course);
 
-add_to_log($course->id, "forum", "search", "search.php?id=$course->id&amp;search=".urlencode($search), $search);
+$params = array(
+    'context' => $PAGE->context,
+    'other' => array('searchterm' => $search)
+);
+
+$event = \mod_forum\event\course_searched::create($params);
+$event->trigger();
 
 $strforums = get_string("modulenameplural", "forum");
 $strsearch = get_string("search", "forum");
@@ -141,12 +147,14 @@ $searchterms = explode(' ', $searchterms);
 $searchform = forum_search_form($course, $search);
 
 $PAGE->navbar->add($strsearch, new moodle_url('/mod/forum/search.php', array('id'=>$course->id)));
-$PAGE->navbar->add(s($search, true));
+$PAGE->navbar->add($strsearchresults);
 if (!$posts = forum_search_posts($searchterms, $course->id, $page*$perpage, $perpage, $totalcount)) {
     $PAGE->set_title($strsearchresults);
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string("nopostscontaining", "forum", $search));
+    echo $OUTPUT->heading($strforums, 2);
+    echo $OUTPUT->heading($strsearchresults, 3);
+    echo $OUTPUT->heading(get_string("noposts", "forum"), 4);
 
     if (!$individualparams) {
         $words = $search;
@@ -189,7 +197,8 @@ echo '<a href="search.php?id='.$course->id.
                          '">'.get_string('advancedsearch','forum').'...</a>';
 echo '</div>';
 
-echo $OUTPUT->heading("$strsearchresults: $totalcount");
+echo $OUTPUT->heading($strforums, 2);
+echo $OUTPUT->heading("$strsearchresults: $totalcount", 3);
 
 $url = new moodle_url('search.php', array('search' => $search, 'id' => $course->id, 'perpage' => $perpage));
 echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
@@ -241,7 +250,7 @@ foreach ($posts as $post) {
     //add the ratings information to the post
     //Unfortunately seem to have do this individually as posts may be from different forums
     if ($forum->assessed != RATING_AGGREGATE_NONE) {
-        $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $modcontext = context_module::instance($cm->id);
         $ratingoptions->context = $modcontext;
         $ratingoptions->items = array($post);
         $ratingoptions->aggregate = $forum->assessed;//the aggregation method
@@ -369,11 +378,11 @@ function forum_print_big_search_form($course) {
     }
 
     echo '<input name="timetorestrict" type="checkbox" value="1" alt="'.get_string('searchdateto', 'forum').'" onclick="return lockoptions(\'searchform\', \'timetorestrict\', timetoitems)" ' .$datetochecked. ' /> ';
-    $selectors = html_writer::select_time('days', 'fromday', $dateto)
-               . html_writer::select_time('months', 'frommonth', $dateto)
-               . html_writer::select_time('years', 'fromyear', $dateto)
-               . html_writer::select_time('hours', 'fromhour', $dateto)
-               . html_writer::select_time('minutes', 'fromminute', $dateto);
+    $selectors = html_writer::select_time('days', 'today', $dateto)
+               . html_writer::select_time('months', 'tomonth', $dateto)
+               . html_writer::select_time('years', 'toyear', $dateto)
+               . html_writer::select_time('hours', 'tohour', $dateto)
+               . html_writer::select_time('minutes', 'tominute', $dateto);
     echo $selectors;
 
     echo '<input type="hidden" name="htoday" value="0" />';
@@ -422,7 +431,7 @@ function forum_print_big_search_form($course) {
  *
  * @param string $words String containing space-separated strings to search for
  * @param string $prefix String to prepend to the each token taken out of $words
- * @returns array
+ * @return array
  * @todo Take the hardcoded limit out of this function and put it into a user-specified parameter
  */
 function forum_clean_search_terms($words, $prefix='') {
@@ -454,7 +463,7 @@ function forum_menu_list($course)  {
         if (!$cm->uservisible) {
             continue;
         }
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $context = context_module::instance($cm->id);
         if (!has_capability('mod/forum:viewdiscussion', $context)) {
             continue;
         }

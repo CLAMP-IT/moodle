@@ -18,13 +18,17 @@
 /**
  * Mandatory public API of folder module
  *
- * @package    mod
- * @subpackage folder
- * @copyright  2009 Petr Skoda  {@link http://skodak.org}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_folder
+ * @copyright 2009 Petr Skoda  {@link http://skodak.org}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
+
+/** Display folder contents on a separate page */
+define('FOLDER_DISPLAY_PAGE', 0);
+/** Display folder contents inline in a course */
+define('FOLDER_DISPLAY_INLINE', 1);
 
 /**
  * List of features supported in Folder module
@@ -98,7 +102,7 @@ function folder_add_instance($data, $mform) {
 
     // we need to use context now, so we need to make sure all needed info is already in db
     $DB->set_field('course_modules', 'instance', $data->id, array('id'=>$cmid));
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
+    $context = context_module::instance($cmid);
 
     if ($draftitemid) {
         file_save_draft_area_files($draftitemid, $context->id, 'mod_folder', 'content', 0, array('subdirs'=>true));
@@ -125,7 +129,7 @@ function folder_update_instance($data, $mform) {
 
     $DB->update_record('folder', $data);
 
-    $context = get_context_instance(CONTEXT_MODULE, $cmid);
+    $context = context_module::instance($cmid);
     if ($draftitemid = file_get_submitted_draft_itemid('files')) {
         file_save_draft_area_files($draftitemid, $context->id, 'mod_folder', 'content', 0, array('subdirs'=>true));
     }
@@ -312,7 +316,7 @@ function folder_pluginfile($course, $cm, $context, $filearea, $args, $forcedownl
 
     // finally send the file
     // for folder module, we force download file all the time
-    send_stored_file($file, 86400, 0, true, $options);
+    send_stored_file($file, 0, 0, true, $options);
 }
 
 /**
@@ -334,7 +338,7 @@ function folder_page_type_list($pagetype, $parentcontext, $currentcontext) {
 function folder_export_contents($cm, $baseurl) {
     global $CFG, $DB;
     $contents = array();
-    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $folder = $DB->get_record('folder', array('id'=>$cm->instance), '*', MUST_EXIST);
 
     $fs = get_file_storage();
@@ -405,4 +409,88 @@ function folder_dndupload_handle($uploadinfo) {
 
     $DB->delete_records('folder', array('id' => $data->id));
     return false;
+}
+
+/**
+ * Given a coursemodule object, this function returns the extra
+ * information needed to print this activity in various places.
+ *
+ * If folder needs to be displayed inline we store additional information
+ * in customdata, so functions {@link folder_cm_info_dynamic()} and
+ * {@link folder_cm_info_view()} do not need to do DB queries
+ *
+ * @param cm_info $cm
+ * @return cached_cm_info info
+ */
+function folder_get_coursemodule_info($cm) {
+    global $DB;
+    if (!($folder = $DB->get_record('folder', array('id' => $cm->instance),
+            'id, name, display, showexpanded, intro, introformat'))) {
+        return NULL;
+    }
+    $cminfo = new cached_cm_info();
+    $cminfo->name = $folder->name;
+    if ($folder->display == FOLDER_DISPLAY_INLINE) {
+        // prepare folder object to store in customdata
+        $fdata = new stdClass();
+        $fdata->showexpanded = $folder->showexpanded;
+        if ($cm->showdescription && strlen(trim($folder->intro))) {
+            $fdata->intro = $folder->intro;
+            if ($folder->introformat != FORMAT_MOODLE) {
+                $fdata->introformat = $folder->introformat;
+            }
+        }
+        $cminfo->customdata = $fdata;
+    } else {
+        if ($cm->showdescription) {
+            // Convert intro to html. Do not filter cached version, filters run at display time.
+            $cminfo->content = format_module_intro('folder', $folder, $cm->id, false);
+        }
+    }
+    return $cminfo;
+}
+
+/**
+ * Sets dynamic information about a course module
+ *
+ * This function is called from cm_info when displaying the module
+ * mod_folder can be displayed inline on course page and therefore have no course link
+ *
+ * @param cm_info $cm
+ */
+function folder_cm_info_dynamic(cm_info $cm) {
+    if ($cm->customdata) {
+        // the field 'customdata' is not empty IF AND ONLY IF we display contens inline
+        $cm->set_no_view_link();
+    }
+}
+
+/**
+ * Overwrites the content in the course-module object with the folder files list
+ * if folder.display == FOLDER_DISPLAY_INLINE
+ *
+ * @param cm_info $cm
+ */
+function folder_cm_info_view(cm_info $cm) {
+    global $PAGE;
+    if ($cm->uservisible && $cm->customdata &&
+            has_capability('mod/folder:view', $cm->context)) {
+        // Restore folder object from customdata.
+        // Note the field 'customdata' is not empty IF AND ONLY IF we display contens inline.
+        // Otherwise the content is default.
+        $folder = $cm->customdata;
+        $folder->id = (int)$cm->instance;
+        $folder->course = (int)$cm->course;
+        $folder->display = FOLDER_DISPLAY_INLINE;
+        $folder->name = $cm->name;
+        if (empty($folder->intro)) {
+            $folder->intro = '';
+        }
+        if (empty($folder->introformat)) {
+            $folder->introformat = FORMAT_MOODLE;
+        }
+        // display folder
+        $renderer = $PAGE->get_renderer('mod_folder');
+        $cm->set_content($renderer->display_folder($folder));
+    }
 }

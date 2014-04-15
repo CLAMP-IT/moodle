@@ -36,13 +36,15 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
         /** Number of seconds to delay before submitting a query request */
         querydelay : 0.5,
         /** The input element that contains the search term. */
-        searchfield : Y.one('#'+name + '_searchtext'),
+        searchfield : Y.one('#' + name + '_searchtext'),
         /** The clear button. */
         clearbutton : null,
         /** The select element that contains the list of users. */
-        listbox : Y.one('#'+name),
+        listbox : Y.one('#' + name),
         /** Used to hold the timeout id of the timeout that waits before doing a search. */
         timeoutid : null,
+        /** Stores any in-progress remote requests. */
+        iotransactions : {},
         /** The last string that we searched for, so we can avoid unnecessary repeat searches. */
         lastsearch : lastsearch,
         /** Whether any options where selected last time we checked. Used by
@@ -54,8 +56,8 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
          */
         init : function() {
             // Hide the search button and replace it with a label.
-            var searchbutton = Y.one('#'+this.name + '_searchbutton');
-            this.searchfield.insert(Y.Node.create('<label for="'+this.name + '_searchtext">'+searchbutton.get('value')+'</label>'), this.searchfield);
+            var searchbutton = Y.one('#' + this.name + '_searchbutton');
+            this.searchfield.insert(Y.Node.create('<label for="' + this.name + '_searchtext">' + searchbutton.get('value') + '</label>'), this.searchfield);
             searchbutton.remove();
 
             // Hook up the event handler for when the search text changes.
@@ -74,11 +76,12 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
             this.selectionempty = this.is_selection_empty();
 
             // Replace the Clear submit button with a clone that is not a submit button.
-            var clearbtn = Y.one('#'+this.name + '_clearbutton');
-            this.clearbutton = Y.Node.create('<input type="button" value="'+clearbtn.get('value')+'" />');
+            var clearbtn = Y.one('#' + this.name + '_clearbutton');
+            this.clearbutton = Y.Node.create('<input type="button" value="' + clearbtn.get('value') + '" />');
             clearbtn.replace(Y.Node.getDOMNode(this.clearbutton));
-            this.clearbutton.set('id',+this.name+"_clearbutton");
+            this.clearbutton.set('id', this.name + "_clearbutton");
             this.clearbutton.on('click', this.handle_clear, this);
+            this.clearbutton.set('disabled', (this.get_search_text() == ''));
 
             this.send_query(false);
         },
@@ -89,7 +92,7 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
         handle_keyup : function(e) {
             //  Trigger an ajax search after a delay.
             this.cancel_timeout();
-            this.timeoutid = Y.later(this.querydelay*1000, e, function(obj){obj.send_query(false)}, this);
+            this.timeoutid = Y.later(this.querydelay * 1000, e, function(obj){obj.send_query(false)}, this);
 
             // Enable or diable the clear button.
             this.clearbutton.set('disabled', (this.get_search_text() == ''));
@@ -139,15 +142,20 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
                 return;
             }
 
-            Y.io(M.cfg.wwwroot + '/user/selector/search.php', {
+            // Try to cancel existing transactions.
+            Y.Object.each(this.iotransactions, function(trans) {
+                trans.abort();
+            });
+
+            var iotrans = Y.io(M.cfg.wwwroot + '/user/selector/search.php', {
                 method: 'POST',
-                data: 'selectorid='+hash+'&sesskey='+M.cfg.sesskey+'&search='+value + '&userselector_searchanywhere=' + this.get_option('searchanywhere'),
+                data: 'selectorid=' + hash + '&sesskey=' + M.cfg.sesskey + '&search=' + value + '&userselector_searchanywhere=' + this.get_option('searchanywhere'),
                 on: {
-                    success:this.handle_response,
-                    failure:this.handle_failure
+                    complete: this.handle_response
                 },
                 context:this
             });
+            this.iotransactions[iotrans.id] = iotrans;
 
             this.lastsearch = value;
             this.listbox.setStyle('background','url(' + M.util.image_url('i/loading', 'moodle') + ') no-repeat center center');
@@ -159,23 +167,22 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
          */
         handle_response : function(requestid, response) {
             try {
+                delete this.iotransactions[requestid];
+                if (!Y.Object.isEmpty(this.iotransactions)) {
+                    // More searches pending. Wait until they are all done.
+                    return;
+                }
                 this.listbox.setStyle('background','');
                 var data = Y.JSON.parse(response.responseText);
+                if (data.error) {
+                    this.searchfield.addClass('error');
+                    return new M.core.ajaxException(data);
+                }
                 this.output_options(data);
             } catch (e) {
-                this.handle_failure();
-            }
-        },
-        /**
-         * Handles what happens when the ajax request fails.
-         */
-        handle_failure : function() {
-            this.listbox.setStyle('background','');
-            this.searchfield.addClass('error');
-
-            // If we are in developer debug mode, output a link to help debug the failure.
-            if (M.cfg.developerdebug) {
-                this.searchfield.insert(Y.Node.create('<a href="'+M.cfg.wwwroot +'/user/selector/search.php?selectorid='+hash+'&sesskey='+M.cfg.sesskey+'&search='+this.get_search_text()+'&debug=1">Ajax call failed. Click here to try the search call directly.</a>'));
+                this.listbox.setStyle('background','');
+                this.searchfield.addClass('error');
+                return new M.core.exception(e);
             }
         },
         /**
@@ -202,12 +209,13 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
 
             // Output each optgroup.
             var count = 0;
-            for (var groupname in data.results) {
-                this.output_group(groupname, data.results[groupname], selectedusers, true);
-                count++;
+            for (var key in data.results) {
+                var groupdata = data.results[key];
+                this.output_group(groupdata.name, groupdata.users, selectedusers, true);
+                count ++;
             }
             if (!count) {
-                var searchstr = (this.lastsearch != '')?this.insert_search_into_str(M.str.moodle.nomatchingusers, this.lastsearch):M.str.moodle.none;
+                var searchstr = (this.lastsearch != '') ? this.insert_search_into_str(M.str.moodle.nomatchingusers, this.lastsearch) : M.str.moodle.none;
                 this.output_group(searchstr, {}, selectedusers, true)
             }
 
@@ -229,26 +237,33 @@ M.core_user.init_user_selector = function (Y, name, hash, extrafields, lastsearc
         output_group : function(groupname, users, selectedusers, processsingle) {
             var optgroup = Y.Node.create('<optgroup></optgroup>');
             var count = 0;
-            for (var userid in users) {
-                var user = users[userid];
-                var option = Y.Node.create('<option value="'+userid+'">'+user.name+'</option>');
+            for (var key in users) {
+                var user = users[key];
+                var option = Y.Node.create('<option value="' + user.id + '">' + user.name + '</option>');
                 if (user.disabled) {
                     option.set('disabled', true);
-                } else if (selectedusers===true || selectedusers[userid]) {
+                } else if (selectedusers === true || selectedusers[user.id]) {
                     option.set('selected', true);
+                    delete selectedusers[user.id];
                 } else {
                     option.set('selected', false);
                 }
                 optgroup.append(option);
-                count++;
+                if (user.infobelow) {
+                    extraoption = Y.Node.create('<option disabled="disabled" class="userselector-infobelow"/>');
+                    extraoption.appendChild(document.createTextNode(user.infobelow));
+                    optgroup.append(extraoption);
+                }
+                count ++;
             }
 
             if (count > 0) {
-                optgroup.set('label', groupname+' ('+count+')');
-                if (processsingle && count===1 && this.get_option('autoselectunique') && option.get('disabled')) {
+                optgroup.set('label', groupname + ' (' + count + ')');
+                if (processsingle && count === 1 && this.get_option('autoselectunique') && option.get('disabled') == false) {
                     option.set('selected', true);
                 }
             } else {
+                optgroup.set('label', groupname);
                 optgroup.append(Y.Node.create('<option disabled="disabled">\u00A0</option>'));
             }
             this.listbox.append(optgroup);
@@ -337,7 +352,7 @@ M.core_user.init_user_selector_options_tracker = function(Y) {
             ];
             for (var s in settings) {
                 var setting = settings[s];
-                Y.one('#'+setting+'id').on('click', this.set_user_preference, this, setting);
+                Y.one('#' + setting + 'id').on('click', this.set_user_preference, this, setting);
             }
         },
         /**
@@ -346,7 +361,7 @@ M.core_user.init_user_selector_options_tracker = function(Y) {
          * @param {string} name The name of the preference to set
          */
         set_user_preference : function(e, name) {
-            M.util.set_user_preference(name, Y.one('#'+name+'id').get('checked'));
+            M.util.set_user_preference(name, Y.one('#' + name + 'id').get('checked'));
         }
     };
     // Initialise the options tracker

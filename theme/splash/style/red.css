@@ -70,12 +70,15 @@ a:hover {
 .tabtree .here ul .here a.nolink:hover {
     color:#853650;
 }
+.coursebox {
+    border-bottom: 1px dashed #cbd3d6;
+}
 .path-mod-quiz .qnbutton {
-    background:#853650;color:#fff;
+    background:#853650;
+    color:#fff;
 }
 .path-mod-quiz .qnbutton.open {
-    background:#853650;}
-#categoryquestions tr th{background:#853650;
+    background:#853650;
 }
 .pagelayout-redirect {
     border-top: 1px solid #6d1523;

@@ -34,15 +34,20 @@ $PAGE->set_url('/report/outline/index.php', array('id'=>$id));
 $PAGE->set_pagelayout('report');
 
 require_login($course);
-$context = get_context_instance(CONTEXT_COURSE, $course->id);
+$context = context_course::instance($course->id);
 require_capability('report/outline:view', $context);
 
-add_to_log($course->id, 'course', 'report outline', "report/outline/index.php?id=$course->id", $course->id);
+// Trigger a content view event.
+$event = \report_outline\event\content_viewed::create(array('courseid' => $course->id,
+                                                            'other'    => array('content' => 'outline')));
+$event->set_page_detail();
+$event->set_legacy_logdata(array($course->id, 'course', 'report outline', "report/outline/index.php?id=$course->id", $course->id));
+$event->trigger();
 
 $showlastaccess = true;
 $hiddenfields = explode(',', $CFG->hiddenuserfields);
 
-if (array_search('lastaccess', $hiddenfields) and !has_capability('moodle/user:viewhiddendetails', $context)) {
+if (array_search('lastaccess', $hiddenfields) !== false and !has_capability('moodle/user:viewhiddendetails', $context)) {
     $showlastaccess = false;
 }
 
@@ -79,7 +84,6 @@ if ($showlastaccess) {
 }
 
 $modinfo = get_fast_modinfo($course);
-$sections = get_all_sections($course->id);
 
 $sql = "SELECT cm.id, COUNT('x') AS numviews, MAX(time) AS lasttime
           FROM {course_modules} cm
@@ -105,7 +109,7 @@ foreach ($modinfo->sections as $sectionnum=>$section) {
             $sectioncell = new html_table_cell();
             $sectioncell->colspan = count($outlinetable->head);
 
-            $sectiontitle = get_section_name($course, $sections[$sectionnum]);
+            $sectiontitle = get_section_name($course, $sectionnum);
 
             $sectioncell->text = $OUTPUT->heading($sectiontitle, 3);
             $sectionrow->cells[] = $sectioncell;
@@ -128,7 +132,7 @@ foreach ($modinfo->sections as $sectionnum=>$section) {
             $attributes['class'] = 'dimmed';
         }
 
-        $activitycell->text = $activityicon . html_writer::link("$CFG->wwwroot/mod/$cm->modname/view.php?id=$cm->id", format_string($cm->name), $attributes);;
+        $activitycell->text = $activityicon . html_writer::link("$CFG->wwwroot/mod/$cm->modname/view.php?id=$cm->id", format_string($cm->name), $attributes);
 
         $reportrow->cells[] = $activitycell;
 
@@ -148,7 +152,8 @@ foreach ($modinfo->sections as $sectionnum=>$section) {
             $blogcell = new html_table_cell();
             $blogcell->attributes['class'] = 'blog';
             if ($blogcount = blog_get_associated_count($course->id, $cm->id)) {
-                $blogcell->text = html_writer::link('/blog/index.php?modid='.$cm->id, $blogcount);
+                $blogurl = new moodle_url('/blog/index.php', array('modid' => $cm->id));
+                $blogcell->text = html_writer::link($blogurl, $blogcount);
             } else {
                 $blogcell->text = '-';
             }

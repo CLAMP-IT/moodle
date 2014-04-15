@@ -81,11 +81,19 @@ class google_docs {
         if ($search) {
             $url.='?q='.urlencode($search);
         }
-        $content = $this->googleoauth->get($url);
-
-        $xml = new SimpleXMLElement($content);
 
         $files = array();
+        $content = $this->googleoauth->get($url);
+        try {
+            if (strpos($content, '<?xml') !== 0) {
+                throw new moodle_exception('invalidxmlresponse');
+            }
+            $xml = new SimpleXMLElement($content);
+        } catch (Exception $e) {
+            // An error occured while trying to parse the XML, let's just return nothing. SimpleXML does not
+            // return a more specific Exception, that's why the global Exception class is caught here.
+            return $files;
+        }
         foreach ($xml->entry as $gdoc) {
             $docid  = (string) $gdoc->children('http://schemas.google.com/g/2005')->resourceId;
             list($type, $docid) = explode(':', $docid);
@@ -109,23 +117,21 @@ class google_docs {
                     $source = 'https://spreadsheets.google.com/feeds/download/spreadsheets/Export?key='.$docid.'&exportFormat=xls';
                     break;
                 case 'pdf':
-                    $title  = (string)$gdoc->title;
-                    $source = (string)$gdoc->content[0]->attributes()->src;
-                    break;
                 case 'file':
-                    $title = (string)$gdoc->title;
-                    $source = (string)$gdoc->content[0]->attributes()->src;
+                    $title  = (string)$gdoc->title;
+                    // Some files don't have a content probably because the download has been restricted.
+                    if (isset($gdoc->content)) {
+                        $source = (string)$gdoc->content[0]->attributes()->src;
+                    }
                     break;
             }
 
-            if (!empty($source)) {
-                $files[] =  array( 'title' => $title,
-                    'url' => "{$gdoc->link[0]->attributes()->href}",
-                    'source' => $source,
-                    'date'   => usertime(strtotime($gdoc->updated)),
-                    'thumbnail' => (string) $OUTPUT->pix_url(file_extension_icon($title, 32))
-                );
-            }
+            $files[] =  array( 'title' => $title,
+                'url' => "{$gdoc->link[0]->attributes()->href}",
+                'source' => $source,
+                'date'   => usertime(strtotime($gdoc->updated)),
+                'thumbnail' => (string) $OUTPUT->pix_url(file_extension_icon($title, 32))
+            );
         }
 
         return $files;
@@ -185,12 +191,21 @@ class google_docs {
      *
      * @param string $url url of file
      * @param string $path path to save file to
+     * @param int $timeout request timeout, default 0 which means no timeout
      * @return array stucture for repository download_file
      */
-    public function download_file($url, $path) {
-        $content = $this->googleoauth->get($url);
-        file_put_contents($path, $content);
-        return array('path'=>$path, 'url'=>$url);
+    public function download_file($url, $path, $timeout = 0) {
+        $result = $this->googleoauth->download_one($url, null, array('filepath' => $path, 'timeout' => $timeout));
+        if ($result === true) {
+            $info = $this->googleoauth->get_info();
+            if (isset($info['http_code']) && $info['http_code'] == 200) {
+                return array('path'=>$path, 'url'=>$url);
+            } else {
+                throw new moodle_exception('cannotdownload', 'repository');
+            }
+        } else {
+            throw new moodle_exception('errorwhiledownload', 'repository', '', $result);
+        }
     }
 }
 
@@ -310,10 +325,19 @@ class google_picasa {
      * @return mixes $files Array in the format get_listing uses for folders
      */
     public function get_albums() {
-        $content = $this->googleoauth->get(self::LIST_ALBUMS_URL);
-        $xml = new SimpleXMLElement($content);
-
         $files = array();
+        $content = $this->googleoauth->get(self::LIST_ALBUMS_URL);
+
+        try {
+            if (strpos($content, '<?xml') !== 0) {
+                throw new moodle_exception('invalidxmlresponse');
+            }
+            $xml = new SimpleXMLElement($content);
+        } catch (Exception $e) {
+            // An error occured while trying to parse the XML, let's just return nothing. SimpleXML does not
+            // return a more specific Exception, that's why the global Exception class is caught here.
+            return $files;
+        }
 
         foreach ($xml->entry as $album) {
             $gphoto = $album->children('http://schemas.google.com/photos/2007');
@@ -331,7 +355,6 @@ class google_picasa {
                 'thumbnail_height' => 160,
                 'children' => array(),
             );
-
         }
 
         return $files;
@@ -345,11 +368,19 @@ class google_picasa {
      * @return mixed $files A list of files for the file picker
      */
     public function get_photo_details($rawxml) {
-
-        $xml = new SimpleXMLElement($rawxml);
-        $this->lastalbumname = (string)$xml->title;
-
         $files = array();
+
+        try {
+            if (strpos($rawxml, '<?xml') !== 0) {
+                throw new moodle_exception('invalidxmlresponse');
+            }
+            $xml = new SimpleXMLElement($rawxml);
+        } catch (Exception $e) {
+            // An error occured while trying to parse the XML, let's just return nothing. SimpleXML does not
+            // return a more specific Exception, that's why the global Exception class is caught here.
+            return $files;
+        }
+        $this->lastalbumname = (string)$xml->title;
 
         foreach ($xml->entry as $photo) {
             $gphoto = $photo->children('http://schemas.google.com/photos/2007');

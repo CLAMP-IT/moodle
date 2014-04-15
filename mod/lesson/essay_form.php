@@ -18,8 +18,7 @@
 /**
  * Essay grading form
  *
- * @package    mod
- * @subpackage lesson
+ * @package mod_lesson
  * @copyright  2009 Sam Hemelryk
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
@@ -53,6 +52,7 @@ class essay_grading_form extends moodleform {
         $mform->addElement('hidden', 'mode', 'update');
         $mform->setType('mode', PARAM_ALPHA);
 
+        $mform->addElement('static', 'question', get_string('question', 'lesson'));
         $mform->addElement('static', 'studentanswer', get_string('studentresponse', 'lesson', fullname($this->_customdata['user'], true)));
 
         $mform->addElement('textarea', 'response', get_string('comments', 'lesson'), array('rows'=>'15', 'cols'=>'60'));

@@ -37,6 +37,7 @@ require_once($CFG->dirroot . '/backup/moodle2/restore_default_block_task.class.p
 require_once($CFG->dirroot . '/backup/moodle2/restore_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/restore_qtype_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/restore_format_plugin.class.php');
+require_once($CFG->dirroot . '/backup/moodle2/restore_local_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/restore_theme_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/restore_report_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/restore_coursereport_plugin.class.php');
@@ -45,6 +46,7 @@ require_once($CFG->dirroot . '/backup/moodle2/restore_gradingform_plugin.class.p
 require_once($CFG->dirroot . '/backup/moodle2/backup_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_qtype_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_format_plugin.class.php');
+require_once($CFG->dirroot . '/backup/moodle2/backup_local_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_theme_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_report_plugin.class.php');
 require_once($CFG->dirroot . '/backup/moodle2/backup_coursereport_plugin.class.php');
@@ -55,7 +57,7 @@ require_once($CFG->dirroot . '/backup/moodle2/restore_settingslib.php');
 require_once($CFG->dirroot . '/backup/moodle2/restore_stepslib.php');
 
 // Load all the activity tasks for moodle2 format
-$mods = get_plugin_list('mod');
+$mods = core_component::get_plugin_list('mod');
 foreach ($mods as $mod => $moddir) {
     $taskpath = $moddir . '/backup/moodle2/restore_' . $mod . '_activity_task.class.php';
     if (plugin_supports('mod', $mod, FEATURE_BACKUP_MOODLE2)) {
@@ -66,7 +68,7 @@ foreach ($mods as $mod => $moddir) {
 }
 
 // Load all the block tasks for moodle2 format
-$blocks = get_plugin_list('block');
+$blocks = core_component::get_plugin_list('block');
 foreach ($blocks as $block => $blockdir) {
     $taskpath = $blockdir . '/backup/moodle2/restore_' . $block . '_block_task.class.php';
     if (file_exists($taskpath)) {
@@ -95,6 +97,7 @@ abstract class restore_plan_builder {
         // preloading information to temp table
         // and other init tasks
         $plan->add_task(new restore_root_task('root_task'));
+        $controller->get_progress()->progress();
 
         switch ($controller->get_type()) {
             case backup::TYPE_1ACTIVITY:
@@ -113,6 +116,7 @@ abstract class restore_plan_builder {
         // conversion...)
         // and perform other various final actions.
         $plan->add_task(new restore_final_task('final_task'));
+        $controller->get_progress()->progress();
     }
 
 
@@ -132,6 +136,7 @@ abstract class restore_plan_builder {
         // as far as the module can be missing on restore
         if ($task = restore_factory::get_restore_activity_task($infoactivity)) { // can be missing
             $plan->add_task($task);
+            $controller->get_progress()->progress();
 
             // For the given activity path, add as many block tasks as necessary
             // TODO: Add blocks, we need to introspect xml here
@@ -139,6 +144,7 @@ abstract class restore_plan_builder {
             foreach ($blocks as $basepath => $name) {
                 if ($task = restore_factory::get_restore_block_task($name, $basepath)) {
                     $plan->add_task($task);
+                    $controller->get_progress()->progress();
                 } else {
                     // TODO: Debug information about block not supported
                 }
@@ -161,6 +167,7 @@ abstract class restore_plan_builder {
         // Add the section task, responsible for restoring
         // all the section related information
         $plan->add_task(restore_factory::get_restore_section_task($infosection));
+        $controller->get_progress()->progress();
         // For the given section, add as many activity tasks as necessary
         foreach ($info->activities as $activityid => $activity) {
             if ($activity->sectionid != $infosection->sectionid) {
@@ -186,6 +193,7 @@ abstract class restore_plan_builder {
         // all the course related information
         $task = restore_factory::get_restore_course_task($info->course, $courseid);
         $plan->add_task($task);
+        $controller->get_progress()->progress();
 
         // For the given course path, add as many block tasks as necessary
         // TODO: Add blocks, we need to introspect xml here
@@ -193,6 +201,7 @@ abstract class restore_plan_builder {
         foreach ($blocks as $basepath => $name) {
             if ($task = restore_factory::get_restore_block_task($name, $basepath)) {
                 $plan->add_task($task);
+                $controller->get_progress()->progress();
             } else {
                 // TODO: Debug information about block not supported
             }

@@ -12,13 +12,13 @@ require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/tablelib.php');
 
 require_login();
-require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
+require_capability('moodle/site:config', context_system::instance());
 
 $returnurl = new moodle_url('/admin/settings.php', array('section'=>'manageauths'));
 
 $PAGE->set_url($returnurl);
 
-$action = optional_param('action', '', PARAM_ACTION);
+$action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $auth   = optional_param('auth', '', PARAM_PLUGIN);
 
 get_enabled_auth_plugins(true); // fix the list of enabled auths
@@ -51,7 +51,8 @@ switch ($action) {
         if ($auth == $CFG->registerauth) {
             set_config('registerauth', '');
         }
-        session_gc(); // remove stale sessions
+        \core\session\manager::gc(); // Remove stale sessions.
+        core_plugin_manager::reset_caches();
         break;
 
     case 'enable':
@@ -61,7 +62,8 @@ switch ($action) {
             $authsenabled = array_unique($authsenabled);
             set_config('auth', implode(',', $authsenabled));
         }
-        session_gc(); // remove stale sessions
+        \core\session\manager::gc(); // Remove stale sessions.
+        core_plugin_manager::reset_caches();
         break;
 
     case 'down':

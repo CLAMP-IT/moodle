@@ -74,8 +74,8 @@ function my_copy_page($userid, $private=MY_PAGE_PRIVATE, $pagetype='my-index') {
     $page->id = $DB->insert_record('my_pages', $page);
 
     // Clone ALL the associated blocks as well
-    $systemcontext = get_context_instance(CONTEXT_SYSTEM);
-    $usercontext = get_context_instance(CONTEXT_USER, $userid);
+    $systemcontext = context_system::instance();
+    $usercontext = context_user::instance($userid);
 
     $blockinstances = $DB->get_records('block_instances', array('parentcontextid' => $systemcontext->id,
                                                                 'pagetypepattern' => $pagetype,
@@ -85,7 +85,7 @@ function my_copy_page($userid, $private=MY_PAGE_PRIVATE, $pagetype='my-index') {
         $instance->parentcontextid = $usercontext->id;
         $instance->subpagepattern = $page->id;
         $instance->id = $DB->insert_record('block_instances', $instance);
-        $blockcontext = get_context_instance(CONTEXT_BLOCK, $instance->id);  // Just creates the context record
+        $blockcontext = context_block::instance($instance->id);  // Just creates the context record
     }
 
     // FIXME: block position overrides should be merged in with block instance
@@ -96,6 +96,38 @@ function my_copy_page($userid, $private=MY_PAGE_PRIVATE, $pagetype='my-index') {
     //}
 
     return $page;
+}
+
+/*
+ * For a given user, this deletes their My Moodle page and returns them to the system default.
+ *
+ * @param int $userid the id of the user whose page should be reset
+ * @param int $private either MY_PAGE_PRIVATE or MY_PAGE_PUBLIC
+ * @param string $pagetype either my-index or user-profile
+ * @return mixed system page, or false on error
+ */
+function my_reset_page($userid, $private=MY_PAGE_PRIVATE, $pagetype='my-index') {
+    global $DB, $CFG;
+
+    $page = my_get_page($userid, $private);
+    if ($page->userid == $userid) {
+        $context = context_user::instance($userid);
+        if ($blocks = $DB->get_records('block_instances', array('parentcontextid' => $context->id,
+                'pagetypepattern' => $pagetype))) {
+            foreach ($blocks as $block) {
+                if (is_null($block->subpagepattern) || $block->subpagepattern == $page->id) {
+                    blocks_delete_instance($block);
+                }
+            }
+        }
+        $DB->delete_records('my_pages', array('id' => $page->id));
+    }
+
+    // Get the system default page
+    if (!$systempage = $DB->get_record('my_pages', array('userid' => null, 'private' => $private))) {
+        return false; // error
+    }
+    return $systempage;
 }
 
 class my_syspage_block_manager extends block_manager {
@@ -110,7 +142,7 @@ class my_syspage_block_manager extends block_manager {
      */
     public function load_blocks($includeinvisible = null) {
         $origcontext = $this->page->context;
-        $this->page->context = get_context_instance(CONTEXT_SYSTEM);
+        $this->page->context = context_system::instance();
         parent::load_blocks($includeinvisible);
         $this->page->context = $origcontext;
     }

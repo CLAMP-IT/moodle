@@ -31,7 +31,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['admindirname'] = 'Admin-map';
-$string['availablelangs'] = 'Lijst met beschikbare talen';
+$string['availablelangs'] = 'Beschikbare taalpakketten';
 $string['chooselanguagehead'] = 'Kies een taal';
 $string['chooselanguagesub'] = 'Kies een taal voor de installatie. Deze taal zal ook als standaardtaal voor de site gebruikt worden, maar die instelling kun je later nog wijzigen.';
 $string['clialreadyconfigured'] = 'Bestand config.php bestaat al, maak aub gebruik van admin/cli/install_database.php indien je deze site wenst te installeren.';
@@ -45,7 +45,7 @@ $string['datarootpermission'] = 'Toestemming datamappen';
 $string['dbprefix'] = 'Tabelvoorvoegsel';
 $string['dirroot'] = 'Moodle-map';
 $string['environmenthead'] = 'Omgeving controleren ...';
-$string['environmentsub2'] = 'Elke Moodleversie vraagt een minimum PHP-versie en een aantal vereiste PHP-extenties.
+$string['environmentsub2'] = 'Elke Moodleversie vraagt een minimale PHP-versie en een aantal vereiste PHP-extenties.
 De volledige installatie-omgeving wordt gecontroleerd voor elke installatie en upgrade. Contacteer je server beheerder als je niet weet hoe je de juiste PHP-versie moet installeren of PHP-extenties moet inschakelen.';
 $string['errorsinenvironment'] = 'Fouten in je omgeving!';
 $string['installation'] = 'Installatie';

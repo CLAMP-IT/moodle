@@ -26,11 +26,7 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
 
     $optionalsubsystems->add(new admin_setting_configcheckbox('enablerssfeeds', new lang_string('enablerssfeeds', 'admin'), new lang_string('configenablerssfeeds', 'admin'), 0));
 
-    $optionalsubsystems->add(new admin_setting_bloglevel('bloglevel', new lang_string('bloglevel', 'admin'),
-                                new lang_string('configbloglevel', 'admin'), 4, array(5 => new lang_string('worldblogs','blog'),
-                                                                                 4 => new lang_string('siteblogs','blog'),
-                                                                                 1 => new lang_string('personalblogs','blog'),
-                                                                                 0 => new lang_string('disableblogs','blog'))));
+    $optionalsubsystems->add(new admin_setting_configcheckbox('enableblogs', new lang_string('enableblogs', 'admin'), new lang_string('configenableblogs', 'admin'), 1));
 
     $options = array('off'=>new lang_string('off', 'mnet'), 'strict'=>new lang_string('on', 'mnet'));
     $optionalsubsystems->add(new admin_setting_configselect('mnet_dispatcher_mode', new lang_string('net', 'mnet'), new lang_string('configmnet', 'mnet'), 'off', $options));
@@ -39,10 +35,20 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     $optionalsubsystems->add(new admin_setting_configcheckbox('enablecompletion',
         new lang_string('enablecompletion','completion'),
         new lang_string('configenablecompletion','completion'), 0));
+
+    $options = array(
+        1 => get_string('completionactivitydefault', 'completion'),
+        0 => get_string('completion_none', 'completion')
+    );
+    $optionalsubsystems->add(new admin_setting_configselect('completiondefault', new lang_string('completiondefault', 'completion'),
+            new lang_string('configcompletiondefault', 'completion'), 1, $options));
+
     $optionalsubsystems->add($checkbox = new admin_setting_configcheckbox('enableavailability',
         new lang_string('enableavailability','condition'),
         new lang_string('configenableavailability','condition'), 0));
     $checkbox->set_affects_modinfo(true);
 
     $optionalsubsystems->add(new admin_setting_configcheckbox('enableplagiarism', new lang_string('enableplagiarism','plagiarism'), new lang_string('configenableplagiarism','plagiarism'), 0));
+
+    $optionalsubsystems->add(new admin_setting_configcheckbox('enablebadges', new lang_string('enablebadges', 'badges'), new lang_string('configenablebadges', 'badges'), 1));
 }

@@ -36,8 +36,7 @@
  * This file contains all the backup steps that will be used
  * by the backup_lti_activity_task
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -56,11 +55,13 @@ class backup_lti_activity_structure_step extends backup_activity_structure_step 
 
     protected function define_structure() {
 
+        // TODO: MDL-34161 - Fix restore to support course/site tools & submissions.
+
         // To know if we are including userinfo
         $userinfo = $this->get_setting_value('userinfo');
 
         // Define each element separated
-        $basiclti = new backup_nested_element('lti', array('id'), array(
+        $lti = new backup_nested_element('lti', array('id'), array(
             'name',
             'intro',
             'introformat',
@@ -68,6 +69,7 @@ class backup_lti_activity_structure_step extends backup_activity_structure_step 
             'timemodified',
             'typeid',
             'toolurl',
+            'securetoolurl',
             'preferheight',
             'launchcontainer',
             'instructorchoicesendname',
@@ -77,8 +79,11 @@ class backup_lti_activity_structure_step extends backup_activity_structure_step 
             'instructorchoiceallowsetting',
             'grade',
             'instructorcustomparameters',
+            'debuglaunch',
             'showtitlelaunch',
-            'showdescriptionlaunch'
+            'showdescriptionlaunch',
+            'icon',
+            'secureicon',
             )
         );
 
@@ -86,15 +91,15 @@ class backup_lti_activity_structure_step extends backup_activity_structure_step 
         // (none)
 
         // Define sources
-        $basiclti->set_source_table('lti', array('id' => backup::VAR_ACTIVITYID));
+        $lti->set_source_table('lti', array('id' => backup::VAR_ACTIVITYID));
 
         // Define id annotations
         // (none)
 
         // Define file annotations
-        $basiclti->annotate_files('mod_lti', 'intro', null); // This file areas haven't itemid
+        $lti->annotate_files('mod_lti', 'intro', null); // This file areas haven't itemid
 
-        // Return the root element (basiclti), wrapped into standard activity structure
-        return $this->prepare_activity_structure($basiclti);
+        // Return the root element (lti), wrapped into standard activity structure
+        return $this->prepare_activity_structure($lti);
     }
 }

@@ -19,7 +19,7 @@
  *
  * @author Andreas Grabs
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package feedback
+ * @package mod_feedback
  */
 
 require_once("../../config.php");
@@ -61,15 +61,14 @@ if (! $feedback = $DB->get_record("feedback", array("id"=>$cm->instance))) {
     print_error('invalidcoursemodule');
 }
 
-if (!$context = get_context_instance(CONTEXT_MODULE, $cm->id)) {
-        print_error('badcontext');
-}
+$context = context_module::instance($cm->id);
 
 require_login($course, true, $cm);
 
 require_capability('mod/feedback:mapcourse', $context);
 
 if ($coursefilter) {
+    $map = new stdClass;
     $map->feedbackid = $feedback->id;
     $map->courseid = $coursefilter;
     // insert a map only if it does exists yet
@@ -85,9 +84,10 @@ if ($coursefilter) {
 $strfeedbacks = get_string("modulenameplural", "feedback");
 $strfeedback  = get_string("modulename", "feedback");
 
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_title(format_string($feedback->name));
+$PAGE->set_heading($course->fullname);
+$PAGE->set_title($feedback->name);
 echo $OUTPUT->header();
+echo $OUTPUT->heading(format_string($feedback->name));
 
 require('tabs.php');
 
@@ -104,7 +104,7 @@ $sql = "select c.id, c.shortname
 $params = array("%{$searchcourse}%", "%{$searchcourse}%");
 
 if (($courses = $DB->get_records_sql_menu($sql, $params)) && !empty($searchcourse)) {
-    echo ' ' . get_string('courses') . ': ';
+    echo ' '. html_writer::label(get_string('courses'), 'menucoursefilter', false). ': ';
     echo html_writer::select($courses, 'coursefilter', $coursefilter);
     echo '<input type="submit" value="'.get_string('mapcourse', 'feedback').'"/>';
     echo $OUTPUT->help_icon('mapcourses', 'feedback');
@@ -125,6 +125,7 @@ echo '</form>';
 
 if ($coursemap = feedback_get_courses_from_sitecourse_map($feedback->id)) {
     $table = new flexible_table('coursemaps');
+    $table->baseurl = $url;
     $table->define_columns( array('course'));
     $table->define_headers( array(get_string('mappedcourses', 'feedback')));
 
@@ -132,9 +133,8 @@ if ($coursemap = feedback_get_courses_from_sitecourse_map($feedback->id)) {
 
     $unmapurl = new moodle_url('/mod/feedback/unmapcourse.php');
     foreach ($coursemap as $cmap) {
-        $cmapcontext = get_context_instance(CONTEXT_COURSE, $cmap->id);
-        $cmapshortname = format_string($cmap->shortname, true, array('context' => $cmapcontext));
-        $coursecontext = get_context_instance(CONTEXT_COURSE, $cmap->courseid);
+        $coursecontext = context_course::instance($cmap->courseid);
+        $cmapshortname = format_string($cmap->shortname, true, array('context' => $coursecontext));
         $cmapfullname = format_string($cmap->fullname, true, array('context' => $coursecontext));
         $unmapurl->params(array('id'=>$id, 'cmapid'=>$cmap->id));
         $anker = '<a href="'.$unmapurl->out().'">';
@@ -145,7 +145,7 @@ if ($coursemap = feedback_get_courses_from_sitecourse_map($feedback->id)) {
 
     $table->print_html();
 } else {
-    echo '<h3>'.get_string('mapcoursenone', 'feedback').'</h3>';
+    echo $OUTPUT->heading(get_string('mapcoursenone', 'feedback'), 3);
 }
 
 

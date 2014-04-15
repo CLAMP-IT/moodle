@@ -32,8 +32,10 @@
   -webkit-border-radius: 0;
   border-radius: 0;
 }
-
-.headingblock,
+#site-news-forum h2,
+#frontpage-course-list h2,
+#frontpage-category-names h2,
+#frontpage-category-combo h2,
 table.minicalendar td,
 .path-calendar .maincalendar .filters table,
 .path-calendar .sidecalendar .filters table,
@@ -58,8 +60,6 @@ table.minicalendar td,
   border-radius: 5px;
 }
 
-.categorybox,
-.categoryboxcontent,
 .coursebox,
 .notifyproblem,
 .notifysuccess,
@@ -75,8 +75,6 @@ table.minicalendar {
   border-radius: 10px;
 }
 
-.block_course_summary,
-.block_course_summary .content,
 #page-report-outline-user .section {
   -moz-border-radius:10px;
   -webkit-border-radius: 10px;
@@ -87,18 +85,9 @@ table.minicalendar {
 .generalboxcontent,
 .informationbox,
 .informationboxcontent {
-  -moz-border-radius-topleft: 3px;
-  -moz-border-radius-topright: 3px;
-  -moz-border-radius-bottomleft: 15px;
-  -moz-border-radius-bottomright: 15px;
-  -webkit-border-top-left-radius: 3px;
-  -webkit-border-top-right-radius: 3px;
-  -webkit-border-bottom-left-radius: 15px;
-  -webkit-border-bottom-right-radius: 15px;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-  border-bottom-left-radius: 15px;
-  border-bottom-right-radius: 15px;
+    -webkit-border-radius: 3px;
+       -moz-border-radius: 3px;
+            border-radius: 3px;
 }
 
 .editing .block_course_summary .content {
@@ -158,6 +147,16 @@ table.minicalendar {
   -webkit-border-bottom-left-radius: 15px;
   border-bottom-left-radius: 15px;
 }
+.dir-rtl.path-calendar .eventlist .event .side,
+.dir-rtl .glossarypost .side,
+.dir-rtl#page-mod-journal-view .feedbackbox .side {
+  -moz-border-radius-bottomleft:0;
+  -webkit-border-bottom-left-radius: 0;
+  border-bottom-left-radius: 0;
+  -moz-border-radius-bottomright:15px;
+  -webkit-border-bottom-right-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
 
 .path-calendar .eventlist .event .description,
 .encyclopedia .entrylowersection,
@@ -165,6 +164,16 @@ table.minicalendar {
   -moz-border-radius-bottomright:15px;
   -webkit-border-bottom-right-radius: 15px;
   border-bottom-right-radius: 15px;
+}
+.dir-rtl.path-calendar .eventlist .event .description,
+.dir-rtl .encyclopedia .entrylowersection,
+.dir-rtl#page-mod-journal-view .feedbackbox .entrycontent {
+  -moz-border-radius-bottomright:0;
+  -webkit-border-bottom-right-radius: 0;
+  border-bottom-right-radius: 0;
+  -moz-border-radius-bottomleft:15px;
+  -webkit-border-bottom-left-radius: 15px;
+  border-bottom-left-radius: 15px;
 }
 
 .path-calendar .maincalendar,

@@ -30,7 +30,7 @@ require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
 /*
  * controller tests (all)
  */
-class backup_controller_testcase extends advanced_testcase {
+class core_backup_controller_testcase extends advanced_testcase {
 
     protected $moduleid;  // course_modules id used for testing
     protected $sectionid; // course_sections id used for testing
@@ -81,6 +81,25 @@ class backup_controller_testcase extends advanced_testcase {
         $recid = $bc->save_controller();
         $newbc = mock_backup_controller::load_controller($bc->get_backupid());
         $this->assertTrue($newbc instanceof backup_controller); // This means checksum and load worked ok
+    }
+
+    public function test_backup_controller_include_files() {
+        // A MODE_GENERAL controller - this should include files
+        $bc = new mock_backup_controller(backup::TYPE_1ACTIVITY, $this->moduleid, backup::FORMAT_MOODLE,
+            backup::INTERACTIVE_NO, backup::MODE_GENERAL, $this->userid);
+        $this->assertEquals($bc->get_include_files(), 1);
+
+
+        // The MODE_IMPORT and MODE_SAMESITE should not include files in the backup.
+        // A MODE_IMPORT controller
+        $bc = new mock_backup_controller(backup::TYPE_1ACTIVITY, $this->moduleid, backup::FORMAT_MOODLE,
+            backup::INTERACTIVE_NO, backup::MODE_IMPORT, $this->userid);
+        $this->assertEquals($bc->get_include_files(), 0);
+
+        // A MODE_SAMESITE controller
+        $bc = new mock_backup_controller(backup::TYPE_1COURSE, $this->courseid, backup::FORMAT_MOODLE,
+            backup::INTERACTIVE_NO, backup::MODE_IMPORT, $this->userid);
+        $this->assertEquals($bc->get_include_files(), 0);
     }
 }
 

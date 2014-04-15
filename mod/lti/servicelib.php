@@ -17,8 +17,7 @@
 /**
  * Utility code for LTI service handling.
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  Copyright (c) 2011 Moodlerooms Inc. (http://www.moodlerooms.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Chris Scribner
@@ -37,7 +36,7 @@ define('LTI_SOURCE', 'mod/lti');
 
 function lti_get_response_xml($codemajor, $description, $messageref, $messagetype) {
     $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><imsx_POXEnvelopeResponse />');
-    $xml->addAttribute('xmlns', 'http://www.imsglobal.org/lis/oms1p0/pox');
+    $xml->addAttribute('xmlns', 'http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0');
 
     $headerinfo = $xml->addChild('imsx_POXHeader')->addChild('imsx_POXResponseHeaderInfo');
 
@@ -49,6 +48,8 @@ function lti_get_response_xml($codemajor, $description, $messageref, $messagetyp
     $statusinfo->addChild('imsx_severity', 'status');
     $statusinfo->addChild('imsx_description', $description);
     $statusinfo->addChild('imsx_messageRefIdentifier', $messageref);
+    $incomingtype = str_replace('Response','Request', $messagetype);
+    $statusinfo->addChild('imsx_operationRefIdentifier', $incomingtype);
 
     $xml->addChild('imsx_POXBody')->addChild($messagetype);
 
@@ -220,4 +221,41 @@ function lti_verify_sourcedid($ltiinstance, $parsed) {
     if ($sourceid->hash != $parsed->sourcedidhash) {
         throw new Exception('SourcedId hash not valid');
     }
+}
+
+/**
+ * Extend the LTI services through the ltisource plugins
+ *
+ * @param stdClass $data LTI request data
+ * @return bool
+ * @throws coding_exception
+ */
+function lti_extend_lti_services($data) {
+    $plugins = get_plugin_list_with_function('ltisource', $data->messagetype);
+    if (!empty($plugins)) {
+        try {
+            // There can only be one
+            if (count($plugins) > 1) {
+                throw new coding_exception('More than one ltisource plugin handler found');
+            }
+            $callback = current($plugins);
+            call_user_func($callback, $data);
+        } catch (moodle_exception $e) {
+            $error = $e->getMessage();
+            if (debugging('', DEBUG_DEVELOPER)) {
+                $error .= ' '.format_backtrace(get_exception_info($e)->backtrace);
+            }
+            $responsexml = lti_get_response_xml(
+                'failure',
+                $error,
+                $data->messageid,
+                $data->messagetype
+            );
+
+            header('HTTP/1.0 400 bad request');
+            echo $responsexml->asXML();
+        }
+        return true;
+    }
+    return false;
 }

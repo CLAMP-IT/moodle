@@ -31,8 +31,8 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 require_once($CFG->dirroot . '/mod/quiz/report/reportlib.php');
 
 $attemptid = required_param('attempt', PARAM_INT);
-$page = optional_param('page', 0, PARAM_INT);
-$showall = optional_param('showall', 0, PARAM_BOOL);
+$page      = optional_param('page', 0, PARAM_INT);
+$showall   = optional_param('showall', 0, PARAM_BOOL);
 
 $url = new moodle_url('/mod/quiz/review.php', array('attempt'=>$attemptid));
 if ($page !== 0) {
@@ -44,6 +44,7 @@ if ($showall !== 0) {
 $PAGE->set_url($url);
 
 $attemptobj = quiz_attempt::create($attemptid);
+$page = $attemptobj->force_page_number_into_range($page);
 
 // Check login.
 require_login($attemptobj->get_course(), false, $attemptobj->get_cm());
@@ -51,6 +52,8 @@ $attemptobj->check_review_capability();
 
 // Create an object to manage all the other (non-roles) access rules.
 $accessmanager = $attemptobj->get_access_manager(time());
+$accessmanager->setup_attempt_page($PAGE);
+
 $options = $attemptobj->get_display_options(true);
 
 // Check permissions.
@@ -100,9 +103,8 @@ if ($attemptobj->is_preview_user() && $attemptobj->is_own_attempt()) {
 
 // Set up the page header.
 $headtags = $attemptobj->get_html_head_contributions($page, $showall);
-$PAGE->set_title(format_string($attemptobj->get_quiz_name()));
+$PAGE->set_title($attemptobj->get_quiz_name());
 $PAGE->set_heading($attemptobj->get_course()->fullname);
-$accessmanager->setup_attempt_page($PAGE);
 
 // Summary table start. ============================================================================
 
@@ -185,10 +187,7 @@ $grade = quiz_rescale_grade($attempt->sumgrades, $quiz, false);
 if ($options->marks >= question_display_options::MARK_AND_MAX && quiz_has_grades($quiz)) {
 
     if ($attempt->state != quiz_attempt::FINISHED) {
-        $summarydata['grade'] = array(
-            'title'   => get_string('grade', 'quiz'),
-            'content' => get_string('attemptstillinprogress', 'quiz'),
-        );
+        // Cannot display grade.
 
     } else if (is_null($grade)) {
         $summarydata['grade'] = array(
@@ -225,6 +224,9 @@ if ($options->marks >= question_display_options::MARK_AND_MAX && quiz_has_grades
         );
     }
 }
+
+// Any additional summary data from the behaviour.
+$summarydata = array_merge($summarydata, $attemptobj->get_additional_summary_data($options));
 
 // Feedback if there is any, and the user is allowed to see it now.
 $feedback = $attemptobj->get_overall_feedback($grade);

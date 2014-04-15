@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package moodlecore
+ * @package    mod_data
  * @subpackage backup-moodle2
  * @copyright 2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -119,5 +119,20 @@ class restore_data_activity_task extends restore_activity_task {
         $rules[] = new restore_log_rule('data', 'view all', 'index.php?id={course}', null);
 
         return $rules;
+    }
+
+    /**
+     * Given a commment area, return the itemname that contains the itemid mappings.
+     *
+     * @param string $commentarea Comment area name e.g. database_entry.
+     * @return string name of the mapping used to determine the itemid.
+     */
+    public function get_comment_mapping_itemname($commentarea) {
+        if ($commentarea == 'database_entry') {
+            $itemname = 'data_record';
+        } else {
+            $itemname = parent::get_comment_mapping_itemname($commentarea);
+        }
+        return $itemname;
     }
 }

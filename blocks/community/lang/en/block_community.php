@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -19,7 +18,7 @@
  * Strings for component 'block_community', language 'en', branch 'MOODLE_20_STABLE'
  *
  * @package   block_community
- * @author     Jerome Mouneyrac <jerome@mouneyrac.com>
+ * @author    Jerome Mouneyrac <jerome@mouneyrac.com>
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -37,6 +36,8 @@ $string['audience_help'] = 'What kind of course are you looking for?  As well as
 $string['blocks'] = 'Blocks';
 $string['cannotselecttopsubject'] = 'Cannot select a top subject level';
 $string['comments'] = 'Comments ({$a})';
+$string['community:addinstance'] = 'Add a new community finder block';
+$string['community:myaddinstance'] = 'Add a new community finder block to My home';
 $string['contentinfo'] = 'Subject: {$a->subject} - Audience: {$a->audience} - Educational level: {$a->educationallevel}';
 $string['continue'] = 'Continue';
 $string['contributors'] = ' - Contributors: {$a}';
@@ -66,9 +67,11 @@ $string['enrollablecourses'] = 'Enrollable courses';
 $string['errorcourselisting'] = 'An error occurred when retrieving the course listing from the selected hub, please try again later. ({$a})';
 $string['errorhublisting'] = 'An error occurred when retrieving the hub listing from Moodle.org, please try again later. ({$a})';
 $string['fileinfo'] = 'Language: {$a->lang} - License: {$a->license} -  Time updated: {$a->timeupdated}';
+$string['hideall'] = 'Hide hubs';
 $string['hub'] = 'hub';
 $string['hubnottrusted'] = 'Not trusted';
 $string['hubtrusted'] = 'This hub is trusted by Moodle.org';
+$string['install'] = 'Install';
 $string['keywords'] = 'Keywords';
 $string['keywords_help'] = 'You can search for courses containing specific text in the name, description and other fields of the database.';
 $string['langdesc'] = 'Language: {$a} - ';
@@ -104,6 +107,7 @@ $string['searchcourse'] = 'Search for community course';
 $string['selecthub'] = 'Select hub';
 $string['selecthub_help'] = 'Select hub where to search the courses.';
 $string['sites'] = 'Sites';
+$string['showall'] = 'Show all hubs';
 $string['subject'] = 'Subject';
 $string['subject_help'] = 'To narrow your search to courses about a particular subject, choose one from this list.';
 $string['userinfo'] = 'Creator: {$a->creatorname} - Publisher: {$a->publishername}';

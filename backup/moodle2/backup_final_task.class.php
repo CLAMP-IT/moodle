@@ -43,7 +43,7 @@ class backup_final_task extends backup_task {
         global $CFG;
 
         // Set the backup::VAR_CONTEXTID setting to course context as far as next steps require that
-        $coursectxid = get_context_instance(CONTEXT_COURSE, $this->get_courseid())->id;
+        $coursectxid = context_course::instance($this->get_courseid())->id;
         $this->add_setting(new backup_activity_generic_setting(backup::VAR_CONTEXTID, base_setting::IS_INTEGER, $coursectxid));
 
         // Set the backup::VAR_COURSEID setting to course, we'll need that in some steps
@@ -91,6 +91,11 @@ class backup_final_task extends backup_task {
 
         // Generate the course completion
         $this->add_step(new backup_course_completion_structure_step('course_completion', 'completion.xml'));
+
+        // Conditionally generate the badges file.
+        if ($this->get_setting_value('badges')) {
+            $this->add_step(new backup_badges_structure_step('course_badges', 'badges.xml'));
+        }
 
         // Generate the scales file with all the (final) annotated scales
         $this->add_step(new backup_final_scales_structure_step('scaleslist', 'scales.xml'));
@@ -150,6 +155,11 @@ class backup_final_task extends backup_task {
         $this->add_step($cleanstep);
 
         $this->built = true;
+    }
+
+    public function get_weight() {
+        // The final task takes ages, so give it 20 times the weight of a normal task.
+        return 20;
     }
 
 // Protected API starts here

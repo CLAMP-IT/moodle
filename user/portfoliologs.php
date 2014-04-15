@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -20,7 +19,7 @@
  *
  * @copyright 1999 Martin Dougiamas  http://dougiamas.com
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package user
+ * @package core_user
  */
 
 require_once(dirname(dirname(__FILE__)) . '/config.php');
@@ -36,7 +35,7 @@ $courseid = optional_param('courseid', SITEID, PARAM_INT);
 $page     = optional_param('page', 0, PARAM_INT);
 $perpage  = optional_param('perpage', 10, PARAM_INT);
 
-if (! $course = $DB->get_record("course", array("id"=>$courseid))) {
+if (! $course = $DB->get_record("course", array("id" => $courseid))) {
     print_error('invalidcourseid');
 }
 
@@ -46,9 +45,9 @@ $user = $USER;
 $fullname = fullname($user);
 $strportfolios = get_string('portfolios', 'portfolio');
 
-$url = new moodle_url('/user/portfoliologs.php', array('courseid'=>$courseid));
+$url = new moodle_url('/user/portfoliologs.php', array('courseid' => $courseid));
 
-navigation_node::override_active_url(new moodle_url('/user/portfoliologs.php', array('courseid'=>$courseid)));
+navigation_node::override_active_url(new moodle_url('/user/portfoliologs.php', array('courseid' => $courseid)));
 
 if ($page !== 0) {
     $url->param('page', $page);
@@ -60,7 +59,7 @@ if ($perpage !== 0) {
 $PAGE->set_url($url);
 $PAGE->set_title("$course->fullname: $fullname: $strportfolios");
 $PAGE->set_heading($course->fullname);
-$PAGE->set_context(get_context_instance(CONTEXT_USER, $user->id));
+$PAGE->set_context(context_user::instance($user->id));
 $PAGE->set_pagelayout('standard');
 
 echo $OUTPUT->header();
@@ -82,16 +81,16 @@ if (count($queued) > 0) {
     );
     $table->data = array();
     $now = time();
-    foreach ($queued as $q){
+    foreach ($queued as $q) {
         $e = portfolio_exporter::rewaken_object($q->id);
         $e->verify_rewaken(true);
         $queued = $e->get('queued');
-        $baseurl = new moodle_url('/portfolio/add.php', array('id'=>$q->id, 'logreturn'=>1, 'sesskey'=>sesskey()));
+        $baseurl = new moodle_url('/portfolio/add.php', array('id' => $q->id, 'logreturn' => 1, 'sesskey' => sesskey()));
 
-        $iconstr = $OUTPUT->action_icon(new moodle_url($baseurl, array('cancel'=>1)), new pix_icon('t/stop', get_string('cancel')));
+        $iconstr = $OUTPUT->action_icon(new moodle_url($baseurl, array('cancel' => 1)), new pix_icon('t/stop', get_string('cancel')));
 
         if (!$e->get('queued') && $e->get('expirytime') > $now) {
-            $iconstr .= '&nbsp;' . $OUTPUT->action_icon($baseurl, new pix_icon('t/go', get_string('continue')));
+            $iconstr .= $OUTPUT->action_icon($baseurl, new pix_icon('t/go', get_string('continue')));
         }
         $table->data[] = array(
             $e->get('caller')->display_name(),
@@ -100,13 +99,13 @@ if (count($queued) > 0) {
             userdate($q->expirytime),
             $iconstr,
         );
-        unset($e); // this could potentially be quite big, so free it.
+        unset($e); // This could potentially be quite big, so free it.
     }
     echo $OUTPUT->heading(get_string('queuesummary', 'portfolio'));
     echo html_writer::table($table);
     $somethingprinted = true;
 }
-// paging - get total count separately
+// Paging - get total count separately.
 $logcount = $DB->count_records('portfolio_log', array('userid' => $USER->id));
 if ($logcount > 0) {
     $table = new html_table();
@@ -117,7 +116,13 @@ if ($logcount > 0) {
     );
     $logs = $DB->get_records('portfolio_log', array('userid' => $USER->id), 'time DESC', '*', ($page * $perpage), $perpage);
     foreach ($logs as $log) {
-        require_once($CFG->dirroot . $log->caller_file);
+        if (!empty($log->caller_file)) {
+            portfolio_include_callback_file($log->caller_file);
+        } else if (!empty($log->caller_component)) {
+            portfolio_include_callback_file($log->caller_component);
+        } else { // Errrmahgerrrd - this should never happen. Skipping.
+            continue;
+        }
         $class = $log->caller_class;
         $pluginname = '';
         try {
@@ -128,7 +133,7 @@ if ($logcount > 0) {
             } else {
                 $pluginname = $plugin->get('name');
             }
-        } catch (portfolio_exception $e) { // may have been deleted
+        } catch (portfolio_exception $e) { // May have been deleted.
             $pluginname = get_string('unknownplugin', 'portfolio');
         }
 

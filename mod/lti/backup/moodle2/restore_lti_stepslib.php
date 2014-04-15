@@ -36,8 +36,7 @@
  * This file contains all the restore steps that will be used
  * by the restore_lti_activity_task
  *
- * @package    mod
- * @subpackage lti
+ * @package mod_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -50,7 +49,7 @@
 defined('MOODLE_INTERNAL') || die;
 
 /**
- * Structure step to restore one basiclti activity
+ * Structure step to restore one lti activity
  */
 class restore_lti_activity_structure_step extends restore_activity_structure_step {
 
@@ -64,40 +63,27 @@ class restore_lti_activity_structure_step extends restore_activity_structure_ste
     }
 
     protected function process_lti($data) {
-        global $DB, $CFG;
+        global $DB;
 
         $data = (object)$data;
         $oldid = $data->id;
         $data->course = $this->get_courseid();
+        $data->servicesalt = uniqid('', true);
 
-        require_once($CFG->dirroot.'/mod/lti/lib.php');
+        // Clean any course or site typeid. All modules
+        // are restored as self-contained. Note this is
+        // an interim solution until the issue below is implemented.
+        // TODO: MDL-34161 - Fix restore to support course/site tools & submissions.
+        $data->typeid = 0;
 
-        $newitemid = lti_add_instance($data, null);
+        $newitemid = $DB->insert_record('lti', $data);
 
-        // insert the basiclti record
-        //$newitemid = $DB->insert_record('lti', $data);
         // immediately after inserting "activity" record, call this
         $this->apply_activity_instance($newitemid);
     }
 
     protected function after_execute() {
-        global $DB;
-
-        $basicltis = $DB->get_records('lti');
-        foreach ($basicltis as $basiclti) {
-            if (!$DB->get_record('lti_types_config',
-                array('typeid' => $basiclti->typeid, 'name' => 'toolurl', 'value' => $basiclti->toolurl))) {
-
-                $basiclti->typeid = 0;
-            }
-
-            $basiclti->placementsecret = uniqid('', true);
-            $basiclti->timeplacementsecret = time();
-
-            $DB->update_record('lti', $basiclti);
-        }
-
-        // Add basiclti related files, no need to match by itemname (just internally handled context)
+        // Add lti related files, no need to match by itemname (just internally handled context)
         $this->add_related_files('mod_lti', 'intro', null);
     }
 }

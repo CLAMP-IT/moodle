@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -62,10 +61,12 @@ $string['numentries'] = 'Entries per feed';
 $string['pickfeed'] = 'Pick a news feed';
 $string['pluginname'] = 'Remote RSS feeds';
 $string['remotenewsfeed'] = 'Remote news feed';
+$string['rss_client:addinstance'] = 'Add a new remote RSS feeds block';
 $string['rss_client:createprivatefeeds'] = 'Create private RSS feeds';
 $string['rss_client:createsharedfeeds'] = 'Create shared RSS feeds';
 $string['rss_client:manageanyfeeds'] = 'Manage any RSS feeds';
 $string['rss_client:manageownfeeds'] = 'Manage own RSS feeds';
+$string['rss_client:myaddinstance'] = 'Add a new RSS feeds block to My home';
 $string['seeallfeeds'] = 'See all feeds';
 $string['sharedfeed'] = 'Shared feed';
 $string['shownumentrieslabel'] = 'Max number entries to show per block.';

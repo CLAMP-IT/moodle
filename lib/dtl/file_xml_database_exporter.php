@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,12 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * XML format exporter class to file storage
  *
- * @package    core
- * @subpackage dtl
+ * @package    core_dtl
  * @copyright  2008 Andrei Bautu
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -31,9 +28,9 @@ defined('MOODLE_INTERNAL') || die();
  * XML format exporter class to file storage.
  */
 class file_xml_database_exporter extends xml_database_exporter {
-    /** Path to the XML data file. */
+    /** @var string Path to the XML data file. */
     protected $filepath;
-    /** File descriptor for the output file. */
+    /** @var resource File descriptor for the output file. */
     protected $file;
 
     /**
@@ -53,6 +50,7 @@ class file_xml_database_exporter extends xml_database_exporter {
 
     /**
      * Specific output method for the file XML sink.
+     * @param string $text
      */
     protected function output($text) {
         fwrite($this->file, $text);
@@ -62,14 +60,16 @@ class file_xml_database_exporter extends xml_database_exporter {
      * Specific implementation for file exporting the database: it opens output stream, calls
      * superclass @see database_exporter::export_database() and closes output stream.
      *
-     * @exception dbtransfer_exception if any checking (e.g. database schema) fails
+     * @throws dbtransfer_exception if any checking (e.g. database schema) fails
      *
      * @param string $description a user description of the data.
      */
     public function export_database($description=null) {
+        global $CFG;
         // TODO: add exception if file creation fails
         $this->file = fopen($this->filepath, 'wb');
         parent::export_database($description);
         fclose($this->file);
+        @chmod($this->filepath, $CFG->filepermissions);
     }
 }

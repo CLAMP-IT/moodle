@@ -17,11 +17,10 @@
 /**
  * Strings for component 'qformat_learnwise', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package    qformat
- * @subpackage learnwise
+ * @package    qformat_learnwise
  * @copyright  2010 Helen Foster
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 $string['pluginname'] = 'Learnwise format';
-$string['plugidnname_help'] = 'This format enables the import of multiple choice questions saved in Learnwise\'s XML format.';
+$string['pluginname_help'] = 'This format enables the import of multiple choice questions saved in Learnwise\'s XML format.';

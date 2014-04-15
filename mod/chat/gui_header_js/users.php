@@ -9,6 +9,7 @@ $chat_sid   = required_param('chat_sid', PARAM_ALPHANUM);
 $beep       = optional_param('beep', 0, PARAM_INT);  // beep target
 
 $PAGE->set_url('/mod/chat/gui_header_js/users.php', array('chat_sid'=>$chat_sid));
+$PAGE->set_popup_notification_allowed(false);
 
 if (!$chatuser = $DB->get_record('chat_users', array('sid'=>$chat_sid))) {
     print_error('notlogged', 'chat');
@@ -20,13 +21,12 @@ if (!$course = $DB->get_record('course', array('id'=>$chatuser->course))) {
 }
 
 //Get the user theme and enough info to be used in chat_format_message() which passes it along to
-if (!$USER = $DB->get_record('user', array('id'=>$chatuser->userid))) { // no optimisation here, it would break again in future!
+if (!$user = $DB->get_record('user', array('id'=>$chatuser->userid, 'deleted'=>0, 'suspended'=>0))) { // no optimisation here, it would break again in future!
     print_error('invaliduser');
 }
+\core\session\manager::set_user($user);
 
 $PAGE->set_pagelayout('embedded');
-
-$USER->description = '';
 
 //Setup course, lang and theme
 $PAGE->set_course($course);
@@ -38,16 +38,7 @@ if (!$cm = get_coursemodule_from_instance('chat', $chatuser->chatid, $courseid))
 }
 
 if ($beep) {
-    $message->chatid    = $chatuser->chatid;
-    $message->userid    = $chatuser->userid;
-    $message->groupid   = $chatuser->groupid;
-    $message->message   = "beep $beep";
-    $message->system    = 0;
-    $message->timestamp = time();
-
-    $DB->insert_record('chat_messages', $message);
-    $DB->insert_record('chat_messages_current', $message);
-
+    chat_send_chatmessage($chatuser, "beep $beep", 0, $cm);
     $chatuser->lastmessageping = time();          // A beep is a ping  ;-)
 }
 
@@ -89,7 +80,6 @@ foreach ($chatusers as $chatuser) {
     $min = $min < 10 ? '0'.$min : $min;
     $sec = $sec < 10 ? '0'.$sec : $sec;
     $idle = $min.':'.$sec;
-    
 
     $row = array();
     $row[0] = $OUTPUT->user_picture($chatuser, array('courseid'=>$courseid, 'popup'=>true));

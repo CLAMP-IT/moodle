@@ -97,15 +97,15 @@ function quiz_report_get_significant_questions($quiz) {
 SELECT
     q.id,
     q.length,
-    qqi.grade AS maxmark
+    qqi.maxmark
 
 FROM {question} q
-JOIN {quiz_question_instances} qqi ON qqi.question = q.id
+JOIN {quiz_question_instances} qqi ON qqi.questionid = q.id
 
 WHERE
     q.id $usql AND
-    qqi.quiz = ? AND
-    length > 0", $params);
+    qqi.quizid = ? AND
+    q.length > 0", $params);
 
     $qsbyslot = array();
     $number = 1;
@@ -137,52 +137,68 @@ function quiz_report_can_filter_only_graded($quiz) {
 }
 
 /**
- * Given the quiz grading method return sub select sql to find the id of the
- * one attempt that will be graded for each user. Or return
- * empty string if all attempts contribute to final grade.
+ * This is a wrapper for {@link quiz_report_grade_method_sql} that takes the whole quiz object instead of just the grading method
+ * as a param. See definition for {@link quiz_report_grade_method_sql} below.
+ *
+ * @param object $quiz
+ * @param string $quizattemptsalias sql alias for 'quiz_attempts' table
+ * @return string sql to test if this is an attempt that will contribute towards the grade of the user
  */
 function quiz_report_qm_filter_select($quiz, $quizattemptsalias = 'quiza') {
     if ($quiz->attempts == 1) {
         // This quiz only allows one attempt.
         return '';
     }
+    return quiz_report_grade_method_sql($quiz->grademethod, $quizattemptsalias);
+}
 
-    switch ($quiz->grademethod) {
+/**
+ * Given a quiz grading method return sql to test if this is an
+ * attempt that will be contribute towards the grade of the user. Or return an
+ * empty string if the grading method is QUIZ_GRADEAVERAGE and thus all attempts
+ * contribute to final grade.
+ *
+ * @param string $grademethod quiz grading method.
+ * @param string $quizattemptsalias sql alias for 'quiz_attempts' table
+ * @return string sql to test if this is an attempt that will contribute towards the graded of the user
+ */
+function quiz_report_grade_method_sql($grademethod, $quizattemptsalias = 'quiza') {
+    switch ($grademethod) {
         case QUIZ_GRADEHIGHEST :
             return "$quizattemptsalias.id = (
-                    SELECT MIN(qa2.id)
-                    FROM {quiz_attempts} qa2
-                    WHERE qa2.quiz = $quizattemptsalias.quiz AND
-                        qa2.userid = $quizattemptsalias.userid AND
-                        COALESCE(qa2.sumgrades, 0) = (
-                            SELECT MAX(COALESCE(qa3.sumgrades, 0))
-                            FROM {quiz_attempts} qa3
-                            WHERE qa3.quiz = $quizattemptsalias.quiz AND
-                                qa3.userid = $quizattemptsalias.userid
-                        )
-                    )";
+                            SELECT MIN(qa2.id)
+                            FROM {quiz_attempts} qa2
+                            WHERE qa2.quiz = $quizattemptsalias.quiz AND
+                                qa2.userid = $quizattemptsalias.userid AND
+                                COALESCE(qa2.sumgrades, 0) = (
+                                    SELECT MAX(COALESCE(qa3.sumgrades, 0))
+                                    FROM {quiz_attempts} qa3
+                                    WHERE qa3.quiz = $quizattemptsalias.quiz AND
+                                        qa3.userid = $quizattemptsalias.userid
+                                )
+                            )";
 
         case QUIZ_GRADEAVERAGE :
             return '';
 
         case QUIZ_ATTEMPTFIRST :
             return "$quizattemptsalias.id = (
-                    SELECT MIN(qa2.id)
-                    FROM {quiz_attempts} qa2
-                    WHERE qa2.quiz = $quizattemptsalias.quiz AND
-                        qa2.userid = $quizattemptsalias.userid)";
+                            SELECT MIN(qa2.id)
+                            FROM {quiz_attempts} qa2
+                            WHERE qa2.quiz = $quizattemptsalias.quiz AND
+                                qa2.userid = $quizattemptsalias.userid)";
 
         case QUIZ_ATTEMPTLAST :
             return "$quizattemptsalias.id = (
-                    SELECT MAX(qa2.id)
-                    FROM {quiz_attempts} qa2
-                    WHERE qa2.quiz = $quizattemptsalias.quiz AND
-                        qa2.userid = $quizattemptsalias.userid)";
+                            SELECT MAX(qa2.id)
+                            FROM {quiz_attempts} qa2
+                            WHERE qa2.quiz = $quizattemptsalias.quiz AND
+                                qa2.userid = $quizattemptsalias.userid)";
     }
 }
 
 /**
- * Get the nuber of students whose score was in a particular band for this quiz.
+ * Get the number of students whose score was in a particular band for this quiz.
  * @param number $bandwidth the width of each band.
  * @param int $bands the number of bands
  * @param int $quizid the quiz id.
@@ -191,6 +207,11 @@ function quiz_report_qm_filter_select($quiz, $quizattemptsalias = 'quiza') {
  */
 function quiz_report_grade_bands($bandwidth, $bands, $quizid, $userids = array()) {
     global $DB;
+    if (!is_int($bands)) {
+        debugging('$bands passed to quiz_report_grade_bands must be an integer. (' .
+                gettype($bands) . ' passed.)', DEBUG_DEVELOPER);
+        $bands = (int) $bands;
+    }
 
     if ($userids) {
         list($usql, $params) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'u');
@@ -220,10 +241,10 @@ ORDER BY
     $data = $DB->get_records_sql_menu($sql, $params);
 
     // We need to create array elements with values 0 at indexes where there is no element.
-    $data =  $data + array_fill(0, $bands+1, 0);
+    $data = $data + array_fill(0, $bands + 1, 0);
     ksort($data);
 
-    // Place the maximum (prefect grade) into the last band i.e. make last
+    // Place the maximum (perfect grade) into the last band i.e. make last
     // band for example 9 <= g <=10 (where 10 is the perfect grade) rather than
     // just 9 <= g <10.
     $data[$bands - 1] += $data[$bands];
@@ -326,7 +347,7 @@ function quiz_report_list($context) {
     }
 
     $reports = $DB->get_records('quiz_reports', null, 'displayorder DESC', 'name, capability');
-    $reportdirs = get_plugin_list('quiz');
+    $reportdirs = core_component::get_plugin_list('quiz');
 
     // Order the reports tab in descending order of displayorder.
     $reportcaps = array();
@@ -401,9 +422,10 @@ function quiz_no_questions_message($quiz, $cm, $context) {
  * Should the grades be displayed in this report. That depends on the quiz
  * display options, and whether the quiz is graded.
  * @param object $quiz the quiz settings.
+ * @param context $context the quiz context.
  * @return bool
  */
-function quiz_report_should_show_grades($quiz) {
+function quiz_report_should_show_grades($quiz, context $context) {
     if ($quiz->timeclose && time() > $quiz->timeclose) {
         $when = mod_quiz_display_options::AFTER_CLOSE;
     } else {
@@ -413,5 +435,5 @@ function quiz_report_should_show_grades($quiz) {
 
     return quiz_has_grades($quiz) &&
             ($reviewoptions->marks >= question_display_options::MARK_AND_MAX ||
-            has_capability('moodle/grade:viewhidden', $this->context));
+            has_capability('moodle/grade:viewhidden', $context));
 }

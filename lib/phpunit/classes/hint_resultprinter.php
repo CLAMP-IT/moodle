@@ -34,6 +34,20 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class Hint_ResultPrinter extends PHPUnit_TextUI_ResultPrinter {
+    public function __construct() {
+        // ARRGH - PHPUnit does not give us commandline arguments or xml config, so let's hack hard!
+        if (defined('DEBUG_BACKTRACE_PROVIDE_OBJECT')) {
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT);
+            if (isset($backtrace[2]['object']) and ($backtrace[2]['object'] instanceof PHPUnit_TextUI_Command)) {
+                list($verbose, $colors, $debug) = Hacky_TextUI_Command_reader::get_settings_hackery($backtrace[2]['object']);
+                parent::__construct(null, $verbose, $colors, $debug);
+                return;
+            }
+        }
+        // Fallback if something goes wrong.
+        parent::__construct(null, false, false, false);
+    }
+
     protected function printDefectTrace(PHPUnit_Framework_TestFailure $defect) {
         global $CFG;
 
@@ -74,6 +88,59 @@ class Hint_ResultPrinter extends PHPUnit_TextUI_ResultPrinter {
             $file = substr($file, strlen($cwd)+1);
         }
 
-        $this->write("\nTo re-run:\n phpunit $testName $file\n");
+        $executable = null;
+
+        if (isset($_SERVER['argv'][0])) {
+            if (preg_match('/phpunit(\.bat|\.cmd)?$/', $_SERVER['argv'][0])) {
+                $executable = $_SERVER['argv'][0];
+                for($i=1;$i<count($_SERVER['argv']);$i++) {
+                    if (!isset($_SERVER['argv'][$i])) {
+                        break;
+                    }
+                    if (in_array($_SERVER['argv'][$i], array('--colors', '--verbose', '-v', '--debug', '--strict'))) {
+                        $executable .= ' '.$_SERVER['argv'][$i];
+                    }
+                }
+            }
+        }
+
+        if (!$executable) {
+            $executable = 'phpunit';
+            if (testing_is_cygwin()) {
+                $file = str_replace('\\', '/', $file);
+                if (!testing_is_mingw()) {
+                    $executable = 'phpunit.bat';
+                }
+            }
+        }
+
+        $this->write("\nTo re-run:\n $executable $testName $file\n");
+    }
+}
+
+
+/**
+ * Class used in bloody hack that works around result printer constructor troubles.
+ *
+ * @package    core
+ * @category   phpunit
+ * @copyright  2012 Petr Skoda {@link http://skodak.org}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class Hacky_TextUI_Command_reader extends PHPUnit_TextUI_Command {
+    public static function get_settings_hackery(PHPUnit_TextUI_Command $toread) {
+        $arguments = $toread->arguments;
+        $config = PHPUnit_Util_Configuration::getInstance($arguments['configuration'])->getPHPUnitConfiguration();
+
+        $verbose = isset($config['verbose']) ? $config['verbose'] : false;
+        $verbose = isset($arguments['verbose']) ? $arguments['verbose'] : $verbose;
+
+        $colors = isset($config['colors']) ? $config['colors'] : false;
+        $colors = isset($arguments['colors']) ? $arguments['colors'] : $colors;
+
+        $debug = isset($config['debug']) ? $config['debug'] : false;
+        $debug = isset($arguments['debug']) ? $arguments['debug'] : $debug;
+
+        return array($verbose, $colors, $debug);
     }
 }

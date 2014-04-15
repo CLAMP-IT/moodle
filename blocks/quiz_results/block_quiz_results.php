@@ -17,8 +17,7 @@
 /**
  * Classes to enforce the various access rules that can apply to a quiz.
  *
- * @package    block
- * @subpackage quiz_results
+ * @package    block_quiz_results
  * @copyright  2009 Tim Hunt
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -35,8 +34,7 @@ require_once($CFG->dirroot . '/mod/quiz/lib.php');
  * This block can be added to a course page or a quiz page to display of list of
  * the best/worst students/groups in a particular quiz.
  *
- * @package    block
- * @subpackage quiz_results
+ * @package    block_quiz_results
  * @copyright  2009 Tim Hunt
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -65,7 +63,7 @@ class block_quiz_results extends block_base {
         if (empty($this->instance->parentcontextid)) {
             return 0;
         }
-        $parentcontext = get_context_instance_by_id($this->instance->parentcontextid);
+        $parentcontext = context::instance_by_id($this->instance->parentcontextid);
         if ($parentcontext->contextlevel != CONTEXT_MODULE) {
             return 0;
         }
@@ -151,7 +149,7 @@ class block_quiz_results extends block_base {
                 $context = $this->page->context;
             } else {
                 $cm = get_coursemodule_from_instance('quiz', $quizid, $courseid);
-                $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+                $context = context_module::instance($cm->id);
             }
             $groupmode = groups_get_activity_groupmode($cm);
 
@@ -378,7 +376,9 @@ class block_quiz_results extends block_base {
 
             // Now grab all the users from the database
             $userids = array_merge(array_keys($best), array_keys($worst));
-            $users = $DB->get_records_list('user', 'id', $userids, '', 'id, firstname, lastname, idnumber');
+            $fields = array_merge(array('id', 'idnumber'), get_all_user_name_fields());
+            $fields = implode(',', $fields);
+            $users = $DB->get_records_list('user', 'id', $userids, '', $fields);
 
             // Ready for output!
 

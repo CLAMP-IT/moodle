@@ -34,13 +34,13 @@ foreach ($url_params as $var => $val) {
 }
 $PAGE->set_url('/blog/index.php', $url_params);
 
-if (empty($CFG->bloglevel)) {
+if (empty($CFG->enableblogs)) {
     print_error('blogdisable', 'blog');
 }
 
 //correct tagid if a text tag is provided as a param
 if (!empty($tag)) {
-    if ($tagrec = $DB->get_record_sql("SELECT * FROM {tag} WHERE ". $DB->sql_like('name', '?', false), array("%$tag%"))) {
+    if ($tagrec = $DB->get_record('tag', array('name' => $tag))) {
         $tagid = $tagrec->id;
     } else {
         unset($tagid);
@@ -56,7 +56,9 @@ if (!empty($groupid) && empty($courseid)) {
     $courseid = $DB->get_field('groups', 'courseid', array('id'=>$groupid));
 }
 
-$sitecontext = get_context_instance(CONTEXT_SYSTEM);
+$sitecontext = context_system::instance();
+// Blogs are always in system context.
+$PAGE->set_context($sitecontext);
 
 // check basic permissions
 if ($CFG->bloglevel == BLOG_GLOBAL_LEVEL) {
@@ -122,15 +124,13 @@ if (!empty($courseid)) {
     }
 
     $courseid = $course->id;
-    $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
-
     require_login($course);
 
-    if (!has_capability('moodle/blog:view', $coursecontext)) {
+    if (!has_capability('moodle/blog:view', $sitecontext)) {
         print_error('cannotviewcourseblog', 'blog');
     }
 } else {
-    $coursecontext = get_context_instance(CONTEXT_COURSE, SITEID);
+    $coursecontext = context_course::instance(SITEID);
 }
 
 if (!empty($groupid)) {
@@ -143,14 +143,14 @@ if (!empty($groupid)) {
     }
 
     if (!$course = $DB->get_record('course', array('id'=>$group->courseid))) {
-        print_error(get_string('invalidcourseid', 'blog'));
+        print_error('invalidcourseid');
     }
 
-    $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+    $coursecontext = context_course::instance($course->id);
     $courseid = $course->id;
     require_login($course);
 
-    if (!has_capability('moodle/blog:view', $coursecontext)) {
+    if (!has_capability('moodle/blog:view', $sitecontext)) {
         print_error(get_string('cannotviewcourseorgroupblog', 'blog'));
     }
 
@@ -183,13 +183,7 @@ if (!empty($userid)) {
             print_error('donothaveblog', 'blog');
         }
     } else {
-        $personalcontext = get_context_instance(CONTEXT_USER, $userid);
-
-        if (!has_capability('moodle/blog:view', $sitecontext) && !has_capability('moodle/user:readuserblogs', $personalcontext)) {
-            print_error('cannotviewuserblog', 'blog');
-        }
-
-        if (!blog_user_can_view_user_entry($userid)) {
+        if (!has_capability('moodle/blog:view', $sitecontext) || !blog_user_can_view_user_entry($userid)) {
             print_error('cannotviewcourseblog', 'blog');
         }
 
@@ -199,15 +193,6 @@ if (!empty($userid)) {
 
 $courseid = (empty($courseid)) ? SITEID : $courseid;
 
-if (empty($entryid) && empty($modid) && empty($groupid)) {
-    $PAGE->set_context(context_user::instance($USER->id));
-} else if (!empty($modid)) {
-    $PAGE->set_context(context_module::instance($modid));
-} else if (!empty($courseid)) {
-    $PAGE->set_context(context_course::instance($courseid));
-} else {
-    $PAGE->set_context(context_system::instance());
-}
 
 $blogheaders = blog_get_headers();
 
@@ -217,7 +202,7 @@ if ($CFG->enablerssfeeds) {
     $thingid = null;
     list($thingid, $rsscontext, $filtertype) = blog_rss_get_params($blogheaders['filters']);
     if (empty($rsscontext)) {
-        $rsscontext = get_system_context();
+        $rsscontext = context_system::instance();
     }
     $rsstitle = $blogheaders['heading'];
 
@@ -238,5 +223,13 @@ $bloglisting = new blog_listing($blogheaders['filters']);
 $bloglisting->print_entries();
 
 echo $OUTPUT->footer();
-
-add_to_log($courseid, 'blog', 'view', 'index.php?entryid='.$entryid.'&amp;tagid='.@$tagid.'&amp;tag='.$tag, 'view blog entry');
+$eventparams = array(
+    'other' => array('entryid' => $entryid, 'tagid' => $tagid, 'userid' => $userid, 'modid' => $modid, 'groupid' => $groupid,
+                     'search' => $search, 'fromstart' => $start)
+);
+if (!empty($userid)) {
+    $eventparams['relateduserid'] = $userid;
+}
+$eventparams['other']['courseid'] = ($courseid === SITEID) ? 0 : $courseid;
+$event = \core\event\blog_entries_viewed::create($eventparams);
+$event->trigger();

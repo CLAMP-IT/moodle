@@ -31,6 +31,16 @@ if (!defined('MOODLE_INTERNAL')) {
 
 //dummy class - all plugins should be based off this.
 class plagiarism_plugin {
+
+    /**
+     * Return the list of form element names.
+     *
+     * @return array contains the form element names.
+     */
+    public function get_configs() {
+        return array();
+    }
+
     /**
      * hook to allow plagiarism specific information to be displayed beside a submission 
      * @param array  $linkarraycontains all relevant information for the plugin to generate a link
@@ -44,21 +54,22 @@ class plagiarism_plugin {
      * hook to allow plagiarism specific information to be returned unformatted
      * @param int $cmid
      * @param int $userid
-     * @param stored_file $file moodle file object
+     * @param $file file object
      * @return array containing at least:
      *   - 'analyzed' - whether the file has been successfully analyzed
      *   - 'score' - similarity score - ('' if not known)
      *   - 'reporturl' - url of originality report - '' if unavailable
      */
-    public function get_file_results($cmid, $userid, stored_file $file) {
+    public function get_file_results($cmid, $userid, $file) {
         return array('analyzed' => '', 'score' => '', 'reporturl' => '');
     }
     /**
      * hook to add plagiarism specific settings to a module settings page
      * @param object $mform  - Moodle form
      * @param object $context - current context
+     * @param string $modulename - Name of the module
      */
-    public function get_form_elements_module($mform, $context) {
+    public function get_form_elements_module($mform, $context, $modulename = "") {
     }
     /* hook to save plagiarism specific settings on a module settings page
      * @param object $data - data from an mform submission.

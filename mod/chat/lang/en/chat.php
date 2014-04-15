@@ -18,15 +18,18 @@
 /**
  * Strings for component 'chat', language 'en', branch 'MOODLE_20_STABLE'
  *
- * @package   chat
+ * @package   mod_chat
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['activityoverview'] = 'You have upcoming chat sessions';
 $string['ajax'] = 'Version using Ajax';
 $string['autoscroll'] = 'Auto scroll';
-$string['beep'] = 'beep';
+$string['beep'] = 'Beep';
+$string['bubble'] = 'Bubble';
 $string['cantlogin'] = 'Could not log in to chat room!!';
+$string['composemessage'] = 'Compose a message';
 $string['configmethod'] = 'The ajax chat method provide an ajax based chat interface, it contacts server regularly for update. The normal chat method involves the clients regularly contacting the server for updates. It requires no configuration and works everywhere, but it can create a large load on the server with many chatters.  Using a server daemon requires shell access to Unix, but it results in a fast scalable chat environment.';
 $string['confignormalupdatemode'] = 'Chatroom updates are normally served efficiently using the <em>Keep-Alive</em> feature of HTTP 1.1, but this is still quite heavy on the server. A more advanced method is to use the <em>Stream</em> strategy to feed updates to the users. Using <em>Stream</em> scales much better (similar to the chatd method) but may not be supported by your server.';
 $string['configoldping'] = 'What is the maximum time that may pass before we detect that a user has disconnected (in seconds)? This is just an upper limit, as usually disconnects are detected very quickly. Lower values will be more demanding on your server. If you are using the normal method, <strong>never</strong> set this lower than 2 * chat_refresh_room.';
@@ -36,6 +39,8 @@ $string['configserverhost'] = 'The hostname of the computer where the server dae
 $string['configserverip'] = 'The numerical IP address that matches the above hostname';
 $string['configservermax'] = 'Max number of clients allowed';
 $string['configserverport'] = 'Port to use on the server for the daemon';
+$string['compact'] = 'Compact';
+$string['coursetheme'] = 'Course theme';
 $string['currentchats'] = 'Active chat sessions';
 $string['currentusers'] = 'Current users';
 $string['deletesession'] = 'Delete this session';
@@ -52,12 +57,15 @@ $string['chat:deletelog'] = 'Delete chat logs';
 $string['chat:exportparticipatedsession'] = 'Export chat session which you took part in';
 $string['chat:exportsession'] = 'Export any chat session';
 $string['chat:chat'] = 'Access a chat room';
-$string['chatintro'] = 'Introduction text';
+$string['chatintro'] = 'Description';
 $string['chatname'] = 'Name of this chat room';
 $string['chat:readlog'] = 'Read chat logs';
 $string['chatreport'] = 'Chat sessions';
 $string['chat:talk'] = 'Talk in a chat';
 $string['chattime'] = 'Next chat time';
+$string['entermessage'] = "Enter your message";
+$string['event_message_sent'] = 'Message sent';
+$string['event_sessions_viewed'] = 'Sessions viewed';
 $string['idle'] = 'Idle';
 $string['inputarea'] = 'Input area';
 $string['invalidid'] = 'Could not find that chat room!';
@@ -98,7 +106,7 @@ $string['nomessages'] = 'No messages yet';
 $string['normalkeepalive'] = 'KeepAlive';
 $string['normalstream'] = 'Stream';
 $string['noscheduledsession'] = 'No scheduled session';
-$string['notallowenter'] = 'You are not allow to enter the chat room.';
+$string['notallowenter'] = 'You are not allowed to enter the chat room.';
 $string['notlogged'] = 'You are not logged in!';
 $string['nopermissiontoseethechatlog'] = 'You don\'t have permission to see the chat logs.';
 $string['oldping'] = 'Disconnect timeout';
@@ -111,7 +119,7 @@ $string['refreshuserlist'] = 'Refresh user list';
 $string['removemessages'] = 'Remove all messages';
 $string['repeatdaily'] = 'At the same time every day';
 $string['repeatnone'] = 'No repeats - publish the specified time only';
-$string['repeattimes'] = 'Repeat sessions';
+$string['repeattimes'] = 'Repeat/publish session times';
 $string['repeatweekly'] = 'At the same time every week';
 $string['saidto'] = 'said to';
 $string['savemessages'] = 'Save past sessions';
@@ -123,7 +131,7 @@ $string['serverip'] = 'Server ip';
 $string['servermax'] = 'Max users';
 $string['serverport'] = 'Server port';
 $string['sessions'] = 'Chat sessions';
-$string['sessionstart'] = 'Chat session will be start in: {$a}';
+$string['sessionstart'] = 'The next chat session will start in {$a}';
 $string['strftimemessage'] = '%H:%M';
 $string['studentseereports'] = 'Everyone can view past sessions';
 $string['studentseereports_help'] = 'If set to No, only users have mod/chat:readlog capability are able to see the chat logs';

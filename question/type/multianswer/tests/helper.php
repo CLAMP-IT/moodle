@@ -17,9 +17,8 @@
 /**
  * Test helpers for the multianswer question type.
  *
- * @package    qtype
- * @subpackage multianswer
- * @copyright  2011 The Open University
+ * @package    qtype_multianswer
+ * @copyright  2013 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -33,12 +32,12 @@ require_once($CFG->dirroot . '/question/type/multianswer/question.php');
 /**
  * Test helper class for the multianswer question type.
  *
- * @copyright  2011 The Open University
+ * @copyright  2013 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qtype_multianswer_test_helper extends question_test_helper {
     public function get_test_questions() {
-        return array('twosubq');
+        return array('twosubq', 'fourmc', 'numericalzero', 'dollarsigns');
     }
 
     /**
@@ -54,6 +53,14 @@ class qtype_multianswer_test_helper extends question_test_helper {
                 'Complete this opening line of verse: "The {#1} and the {#2} went to sea".';
         $q->generalfeedback = 'General feedback: It\'s from "The Owl and the Pussy-cat" by Lear: ' .
                 '"The owl and the pussycat went to sea';
+        $q->qtype = question_bank::get_qtype('multianswer');
+
+        $q->textfragments = array(
+            'Complete this opening line of verse: "The ',
+            ' and the ',
+            ' went to sea".',
+        );
+        $q->places = array('1' => '1', '2' => '2');
 
         // Shortanswer subquestion.
         question_bank::load_question_definition_classes('shortanswer');
@@ -163,7 +170,7 @@ class qtype_multianswer_test_helper extends question_test_helper {
         $mc->options->partiallycorrectfeedbackformat = 1;
         $mc->options->incorrectfeedback = '';
         $mc->options->incorrectfeedbackformat = 1;
-        $mc->options->answernumbering = '';
+        $mc->options->answernumbering = 0;
         $mc->options->shownumcorrect = 0;
 
         $mc->options->answers = array(
@@ -182,8 +189,65 @@ class qtype_multianswer_test_helper extends question_test_helper {
         );
 
         $qdata->hints = array(
-            new question_hint(0, 'Hint 1', FORMAT_HTML),
-            new question_hint(0, 'Hint 2', FORMAT_HTML),
+            new question_hint_with_parts(0, 'Hint 1', FORMAT_HTML, 0, 0),
+            new question_hint_with_parts(0, 'Hint 2', FORMAT_HTML, 0, 0),
+        );
+
+        return $qdata;
+    }
+
+    /**
+     * Makes a multianswer question onetaining one blank in some text.
+     * This question has no hints.
+     *
+     * @return object the question definition data, as it might be returned from
+     * get_question_options.
+     */
+    public function get_multianswer_question_data_dollarsigns() {
+        $qdata = new stdClass();
+        test_question_maker::initialise_question_data($qdata);
+
+        $qdata->name = 'Multianswer with $s';
+        $qdata->questiontext =
+                        'Which is the right order? {#1}';
+        $qdata->generalfeedback = '';
+
+        $qdata->defaultmark = 1.0;
+        $qdata->qtype = 'multianswer';
+
+        $mc = new stdClass();
+        test_question_maker::initialise_question_data($mc);
+
+        $mc->name = 'Multianswer with $s';
+        $mc->questiontext = '{1:MULTICHOICE:=y,y,$3~$3,y,y}';
+        $mc->generalfeedback = '';
+        $mc->penalty = 0.0;
+        $mc->qtype = 'multichoice';
+
+        $mc->options = new stdClass();
+        $mc->options->layout = 0;
+        $mc->options->single = 1;
+        $mc->options->shuffleanswers = 1;
+        $mc->options->correctfeedback = '';
+        $mc->options->correctfeedbackformat = 1;
+        $mc->options->partiallycorrectfeedback = '';
+        $mc->options->partiallycorrectfeedbackformat = 1;
+        $mc->options->incorrectfeedback = '';
+        $mc->options->incorrectfeedbackformat = 1;
+        $mc->options->answernumbering = 0;
+        $mc->options->shownumcorrect = 0;
+
+        $mc->options->answers = array(
+            23 => new question_answer(23, 'y,y,$3', 0, '', FORMAT_HTML),
+            24 => new question_answer(24, '$3,y,y', 0, '', FORMAT_HTML),
+        );
+
+        $qdata->options = new stdClass();
+        $qdata->options->questions = array(
+            1 => $mc,
+        );
+
+        $qdata->hints = array(
         );
 
         return $qdata;
@@ -196,16 +260,14 @@ class qtype_multianswer_test_helper extends question_test_helper {
      */
     public function get_multianswer_question_form_data_twosubq() {
         $formdata = new stdClass();
-        test_question_maker::initialise_question_form_data($formdata);
-
         $formdata->name = 'Simple multianswer';
-        $formdata->questiontext = 'Complete this opening line of verse: "The ' .
+        $formdata->questiontext = array('text' => 'Complete this opening line of verse: "The ' .
                 '{1:SHORTANSWER:Dog#Wrong, silly!~=Owl#Well done!~*#Wrong answer} ' .
                 'and the {1:MULTICHOICE:Bow-wow#You seem to have a dog obsessions!' .
                 '~Wiggly worm#Now you are just being ridiculous!~=Pussy-cat#Well done!}' .
-                ' went to sea".';
-        $formdata->generalfeedback = 'General feedback: It\'s from "The Owl and the Pussy-cat" ' .
-                'by Lear: "The owl and the pussycat went to sea';
+                ' went to sea".', 'format' => FORMAT_HTML);
+        $formdata->generalfeedback = array('text' => 'General feedback: It\'s from "The Owl and the Pussy-cat" ' .
+                'by Lear: "The owl and the pussycat went to sea', 'format' => FORMAT_HTML);
 
         $formdata->hint = array(
             0 => array('text' => 'Hint 1', 'format' => FORMAT_HTML, 'itemid' => 0),
@@ -213,5 +275,116 @@ class qtype_multianswer_test_helper extends question_test_helper {
         );
 
         return $formdata;
+    }
+
+    /**
+     * Makes a multianswer question about completing two blanks in some text.
+     * @return qtype_multianswer_question
+     */
+    public function make_multianswer_question_fourmc() {
+        question_bank::load_question_definition_classes('multianswer');
+        $q = new qtype_multianswer_question();
+        test_question_maker::initialise_a_question($q);
+        $q->name = 'Multianswer four multi-choice';
+        $q->questiontext = '<p>Match the following cities with the correct state:</p>
+                <ul>
+                <li>San Francisco: {#1}</li>
+                <li>Tucson: {#2}</li>
+                <li>Los Angeles: {#3}</li>
+                <li>Phoenix: {#4}</li>
+                </ul>';
+        $q->questiontextformat = FORMAT_HTML;
+        $q->generalfeedback = '';
+        $q->qtype = question_bank::get_qtype('multianswer');
+
+        $q->textfragments = array('<p>Match the following cities with the correct state:</p>
+                <ul>
+                <li>San Francisco: ', '</li>
+                <li>Tucson: ', '</li>
+                <li>Los Angeles: ', '</li>
+                <li>Phoenix: ', '</li>
+                </ul>');
+        $q->places = array('1' => '1', '2' => '2', '3' => '3', '4' => '4');
+
+        $subqdata = array(
+            1 => array('qt' => '{1:MULTICHOICE:=California#OK~Arizona#Wrong}', 'California' => 'OK', 'Arizona' => 'Wrong'),
+            2 => array('qt' => '{1:MULTICHOICE:%0%California#Wrong~=Arizona#OK}', 'California' => 'Wrong', 'Arizona' => 'OK'),
+            3 => array('qt' => '{1:MULTICHOICE:=California#OK~Arizona#Wrong}', 'California' => 'OK', 'Arizona' => 'Wrong'),
+            4 => array('qt' => '{1:MULTICHOICE:%0%California#Wrong~=Arizona#OK}', 'California' => 'Wrong', 'Arizona' => 'OK'),
+        );
+
+        foreach ($subqdata as $i => $data) {
+            // Multiple-choice subquestion.
+            question_bank::load_question_definition_classes('multichoice');
+            $mc = new qtype_multichoice_single_question();
+            test_question_maker::initialise_a_question($mc);
+            $mc->name = 'Multianswer four multi-choice';
+            $mc->questiontext = $data['qt'];
+            $mc->questiontextformat = FORMAT_HTML;
+            $mc->generalfeedback = '';
+            $mc->generalfeedbackformat = FORMAT_HTML;
+
+            $mc->shuffleanswers = 0; // TODO this is a cheat to make the unit tests easier to write.
+            // In reality, multianswer questions always shuffle.
+            $mc->answernumbering = 'none';
+            $mc->layout = qtype_multichoice_base::LAYOUT_DROPDOWN;
+
+            $mc->answers = array(
+                10 * $i     => new question_answer(13, 'California', (float) ($data['California'] == 'OK'),
+                        $data['California'], FORMAT_HTML),
+                10 * $i + 1 => new question_answer(14, 'Arizona', (float) ($data['Arizona'] == 'OK'),
+                        $data['Arizona'], FORMAT_HTML),
+            );
+            $mc->qtype = question_bank::get_qtype('multichoice');
+            $mc->maxmark = 1;
+
+            $q->subquestions[$i] = $mc;
+        }
+
+        return $q;
+    }
+
+    /**
+     * Makes a multianswer question with one numerical subquestion, right answer 0.
+     * This is used for testing the MDL-35370 bug.
+     * @return qtype_multianswer_question
+     */
+    public function make_multianswer_question_numericalzero() {
+        question_bank::load_question_definition_classes('multianswer');
+        $q = new qtype_multianswer_question();
+        test_question_maker::initialise_a_question($q);
+        $q->name = 'Numerical zero';
+        $q->questiontext =
+                'Enter zero: {#1}.';
+        $q->generalfeedback = '';
+        $q->qtype = question_bank::get_qtype('multianswer');
+
+        $q->textfragments = array(
+            'Enter zero: ',
+            '.',
+        );
+        $q->places = array('1' => '1');
+
+        // Numerical subquestion.
+        question_bank::load_question_definition_classes('numerical');
+        $sub = new qtype_numerical_question();
+        test_question_maker::initialise_a_question($sub);
+        $sub->name = 'Numerical zero';
+        $sub->questiontext = '{1:NUMERICAL:=0:0}';
+        $sub->questiontextformat = FORMAT_HTML;
+        $sub->generalfeedback = '';
+        $sub->generalfeedbackformat = FORMAT_HTML;
+        $sub->answers = array(
+            13 => new qtype_numerical_answer(13, '0', 1.0, '', FORMAT_HTML, 0),
+        );
+        $sub->qtype = question_bank::get_qtype('numerical');
+        $sub->ap = new qtype_numerical_answer_processor(array());
+        $sub->maxmark = 1;
+
+        $q->subquestions = array(
+            1 => $sub,
+        );
+
+        return $q;
     }
 }

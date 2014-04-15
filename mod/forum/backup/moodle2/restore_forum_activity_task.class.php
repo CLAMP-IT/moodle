@@ -16,10 +16,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package moodlecore
+ * @package    mod_forum
  * @subpackage backup-moodle2
- * @copyright 2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -112,6 +112,7 @@ class restore_forum_activity_task extends restore_activity_task {
         $rules[] = new restore_log_rule('forum', 'delete discussion', 'view.php?id={course_module}', '{forum}');
         $rules[] = new restore_log_rule('forum', 'add post', 'discuss.php?d={forum_discussion}&parent={forum_post}', '{forum_post}');
         $rules[] = new restore_log_rule('forum', 'update post', 'discuss.php?d={forum_discussion}#p{forum_post}&parent={forum_post}', '{forum_post}');
+        $rules[] = new restore_log_rule('forum', 'update post', 'discuss.php?d={forum_discussion}&parent={forum_post}', '{forum_post}');
         $rules[] = new restore_log_rule('forum', 'prune post', 'discuss.php?d={forum_discussion}', '{forum_post}');
         $rules[] = new restore_log_rule('forum', 'delete post', 'discuss.php?d={forum_discussion}', '[post]');
 
