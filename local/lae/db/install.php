@@ -56,6 +56,7 @@ function xmldb_local_lae_install() {
         $anon_user->email = get_string('auser_email', 'local_lae');
         if ($result = $DB->insert_record('user', $anon_user)) {
             set_config('anonymous_userid', $result);
+            context_user::instance($result);
         } else {
             print_error("Failed to create anonymous user");
             return false;

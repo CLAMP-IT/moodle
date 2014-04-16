@@ -26,4 +26,11 @@ function xmldb_local_lae_upgrade($oldversion) {
         $DB->update_record('user', $user);
         upgrade_plugin_savepoint(true, 2014010900, 'local', 'lae');
     }
+
+    if ($oldversion < 2014041600) {
+        // Set context for Anonymous User.
+        $user = $DB->get_record('user', array('id' => $CFG->anonymous_userid));
+        context_user::instance($user->id);
+        upgrade_plugin_savepoint(true, 2014041600, 'local', 'lae');
+    }
 }
