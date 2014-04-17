@@ -38,3 +38,15 @@
 [submodule "lib/mathjax"]
 	path = lib/mathjax
 	url = git://github.com/mathjax/MathJax.git
+[submodule "question/behaviour/dfexplicitvaildate"]
+	path = question/behaviour/dfexplicitvaildate
+	url = git://github.com/maths/moodle-qbehaviour_dfexplicitvaildate.git
+[submodule "question/behaviour/dfcbmexplicitvaildate"]
+	path = question/behaviour/dfcbmexplicitvaildate
+	url = git://github.com/maths/moodle-qbehaviour_dfcbmexplicitvaildate.git
+[submodule "question/behaviour/adaptivemultipart"]
+	path = question/behaviour/adaptivemultipart
+	url = git://github.com/maths/moodle-qbehaviour_adaptivemultipart.git
+[submodule "question/type/stack"]
+	path = question/type/stack
+	url = git://github.com/maths/moodle-qtype_stack.git
