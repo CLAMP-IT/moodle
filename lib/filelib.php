@@ -824,6 +824,17 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
     $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftitemid, 'id');
     $oldfiles   = $fs->get_area_files($contextid, $component, $filearea, $itemid, 'id');
 
+    // If a user is copying and pasting there may be other draftfile areas.
+    if (!is_null($text)) {
+        $matches = array();
+        preg_match_all('/' . preg_quote($wwwroot, '/') . '\/draftfile\.php\/' . $usercontext->id . '\/user\/draft\/([0-9]*)/', $text, $matches);
+        if (!empty($matches[1])) {
+            foreach($matches[1] as $draftid) {
+                $draftfiles = array_merge($draftfiles, $fs->get_area_files($usercontext->id, 'user', 'draft', $draftid, 'id')); 
+            }
+        }
+    }
+
     // One file in filearea means it is empty (it has only top-level directory '.').
     if (count($draftfiles) > 1 || count($oldfiles) > 1) {
         // we have to merge old and new files - we want to keep file ids for files that were not changed
@@ -990,6 +1001,11 @@ function file_rewrite_urls_to_pluginfile($text, $draftitemid, $forcehttps = fals
 
     // relink embedded files if text submitted - no absolute links allowed in database!
     $text = str_ireplace("$wwwroot/draftfile.php/$usercontext->id/user/draft/$draftitemid/", '@@PLUGINFILE@@/', $text);
+
+    // Attempt to rescue copy/paste draftfiles
+    if (strpos($text, "draftfile.php/$usercontext->id") !== false) {
+       $text = preg_replace('/(' . preg_quote($wwwroot, '/') . '\/draftfile\.php\/' . $usercontext->id . '\/user\/draft\/[0-9]*)/', '@@PLUGINFILE@@', $text);
+    }
 
     if (strpos($text, 'draftfile.php?file=') !== false) {
         $matches = array();
