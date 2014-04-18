@@ -829,8 +829,10 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
         $matches = array();
         preg_match_all('/' . preg_quote($wwwroot, '/') . '\/draftfile\.php\/' . $usercontext->id . '\/user\/draft\/([0-9]*)/', $text, $matches);
         if (!empty($matches[1])) {
+            $draftitemid = array($draftitemid);
             foreach($matches[1] as $draftid) {
                 $draftfiles = array_merge($draftfiles, $fs->get_area_files($usercontext->id, 'user', 'draft', $draftid, 'id')); 
+                $draftitemid[] = $draftid;
             }
         }
     }
@@ -985,7 +987,7 @@ function file_save_draft_area_files($draftitemid, $contextid, $component, $filea
  *
  * @category files
  * @param string $text the content to process.
- * @param int $draftitemid the draft file area the content was using.
+ * @param mixed $draftitemid the draft file area(s) the content was using.
  * @param bool $forcehttps whether the content contains https URLs. Default false.
  * @return string the processed content.
  */
@@ -999,24 +1001,28 @@ function file_rewrite_urls_to_pluginfile($text, $draftitemid, $forcehttps = fals
         $wwwroot = str_replace('http://', 'https://', $wwwroot);
     }
 
-    // relink embedded files if text submitted - no absolute links allowed in database!
-    $text = str_ireplace("$wwwroot/draftfile.php/$usercontext->id/user/draft/$draftitemid/", '@@PLUGINFILE@@/', $text);
+    // We may have multiple draft file areas.
+    if (!is_array($draftitemid)) {
+        $draftitemid = array($draftitemid);
+    }
 
-    // Attempt to rescue copy/paste draftfiles
-    if (strpos($text, "draftfile.php/$usercontext->id") !== false) {
-       $text = preg_replace('/(' . preg_quote($wwwroot, '/') . '\/draftfile\.php\/' . $usercontext->id . '\/user\/draft\/[0-9]*)/', '@@PLUGINFILE@@', $text);
+    // relink embedded files if text submitted - no absolute links allowed in database!
+    foreach($draftitemid as $dii) {
+        $text = str_ireplace("$wwwroot/draftfile.php/$usercontext->id/user/draft/$dii/", '@@PLUGINFILE@@/', $text);
     }
 
     if (strpos($text, 'draftfile.php?file=') !== false) {
-        $matches = array();
-        preg_match_all("!$wwwroot/draftfile.php\?file=%2F{$usercontext->id}%2Fuser%2Fdraft%2F{$draftitemid}%2F[^'\",&<>|`\s:\\\\]+!iu", $text, $matches);
-        if ($matches) {
-            foreach ($matches[0] as $match) {
-                $replace = str_ireplace('%2F', '/', $match);
-                $text = str_replace($match, $replace, $text);
+        foreach($draftiemid as $dii) {
+            $matches = array();
+            preg_match_all("!$wwwroot/draftfile.php\?file=%2F{$usercontext->id}%2Fuser%2Fdraft%2F{$dii}%2F[^'\",&<>|`\s:\\\\]+!iu", $text, $matches);
+            if ($matches) {
+                foreach ($matches[0] as $match) {
+                    $replace = str_ireplace('%2F', '/', $match);
+                    $text = str_replace($match, $replace, $text);
+                }
             }
+            $text = str_ireplace("$wwwroot/draftfile.php?file=/$usercontext->id/user/draft/$dii/", '@@PLUGINFILE@@/', $text);
         }
-        $text = str_ireplace("$wwwroot/draftfile.php?file=/$usercontext->id/user/draft/$draftitemid/", '@@PLUGINFILE@@/', $text);
     }
 
     return $text;
