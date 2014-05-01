@@ -4,3 +4,9 @@
 [submodule "blocks/course_search"]
 	path = blocks/course_search
 	url = https://github.com/oohoo/moodle-block_course_search.git
+[submodule "theme/wfi"]
+	path = theme/wfi
+	url = http://kevinwiliarty.com/git/moodle-theme_wfi.git
+[submodule "course/format/grid"]
+	path = course/format/grid
+	url = https://github.com/gjb2048/moodle-courseformat_grid.git
