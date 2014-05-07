@@ -10,3 +10,6 @@
 [submodule "course/format/grid"]
 	path = course/format/grid
 	url = https://github.com/gjb2048/moodle-courseformat_grid.git
+[submodule "mod/certificate"]
+	path = mod/certificate
+	url = https://github.com/markn86/moodle-mod_certificate.git
