@@ -13,3 +13,6 @@
 [submodule "mod/certificate"]
 	path = mod/certificate
 	url = https://github.com/markn86/moodle-mod_certificate.git
+[submodule "mod/questionnaire"]
+	path = mod/questionnaire
+	url = https://github.com/remotelearner/moodle-mod_questionnaire.git
