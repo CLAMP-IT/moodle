@@ -41,3 +41,6 @@
 [submodule "question/type/stack"]
 	path = question/type/stack
 	url = git://github.com/maths/moodle-qtype_stack.git
+[submodule "filter/ipa"]
+	path = filter/ipa
+	url = https://github.com/kwiliarty/moodle-filter_ipa.git
