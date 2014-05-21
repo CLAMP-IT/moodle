@@ -329,6 +329,7 @@ class grade_report_laeuser extends grade_report {
         global $DB, $COURSE;
         $userid = $this->user->id;
 		$this->load_final_grades($userid);
+		$this->gtree->emptycats = array();
         $this->gtree->accuratepointsprelimcalculation($this->grades); // gives us our pctg in case we have drop or keep situations
 //        $this->gtree->grades = $this->grades;
         if (isset($this->target_letter)) {
