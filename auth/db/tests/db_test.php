@@ -81,7 +81,11 @@ class auth_db_testcase extends advanced_testcase {
                 set_config('sybasequoting', '0', 'auth/db');
                 if (!empty($CFG->dboptions['dbsocket']) and ($CFG->dbhost === 'localhost' or $CFG->dbhost === '127.0.0.1')) {
                     if (strpos($CFG->dboptions['dbsocket'], '/') !== false) {
-                        set_config('host', $CFG->dboptions['dbsocket'], 'auth/db');
+                        $socket = $CFG->dboptions['dbsocket'];
+                        if (!empty($CFG->dboptions['dbport'])) {
+                            $socket .= ':' . $CFG->dboptions['dbport'];
+                        }
+                        set_config('host', $socket, 'auth/db');
                     } else {
                         set_config('host', '', 'auth/db');
                     }
@@ -180,12 +184,12 @@ class auth_db_testcase extends advanced_testcase {
         $user3 = (object)array('name'=>'admin', 'pass'=>'heslo', 'email'=>'admin@example.com'); // Should be skipped.
         $user3->id = $DB->insert_record('auth_db_users', $user3);
 
-        $this->assertCount(2, $DB->get_records('user'));
+        $this->assertCount(3, $DB->get_records('user'));
 
         $trace = new null_progress_trace();
         $auth->sync_users($trace, false);
 
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $u1 = $DB->get_record('user', array('username'=>$user1->name, 'auth'=>'db'));
         $this->assertSame($user1->email, $u1->email);
         $u2 = $DB->get_record('user', array('username'=>$user2->name, 'auth'=>'db'));
@@ -201,12 +205,12 @@ class auth_db_testcase extends advanced_testcase {
         $DB->update_record('auth_db_users', $user2b);
 
         $auth->sync_users($trace, false);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $u2 = $DB->get_record('user', array('username'=>$user2->name));
         $this->assertSame($user2->email, $u2->email);
 
         $auth->sync_users($trace, true);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $u2 = $DB->get_record('user', array('username'=>$user2->name));
         $this->assertSame($user2->email, $u2->email);
 
@@ -214,12 +218,12 @@ class auth_db_testcase extends advanced_testcase {
         $auth->config->field_updatelocal_email = 'onlogin';
 
         $auth->sync_users($trace, false);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $u2 = $DB->get_record('user', array('username'=>$user2->name));
         $this->assertSame($user2->email, $u2->email);
 
         $auth->sync_users($trace, true);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $u2 = $DB->get_record('user', array('username'=>$user2->name));
         $this->assertSame($user2b->email, $u2->email);
 
@@ -232,7 +236,7 @@ class auth_db_testcase extends advanced_testcase {
         unset($user2b);
 
         $auth->sync_users($trace, false);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $this->assertEquals(0, $DB->count_records('user', array('deleted'=>1)));
         $this->assertEquals(0, $DB->count_records('user', array('suspended'=>1)));
 
@@ -240,7 +244,7 @@ class auth_db_testcase extends advanced_testcase {
         $auth->config->removeuser = AUTH_REMOVEUSER_SUSPEND;
 
         $auth->sync_users($trace, false);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $this->assertEquals(0, $DB->count_records('user', array('deleted'=>1)));
         $this->assertEquals(1, $DB->count_records('user', array('suspended'=>1)));
 
@@ -248,7 +252,7 @@ class auth_db_testcase extends advanced_testcase {
         $user2->id = $DB->insert_record('auth_db_users', $user2);
 
         $auth->sync_users($trace, false);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $this->assertEquals(0, $DB->count_records('user', array('deleted'=>1)));
         $this->assertEquals(0, $DB->count_records('user', array('suspended'=>1)));
 
@@ -258,7 +262,7 @@ class auth_db_testcase extends advanced_testcase {
         $auth->config->removeuser = AUTH_REMOVEUSER_FULLDELETE;
 
         $auth->sync_users($trace, false);
-        $this->assertEquals(4, $DB->count_records('user'));
+        $this->assertEquals(5, $DB->count_records('user'));
         $this->assertEquals(1, $DB->count_records('user', array('deleted'=>1)));
         $this->assertEquals(0, $DB->count_records('user', array('suspended'=>1)));
 
@@ -266,7 +270,7 @@ class auth_db_testcase extends advanced_testcase {
         $user2->id = $DB->insert_record('auth_db_users', $user2);
 
         $auth->sync_users($trace, false);
-        $this->assertEquals(5, $DB->count_records('user'));
+        $this->assertEquals(6, $DB->count_records('user'));
         $this->assertEquals(1, $DB->count_records('user', array('deleted'=>1)));
         $this->assertEquals(0, $DB->count_records('user', array('suspended'=>1)));
 

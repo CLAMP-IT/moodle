@@ -814,15 +814,10 @@ function quiz_refresh_events($courseid = 0) {
  */
 function quiz_get_recent_mod_activity(&$activities, &$index, $timestart,
         $courseid, $cmid, $userid = 0, $groupid = 0) {
-    global $CFG, $COURSE, $USER, $DB;
+    global $CFG, $USER, $DB;
     require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
-    if ($COURSE->id == $courseid) {
-        $course = $COURSE;
-    } else {
-        $course = $DB->get_record('course', array('id' => $courseid));
-    }
-
+    $course = get_course($courseid);
     $modinfo = get_fast_modinfo($course);
 
     $cm = $modinfo->cms[$cmid];
@@ -869,11 +864,6 @@ function quiz_get_recent_mod_activity(&$activities, &$index, $timestart,
     $grader          = has_capability('mod/quiz:viewreports', $context);
     $groupmode       = groups_get_activity_groupmode($cm, $course);
 
-    if (is_null($modinfo->groups)) {
-        // Load all my groups and cache it in modinfo.
-        $modinfo->groups = groups_get_user_groups($course->id);
-    }
-
     $usersgroups = null;
     $aname = format_string($cm->name, true);
     foreach ($attempts as $attempt) {
@@ -884,16 +874,10 @@ function quiz_get_recent_mod_activity(&$activities, &$index, $timestart,
             }
 
             if ($groupmode == SEPARATEGROUPS and !$accessallgroups) {
-                if (is_null($usersgroups)) {
-                    $usersgroups = groups_get_all_groups($course->id,
-                            $attempt->userid, $cm->groupingid);
-                    if (is_array($usersgroups)) {
-                        $usersgroups = array_keys($usersgroups);
-                    } else {
-                        $usersgroups = array();
-                    }
-                }
-                if (!array_intersect($usersgroups, $modinfo->groups[$cm->id])) {
+                $usersgroups = groups_get_all_groups($course->id,
+                        $attempt->userid, $cm->groupingid);
+                $usersgroups = array_keys($usersgroups);
+                if (!array_intersect($usersgroups, $modinfo->get_groups($cm->groupingid))) {
                     continue;
                 }
             }
@@ -1752,8 +1736,14 @@ function quiz_question_pluginfile($course, $context, $component,
  */
 function quiz_page_type_list($pagetype, $parentcontext, $currentcontext) {
     $module_pagetype = array(
-        'mod-quiz-*'=>get_string('page-mod-quiz-x', 'quiz'),
-        'mod-quiz-edit'=>get_string('page-mod-quiz-edit', 'quiz'));
+        'mod-quiz-*'       => get_string('page-mod-quiz-x', 'quiz'),
+        'mod-quiz-view'    => get_string('page-mod-quiz-view', 'quiz'),
+        'mod-quiz-attempt' => get_string('page-mod-quiz-attempt', 'quiz'),
+        'mod-quiz-summary' => get_string('page-mod-quiz-summary', 'quiz'),
+        'mod-quiz-review'  => get_string('page-mod-quiz-review', 'quiz'),
+        'mod-quiz-edit'    => get_string('page-mod-quiz-edit', 'quiz'),
+        'mod-quiz-report'  => get_string('page-mod-quiz-report', 'quiz'),
+    );
     return $module_pagetype;
 }
 

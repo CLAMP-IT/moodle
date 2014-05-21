@@ -233,7 +233,6 @@ class tool_installaddon_installer {
         if ($plugintypepath === false) {
             throw new coding_exception('Plugin type location does not exist!');
         }
-
         return is_writable($plugintypepath);
     }
 
