@@ -96,8 +96,8 @@ class filter_rtmp extends moodle_text_filter
         $regex = '~<a\s[^>]*href="(rtmp:\/\/(?:playlist=[^"]*|[^"]*(?:' . $this->embedmarkers . '))[^"]*)"[^>]*>([^>]*)</a>~is';
         $newtext = preg_replace_callback($regex, array($this, 'callback'), $text);
 
-        // If no joy then return original
-        if (empty($newtext)) {
+        // If no joy or no change then return original
+        if (empty($newtext) || $newtext === $text) {
             return $text;
         }
 
@@ -188,11 +188,11 @@ class filter_rtmp extends moodle_text_filter
      * @param int    $width        Output variable: width (will be set to 0 if not specified)
      * @param int    $height       Output variable: height (0 if not specified)
      * @return array               Containing two elements, an array of 1 or more moodle_url objects, and an array of names (optional)
-     * @uses $DB, $COURSE
+     * @uses $DB, $COURSE, $CFG
      */
     private static function split_alternatives($combinedurl, &$width, &$height)
     {
-        global $DB, $COURSE;
+        global $DB, $COURSE, $CFG;
 
 
         $orig_urls    = array_map('trim', explode('#', $combinedurl));
@@ -204,7 +204,8 @@ class filter_rtmp extends moodle_text_filter
 
 
         // First pass through the array to expand any playlist entries
-        $expanded_urls = array();
+        // and look for height-width parameters
+        $expanded_list = array();
 
         foreach ($orig_urls as $url) {
 
@@ -216,71 +217,63 @@ class filter_rtmp extends moodle_text_filter
                 // are concerned are placed) is massaged, converting
                 // ampersands. We need to put them back to match the
                 // playlist name
-                $playlist_name = str_replace('&amp;', '&', $matches[1]);
-                $playlist_record = self::get_playlist($COURSE->id, $playlist_name);
+                $playlist_record = self::get_playlist($COURSE->id, htmlspecialchars_decode($matches[1]));
                 if (!$playlist_record) {
                     continue;
                 }
 
                 foreach (explode("\n", $playlist_record->list) as $list_item) {
-                    @list($list_item_url, $list_item_name) = array_map('trim', explode(',', $list_item, 2));
-                    array_push($expanded_urls, $list_item_url);
-                    if (!empty($list_item_name)) {
-                        $clip_names[$list_item_url] = $list_item_name;
-                    }
+                    $expanded_list[] = trim($list_item);
                 }
 
+                // With a playlist, do not want the page littered
+                // with links while waiting for the JavaScript to
+                // replace them with the media player
                 $options[core_media::OPTION_NO_LINK] = true;
+
+            } elseif (preg_match('/^d=([\d]{1,4})x([\d]{1,4})$/i', $url, $matches)) {
+
+                // You can specify the size as a separate part of the array like
+                // #d=640x480 without actually including as part of a url.
+                $width  = $matches[1];
+                $height = $matches[2];
+                continue;
 
             } else {
 
                 // Append as is
-                array_push($expanded_urls, $url);
+                $expanded_list[] = $url;
 
             }
 
         } // foreach - first pass
 
-        $options['PLAYLIST_NAMES'] = $clip_names;
-
 
         // Second pass, massage the URLs and parse any height or width
-        foreach ($expanded_urls as $url) {
+        // or clip name or close caption directive
+        foreach($expanded_list as $list_item) {
 
-            $matches = null;
-
-            // You can specify the size as a separate part of the array like
-            // #d=640x480 without actually including as part of a url.
-            if (preg_match('/^d=([\d]{1,4})x([\d]{1,4})$/i', $url, $matches)) {
-                $width  = $matches[1];
-                $height = $matches[2];
-                continue;
-            }
-
-            // Can also include the ?d= as part of one of the URLs (if you use
-            // more than one they will be ignored except the last).
-            if (preg_match('/\?d=([\d]{1,4})x([\d]{1,4})$/i', $url, $matches)) {
-                $width  = $matches[1];
-                $height = $matches[2];
-
-                // Trim from URL.
-                $url    = str_replace($matches[0], '', $url);
-            }
+            // First parse using comma delimter to separate playlist
+            // names (if present) from the URL
+            @list($list_item_url, $list_item_name) = array_map('trim', explode(',', $list_item, 2));
 
             // Clean up url. But first substitute the rtmp scheme with
             // http to allow validation against everything else, then
             // put the rtmp back.
-            $url = preg_replace('/^rtmp:\/\//i', 'http://', $url, 1);
-            $url = clean_param($url, PARAM_URL);
-            if (empty($url)) {
+            $list_item_url = preg_replace('/^rtmp:\/\//i', 'http://', $list_item_url, 1);
+            $list_item_url = clean_param($list_item_url, PARAM_URL);
+            if (empty($list_item_url)) {
                 continue;
             }
-            $url = preg_replace('/^http:\/\//', 'rtmp://', $url, 1);
+            $list_item_url = preg_replace('/^http:\/\//', 'rtmp://', $list_item_url, 1);
 
             // Turn it into moodle_url object.
-            $clip_urls[] = new moodle_url($url);
+            $clip_urls[]    = new moodle_url($list_item_url);
+            $clip_names[]   = empty($list_item_name) ? '' : htmlspecialchars_decode($list_item_name);
 
         } // foreach - second pass
+
+        $options['PLAYLIST_NAMES'] = $clip_names;
 
         return array($clip_urls, $options);
 
@@ -309,7 +302,9 @@ class filter_rtmp extends moodle_text_filter
         $glob_paths = array(
                 'js'   => $flowlibpath . "/flowplayer-[0-9].[0-9].?*.min.js",
                 'swf'  => $flowlibpath . "/flowplayer-[0-9].[0-9].?*.swf",
-                'rtmp' => $filterpath  . "/flowplayer.rtmp-[0-9].[0-9].?*.swf"
+                'rtmp' => $filterpath  . "/flowplayer.rtmp-[0-9].[0-9].?*.swf",
+                'caption' => $filterpath  . "/flowplayer.captions-[0-9].[0-9].?*.swf",
+                'content' => $filterpath  . "/flowplayer.content-[0-9].[0-9].?*.swf"
         );
 
         $retval = '';

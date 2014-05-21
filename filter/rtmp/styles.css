@@ -1,4 +1,4 @@
-.filter_rtmp_video { display: inline-block; border: solid 10px #292929; font-size: 0px; vertical-align:top; min-height: 240px; background-color: #292929; }
+.filter_rtmp_video { display: inline-block; border: solid 10px #292929; font-size: 0px; vertical-align:top; min-height: 180px; background-color: #292929; }
 .filter_rtmp_video_playlist { display: inline-block; float: left; border: solid 10px #292929; background-color: #292929; width: 260px; overflow-y: scroll; }
 .filter_rtmp_video_playlist a { display: block; padding: .3em; background: url([[pix:filter_rtmp|gradient_h]]) repeat-x #eaeaea; border-bottom: solid 1px #333; text-decoration: none; color: #333333; cursor: pointer; line-height: 1.2em; }
 .filter_rtmp_video_playlist a.playing, .filter_rtmp_video_playlist a.paused, .filter_rtmp_video_playlist a.progress { background: url([[pix:filter_rtmp|gradient]]) repeat-x #fff; color: #666; font-weight: bold; }

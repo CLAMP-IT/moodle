@@ -29,13 +29,15 @@ M.filter_rtmp = {
 
     Y: null, transaction: [],
 
-    _js_flowplayer: M.cfg.wwwroot + filter_rtmp_flowplayer_js,
-    _swf_cfg_base:  M.cfg.wwwroot + filter_rtmp_flowplayer_swf,
-    _swf_cfg_rtmp:  M.cfg.wwwroot + filter_rtmp_flowplayer_rtmp,
-    _min_video_width: 300,
-    _default_volume: 80,
+    _js_flowplayer   : M.cfg.wwwroot + filter_rtmp_flowplayer_js,
+    _swf_cfg_base    : M.cfg.wwwroot + filter_rtmp_flowplayer_swf,
+    _swf_cfg_rtmp    : M.cfg.wwwroot + filter_rtmp_flowplayer_rtmp,
+    _swf_cfg_caption : M.cfg.wwwroot + filter_rtmp_flowplayer_caption,
+    _swf_cfg_content : M.cfg.wwwroot + filter_rtmp_flowplayer_content,
+    _min_video_width : 240,
+    _default_volume  : 80,
 
-    
+
     init_flowplayer_rtmp_video: function(playerNode) {
 
         // Get the attributes for the playerNode
@@ -49,6 +51,9 @@ M.filter_rtmp = {
         var mediaAutosize = playerNode.getAttribute('data-media-autosize');
         if (typeof(mediaAutosize) == 'undefined') { mediaAutosize = true; }
         else { mediaAutosize = (isNaN(mediaAutosize) ? false : parseInt(mediaAutosize) == 1); }
+        var useCaptions = playerNode.getAttribute('data-media-captions');
+        if (typeof(useCaptions) == 'undefined') { useCaptions = false; }
+        else { useCaptions = (isNaN(useCaptions) ? false : parseInt(useCaptions) == 1); }
 
         var flashConfig = { src: M.filter_rtmp._swf_cfg_base };
         // If dimensions specified, pass along in Flash configs
@@ -82,27 +87,51 @@ M.filter_rtmp = {
 
         var flowConfig = {
             plugins: {
-                controls: { autoHide: true }, rtmp: { url: M.filter_rtmp._swf_cfg_rtmp, objectEncoding: 0 }
+                controls: { autoHide: true }, rtmp: { url: M.filter_rtmp._swf_cfg_rtmp, objectEncoding: 0 },
             },
             clip: baseClip,
             onLoad: function() {
                 this.setVolume(M.filter_rtmp._default_volume); this.unmute();
             }
         };
+        var captionsConfig = { url: M.filter_rtmp._swf_cfg_caption, captionTarget: 'content' };
+        var contentConfig  = {
+            url: M.filter_rtmp._swf_cfg_content,
+            top: 0, width: '85%', height: 40,
+            backgroundColor: 'transparent', backgroundGradient: 'none',
+            border: 0, textDecoration: 'outline',
+            style: { 'body': { fontSize: '14', fontFamily: 'verdana,arial,helvetica,sans-serif', textAlign: 'center', color: '#ffffff' } }
+        };
 
         var playlistNodes = M.filter_rtmp.Y.all('span.filter_rtmp_video_playlist.' + playerId + ' a.clip');
         if (playlistNodes.size() == 0) {
             baseClip.netConnectionUrl = playerNode.getAttribute('data-media-conx');
             baseClip.url = playerNode.getAttribute('data-media-path');
+            if (useCaptions) {
+                flowConfig.plugins.captions = captionsConfig;
+                flowConfig.plugins.content  = contentConfig;
+            }
             flowplayer(playerId, flashConfig, flowConfig);
         } else {
             M.filter_rtmp.attachPlaylistPlugin();
             M.filter_rtmp.Y.one('.filter_rtmp_video_playlist.' + playerId).setStyle('height', mediaHeight);
-            var playlist = [];
+            var playlist = []; var needCC = false;
             playlistNodes.each(function(node, nodeIndex) {
-                playlist[nodeIndex] = { index: nodeIndex, url: node.getAttribute('data-media-path'), netConnectionUrl: node.getAttribute('data-media-conx') };
+                playlist[nodeIndex] = { index: nodeIndex, url: node.getAttribute('data-media-path'), netConnectionUrl: node.getAttribute('data-media-conx'), showCC: node.getAttribute('data-media-captions') == '1' };
+                needCC = playlist[nodeIndex].showCC;
             });
             flowConfig.playlist = playlist;
+            if (needCC) {
+                flowConfig.plugins.captions = captionsConfig;
+                flowConfig.plugins.content  = contentConfig;
+                flowConfig.clip.onBegin = function(clip) {
+                    var cap = this.getPlugin('captions');
+                    var cnt = this.getPlugin('content');
+                    if (this.getPlaylist()[clip.index].showCC) { cap.showButton(); cnt.show(); }
+                    else { cap.hideButton(); cnt.hide(); }
+                    return true;
+                };
+            }
             flowplayer(playerId, flashConfig, flowConfig).playlist(playlistNodes);
         }
 
