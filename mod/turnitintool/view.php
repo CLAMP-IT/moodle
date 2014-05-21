@@ -12,6 +12,7 @@ require_once("../../lib/form/datetimeselector.php");
 require_once("../../lib/form/hidden.php");
 require_once("../../lib/form/button.php");
 require_once("../../lib/form/submit.php");
+require_once("version.php");
 if (!turnitintool_check_config()) {
     turnitintool_print_error('configureerror','turnitintool',NULL,NULL,__FILE__,__LINE__);
     exit();
@@ -57,7 +58,7 @@ if ($id) {
 require_login($course->id);
 
 if (isset($PAGE) AND is_callable(array($PAGE->requires, 'js'))) { // Are we using new moodle or old?
-    $jsurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.7.2.min.js');
+    $jsurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.11.0.min.js');
     $PAGE->requires->js($jsurl,true);
     $jsurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/scripts/datatables.min.js');
     $PAGE->requires->js($jsurl);
@@ -70,7 +71,7 @@ if (isset($PAGE) AND is_callable(array($PAGE->requires, 'js'))) { // Are we usin
     $cssurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/styles.css');
     $PAGE->requires->css($cssurl);
 } else {
-    require_js($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.7.2.min.js');
+    require_js($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.11.0.min.js');
     require_js($CFG->wwwroot.'/mod/turnitintool/scripts/turnitintool.js');
 }
 turnitintool_activitylog("turnitintool.js Loaded","REQUIRE_JS");
@@ -411,7 +412,6 @@ if (isset($PAGE) AND @is_callable(array($PAGE->requires, 'js'))) { // Are we usi
 }
 
 turnitintool_footer($course);
-$module=turnitintool_get_record('modules','name','turnitintool');
 $parts=turnitintool_get_records('turnitintool_parts','turnitintoolid',$turnitintool->id);
 $parts_string="(";
 foreach ($parts as $part) {

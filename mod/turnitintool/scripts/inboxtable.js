@@ -1,6 +1,8 @@
+jQuery.noConflict();
+
 (function($){
     $.inboxTable = {
-    init: function( uid, displayusi, turnitintool_datatables_strings ) {
+    init: function( uid, displayusi, turnitintool_datatables_strings, date_format ) {
         $.fn.dataTableExt.oStdClasses.sSortable = "header sort";
         $.fn.dataTableExt.oStdClasses.sSortableNone = "header nosort";
         $.fn.dataTableExt.oStdClasses.sSortAsc = "header asc";
@@ -8,25 +10,34 @@
         $.fn.dataTableExt.oStdClasses.sWrapper = "submissionTable";
         $.fn.dataTableExt.oStdClasses.sStripeOdd = "row r0";
         $.fn.dataTableExt.oStdClasses.sStripeEven = "row r1";
+
+        // Decide table ordering based on langconfig setting
+        if (date_format ==  "%d/%m/%y, %H:%M") {
+            console.log(date_format);
+            sortSubmittedDate = "date-uk";
+        }else{
+            sortSubmittedDate = "date"; //US date is default
+        }
+
         var oTable = $("#inboxTable").dataTable( {
             "aoColumns": [
-                    { "bSearchable": false, "bSortable": true, "bVisible": false }, // [0] Sort ID Column, Unique to preserver sorting when filtering
-                    { "bSearchable": true, "bSortable": true, "bVisible": false }, // [1] Sort Display title, is shown in the sort header row
-                    { "bSearchable": true, "bSortable": true, "bVisible": true, "aDataSort": [ 1, 2 ] }, // [2] The first column shown, contains the file name, user name, part name, anon button
-                    { "bSearchable": true, "bSortable": true, "bVisible": false }, // [3] Column to store the USI (Unique Student Identifier), used with Rosetta Pseudo behaviour
-                    { "bSearchable": false, "bSortable": true, "bVisible": displayusi, "iDataSort": [ 3 ] }, // [4] USI field, blank but will store the USI in row header if enabled
-                    { "bSearchable": true, "bSortable": true, "sType": "numeric", "bVisible": true }, // [5] Paper ID Column
-                    { "bSearchable": false, "bSortable": true, "sType": "date", "bVisible": true }, // [6] The Submitted Date
+                    { "bSearchable": false, "bSortable": true, "bVisible": false },                                              // [0] Sort ID Column, Unique to preserver sorting when filtering
+                    { "bSearchable": true, "bSortable": true, "bVisible": false },                                               // [1] Sort Display title, is shown in the sort header row
+                    { "bSearchable": true, "bSortable": true, "bVisible": true, "aDataSort": [ 1, 2 ] },                         // [2] The first column shown, contains the file name, user name, part name, anon button
+                    { "bSearchable": true, "bSortable": true, "bVisible": false },                                               // [3] Column to store the USI (Unique Student Identifier), used with Rosetta Pseudo behaviour
+                    { "bSearchable": false, "bSortable": true, "bVisible": displayusi, "iDataSort": [ 3 ] },                     // [4] USI field, blank but will store the USI in row header if enabled
+                    { "bSearchable": true, "bSortable": true, "sType": "numeric", "bVisible": true },                            // [5] Paper ID Column
+                    { "bSearchable": false, "bSortable": true, "sType": sortSubmittedDate, "bVisible": true },                   // [6] The Submitted Date
                     { "bSearchable": false, "bSortable": true, "asSorting": [ "desc" ], "sType": "numeric", "bVisible": false }, // [7] Raw data for the Similarity score
-                    { "bSearchable": false, "bSortable": true, "sType": "numeric", "bVisible": true, "iDataSort": [ 7 ] }, // [8] Similarity Display Column, the HTML for the originality report launch
-                    { "bSearchable": true, "bSortable": true, "asSorting": [ "desc" ], "bVisible": false }, // [9] Overall Grade Column, Used to sort and to Display above the Grade Display Column
-                    { "bSearchable": false, "bSortable": true, "sType": "numeric", "bVisible": false }, // [10] Raw data for the submission grade, Used to sort
-                    { "bSearchable": false, "bSortable": true, "sType": "numeric", "bVisible": true, "aDataSort": [ 10 ] }, // [11] Grade Display Column, the HTML for the grademark launch
-                    { "bSearchable": false, "bSortable": false, "bVisible": true }, // [12] Student View Indicator column
-                    { "bSearchable": false, "bSortable": false, "bVisible": true }, // [13] Comments / Feed Back column
-                    { "bSearchable": false, "bSortable": false, "bVisible": true }, // [14] Download Button column
-                    { "bSearchable": false, "bSortable": false, "bVisible": true }, // [14] Refresh Row column
-                    { "bSearchable": false, "bSortable": false, "bVisible": true } // [15] Delete Button column
+                    { "bSearchable": false, "bSortable": true, "sType": "numeric", "bVisible": true, "iDataSort": [ 7 ] },       // [8] Similarity Display Column, the HTML for the originality report launch
+                    { "bSearchable": true, "bSortable": true, "asSorting": [ "desc" ], "bVisible": false },                      // [9] Overall Grade Column, Used to sort and to Display above the Grade Display Column
+                    { "bSearchable": false, "bSortable": true, "sType": "numeric", "bVisible": false },                          // [10] Raw data for the submission grade, Used to sort
+                    { "bSearchable": false, "bSortable": true, "sType": "numeric", "bVisible": true, "aDataSort": [ 10 ] },      // [11] Grade Display Column, the HTML for the grademark launch
+                    { "bSearchable": false, "bSortable": false, "bVisible": true },                                              // [12] Student View Indicator column
+                    { "bSearchable": false, "bSortable": false, "bVisible": true },                                              // [13] Comments / Feed Back column
+                    { "bSearchable": false, "bSortable": false, "bVisible": true },                                              // [14] Download Button column
+                    { "bSearchable": false, "bSortable": false, "bVisible": true },                                              // [14] Refresh Row column
+                    { "bSearchable": false, "bSortable": false, "bVisible": true }                                               // [15] Delete Button column
                 ],
             "fnDrawCallback": function ( oSettings ) {
 

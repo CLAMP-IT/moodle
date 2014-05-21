@@ -60,7 +60,7 @@ class turnitintool_loaderbarclass {
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
                 </head>
 		<body></body>
-                <script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.7.2.min.js"></script>
+                <script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.11.0.min.js"></script>
                 <script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/scripts/turnitintool.js"></script>
 		<script type="text/javascript" src="'.$CFG->wwwroot.'/mod/turnitintool/scripts/loaderbar.js"></script>
 		<script type="text/javascript" language="javascript">

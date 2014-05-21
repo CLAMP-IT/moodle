@@ -105,7 +105,7 @@ class mod_turnitintool_mod_form extends moodleform_mod {
             $numsubs=0;
         }
 
-        if ($updating AND $CFG->turnitin_useanon AND isset($turnitintool->anon) AND $numsubs>0) {
+        if ($updating AND $CFG->turnitin_useanon AND isset($turnitintool->anon) AND $turnitintool->submitted==1) {
             $staticout=(isset($turnitintool->anon) AND $turnitintool->anon) ? get_string('yes', 'turnitintool') : get_string('no', 'turnitintool');
             $mform->addElement('static', 'static', get_string('turnitinanon', 'turnitintool'), $staticout);
             $mform->addElement('hidden', 'anon', $turnitintool->anon);
@@ -234,7 +234,6 @@ class mod_turnitintool_mod_form extends moodleform_mod {
             $mform->disabledIf('erater_dictionary','erater', 'eq', 0);
 
             $mform->addElement('checkbox', 'erater_spelling', get_string('erater_categories', 'turnitintool'), " ".get_string('erater_spelling', 'turnitintool'));
-            turnitintool_modform_help_icon('erater_spelling', 'erater_spelling', 'turnitintool', $mform);
             $mform->setDefault('erater_spelling', false);
             $mform->disabledIf('erater_spelling','erater', 'eq', 0);
 

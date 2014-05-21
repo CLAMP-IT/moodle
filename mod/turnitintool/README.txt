@@ -1,5 +1,21 @@
 Moodle Direct Release Notes
 ------------------------------------------------------------------------------------
+Date:       2014-Apr-04
+Release:    v2013111403
+
+- Anonymous marking option is locked once a submission is made to any assignment part
+- Upgraded jQuery to 1.11.0
+- Added cURL CA cert link to INSTALL.html
+- Fixes:
+    > Improved appearance of errors that appear during refresh submissions
+    > Inbox sort on date now works with UK date format dd/mm/yy as well as mm/dd/yy
+    > Fix for generic API errors being returned when using non-English language
+    > Non-OR capable submissions now show "--" for similarity in assignment inbox
+      rather than "0%"
+    > Added file check to identify submissions that are missing from disk/corrupt in
+      Moodle and remove the associated submission
+
+####################################################################################
 Date:       2014-Feb-26
 Release:    v2013111402
 
@@ -58,22 +74,22 @@ Release:    v2011081801
 - Added additional email notification options in the admin config screen
 
 ####################################################################################
-Date:		2011-July-29
-Release:	v2011072901
+Date:       2011-July-29
+Release:    v2011072901
 
 - Added support Bulk Download of Submissions in PDF and Original format
 - Added feature to download grade report XLS spreadsheet
 - Added Multi tutor management screen
 
 ####################################################################################
-Date:		2010-Nov-19
-Release:	v2010111901
+Date:       2010-Nov-19
+Release:    v2010111901
 
 - Added support for Moodle groups
 
 ####################################################################################
-Date:		2010-Oct-26
-Release:	v2010102601
+Date:       2010-Oct-26
+Release:    v2010102601
 
 - Added pagination to the inbox
 - Updated database fields and tables for Oracle support
@@ -86,47 +102,47 @@ Release:	v2010102601
     > Fixed issue with incorrect / incomplete ordering of anonymous inbox
 
 ####################################################################################
-Date:		2010-Sept-01
-Release:	v2010090101
+Date:       2010-Sept-01
+Release:    v2010090101
 
 - Added various changes to add compatibility for Moodle 2.0
-	> Refactored table output to support both Moodle 1.9 - 2.0
-	> Updated language pack, incorporated help into standard language strings
-	> Updated Javascript and CSS file functionality
-	> Added Moodle 2.0 Back Up and Restore
-	> Changed file storage to use Moodle 2.0 file storage where available
-	> Moved images to 'pix' directory instead of 'images'
+    > Refactored table output to support both Moodle 1.9 - 2.0
+    > Updated language pack, incorporated help into standard language strings
+    > Updated Javascript and CSS file functionality
+    > Added Moodle 2.0 Back Up and Restore
+    > Changed file storage to use Moodle 2.0 file storage where available
+    > Moved images to 'pix' directory instead of 'images'
 - Added Backup and Restore for Moodle 1.9
 
 ####################################################################################
-Date:		2010-June-19
-Release:	v2010061901
+Date:       2010-June-19
+Release:    v2010061901
 
 - Added additional diagnostic logging
 - Added Authenticated Proxy support
 
 ####################################################################################
-Date:		2010-June-12
-Release:	v2010061201
+Date:       2010-June-12
+Release:    v2010061201
 
 - Refactored Inbox SQL queries
 
 ####################################################################################
-Date:		2010-June-2
-Release:	v2010060201
+Date:       2010-June-2
+Release:    v2010060201
 
 - Added support for UTF-8 intepretation of API return data
 
 ####################################################################################
-Date:		2010-April-23
-Release:	v2010042301
+Date:       2010-April-23
+Release:    v2010042301
 
 - Removed redundant assignment synching cron functionality
 - Now allows resubmission to the same paper ID
 
 ####################################################################################
-Date: 		2010-April-06
-Release:	v2010040601
+Date:       2010-April-06
+Release:    v2010040601
  
 - Provides seamless integration into Turnitin using Moodle workflow 
 - Uses an activity module so that we can update Turnitin independently of Moodle 
@@ -145,5 +161,3 @@ Current Limitations
 - Will not update information changed in Turnitin by users in native Turnitin 
 - Will not work with assignments created under the framed-in API 
 - No support for revision assignment, master classes, GradeMark analytics, translations, Zip file upload, PeerMark, QuickSubmit
-
-

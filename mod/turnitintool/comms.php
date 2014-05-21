@@ -233,6 +233,9 @@ class turnitintool_commclass {
 
             // note overlap is the Originality Percentage Score
             $output[$objectid]["overlap"] = ( !is_null( $high_overlap ) AND $similarityscore != "-1" ) ? (string)$high_overlap : null;
+            if ($similarityscore == "-2") {
+                $output[$objectid]['overlap'] = -2;
+            }
 
             $score = (string)$object->score;
             $output[$objectid]["grademark"] = ( $score === '0' OR ( !is_null( $score ) AND $score != "-1" ) ) ? $score : null;
@@ -450,9 +453,10 @@ class turnitintool_commclass {
             $this->curlerror=$result;
         }
         $this->doLogging($vars,$result);
-        return utf8_decode($result);
+
         curl_close($ch);
-        fclose($temp_pem);
+
+        return $result;
 
     }
     /**

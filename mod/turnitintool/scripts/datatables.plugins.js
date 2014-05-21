@@ -77,6 +77,24 @@ tiiQ.fn.dataTableExt.aTypes.unshift(
         return null;
     }
 );
+tiiQ.extend( tiiQ.fn.dataTableExt.oSort, {
+   "date-uk-pre": function ( a ) {
+        var ukDatea = a.split('/');
+        ukDatea[2] = ukDatea[2].substring(0,2);
+        if(ukDatea[0].length == 1){
+            ukDatea[0] = '0'+ukDatea[0];
+        }
+        return (ukDatea[2] + ukDatea[1] + ukDatea[0]) * 1;
+    },
+
+    "date-uk-asc": function ( a, b ) {
+        return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+    },
+
+    "date-uk-desc": function ( a, b ) {
+        return ((a < b) ? 1 : ((a > b) ? -1 : 0));
+    }
+} );
 tiiQ.fn.dataTableExt.oApi.fnStandingRedraw = function(oSettings) {
     if(oSettings.oFeatures.bServerSide === false){
         var before = oSettings._iDisplayStart;

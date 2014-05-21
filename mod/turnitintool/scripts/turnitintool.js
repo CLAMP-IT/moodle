@@ -115,7 +115,11 @@ function refreshSubmissionsAjax( sidin, priority ) {
             },
             'error': function( xhr ) {
                 jQuery("#inboxNotice").hide();
-                alert( xhr.responseText );
+                var errorText = jQuery(xhr.responseText).find("p.errormessage span").text();
+                if (errorText == "") {
+                    errorText = xhr.responseText;
+                };
+                alert( errorText );
                 return;
             }
         } );
