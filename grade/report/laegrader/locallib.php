@@ -697,7 +697,7 @@ class grade_tree_local extends grade_tree {
                     continue;
                 } else if ($element['object']->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2) {
                     if (isset($grades[$id]->cat_item)) {
-                        $combined_weight += array_sum($this->items[$id]->cat_max); // TODO: fix this to use cat_max or something
+                        $combined_weight += array_sum($grades[$id]->cat_max); // TODO: fix this to use cat_max or something
                     	$contribution += array_sum($grades[$id]->cat_item) / array_sum($grades[$id]->cat_max);
                     } else {
                         $combined_weight += $this->items[$id]->grademax; // TODO: fix this to use cat_max or something
@@ -709,14 +709,14 @@ class grade_tree_local extends grade_tree {
             }
 
             // how much potential grades are left to be earned
-            // normalizer adjust the weights to be equal to 100
+            // normalizer adjust the weights to be equal to container_weight
             // weight adjuster is multiplied by the child's weight to achieve the right percentage of the container weight
-            if ($combined_weight == 0 && $missing_weight == 0) {
+            if ($combined_weight == 0) {
                 $normalizer = 1;
-                $weight_adjuster = 1;
+//                $weight_adjuster = 1; // don't use this???
             } else {
-                $normalizer = 100 / ($combined_weight + $missing_weight);
-                $weight_adjuster = $container_weight / $normalizer;
+                $normalizer = $container_weight / $combined_weight;
+//                $weight_adjuster = $container_weight / $normalizer; // don't user this ??
             }
 
             // go back through and apply normalizer to have weights add up to container
@@ -743,7 +743,7 @@ class grade_tree_local extends grade_tree {
                     $weight_adjuster = 1;
                     $this->items[$id]->weight = $container_weight * $weight_adjuster; // TODO: fix this to use cat_max or something
                 } else if ($element['object']->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2) {
-                    $weight_adjuster = $this->items[$id]->grademax / ($combined_weight + $missing_weight);
+                    $weight_adjuster = $this->items[$id]->grademax / $combined_weight;
                     $this->items[$id]->weight = $container_weight * $weight_adjuster; // TODO: fix this to use cat_max or something
                 }
             }
