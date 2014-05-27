@@ -138,6 +138,7 @@ class grade_report_laegrader extends grade_report_grader {
 
         // Grab the grade_tree for this course
         $this->gtree = grade_tree_local_helper($this->courseid, false, $switch, null, $nooutcomes, $this->currentgroup);
+        $this->gtree->showtotalsifcontainhidden = $showtotalsifcontainhidden;
 
         // Fill items with parent information needed later for laegrader report
         $this->gtree->parents = array();
@@ -1170,10 +1171,8 @@ class grade_report_laegrader extends grade_report_grader {
                 // if we have an accumulated total points that's not accurately reflected in the db, then we want to display the ACCURATE number
                 // we only need to take the extra calculation into account if points display since percent and letter are accurate by their nature
                 // If the settings don't call for ACCURATE point totals ($this->accuratetotals) then there will be no earned_total value
-//                $tempmax = $item->grademax;
-                if (isset($items[$itemid]->cat_max)) {
-                	$grade_maxes = $items[$itemid]->cat_max;
-                	$item->grademax = array_sum($grade_maxes);
+                if (isset($item->max_earnable)) {
+                	$item->grademax = $item->max_earnable;
                 }
                 if ((!$unused->is_hidden() || $showtotalsifcontainhidden == GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN)
                 		&& $this->accuratetotals
@@ -1185,7 +1184,6 @@ class grade_report_laegrader extends grade_report_grader {
                 $formattedrange = $item->get_formatted_range(GRADE_DISPLAY_TYPE_REAL, $rangesdecimalpoints);
                 $itemcell->text = $OUTPUT->container($formattedrange, 'rangevalues'.$hidden);
                 $rangerow->cells[] = $itemcell;
-//                $item->grademax = $tempmax;
             }
             $rows[] = $rangerow;
         }

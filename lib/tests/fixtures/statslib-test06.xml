@@ -65,7 +65,7 @@
             <value>[end]</value>
             <value>0</value>
             <value>enrolments</value>
-            <value>4</value>
+            <value>5</value>
             <value>1</value>
         </row>
         <!-- Query 9 -->
@@ -74,7 +74,7 @@
             <value>[end]</value>
             <value>[frontpage_roleid]</value>
             <value>enrolments</value>
-            <value>4</value>
+            <value>5</value>
             <value>1</value>
         </row>
         <!-- Query 11 -->
