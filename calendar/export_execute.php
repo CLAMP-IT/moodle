@@ -24,9 +24,14 @@ if (!$checkuserid && !$checkusername) {
 }
 
 //Check authentication token
-$authuserid = !empty($userid) && $authtoken == sha1($userid . $user->password . $CFG->calendar_exportsalt);
+$authuserid = !empty($userid) && $authtoken == calendar_authtoken_generator::generate_calendar_authtoken($user);
 //allowing for fallback check of old url - MDL-27542
-$authusername = !empty($username) && $authtoken == sha1($username . $user->password . $CFG->calendar_exportsalt);
+// Stuff username into the id field so that we can generate an authtoken based on name instead of id.
+$authobj = new stdClass();
+$authobj->id = $username;
+$authobj->password = $user->password;
+$authusername = !empty($username) && $authtoken == calendar_authtoken_generator::generate_calendar_authtoken($authobj);
+
 if (!$authuserid && !$authusername) {
     die('Invalid authentication');
 }
@@ -44,7 +49,7 @@ $allowed_what = array('all', 'courses');
 $allowed_time = array('weeknow', 'weeknext', 'monthnow', 'monthnext', 'recentupcoming', 'custom');
 
 if (!empty($generateurl)) {
-    $authtoken = sha1($user->id . $user->password . $CFG->calendar_exportsalt);
+    $authtoken = calendar_authtoken_generator::generate_calendar_authtoken($user);
     $params = array();
     $params['preset_what'] = $what;
     $params['preset_time'] = $time;

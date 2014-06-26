@@ -121,6 +121,17 @@ define('CALENDAR_SUBSCRIPTION_UPDATE', 1);
 define('CALENDAR_SUBSCRIPTION_REMOVE', 2);
 
 /**
+ * CALENDAR_AUTHTOKEN_METHOD_DEFAULT - default method of generating calendar export authtokens
+ */
+define('CALENDAR_AUTHTOKEN_METHOD_DEFAULT', 1);
+
+/**
+ * CALENDAR_AUTHTOKEN_METHOD_USERNAME_ONLY - alternate method of generating calendar export authtokens,
+ * using name instead of id and without using password
+ */
+define('CALENDAR_AUTHTOKEN_METHOD_USERNAME_ONLY', 2);
+
+/**
  * Return the days of the week
  *
  * @return array array of days
@@ -3210,4 +3221,124 @@ function calendar_cron() {
     mtrace('Finished updating calendar subscriptions.');
 
     return true;
+}
+
+/**
+ * Calendar authtoken generator
+ *
+ * This class has a single public static method and exists so that various
+ * areas of the code can generate calendar export authtokens consistently. It
+ * also provides a more centralized part of the code so that alternate token 
+ * generation schemes can be more easily supported.
+ *
+ * @package core_calendar
+ * @category calendar
+ * @copyright 2014 Thomas Feiler
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class calendar_authtoken_generator {
+    /**
+     * Generates an authentication token for calendar. This is a refactored entry point
+     * that calls a helper function to generate a token according to a configuration value.
+     *
+     * Various types can be passed in as userdata with the following behavior:
+     *  + null: do a db lookup for the currently logged in user and generate an authtoken from that
+     *  + number: do a db lookup for the user with that user id and generate an authtoken from that
+     *  + string: do a db lookup for the user with that username and generate an authtoken from that
+     *  + stdClass: skip the db lookup and generate an authtoken from userdata directly
+     *
+     *  If a complete object is passed in, it must have the necessary fields on it or an
+     *  exception will be thrown. The necessary fields vary based on the type of authtoken
+     *  being generated.
+     *
+     * @param mixed $userdata param that identifies/represents a user.
+     * @return an authtoken
+     * @throws coding_exception if passed in or retrieved user object is missing required fields.
+     */
+    public static function generate_calendar_authtoken($userdata = null) {
+        $generationmethod = get_config(NULL,'calendar_authtokenmethod');
+
+        switch ($generationmethod) {
+            case CALENDAR_AUTHTOKEN_METHOD_USERNAME_ONLY:
+                $authtoken = self::generate_calendar_authtoken_username_only($userdata);
+                break;
+
+            case CALENDAR_AUTHTOKEN_METHOD_DEFAULT:
+            default:
+                $authtoken = self::generate_calendar_authtoken_default($userdata);
+                break;
+        }
+
+        return $authtoken;
+    }
+
+    /**
+     * Either looks up a user from the database according to the rules defined above,
+     * or just verifies that a passed in user object contains the required fields.
+     *
+     * @param mixed $userdata param that identifies/represents a user.
+     * @param string $fields the fields to retrieve from the database and to verify on the user
+     * @return a user stdClass
+     */
+    private static function lookup_user($userdata, $fields) {
+        global $DB, $USER;
+
+        if ($userdata == null) {
+            $user = $DB->get_record('user', array('id' => $USER->id), $fields);
+        } else if (is_numeric($userdata)) {
+            $user = $DB->get_record('user', array('id' => $userdata), $fields);
+        } else if (is_string($userdata)) {
+            $user = $DB->get_record('user', array('username' => $userdata), $fields);
+        } else if (get_class($userdata) == "stdClass") {
+            $user = $userdata;
+        }
+
+        foreach (explode(",", $fields) as $field) {
+            if (!property_exists($user, $field)) {
+                throw new coding_exception('Invalid user object');
+            }
+        }
+
+        return $user;
+    }
+
+    /**
+     * Helper function that generates an authtoken in the standard Moodle 2.7 way, using
+     * a userid and hashed password to identify a user. The authtoken is a sha1 hash of
+     * userid+password+salt.
+     *
+     * Note that the "id" passed as part of userdata does not necessarily have to actually
+     * be an id; you could for instance pass in an object with an id of "somename" if
+     * you wanted to generate an authtoken that was based on username+password+salt.
+     *
+     * @param mixed $userdata param that identifies/represents a user.
+     * @return an authtoken
+     */
+    private static function generate_calendar_authtoken_default($userdata = null) {
+        global $CFG;
+        $user = self::lookup_user($userdata, 'id,password');
+        $authtoken = sha1($user->id . $user->password . $CFG->calendar_exportsalt);
+        return $authtoken;
+    }
+
+    /**
+     * Helper function that generates an authtoken in an alternate way, using just the username
+     * to identify a user. The authtoken is a sha1 hash of username+salt.
+     *
+     * @param mixed $userdata param that identifies/represents a user.
+     * @return an authtoken
+     */
+    private static function generate_calendar_authtoken_username_only($userdata = null) {
+        global $CFG;
+        if (is_string($userdata)) {
+            // Not necessary to hit the db; just create a stdClass on the fly.
+            $user = new stdClass();
+            $user->username = $userdata;
+        } else {
+            $user = self::lookup_user($userdata, 'username');
+        }
+
+        $authtoken = sha1($user->username . $CFG->calendar_exportsalt);
+        return $authtoken;
+    }
 }

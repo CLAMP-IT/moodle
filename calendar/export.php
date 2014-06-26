@@ -138,7 +138,7 @@ switch($action) {
         // Get the number of days.
         $numberofdaysinweek = $calendartype->get_num_weekdays();
 
-        $authtoken = sha1($USER->id . $DB->get_field('user', 'password', array('id'=>$USER->id)). $CFG->calendar_exportsalt);
+        $authtoken = calendar_authtoken_generator::generate_calendar_authtoken();
         // Let's populate some vars to let "common tasks" be somewhat smart...
         // If today it's weekend, give the "next week" option.
         $allownextweek = $weekend & (1 << $now['wday']);

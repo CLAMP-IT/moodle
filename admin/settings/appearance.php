@@ -1,5 +1,7 @@
 <?php
 
+require_once($CFG->dirroot.'/calendar/lib.php'); // For CALENDAR_AUTHTOKEN_METHOD_* consts.
+
 // This file defines settingpages and externalpages under the "appearance" category
 
 $capabilities = array(
@@ -90,6 +92,16 @@ if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) { // sp
     $temp->add(new admin_setting_configselect('calendar_exportlookback', new lang_string('configexportlookback','admin'), new lang_string('helpexportlookback', 'admin'), 5, $days));
     $temp->add(new admin_setting_configtext('calendar_exportsalt', new lang_string('calendarexportsalt','admin'), new lang_string('configcalendarexportsalt', 'admin'), random_string(60)));
     $temp->add(new admin_setting_configcheckbox('calendar_showicalsource', new lang_string('configshowicalsource', 'admin'), new lang_string('helpshowicalsource','admin'), 1));
+
+    $authtokenmethods = array(
+        CALENDAR_AUTHTOKEN_METHOD_DEFAULT => get_string('calendarauthtokenmethoddefault', 'admin'),
+        CALENDAR_AUTHTOKEN_METHOD_USERNAME_ONLY => get_string('calendarauthtokenmethodusernameonly', 'admin')
+    );
+    $temp->add(new admin_setting_configselect('calendar_authtokenmethod',
+                                                new lang_string('configcalendarauthtokenmethod','admin'),
+                                                new lang_string('helpcalendarauthtokenmethod', 'admin'),
+                                                CALENDAR_AUTHTOKEN_METHOD_DEFAULT,
+                                                $authtokenmethods));
     $ADMIN->add('appearance', $temp);
 
     // blog
