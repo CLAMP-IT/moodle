@@ -78,6 +78,7 @@ Options:
                       required in non-interactive mode.
 --allow-unstable      Install even if the version is not marked as stable yet,
                       required in non-interactive mode.
+--skip-database         Stop the installation before installing the database.
 -h, --help            Print out this help
 
 Example:
@@ -263,6 +264,7 @@ list($options, $unrecognized) = cli_get_params(
         'non-interactive'   => false,
         'agree-license'     => false,
         'allow-unstable'    => false,
+        'skip-database'     => false,
         'help'              => false
     ),
     array(
@@ -759,7 +761,11 @@ if (!core_plugin_manager::instance()->all_plugins_ok($version, $failed)) {
     cli_error(get_string('pluginschecktodo', 'admin'));
 }
 
-install_cli_database($options, $interactive);
+if (!$options['skip-database']) {
+    install_cli_database($options, $interactive);
+} else {
+    echo get_string('cliskipdatabase', 'install')."\n";
+}
 
 echo get_string('cliinstallfinished', 'install')."\n";
 exit(0); // 0 means success
