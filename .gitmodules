@@ -53,3 +53,6 @@
 [submodule "filter/ipa"]
 	path = filter/ipa
 	url = https://github.com/kwiliarty/moodle-filter_ipa.git
+[submodule "filter/videojs"]
+	path = filter/videojs
+	url = http://kevinwiliarty.com/git/moodle-filter_videojs.git
