@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.popup");
-Clazz.load (null, "J.popup.PopupResource", ["java.io.BufferedReader", "$.StringReader", "java.util.Properties", "J.i18n.GT"], function () {
+Clazz.load (null, "J.popup.PopupResource", ["java.util.Properties", "J.i18n.GT", "J.io.JmolBinary"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.structure = null;
 this.words = null;
@@ -28,7 +28,7 @@ return (str == null ? key : str);
 $_M(c$, "setStructure", 
 function (slist) {
 if (slist == null) return;
-var br =  new java.io.BufferedReader ( new java.io.StringReader (slist));
+var br = J.io.JmolBinary.getBR (slist);
 var line;
 var pt;
 try {

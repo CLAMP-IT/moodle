@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.adapter.smarter");
-Clazz.load (null, "J.adapter.smarter.Resolver", ["java.lang.Character", "$.Float", "java.util.StringTokenizer", "J.adapter.smarter.AtomSetCollectionReader", "$.SmarterJmolAdapter", "J.io.LimitedLineReader", "J.util.Logger", "$.Parser"], function () {
+Clazz.load (null, "J.adapter.smarter.Resolver", ["java.lang.Character", "$.Float", "java.util.StringTokenizer", "JU.PT", "J.adapter.smarter.AtomSetCollectionReader", "$.SmarterJmolAdapter", "J.api.JmolDocument", "J.io.LimitedLineReader", "J.util.Logger"], function () {
 c$ = Clazz.declareType (J.adapter.smarter, "Resolver");
 c$.getReaderClassBase = $_M(c$, "getReaderClassBase", 
 function (type) {
@@ -102,8 +102,10 @@ throw e;
 }
 }, "~O,java.util.Map");
 c$.determineAtomSetCollectionReader = $_M(c$, "determineAtomSetCollectionReader", 
-($fz = function (bufferedReader, returnLines) {
-var llr =  new J.io.LimitedLineReader (bufferedReader, 16384);
+($fz = function (readerOrDocument, returnLines) {
+if (Clazz.instanceOf (readerOrDocument, J.api.JmolDocument)) {
+return "PyMOL";
+}var llr =  new J.io.LimitedLineReader (readerOrDocument, 16384);
 var leader = llr.getHeader (64).trim ();
 for (var i = 0; i < J.adapter.smarter.Resolver.fileStartsWithRecords.length; ++i) {
 var recordTags = J.adapter.smarter.Resolver.fileStartsWithRecords[i];
@@ -127,7 +129,7 @@ if ((readerName = J.adapter.smarter.Resolver.checkLineStarts (lines)) != null) r
 if ((readerName = J.adapter.smarter.Resolver.checkHeaderContains (llr.getHeader (0))) != null) return readerName;
 if ((readerName = J.adapter.smarter.Resolver.checkSpecial (nLines, lines, true)) != null) return readerName;
 return (returnLines ? "\n" + lines[0] + "\n" + lines[1] + "\n" + lines[2] + "\n" : null);
-}, $fz.isPrivate = true, $fz), "java.io.BufferedReader,~B");
+}, $fz.isPrivate = true, $fz), "~O,~B");
 c$.checkHeaderContains = $_M(c$, "checkHeaderContains", 
 ($fz = function (header) {
 for (var i = 0; i < J.adapter.smarter.Resolver.headerContainsRecords.length; ++i) {
@@ -216,7 +218,7 @@ c$.checkAims = $_M(c$, "checkAims",
 ($fz = function (lines) {
 for (var i = 0; i < lines.length; i++) {
 if (lines[i].startsWith ("mol 1")) return false;
-var tokens = J.util.Parser.getTokens (lines[i]);
+var tokens = JU.PT.getTokens (lines[i]);
 if (tokens.length == 0) continue;
 if (tokens[0].startsWith ("atom") && tokens.length >= 5 || tokens[0].startsWith ("multipole") && tokens.length >= 6 || tokens[0].startsWith ("lattice_vector") && tokens.length >= 4) return true;
 }
@@ -263,16 +265,15 @@ return false;
 c$.checkCube = $_M(c$, "checkCube", 
 ($fz = function (lines) {
 try {
-var tokens2 =  new java.util.StringTokenizer (lines[2]);
-if (tokens2.countTokens () != 4) return false;
+for (var j = 2; j <= 5; j++) {
+var tokens2 =  new java.util.StringTokenizer (lines[j]);
+var n = tokens2.countTokens ();
+if (!(n == 4 || j == 2 && n == 5)) return false;
 Integer.parseInt (tokens2.nextToken ());
-for (var i = 3; --i >= 0; ) J.util.Parser.fVal (tokens2.nextToken ());
+for (var i = 3; --i >= 0; ) JU.PT.fVal (tokens2.nextToken ());
 
-var tokens3 =  new java.util.StringTokenizer (lines[3]);
-if (tokens3.countTokens () != 4) return false;
-Integer.parseInt (tokens3.nextToken ());
-for (var i = 3; --i >= 0; ) if (J.util.Parser.fVal (tokens3.nextToken ()) < 0) return false;
-
+if (n == 5) Integer.parseInt (tokens2.nextToken ());
+}
 return true;
 } catch (nfe) {
 if (Clazz.exceptionOf (nfe, NumberFormatException)) {
@@ -316,7 +317,7 @@ return (lines[1].startsWith (" Basis set information needed for plotting orbital
 }, $fz.isPrivate = true, $fz), "~A");
 c$.checkGromacs = $_M(c$, "checkGromacs", 
 ($fz = function (lines) {
-if (J.util.Parser.parseInt (lines[1]) == -2147483648) return false;
+if (JU.PT.parseInt (lines[1]) == -2147483648) return false;
 var len = -1;
 for (var i = 2; i < 16 && len != 0; i++) if ((len = lines[i].length) != 69 && len != 45 && len != 0) return false;
 
@@ -383,7 +384,7 @@ return false;
 }, $fz.isPrivate = true, $fz), "~A");
 Clazz.defineStatics (c$,
 "classBase", "J.adapter.readers.");
-c$.readerSets = c$.prototype.readerSets = ["cifpdb.", ";Cif;Pdb;", "molxyz.", ";Mol3D;Mol;Xyz;", "more.", ";BinaryDcd;Gromacs;Jcampdx;MdCrd;MdTop;Mol2;Pqr;P2n;TlsDataOnly;", "quantum.", ";Adf;Csf;Dgrid;GamessUK;GamessUS;Gaussian;GausianWfn;Jaguar;Molden;MopacGraphf;GenNBO;NWChem;Odyssey;Psi;Qchem;Spartan;SpartanSmol;WebMO;", "pymol.", ";PyMOL;", "simple.", ";Alchemy;Ampac;Cube;FoldingXyz;GhemicalMM;HyperChem;Jme;Mopac;MopacArchive;ZMatrix;", "xtal.", ";Aims;Castep;Crystal;Dmol;Espresso;Gulp;MagRes;Shelx;Siesta;VaspOutcar;VaspPoscar;Wien2k;Xcrysden;"];
+c$.readerSets = c$.prototype.readerSets = ["cif.", ";Cif;", "molxyz.", ";Mol3D;Mol;Xyz;", "more.", ";BinaryDcd;Gromacs;Jcampdx;MdCrd;MdTop;Mol2;Pqr;P2n;TlsDataOnly;", "quantum.", ";Adf;Csf;Dgrid;GamessUK;GamessUS;Gaussian;GausianWfn;Jaguar;Molden;MopacGraphf;GenNBO;NWChem;Odyssey;Psi;Qchem;Spartan;SpartanSmol;WebMO;", "pdb.", ";Pdb;", "pymol.", ";PyMOL;", "simple.", ";Alchemy;Ampac;Cube;FoldingXyz;GhemicalMM;HyperChem;Jme;Mopac;MopacArchive;ZMatrix;JSON;", "xtal.", ";Abinit;Aims;Castep;Crystal;Dmol;Espresso;Gulp;Jana;Magres;Shelx;Siesta;VaspOutcar;VaspPoscar;Wien2k;Xcrysden;"];
 Clazz.defineStatics (c$,
 "CML_NAMESPACE_URI", "http://www.xml-cml.org/schema",
 "SPECIAL_JME", 0,
@@ -418,7 +419,7 @@ Clazz.defineStatics (c$,
 "SPECIAL_VASP_DOM", 30,
 "specialTags", [["Jme"], ["MopacGraphf"], ["Mol3D"], ["Odyssey"], ["Mol"], ["Xyz"], ["FoldingXyz"], ["Cube"], ["Alchemy"], ["Wien2k"], ["Castep"], ["Aims"], ["Crystal"], ["VaspPoscar"], ["Gromacs"], ["GenNBO"], ["XmlArgus"], ["XmlCml"], ["XmlChem3d"], ["XmlMolpro"], ["XmlOdyssey"], ["XmlXsd"], ["XmlVasp"], ["XmlQE"], ["XmlArgus(DOM)"], ["XmlCml(DOM)"], ["XmlChem3d(DOM)"], ["XmlMolpro(DOM)"], ["XmlOdyssey(DOM)"], ["XmlXsd(DOM)"], ["XmlVasp(DOM)"], ["MdCrd"]],
 "LEADER_CHAR_MAX", 64,
-"sptContainsRecords", ["spt", "# Jmol state", "# Jmol script"],
+"sptContainsRecords", ["spt", "# Jmol state", "# Jmol script", "JmolManifest"],
 "cubeFileStartRecords", ["Cube", "JVXL", "#JVXL"],
 "mol2Records", ["Mol2", "mol2", "@<TRIPOS>"],
 "webmoFileStartRecords", ["WebMO", "[HEADER]"],
@@ -426,9 +427,11 @@ Clazz.defineStatics (c$,
 "dcdFileStartRecords", ["BinaryDcd", "T\0\0\0CORD", "\0\0\0TCORD"],
 "tlsDataOnlyFileStartRecords", ["TlsDataOnly", "REFMAC\n\nTL", "REFMAC\r\n\r\n", "REFMAC\r\rTL"],
 "zMatrixFileStartRecords", ["ZMatrix", "#ZMATRIX"],
-"magResFileStartRecords", ["MagRes", "# magres"],
-"pymolStartRecords", ["PyMOL", "}q"]);
-c$.fileStartsWithRecords = c$.prototype.fileStartsWithRecords = [J.adapter.smarter.Resolver.sptContainsRecords, J.adapter.smarter.Resolver.cubeFileStartRecords, J.adapter.smarter.Resolver.mol2Records, J.adapter.smarter.Resolver.webmoFileStartRecords, J.adapter.smarter.Resolver.moldenFileStartRecords, J.adapter.smarter.Resolver.dcdFileStartRecords, J.adapter.smarter.Resolver.tlsDataOnlyFileStartRecords, J.adapter.smarter.Resolver.zMatrixFileStartRecords, J.adapter.smarter.Resolver.magResFileStartRecords, J.adapter.smarter.Resolver.pymolStartRecords];
+"magresFileStartRecords", ["Magres", "#$magres", "# magres"],
+"pymolStartRecords", ["PyMOL", "}q"],
+"janaStartRecords", ["Jana", "Version Jana"],
+"jsonStartRecords", ["JSON", "{\"mol\":"]);
+c$.fileStartsWithRecords = c$.prototype.fileStartsWithRecords = [J.adapter.smarter.Resolver.sptContainsRecords, J.adapter.smarter.Resolver.cubeFileStartRecords, J.adapter.smarter.Resolver.mol2Records, J.adapter.smarter.Resolver.webmoFileStartRecords, J.adapter.smarter.Resolver.moldenFileStartRecords, J.adapter.smarter.Resolver.dcdFileStartRecords, J.adapter.smarter.Resolver.tlsDataOnlyFileStartRecords, J.adapter.smarter.Resolver.zMatrixFileStartRecords, J.adapter.smarter.Resolver.magresFileStartRecords, J.adapter.smarter.Resolver.pymolStartRecords, J.adapter.smarter.Resolver.janaStartRecords, J.adapter.smarter.Resolver.jsonStartRecords];
 Clazz.defineStatics (c$,
 "pqrLineStartRecords", ["Pqr", "REMARK   1 PQR"],
 "p2nLineStartRecords", ["P2n", "REMARK   1 P2N"],
@@ -464,7 +467,8 @@ Clazz.defineStatics (c$,
 "crystalContainsRecords", ["Crystal", "*                                CRYSTAL"],
 "espressoContainsRecords", ["Espresso", "Program PWSCF", "Program PHONON"],
 "siestaContainsRecords", ["Siesta", "MD.TypeOfRun", "SolutionMethod", "MeshCutoff", "WELCOME TO SIESTA"],
-"xcrysDenContainsRecords", ["Xcrysden", "PRIMVEC", "CONVVEC", "PRIMCOORD"],
-"mopacArchiveContainsRecords", ["MopacArchive", "SUMMARY OF PM"]);
-c$.headerContainsRecords = c$.prototype.headerContainsRecords = [J.adapter.smarter.Resolver.sptContainsRecords, J.adapter.smarter.Resolver.xmlContainsRecords, J.adapter.smarter.Resolver.gaussianContainsRecords, J.adapter.smarter.Resolver.ampacContainsRecords, J.adapter.smarter.Resolver.mopacContainsRecords, J.adapter.smarter.Resolver.qchemContainsRecords, J.adapter.smarter.Resolver.gamessUKContainsRecords, J.adapter.smarter.Resolver.gamessUSContainsRecords, J.adapter.smarter.Resolver.spartanBinaryContainsRecords, J.adapter.smarter.Resolver.spartanContainsRecords, J.adapter.smarter.Resolver.mol2Records, J.adapter.smarter.Resolver.adfContainsRecords, J.adapter.smarter.Resolver.psiContainsRecords, J.adapter.smarter.Resolver.nwchemContainsRecords, J.adapter.smarter.Resolver.uicrcifContainsRecords, J.adapter.smarter.Resolver.dgridContainsRecords, J.adapter.smarter.Resolver.crystalContainsRecords, J.adapter.smarter.Resolver.dmolContainsRecords, J.adapter.smarter.Resolver.gulpContainsRecords, J.adapter.smarter.Resolver.espressoContainsRecords, J.adapter.smarter.Resolver.siestaContainsRecords, J.adapter.smarter.Resolver.xcrysDenContainsRecords, J.adapter.smarter.Resolver.mopacArchiveContainsRecords];
+"xcrysDenContainsRecords", ["Xcrysden", "PRIMVEC", "CONVVEC", "PRIMCOORD", "ANIMSTEP"],
+"mopacArchiveContainsRecords", ["MopacArchive", "SUMMARY OF PM"],
+"abinitContainsRecords", ["Abinit", "http://www.abinit.org", "Catholique", "Louvain"]);
+c$.headerContainsRecords = c$.prototype.headerContainsRecords = [J.adapter.smarter.Resolver.sptContainsRecords, J.adapter.smarter.Resolver.xmlContainsRecords, J.adapter.smarter.Resolver.gaussianContainsRecords, J.adapter.smarter.Resolver.ampacContainsRecords, J.adapter.smarter.Resolver.mopacContainsRecords, J.adapter.smarter.Resolver.qchemContainsRecords, J.adapter.smarter.Resolver.gamessUKContainsRecords, J.adapter.smarter.Resolver.gamessUSContainsRecords, J.adapter.smarter.Resolver.spartanBinaryContainsRecords, J.adapter.smarter.Resolver.spartanContainsRecords, J.adapter.smarter.Resolver.mol2Records, J.adapter.smarter.Resolver.adfContainsRecords, J.adapter.smarter.Resolver.psiContainsRecords, J.adapter.smarter.Resolver.nwchemContainsRecords, J.adapter.smarter.Resolver.uicrcifContainsRecords, J.adapter.smarter.Resolver.dgridContainsRecords, J.adapter.smarter.Resolver.crystalContainsRecords, J.adapter.smarter.Resolver.dmolContainsRecords, J.adapter.smarter.Resolver.gulpContainsRecords, J.adapter.smarter.Resolver.espressoContainsRecords, J.adapter.smarter.Resolver.siestaContainsRecords, J.adapter.smarter.Resolver.xcrysDenContainsRecords, J.adapter.smarter.Resolver.mopacArchiveContainsRecords, J.adapter.smarter.Resolver.abinitContainsRecords];
 });

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 class report_editdates_mod_data_date_extractor
-extends report_editdates_mod_date_extractor {
+        extends report_editdates_mod_date_extractor {
 
     public function __construct($course) {
         parent::__construct($course, 'data');

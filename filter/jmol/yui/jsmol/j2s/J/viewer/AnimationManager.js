@@ -1,7 +1,8 @@
 Clazz.declarePackage ("J.viewer");
-Clazz.load (["J.constant.EnumAnimationMode", "J.util.BS"], "J.viewer.AnimationManager", ["J.thread.AnimationThread", "J.util.BSUtil"], function () {
+Clazz.load (["JU.BS", "J.constant.EnumAnimationMode"], "J.viewer.AnimationManager", ["J.api.Interface", "J.util.BSUtil"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.animationThread = null;
+this.modulationThread = null;
 this.viewer = null;
 this.animationOn = false;
 this.animationFps = 0;
@@ -13,7 +14,6 @@ this.bsDisplay = null;
 this.animationFrames = null;
 this.isMovie = false;
 this.animationPaused = false;
-this.inMotion = false;
 this.currentModelIndex = 0;
 this.currentAnimationFrame = 0;
 this.morphCount = 0;
@@ -29,10 +29,13 @@ this.lastFrameDelay = 1;
 this.lastFramePainted = 0;
 this.lastModelPainted = 0;
 this.intAnimThread = 0;
+this.modulationPlay = false;
+this.modulationFps = 1;
+this.bsModulating = null;
 Clazz.instantialize (this, arguments);
 }, J.viewer, "AnimationManager");
 Clazz.prepareFields (c$, function () {
-this.bsVisibleModels =  new J.util.BS ();
+this.bsVisibleModels =  new JU.BS ();
 this.animationReplayMode = J.constant.EnumAnimationMode.ONCE;
 });
 Clazz.makeConstructor (c$, 
@@ -41,22 +44,26 @@ this.viewer = viewer;
 }, "J.viewer.Viewer");
 $_M(c$, "setAnimationOn", 
 function (animationOn) {
+if (animationOn == this.animationOn) return;
 if (!animationOn || !this.viewer.haveModelSet () || this.viewer.isHeadless ()) {
 this.stopThread (false);
 return;
-}if (!this.viewer.getSpinOn ()) this.viewer.refresh (3, "Viewer:setAnimationOn");
+}if (!this.viewer.getSpinOn ()) this.viewer.refresh (3, "Anim:setAnimationOn");
 this.setAnimationRange (-1, -1);
 this.resumeAnimation ();
 }, "~B");
 $_M(c$, "stopThread", 
 function (isPaused) {
+var stopped = false;
 if (this.animationThread != null) {
 this.animationThread.interrupt ();
 this.animationThread = null;
+stopped = true;
 }this.animationPaused = isPaused;
-if (!this.viewer.getSpinOn ()) this.viewer.refresh (3, "Viewer:setAnimationOff");
+if (stopped && !this.viewer.getSpinOn ()) this.viewer.refresh (3, "Viewer:setAnimationOff");
 this.animation (false);
-this.viewer.setStatusFrameChanged (false);
+this.stopModulationThread ();
+this.viewer.setStatusFrameChanged (false, true);
 }, "~B");
 $_M(c$, "setAnimationNext", 
 function () {
@@ -106,7 +113,7 @@ return this.viewer.getModelNumberDotted (i);
 $_M(c$, "setDisplay", 
 function (bs) {
 this.bsDisplay = (bs == null || bs.cardinality () == 0 ? null : J.util.BSUtil.copy (bs));
-}, "J.util.BS");
+}, "JU.BS");
 $_M(c$, "setMorphCount", 
 function (n) {
 this.morphCount = (this.isMovie ? 0 : n);
@@ -151,7 +158,7 @@ isSameSource = (this.viewer.getJmolDataSourceFrame (modelIndex) == this.viewer.g
 }}this.currentModelIndex = modelIndex;
 if (ids != null) {
 if (modelIndex >= 0) this.viewer.restoreModelOrientation (modelIndex);
-if (isSameSource && ids.indexOf ("quaternion") >= 0 && ids.indexOf ("plot") < 0 && ids.indexOf ("ramachandran") < 0 && ids.indexOf (" property ") < 0) {
+if (isSameSource && (ids.indexOf ("quaternion") >= 0 || ids.indexOf ("plot") < 0 && ids.indexOf ("ramachandran") < 0 && ids.indexOf (" property ") < 0)) {
 this.viewer.restoreModelRotation (formerModelIndex);
 }}}this.setViewer (clearBackgroundModel);
 }, "~N,~B");
@@ -178,6 +185,7 @@ this.animationDirection = animationDirection;
 $_M(c$, "setAnimationFps", 
 function (animationFps) {
 this.animationFps = animationFps;
+this.viewer.setFrameVariables ();
 }, "~N");
 $_M(c$, "setAnimationReplayMode", 
 function (animationReplayMode, firstFrameDelay, lastFrameDelay) {
@@ -215,6 +223,17 @@ function () {
 this.lastModelPainted = this.currentModelIndex;
 this.lastFramePainted = this.currentAnimationFrame;
 });
+$_M(c$, "setModulationPlay", 
+function (modT1, modT2) {
+if (modT1 == 2147483647 || !this.viewer.haveModelSet () || this.viewer.isHeadless ()) {
+this.stopThread (false);
+return;
+}if (this.modulationThread == null) {
+this.modulationPlay = true;
+this.modulationThread = J.api.Interface.getOptionInterface ("thread.ModulationThread");
+this.modulationThread.setManager (this, this.viewer, [modT1, modT2]);
+this.modulationThread.start ();
+}}, "~N,~N");
 $_M(c$, "resumeAnimation", 
 function () {
 if (this.currentModelIndex < 0) this.setAnimationRange (this.firstFrameIndex, this.lastFrameIndex);
@@ -225,7 +244,8 @@ return;
 this.animationPaused = false;
 if (this.animationThread == null) {
 this.intAnimThread++;
-this.animationThread =  new J.thread.AnimationThread (this, this.viewer, this.firstFrameIndex, this.lastFrameIndex, this.intAnimThread);
+this.animationThread = J.api.Interface.getOptionInterface ("thread.AnimationThread");
+this.animationThread.setManager (this, this.viewer, [this.firstFrameIndex, this.lastFrameIndex, this.intAnimThread]);
 this.animationThread.start ();
 }});
 $_M(c$, "setAnimationLast", 
@@ -263,7 +283,8 @@ this.isMovie = false;
 } else {
 this.currentAnimationFrame = (info.get ("currentFrame")).intValue ();
 if (this.currentAnimationFrame < 0 || this.currentAnimationFrame >= this.animationFrames.length) this.currentAnimationFrame = 0;
-}}if (!this.isMovie) {
+}this.setFrame (this.currentAnimationFrame);
+}if (!this.isMovie) {
 this.animationFrames = null;
 }this.viewer.setBooleanProperty ("_ismovie", this.isMovie);
 this.bsDisplay = null;
@@ -302,6 +323,11 @@ throw e;
 }
 }
 }, "~N");
+$_M(c$, "setModulationFps", 
+function (fps) {
+if (fps > 0) this.modulationFps = fps;
+ else this.stopModulationThread ();
+}, "~N");
 $_M(c$, "setViewer", 
 ($fz = function (clearBackgroundModel) {
 this.viewer.setTrajectory (this.currentModelIndex);
@@ -309,7 +335,7 @@ this.viewer.setFrameOffset (this.currentModelIndex);
 if (this.currentModelIndex == -1 && clearBackgroundModel) this.setBackgroundModelIndex (-1);
 this.viewer.setTainted (true);
 this.setFrameRangeVisible ();
-this.viewer.setStatusFrameChanged (false);
+this.viewer.setStatusFrameChanged (false, true);
 if (this.viewer.modelSet != null && !this.viewer.global.selectAllModels) this.viewer.setSelectionSubset (this.viewer.getModelUndeletedAtomsBitSet (this.currentModelIndex));
 }, $fz.isPrivate = true, $fz), "~B");
 $_M(c$, "setFrameRangeVisible", 
@@ -383,6 +409,13 @@ $_M(c$, "getFrameStep",
 ($fz = function (direction) {
 return this.frameStep * direction * this.currentDirection;
 }, $fz.isPrivate = true, $fz), "~N");
+$_M(c$, "stopModulationThread", 
+function () {
+if (this.modulationThread != null) {
+this.modulationThread.interrupt ();
+this.modulationThread = null;
+}this.modulationPlay = false;
+});
 Clazz.defineStatics (c$,
 "FRAME_FIRST", -1,
 "FRAME_LAST", 1,

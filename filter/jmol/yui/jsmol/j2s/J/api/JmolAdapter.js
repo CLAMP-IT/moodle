@@ -1,9 +1,6 @@
 Clazz.declarePackage ("J.api");
 Clazz.load (["J.constant.EnumQuantumShell"], "J.api.JmolAdapter", ["java.util.Hashtable", "J.api.JmolViewer", "J.modelset.Group", "J.util.Elements", "J.viewer.JC"], function () {
-c$ = Clazz.decorateAsClass (function () {
-this.adapterName = null;
-Clazz.instantialize (this, arguments);
-}, J.api, "JmolAdapter");
+c$ = Clazz.declareType (J.api, "JmolAdapter");
 c$.getShellEnumeration = $_M(c$, "getShellEnumeration", 
 function (i) {
 return J.constant.EnumQuantumShell.getItem (i);
@@ -28,6 +25,10 @@ c$.isHetero = $_M(c$, "isHetero",
 function (group3) {
 return J.viewer.JC.isHetero (group3);
 }, "~S");
+c$.getQuantumShellTag = $_M(c$, "getQuantumShellTag", 
+function (id) {
+return J.constant.EnumQuantumShell.getQuantumShellTag (id);
+}, "~N");
 c$.getQuantumShellTagID = $_M(c$, "getQuantumShellTagID", 
 function (tag) {
 return J.constant.EnumQuantumShell.getQuantumShellTagID (tag);
@@ -44,14 +45,6 @@ c$.getBondingRadiusFloat = $_M(c$, "getBondingRadiusFloat",
 function (atomicNumberWithIsotope, charge) {
 return J.util.Elements.getBondingRadiusFloat (atomicNumberWithIsotope, charge);
 }, "~N,~N");
-Clazz.makeConstructor (c$, 
-function (adapterName) {
-this.adapterName = adapterName;
-}, "~S");
-$_M(c$, "getAdapterName", 
-function () {
-return this.adapterName;
-});
 $_M(c$, "getAtomSetCollectionFromReader", 
 function (name, type, bufferedReader, htParams) {
 if (htParams == null) htParams =  new java.util.Hashtable ();
@@ -73,14 +66,9 @@ function (name, type, bufferedReader) {
 return this.getAtomSetCollectionFromReader (name, type, bufferedReader, null);
 }, "~S,~S,java.io.BufferedReader");
 c$.canonizeAlphaDigit = $_M(c$, "canonizeAlphaDigit", 
-function (ch) {
-if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) return ch;
-return '\0';
-}, "~S");
-c$.canonizeChainID = $_M(c$, "canonizeChainID", 
-function (chainID) {
-return J.api.JmolAdapter.canonizeAlphaDigit (chainID);
-}, "~S");
+($fz = function (ch) {
+return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') ? ch : '\0');
+}, $fz.isPrivate = true, $fz), "~S");
 c$.canonizeInsertionCode = $_M(c$, "canonizeInsertionCode", 
 function (insertionCode) {
 return J.api.JmolAdapter.canonizeAlphaDigit (insertionCode);
@@ -115,6 +103,8 @@ c$.SHELL_F_SPHERICAL = c$.prototype.SHELL_F_SPHERICAL = J.constant.EnumQuantumSh
 c$.SHELL_F_CARTESIAN = c$.prototype.SHELL_F_CARTESIAN = J.constant.EnumQuantumShell.F_CARTESIAN.id;
 c$.SHELL_G_SPHERICAL = c$.prototype.SHELL_G_SPHERICAL = J.constant.EnumQuantumShell.G_SPHERICAL.id;
 c$.SHELL_G_CARTESIAN = c$.prototype.SHELL_G_CARTESIAN = J.constant.EnumQuantumShell.G_CARTESIAN.id;
+c$.SHELL_H_SPHERICAL = c$.prototype.SHELL_H_SPHERICAL = J.constant.EnumQuantumShell.H_SPHERICAL.id;
+c$.SHELL_H_CARTESIAN = c$.prototype.SHELL_H_CARTESIAN = J.constant.EnumQuantumShell.H_CARTESIAN.id;
 c$.SUPPORTED_BASIS_FUNCTIONS = c$.prototype.SUPPORTED_BASIS_FUNCTIONS = "SPLDF";
 c$.NOTE_SCRIPT_FILE = c$.prototype.NOTE_SCRIPT_FILE = "NOTE: file recognized as a script file: ";
 Clazz.defineStatics (c$,

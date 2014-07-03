@@ -1,17 +1,13 @@
 Clazz.declarePackage ("J.adapter.smarter");
-Clazz.load (["J.api.JmolAdapter"], "J.adapter.smarter.SmarterJmolAdapter", ["J.adapter.smarter.AtomIterator", "$.AtomSetCollection", "$.BondIterator", "$.Resolver", "$.StructureIterator", "J.util.Logger"], function () {
+Clazz.load (["J.api.JmolAdapter"], "J.adapter.smarter.SmarterJmolAdapter", ["java.io.BufferedReader", "J.adapter.smarter.AtomIterator", "$.AtomSetCollection", "$.AtomSetCollectionReader", "$.BondIterator", "$.Resolver", "$.StructureIterator", "J.api.JmolDocument", "J.util.Logger"], function () {
 c$ = Clazz.declareType (J.adapter.smarter, "SmarterJmolAdapter", J.api.JmolAdapter);
-Clazz.makeConstructor (c$, 
-function () {
-Clazz.superConstructor (this, J.adapter.smarter.SmarterJmolAdapter, ["SmarterJmolAdapter"]);
-});
-Clazz.overrideMethod (c$, "getFileTypeName", 
+$_V(c$, "getFileTypeName", 
 function (atomSetCollectionOrReader) {
 if (Clazz.instanceOf (atomSetCollectionOrReader, J.adapter.smarter.AtomSetCollection)) return (atomSetCollectionOrReader).getFileTypeName ();
 if (Clazz.instanceOf (atomSetCollectionOrReader, java.io.BufferedReader)) return J.adapter.smarter.Resolver.getFileType (atomSetCollectionOrReader);
 return null;
 }, "~O");
-Clazz.overrideMethod (c$, "getAtomSetCollectionReader", 
+$_V(c$, "getAtomSetCollectionReader", 
 function (name, type, bufferedReader, htParams) {
 return J.adapter.smarter.SmarterJmolAdapter.staticGetAtomSetCollectionReader (name, type, bufferedReader, htParams);
 }, "~S,~S,~O,java.util.Map");
@@ -53,7 +49,7 @@ if (Clazz.instanceOf (ret, J.adapter.smarter.AtomSetCollectionReader)) {
 return (ret).readData ();
 }return "" + ret;
 }, "~S,~O,java.util.Map");
-Clazz.overrideMethod (c$, "getAtomSetCollection", 
+$_V(c$, "getAtomSetCollection", 
 function (atomSetCollectionReader) {
 return J.adapter.smarter.SmarterJmolAdapter.staticGetAtomSetCollection (atomSetCollectionReader);
 }, "~O");
@@ -90,18 +86,22 @@ J.util.Logger.error ("" + e);
 return "" + e;
 }
 }, "J.adapter.smarter.AtomSetCollectionReader");
-Clazz.overrideMethod (c$, "getAtomSetCollectionReaders", 
+$_V(c$, "getAtomSetCollectionReaders", 
 function (filesReader, names, types, htParams, getReadersOnly) {
 var size = names.length;
 var readers = (getReadersOnly ?  new Array (size) : null);
 var atomsets = (getReadersOnly ? null :  new Array (size));
+var r = null;
+var viewer = htParams.get ("viewer");
 for (var i = 0; i < size; i++) {
 try {
+if (r != null) htParams.put ("viewer", viewer);
 var reader = filesReader.getBufferedReaderOrBinaryDocument (i, false);
 if (!(Clazz.instanceOf (reader, java.io.BufferedReader) || Clazz.instanceOf (reader, J.api.JmolDocument))) return reader;
 var ret = J.adapter.smarter.Resolver.getAtomCollectionReader (names[i], (types == null ? null : types[i]), reader, htParams, i);
 if (!(Clazz.instanceOf (ret, J.adapter.smarter.AtomSetCollectionReader))) return ret;
-var r = ret;
+r = ret;
+r.setup (null, null, null);
 if (r.isBinary) {
 r.setup (names[i], htParams, filesReader.getBufferedReaderOrBinaryDocument (i, true));
 } else {
@@ -115,13 +115,14 @@ atomsets[i] = ret;
 if (atomsets[i].errorMessage != null) return atomsets[i].errorMessage;
 }} catch (e) {
 J.util.Logger.error ("" + e);
+if (!viewer.isJS) e.printStackTrace ();
 return "" + e;
 }
 }
 if (getReadersOnly) return readers;
 return this.getAtomSetCollectionFromSet (readers, atomsets, htParams);
 }, "J.api.JmolFilesReaderInterface,~A,~A,java.util.Map,~B");
-Clazz.overrideMethod (c$, "getAtomSetCollectionFromSet", 
+$_V(c$, "getAtomSetCollectionFromSet", 
 function (readerSet, atomsets, htParams) {
 var readers = readerSet;
 var asc = (atomsets == null ?  new Array (readers.length) : atomsets);
@@ -157,7 +158,7 @@ for (var i = 1; i < asc.length; i++) asc[0].mergeTrajectories (asc[i]);
 result =  new J.adapter.smarter.AtomSetCollection ("Array", null, asc, null);
 }return (result.errorMessage == null ? result : result.errorMessage);
 }, "~O,~O,java.util.Map");
-Clazz.overrideMethod (c$, "getAtomSetCollectionFromDOM", 
+$_V(c$, "getAtomSetCollectionFromDOM", 
 function (DOMNode, htParams) {
 try {
 var ret = J.adapter.smarter.Resolver.DOMResolve (DOMNode, htParams);
@@ -174,56 +175,56 @@ J.util.Logger.error ("" + e);
 return "" + e;
 }
 }, "~O,java.util.Map");
-Clazz.overrideMethod (c$, "finish", 
-function (atomSetCollection, baseModelIndex, baseAtomIndex) {
-(atomSetCollection).finish (baseModelIndex, baseAtomIndex);
-}, "~O,~N,~N");
-Clazz.overrideMethod (c$, "getAtomSetCollectionName", 
+$_V(c$, "finish", 
+function (atomSetCollection) {
+(atomSetCollection).finish ();
+}, "~O");
+$_V(c$, "getAtomSetCollectionName", 
 function (atomSetCollection) {
 return (atomSetCollection).getCollectionName ();
 }, "~O");
-Clazz.overrideMethod (c$, "getAtomSetCollectionAuxiliaryInfo", 
+$_V(c$, "getAtomSetCollectionAuxiliaryInfo", 
 function (atomSetCollection) {
 return (atomSetCollection).getAtomSetCollectionAuxiliaryInfoMap ();
 }, "~O");
-Clazz.overrideMethod (c$, "getAtomSetCount", 
+$_V(c$, "getAtomSetCount", 
 function (atomSetCollection) {
 return (atomSetCollection).getAtomSetCount ();
 }, "~O");
-Clazz.overrideMethod (c$, "getAtomSetNumber", 
+$_V(c$, "getAtomSetNumber", 
 function (atomSetCollection, atomSetIndex) {
 return (atomSetCollection).getAtomSetNumber (atomSetIndex);
 }, "~O,~N");
-Clazz.overrideMethod (c$, "getAtomSetName", 
+$_V(c$, "getAtomSetName", 
 function (atomSetCollection, atomSetIndex) {
 return (atomSetCollection).getAtomSetName (atomSetIndex);
 }, "~O,~N");
-Clazz.overrideMethod (c$, "getAtomSetAuxiliaryInfo", 
+$_V(c$, "getAtomSetAuxiliaryInfo", 
 function (atomSetCollection, atomSetIndex) {
 return (atomSetCollection).getAtomSetAuxiliaryInfo (atomSetIndex);
 }, "~O,~N");
-Clazz.overrideMethod (c$, "getHydrogenAtomCount", 
+$_V(c$, "getHydrogenAtomCount", 
 function (atomSetCollection) {
 return (atomSetCollection).getHydrogenAtomCount ();
 }, "~O");
-Clazz.overrideMethod (c$, "getBondList", 
+$_V(c$, "getBondList", 
 function (atomSetCollection) {
 return (atomSetCollection).getBondList ();
 }, "~O");
-Clazz.overrideMethod (c$, "getAtomCount", 
+$_V(c$, "getAtomCount", 
 function (atomSetCollection) {
 var a = atomSetCollection;
 return (a.bsAtoms == null ? a.getAtomCount () : a.bsAtoms.cardinality ());
 }, "~O");
-Clazz.overrideMethod (c$, "coordinatesAreFractional", 
+$_V(c$, "coordinatesAreFractional", 
 function (atomSetCollection) {
 return (atomSetCollection).coordinatesAreFractional;
 }, "~O");
-Clazz.overrideMethod (c$, "getNotionalUnitcell", 
+$_V(c$, "getNotionalUnitcell", 
 function (atomSetCollection) {
 return (atomSetCollection).notionalUnitCell;
 }, "~O");
-Clazz.overrideMethod (c$, "getPdbScaleMatrix", 
+$_V(c$, "getPdbScaleMatrix", 
 function (atomSetCollection) {
 var a = (atomSetCollection).notionalUnitCell;
 if (a.length < 22) return null;
@@ -232,7 +233,7 @@ for (var i = 0; i < 16; i++) b[i] = a[6 + i];
 
 return b;
 }, "~O");
-Clazz.overrideMethod (c$, "getPdbScaleTranslate", 
+$_V(c$, "getPdbScaleTranslate", 
 function (atomSetCollection) {
 var a = (atomSetCollection).notionalUnitCell;
 if (a.length < 22) return null;
@@ -242,15 +243,15 @@ b[1] = a[13];
 b[2] = a[17];
 return b;
 }, "~O");
-Clazz.overrideMethod (c$, "getAtomIterator", 
+$_V(c$, "getAtomIterator", 
 function (atomSetCollection) {
 return  new J.adapter.smarter.AtomIterator (atomSetCollection);
 }, "~O");
-Clazz.overrideMethod (c$, "getBondIterator", 
+$_V(c$, "getBondIterator", 
 function (atomSetCollection) {
 return  new J.adapter.smarter.BondIterator (atomSetCollection);
 }, "~O");
-Clazz.overrideMethod (c$, "getStructureIterator", 
+$_V(c$, "getStructureIterator", 
 function (atomSetCollection) {
 return (atomSetCollection).getStructureCount () == 0 ? null :  new J.adapter.smarter.StructureIterator (atomSetCollection);
 }, "~O");

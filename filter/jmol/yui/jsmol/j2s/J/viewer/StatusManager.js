@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.viewer");
-Clazz.load (["java.util.Hashtable"], "J.viewer.StatusManager", ["java.lang.Boolean", "$.Float", "J.api.Interface", "J.constant.EnumCallback", "J.util.Dimension", "$.JmolList", "$.Logger", "$.TextFormat"], function () {
+Clazz.load (["java.util.Hashtable"], "J.viewer.StatusManager", ["java.lang.Boolean", "$.Float", "javajs.awt.Dimension", "JU.List", "$.PT", "J.api.Interface", "J.constant.EnumCallback", "J.util.Logger"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.viewer = null;
 this.jmolStatusListener = null;
@@ -48,13 +48,13 @@ return (this.allowStatusReporting && this.statusList.length > 0 && (this.statusL
 $_M(c$, "setStatusChanged", 
 ($fz = function (statusName, intInfo, statusInfo, isReplace) {
 if (!this.recordStatus (statusName)) return;
-var msgRecord =  new J.util.JmolList ();
+var msgRecord =  new JU.List ();
 msgRecord.addLast (Integer.$valueOf (++this.statusPtr));
 msgRecord.addLast (statusName);
 msgRecord.addLast (Integer.$valueOf (intInfo));
 msgRecord.addLast (statusInfo);
 var statusRecordSet = (isReplace ? null : this.messageQueue.get (statusName));
-if (statusRecordSet == null) this.messageQueue.put (statusName, statusRecordSet =  new J.util.JmolList ());
+if (statusRecordSet == null) this.messageQueue.put (statusName, statusRecordSet =  new JU.List ());
  else if (statusRecordSet.size () == J.viewer.StatusManager.MAXIMUM_QUEUE_LENGTH) statusRecordSet.remove (0);
 statusRecordSet.addLast (msgRecord);
 }, $fz.isPrivate = true, $fz), "~S,~N,~O,~B");
@@ -64,16 +64,16 @@ var isRemove = (newStatusList.length > 0 && newStatusList.charAt (0) == '-');
 var isAdd = (newStatusList.length > 0 && newStatusList.charAt (0) == '+');
 var getList = false;
 if (isRemove) {
-this.statusList = J.util.TextFormat.simpleReplace (this.statusList, newStatusList.substring (1, newStatusList.length), "");
+this.statusList = JU.PT.simpleReplace (this.statusList, newStatusList.substring (1, newStatusList.length), "");
 } else {
-newStatusList = J.util.TextFormat.simpleReplace (newStatusList, "+", "");
+newStatusList = JU.PT.simpleReplace (newStatusList, "+", "");
 if (this.statusList.equals (newStatusList) || isAdd && this.statusList.indexOf (newStatusList) >= 0) {
 getList = true;
 } else {
 if (!isAdd) this.statusList = "";
 this.statusList += newStatusList;
 if (J.util.Logger.debugging) J.util.Logger.debug ("StatusManager messageQueue = " + this.statusList);
-}}var list =  new J.util.JmolList ();
+}}var list =  new JU.List ();
 if (getList) for (var e, $e = this.messageQueue.entrySet ().iterator (); $e.hasNext () && ((e = $e.next ()) || true);) list.addLast (e.getValue ());
 
 this.messageQueue.clear ();
@@ -118,7 +118,7 @@ function (bsMoved) {
 var sJmol = this.jmolScriptCallback (J.constant.EnumCallback.ATOMMOVED);
 this.setStatusChanged ("atomMoved", -1, bsMoved, false);
 if (this.notifyEnabled (J.constant.EnumCallback.ATOMMOVED)) this.jmolCallbackListener.notifyCallback (J.constant.EnumCallback.ATOMMOVED, [sJmol, bsMoved]);
-}, "J.util.BS");
+}, "JU.BS");
 $_M(c$, "setStatusAtomPicked", 
 function (atomIndex, strInfo) {
 var sJmol = this.jmolScriptCallback (J.constant.EnumCallback.PICK);
@@ -148,7 +148,7 @@ $_M(c$, "setStatusObjectHovered",
 function (id, strInfo, pt) {
 var sJmol = this.jmolScriptCallback (J.constant.EnumCallback.HOVER);
 if (this.notifyEnabled (J.constant.EnumCallback.HOVER)) this.jmolCallbackListener.notifyCallback (J.constant.EnumCallback.HOVER, [sJmol, strInfo, Integer.$valueOf (-1), id, Float.$valueOf (pt.x), Float.$valueOf (pt.y), Float.$valueOf (pt.z)]);
-}, "~S,~S,J.util.P3");
+}, "~S,~S,JU.P3");
 $_M(c$, "setFileLoadStatus", 
 function (fullPathName, fileName, modelName, errorMsg, ptLoad, doCallback, isAsync) {
 if (fullPathName == null && "resetUndo".equals (fileName)) {
@@ -218,7 +218,7 @@ var isError = (strErrorMessageUntranslated != null);
 this.setStatusChanged ((isError ? "scriptError" : "scriptStatus"), 0, strStatus, false);
 if (isError || isScriptCompletion) this.setStatusChanged ("scriptTerminated", 1, "Jmol script terminated" + (isError ? " unsuccessfully: " + strStatus : " successfully"), false);
 }var data;
-if (isScriptCompletion && this.viewer.getBoolean (603979879) && this.viewer.getBoolean (603979824)) {
+if (isScriptCompletion && this.viewer.getBoolean (603979880) && this.viewer.getBoolean (603979824)) {
 data = [null, "script <exiting>", statusMessage, Integer.$valueOf (-1), strErrorMessageUntranslated];
 if (this.notifyEnabled (J.constant.EnumCallback.SCRIPT)) this.jmolCallbackListener.notifyCallback (J.constant.EnumCallback.SCRIPT, data);
 this.processScript (data);
@@ -236,7 +236,7 @@ this.viewer.scriptEditor.notifyScriptTermination ();
 } else if (msWalltime < 0) {
 if (msWalltime == -2) this.viewer.scriptEditor.notifyScriptStart ();
 } else if (this.viewer.scriptEditor.isVisible () && (data[2]).length > 0) {
-this.viewer.scriptEditor.notifyContext (this.viewer.getScriptContext (), data);
+this.viewer.scriptEditor.notifyContext (this.viewer.getScriptContext ("SE notify"), data);
 }}if (this.viewer.appConsole != null) {
 if (msWalltime == 0) {
 var strInfo = (data[1] == null ? null : data[1].toString ());
@@ -289,6 +289,10 @@ $_M(c$, "syncSend",
 function (script, appletName, port) {
 if (port != 0 || this.notifyEnabled (J.constant.EnumCallback.SYNC)) this.jmolCallbackListener.notifyCallback (J.constant.EnumCallback.SYNC, [null, script, appletName, Integer.$valueOf (port)]);
 }, "~S,~S,~N");
+$_M(c$, "modifySend", 
+function (atomIndex, modelIndex, mode) {
+if (this.notifyEnabled (J.constant.EnumCallback.STRUCTUREMODIFIED)) this.jmolCallbackListener.notifyCallback (J.constant.EnumCallback.STRUCTUREMODIFIED, [null, Integer.$valueOf (mode), Integer.$valueOf (atomIndex), Integer.$valueOf (modelIndex)]);
+}, "~N,~N,~N");
 $_M(c$, "getSyncMode", 
 function () {
 return (!this.isSynced ? 0 : this.drivingSync ? 1 : 2);
@@ -325,8 +329,8 @@ return (this.jmolStatusListener == null ? null : this.jmolStatusListener.getRegi
 });
 $_M(c$, "dialogAsk", 
 function (type, fileName) {
-var isImage = (type.startsWith ("saveImage"));
-var sd = J.api.Interface.getOptionInterface ("export.dialog.Dialog");
+var isImage = type.equals ("Save Image");
+var sd = J.api.Interface.getOptionInterface ("dialog.Dialog");
 if (sd == null) return null;
 sd.setupUI (false);
 if (isImage) sd.setImageInfo (this.qualityJPG, this.qualityPNG, this.imageType);
@@ -340,11 +344,11 @@ if (sType != null) this.imageType = sType;
 }, "~S,~S");
 $_M(c$, "getJspecViewProperties", 
 function (myParam) {
-return (this.jmolStatusListener == null ? null : this.jmolStatusListener.getProperty ("JSpecView" + (myParam == null || myParam.length == 0 ? "" : ":" + myParam)));
+return (this.jmolStatusListener == null ? null : this.jmolStatusListener.getJSpecViewProperty (myParam == null || myParam.length == 0 ? "" : ":" + myParam));
 }, "~S");
 $_M(c$, "resizeInnerPanel", 
 function (width, height) {
-return (this.jmolStatusListener == null ?  new J.util.Dimension ().set (width, height) : this.jmolStatusListener.resizeInnerPanel ("preferredWidthHeight " + width + " " + height + ";"));
+return (this.jmolStatusListener == null ?  new javajs.awt.Dimension (width, height) : this.jmolStatusListener.resizeInnerPanel ("preferredWidthHeight " + width + " " + height + ";"));
 }, "~N,~N");
 Clazz.defineStatics (c$,
 "MAXIMUM_QUEUE_LENGTH", 16,

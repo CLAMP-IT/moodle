@@ -3,14 +3,15 @@ Clazz.load (["J.viewer.binding.JmolBinding"], "J.viewer.binding.PfaatBinding", n
 c$ = Clazz.declareType (J.viewer.binding, "PfaatBinding", J.viewer.binding.JmolBinding);
 Clazz.makeConstructor (c$, 
 function () {
-Clazz.superConstructor (this, J.viewer.binding.PfaatBinding, ["extendedSelect"]);
+Clazz.superConstructor (this, J.viewer.binding.PfaatBinding, []);
+this.set ("extendedSelect");
 });
-Clazz.overrideMethod (c$, "setSelectBindings", 
+$_V(c$, "setSelectBindings", 
 function () {
-this.bindAction (272, 16);
-this.bindAction (272, 17);
-this.bindAction (273, 18);
-this.bindAction (281, 19);
-this.bindAction (280, 20);
+this.bindAction (33040, 30);
+this.bindAction (33040, 33);
+this.bindAction (33041, 35);
+this.bindAction (33049, 32);
+this.bindAction (33048, 34);
 });
 });

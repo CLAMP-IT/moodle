@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.g3d");
-Clazz.load (["J.util.P3", "$.Shader"], "J.g3d.SphereRenderer", ["J.util.Quadric"], function () {
+Clazz.load (["JU.P3", "J.util.Shader"], "J.g3d.SphereRenderer", ["J.util.GData"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.g3d = null;
 this.shader = null;
@@ -37,7 +37,7 @@ Clazz.instantialize (this, arguments);
 }, J.g3d, "SphereRenderer");
 Clazz.prepareFields (c$, function () {
 this.zroot =  Clazz.newDoubleArray (2, 0);
-this.ptTemp =  new J.util.P3 ();
+this.ptTemp =  new JU.P3 ();
 this.planeShades =  Clazz.newIntArray (3, 0);
 this.dxyz =  Clazz.newFloatArray (3, 3, 0);
 });
@@ -92,7 +92,7 @@ if (this.minX < 0 || this.maxX >= this.width || this.minY < 0 || this.maxY >= th
  else this.renderShapeUnclipped (ss);
 }this.shades = null;
 this.zbuf = null;
-}, "~A,~B,~N,~N,~N,~N,J.util.Matrix3f,~A,J.util.Matrix4f,~N,~A,~B");
+}, "~A,~B,~N,~N,~N,~N,JU.M3,~A,JU.M4,~N,~A,~B");
 $_M(c$, "getSphereShape", 
 ($fz = function (diameter) {
 var ss;
@@ -276,8 +276,7 @@ $_M(c$, "renderLarge",
 if (this.mat != null) {
 if (this.shader.ellipsoidShades == null) this.shader.createEllipsoidShades ();
 if (this.octantPoints != null) this.setPlaneDerivatives ();
-} else if (!this.shader.sphereShadingCalculated) this.shader.calcSphereShading ();
-this.renderQuadrant (-1, -1);
+}this.renderQuadrant (-1, -1);
 this.renderQuadrant (-1, 1);
 this.renderQuadrant (1, -1);
 this.renderQuadrant (1, 1);
@@ -356,7 +355,7 @@ continue;
 }if (this.tScreened && (((xCurrent ^ yCurrent) & 1) != 0)) continue;
 var zPixel;
 if (isEllipsoid) {
-if (!J.util.Quadric.getQuardricZ (xCurrent, yCurrent, this.coef, this.zroot)) {
+if (!J.g3d.SphereRenderer.getQuardricZ (xCurrent, yCurrent, this.coef, this.zroot)) {
 if (iRoot >= 0) {
 break;
 }continue;
@@ -368,7 +367,7 @@ this.z0 = zPixel;
 if (checkOctant) {
 this.ptTemp.set (xCurrent - this.x, yCurrent - this.y, zPixel - this.z);
 this.mat.transform (this.ptTemp);
-var thisOctant = J.util.Quadric.getOctant (this.ptTemp);
+var thisOctant = J.util.GData.getScreenOctant (this.ptTemp);
 if (thisOctant == this.selectedOctant) {
 iShade = this.getPlaneShade (xCurrent, yCurrent, this.zroot);
 zPixel = Clazz.doubleToInt (this.zroot[0]);
@@ -408,6 +407,17 @@ this.g3d.addPixel (offset, zPixel, this.shades[iShade]);
 randu = ((randu + xCurrent + yCurrent) | 1) & 0x7FFFFFFF;
 }
 }, $fz.isPrivate = true, $fz), "~N,~N,~N");
+c$.getQuardricZ = $_M(c$, "getQuardricZ", 
+($fz = function (x, y, coef, zroot) {
+var b_2a = (coef[4] * x + coef[5] * y + coef[8]) / coef[2] / 2;
+var c_a = (coef[0] * x * x + coef[1] * y * y + coef[3] * x * y + coef[6] * x + coef[7] * y - 1) / coef[2];
+var f = b_2a * b_2a - c_a;
+if (f < 0) return false;
+f = Math.sqrt (f);
+zroot[0] = (-b_2a - f);
+zroot[1] = (-b_2a + f);
+return true;
+}, $fz.isPrivate = true, $fz), "~N,~N,~A,~A");
 $_M(c$, "setPlaneDerivatives", 
 ($fz = function () {
 this.planeShade = -1;

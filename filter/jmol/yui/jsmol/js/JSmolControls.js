@@ -1,3 +1,6 @@
+// JSmolControls.js
+//
+// BH 12/3/2013 12:39:48 PM added up/down arrow key-driven command history for commandInput (changed keypress to keydown)
 // BH 5/16/2013 8:14:47 AM fix for checkbox groups and default radio names
 // BH 8:36 AM 7/27/2012  adds name/id for cmd button 
 // BH 8/12/2012 6:51:53 AM adds function() {...} option for all controls:
@@ -94,14 +97,62 @@
 			Jmol.script(applet, script);
 	}
 	
-	c._commandKeyPress = function(e, id, appId) {
-		var keycode = (e == 13 ? 13 : window.event ? window.event.keyCode : e ? e.which : 0);
-		if (keycode == 13) {
-			var inputBox = document.getElementById(id)
-			c._scriptExecute(inputBox, [appId, inputBox.value]);
-		}
+  c.__checkScript = function(applet, d) {
+    var ok = (d.value.indexOf("JSCONSOLE ") >= 0 || applet._scriptCheck(d.value) === "");
+    d.style.color = (ok ? "black" : "red");
+    return ok;
+  } 
+
+  c.__getCmd = function(dir, d) {
+    if (!d._cmds || !d._cmds.length)return
+    var s = d._cmds[d._cmdpt = (d._cmdpt + d._cmds.length + dir) % d._cmds.length]
+    setTimeout(function(){d.value = s},10);    
+    d._cmdadd = 1;
+    d._cmddir = dir;
+  }
+
+  c._commandKeyPress = function(e, id, appId) {
+  var keycode = (e == 13 ? 13 : window.event ? window.event.keyCode : e ? e.keyCode || e.which : 0);
+  var d = document.getElementById(id);
+    var applet = Jmol._applets[appId];
+  switch (keycode) {
+  case 13:
+    var v = d.value;
+    if (c.__checkScript(applet, d) && (c._scriptExecute(d, [appId, v]) || 1)) {
+       if (!d._cmds){
+         d._cmds = [];
+         d._cmddir = 0;
+         d._cmdpt = -1;
+         d._cmdadd = 0;      
 	}
-	
+       if (v && d._cmdadd == 0) {
+          ++d._cmdpt;
+          d._cmds.splice(d._cmdpt, 0, v);
+          d._cmdadd = 0;
+          d._cmddir = 0;
+       } else {
+          //d._cmdpt -= d._cmddir;
+          d._cmdadd = 0;
+       }
+       d.value = "";
+    }
+    return false;
+  case 27:
+    setTimeout(function() {d.value = ""}, 20);
+    return false;
+  case 38: // up
+    c.__getCmd(-1, d);
+    break;
+  case 40: // dn
+    c.__getCmd(1, d);
+    break;
+  default:
+    d._cmdadd = 0;
+  }
+  setTimeout(function() {c.__checkScript(applet, d)}, 20);
+  return true;
+ }
+  
 	c._click = function(obj, scriptIndex) {
 		c._element = obj;
     if (arguments.length == 1)
@@ -216,7 +267,6 @@
 		c._hasResetForms = true;
 		c._previousOnloadHandler = window.onload;
 		window.onload = function() {
-//			var c = Jmol.controls;
 			if (c._buttonCount+c._checkboxCount+c._menuCount+c._radioCount+c._radioGroupCount > 0) {
 				var forms = document.forms;
 				for (var i = forms.length; --i >= 0; )
@@ -295,7 +345,7 @@
 		size != undefined && !isNaN(size) || (size = 60);
 		++c._cmdCount;
 		var t = "<span id=\"span_"+id+"\""+(title ? " title=\"" + title + "\"":"")+"><input name='" + id + "' id='" + id +
-						"' size='"+size+"' onkeypress='Jmol.controls._commandKeyPress(event,\""+id+"\",\"" + appId + "\")' /><input " +
+						"' size='"+size+"' onkeydown='return Jmol.controls._commandKeyPress(event,\""+id+"\",\"" + appId + "\")' /><input " +
 						" type='button' name='" + id + "Btn' id='" + id + "Btn' value = '"+label+"' onclick='Jmol.controls._commandKeyPress(13,\""+id+"\",\"" + appId + "\")' /></span>";
 		if (Jmol._debugAlert)
 			alert(t);

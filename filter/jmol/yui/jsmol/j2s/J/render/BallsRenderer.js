@@ -1,10 +1,10 @@
 Clazz.declarePackage ("J.render");
 Clazz.load (["J.render.ShapeRenderer"], "J.render.BallsRenderer", ["J.shape.Shape"], function () {
 c$ = Clazz.declareType (J.render, "BallsRenderer", J.render.ShapeRenderer);
-Clazz.overrideMethod (c$, "render", 
+$_V(c$, "render", 
 function () {
 var needTranslucent = false;
-if (!this.viewer.getBoolean (603979976) || !this.viewer.getInMotion (true)) {
+if (this.isExport || this.viewer.checkMotionRendering (1141899265)) {
 var atoms = this.modelSet.atoms;
 var colixes = (this.shape).colixes;
 var bsOK = this.viewer.getRenderableBitSet ();

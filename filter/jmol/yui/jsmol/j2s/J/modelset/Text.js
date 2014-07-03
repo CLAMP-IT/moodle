@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.modelset");
-Clazz.load (["J.modelset.Object2d"], "J.modelset.Text", ["J.util.JmolFont", "$.TextFormat"], function () {
+Clazz.load (["J.modelset.Object2d"], "J.modelset.Text", ["javajs.awt.Font", "JU.PT"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.fontScale = 0;
 this.textUnformatted = null;
@@ -17,12 +17,14 @@ this.widths = null;
 this.viewer = null;
 this.image = null;
 this.imageScale = 1;
+this.boxYoff2 = 0;
 this.xAdj = 0;
 this.yAdj = 0;
 this.y0 = 0;
+this.pointerPt = null;
 Clazz.instantialize (this, arguments);
 }, J.modelset, "Text", J.modelset.Object2d);
-Clazz.overrideMethod (c$, "setScalePixelsPerMicron", 
+$_V(c$, "setScalePixelsPerMicron", 
 function (scalePixelsPerMicron) {
 this.fontScale = 0;
 this.scalePixelsPerMicron = scalePixelsPerMicron;
@@ -42,7 +44,7 @@ t.set (gdata, font, colix, align, true, scalePixelsPerMicron, value);
 t.setText (text);
 t.bgcolix = bgcolix;
 return t;
-}, "J.util.GData,J.util.JmolFont,~S,~N,~N,~N,~N,~A");
+}, "J.util.GData,javajs.awt.Font,~S,~N,~N,~N,~N,~A");
 c$.newEcho = $_M(c$, "newEcho", 
 function (viewer, gdata, font, target, colix, valign, align, scalePixelsPerMicron) {
 var t =  new J.modelset.Text ();
@@ -54,7 +56,7 @@ t.valign = valign;
 t.z = 2;
 t.zSlab = -2147483648;
 return t;
-}, "J.viewer.Viewer,J.util.GData,J.util.JmolFont,~S,~N,~N,~N,~N");
+}, "J.viewer.Viewer,J.util.GData,javajs.awt.Font,~S,~N,~N,~N,~N");
 $_M(c$, "set", 
 ($fz = function (gdata, font, colix, align, isLabelOrHover, scalePixelsPerMicron, value) {
 this.scalePixelsPerMicron = scalePixelsPerMicron;
@@ -64,7 +66,7 @@ this.colix = colix;
 this.align = align;
 this.pymolOffset = value;
 this.setFont (font, isLabelOrHover);
-}, $fz.isPrivate = true, $fz), "J.util.GData,J.util.JmolFont,~N,~N,~B,~N,~A");
+}, $fz.isPrivate = true, $fz), "J.util.GData,javajs.awt.Font,~N,~N,~B,~N,~A");
 $_M(c$, "getFontMetrics", 
 ($fz = function () {
 this.descent = this.font.getDescent ();
@@ -75,7 +77,7 @@ $_M(c$, "setFontFromFid",
 function (fid) {
 if (this.fid == fid) return;
 this.fontScale = 0;
-this.setFont (J.util.JmolFont.getFont3D (fid), true);
+this.setFont (javajs.awt.Font.getFont3D (fid), true);
 }, "~N");
 $_M(c$, "setText", 
 function (text) {
@@ -106,7 +108,7 @@ this.getFontMetrics ();
 if (!doAll) return;
 this.fid = this.font.fid;
 this.recalc ();
-}, "J.util.JmolFont,~B");
+}, "javajs.awt.Font,~B");
 $_M(c$, "setFontScale", 
 function (scale) {
 if (this.fontScale == scale) return;
@@ -121,7 +123,7 @@ while ((pt = text.indexOf ("\n")) >= 0) text = text.substring (0, pt) + "|" + te
 
 return text;
 }, "~S");
-Clazz.overrideMethod (c$, "recalc", 
+$_V(c$, "recalc", 
 function () {
 if (this.image != null) {
 this.textWidth = this.textHeight = 0;
@@ -135,7 +137,7 @@ this.lines = null;
 this.widths = null;
 return;
 }if (this.font == null) return;
-this.lines = J.util.TextFormat.split (this.text, '|');
+this.lines = JU.PT.split (this.text, "|");
 this.textWidth = 0;
 this.widths =  Clazz.newIntArray (this.lines.length, 0);
 for (var i = this.lines.length; --i >= 0; ) this.textWidth = Math.max (this.textWidth, this.widths[i] = this.stringWidth (this.lines[i]));
@@ -179,6 +181,9 @@ boxXY[0] = this.movableX - this.xAdj;
 boxXY[1] = this.movableY - this.yAdj;
 this.y0 = this.movableY - dy - this.descent;
 isExact = true;
+this.boxYoff2 = -2;
+} else {
+this.boxYoff2 = 0;
 }J.modelset.Text.setBoxXY (this.boxWidth, this.boxHeight, dx, dy, boxXY, isExact);
 } else {
 this.setPos (this.fontScale);

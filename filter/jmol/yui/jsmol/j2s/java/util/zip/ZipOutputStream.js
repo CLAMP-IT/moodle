@@ -1,5 +1,5 @@
 Clazz.declarePackage ("java.util.zip");
-Clazz.load (["java.util.zip.DeflaterOutputStream", "$.ZipConstants", "java.util.Hashtable", "java.util.zip.CRC32", "J.util.JmolList"], "java.util.zip.ZipOutputStream", ["JZ.ZStream", "java.io.IOException", "java.lang.Boolean", "$.IllegalArgumentException", "$.IndexOutOfBoundsException", "$.Long", "java.util.zip.Deflater", "$.ZipException"], function () {
+Clazz.load (["java.util.zip.DeflaterOutputStream", "$.ZipConstants", "java.util.Hashtable", "java.util.zip.CRC32", "JU.List"], "java.util.zip.ZipOutputStream", ["JZ.ZStream", "java.io.IOException", "java.lang.Boolean", "$.IllegalArgumentException", "$.IndexOutOfBoundsException", "$.Long", "java.util.zip.Deflater", "$.ZipException"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.current = null;
 this.xentries = null;
@@ -14,7 +14,7 @@ this.$closed = false;
 Clazz.instantialize (this, arguments);
 }, java.util.zip, "ZipOutputStream", java.util.zip.DeflaterOutputStream, java.util.zip.ZipConstants);
 Clazz.prepareFields (c$, function () {
-this.xentries =  new J.util.JmolList ();
+this.xentries =  new JU.List ();
 this.names =  new java.util.Hashtable ();
 this.crc =  new java.util.zip.CRC32 ();
 });
@@ -35,8 +35,13 @@ if (this.$closed) {
 throw  new java.io.IOException ("Stream closed");
 }}, $fz.isPrivate = true, $fz));
 Clazz.makeConstructor (c$, 
+function () {
+Clazz.superConstructor (this, java.util.zip.ZipOutputStream, []);
+});
+$_M(c$, "setZOS", 
 function (out) {
-Clazz.superConstructor (this, java.util.zip.ZipOutputStream, [out, java.util.zip.ZipOutputStream.newDeflater ()]);
+this.setDOS (out, java.util.zip.ZipOutputStream.newDeflater ());
+return this;
 }, "java.io.OutputStream");
 c$.newDeflater = $_M(c$, "newDeflater", 
 ($fz = function () {
@@ -138,7 +143,7 @@ case 0:
 this.written += len;
 if (this.written - this.locoff > entry.size) {
 throw  new java.util.zip.ZipException ("attempt to write past end of STORED entry");
-}this.out.write (b, off, len);
+}this.out.write (this.buffer, 0, len);
 break;
 default:
 throw  new java.util.zip.ZipException ("invalid compression method");

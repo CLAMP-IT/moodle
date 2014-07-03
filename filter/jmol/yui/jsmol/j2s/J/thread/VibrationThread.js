@@ -5,12 +5,16 @@ this.transformManager = null;
 Clazz.instantialize (this, arguments);
 }, J.thread, "VibrationThread", J.thread.JmolThread);
 Clazz.makeConstructor (c$, 
-function (transformManager, viewer) {
-Clazz.superConstructor (this, J.thread.VibrationThread);
+function () {
+Clazz.superConstructor (this, J.thread.VibrationThread, []);
+});
+$_V(c$, "setManager", 
+function (manager, viewer, options) {
+this.transformManager = manager;
 this.setViewer (viewer, "VibrationThread");
-this.transformManager = transformManager;
-}, "J.viewer.TransformManager,J.viewer.Viewer");
-Clazz.overrideMethod (c$, "run1", 
+return 0;
+}, "~O,J.viewer.Viewer,~O");
+$_V(c$, "run1", 
 function (mode) {
 var elapsed;
 while (true) switch (mode) {

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>jmol applet vibrations demo</title>
     <script src="JSmol.min.js"></script>
-    <script src="Jmol2.js"></script>
+    <script src="js/Jmol2.js"></script>
     <script>
 
 
@@ -48,7 +48,7 @@ function showFrame(i){
 	    <h2>automatically read vibrations in SMOL files</h2>
 	    <script>
 	      var script =
-	      "load data/c6h 6.smol; wireframe .1; cpk off;" +
+	      "load data/c6h6.smol; wireframe .1; cpk off;" +
 	      "frame 1; vectors 0.05;vector scale 2.0 ; color vectors yellow;" +
 	      "move 10 -20 10 0 0 0 0 0 1; delay 1; vibration on;vibration scale 0.4;";
 	      jmolApplet(300, script);

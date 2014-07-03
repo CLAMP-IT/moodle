@@ -1,5 +1,5 @@
 Clazz.declarePackage ("J.renderbio");
-Clazz.load (["J.renderbio.RocketsRenderer", "J.util.P3", "$.P3i"], "J.renderbio.CartoonRenderer", ["J.util.C"], function () {
+Clazz.load (["J.renderbio.RocketsRenderer", "JU.P3", "$.P3i"], "J.renderbio.CartoonRenderer", ["J.util.C"], function () {
 c$ = Clazz.decorateAsClass (function () {
 this.renderAsRockets = false;
 this.renderEdges = false;
@@ -13,23 +13,26 @@ this.ring5Screens = null;
 Clazz.instantialize (this, arguments);
 }, J.renderbio, "CartoonRenderer", J.renderbio.RocketsRenderer);
 Clazz.prepareFields (c$, function () {
-this.ptConnectScr =  new J.util.P3i ();
-this.ptConnect =  new J.util.P3 ();
+this.ptConnectScr =  new JU.P3i ();
+this.ptConnect =  new JU.P3 ();
 this.ring6Points =  new Array (6);
 this.ring6Screens =  new Array (6);
 this.ring5Points =  new Array (5);
 this.ring5Screens =  new Array (5);
 {
-this.ring6Screens[5] =  new J.util.P3i ();
+this.ring6Screens[5] =  new JU.P3i ();
 for (var i = 5; --i >= 0; ) {
-this.ring5Screens[i] =  new J.util.P3i ();
-this.ring6Screens[i] =  new J.util.P3i ();
+this.ring5Screens[i] =  new JU.P3i ();
+this.ring6Screens[i] =  new JU.P3i ();
 }
 }});
-Clazz.overrideMethod (c$, "renderBioShape", 
+$_V(c$, "renderBioShape", 
 function (bioShape) {
-this.newRockets = true;
-if (bioShape.wingVectors == null || this.isCarbohydrate) return;
+if (this.wireframeOnly) {
+this.renderStrands ();
+return;
+}this.newRockets = true;
+if (this.wingVectors == null || this.isCarbohydrate) return;
 this.getScreenControlPoints ();
 if (this.isNucleic) {
 this.renderNucleic ();
@@ -48,7 +51,7 @@ this.calcRopeMidPoints (this.newRockets);
 if (!this.renderArrowHeads) {
 this.calcScreenControlPoints (this.cordMidPoints);
 this.controlPoints = this.cordMidPoints;
-}this.render1 ();
+}this.renderRockets ();
 this.viewer.freeTempPoints (this.cordMidPoints);
 this.viewer.freeTempScreens (this.ribbonTopScreens);
 this.viewer.freeTempScreens (this.ribbonBottomScreens);
@@ -72,7 +75,7 @@ this.colix = this.getLeadColix (i);
 if (this.setBioColix (this.colix)) this.renderNucleicBaseStep (this.monomers[i], this.mads[i], this.ptConnectScr, this.ptConnect);
 }
 });
-Clazz.overrideMethod (c$, "render1", 
+$_V(c$, "renderRockets", 
 function () {
 var lastWasSheet = false;
 var lastWasHelix = false;
@@ -99,9 +102,9 @@ this.renderHermiteConic (i, true);
 }}lastWasSheet = isSheet;
 lastWasHelix = isHelix;
 }
-if (this.renderAsRockets || !this.renderArrowHeads) this.renderRockets ();
+if (this.renderAsRockets || !this.renderArrowHeads) this.renderCartoonRockets ();
 });
-$_M(c$, "renderRockets", 
+$_M(c$, "renderCartoonRockets", 
 ($fz = function () {
 this.tPending = false;
 for (var i = this.bsVisible.nextSetBit (0); i >= 0; i = this.bsVisible.nextSetBit (i + 1)) if (this.isHelix (i)) this.renderSpecialSegment (this.monomers[i], this.getLeadColix (i), this.mads[i]);
@@ -148,7 +151,7 @@ for (var i = 5; --i > 0; ) this.g3d.fillCylinderScreen3I (3, 3, this.ring5Screen
 
 } else {
 this.g3d.fillCylinderScreen3I (3, 3, this.ring6Screens[5], this.ring6Screens[0], this.ring6Points[5], this.ring6Points[0], 0.005);
-}}, $fz.isPrivate = true, $fz), "J.modelsetbio.NucleicMonomer,~N,J.util.P3i,J.util.P3");
+}}, $fz.isPrivate = true, $fz), "J.modelsetbio.NucleicMonomer,~N,JU.P3i,JU.P3");
 $_M(c$, "renderLeontisWesthofEdges", 
 ($fz = function (nucleotide, thisMad) {
 if (!nucleotide.getEdgePoints (this.ring6Points)) return;

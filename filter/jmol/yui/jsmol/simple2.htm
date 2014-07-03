@@ -5,27 +5,7 @@
 	<title>JSmol -- platform-aware Jmol using jQuery</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-<!-- 
-
-JSmoljQuery.js 			  required
-JSmolCore.js					essential; add next in the order given here
-JSmolApplet.js				essential
-JSmolControls.js			required for any interactivity
-JSmolApi.js						essential
-JSmol.js							required
-
 <script type="text/javascript" src="JSmol.min.js"></script>
-
-
--->
-
-<script type="text/javascript" src="js/JSmoljQuery.js"></script>
-<script type="text/javascript" src="js/JSmolCore.js"></script>
-<script type="text/javascript" src="js/JSmolApplet.js"></script>
-<script type="text/javascript" src="js/JSmolApi.js"></script>
-<script type="text/javascript" src="js/JSmolControls.js"></script>
-<script type="text/javascript" src="js/j2sjmol.js"></script>
-<script type="text/javascript" src="js/JSmol.js"></script>
 
 <script type="text/javascript">
 //<![CDATA[
@@ -38,8 +18,8 @@ JSmol.js							required
 ////// special stuff just for this particular page
 
 var s = unescape(document.location.search);
-var xxxx = s.split("USE=")[0]
-if (xxxx.length == 0) {
+var xxxx = s.split("_USE=")[0]
+if (xxxx.length < 2) {
 	xxxx = "ethanol"
 	script = 'set errorCallback "myCallback";'
 	+'set zoomlarge false;set echo top left;echo loading XXXX...;refresh;'
@@ -50,25 +30,6 @@ if (xxxx.length == 0) {
 	script = xxxx.substring(1)
 }
 
-var use = "JAVA HTML5 IMAGE"
-
-if (s.indexOf("USE=") >= 0)
-  use = s.split("USE=")[1].split("&")[0]
-else if (s.indexOf("JAVA") >= 0)
-  use = "JAVA"
-else if (s.indexOf("IMAGE") >= 0)
-  use = "IMAGE"
-else if (s.indexOf("NOWEBGL") >= 0)
-  use = "JAVA IMAGE"
-else if (s.indexOf("WEBGL") >= 0)
-  use = "WEBGL HTML5"
-if (s.indexOf("NOWEBGL") >= 0)
-  use = use.replace(/WEBGL/,"")
-var useSignedApplet = (s.indexOf("SIGNED") >= 0);
-
-  
-var useSignedApplet = true;//(document.location.href.indexOf("SIGNED") >= 0);
-
 // ---------------------------------------------------------------------------------
 
 ////// every page will need one variable and one Info object for each applet object
@@ -77,13 +38,13 @@ var Info = {
 	width: 450,
 	height: 450,
 	script: script,
-	use: use,
+	use: "HTML5",
 	jarPath: "java",
 	j2sPath: "j2s",
-	jarFile: (useSignedApplet ? "JmolAppletSigned.jar" : "JmolApplet.jar"),
-	isSigned: useSignedApplet,
+	jarFile: "JmolApplet.jar",
+	isSigned: false,
 	addSelectionOptions: false,
-	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/jsmol.php",
+	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
 	readyFunction: null,
 	console: "jmol_infodiv",
 	disableInitialConsole: true,
@@ -168,8 +129,8 @@ $(document).ready(function(){
 
 		$("#leftpanel").html(
 		  '<a target="_blank" href="data/chairflip.png">images</a> '
-			+ '<a target="_blank" href="simple2.htm?cd%20data%3Bscript%20cyclflip2.spt;//USE=' + use + '">cyclohexane ring flip</a> '
-			+ '<a href="simple2.htm?USE=' + use + '">back</a><br />'
+			+ '<a target="_blank" href="simple2.htm?cd%20data%3Bscript%20cyclflip2.spt;//&_USE=' + Info.use + '">cyclohexane ring flip</a> '
+			+ '<a href="simple2.htm?_USE=' + Info.use + '">back</a><br />'
 			+ (true || isApplet ? 
 			'Drag-Minimize '
 			+ Jmol.jmolLink(jmol,"set picking dragMinimize", "on")  
@@ -193,7 +154,7 @@ $(document).ready(function(){
 		);
 
   // the HTML code is in jmol._code since we are using Jmol.setDocument(0)
-			jmol = Jmol.getApplet("jmol", Info);
+			Jmol.getApplet("jmol", Info);
 
   	$("#middlepanel").html(Jmol.getAppletHtml(jmol));
 
@@ -225,13 +186,15 @@ $(document).ready(function(){
 		+ Jmol.jmolButton(jmol,"write FILE ?","Save FILE")
 		+ "<br />"
 		+ Jmol.jmolButton(jmol,"write PNGJ ?.png","Save PNG")
-		+ "<br /><br /><a href=simple2.htm?USE=HTML5>HTML5 version</a>"
+		+ "<br /><br /><a href=simple2.htm?_USE=HTML5>HTML5 version</a>"
+		+ "<br /><br /><a href=simple2.htm?_USE=SIGNED>(Signed) Java version</a>"
+		+ "<br /><br />" + Jmol.jmolLink(jmol, "JSCONSOLE", "show info")
 		: 
 		"<br /><br />"
 		+ Jmol.jmolButton(jmol,"write FILE ?","Save FILE")
 		+ "<br />"
 		+ Jmol.jmolButton(jmol,"write PNGJ ?.png","Save PNG")
-		+ "<br /><br /><a href=simple2.htm?USE=JAVA>JAVA version</a>"
+		+ "<br /><br /><a href=simple2.htm?_USE=SIGNED>JAVA version</a>"
     + "<br /><br /><a href=javascript:Jmol.showInfo(jmol,true)>show info</a>"
     )
 	);

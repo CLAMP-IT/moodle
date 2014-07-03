@@ -18,10 +18,10 @@ var JmolInfo = {
 	color: "black",
 	use: "JAVA",
   addSelectionOptions: true,
-	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/jsmol.php",
-	jarPath: "..",
+	serverURL: "http://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
+	jarPath: "java",
 	jarFile: "JmolAppletSigned.jar",
-  j2sPath: "../jsmol/j2s",
+  j2sPath: "j2s",
 	isSigned: true,
   defaultModel: "$morphine",
 	script: ""
@@ -51,8 +51,8 @@ jme = Jmol.getJMEApplet("jme", JMEInfo, jmol);
 </td>
 <td>
 
-<a href="javascript:Jmol.showInfo(jmol, true)">2D</a>
-<a href="javascript:Jmol.showInfo(jmol, false)">3D</a>
+<a href="javascript:Jmol.show2d(jmol, true)">2D</a>
+<a href="javascript:Jmol.show2d(jmol, false)">3D</a>
 <br>
 <script>
 
