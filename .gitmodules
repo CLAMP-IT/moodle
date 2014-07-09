@@ -50,3 +50,6 @@
 [submodule "theme/newfallen"]
 	path = theme/newfallen
 	url = https://git.smith.edu/kwiliarty/moodle-theme_newfallen.git
+[submodule "mod/vpl"]
+	path = mod/vpl
+	url = https://github.com/jcrodriguez-dis/moodle-mod_vpl.git
