@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -20,7 +19,7 @@
  * A page for uploading new images
  *
  * @package   mod_lightworkgallery
- * @copyright 2011 John Kelsh
+ * @copyright 2011 John Kelsh <john.kelsh@netspot.com.au>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -54,46 +53,23 @@ if ($mform->is_cancelled()) {
 
     $fs = get_file_storage();
     $draftid = file_get_submitted_draft_itemid('image');
-    if (!$files = $fs->get_area_files(get_context_instance(CONTEXT_USER, $USER->id)->id, 'user', 'draft', $draftid, 'id DESC', false)) {
+    if (!$files = $fs->get_area_files(
+        get_context_instance(CONTEXT_USER, $USER->id)->id, 'user', 'draft', $draftid, 'id DESC', false)) {
         redirect($PAGE->url);
     }
     $stored_file = reset($files);
 
-    // ---- Damon 9/13/12 trying to get the resize options from the user ----
-    // okay this doesn't mess anything up... yet... okay now it does, but optional_param works
-    $resizedisabled = optional_param('resizedisabled', '', PARAM_INT);
-    
-    if ($resizedisabled) {
-    	// send zeroes for width and height because user doesn't want to resize
-	    lightboxgallery_add_images($stored_file, $context, $cm, $gallery, 0, 0);
-	    redirect($CFG->wwwroot.'/mod/lightboxgallery/view.php?id='.$cm->id);
-	   
+    if ($gallery->autoresize == AUTO_RESIZE_UPLOAD || $gallery->autoresize == AUTO_RESIZE_BOTH) {
+        $resize = $gallery->resize;
+    } else if (isset($formdata->resize)) {
+        $resize = $formdata->resize;
     } else {
-	// weird git issue
-    	//$size = optional_param('resize', '', PARAM_INT);
-    	//$resizeoptions = lightboxgallery_resize_options();
-	// end weird git issue
-
-	// need to get the gallery's set default resize value
-    	$size = $gallery->resize;
-	if ($size == 0) {
-		// this means resizing is not set in the lightbox's settings as a default
-		$size = optional_param('resize', '', PARAM_INT);
-	}
-	$resizeoptions = lightboxgallery_resize_options();
-
-	//mail("damonbla@gmail.com", "lightbox", "size = $size and resizeoptions = ".print_r($resizeoptions));
-
-    	list($width, $height) = explode('x', $resizeoptions[$size]);
-
-	    lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $width, $height);
-	    redirect($CFG->wwwroot.'/mod/lightboxgallery/view.php?id='.$cm->id);	    
+        $resize = 0; // No resize.
     }
-    // ---- end Damon's shenanigans ----
 
-    // original code... don't want to lose
-    //lightboxgallery_add_images($stored_file, $context, $cm, $gallery);
-    //redirect($CFG->wwwroot.'/mod/lightboxgallery/view.php?id='.$cm->id);
+    lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $resize);
+    redirect($CFG->wwwroot.'/mod/lightboxgallery/view.php?id='.$cm->id);
+
 }
 
 echo $OUTPUT->header();

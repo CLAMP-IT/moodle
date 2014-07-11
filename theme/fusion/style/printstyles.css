@@ -1,0 +1,45 @@
+/* Print styles for Moodle Fusion Theme */
+
+@media print {
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  body {
+    background-color: White;
+    color: Black;
+    font-size: 100%;
+  }
+  // things that will be modified
+
+  #region-header {
+      margin-bottom: 40px; // something reasonable
+  }
+
+  div#region-header.headermain { // this is the header text
+      // make sure to scrape the text only
+  }
+
+// section that will not be displayed at all
+  /* a, b, c, d, ... { display: none; } */
+  div.navbar {
+      display: none;
+  }
+
+  div.breadcrumb, div.navbutton {
+      display: none;
+  }
+
+  div.block_action, div#page-header, div#page-footer, div#region-post-wrap-2, div#dock {
+      display: none;
+  }
+
+  body, div, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6, pre, code, form, fieldset, legend, input, textarea, p, blockquote, th, td {
+      margin:0;
+      width:  100%;
+      padding:0;
+  }
+}
