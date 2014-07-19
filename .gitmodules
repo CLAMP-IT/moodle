@@ -56,3 +56,6 @@
 [submodule "filter/videojs"]
 	path = filter/videojs
 	url = http://kevinwiliarty.com/git/moodle-filter_videojs.git
+[submodule "theme/newfallen"]
+	path = theme/newfallen
+	url = http://kevinwiliarty.com/git/moodle-theme_newfallen.git
