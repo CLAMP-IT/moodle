@@ -47,3 +47,6 @@
 [submodule "filter/videojs"]
 	path = filter/videojs
 	url = https://github.com/kwiliarty/moodle-filter_videojs.git
+[submodule "theme/newfallen"]
+	path = theme/newfallen
+	url = https://git.smith.edu/kwiliarty/moodle-theme_newfallen.git
