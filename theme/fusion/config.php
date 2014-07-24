@@ -58,6 +58,7 @@ $THEME->sheets = array(
     'pagelayout',
     'menus',
     'settings',
+    'printstyles',
 );
 
 ////////////////////////////////////////////////////
