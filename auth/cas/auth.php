@@ -132,7 +132,18 @@ class auth_plugin_cas extends auth_plugin_ldap {
 
             return;
         }
-
+	if (isset($SESSION->wantsurl) && strstr($SESSION->wantsurl,"/course/view.php?id=")) {
+		$matches = array();
+	   	preg_match('/\\/course\\/view\.php\?id=(\d+)$/',$SESSION->wantsurl,$matches);
+		$enrol_instances = enrol_get_instances($matches[1],true);
+		foreach ($enrol_instances as $instance) {
+		  if ($instance->enrol == "guest") {
+		    $frm->username = 'guest';
+		    $frm->password = 'guest';
+		    return;
+		  }
+	        }
+	}
         if (isset($_GET['loginguest']) && ($_GET['loginguest'] == true)) {
             $frm = new stdClass();
             $frm->username = 'guest';
