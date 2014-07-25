@@ -214,11 +214,14 @@ function ldap_enrol ($enrol,$lock) {
                           'AdHocCommRpts' => array ('list_all_faculty','list_admin_fac_priv'), 
                           'faculty-chair' => array('voting_faculty'),
 	                  'Hughes2013' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
-                          'Host-Training' => array('2012'),
+			   'ScienceResearch2014' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
+                          'Host-Training' => array('2015'),
                         'Inter' => array('department_chairs'),
 		        'TeachEval' => array('list_all_faculty'),
                         'TenureReps' => array('tenure_track'),
+			'Moodle Help' => array('all-facstaff'),
 );
+
 
   foreach ($one_off_syncs as $course => $ldap_groups) {
     $moodle_course = $DB->get_record('course',array('shortname' => $course));

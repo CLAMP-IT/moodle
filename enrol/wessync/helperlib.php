@@ -273,11 +273,13 @@ function wes_get_first_year_students($psdb,$semester) {
   }
   if ($season == "Spring") {
     $ps_year = substr($semester,0,3);
+    $ps_year--;
     $prev_semester = $ps_year . '9';
     $prev_students = wes_get_first_year_students($psdb,$prev_semester);
     $members = array_merge($prev_students,$members);
   }
   print $members;
+
   return array_unique($members);
 }
 /*updates moodlecreate database with updated status */
@@ -296,7 +298,7 @@ function get_season_from_semester($semester) {
   $season = substr($semester,-1,1);
   if ($season == 9) {
     $season = "Fall";
-  } else if ($season == 0 ) {
+  } else if ($season == 1 ) {
     $season = "Spring";
   } else if ($season == 0 ) {
     $season = "Winter";

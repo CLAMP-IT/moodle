@@ -238,13 +238,13 @@ and d.crse_id=:crse_id and d.class_section=:section and a.emplid=e.wesid";
                $this->unenrol_user($instance,$current_id,$roleid);
 	       $this->log_action("unenrol",$moodle_course->id,$current_id,$roleid);
              } else {
-  	       #suspends as opposed to unenroll
+  	       #suspends as opposed to unenroll - keeps them out of the course
 	       $this->update_user_enrol($instance,$current_id,ENROL_USER_SUSPENDED);
+	       #keeps them out of the gradebook and another layer of access control
                $context = get_context_instance(CONTEXT_COURSE, $instance->courseid, MUST_EXIST);
                role_unassign($roleid,$current_id,$context->id,'enrol_wessync',$instance->id);
 	       $this->log_action("suspend",$moodle_course->id,$current_id,$roleid);
 
-	       #optionally remove role as well
 	     }
            }
          }
