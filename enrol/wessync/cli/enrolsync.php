@@ -196,7 +196,7 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
   /* no need to notify on redirect course creation */ 
   if ($email_results && !$redirect) {
      $body = implode("\n",$email_results);
-     $recipients = array ('jwest@wesleyan.edu','kwiliarty@wesleyan.edu','dschnaidt@wesleyan.edu','jgoetz@wesleyan.edu','eparis@wesleyan.edu','melson@wesleyan.edu');
+     $recipients = array ('jwest@wesleyan.edu','dschnaidt@wesleyan.edu','jsimms@wesleyan.edu','eparis@wesleyan.edu','melson@wesleyan.edu','mcope@wesleyan.edu');
      $subject = "Moodle2 Course Creation Report";
      mail(join(',',$recipients),$subject,$body,"From: <moodle_admins@wesleyan.edu>\r\nPrecedence: Bulk\r\n");
   }
@@ -214,8 +214,13 @@ function ldap_enrol ($enrol,$lock) {
                           'AdHocCommRpts' => array ('list_all_faculty','list_admin_fac_priv'), 
                           'faculty-chair' => array('voting_faculty'),
 	                  'Hughes2013' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
-
-                          'Host-Training' => array('2012'));
+			   'ScienceResearch2014' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
+                          'Host-Training' => array('2015'),
+                        'Inter' => array('department_chairs'),
+		        'TeachEval' => array('list_all_faculty'),
+                        'TenureReps' => array('tenure_track'),
+			'Moodle Help' => array('all-facstaff'),
+);
 
 
   foreach ($one_off_syncs as $course => $ldap_groups) {

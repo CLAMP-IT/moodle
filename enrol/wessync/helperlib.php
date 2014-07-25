@@ -228,7 +228,7 @@ function wes_get_first_year_students($psdb,$semester) {
   /*from pturenne*/
   $year = substr($semester,0,3)+ 1900;
 
-  $statement = "SELECT A.EMPLID
+/*  $statement = "SELECT A.EMPLID
   FROM SYSADM.PS_ACAD_PROG A, SYSADM.PS_ACAD_PLAN B
   WHERE A.ACAD_CAREER = 'UGRD'
      AND A.admit_term>=:strm
@@ -236,8 +236,9 @@ function wes_get_first_year_students($psdb,$semester) {
      AND A.ACAD_CAREER = B.ACAD_CAREER
      AND A.STDNT_CAR_NBR = B.STDNT_CAR_NBR
      AND A.EFFSEQ = B.EFFSEQ
-     AND B.EFFDT = A.EFFDT
-     AND B.ACAD_PLAN in ('PRE-MATRIC','TCEX','VINT','FYST','TRAN') UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW'      AND C.SRVC_IND_REASON IN ('ADVIS','INTER') AND C.AMOUNT = :year";
+     AND B.EFFDT = A.EFFD
+     AND B.ACAD_PLAN in ('PRE-MATRIC','TCEX','VINT','FYST','TRAN') UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW'      AND C.SRVC_IND_REASON IN ('ADVIS','INTER') AND C.AMOUNT = :year";*/
+  $statement = "SELECT A.EMPLID FROM SYSADM.PS_WES_NEW_STU_TRM A WHERE A.STRM >=:strm UNION SELECT C.EMPLID   FROM SYSADM.PS_SRVC_IND_DATA C   WHERE C.SRVC_IND_CD = 'NEW' AND C.SRVC_IND_REASON IN ('ADVIS','INTER','JTRAN') AND C.AMOUNT = :year";
   /* now see if it's Spring and if we have to go back a semester because the
      year of Spring is 2013, but it's the "2012" school year for the above
      query */
@@ -248,10 +249,10 @@ function wes_get_first_year_students($psdb,$semester) {
   $sth = oci_parse($psdb,$statement);
   oci_bind_by_name($sth,':strm',$semester);
   oci_bind_by_name($sth,':year',$year);
-  if (!oci_execute($sth)) {
+  if (!oci_execute($sth)) { 
+    var_dump(oci_error($sth));
     return false;
   }
- 
   /*wesid->username */
   $wesid_statement = "select sysadm.wes_get_email(:wesid) from dual";
   $wesid_sth = oci_parse($psdb,$wesid_statement);
@@ -259,6 +260,7 @@ function wes_get_first_year_students($psdb,$semester) {
     $emplid = $row['EMPLID'];
     oci_bind_by_name($wesid_sth,':wesid',$emplid);
     if (!oci_execute($wesid_sth)) {
+      var_dump(oci_error($sth));
       return false;
     }
     $wesid_row = oci_fetch_row($wesid_sth);
@@ -271,10 +273,12 @@ function wes_get_first_year_students($psdb,$semester) {
   }
   if ($season == "Spring") {
     $ps_year = substr($semester,0,3);
+    $ps_year--;
     $prev_semester = $ps_year . '9';
     $prev_students = wes_get_first_year_students($psdb,$prev_semester);
     $members = array_merge($prev_students,$members);
   }
+
   return array_unique($members);
 }
 /*updates moodlecreate database with updated status */
@@ -293,8 +297,10 @@ function get_season_from_semester($semester) {
   $season = substr($semester,-1,1);
   if ($season == 9) {
     $season = "Fall";
-  } else if ($season == 0 ) {
+  } else if ($season == 1 ) {
     $season = "Spring";
+  } else if ($season == 0 ) {
+    $season = "Winter";
   } else if ($season == 6 ) {
     $season = "Summer";
   }
