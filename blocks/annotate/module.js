@@ -205,7 +205,6 @@ M.block_annotate.init = function(Y, tgts, rt) {
 	 
 }
 
-M.block_annotate.destroy();
 
 
 
