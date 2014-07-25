@@ -220,7 +220,6 @@ function ldap_enrol ($enrol,$lock) {
                         'TenureReps' => array('tenure_track'),
 );
 
-
   foreach ($one_off_syncs as $course => $ldap_groups) {
     $moodle_course = $DB->get_record('course',array('shortname' => $course));
     if (!$moodle_course) {

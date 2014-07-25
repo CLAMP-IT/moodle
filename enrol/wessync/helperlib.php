@@ -253,7 +253,6 @@ function wes_get_first_year_students($psdb,$semester) {
     var_dump(oci_error($sth));
     return false;
   }
-   
   /*wesid->username */
   $wesid_statement = "select sysadm.wes_get_email(:wesid) from dual";
   $wesid_sth = oci_parse($psdb,$wesid_statement);
@@ -297,7 +296,7 @@ function get_season_from_semester($semester) {
   $season = substr($semester,-1,1);
   if ($season == 9) {
     $season = "Fall";
-  } else if ($season == 1 ) {
+  } else if ($season == 0 ) {
     $season = "Spring";
   } else if ($season == 0 ) {
     $season = "Winter";
