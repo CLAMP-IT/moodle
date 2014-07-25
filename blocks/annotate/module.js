@@ -7,8 +7,15 @@ M.block_annotate.init = function(Y, tgts, rt) {
 	
 	var targets = tgts;
 	var root = rt;
-	 
-	Y.on("domready", activate);
+
+	var node = Y.one('#region-pre');
+	if (node) {
+  	  block = node.one('.block_annotate');
+	  if (block) {
+	    Y.on("domready", activate);
+  	  }
+ 	}
+	
 	
 	
 	 
@@ -197,4 +204,3 @@ M.block_annotate.init = function(Y, tgts, rt) {
 	 }
 	 
 }
-
