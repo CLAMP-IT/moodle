@@ -162,7 +162,8 @@
     .fluid-span (@columns) {
         .fluid-span-full(@columns, @fluidGridColumnWidth1200, @fluidGridGutterWidth1200);
     }
-    .empty-region-side-post.used-region-side-pre { // Post region is empty and pre region is in use.
+    .empty-region-side-post.used-region-side-pre, // Post region is empty and pre region is in use.
+    .jsenabled.docked-region-side-post.used-region-side-pre { // All post blocks docked and pre region is in use.
         #region-main.span8 {
             /** increase the span size by 1 **/
             .fluid-span(9);
@@ -199,7 +200,8 @@
     .fluid-span (@columns) {
         .fluid-span-full(@columns, @fluidGridColumnWidth768, @fluidGridGutterWidth768);
     }
-    .empty-region-side-post.used-region-side-pre { // Post region is empty and pre region is in use.
+    .empty-region-side-post.used-region-side-pre, // Post region is empty and pre region is in use.
+    .jsenabled.docked-region-side-post.used-region-side-pre { // All post blocks docked and pre region is in use.
         #region-main.span8 {
             /** increase the span size by 1 **/
             .fluid-span(9);
@@ -383,23 +385,25 @@
     .dropdown-menu {
         right:0;
         left:auto;
+        margin-right: 0px;
     }
-    .navbar .nav>li>.dropdown-menu:before {
+    .navbar .nav > li > .dropdown-menu:before {
         right:9px;
         left:auto;
     }
-    .navbar .nav>li>.dropdown-menu:after {
+    .navbar .nav > li > .dropdown-menu:after {
         right: 10px;
         left:auto;
     }
-    .dropdown-submenu>a:after {
-        margin-right: -10px;
-        margin-left: 0;
+    .dropdown-submenu > a:after {
+        margin-right: 0;
+        margin-left: -10px;
+        float: left;
         border-right-color: #ccc;
         border-left-color: transparent;
         border-width: 5px 5px 5px 0px;
     }
-    .dropdown-submenu>.dropdown-menu {
+    .dropdown-submenu > .dropdown-menu {
         right:100%;
         left:auto;
     }
@@ -503,7 +507,8 @@
     // cases when we have content in the side-pre blockregion but not in the
     // side-post blockregion as there are more specific selectors in
     // core.less which take precedence which break responsiveness.
-    .empty-region-side-post.used-region-side-pre { // Post region is empty and pre region is in use.
+    .empty-region-side-post.used-region-side-pre, // Post region is empty and pre region is in use.
+    .jsenabled.docked-region-side-post.used-region-side-pre { // All post blocks docked and pre region is in use.
         #block-region-side-pre.span4,
         #region-main.span8 {
             .fluid-span(12);
