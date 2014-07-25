@@ -132,6 +132,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
 
             return;
         }
+	/* Work around to allow courses with guest access to be direct linked to */
 	if (isset($SESSION->wantsurl) && strstr($SESSION->wantsurl,"/course/view.php?id=")) {
 		$matches = array();
 	   	preg_match('/\\/course\\/view\.php\?id=(\d+)$/',$SESSION->wantsurl,$matches);
