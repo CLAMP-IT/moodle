@@ -77,7 +77,7 @@ function cron_run() {
             $rs = $DB->get_recordset_sql ("SELECT *
                                              FROM {user}
                                             WHERE confirmed = 0 AND firstaccess > 0
-                                                  AND firstaccess < ?", array($cuttime));
+                                                  AND firstaccess < ? AND deleted = 0", array($cuttime));
             foreach ($rs as $user) {
                 delete_user($user); // we MUST delete user properly first
                 $DB->delete_records('user', array('id'=>$user->id)); // this is a bloody hack, but it might work
@@ -806,8 +806,11 @@ function cron_delete_from_temp() {
             // Check if file or directory is older than the given time.
             if ($iter->getMTime() < $time) {
                 if ($iter->isDir() && !$iter->isDot()) {
-                    if (@rmdir($node) === false) {
-                        mtrace("Failed removing directory '$node'.");
+                    // Don't attempt to delete the directory if it isn't empty.
+                    if (!glob($node. DIRECTORY_SEPARATOR . '*')) {
+                        if (@rmdir($node) === false) {
+                            mtrace("Failed removing directory '$node'.");
+                        }
                     }
                 }
                 if ($iter->isFile()) {

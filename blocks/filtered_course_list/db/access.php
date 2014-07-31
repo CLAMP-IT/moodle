@@ -16,6 +16,16 @@
 
 $capabilities = array(
 
+    'block/filtered_course_list:myaddinstance' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'user' => CAP_ALLOW
+        ),
+
+        'clonepermissionsfrom' => 'moodle/my:manageblocks'
+    ),
+
     'block/filtered_course_list:addinstance' => array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_BLOCK,
