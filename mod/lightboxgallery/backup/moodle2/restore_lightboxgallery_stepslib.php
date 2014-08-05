@@ -72,6 +72,9 @@ class restore_lightboxgallery_activity_structure_step extends restore_activity_s
         $data->gallery = $this->get_new_parentid('lightboxgallery');
         $data->userid = $this->get_mappingid('user', $data->userid);
         $data->timemodified = $this->apply_date_offset($data->timemodified);
+        if (isset($data->comment)) {
+            $data->commenttext = $data->comment;
+        }
         $newitemid = $DB->insert_record('lightboxgallery_comments', $data);
     }
 

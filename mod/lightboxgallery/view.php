@@ -165,7 +165,7 @@ $showtags = !in_array('tag', explode(',', get_config('lightboxgallery', 'disable
 
 if (!$editing && $showtags) {
     $desc_compare = $DB->sql_compare_text('description');
-    $sql = "SELECT $desc_compare
+    $sql = "SELECT $desc_compare AS description
               FROM {lightboxgallery_image_meta}
              WHERE gallery = {$gallery->id}
                AND metatype = 'tag'

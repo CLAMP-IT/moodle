@@ -44,7 +44,7 @@ class backup_lightboxgallery_activity_structure_step extends backup_activity_str
 
         $comments = new backup_nested_element('usercomments');
         $comment = new backup_nested_element('comment', array('id'), array(
-            'gallery', 'userid', 'comment', 'timemodified'
+            'gallery', 'userid', 'commenttext', 'timemodified'
         ));
 
         $image_metas = new backup_nested_element('image_metas');

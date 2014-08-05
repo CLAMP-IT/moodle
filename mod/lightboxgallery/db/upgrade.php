@@ -269,5 +269,16 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
         upgrade_mod_savepoint(true, 2011111600, 'lightboxgallery');
     }
 
+    if ($oldversion < 2013051300) {
+        $table = new xmldb_table('lightboxgallery_comments');
+
+        $field = new xmldb_field('comment', XMLDB_TYPE_TEXT, null, null, null, null, null, 'userid');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->rename_field($table, $field, 'commenttext');
+        }
+
+        upgrade_mod_savepoint(true, 2013051300, 'lightboxgallery');
+    }
+
     return true;
 }
