@@ -30,3 +30,4 @@ $string['filtername']    = 'Streaming media filter (RTMP)';
 
 $string['rtmp_audio']    = 'Filter audio (.mp3)';
 $string['rtmp_video']    = 'Filter video (.flv|.mp4|.f4v)';
+$string['rtmp_defcc']    = 'Closed captions on by default';

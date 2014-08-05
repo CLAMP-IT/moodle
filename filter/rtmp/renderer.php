@@ -69,7 +69,7 @@ class filter_rtmp_player_video extends core_media_player
 {
 
     const            RANK                       = 1001;
-    const            EXTENSIONS                 = 'flv,mp4,f4v';
+    const            EXTENSIONS                 = 'flv,mp4,f4v,mov';
 
     const            DEFAULT_WIDTH              = 320;
     const            DEFAULT_HEIGHT             = 240;
@@ -78,6 +78,13 @@ class filter_rtmp_player_video extends core_media_player
 
     public function embed($urls, $name, $width, $height, $options)
     {
+        global $CFG;
+
+
+        // If player disabled or cron task return empty str
+        if (empty($CFG->filter_rtmp_enable_video) || CLI_SCRIPT) {
+            return '';
+        }
 
         // Unique id even across different http requests made at the same time
         // (for AJAX, iframes).
@@ -92,7 +99,56 @@ class filter_rtmp_player_video extends core_media_player
         }
 
         $clip_array = array();
-        foreach ($urls as $url) {
+        for($url_index = 0; $url_index < count($urls); $url_index++) {
+
+            $url = $urls[$url_index];
+
+            // There are optional query str params that are
+            // only used to change player behavior or
+            // appearance. Find, evaluate and remove them.
+
+            // Look for dimensions in query str, if found
+            // it overrides the width and height args; last
+            // one found wins
+            $dimensions = $url->get_param('d');
+            if (null != $dimensions) {
+                $matches = null;
+                // Make sure the param looks reasonable for
+                // a width x height spec
+                if (preg_match('/([\d]{1,4})x([\d]{1,4})/i', $dimensions, $matches)) {
+                    $width  = $matches[1];
+                    $height = $matches[2];
+                    $autosize = false;
+                }
+                $url->remove_params(array('d'));
+            }
+
+            // Look for closed-captioning param, use site
+            // config for default setting
+            $captions = $url->get_param('captions');
+            switch (strtolower($captions)) {
+                case '0' :
+                case 'n' :
+                    $media_captions = 0;
+                    break;
+                case '1' :
+                case 'y' :
+                    $media_captions = 1;
+                    break;
+                default  :
+                    $media_captions = $CFG->filter_rtmp_default_cc;
+            }
+            if ($captions != null) {
+                $url->remove_params(array('captions'));
+            }
+
+            // Look for an indicator of stream provider
+            // which will affect how the media-conx and
+            // media-path values are formed
+            $provider = $url->get_param('provider');
+            if ($provider != null) {
+                $url->remove_params(array('provider'));
+            }
 
             // Parse the URL here to simplify the JavaScript
             // module. FlowPlayer rtmp needs the URL massaged
@@ -103,7 +159,11 @@ class filter_rtmp_player_video extends core_media_player
             }
             $path_parts = explode('/', $url_path);
 
-            $provider = $url->get_param('provider');
+            // Usually need the application name (which is
+            // first segment of path) in Flowplayer
+            // netConnection URL config parameter, but for
+            // certain servers, need first and second path
+            // segments.
             switch ($provider) {
                 case "acf": /* Amazon Cloudfront */
                     $media_conx = str_replace($url_path, '', $url->out_omit_querystring()) . array_shift($path_parts) . '/' . array_shift($path_parts);
@@ -118,15 +178,9 @@ class filter_rtmp_player_video extends core_media_player
 
             // Get the name from the $options, if not present there
             // take it from last segment of media path
-            $media_title = isset($options['PLAYLIST_NAMES'][$url->out()])
-                         ? $options['PLAYLIST_NAMES'][$url->out()]
+            $media_title = !empty($options['PLAYLIST_NAMES'][$url_index])
+                         ? $options['PLAYLIST_NAMES'][$url_index]
                          : str_replace('+', ' ', array_pop($path_parts));
-
-            // Now that the title has been referenced using the orig
-            // URL, remove the provider param if it is present
-            if ($provider != null) {
-                $url->remove_params(array('provider'));
-            }
 
             // If there is an extension, remove it, but in the
             // case of an mp4 leave it as well as prepend it to
@@ -136,6 +190,7 @@ class filter_rtmp_player_video extends core_media_player
                 switch ($matches[1]) {
                     case "mp4" :
                     case "f4v" :
+                    case "mov" :
                         if (0 === preg_match("/^mp4:/", $media_path)) {
                             $media_path = 'mp4:' . $media_path;
                         }
@@ -144,14 +199,16 @@ class filter_rtmp_player_video extends core_media_player
                         $media_path = substr($media_path, 0, 0 - strlen($matches[0]));
                 }
             }
+
             // Append the remainder (query string) of the original URL
             $query_str  = htmlspecialchars_decode($url->get_query_string(false));
             if (!empty($query_str)) {
                 $media_path .= '?' . $query_str;
             }
-            $clip_array[] = array('conx' => $media_conx, 'path' => $media_path, 'title' => $media_title);
 
-        } // foreach
+            $clip_array[] = array('conx' => $media_conx, 'path' => $media_path, 'title' => $media_title, 'captions' => $media_captions);
+
+        } // for($url_index ...
 
         // For situation where one item in clip array, render
         // only a span tag with the needed data- attributes
@@ -162,6 +219,7 @@ class filter_rtmp_player_video extends core_media_player
             $player_elem_attrs['data-media-conx']  = $clip_array[0]['conx'];
             $player_elem_attrs['data-media-path']  = $clip_array[0]['path'];
             $player_elem_attrs['data-media-title'] = $clip_array[0]['title'];
+            $player_elem_attrs['data-media-captions'] = $clip_array[0]['captions'];
 
         } elseif ($clip_array) {
 
@@ -172,7 +230,7 @@ class filter_rtmp_player_video extends core_media_player
             $playlist_open  = "<span class=\"filter_rtmp_wrapper\">\n"
                             . "<span class=\"filter_rtmp_video_playlist {$unique_id}\">\n";
             for ($clip_index = 0; $clip_index < count($clip_array); $clip_index++) {
-                $playlist_open .= "<a class=\"clip\" href=\"#\" data-media-path=\"{$clip_array[$clip_index]['path']}\" data-media-conx=\"{$clip_array[$clip_index]['conx']}\">{$clip_array[$clip_index]['title']}</a>\n";
+                $playlist_open .= "<a class=\"clip\" href=\"#\" data-media-path=\"{$clip_array[$clip_index]['path']}\" data-media-conx=\"{$clip_array[$clip_index]['conx']}\" data-media-captions=\"{$clip_array[$clip_index]['captions']}\">{$clip_array[$clip_index]['title']}</a>\n";
             }
             $playlist_open .= "</span>\n";
             $playlist_close = "</span>\n";
@@ -211,14 +269,22 @@ class filter_rtmp_player_audio extends core_media_player
 
     public function embed($urls, $name, $width, $height, $options)
     {
+        global $CFG;
+
+
+        // If player disabled or cron task return empty str
+        if (empty($CFG->filter_rtmp_enable_audio) || CLI_SCRIPT) {
+            return '';
+        }
 
         // Unique id even across different http requests made at the same time
         // (for AJAX, iframes).
         $unique_id = "filter_rtmp_" . md5(time() . '_' . rand());
 
-      //$clip_array_javascript = "var {$unique_id} = [];";
         $clip_array = array();
-        foreach ($urls as $url) {
+        for($url_index = 0; $url_index < count($urls); $url_index++) {
+
+            $url = $urls[$url_index];
 
             // Parse the URL here to simplify the JavaScript
             // module. FlowPlayer rtmp needs the URL massaged
@@ -237,6 +303,10 @@ class filter_rtmp_player_audio extends core_media_player
                 default:    /* Flash Media, Red5, Wowza */
                     $media_conx = str_replace($url_path, '', $url->out_omit_querystring()) . array_shift($path_parts);
             }
+            // Remove provider param from the URL
+            if ($provider != null) {
+                $url->remove_params(array('provider'));
+            }
 
             // Put together the media path from the remainder of
             // the un-shifted path_parts elements
@@ -244,15 +314,9 @@ class filter_rtmp_player_audio extends core_media_player
 
             // Get the name from the $options, if not present there
             // take it from last segment of media path
-            $media_title = isset($options['PLAYLIST_NAMES'][$url->out()])
-                         ? $options['PLAYLIST_NAMES'][$url->out()]
+            $media_title = !empty($options['PLAYLIST_NAMES'][$url_index])
+                         ? $options['PLAYLIST_NAMES'][$url_index]
                          : str_replace('+', ' ', array_pop($path_parts));
-
-            // Now that the title has been referenced using the orig
-            // URL, remove the provider param if it is present
-            if ($provider != null) {
-                $url->remove_params(array('provider'));
-            }
 
             // If there is an extension, remove it, but in the
             // case of an mp4 leave it as well as prepend it to
@@ -278,7 +342,7 @@ class filter_rtmp_player_audio extends core_media_player
 
             $clip_array[] = array('conx' => $media_conx, 'path' => $media_path, 'title' => $media_title);
 
-        } // foreach
+        } // for($url_index ...
 
         // For situation where one item in clip array, render
         // only a span tag with the needed data- attributes
@@ -333,8 +397,8 @@ class filter_rtmp_player_link extends core_media_player
     public function embed($urls, $name, $width, $height, $options)
     {
 
-        // If link is turned off, return empty.
-        if (!empty($options[core_media::OPTION_NO_LINK])) {
+        // If links turned off or cron task return empty str
+        if (!empty($options[core_media::OPTION_NO_LINK]) || CLI_SCRIPT) {
             return '';
         }
 
@@ -377,3 +441,4 @@ class filter_rtmp_player_link extends core_media_player
     }
 
 } // class filter_rtmp_player_link
+
