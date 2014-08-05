@@ -79,7 +79,13 @@ for ( $i=0; $i < count($aColumns); $i++ ) {
             $sWhere .= "tu.turnitin_uid = 0";
             if ( $bracket ) $sWhere .= " )";
         } else if ( $aColumns[$i] != ' ' ) {
-            $sWhere .= "CAST(" . $aColumns[$i] . " AS CHAR) LIKE '%" . $param_search . "%'";
+            // If using postgres, cast as VARCHAR rather than CHAR
+            if ( ( is_callable( array($DB,'get_dbfamily') ) ) && ( $DB->get_dbfamily() == 'postgres' ) ) {
+                $sWhere .= "CAST(" . $aColumns[$i] . " AS VARCHAR) LIKE '%" . $param_search . "%'";
+            } else {
+                $sWhere .= "CAST(" . $aColumns[$i] . " AS CHAR) LIKE '%" . $param_search . "%'";
+            }
+
             $start = false;
         }
     }

@@ -444,6 +444,22 @@ function xmldb_turnitintool_upgrade($oldversion) {
         }
     }
 
+    if ($result && $oldversion < 2013111403) {
+        if (is_callable(array($DB,'get_manager'))) {
+            $dbman=$DB->get_manager();
+            $table = new xmldb_table('turnitintool');
+            $field = new xmldb_field('submitted', XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, null, null, 0, 'anon');
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        } else {
+            $table = new XMLDBTable('turnitintool');
+            $field = new XMLDBField('submitted');
+            $field->setAttributes(XMLDB_TYPE_INTEGER, '1', XMLDB_UNSIGNED, null, null, null, null, 0, 'anon');
+            $result = $result && add_field($table, $field);
+        }
+    }
+
     return $result;
 }
 

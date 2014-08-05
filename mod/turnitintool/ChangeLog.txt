@@ -1,3 +1,21 @@
+2014-04-04 : Anonymous marking option is locked once a submission is made to any assignment part
+2014-04-04 : Upgraded jQuery to 1.11.0
+2014-04-04 : Added cURL CA cert link to INSTALL.html
+2014-04-04 : Improved appearance of errors that appear during refresh submissions
+2014-04-04 : Inbox sort on date now works with UK date format dd/mm/yy as well as mm/dd/yy
+2014-04-04 : Fix for generic API errors being returned when using non-English language
+2014-04-04 : Non-OR capable submissions now show "--" for similarity in assignment inbox rather than "0%"
+2014-04-04 : Added file check to identify submissions that are missing from disk/corrupt in Moodle and remove the associated submission
+2014-02-26 : Changes to prevent apostrophe issues in Moodle 1.9
+2013-11-14 : Fixed assingment inbox so that it will error out instead of refreshing indefinitely
+2013-11-14 : Fixed user search in unlink/relink screen
+2013-11-14 : Submission logic fixed to allow resubmission until due date when reports generated on due date
+2013-11-14 : Assignment inbox stays in part view until all parts pass post date
+2013-11-14 : Changed the write to log function as it was causing errors in some environments
+2013-11-14 : Fixed various issues on postgres databases
+2013-11-14 : Added Russian and Polish strings to language packs
+2013-11-14 : Fixed refresh inbox row button
+2013-11-14 : Turnitin JavaScript namespaced to avoid overwriting by jQuery
 2013-05-20 : Refresh individual inbox row now fetches Translated Matching similarity
 2013-05-20 : Fixed issue where deleted parts were being flagged as duplicates after course reset
 2013-05-20 : Added support for backing up / restoring activity logs

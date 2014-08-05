@@ -18,7 +18,7 @@
     }
 
     if (isset($PAGE) AND @is_callable(array($PAGE->requires, 'js'))) { // Are we using new moodle or old?
-        $jsurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.7.2.min.js');
+        $jsurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.11.0.min.js');
         $PAGE->requires->js($jsurl,true);
         $jsurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/scripts/datatables.min.js');
         $PAGE->requires->js($jsurl);
@@ -29,7 +29,7 @@
         $cssurl = new moodle_url($CFG->wwwroot.'/mod/turnitintool/styles.css');
         $PAGE->requires->css($cssurl);
     } else {
-        require_js($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.7.2.min.js');
+        require_js($CFG->wwwroot.'/mod/turnitintool/scripts/jquery-1.11.0.min.js');
         require_js($CFG->wwwroot.'/mod/turnitintool/scripts/turnitintool.js');
     }
 
@@ -112,7 +112,7 @@
                 foreach ($data as $datarow) {
                     $datarow=get_object_vars($datarow);
                     foreach ($datarow as $datacell) {
-                        echo ' '.htmlspecialchars(str_pad(substr($datacell,0,$columnwidth),$columnwidth," ",1)).'|';
+                        echo ' '.htmlspecialchars(str_pad(substr($datacell,0,$columnwidth),$columnwidth," ",1),ENT_NOQUOTES,'UTF-8').'|';
                     }
                     if ($table=='turnitintool_users' AND $moodleuser=turnitintool_get_record('user','id',$datarow['userid'])) {
                         echo ' '.str_pad(substr($moodleuser->firstname.' '.$moodleuser->lastname,0,$columnwidth),$columnwidth," ",1).'|';
@@ -189,7 +189,7 @@
         echo '<b>'.get_string('unlinkrelinkusers','turnitintool').'</b><br /><br />';
 
         // 'tu.userid', 'tu.turnitin_uid', 'tu.turnitin_utp', 'mu.firstname', 'mu.lastname', 'mu.email', 'tu.turnitin_uid'
-        
+
         if ( isset($CFG->turnitin_enablepseudo) AND $CFG->turnitin_enablepseudo == 1 ) {
             $pseudo = 1;
             $pseudo_visible = 'true';
@@ -197,7 +197,7 @@
             $pseudo = 0;
             $pseudo_visible = 'false';
         }
-        
+
         echo '
     <style>
     #unlink .header.sort div {
