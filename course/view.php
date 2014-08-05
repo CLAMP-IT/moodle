@@ -120,6 +120,8 @@
     $course->format = course_get_format($course)->get_format();
 
     $PAGE->set_pagelayout('course');
+    // added by sryder to allow blocks to be put in at the top of the main center content (specifically our custom course description block)
+    $PAGE->blocks->add_region('course-view-top');
     $PAGE->set_pagetype('course-view-' . $course->format);
     $PAGE->set_other_editing_capability('moodle/course:update');
     $PAGE->set_other_editing_capability('moodle/course:manageactivities');
@@ -269,6 +271,9 @@
 
     // make sure that section 0 exists (this function will create one if it is missing)
     course_create_sections_if_missing($course, 0);
+
+    // added by sryder to allow blocks to be put in at the top of the main center content (specifically our custom course description block)
+    echo $OUTPUT->blocks_for_region('course-view-top');
 
     // get information about course modules and existing module types
     // format.php in course formats may rely on presence of these variables
