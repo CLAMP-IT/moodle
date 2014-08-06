@@ -120,13 +120,14 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     /**
      * Get the user submission and team submission objects for the given user.
      * @param $userid
+     * @param $attemptnumber
      * @return array - [$submission, $teamsubmission]
      */
-    protected function get_submission($userid) {
-        $submission = $this->assignment->get_user_submission($userid, false);
+    protected function get_submission($userid, $attemptnumber) {
+        $submission = $this->assignment->get_user_submission($userid, false, $attemptnumber);
         $teamsubmission = false;
         if (!empty($this->assignment->get_instance()->teamsubmission)) {
-            $teamsubmission = $this->assignment->get_group_submission($userid, 0, false);
+            $teamsubmission = $this->assignment->get_group_submission($userid, 0, false, $attemptnumber);
         }
 
         return array($submission, $teamsubmission);
@@ -159,7 +160,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return bool true if elements were added to the form
      */
     public function get_form_elements_for_user($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
-        list($submission, $teamsubmission) = $this->get_submission($userid);
+        $attemptnumber = -1;
+        if (isset($grade->attemptnumber)) {
+            $attemptnumber = $grade->attemptnumber;
+        }
+        list($submission, $teamsubmission) = $this->get_submission($userid, $attemptnumber);
         $annotatelink = $this->annotate_link($submission, $teamsubmission);
         if ($annotatelink) {
             $mform->addElement('static', '', '', $annotatelink);
@@ -179,7 +184,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
-        list($submission, $teamsubmission) = $this->get_submission($grade->userid);
+        $attemptnumber = -1;
+        if (isset($grade->attemptnumber)) {
+            $attemptnumber = $grade->attemptnumber;
+        }
+        list($submission, $teamsubmission) = $this->get_submission($grade->userid, $attemptnumber);
         return $this->response_link($submission, $teamsubmission);
     }
 
@@ -189,7 +198,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view(stdClass $grade) {
-        list($submission, $teamsubmission) = $this->get_submission($grade->userid);
+        $attemptnumber = -1;
+        if (isset($grade->attemptnumber)) {
+            $attemptnumber = $grade->attemptnumber;
+        }
+        list($submission, $teamsubmission) = $this->get_submission($grade->userid, $attemptnumber);
         return $this->response_link($submission, $teamsubmission);
     }
 
@@ -208,7 +221,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function get_quickgrading_html($userid, $grade) {
-        list($submission, $teamsubmission) = $this->get_submission($userid);
+        $attemptnumber = -1;
+        if (isset($grade->attemptnumber)) {
+            $attemptnumber = $grade->attemptnumber;
+        }
+        list($submission, $teamsubmission) = $this->get_submission($userid, $attemptnumber);
 
         $annotate = $this->annotate_link($submission, $teamsubmission);
         $resp = $this->response_link($submission, $teamsubmission);
@@ -347,7 +364,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      */
     public function is_empty(stdClass $grade) {
         global $DB;
-        list($submission, $teamsubmission) = $this->get_submission($grade->userid);
+        $attemptnumber = -1;
+        if (isset($grade->attemptnumber)) {
+            $attemptnumber = $grade->attemptnumber;
+        }
+        list($submission, $teamsubmission) = $this->get_submission($grade->userid, $attemptnumber);
         if ($teamsubmission) {
             $submission = $teamsubmission;
         }

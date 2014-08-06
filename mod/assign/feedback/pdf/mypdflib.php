@@ -27,7 +27,11 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir.'/pdflib.php');
-require_once($CFG->dirroot.'/mod/assign/feedback/pdf/fpdi/fpdi.php');
+if (file_exists($CFG->dirroot.'/mod/assign/feedback/editpdf/fpdi/fpdi.php')) {
+    require_once($CFG->dirroot.'/mod/assign/feedback/editpdf/fpdi/fpdi.php');
+} else {
+    require_once($CFG->dirroot.'/mod/assign/feedback/pdf/fpdi/fpdi.php');
+}
 
 class AssignPDFLib extends FPDI {
 

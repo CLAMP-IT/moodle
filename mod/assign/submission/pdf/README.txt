@@ -27,8 +27,8 @@ https://github.com/davosmith/moodle-assignfeedback_pdf/zipball/master
 
 ==Recent changes==
 
+* 2013-10-31 - Now able to create new submission from previous submission.
 * 2013-09-29 - Hide 'Download final submission' link when no files submitted.
-* 2013-08-07 - Moodle 2.4 compatibility issue introduced by MDL-39760
 * 2013-05-31 - Fix support for team submissions
 * 2013-03-25 - Plugin is disabled if the ghostscipt path is incorrect
 * 2013-02-22 - Now correctly handles 'landscape' pages in PDFs
