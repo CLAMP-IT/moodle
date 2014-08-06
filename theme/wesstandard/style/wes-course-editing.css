@@ -61,7 +61,6 @@ body.editing .section .modtype_label {
 	position: relative;
 }
 body.editing .section .modtype_label .commands {
-	position: absolute; 
 	top: 0;
 	left: 0;
 	height: 100%;
