@@ -11,8 +11,8 @@ body.editing .section .commands {
 	position: relative;
 }
 
-body.editing .section .commands a {position: absolute; top: 4px;}
-body.editing .section .commands span {position: absolute; top: 4px;}
+body.editing .section .commands a {/*position: absolute;*/ top: 4px;}
+body.editing .section .commands span {/*position: absolute;*/ top: 4px;}
 body.editing .section .commands [title='Edit title'] {left: 0;}
 body.editing .section .commands [title='Move left'] {left: 16px;}
 body.editing .section .commands [title='Move right'] {left: 32px;}
@@ -61,6 +61,7 @@ body.editing .section .modtype_label {
 	position: relative;
 }
 body.editing .section .modtype_label .commands {
+	position: absolute;
 	top: 0;
 	left: 0;
 	height: 100%;
