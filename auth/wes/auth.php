@@ -73,7 +73,7 @@ class auth_plugin_wes extends auth_plugin_base {
     $user->confirmed = 1;
     $user->auth = 'cas';
     $user->mnethostid = $CFG->mnet_localhost_id;
-    $user->username = trim(moodle_strtolower($username));
+    $user->username = trim(core_text::strtolower($username));
     #AD lies sometimes, so hard code it to be username for now
     $user->email = $user->username . "@wesleyan.edu";
     $user->trackforums = 1;
