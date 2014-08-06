@@ -220,6 +220,7 @@ function ldap_enrol ($enrol,$lock) {
 		        'TeachEval' => array('list_all_faculty'),
                         'TenureReps' => array('tenure_track'),
 			'Moodle Help' => array('all-facstaff'),
+			'GWR' => array('ad_moodle_gwr'),
 );
 
 
