@@ -1,0 +1,128 @@
+.path-mod-attendance .attbtn {
+    border:1px solid #AAAAAA;
+    margin-left: 2px;
+    margin-right: 2px;
+    padding: 5px;
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -opera-border-radius: 5px;
+    -khtml-border-radius: 5px;
+}
+
+.path-mod-attendance .attcurbtn {
+    margin-left: 2px;
+    margin-right: 2px;
+    padding: 5px;
+}
+
+.path-mod-attendance .attfiltercontrols {
+    margin-bottom: 10px;
+    margin-right:auto;
+    margin-left:auto;
+}
+
+.path-mod-attendance .attfiltercontrols #currentdate{
+    display: inline;
+}
+
+.path-mod-attendance .attwidth {
+    width:90%;
+    margin: auto;
+}
+
+.path-mod-attendance .userwithoutenrol,
+.path-mod-attendance .userwithoutenrol a{
+    color: gray;
+}
+
+.path-mod-attendance .userwithoutdata,
+.path-mod-attendance .userwithoutdata a{
+    color: red;
+}
+
+.path-mod-attendance .takelist td {
+    vertical-align: middle;
+}
+
+.path-mod-attendance .takelist .userpicture {
+    margin:0 3px;
+    vertical-align:middle;
+}
+
+.path-mod-attendance .takegrid input {
+    margin: 0px 3px 0px 6px;
+}
+
+.path-mod-attendance .takegrid .fullname {
+    font-size: 0.8em;
+}
+
+.path-mod-attendance table.controls {
+    width: 100%;
+    text-align: center;
+}
+
+.path-mod-attendance table.controls tr {
+    vertical-align: top;
+}
+
+.path-mod-attendance table.controls td.right,
+.path-mod-attendance table.controls td.left {
+    padding-bottom: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 4px;
+}
+
+.path-mod-attendance table.controls .right {
+    text-align: right;
+}
+/* for IE7*/
+.path-mod-attendance .filtercontrols td {
+    padding:6px;
+}
+
+.path-mod-attendance .takecontrols {
+    width: 800px;
+    margin: 0px auto 20px auto;
+}
+.path-mod-attendance .takecontrols table{
+    margin: 0px auto;
+}
+.path-mod-attendance .takecontrols .c0 {
+    width: 500px;
+    text-align: left;
+}
+.path-mod-attendance .takecontrols .c1 {
+    text-align: right;
+}
+
+.path-mod-attendance .inline,
+.path-mod-attendance .inline form,
+.path-mod-attendance .inline div {
+    display: inline;
+}
+
+.path-mod-attendance table.userinfobox {
+    border: 1px solid #EEEEEE;
+    padding: 0px;
+}
+.path-mod-attendance table.userinfobox td.left {
+    background-color: #EEEEEE;
+    padding: 30px 10px;
+}
+.path-mod-attendance table.attlist td.c0 {
+    text-align: right;
+}
+
+#page-mod-attendance-preferences .generalbox {
+    text-align: center;
+}
+
+.path-mod-attendance .attsessions_manage_table .action-icon img.smallicon {
+    margin-left: 5px;
+}
+#page-mod-attendance-sessions input[type="checkbox"] {
+    margin-right: 2px;
+}

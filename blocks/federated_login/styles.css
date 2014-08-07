@@ -1,0 +1,12 @@
+.block_federated_login .content {
+}
+
+.block_federated_login .login-link-div {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+
+.block_federated_login .login-account-home {
+    padding-bottom: 1em;
+    font-size: 1.1em;
+}
