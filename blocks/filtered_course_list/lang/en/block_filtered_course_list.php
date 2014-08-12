@@ -17,7 +17,7 @@
 $string['filtered_course_list:addinstance'] = 'Add a new Filtered Course List block';
 $string['adminview']                = 'Admin view';
 $string['allcourses']               = 'Admin user sees all courses';
-$string['blockname']                = 'Filtered Course List';
+$string['blockname']                = 'Course List';
 $string['categories']               = 'Current category';
 $string['categorysettings']         = 'Category settings';
 $string['categorysettingsinfo']     = 'These settings apply only when using the category filter type.';
