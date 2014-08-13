@@ -5783,7 +5783,7 @@ class assign {
             $mform->setDefault('sendstudentnotifications', 0);
             $mform->freeze('sendstudentnotifications');
         } else {
-            $mform->setDefault('sendstudentnotifications', 1);
+            $mform->setDefault('sendstudentnotifications', 0);
         }
 
         $mform->addElement('hidden', 'action', 'submitgrade');
