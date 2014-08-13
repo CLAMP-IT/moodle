@@ -16,3 +16,6 @@
 [submodule "mod/questionnaire"]
 	path = mod/questionnaire
 	url = https://github.com/remotelearner/moodle-mod_questionnaire.git
+[submodule "theme/newfallen"]
+	path = theme/newfallen
+	url = https://git.smith.edu/kwiliarty/moodle-theme_newfallen.git
