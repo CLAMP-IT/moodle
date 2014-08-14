@@ -80,10 +80,17 @@
     require_once("$CFG->libdir/blocklib.php");
     $courseid=-1;
     require_login();
-    $PAGE->set_context(get_context_instance(CONTEXT_SYSTEM));    
+    $context = context_system::instance();
+    //$PAGE->set_context(get_context_instance(CONTEXT_SYSTEM));    
+    $PAGE->set_context(context_system::instance());    
     $PAGE->set_pagelayout('admin');
     $PAGE->set_url('/admin/uploadcourse.php');
     
+    // check added by sryder to make sure only course creators can access this tool
+    if (!has_capability('moodle/course:create', $context)) {
+        echo('You do not have permission to use this tool');
+        exit();
+    }
 
     function csverror($message, $link='') {
         print_error('notlocalisederrormessage', 'error', $link, $message);
