@@ -53,3 +53,6 @@
 [submodule "mod/vpl"]
 	path = mod/vpl
 	url = https://github.com/jcrodriguez-dis/moodle-mod_vpl.git
+[submodule "course/format/grid"]
+	path = course/format/grid
+	url = https://github.com/gjb2048/moodle-format_grid.git
