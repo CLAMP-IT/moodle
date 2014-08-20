@@ -539,15 +539,8 @@ class enrol_flatfile_plugin extends enrol_plugin {
                 if ($instance->enrol === 'flatfile') {
                     $plugin = $this;
                 } else {
-                    if (!enrol_is_enabled($instance->enrol)) {
-                        continue;
-                    }
-                    if (!$plugin = enrol_get_plugin($instance->enrol)) {
-                        continue;
-                    }
-                    if (!$plugin->allow_unenrol_user($instance, $ue)) {
-                        continue;
-                    }
+                    // Kevin Wiliarty modified this section. Flatfile should delete only its own.
+                    continue;
                 }
 
                 // For some reason the del action includes a role name, this complicates everything.
