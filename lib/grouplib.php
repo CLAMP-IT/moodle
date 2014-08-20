@@ -869,6 +869,9 @@ function groups_filter_users_by_course_module_visible($cm, $users) {
     if (empty($cm->groupmembersonly)) {
         return $users;
     }
+    if (empty($users)) {
+        return $users;
+    }
     list($usql, $uparams) = $DB->get_in_or_equal(array_keys($users), SQL_PARAMS_NAMED, 'userid', true);
 
     // Group membership sub-query.
