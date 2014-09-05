@@ -22,3 +22,6 @@
 [submodule "blocks/filtered_course_list"]
 	path = blocks/filtered_course_list
 	url = https://github.com/kwiliarty/moodle-block_filtered_course_list.git
+[submodule "theme/smithreads"]
+	path = theme/smithreads
+	url = http://kevinwiliarty.com/git/moodle-theme_smithreads.git
