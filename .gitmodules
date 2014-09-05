@@ -19,3 +19,6 @@
 [submodule "theme/newfallen"]
 	path = theme/newfallen
 	url = https://git.smith.edu/kwiliarty/moodle-theme_newfallen.git
+[submodule "theme/smithreads"]
+	path = theme/smithreads
+	url = https://git.smith.edu/kwiliarty/moodle-theme_smithreads.git
