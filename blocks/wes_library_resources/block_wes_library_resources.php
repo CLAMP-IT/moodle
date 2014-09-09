@@ -35,4 +35,3 @@ class block_wes_library_resources extends block_list
 	} // get_content
 
 } // block_wes_library_resources
-?>
