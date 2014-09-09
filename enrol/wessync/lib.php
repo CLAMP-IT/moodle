@@ -378,7 +378,7 @@ and d.crse_id=:crse_id and d.class_section=:section and a.emplid=e.wesid";
       $packer = new zip_packer();
       
       #unzip our backup to a temporary restore file
-      $backupfile['backup_destination']->extract_to_pathname($packer,"$CFG->dataroot/temp/backup/$course_template_id");
+      $backupfile['backup_destination']->extract_to_pathname($packer,"$CFG->tempdir/backup/$course_template_id");
       $bc->destroy();
       $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"$admin_id",backup::TARGET_NEW_COURSE);
       if (!$restore->execute_precheck('true')) {
