@@ -20,8 +20,8 @@
  *
  *
  * @package   theme_essential
- * @copyright 2013 Julian Ridden
- * @copyright 2013 Gareth J Barnard - Pirate translation.
+ * @author 2013 Julian Ridden
+ * @author 2013 Gareth J Barnard - Pirate translation.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -46,7 +46,7 @@ Website: <a href="http://www.moodleman.net">www.moodleman.net</a>
 </div></div>';
 
 /* General */
-$string['geneicsettings'] = 'Thy General Settings';
+$string['genericsettings'] = 'Thy General Settings';
 $string['autohide'] = 'Include thee Autohide Functionality';
 $string['autohidedesc'] = 'Thee Autohide functionality is designed to make Moodle less intimidating unlike mee cutlass.  When thy editing is turned on edit icons only appear when thee item is hovered over.';
 $string['editicons'] = 'Thy Edit Icons V2';
@@ -130,7 +130,6 @@ $string['display'] = 'Show';
 $string['dontdisplay'] = 'Do not show';
 $string['readmore'] = 'Read More';
 
-$string['slideshowTitle'] = 'Thy Slideshow';
 $string['slide1'] = 'Slide One: Title';
 $string['slide1desc'] = 'Enter a descriptive title for yee slide.';
 $string['slide1image'] = 'Slide One: Map';
