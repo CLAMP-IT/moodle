@@ -1084,7 +1084,7 @@ OET;
     }
 
     public function get_rank() {
-        return 20;
+        return 55;
     }
 }
 
@@ -1158,7 +1158,7 @@ OET;
     }
 
     public function get_rank() {
-        return 10;
+        return 54;
     }
 }
 
