@@ -449,9 +449,9 @@ input#id_externalurl {direction:ltr;}
 .loginbox .potentialidps .potentialidplist {margin-left:40%;}
 .loginbox .potentialidps .potentialidplist div {text-align:left;}
 .loginbox .loginform {margin-top:1em;text-align:left;}
-.loginbox .loginform .form-label {float:left;text-align:right;width:44%;direction:rtl; white-space:nowrap;}
-.dir-rtl .loginbox .loginform .form-label {float:left;text-align:right;width:44%;direction:ltr; white-space:nowrap;}
-.loginbox .loginform .form-input {float:right;width:55%;}
+.loginbox .loginform .form-label {float:left;text-align:right;width:49%;white-space:nowrap;}
+.loginbox .loginform .form-input {float:right;width:50%;}
+.dir-rtl .loginbox .loginform .form-input {margin-right: 1%;}
 .loginbox .loginform .form-input input {width: 6em;}
 .loginbox .signupform {margin-top:1em;text-align:center;}
 .loginbox.twocolumns .loginpanel {float:left;width:49.5%;border-right: 1px solid;margin-bottom:-2000px;padding-bottom:2000px;}
@@ -815,8 +815,9 @@ body.tag .managelink {padding: 5px;}
 .mod-indent-12   {width:360px;}
 .mod-indent-13   {width:390px;}
 .mod-indent-14   {width:420px;}
-.mod-indent-15,
-.mod-indent-huge {width:420px;}
+.mod-indent-15   {width:450px;}
+.mod-indent-16,
+.mod-indent-huge {width:480px;}
 
 .dir-rtl .mform .fitem .felement {margin-right: 16%;margin-left:auto;text-align: right;}
 .dir-rtl .mform .fitem .felement input[name=email],
@@ -1364,7 +1365,8 @@ form#installform #id_dbpass, form#installform #id_prefix
 
 html[dir=rtl] .breadcrumb,
 html[dir=rtl] .headermain,
-html[dir=rtl] #page-header {float: right;}
+html[dir=rtl] #page-header,
+html[dir=rtl] #page-content {float: right;}
 
 html[dir=rtl] .formrow label.formlabel { float:right; }
 

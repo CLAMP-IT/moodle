@@ -638,7 +638,7 @@ class core_renderer extends renderer_base {
                 $loggedinas = get_string('loggedinas', 'moodle', $username).$rolename;
                 if ($withlinks) {
                     $url = new moodle_url('/course/switchrole.php', array('id'=>$course->id,'sesskey'=>sesskey(), 'switchrole'=>0, 'returnurl'=>$this->page->url->out_as_local_url(false)));
-                    $loggedinas .= '('.html_writer::tag('a', get_string('switchrolereturn'), array('href'=>$url)).')';
+                    $loggedinas .= ' ('.html_writer::tag('a', get_string('switchrolereturn'), array('href' => $url)).')';
                 }
             } else {
                 $loggedinas = $realuserinfo.get_string('loggedinas', 'moodle', $username);
@@ -2876,7 +2876,7 @@ EOD;
 
         //accessibility: heading for navbar list  (MDL-20446)
         $navbarcontent = html_writer::tag('span', get_string('pagepath'), array('class'=>'accesshide'));
-        $navbarcontent .= html_writer::tag('ul', join('', $htmlblocks), array('role'=>'navigation'));
+        $navbarcontent .= html_writer::tag('nav', html_writer::tag('ul', join('', $htmlblocks)));
         // XHTML
         return $navbarcontent;
     }
@@ -3275,6 +3275,9 @@ EOD;
                 $additionalclasses[] = 'used-region-'.$region;
             } else {
                 $additionalclasses[] = 'empty-region-'.$region;
+            }
+            if ($this->page->blocks->region_completely_docked($region, $this)) {
+                $additionalclasses[] = 'docked-region-'.$region;
             }
         }
         foreach ($this->page->layout_options as $option => $value) {

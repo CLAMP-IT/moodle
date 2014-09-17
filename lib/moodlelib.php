@@ -1329,6 +1329,8 @@ function html_is_blank($string) {
  *
  * A NULL value will delete the entry.
  *
+ * NOTE: this function is called from lib/db/upgrade.php
+ *
  * @param string $name the key to set
  * @param string $value the value to set (without magic quotes)
  * @param string $plugin (optional) the plugin scope, default null
@@ -1398,6 +1400,8 @@ function set_config($name, $value, $plugin=null) {
  *
  * If called with 2 parameters it will return a string single
  * value or false if the value is not found.
+ *
+ * NOTE: this function is called from lib/db/upgrade.php
  *
  * @static string|false $siteidentifier The site identifier is not cached. We use this static cache so
  *     that we need only fetch it once per request.
@@ -1484,6 +1488,8 @@ function get_config($plugin, $name = null) {
 
 /**
  * Removes a key from global configuration.
+ *
+ * NOTE: this function is called from lib/db/upgrade.php
  *
  * @param string $name the key to set
  * @param string $plugin (optional) the plugin scope
@@ -4026,7 +4032,7 @@ function create_user_record($username, $password, $auth = 'manual') {
     $newuser->timemodified = $newuser->timecreated;
     $newuser->mnethostid = $CFG->mnet_localhost_id;
 
-    $newuser->id = user_create_user($newuser, false);
+    $newuser->id = user_create_user($newuser, false, false);
 
     // Save user profile data.
     profile_save_data($newuser);
@@ -4037,6 +4043,9 @@ function create_user_record($username, $password, $auth = 'manual') {
     }
     // Set the password.
     update_internal_user_password($user, $password);
+
+    // Trigger event.
+    \core\event\user_created::create_from_userid($newuser->id)->trigger();
 
     return $user;
 }
@@ -4093,10 +4102,13 @@ function update_user_record($username) {
         if ($newuser) {
             $newuser['id'] = $oldinfo->id;
             $newuser['timemodified'] = time();
-            user_update_user((object) $newuser, false);
+            user_update_user((object) $newuser, false, false);
 
             // Save user profile data.
             profile_save_data((object) $newuser);
+
+            // Trigger event.
+            \core\event\user_updated::create_from_userid($newuser['id'])->trigger();
         }
     }
 
@@ -4255,7 +4267,8 @@ function delete_user(stdClass $user) {
     $updateuser->picture      = 0;
     $updateuser->timemodified = time();
 
-    user_update_user($updateuser, false);
+    // Don't trigger update event, as user is being deleted.
+    user_update_user($updateuser, false, false);
 
     // Now do a final accesslib cleanup - removes all role assignments in user context and context itself.
     context_helper::delete_instance(CONTEXT_USER, $user->id);
@@ -4693,13 +4706,17 @@ function update_internal_user_password($user, $password) {
         $hashedpassword = hash_internal_user_password($password);
     }
 
-    if ($legacyhash) {
+    if ($legacyhash || $hashedpassword == AUTH_PASSWORD_NOT_CACHED) {
         $passwordchanged = ($user->password !== $hashedpassword);
         $algorithmchanged = false;
     } else {
-        // If verification fails then it means the password has changed.
-        $passwordchanged = !password_verify($password, $user->password);
-        $algorithmchanged = password_needs_rehash($user->password, PASSWORD_DEFAULT);
+        if (isset($user->password)) {
+            // If verification fails then it means the password has changed.
+            $passwordchanged = !password_verify($password, $user->password);
+            $algorithmchanged = password_needs_rehash($user->password, PASSWORD_DEFAULT);
+        } else {
+            $passwordchanged = true;
+        }
     }
 
     if ($passwordchanged || $algorithmchanged) {
@@ -5768,6 +5785,14 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
         $mail->Sender = generate_email_processing_address(0, $modargs);
     } else {
         $mail->Sender = $supportuser->email;
+    }
+
+    if (!empty($CFG->emailonlyfromnoreplyaddress)) {
+        $usetrueaddress = false;
+        if (empty($replyto) && $from->maildisplay) {
+            $replyto = $from->email;
+            $replytoname = fullname($from);
+        }
     }
 
     if (is_string($from)) { // So we can pass whatever we want if there is need.
@@ -8669,17 +8694,18 @@ function message_popup_window() {
 
     // A quick query to check whether the user has new messages.
     $messagecount = $DB->count_records('message', array('useridto' => $USER->id));
-    if ($messagecount<1) {
+    if ($messagecount < 1) {
         return;
     }
 
-    // Got unread messages so now do another query that joins with the user table.
-    $namefields = get_all_user_name_fields(true, 'u');
-    $messagesql = "SELECT m.id, m.smallmessage, m.fullmessageformat, m.notification, $namefields
+    // There are unread messages so now do a more complex but slower query.
+    $messagesql = "SELECT m.id, c.blocked
                      FROM {message} m
                      JOIN {message_working} mw ON m.id=mw.unreadmessageid
                      JOIN {message_processors} p ON mw.processorid=p.id
                      JOIN {user} u ON m.useridfrom=u.id
+                     LEFT JOIN {message_contacts} c ON c.contactid = m.useridfrom
+                                                   AND c.userid = m.useridto
                     WHERE m.useridto = :userid
                       AND p.name='popup'";
 
@@ -8690,48 +8716,22 @@ function message_popup_window() {
         $messagesql .= 'AND m.timecreated > :lastpopuptime';
     }
 
-    $messageusers = $DB->get_records_sql($messagesql, array('userid' => $USER->id, 'lastpopuptime' => $USER->message_lastpopup));
+    $waitingmessages = $DB->get_records_sql($messagesql, array('userid' => $USER->id, 'lastpopuptime' => $USER->message_lastpopup));
 
-    // If we have new messages to notify the user about.
-    if (!empty($messageusers)) {
-
-        $strmessages = '';
-        if (count($messageusers)>1) {
-            $strmessages = get_string('unreadnewmessages', 'message', count($messageusers));
+    $validmessages = 0;
+    foreach ($waitingmessages as $messageinfo) {
+        if ($messageinfo->blocked) {
+            // Message is from a user who has since been blocked so just mark it read.
+            // Get the full message to mark as read.
+            $messageobject = $DB->get_record('message', array('id' => $messageinfo->id));
+            message_mark_message_read($messageobject, time());
         } else {
-            $messageusers = reset($messageusers);
-
-            // Show who the message is from if its not a notification.
-            if (!$messageusers->notification) {
-                $strmessages = get_string('unreadnewmessage', 'message', fullname($messageusers) );
-            }
-
-            // Try to display the small version of the message.
-            $smallmessage = null;
-            if (!empty($messageusers->smallmessage)) {
-                // Display the first 200 chars of the message in the popup.
-                $smallmessage = null;
-                if (core_text::strlen($messageusers->smallmessage) > 200) {
-                    $smallmessage = core_text::substr($messageusers->smallmessage, 0, 200).'...';
-                } else {
-                    $smallmessage = $messageusers->smallmessage;
-                }
-
-                // Prevent html symbols being displayed.
-                if ($messageusers->fullmessageformat == FORMAT_HTML) {
-                    $smallmessage = html_to_text($smallmessage);
-                } else {
-                    $smallmessage = s($smallmessage);
-                }
-            } else if ($messageusers->notification) {
-                // Its a notification with no smallmessage so just say they have a notification.
-                $smallmessage = get_string('unreadnewnotification', 'message');
-            }
-            if (!empty($smallmessage)) {
-                $strmessages .= '<div id="usermessage">'.s($smallmessage).'</div>';
-            }
+            $validmessages++;
         }
+    }
 
+    if ($validmessages > 0) {
+        $strmessages = get_string('unreadnewmessages', 'message', $validmessages);
         $strgomessage = get_string('gotomessages', 'message');
         $strstaymessage = get_string('ignore', 'admin');
 

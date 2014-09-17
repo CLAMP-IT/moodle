@@ -1044,7 +1044,7 @@ function calendar_filter_controls(moodle_url $returnurl) {
 
     $groupevents = true;
     $id = optional_param( 'id',0,PARAM_INT );
-    $seturl = new moodle_url('/calendar/set.php', array('return' => base64_encode($returnurl->out(false)), 'sesskey'=>sesskey()));
+    $seturl = new moodle_url('/calendar/set.php', array('return' => base64_encode($returnurl->out_as_local_url(false)), 'sesskey'=>sesskey()));
     $content = html_writer::start_tag('ul');
 
     $seturl->param('var', 'showglobal');
@@ -3168,10 +3168,10 @@ function calendar_cron() {
         mtrace("Updating calendar subscription {$sub->name} in course {$sub->courseid}");
         try {
             $log = calendar_update_subscription_events($sub->id);
+            mtrace(trim(strip_tags($log)));
         } catch (moodle_exception $ex) {
-
+            mtrace('Error updating calendar subscription: ' . $ex->getMessage());
         }
-        mtrace(trim(strip_tags($log)));
     }
 
     mtrace('Finished updating calendar subscriptions.');

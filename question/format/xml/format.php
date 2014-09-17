@@ -775,7 +775,7 @@ class qformat_xml extends qformat_default {
 
         // Get answers array.
         $answers = $question['#']['answer'];
-        $qo->answers = array();
+        $qo->answer = array();
         $qo->feedback = array();
         $qo->fraction = array();
         $qo->tolerance = array();
@@ -789,7 +789,7 @@ class qformat_xml extends qformat_default {
             if (empty($ans->answer['text'])) {
                 $ans->answer['text'] = '*';
             }
-            $qo->answers[] = $ans->answer;
+            $qo->answer[] = $ans->answer['text'];
             $qo->feedback[] = $ans->feedback;
             $qo->tolerance[] = $answer['#']['tolerance'][0]['#'];
             // Fraction as a tag is deprecated.
@@ -852,9 +852,10 @@ class qformat_xml extends qformat_default {
             $qo->dataset[$qo->datasetindex]->itemcount = $dataset['#']['itemcount'][0]['#'];
             $qo->dataset[$qo->datasetindex]->datasetitem = array();
             $qo->dataset[$qo->datasetindex]->itemindex = 0;
-            $qo->dataset[$qo->datasetindex]->number_of_items =
-                    $dataset['#']['number_of_items'][0]['#'];
-            $datasetitems = $dataset['#']['dataset_items'][0]['#']['dataset_item'];
+            $qo->dataset[$qo->datasetindex]->number_of_items = $this->getpath($dataset,
+                    array('#', 'number_of_items', 0, '#'), 0);
+            $datasetitems = $this->getpath($dataset,
+                    array('#', 'dataset_items', 0, '#', 'dataset_item'), array());
             foreach ($datasetitems as $datasetitem) {
                 $qo->dataset[$qo->datasetindex]->itemindex++;
                 $qo->dataset[$qo->datasetindex]->datasetitem[

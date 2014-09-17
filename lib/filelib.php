@@ -1166,7 +1166,8 @@ function format_postdata_for_curlcall($postdata) {
  * @param string $tofile store the downloaded content to file instead of returning it.
  * @param bool $calctimeout false by default, true enables an extra head request to try and determine
  *   filesize and appropriately larger timeout based on $CFG->curltimeoutkbitrate
- * @return mixed false if request failed or content of the file as string if ok. True if file downloaded into $tofile successfully.
+ * @return stdClass|string|bool stdClass object if $fullresponse is true, false if request failed, true
+ *   if file downloaded into $tofile successfully or the file content as a string.
  */
 function download_file_content($url, $headers=null, $postdata=null, $fullresponse=false, $timeout=300, $connecttimeout=20, $skipcertverify=false, $tofile=NULL, $calctimeout=false) {
     global $CFG;
@@ -1388,6 +1389,7 @@ function &get_mimetypes_array() {
     static $mimearray = array (
         'xxx'  => array ('type'=>'document/unknown', 'icon'=>'unknown'),
         '3gp'  => array ('type'=>'video/quicktime', 'icon'=>'quicktime', 'groups'=>array('video'), 'string'=>'video'),
+        '7z'  => array ('type'=>'application/x-7z-compressed', 'icon'=>'archive', 'groups'=>array('archive'), 'string'=>'archive'),
         'aac'  => array ('type'=>'audio/aac', 'icon'=>'audio', 'groups'=>array('audio'), 'string'=>'audio'),
         'accdb'  => array ('type'=>'application/msaccess', 'icon'=>'base'),
         'ai'   => array ('type'=>'application/postscript', 'icon'=>'eps', 'groups'=>array('image'), 'string'=>'image'),
@@ -1507,7 +1509,6 @@ function &get_mimetypes_array() {
         'pic'  => array ('type'=>'image/pict', 'icon'=>'image', 'groups'=>array('image'), 'string'=>'image'),
         'pict' => array ('type'=>'image/pict', 'icon'=>'image', 'groups'=>array('image'), 'string'=>'image'),
         'png'  => array ('type'=>'image/png', 'icon'=>'png', 'groups'=>array('image', 'web_image'), 'string'=>'image'),
-
         'pps'  => array ('type'=>'application/vnd.ms-powerpoint', 'icon'=>'powerpoint', 'groups'=>array('presentation')),
         'ppt'  => array ('type'=>'application/vnd.ms-powerpoint', 'icon'=>'powerpoint', 'groups'=>array('presentation')),
         'pptx' => array ('type'=>'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'icon'=>'powerpoint'),
@@ -1517,11 +1518,13 @@ function &get_mimetypes_array() {
         'ppam' => array ('type'=>'application/vnd.ms-powerpoint.addin.macroEnabled.12', 'icon'=>'powerpoint'),
         'ppsx' => array ('type'=>'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'icon'=>'powerpoint'),
         'ppsm' => array ('type'=>'application/vnd.ms-powerpoint.slideshow.macroEnabled.12', 'icon'=>'powerpoint'),
-
         'ps'   => array ('type'=>'application/postscript', 'icon'=>'pdf'),
+        'pub'  => array ('type'=>'application/x-mspublisher', 'icon'=>'publisher', 'groups'=>array('presentation')),
+
         'qt'   => array ('type'=>'video/quicktime', 'icon'=>'quicktime', 'groups'=>array('video','web_video'), 'string'=>'video'),
         'ra'   => array ('type'=>'audio/x-realaudio-plugin', 'icon'=>'audio', 'groups'=>array('audio','web_audio'), 'string'=>'audio'),
         'ram'  => array ('type'=>'audio/x-pn-realaudio-plugin', 'icon'=>'audio', 'groups'=>array('audio'), 'string'=>'audio'),
+        'rar'  => array ('type'=>'application/x-rar-compressed', 'icon'=>'archive', 'groups'=>array('archive'), 'string'=>'archive'),
         'rhb'  => array ('type'=>'text/xml', 'icon'=>'markup'),
         'rm'   => array ('type'=>'audio/x-pn-realaudio-plugin', 'icon'=>'audio', 'groups'=>array('audio'), 'string'=>'audio'),
         'rmvb' => array ('type'=>'application/vnd.rn-realmedia-vbr', 'icon'=>'video', 'groups'=>array('video'), 'string'=>'video'),

@@ -1315,6 +1315,10 @@ function get_coursemodule_from_id($modulename, $cmid, $courseid=0, $sectionnum=f
                                                 WHERE cm.id = :cmid", $params, $strictness)) {
             return false;
         }
+    } else {
+        if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+            throw new coding_exception('Invalid modulename parameter');
+        }
     }
 
     $params['modulename'] = $modulename;
@@ -1360,6 +1364,10 @@ function get_coursemodule_from_id($modulename, $cmid, $courseid=0, $sectionnum=f
 function get_coursemodule_from_instance($modulename, $instance, $courseid=0, $sectionnum=false, $strictness=IGNORE_MISSING) {
     global $DB;
 
+    if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+        throw new coding_exception('Invalid modulename parameter');
+    }
+
     $params = array('instance'=>$instance, 'modulename'=>$modulename);
 
     $courseselect = "";
@@ -1398,6 +1406,10 @@ function get_coursemodule_from_instance($modulename, $instance, $courseid=0, $se
 function get_coursemodules_in_course($modulename, $courseid, $extrafields='') {
     global $DB;
 
+    if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+        throw new coding_exception('Invalid modulename parameter');
+    }
+
     if (!empty($extrafields)) {
         $extrafields = ", $extrafields";
     }
@@ -1435,6 +1447,10 @@ function get_coursemodules_in_course($modulename, $courseid, $extrafields='') {
  */
 function get_all_instances_in_courses($modulename, $courses, $userid=NULL, $includeinvisible=false) {
     global $CFG, $DB;
+
+    if (!core_component::is_valid_plugin_name('mod', $modulename)) {
+        throw new coding_exception('Invalid modulename parameter');
+    }
 
     $outputarray = array();
 
@@ -1676,6 +1692,11 @@ function add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user
     // database so that it doesn't cause a DB error. Log a warning so that
     // developers can avoid doing things which are likely to cause this on a
     // routine basis.
+    if (core_text::strlen($action) > 40) {
+        $action = core_text::substr($action, 0, 37) . '...';
+        debugging('Warning: logged very long action', DEBUG_DEVELOPER);
+    }
+
     if(!empty($info) && core_text::strlen($info)>255) {
         $info = core_text::substr($info,0,252).'...';
         debugging('Warning: logged very long info',DEBUG_DEVELOPER);

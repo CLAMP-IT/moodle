@@ -145,16 +145,11 @@ function add_moduleinfo($moduleinfo, $course, $mform = null) {
     }
 
     // Trigger event based on the action we did.
-    $event = \core\event\course_module_created::create(array(
-         'courseid' => $course->id,
-         'context'  => $modcontext,
-         'objectid' => $moduleinfo->coursemodule,
-         'other'    => array(
-             'modulename' => $moduleinfo->modulename,
-             'name'       => $moduleinfo->name,
-             'instanceid' => $moduleinfo->instance
-         )
-    ));
+    // Api create_from_cm expects modname and id property, and we don't want to modify $moduleinfo since we are returning it.
+    $eventdata = clone $moduleinfo;
+    $eventdata->modname = $eventdata->modulename;
+    $eventdata->id = $eventdata->coursemodule;
+    $event = \core\event\course_module_created::create_from_cm($eventdata, $modcontext);
     $event->trigger();
 
     add_to_log($course->id, $moduleinfo->modulename, "add",
@@ -180,6 +175,7 @@ function add_moduleinfo($moduleinfo, $course, $mform = null) {
  */
 function edit_module_post_actions($moduleinfo, $course) {
     global $CFG;
+    require_once($CFG->libdir.'/gradelib.php');
 
     $modcontext = context_module::instance($moduleinfo->coursemodule);
     $hasgrades = plugin_supports('mod', $moduleinfo->modulename, FEATURE_GRADE_HAS_GRADE, false);
@@ -214,11 +210,22 @@ function edit_module_post_actions($moduleinfo, $course) {
             }
             $moduleinfo->gradecat = $grade_category->id;
         }
+        $gradecategory = $grade_item->get_parent_category();
         foreach ($items as $itemid=>$unused) {
             $items[$itemid]->set_parent($moduleinfo->gradecat);
             if ($itemid == $grade_item->id) {
                 // Use updated grade_item.
                 $grade_item = $items[$itemid];
+            }
+            if (!empty($moduleinfo->add)) {
+                if (grade_category::aggregation_uses_aggregationcoef($gradecategory->aggregation)) {
+                    if ($gradecategory->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                        $grade_item->aggregationcoef = 1;
+                    } else {
+                        $grade_item->aggregationcoef = 0;
+                    }
+                    $grade_item->update();
+                }
             }
         }
     }
@@ -276,6 +283,17 @@ function edit_module_post_actions($moduleinfo, $course) {
 
                 } else if (isset($moduleinfo->gradecat)) {
                     $outcome_item->set_parent($moduleinfo->gradecat);
+                }
+                $gradecategory = $outcome_item->get_parent_category();
+                if ($outcomeexists == false) {
+                    if (grade_category::aggregation_uses_aggregationcoef($gradecategory->aggregation)) {
+                        if ($gradecategory->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN) {
+                            $outcome_item->aggregationcoef = 1;
+                        } else {
+                            $outcome_item->aggregationcoef = 0;
+                        }
+                        $outcome_item->update();
+                    }
                 }
             }
         }

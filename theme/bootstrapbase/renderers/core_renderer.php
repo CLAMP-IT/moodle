@@ -56,6 +56,9 @@ class theme_bootstrapbase_core_renderer extends core_renderer {
      */
     public function navbar() {
         $items = $this->page->navbar->get_items();
+        if (empty($items)) {
+            return '';
+        }
         $breadcrumbs = array();
         foreach ($items as $item) {
             $item->hideicon = true;
@@ -75,8 +78,8 @@ class theme_bootstrapbase_core_renderer extends core_renderer {
     public function custom_menu($custommenuitems = '') {
         global $CFG;
 
-        if (!empty($CFG->custommenuitems)) {
-            $custommenuitems .= $CFG->custommenuitems;
+        if (empty($custommenuitems) && !empty($CFG->custommenuitems)) {
+            $custommenuitems = $CFG->custommenuitems;
         }
         $custommenu = new custom_menu($custommenuitems, current_language());
         return $this->render_custom_menu($custommenu);
@@ -206,7 +209,7 @@ class theme_bootstrapbase_core_renderer extends core_renderer {
      * @return string HTML fragment
      */
     protected function render_tabobject(tabobject $tab) {
-        if ($tab->selected or $tab->activated) {
+        if (($tab->selected and (!$tab->linkedwhenselected)) or $tab->activated) {
             return html_writer::tag('li', html_writer::tag('a', $tab->text), array('class' => 'active'));
         } else if ($tab->inactive) {
             return html_writer::tag('li', html_writer::tag('a', $tab->text), array('class' => 'disabled'));
@@ -217,7 +220,8 @@ class theme_bootstrapbase_core_renderer extends core_renderer {
             } else {
                 $link = html_writer::link($tab->link, $tab->text, array('title' => $tab->title));
             }
-            return html_writer::tag('li', $link);
+            $params = $tab->selected ? array('class' => 'active') : null;
+            return html_writer::tag('li', $link, $params);
         }
     }
 }

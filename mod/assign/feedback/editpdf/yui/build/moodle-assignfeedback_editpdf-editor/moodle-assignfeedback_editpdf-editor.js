@@ -3245,7 +3245,8 @@ EDITOR.prototype = {
                 action : 'loadallpages',
                 userid : this.get('userid'),
                 attemptnumber : this.get('attemptnumber'),
-                assignmentid : this.get('assignmentid')
+                assignmentid : this.get('assignmentid'),
+                readonly : this.get('readonly') ? 1 : 0
             },
             on: {
                 success: function(tid, response) {
@@ -3578,6 +3579,7 @@ EDITOR.prototype = {
      * @method edit_start
      */
     edit_start : function(e) {
+        e.preventDefault();
         var canvas = Y.one(SELECTOR.DRAWINGCANVAS),
             offset = canvas.getXY(),
             scrolltop = canvas.get('docScrollY'),
@@ -3647,6 +3649,7 @@ EDITOR.prototype = {
      * @method edit_move
      */
     edit_move : function(e) {
+        e.preventDefault();
         var bounds = this.get_canvas_bounds(),
             canvas = Y.one(SELECTOR.DRAWINGCANVAS),
             clientpoint = new M.assignfeedback_editpdf.point(e.clientX + canvas.get('docScrollX'),

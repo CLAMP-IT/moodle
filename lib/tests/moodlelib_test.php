@@ -2276,6 +2276,44 @@ class core_moodlelib_testcase extends advanced_testcase {
         }
     }
 
+    /**
+     * Testing that if the password is not cached, that it does not update
+     * the user table and fire event.
+     */
+    public function test_update_internal_user_password_no_cache() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $user = $this->getDataGenerator()->create_user(array('auth' => 'cas'));
+        $this->assertEquals(AUTH_PASSWORD_NOT_CACHED, $user->password);
+
+        // Update the field to see if it was needlessly overwritten.
+        $DB->set_field('user', 'password', 'doNotOverwrite');
+
+        update_internal_user_password($user, 'wonkawonka');
+
+        $this->assertEquals('doNotOverwrite', $DB->get_field('user', 'password', array('id' => $user->id)));
+    }
+
+    /**
+     * Test if the user has a password hash, but now their auth method
+     * says not to cache it.  Then it should update.
+     */
+    public function test_update_internal_user_password_update_no_cache() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $user = $this->getDataGenerator()->create_user(array('password' => 'test'));
+        $this->assertNotEquals(AUTH_PASSWORD_NOT_CACHED, $user->password);
+        $user->auth = 'cas'; // Change to a auth that does not store passwords.
+
+        update_internal_user_password($user, 'wonkawonka');
+
+        $this->assertEquals(AUTH_PASSWORD_NOT_CACHED, $DB->get_field('user', 'password', array('id' => $user->id)));
+    }
+
     public function test_fullname() {
         global $CFG;
 
@@ -2567,6 +2605,18 @@ class core_moodlelib_testcase extends advanced_testcase {
 
         email_to_user($user1, $user2, $subject, $messagetext);
         $this->assertDebuggingCalled('Unit tests must not send real emails! Use $this->redirectEmails()');
+
+        // Test $CFG->emailonlyfromnoreplyaddress.
+        set_config('emailonlyfromnoreplyaddress', 1);
+        $this->assertNotEmpty($CFG->emailonlyfromnoreplyaddress);
+        $sink = $this->redirectEmails();
+        email_to_user($user1, $user2, $subject, $messagetext);
+        unset_config('emailonlyfromnoreplyaddress');
+        email_to_user($user1, $user2, $subject, $messagetext);
+        $result = $sink->get_messages();
+        $this->assertEquals($CFG->noreplyaddress, $result[0]->from);
+        $this->assertNotEquals($CFG->noreplyaddress, $result[1]->from);
+        $sink->close();
     }
 
     /**

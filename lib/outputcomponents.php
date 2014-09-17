@@ -1350,7 +1350,7 @@ class html_writer {
         if (empty($attributes['id'])) {
             $attributes['id'] = self::random_id('ts_');
         }
-        $timerselector = self::select($timeunits, $name, $currentdate[$userdatetype], null, array('id'=>$attributes['id']));
+        $timerselector = self::select($timeunits, $name, $currentdate[$userdatetype], null, $attributes);
         $label = self::tag('label', get_string(substr($type, 0, -1), 'form'), array('for'=>$attributes['id'], 'class'=>'accesshide'));
 
         return $label.$timerselector;
@@ -2335,7 +2335,7 @@ class paging_bar implements renderable {
                 $displaypage = $currpage + 1;
 
                 if ($this->page == $currpage) {
-                    $this->pagelinks[] = $displaypage;
+                    $this->pagelinks[] = html_writer::span($displaypage, 'current-page');
                 } else {
                     $pagelink = html_writer::link(new moodle_url($this->baseurl, array($this->pagevar=>$currpage)), $displaypage);
                     $this->pagelinks[] = $pagelink;
