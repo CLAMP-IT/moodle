@@ -173,6 +173,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
             return;
         }
 
+
         // Force CAS authentication (if needed).
         if (!phpCAS::isAuthenticated()) {
             phpCAS::setLang($this->config->language);
@@ -185,26 +186,11 @@ class auth_plugin_cas extends auth_plugin_ldap {
      *
      */
     function prelogout_hook() {
-
-        global $CFG,$PAGE,$SESSION;
-        if (!empty($this->config->logoutcas)) {
-            $backurl = $CFG->wwwroot;
-            $this->connectCAS();
-	    /*me - customization to handle Wesleyan CAS customization */
-	     if ($SESSION->fromdiscussion) {
-               phpCAS::logoutWithURL($SESSION->fromdiscussion);
-	     } else {
-               phpCAS::logoutWithURL($backurl . "/");
-	     }
-	   
-=======
->>>>>>> origin/Wesleyan_LAE_26_DEV
-        global $CFG, $USER, $DB;
-
+        global $CFG,$USER,$DB,$PAGE,$SESSION;
         if (!empty($this->config->logoutcas) && $USER->auth == $this->authtype) {
-            $backurl = !empty($this->config->logout_return_url) ? $this->config->logout_return_url : $CFG->wwwroot;
+
+            $backurl = $CFG->wckurl = !empty($this->config->logout_return_url) ? $this->config->logout_return_url : $CFG->wwwroot;
             $this->connectCAS();
-            // Note: Hack to stable versions to trigger the event before it redirect to CAS logout.
             $sid = session_id();
             $event = \core\event\user_loggedout::create(
                 array(
@@ -218,9 +204,12 @@ class auth_plugin_cas extends auth_plugin_ldap {
             }
             \core\session\manager::terminate_current();
             $event->trigger();
-
-            phpCAS::logoutWithRedirectService($backurl);
-
+	    /*me - customization to handle Wesleyan CAS customization */
+	    if ($SESSION->fromdiscussion) {
+              phpCAS::logoutWithURL($SESSION->fromdiscussion);
+	    } else {
+               phpCAS::logoutWithURL($backurl . "/");
+	    }
         }
     }
 
