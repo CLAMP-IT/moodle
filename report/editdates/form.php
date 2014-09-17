@@ -207,18 +207,21 @@ class report_editdates_form extends moodleform {
                         $isdateadded = true;
                     }
 
-                // Completion tracking.
-                if ($coursehascompletion && $cm->completion) {
-                    $elname = 'date_mod_'.$cm->id.'_completionexpected';
-                    $mform->addElement('date_selector', $elname,
-                            get_string('completionexpected', 'completion'),
-                            array('optional' => true));
-                    $mform->addHelpButton($elname, 'completionexpected', 'completion');
-                    $mform->setDefault($elname, $cm->completionexpected);
-                    if ($ismodreadonly) {
-                        $mform->hardFreeze($elname);
-		    }
+                    // Completion tracking.
+                    if ($coursehascompletion && $cm->completion) {
+                        $elname = 'date_mod_'.$cm->id.'_completionexpected';
+                        $mform->addElement('date_selector', $elname,
+                                get_string('completionexpected', 'completion'),
+                                array('optional' => true));
+                        $mform->addHelpButton($elname, 'completionexpected', 'completion');
+                        $mform->setDefault($elname, $cm->completionexpected);
+                        if ($ismodreadonly) {
+                            $mform->hardFreeze($elname);
+                        }
+                        $elementadded++;
+
                         $isdateadded = true;
+
                     }
 
                     if ($isdateadded) {
