@@ -125,6 +125,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
             }
             // Show authentication form for multi-authentication.
             // Test pgtIou parameter for proxy mode (https connection in background from CAS server to the php server).
+           /* Wes, ME - disable this all users get directed to CAS
             if ($authCAS != 'CAS' && !isset($_GET['pgtIou'])) {
                 $PAGE->set_url('/login/index.php');
                 $PAGE->navbar->add($CASform);
@@ -134,7 +135,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
                 include($CFG->dirroot.'/auth/cas/cas_form.html');
                 echo $OUTPUT->footer();
                 exit();
-            }
+            }*/
         }
 
         // Connection to CAS server
@@ -172,28 +173,6 @@ class auth_plugin_cas extends auth_plugin_ldap {
             return;
         }
 
-        if ($this->config->multiauth) {
-            $authCAS = optional_param('authCAS', '', PARAM_RAW);
-            if ($authCAS == 'NOCAS' or $_SERVER['HTTP_USER_AGENT'] == '') {
-                return;
-            }
-
-            // Show authentication form for multi-authentication
-            // test pgtIou parameter for proxy mode (https connection
-            // in background from CAS server to the php server)
-	   /* Wes, ME - disable this all users get directed to CAS
-            if ($authCAS != 'CAS' && !isset($_GET['pgtIou'])) {
-                $PAGE->set_url('/login/index.php');
-                $PAGE->navbar->add($CASform);
-                $PAGE->set_title("$site->fullname: $CASform");
-                $PAGE->set_heading($site->fullname);
-                echo $OUTPUT->header();
-                include($CFG->dirroot.'/auth/cas/cas_form.html');
-                echo $OUTPUT->footer();
-                exit();
-            }*/
-        }
-
         // Force CAS authentication (if needed).
         if (!phpCAS::isAuthenticated()) {
             phpCAS::setLang($this->config->language);
@@ -206,6 +185,20 @@ class auth_plugin_cas extends auth_plugin_ldap {
      *
      */
     function prelogout_hook() {
+
+        global $CFG,$PAGE,$SESSION;
+        if (!empty($this->config->logoutcas)) {
+            $backurl = $CFG->wwwroot;
+            $this->connectCAS();
+	    /*me - customization to handle Wesleyan CAS customization */
+	     if ($SESSION->fromdiscussion) {
+               phpCAS::logoutWithURL($SESSION->fromdiscussion);
+	     } else {
+               phpCAS::logoutWithURL($backurl . "/");
+	     }
+	   
+=======
+>>>>>>> origin/Wesleyan_LAE_26_DEV
         global $CFG, $USER, $DB;
 
         if (!empty($this->config->logoutcas) && $USER->auth == $this->authtype) {
@@ -227,6 +220,7 @@ class auth_plugin_cas extends auth_plugin_ldap {
             $event->trigger();
 
             phpCAS::logoutWithRedirectService($backurl);
+
         }
     }
 
