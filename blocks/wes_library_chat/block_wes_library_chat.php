@@ -32,4 +32,3 @@ class block_wes_library_chat extends block_base
 	} // get_content
 
 } // class
-?> 
