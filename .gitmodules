@@ -1,0 +1,6 @@
+[submodule "mod/assign/feedback/pdf"]
+	path = mod/assign/feedback/pdf
+	url = https://github.com/davosmith/moodle-assignfeedback_pdf.git
+[submodule "mod/assign/submission/pdf"]
+	path = mod/assign/submission/pdf
+	url = https://github.com/davosmith/moodle-assignsubmission_pdf.git
