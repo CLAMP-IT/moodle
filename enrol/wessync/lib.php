@@ -108,7 +108,7 @@ class enrol_wessync_plugin extends enrol_plugin {
 
     /*given a moodle course object and peopelsoft object, returns list of usernames according to PeopleSoft */
     public function get_members_from_peoplesoft ( $moodle_course, $conn) {
-    	$statement = "select sysadm.wes_get_email(a.emplid) FROM sysadm.ps_class_tbl d,sysadm.ps_stdnt_enrl a where a.strm = d.strm and a.class_nbr=d.class_nbr and a.stdnt_enrl_status='E' and a.strm = d.strm and to_number(a.strm)=to_number(:strm) and d.crse_id=:crse_id and d.class_section=:section";
+    	$statement = "select sysadm.wes_get_email(a.emplid) FROM sysadm.ps_class_tbl d,sysadm.ps_stdnt_enrl a where a.strm = d.strm and a.class_nbr=d.class_nbr and a.stdnt_enrl_status='E' and a.stdnt_enrl_status_reason='ENRL' and a.strm = d.strm and to_number(a.strm)=to_number(:strm) and d.crse_id=:crse_id and d.class_section=:section";
 	$sth = oci_parse($conn,$statement);
   	$members = array();
 	$errors = array();
