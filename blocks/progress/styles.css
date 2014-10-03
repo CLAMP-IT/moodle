@@ -1,0 +1,122 @@
+.block_progress .content {
+    text-align: center;
+}
+
+.block_progress table {
+    margin: 0 auto;
+    padding: 0;
+}
+
+.block_progress .progressBarProgressTable {
+    width: 100%;
+    margin: 0 0 5px 0;
+    height: 25px;
+    overflow: hidden;
+}
+
+.block_progress .progressBarProgressTable.noNow {
+    height: 19px;
+}
+
+.block_progress .progressBarCell {
+    height: 19px;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    background-color: none;
+    cursor: pointer;
+    border-left: solid 1px #e3e3e3;
+}
+
+.block_progress .progressBarCell#first {
+    border-radius: 3px 0 0 3px;
+    border-left: none;
+}
+
+.block_progress .progressBarCell#last {
+    border-radius: 0 3px 3px 0;
+}
+
+.block_progress .progressBarCell img {
+    width: 100%;
+    height: 15px;
+    margin: 1px 0 0 0;
+    padding: 0;
+}
+
+.block_progress .progressBarCell .smallicon {
+    width: 85%;
+    height: 85%;
+    max-width: 15px;
+    height: auto;
+    max-height: 15px;
+    vertical-align: text-bottom;
+}
+
+.block_progress .progressEventInfo {
+    font-size: x-small;
+    text-align: left;
+    white-space: pre;
+    overflow: hidden;
+    padding: 0;
+    margin: 5px auto;
+}
+
+.block_progress .progressEventInfo img {
+    vertical-align: middle;
+}
+
+.block_progress .moduleIcon {
+    float: left;
+    margin-right: 5px;
+}
+
+.block_progress .progressBarHeader {
+    font-size: 90%;
+    margin: 0;
+    padding: 0;
+}
+
+.block_progress h3 {
+    margin-bottom: 0;
+}
+
+.block_progress .expectedBy {
+    margin: 5px auto;
+}
+
+.progressConfigBox {
+    border:1px dashed #cccccc;
+    padding: 5px;
+    margin:5px 0 !important;
+}
+
+.progressConfigModuleTitle {
+    font-weight: bold;
+}
+
+.progressConfigModuleTitle img {
+    vertical-align: middle;
+}
+
+.block_progress .groupselector {
+    text-align: center;
+}
+
+.progressoverviewmenus {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.progressoverviewmenus form, .progressoverviewmenus select, .progressoverviewmenus div {
+    display: inline;
+}
+
+.progressoverviewmenus select {
+    margin-left: 2px;
+}
+
+.overviewButton {
+    margin: 10px;
+}
