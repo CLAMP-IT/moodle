@@ -109,8 +109,7 @@ class enrol_wessync_plugin extends enrol_plugin {
     /*given a moodle course object and peopelsoft object, returns list of usernames according to PeopleSoft */
     public function get_members_from_peoplesoft ( $moodle_course, $conn) {
    # 	$statement = "select sysadm.wes_get_email(a.emplid) FROM sysadm.ps_class_tbl d,sysadm.ps_stdnt_enrl a where a.strm = d.strm and a.class_nbr=d.class_nbr and a.stdnt_enrl_status='E' and a.strm = d.strm and to_number(a.strm)=to_number(:strm) and d.crse_id=:crse_id and d.class_section=:section";
-        $statement = "select e.username FROM sysadm.ps_class_tbl d,sysadm.ps_stdnt_enrl a, email e where a.strm = d.strm and a.class_nbr=d.class_nbr and a.stdnt_enrl_status='E' and a.strm = d.strm and to_number(a.strm)=to_number(:strm) 
-and d.crse_id=:crse_id and d.class_section=:section and a.emplid=e.wesid";
+        $statement = "select e.username FROM sysadm.ps_class_tbl d,sysadm.ps_stdnt_enrl a, email e where a.strm = d.strm and a.class_nbr=d.class_nbr and a.stdnt_enrl_status='E' and a.enrl_status_reason='ENRL' and a.strm = d.strm and to_number(a.strm)=to_number(:strm) and d.crse_id=:crse_id and d.class_section=:section and a.emplid=e.wesid";
 	$sth = oci_parse($conn,$statement);
   	$members = array();
 	$errors = array();
@@ -123,14 +122,8 @@ and d.crse_id=:crse_id and d.class_section=:section and a.emplid=e.wesid";
 	    return false;
           }
     	  while ($row = oci_fetch_array($sth)) {
-        #    $username = explode('@',$row[0]);
-        #    if ($username[1] == 'wesleyan.edu') {
-        #      array_push($members,$username[0]);
 	    $username = $row[0];
 	    array_push($members,$username);
-       #     } else {
-       #       array_push($errors,"Email returned for the user was $row[0] and non Wesleyan");
-       #     }
           }
         }
         if (empty($members)) {
