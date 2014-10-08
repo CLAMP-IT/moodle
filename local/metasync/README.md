@@ -8,7 +8,7 @@ Requirements
 
 Installation
 ------------
-Copy the metagroups folder into your Moodle /local directory and visit your Admin Notification page to complete the installation.
+Copy the metasync folder into your Moodle /local directory and visit your Admin Notification page to complete the installation.
 
 Usage
 -----
@@ -21,8 +21,8 @@ Author
 ------
 Paul Holden (pholden@greenhead.ac.uk)
 
-- Updates: https://moodle.org/plugins/view.php?plugin=local_metagroups
-- Latest code: https://github.com/paulholden/moodle-local_metagroups
+- Updates: https://moodle.org/plugins/view.php?plugin=local_metasync
+- Latest code: https://github.com/paulholden/moodle-local_metasync
 
 Changes
 -------

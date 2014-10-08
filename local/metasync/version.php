@@ -15,16 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local_metagroups
- * @copyright  2014 Paul Holden (pholden@greenhead.ac.uk)
+ * @package    local_metasync
+ * @copyright  2014 Willy Lee (wlee@carleton.edu)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_metagroups';
-$plugin->release   = '1.2';
-$plugin->version   = 2014080500;
+$plugin->component = 'local_metasync';
+$plugin->release   = '1.0';
+$plugin->version   = 2014100800;
 $plugin->requires  = 2013111800; // Moodle 2.6 onwards.
 $plugin->maturity  = MATURITY_STABLE;
 

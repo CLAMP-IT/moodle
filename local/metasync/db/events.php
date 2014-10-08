@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local_metagroups
+ * @package    local_metasync
  * @copyright  2014 Paul Holden (pholden@greenhead.ac.uk)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -23,28 +23,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $observers = array(
+
     array(
-        'eventname' => '\core\event\group_created',
-        'callback'  => '\local_metagroups\observers::group_created',
+        'eventname' => '\core\event\user_enrolment_created',
+        'callback'  => '\local_metasync\observers::user_enrolment_created',
     ),
 
     array(
-        'eventname' => '\core\event\group_updated',
-        'callback'  => '\local_metagroups\observers::group_updated',
-    ),
-
-    array(
-        'eventname' => '\core\event\group_deleted',
-        'callback'  => '\local_metagroups\observers::group_deleted',
-    ),
-
-    array(
-        'eventname' => '\core\event\group_member_added',
-        'callback'  => '\local_metagroups\observers::group_member_added',
-    ),
-
-    array(
-        'eventname' => '\core\event\group_member_removed',
-        'callback'  => '\local_metagroups\observers::group_member_removed',
+        'eventname' => '\core\event\user_enrolment_deleted',
+        'callback'  => '\local_metasync\observers::user_enrolment_deleted',
     ),
 );

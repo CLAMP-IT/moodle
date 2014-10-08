@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local_metagroups
+ * @package    local_metasync
  * @copyright  2014 Paul Holden (pholden@greenhead.ac.uk)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -24,7 +24,7 @@ define('CLI_SCRIPT', true);
 
 require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/clilib.php');
-require_once($CFG->dirroot . '/local/metagroups/locallib.php');
+require_once($CFG->dirroot . '/local/metasync/locallib.php');
 
 // Ensure errors are well explained.
 set_debugging(DEBUG_DEVELOPER, true);
@@ -46,7 +46,7 @@ Options:
 -h, --help            Print out this help
 
 Example:
-\$ sudo -u www-data /usr/bin/php local/metagroups/sync.php
+\$ sudo -u www-data /usr/bin/php local/metasync/sync.php
 ";
 
     echo $help;
@@ -59,7 +59,7 @@ if (empty($options['verbose'])) {
     $trace = new text_progress_trace();
 }
 
-local_metagroups_sync($trace);
+local_metasync_sync($trace);
 $trace->finished();
 
 exit(0);

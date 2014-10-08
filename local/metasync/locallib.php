@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local_metagroups
+ * @package    local_metasync
  * @copyright  2014 Paul Holden (pholden@greenhead.ac.uk)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -31,7 +31,7 @@ require_once($CFG->dirroot . '/group/lib.php');
  * @param int|null $courseid or null for all parents
  * @return array of course IDs
  */
-function local_metagroups_parent_courses($courseid = null) {
+function local_metasync_parent_courses($courseid = null) {
     global $DB;
 
     $conditions = array('enrol' => 'meta', 'status' => ENROL_INSTANCE_ENABLED);
@@ -48,7 +48,7 @@ function local_metagroups_parent_courses($courseid = null) {
  * @param int $courseid
  * @return array of course IDs
  */
-function local_metagroups_child_courses($courseid) {
+function local_metasync_child_courses($courseid) {
     global $DB;
 
     return $DB->get_records_menu('enrol', array('enrol' => 'meta', 'courseid' => $courseid, 'status' => ENROL_INSTANCE_ENABLED), 'sortorder', 'id, customint1');
@@ -60,42 +60,34 @@ function local_metagroups_child_courses($courseid) {
  * @param progress_trace $trace
  * @return void
  */
-function local_metagroups_sync(progress_trace $trace) {
+function local_metasync_sync(progress_trace $trace) {
     global $DB;
 
-    $courseids = local_metagroups_parent_courses();
+    $courseids = local_metasync_parent_courses();
     foreach (array_unique($courseids) as $courseid) {
         $parent = get_course($courseid);
 
-        // If parent course doesn't use groups, we can skip synchronization.
-        if (groups_get_course_groupmode($parent) == NOGROUPS) {
-            continue;
-        }
-
         $trace->output($parent->fullname, 1);
 
-        $children = local_metagroups_child_courses($parent->id);
+        $children = local_metasync_child_courses($parent->id);
         foreach ($children as $childid) {
             $child = get_course($childid);
             $trace->output($child->fullname, 2);
 
-            $groups = groups_get_all_groups($child->id);
-            foreach ($groups as $group) {
-                if (! $metagroup = $DB->get_record('groups', array('courseid' => $parent->id, 'idnumber' => $group->id))) {
-                    $metagroup = new stdClass();
-                    $metagroup->courseid = $parent->id;
-                    $metagroup->idnumber = $group->id;
-                    $metagroup->name = $group->name;
+            if (! $metagroup = $DB->get_record('groups', array('courseid' => $parent->id, 'idnumber' => $child->id))) {
+                $metagroup = new stdClass();
+                $metagroup->courseid = $parent->id;
+                $metagroup->idnumber = $child->id;
+                $metagroup->name = $child->shortname;
 
-                    $metagroup->id = groups_create_group($metagroup, false, false);
-                }
+                $metagroup->id = groups_create_group($metagroup, false, false);
+            }
 
-                $trace->output($metagroup->name, 3);
-
-                $users = groups_get_members($group->id);
-                foreach ($users as $user) {
-                    groups_add_member($metagroup, $user->id, 'local_metagroups', $group->id);
-                }
+            $trace->output($metagroup->name, 3);
+            $coursecontext = context_course::instance($childid);
+            $users = get_enrolled_users($coursecontext);
+            foreach ($users as $user) {
+                groups_add_member($metagroup, $user->id, 'local_metasync', $courseid);
             }
         }
     }

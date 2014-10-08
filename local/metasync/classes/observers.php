@@ -15,133 +15,76 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local_metagroups
+ * @package    local_metasync
  * @copyright  2014 Paul Holden (pholden@greenhead.ac.uk)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_metagroups;
+namespace local_metasync;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . '/local/metagroups/locallib.php');
+require_once($CFG->dirroot . '/local/metasync/locallib.php');
 
 class observers {
 
     /**
-     * Group created
+     * Enrolment added
      *
-     * @param \core\event\group_created $event
+     * @param \core\event\user_enrolment_created $event
      * @return void
      */
-    public static function group_created(\core\event\group_created $event) {
+    public static function user_enrolment_created(\core\event\user_enrolment_created $event) {
         global $DB;
 
-        $group = $event->get_record_snapshot('groups', $event->objectid);
-
-        $courseids = local_metagroups_parent_courses($group->courseid);
-        foreach ($courseids as $courseid) {
-            $course = get_course($courseid);
-
-            // If parent course doesn't use groups, we can skip synchronization.
-            if (groups_get_course_groupmode($course) == NOGROUPS) {
-                continue;
-            }
-
-            if (! $DB->record_exists('groups', array('courseid' => $course->id, 'idnumber' => $group->id))) {
-                $metagroup = new \stdClass();
-                $metagroup->courseid = $course->id;
-                $metagroup->idnumber = $group->id;
-                $metagroup->name = $group->name;
-
-                groups_create_group($metagroup, false, false);
-            }
+        if (!enrol_is_enabled('meta')) {
+            // No more enrolments for disabled plugins.
+            return true;
         }
-    }
 
-    /**
-     * Group updated
-     *
-     * @param \core\event\group_updated $event
-     * @return void
-     */
-    public static function group_updated(\core\event\group_updated $event) {
-        global $DB;
-
-        $group = $event->get_record_snapshot('groups', $event->objectid);
-
-        $courseids = local_metagroups_parent_courses($group->courseid);
-        foreach ($courseids as $courseid) {
-            $course = get_course($courseid);
-
-            if ($metagroup = $DB->get_record('groups', array('courseid' => $course->id, 'idnumber' => $group->id))) {
-                $metagroup->name = $group->name;
-
-                groups_update_group($metagroup, false, false);
-            }
+        if ($event->other['enrol'] === 'meta') {
+            // Prevent circular dependencies - we can not sync meta enrolments recursively.
+            return true;
         }
-    }
 
-    /**
-     * Group deleted
-     *
-     * @param \core\event\group_deleted $event
-     * @return void
-     */
-    public static function group_deleted(\core\event\group_deleted $event) {
-        global $DB;
-
-        $group = $event->get_record_snapshot('groups', $event->objectid);
-
-        $courseids = local_metagroups_parent_courses($group->courseid);
-        foreach ($courseids as $courseid) {
-            $course = get_course($courseid);
-
-            if ($metagroup = $DB->get_record('groups', array('courseid' => $course->id, 'idnumber' => $group->id))) {
-                groups_delete_group($metagroup);
-            }
-        }
-    }
-
-    /**
-     * Group member added
-     *
-     * @param \core\event\group_member_added $event
-     * @return void
-     */
-    public static function group_member_added(\core\event\group_member_added $event) {
-        global $DB;
-
-        $group = $event->get_record_snapshot('groups', $event->objectid);
         $userid = $event->relateduserid;
 
-        $courseids = local_metagroups_parent_courses($group->courseid);
-        foreach ($courseids as $courseid) {
+        $parentcourseids = local_metasync_parent_courses($event->courseid);
+        foreach ($parentcourseids as $courseid) {
             $course = get_course($courseid);
 
-            if ($metagroup = $DB->get_record('groups', array('courseid' => $course->id, 'idnumber' => $group->id))) {
-                groups_add_member($metagroup, $userid, 'local_metagroups', $group->id);
+            if ($metagroup = $DB->get_record('groups', array('courseid' => $course->id, 'idnumber' => $event->courseid))) {
+                groups_add_member($metagroup, $userid, 'local_metasync', $event->courseid);
             }
         }
     }
 
     /**
-     * Group member removed
+     * Enrolment removed
      *
-     * @param \core\event\group_member_removed $event
+     * @param \core\event\user_enrolment_deleted $event
      * @return void
      */
-    public static function group_member_removed(\core\event\group_member_removed $event) {
+    public static function user_enrolment_deleted(\core\event\user_enrolment_deleted $event) {
         global $DB;
 
-        $group = $event->get_record_snapshot('groups', $event->objectid);
+        if (!enrol_is_enabled('meta')) {
+            // No more enrolments for disabled plugins.
+            return true;
+        }
+
+        if ($event->other['enrol'] === 'meta') {
+            // Prevent circular dependencies - we can not sync meta enrolments recursively.
+            return true;
+        }
+
         $userid = $event->relateduserid;
 
-        $courseids = local_metagroups_parent_courses($group->courseid);
-        foreach ($courseids as $courseid) {
+        $parentcourseids = local_metasync_parent_courses($event->courseid);
+        foreach ($parentcourseids as $courseid) {
             $course = get_course($courseid);
 
-            if ($metagroup = $DB->get_record('groups', array('courseid' => $course->id, 'idnumber' => $group->id))) {
+            if ($metagroup = $DB->get_record('groups', array('courseid' => $course->id, 'idnumber' => $event->courseid))) {
                 groups_remove_member($metagroup, $userid);
             }
         }

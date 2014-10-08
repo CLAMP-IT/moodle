@@ -15,8 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    local_metagroups
- * @copyright  2014 Paul Holden (pholden@greenhead.ac.uk)
+ * @package    local_metasync
+ * @copyright  2014 Willy Lee (wlee@carleton.edu)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -31,6 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  * @param int $userid
  * @return bool
  */
-function local_metagroups_allow_group_member_remove($itemid, $groupid, $userid) {
+function local_metasync_allow_group_member_remove($itemid, $groupid, $userid) {
     return false;
 }
