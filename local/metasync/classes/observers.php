@@ -43,7 +43,30 @@ class observers {
         }
 
         if ($event->other['enrol'] === 'meta') {
-            // Prevent circular dependencies - we can not sync meta enrolments recursively.
+            /**
+             * When adding a metalink, there's no event for that. All you see is each metaenrolment. 
+             * When we see one, check to see if we have a group already made for that linked course.
+             * If we don't have one, loop through and make them.
+             */
+            $children = local_metasync_child_courses($event->courseid);
+            foreach ($children as $childid) {
+                $child = get_course($childid);
+                if (! $metagroup = $DB->get_record('groups', array('courseid' => $event->courseid, 'idnumber' => $child->id))) {
+                    $metagroup = new \stdClass();
+                    $metagroup->courseid = $event->courseid;
+                    $metagroup->idnumber = $child->id;
+                    $metagroup->name = $child->shortname;
+
+                    $metagroup->id = \groups_create_group($metagroup, false, false);
+                }
+                // If event user is enrolled in this child course, add to this group.
+                $coursecontext = \context_course::instance($child->id);
+                $user = \core_user::get_user($event->relateduserid);
+                if (\is_enrolled($coursecontext, $user)) {
+                   $newgroup = $DB->get_record('groups', array('courseid' => $event->courseid, 'idnumber' => $child->id));
+                   \groups_add_member($newgroup, $event->relateduserid, 'local_metasync', $child->id);
+                }
+            }
             return true;
         }
 
