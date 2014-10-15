@@ -2,13 +2,9 @@
 /** Wes Standard **/
 
 body.editing .section .commands {
-	float: left; 
-	display: block; 
-	width: 170px;
-	height: 22px;
-	margin-right: 10px;
-	border-right: 1px solid #999;
-	position: relative;
+	
+	/* Emily removed everything that was in here */
+	
 }
 
 body.editing .section .commands a {/*position: absolute;*/ top: 4px;}
@@ -57,17 +53,11 @@ body.editing .section .mod-indent-9 .no-overflow>p {margin-left: 180px;}
 body.editing .section .mod-indent-10>a,
 body.editing .section .mod-indent-10 .no-overflow>p {margin-left: 200px;}
 body.editing .section .modtype_label {
-	padding: 4px 0 0;
-	position: relative;
+
 }
-body.editing .section .modtype_label .commands {
-	position: absolute;
-	top: 0;
-	left: 0;
-	height: 100%;
-}
+
 body.editing .section .modtype_label .mod-indent {
-	padding-left: 180px;
+	/* Emily removed padding-left:180px; */
 	/*margin-bottom: -1em;*/
 }
 body.editing .section .modtype_label .mod-indent-1 {padding-left: 220px;}
@@ -96,13 +86,19 @@ body.editing .section .contentafterlink {
 	border-left: 1px solid #999;
 }
 
+
 body.editing .section .contentafterlink .no-overflow p {
 	margin-bottom: 0;
 }
 
 body.editing .section .contentafterlink .no-overflow div {
-	padding: 0 0 0 2em;
+	padding: 0 0 0 2em; 
 }
+
+body.editing .section .modtype_label p:last-child {margin-bottom: 8px!important;}
+body.editing .section .activity {border-bottom:1px dotted #EDEDED;}
+
+
 
 /* no longer necessary if a position is static
 body.editing .section .unread,
