@@ -65,3 +65,6 @@
 [submodule "course/format/grid"]
 	path = course/format/grid
 	url = https://github.com/gjb2048/moodle-format_grid.git
+[submodule "blocks/customcss"]
+	path = blocks/customcss
+	url = http://kevinwiliarty.com/git/moodle-block_customcss.git
