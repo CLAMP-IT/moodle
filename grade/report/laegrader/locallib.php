@@ -669,8 +669,7 @@ class grade_tree_local extends grade_tree {
                 		continue; // if all are hidden then don't count this into calculations
                 	}
                 }
-
-                if ($child['type'] === 'categoryitem' || $child['type'] === 'courseitem') {
+                if ($child['type'] === 'categoryitem' || $child['type'] === 'courseitem' || $child['type'] === 'category') {
                     continue; // do nothing with these types of elements
                 } else if ($this->items[$id]->is_hidden() && $target_letter) { // either its not hidden or the hiding setting allows it to be calculated into the total
                     continue;
