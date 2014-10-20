@@ -1,4 +1,4 @@
-# [Moodle Liberal Arts Edition v2.6.4-LAE6.0.3]
+# [Moodle Liberal Arts Edition v2.6.5-LAE6.0.4]
 
 Welcome to the Moodle Liberal Arts Edition. The goal of the LAE is to provide a coherent package for modules, patches, and code developed (or improved) by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
@@ -10,13 +10,13 @@ The LAE is offered "as is", with no warranty. The institutions that comprise CLA
 
 ## Contact
 
-Questions about the LAE can be sent to Ken Newquist at <newquisk@lafayette.edu> or 610-330-5759. CLAMP members may participate in the development of the LAE by joining the Development Project in Redmine (our collaboration web site) at:
+Questions about the LAE can be sent to Ken Newquist at <newquisk@lafayette.edu> or 6.0.430-5759. CLAMP members may participate in the development of the LAE by joining the Development Project in Redmine (our collaboration web site) at:
 
 <http://redmine.clamp-it.org/projects/development>
 
 ## Contents
 
-Moodle 2.6.4+LAE6.0.3 consists of the core Moodle 2.6.4 release plus a number of CLAMP-developed features and bug fixes.
+Moodle 2.6.5+LAE6.0.4 consists of the core Moodle 2.6.5 release plus a number of CLAMP-developed features and bug fixes.
 
 The following core features are included:
 
@@ -76,10 +76,10 @@ You can get the LAE in two ways:
 * Download the tar and zip packages from the CLAMP web site: <http://www.clamp-it.org/code/>
 * Download the current release branch from the CLAMP code repository:
 
-    git clone https://github.com/CLAMP-IT/moodle v2.6.4-LAE6.0.3
-    git checkout -b v2.6.4-LAE6.0.3
+    git clone https://github.com/CLAMP-IT/moodle v2.6.5-LAE6.0.4
+    git checkout -b v2.6.5-LAE6.0.4
 
-By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v2.6.4-LAE6.0.3-base tag instead.
+By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v2.6.5-LAE6.0.4-base tag instead.
 
 CLAMP maintains two branches for each major version:
 
