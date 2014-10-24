@@ -58,8 +58,11 @@ class TurningTechMoodleHelper {
             }
             if ($zz) {
                 // Cas function.
-                $cookiedir = tempnam ("/tmp", "CURLCOOKIE");
-                $authplug = get_auth_plugin('cas');
+		// Cookedir as empty string will keep it in memory - as long as handle is reused; /dev/null would work, not sure if
+		// this is meant to try and be cross platform.
+                // $cookiedir = tempnam ("/tmp", "CURLCOOKIE");
+		$cookiedir = '';
+                $authplug = get_auth_plugin('cas'); 
                 $uri = $authplug->config->baseuri;
                 $hostname = $authplug->config->hostname;
                 $port = $authplug->config->port;
@@ -70,6 +73,7 @@ class TurningTechMoodleHelper {
                 } else {
                     $prefix = "http://";
                 }
+		// could probably grab the CAS login URL from the auth plugin directly
                 $url = $prefix . $hostname . ":" . $port . "/" . $uri . "login?service=" . urlencode($service);
                 $curl_connection = curl_init($url);
                 // Set options.
@@ -79,13 +83,14 @@ class TurningTechMoodleHelper {
                 curl_setopt($curl_connection, CURLOPT_COOKIEFILE, $cookiedir);
                 curl_setopt($curl_connection, CURLOPT_COOKIEJAR, $cookiedir);
                 curl_setopt($curl_connection, CURLOPT_HEADER, 1);
+		/*Really should verify, should be able to piggyback off of settings in the plugin, will fix later */
                 curl_setopt($curl_connection, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($curl_connection, CURLOPT_SSL_VERIFYHOST, false);
                 curl_setopt($curl_connection, CURLOPT_FOLLOWLOCATION, 1);
                 // Perform our request.
                 $result = curl_exec($curl_connection);
-                // Close the connection.
-                curl_close($curl_connection);
+		// No particular reason to close the connection, will reuse; keeps cookie in memory, too
+                #curl_close($curl_connection);
                 $html = new simple_html_dom();
                 $html->load($result);
                 foreach ($html->find('input') as $element) {
@@ -101,10 +106,13 @@ class TurningTechMoodleHelper {
                 // Create the final string to be posted using implode().
                 $post_string = implode('&', $post_items);
                 // Create array of data to be posted.
-                $strcookie = 'JSESSIONID=' . $jsessn[1] . '; Path=/cas/; Secure';
+		// No earthly idea what this is for; doesn't seem to be used again; Path isn't guaranteed to be /cas/ to boot.
+                // $strcookie = 'JSESSIONID=' . $jsessn[1] . '; Path=/cas/; Secure';
                 session_write_close();
-                $curl_connection = curl_init($url);
+		// no reason to re init if re-using the connection
+                //$curl_connection = curl_init($url);
                 // Set options.
+		/*Unnecessry repetition if re-using handle 
                 curl_setopt($curl_connection, CURLOPT_CONNECTTIMEOUT, 30);
                 curl_setopt($curl_connection, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)");
                 curl_setopt($curl_connection, CURLOPT_RETURNTRANSFER, true);
@@ -112,11 +120,14 @@ class TurningTechMoodleHelper {
                 curl_setopt($curl_connection, CURLOPT_COOKIEFILE, $cookiedir);
                 curl_setopt($curl_connection, CURLOPT_COOKIEJAR, $cookiedir);
                 curl_setopt($curl_connection, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($curl_connection, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($curl_connection, CURLOPT_SSL_VERIFYHOST, false); */
                 curl_setopt($curl_connection, CURLOPT_POSTFIELDS, $post_string);
-                curl_setopt($curl_connection, CURLOPT_FOLLOWLOCATION, 1);
+                //curl_setopt($curl_connection, CURLOPT_FOLLOWLOCATION, 1);
                 // Perform our request.
                 $result = curl_exec($curl_connection);
+		// Logout of CAS to close potential security hole
+		curl_setopt($curl_connection,CURLOPT_URL,$prefix . $hostname . ":" . $port . "/" . $uri . "/logout");
+	 	curl_exec($curl_connection);
                 // Close the connection.
                 curl_close($curl_connection);
                 if (strpos($result, 'ticket=ST') !== false) {
