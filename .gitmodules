@@ -68,3 +68,6 @@
 [submodule "blocks/customcss"]
 	path = blocks/customcss
 	url = http://kevinwiliarty.com/git/moodle-block_customcss.git
+[submodule "local/news_forum"]
+	path = local/news_forum
+	url = https://github.com/mackensen/moodle-local_news_forum.git
