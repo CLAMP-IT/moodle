@@ -58,34 +58,7 @@
 	url = https://github.com/gjb2048/moodle-format_grid.git
 [submodule "blocks/customcss"]
 	path = blocks/customcss
-	url = https://git.smith.edu/kwiliarty/moodle-block_customcss.git
+	url = https://github.com/gjb2048/moodle-format_topcoll.git
 [submodule "local/news_forum"]
 	path = local/news_forum
 	url = https://github.com/mackensen/moodle-local_news_forum.git
-[submodule "local/mass_enroll"]
-	path = local/mass_enroll
-	url = https://github.com/patrickpollet/moodle_local_mass_enroll.git
-[submodule "local/metasync"]
-	path = local/metasync
-	url = https://github.com/willylee/moodle-local_metasync.git
-[submodule "blocks/clampmail"]
-	path = blocks/clampmail
-	url = https://github.com/CLAMP-IT/clampmail.git
-[submodule "report/roster"]
-	path = report/roster
-	url = https://github.com/LafColITS/moodle-report_roster.git
-[submodule "report/editdates"]
-	path = report/editdates
-	url = https://github.com/moodleou/moodle-report_editdates.git
-[submodule "filter/collapsible"]
-	path = filter/collapsible
-	url = https://github.com/eberhardt/moodle-filter_collapsible.git
-[submodule "enrol/lmb"]
-	path = enrol/lmb
-	url = https://github.com/merrill-oakland/Banner-Luminis-Message-Broker-for-Moodle.git
-[submodule "local/new_user"]
-	path = local/new_user
-	url = http://kevinwiliarty.com/git/moodle-local_new_user.git
-[submodule "course/format/topcoll"]
-	path = course/format/topcoll
-	url = https://github.com/gjb2048/moodle-format_topcoll.git
