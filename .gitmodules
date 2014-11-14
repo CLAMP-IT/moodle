@@ -22,3 +22,6 @@
 [submodule "theme/smithreads"]
 	path = theme/smithreads
 	url = https://git.smith.edu/kwiliarty/moodle-theme_smithreads.git
+[submodule "local/mass_enroll"]
+	path = local/mass_enroll
+	url = https://github.com/patrickpollet/moodle_local_mass_enroll.git
