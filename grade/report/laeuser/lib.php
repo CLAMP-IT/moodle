@@ -376,11 +376,31 @@ class grade_report_laeuser extends grade_report {
 //			$this->gtree->parents[$itemid]->excredit = 0;
 		}
 
+	$hide_item =0;
+
+	if ($grade_object->courseid == "1570" ) {	
+          if ((($items[$grade_object->parent]->is_hidden || $items[$grade_object->parent]->is_parent_hidden) ||
+	      ($items[$grade_object->categoryid]->is_hidden || $items[$grade_object->categoryid]->is_parent_hidden)) &&
+	      !$this->canviewhidden && (
+	      ($this->showhiddenitems == GRADE_REPORT_LAEUSER_HIDE_HIDDEN ||
+	      ($this->showhiddenitems == GRADE_REPORT_LAEUSER_HIDE_UNTIL && !$grade_object->is_hiddenuntil())))) {
+            $hide_item = 1;
+	    $this->gtree->items[$itemid]->is_parent_hidden = 1;
+            $item->is_parent_hidden = 1;
+          }
+        } 
+
         // If this is a hidden grade category, hide it completely from the user
         if ($type == 'category' && $grade_object->is_hidden() && !$this->canviewhidden && (
                 $this->showhiddenitems == GRADE_REPORT_LAEUSER_HIDE_HIDDEN ||
                 ($this->showhiddenitems == GRADE_REPORT_LAEUSER_HIDE_UNTIL && !$grade_object->is_hiddenuntil()))) {
-            return false;
+	    $hide_item = 1;
+#	    $items[$itemid]->is_hidden = 1;
+	    $this->gtree->items[$itemid]->is_hidden = 1;
+    /* returning false screws up formatting in report later - investigate */ 
+	   if ($grade_object->courseid != "1570") {
+             return false;
+	   }
         }
 
         if ($type == 'category') {
@@ -430,7 +450,7 @@ class grade_report_laeuser extends grade_report {
                 }
             }
 
-            if (!$hide) {
+            if (!$hide and !$hide_item) {
                 /// Excluded Item
                 if ($grade->is_excluded()) {
                     $fullname .= ' ['.get_string('excluded', 'grades').']';
@@ -679,7 +699,7 @@ class grade_report_laeuser extends grade_report {
                     $data['feedback']['headers'] = "$header_cat $header_row feedback";
                 }
 	        }
-        } else if ($type == 'category') {
+        } else if ($type == 'category' && !$hide_item) {
             $data['leader']['class'] = $class.' '.$alter."d$depth b1t b2b b1l";
             $data['leader']['rowspan'] = $element['rowspan'];
 
