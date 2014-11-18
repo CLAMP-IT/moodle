@@ -65,3 +65,6 @@
 [submodule "local/mass_enroll"]
 	path = local/mass_enroll
 	url = https://github.com/patrickpollet/moodle_local_mass_enroll.git
+[submodule "local/metasync"]
+	path = local/metasync
+	url = https://github.com/willylee/moodle-local_metasync.git
