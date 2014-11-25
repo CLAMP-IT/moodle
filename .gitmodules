@@ -25,3 +25,6 @@
 [submodule "local/mass_enroll"]
 	path = local/mass_enroll
 	url = https://github.com/patrickpollet/moodle_local_mass_enroll.git
+[submodule "filter/videojs"]
+	path = filter/videojs
+	url = https://github.com/kwiliarty/moodle-filter_videojs.git
