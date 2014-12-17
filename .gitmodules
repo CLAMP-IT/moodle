@@ -28,3 +28,6 @@
 [submodule "filter/videojs"]
 	path = filter/videojs
 	url = https://github.com/kwiliarty/moodle-filter_videojs.git
+[submodule "theme/execedonline"]
+	path = theme/execedonline
+	url = https://git.smith.edu/kwiliarty/moodle-theme_execedonline.git
