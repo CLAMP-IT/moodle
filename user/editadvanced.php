@@ -42,6 +42,9 @@ $PAGE->set_url('/user/editadvanced.php', array('course'=>$course, 'id'=>$id));
 $course = $DB->get_record('course', array('id'=>$course), '*', MUST_EXIST);
 
 if (!empty($USER->newadminuser)) {
+    // Ignore double clicks, we must finish all operations before cancelling request.
+    ignore_user_abort(true);
+
     $PAGE->set_course($SITE);
     $PAGE->set_pagelayout('maintenance');
 } else {
@@ -184,6 +187,7 @@ if ($usernew = $userform->get_data()) {
             $usernew->password = hash_internal_user_password($usernew->newpassword);
         }
         $usernew->id = user_create_user($usernew, false, false);
+        $usercreated = true;
     } else {
         $usernew = file_postupdate_standard_editor($usernew, 'description', $editoroptions, $usercontext, 'user', 'profile', 0);
         // Pass a true old $user here.
@@ -242,6 +246,13 @@ if ($usernew = $userform->get_data()) {
         set_user_preference('auth_forcepasswordchange', 1, $usernew);
     }
 
+    // Trigger update/create event, after all fields are stored.
+    if ($usercreated) {
+        \core\event\user_created::create_from_userid($usernew->id)->trigger();
+    } else {
+        \core\event\user_updated::create_from_userid($usernew->id)->trigger();
+    }
+
     if ($user->id == $USER->id) {
         // Override old $USER session variable
         foreach ((array)$usernew as $variable => $value) {
@@ -256,9 +267,14 @@ if ($usernew = $userform->get_data()) {
 
         if (!empty($USER->newadminuser)) {
             unset($USER->newadminuser);
-            // apply defaults again - some of them might depend on admin user info, backup, roles, etc.
-            admin_apply_default_settings(NULL , false);
-            // redirect to admin/ to continue with installation
+            // Apply defaults again - some of them might depend on admin user info, backup, roles, etc.
+            admin_apply_default_settings(null, false);
+            // Admin account is fully configured - set flag here in case the redirect does not work.
+            unset_config('adminsetuppending');
+            // Redirect to admin/ to continue with installation.
+            redirect("$CFG->wwwroot/$CFG->admin/");
+        } else if (empty($SITE->fullname)) {
+            // Somebody double clicked when editing admin user during install.
             redirect("$CFG->wwwroot/$CFG->admin/");
         } else {
             redirect("$CFG->wwwroot/user/view.php?id=$USER->id&course=$course->id");

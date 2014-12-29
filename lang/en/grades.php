@@ -302,6 +302,7 @@ $string['gradetype_help'] = 'There are 4 grade types:
 
 Only value and scale grade types may be aggregated. The grade type for an activity-based grade item is set on the activity settings page.';
 $string['gradeview'] = 'View grade';
+$string['gradewasmodifiedduringediting'] = 'The grade entered for {$a->itemname} for {$a->username} was ignored because it was more recently updated by someone else.';
 $string['gradeweighthelp'] = 'Grade weight help';
 $string['groupavg'] = 'Group average';
 $string['hidden'] = 'Hidden';
@@ -344,7 +345,7 @@ $string['import'] = 'Import';
 $string['importcsv'] = 'Import CSV';
 $string['importcustom'] = 'Import as custom outcomes (only this course)';
 $string['importerror'] = 'An error occurred, this script wasn\'t called with the right parameters.';
-$string['importfailed'] = 'Import failed';
+$string['importfailed'] = 'Import failed. No data was imported.';
 $string['importfeedback'] = 'Import feedback';
 $string['importfile'] = 'Import file';
 $string['importfilemissing'] = 'No file was received, go back to the form and make sure to upload a valid file.';

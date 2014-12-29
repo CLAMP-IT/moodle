@@ -358,16 +358,6 @@ function xmldb_main_upgrade($oldversion) {
     if ($oldversion < 2012042300.00) {
         // This change makes the course_section index unique.
 
-        // xmldb does not allow changing index uniqueness - instead we must drop
-        // index then add it again
-        $table = new xmldb_table('course_sections');
-        $index = new xmldb_index('course_section', XMLDB_INDEX_NOTUNIQUE, array('course', 'section'));
-
-        // Conditionally launch drop index course_section
-        if ($dbman->index_exists($table, $index)) {
-            $dbman->drop_index($table, $index);
-        }
-
         // Look for any duplicate course_sections entries. There should not be
         // any but on some busy systems we found a few, maybe due to previous
         // bugs.
@@ -388,6 +378,19 @@ function xmldb_main_upgrade($oldversion) {
         }
         $rs->close();
         $transaction->allow_commit();
+
+        // XMLDB does not allow changing index uniqueness - instead we must drop
+        // index then add it again.
+        // MDL-46182: The query to make the index unique uses the index,
+        // so the removal of the non-unique version needs to happen after any
+        // data changes have been made.
+        $table = new xmldb_table('course_sections');
+        $index = new xmldb_index('course_section', XMLDB_INDEX_NOTUNIQUE, array('course', 'section'));
+
+        // Conditionally launch drop index course_section.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
 
         // Define index course_section (unique) to be added to course_sections
         $index = new xmldb_index('course_section', XMLDB_INDEX_UNIQUE, array('course', 'section'));
@@ -2991,6 +2994,48 @@ function xmldb_main_upgrade($oldversion) {
         $filetypes = array('%.pub'=>'application/x-mspublisher');
         upgrade_mimetypes($filetypes);
         upgrade_main_savepoint(true, 2013111803.05);
+    }
+
+    if ($oldversion < 2013111804.03) {
+        $table = new xmldb_table('user_devices');
+        $oldindex = new xmldb_index('pushid-platform', XMLDB_KEY_UNIQUE, array('pushid', 'platform'));
+        if ($dbman->index_exists($table, $oldindex)) {
+            $key = new xmldb_key('pushid-platform', XMLDB_KEY_UNIQUE, array('pushid', 'platform'));
+            $dbman->drop_key($table, $key);
+        }
+        upgrade_main_savepoint(true, 2013111804.03);
+    }
+
+    if ($oldversion < 2013111804.06) {
+
+        // Define index behaviour (not unique) to be added to question_attempts.
+        $table = new xmldb_table('question_attempts');
+        $index = new xmldb_index('behaviour', XMLDB_INDEX_NOTUNIQUE, array('behaviour'));
+
+        // Conditionally launch add index behaviour.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2013111804.06);
+    }
+
+    if ($oldversion < 2013111804.10) {
+        // Fixing possible wrong MIME type for 7-zip and Rar files.
+        $filetypes = array(
+                '%.7z' => 'application/x-7z-compressed',
+                '%.rar' => 'application/x-rar-compressed');
+        upgrade_mimetypes($filetypes);
+        upgrade_main_savepoint(true, 2013111804.10);
+    }
+
+    if ($oldversion < 2013111805.11) {
+        // Run script restoring missing folder records for draft file areas.
+        upgrade_fix_missing_root_folders_draft();
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2013111805.11);
     }
 
     return true;

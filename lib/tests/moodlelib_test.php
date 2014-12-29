@@ -656,6 +656,8 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertSame('john@doe', clean_param('john@doe', PARAM_USERNAME));
         $this->assertSame('johndoe', clean_param('john~doe', PARAM_USERNAME));
         $this->assertSame('johndoe', clean_param('john´doe', PARAM_USERNAME));
+        $this->assertSame(clean_param('john# $%&()+_^', PARAM_USERNAME), 'john_');
+        $this->assertSame(clean_param(' john# $%&()+_^ ', PARAM_USERNAME), 'john_');
         $this->assertSame(clean_param('john#$%&() ', PARAM_USERNAME), 'john');
         $this->assertSame('johnd', clean_param('JOHNdóé ', PARAM_USERNAME));
         $this->assertSame(clean_param('john.,:;-_/|\ñÑ[]A_X-,D {} ~!@#$%^&*()_+ ?><[] ščřžžý ?ýá?ý??doe ', PARAM_USERNAME), 'john.-_a_x-d@_doe');
@@ -664,7 +666,8 @@ class core_moodlelib_testcase extends advanced_testcase {
         $CFG->extendedusernamechars = true;
         $this->assertSame('john_doe', clean_param('john_doe', PARAM_USERNAME));
         $this->assertSame('john@doe', clean_param('john@doe', PARAM_USERNAME));
-        $this->assertSame(clean_param('john# $%&()+_^', PARAM_USERNAME), 'john#$%&()+_^');
+        $this->assertSame(clean_param('john# $%&()+_^', PARAM_USERNAME), 'john# $%&()+_^');
+        $this->assertSame(clean_param(' john# $%&()+_^ ', PARAM_USERNAME), 'john# $%&()+_^');
         $this->assertSame('john~doe', clean_param('john~doe', PARAM_USERNAME));
         $this->assertSame('john´doe', clean_param('joHN´doe', PARAM_USERNAME));
         $this->assertSame('johndoe', clean_param('johnDOE', PARAM_USERNAME));
@@ -2274,6 +2277,44 @@ class core_moodlelib_testcase extends advanced_testcase {
             // Otherwise password should have been updated to a bcrypt hash.
             $this->assertFalse(password_is_legacy_hash($user->password));
         }
+    }
+
+    /**
+     * Testing that if the password is not cached, that it does not update
+     * the user table and fire event.
+     */
+    public function test_update_internal_user_password_no_cache() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $user = $this->getDataGenerator()->create_user(array('auth' => 'cas'));
+        $this->assertEquals(AUTH_PASSWORD_NOT_CACHED, $user->password);
+
+        // Update the field to see if it was needlessly overwritten.
+        $DB->set_field('user', 'password', 'doNotOverwrite');
+
+        update_internal_user_password($user, 'wonkawonka');
+
+        $this->assertEquals('doNotOverwrite', $DB->get_field('user', 'password', array('id' => $user->id)));
+    }
+
+    /**
+     * Test if the user has a password hash, but now their auth method
+     * says not to cache it.  Then it should update.
+     */
+    public function test_update_internal_user_password_update_no_cache() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $user = $this->getDataGenerator()->create_user(array('password' => 'test'));
+        $this->assertNotEquals(AUTH_PASSWORD_NOT_CACHED, $user->password);
+        $user->auth = 'cas'; // Change to a auth that does not store passwords.
+
+        update_internal_user_password($user, 'wonkawonka');
+
+        $this->assertEquals(AUTH_PASSWORD_NOT_CACHED, $DB->get_field('user', 'password', array('id' => $user->id)));
     }
 
     public function test_fullname() {

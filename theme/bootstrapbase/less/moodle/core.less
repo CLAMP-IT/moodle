@@ -501,20 +501,12 @@ a.skip:active {
 .loginbox .loginform .form-label {
     float: left;
     text-align: right;
-    width: 44%;
-    direction: rtl;
-    white-space: nowrap;
-}
-.dir-rtl .loginbox .loginform .form-label {
-    float: left;
-    text-align: right;
-    width: 44%;
-    direction: ltr;
+    width: 49%;
     white-space: nowrap;
 }
 .loginbox .loginform .form-input {
     float: right;
-    width: 55%;
+    width: 50%;
 }
 .loginbox .loginform .form-input input {
     width: 6em;
@@ -1211,6 +1203,7 @@ body.tag .managelink {
 }
 .dir-rtl .loginbox .loginform .form-input {
     text-align: right;
+    margin-right: 1%;
 }
 .dir-rtl .yui3-menu-hidden {
     left: 0;
@@ -2053,7 +2046,8 @@ img#persona_signin {
             padding-left: 4px;
             padding-right: 4px;
 
-            .iconsmall {
+            .iconsmall,
+            .smallicon {
                 margin: 4px 4px 4px 0px;
                 padding: 8px 4px 0px 2px;
                 vertical-align: text-bottom;
@@ -2130,8 +2124,10 @@ img#persona_signin {
         img {
             vertical-align: middle;
         }
-        .iconsmall {
+        .iconsmall,
+        .smallicon {
             margin: 4px 4px 4px -24px;
+            padding: 4px;
         }
         > li {
             display:block;
@@ -2170,9 +2166,13 @@ img#persona_signin {
             text-align: right;
             left: 0;
             right: auto;
-            .iconsmall {
-                margin-right:0;
-                margin-left:8px;
+            a {
+                padding: 2px 28px 2px 1em;
+            }
+            .iconsmall,
+            .smallicon {
+                margin-right: -24px;
+                margin-left: 4px;
             }
 
             /** bottom left of button **/
@@ -2226,4 +2226,13 @@ body.lockscroll {
     ul, ol {
         margin-right: 25px;
     }
+}
+
+dd:before,
+dd:after {
+  display: block;
+  content: " ";
+}
+dd:after {
+  clear: both;
 }
