@@ -1,0 +1,68 @@
+body {
+    font-size: 11px;
+    background-color: #FBFBFB;
+}
+
+fieldset {
+    border: none;
+}
+
+div.ev-field {
+    display: inline-block;
+}
+
+div.ev-field div.logo {
+    display: none;
+}
+
+div.ev-hider a.action-hide {
+    display: none;
+}
+
+div.ev-poweredby {
+    display: none;
+}
+
+div.ev-field {
+    padding: 1em 1em;
+}
+
+div.ev-video-picker,
+div.ev-playlist-picker {
+    margin-bottom: 10px;
+}
+
+div.ev-results {
+    padding-top: 0.4em;
+}
+
+div.ev-search,
+div.ev-playlist-select {
+    padding-top: 0;
+}
+
+div.ev-search label,
+div.ev-playlist-select label,
+div.ev-search input,
+div.ev-search select,
+div.ev-playlist-select select
+{
+    display: inline;
+}
+
+div.ev-dialog {
+    border: none;
+    border-radius: 0;
+}
+
+div.ev-dialog div.ui-dialog-titlebar {
+    border-radius: 0;
+}
+
+.submit {
+    display: inline;
+}
+
+div.ev-field-actions .action-remove {
+  display: none;
+}
