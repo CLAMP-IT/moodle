@@ -29,7 +29,7 @@ class block_wes_library_resources extends block_list
 	$this->content->icons[] = '';
 	$this->content->icons[] = '';
 	$this->content->icons[] = '';
-	$this->content->footer = '';
+	$this->content->footer = 'FACULTY: For help using Moodle <a href="http://www.wesleyan.edu/its/services/teaching/acm.html">contact your ACM</a>';
 
 		return $this->content;
 	} // get_content
