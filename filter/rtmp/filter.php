@@ -304,7 +304,8 @@ class filter_rtmp extends moodle_text_filter
                 'swf'  => $flowlibpath . "/flowplayer-[0-9].[0-9].?*.swf",
                 'rtmp' => $filterpath  . "/flowplayer.rtmp-[0-9].[0-9].?*.swf",
                 'caption' => $filterpath  . "/flowplayer.captions-[0-9].[0-9].?*.swf",
-                'content' => $filterpath  . "/flowplayer.content-[0-9].[0-9].?*.swf"
+                'content' => $filterpath  . "/flowplayer.content-[0-9].[0-9].?*.swf",
+                'secure'  => $filterpath  . "/flowplayer.securestreaming-[0-9].[0-9].?*.swf"
         );
 
         $retval = '';
