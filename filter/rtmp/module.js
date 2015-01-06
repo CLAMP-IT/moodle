@@ -34,6 +34,7 @@ M.filter_rtmp = {
     _swf_cfg_rtmp    : M.cfg.wwwroot + filter_rtmp_flowplayer_rtmp,
     _swf_cfg_caption : M.cfg.wwwroot + filter_rtmp_flowplayer_caption,
     _swf_cfg_content : M.cfg.wwwroot + filter_rtmp_flowplayer_content,
+    _swf_cfg_secure  : M.cfg.wwwroot + filter_rtmp_flowplayer_secure,
     _min_video_width : 240,
     _default_volume  : 80,
 
@@ -54,6 +55,9 @@ M.filter_rtmp = {
         var useCaptions = playerNode.getAttribute('data-media-captions');
         if (typeof(useCaptions) == 'undefined') { useCaptions = false; }
         else { useCaptions = (isNaN(useCaptions) ? false : parseInt(useCaptions) == 1); }
+        var mediaSecureStreaming = playerNode.getAttribute('data-media-securestreaming');
+        if (typeof(mediaSecureStreaming) == 'undefined') { mediaSecureStreaming = false; }
+        else { mediaSecureStreaming = (isNaN(mediaSecureStreaming) ? false: parseInt(mediaSecureStreaming) == 1); }
 
         var flashConfig = { src: M.filter_rtmp._swf_cfg_base };
         // If dimensions specified, pass along in Flash configs
@@ -102,6 +106,11 @@ M.filter_rtmp = {
             border: 0, textDecoration: 'outline',
             style: { 'body': { fontSize: '14', fontFamily: 'verdana,arial,helvetica,sans-serif', textAlign: 'center', color: '#ffffff' } }
         };
+
+        if (mediaSecureStreaming) {
+            flowConfig.plugins.secure = { url: M.filter_rtmp._swf_cfg_secure };
+            flowConfig.clip.connectionProvider = 'secure';
+        }
 
         var playlistNodes = M.filter_rtmp.Y.all('span.filter_rtmp_video_playlist.' + playerId + ' a.clip');
         if (playlistNodes.size() == 0) {

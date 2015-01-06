@@ -123,6 +123,23 @@ class filter_rtmp_player_video extends core_media_player
                 $url->remove_params(array('d'));
             }
 
+            // Look for query param indicating that the player should
+            // use the secure streaming mechanism.
+            $secflag = $url->get_param('sec');
+            switch (strtolower($secflag)) {
+                case '1' :
+                case 'y' :
+                    $secure_streaming = 1;
+                    break;
+                case '0' :
+                case 'n' :
+                default  :
+                    $secure_streaming = 0;
+            }
+            if ($secflag != null) {
+                $url->remove_params(array('sec'));
+            }
+
             // Look for closed-captioning param, use site
             // config for default setting
             $captions = $url->get_param('captions');
@@ -213,7 +230,7 @@ class filter_rtmp_player_video extends core_media_player
         // For situation where one item in clip array, render
         // only a span tag with the needed data- attributes
         $playlist_open = $playlist_close = $content = '';
-        $player_elem_attrs = array('id' => $unique_id, 'class' => 'mediaplugin filter_rtmp_video', 'data-media-height' => $height, 'data-media-width' => $width, 'data-media-autosize' => $autosize);
+        $player_elem_attrs = array('id' => $unique_id, 'class' => 'mediaplugin filter_rtmp_video', 'data-media-height' => $height, 'data-media-width' => $width, 'data-media-autosize' => $autosize, 'data-media-securestreaming' => $secure_streaming);
         if (count($clip_array) == 1) {
 
             $player_elem_attrs['data-media-conx']  = $clip_array[0]['conx'];
