@@ -4,3 +4,9 @@
 [submodule "mod/assign/feedback/pdf"]
 	path = mod/assign/feedback/pdf
 	url = https://github.com/davosmith/moodle-assignfeedback_pdf.git
+[submodule "mod/assign/submission/mahara"]
+	path = mod/assign/submission/mahara
+	url = https://github.com/MaharaProject/moodle-assignsubmission-mahara.git
+[submodule "mod/assign/feedback/mahara"]
+	path = mod/assign/feedback/mahara
+	url = https://github.com/MaharaProject/moodle-assignfeedback-mahara.git
