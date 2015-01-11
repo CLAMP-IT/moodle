@@ -107,7 +107,7 @@ grade_regrade_final_grades($courseid);
 
 // Perform actions
 if (!empty($target) && !empty($action) && confirm_sesskey()) {
-    grade_report_grader::do_process_action($target, $action);
+    grade_report_grader::do_process_action($target, $action, $courseid);
 }
 
 $reportname = get_string('pluginname', 'gradereport_grader');
@@ -160,6 +160,7 @@ if ($USER->gradeediting[$course->id] && ($report->get_pref('showquickfeedback') 
     echo '<div>';
     echo '<input type="hidden" value="'.s($courseid).'" name="id" />';
     echo '<input type="hidden" value="'.sesskey().'" name="sesskey" />';
+    echo '<input type="hidden" value="'.time().'" name="timepageload" />';
     echo '<input type="hidden" value="grader" name="report"/>';
     echo '<input type="hidden" value="'.$page.'" name="page"/>';
     echo $reporthtml;

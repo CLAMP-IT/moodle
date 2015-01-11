@@ -2087,7 +2087,7 @@ class global_navigation extends navigation_node {
         $featuresfunc = $cm->modname.'_supports';
         if (function_exists($featuresfunc) && $featuresfunc(FEATURE_ADVANCED_GRADING)) {
             require_once($CFG->dirroot.'/grade/grading/lib.php');
-            $gradingman = get_grading_manager($cm->context, $cm->modname);
+            $gradingman = get_grading_manager($cm->context,  'mod_'.$cm->modname);
             $gradingman->extend_navigation($this, $activity);
         }
 
@@ -2277,7 +2277,14 @@ class global_navigation extends navigation_node {
             $userscourses = enrol_get_users_courses($user->id);
             $userscoursesnode = $usernode->add(get_string('courses'));
 
+            $count = 0;
             foreach ($userscourses as $usercourse) {
+                if ($count === (int)$CFG->navcourselimit) {
+                    $url = new moodle_url('/user/profile.php', array('id' => $user->id, 'showallcourses' => 1));
+                    $userscoursesnode->add(get_string('showallcourses'), $url);
+                    break;
+                }
+                $count++;
                 $usercoursecontext = context_course::instance($usercourse->id);
                 $usercourseshortname = format_string($usercourse->shortname, true, array('context' => $usercoursecontext));
                 $usercoursenode = $userscoursesnode->add($usercourseshortname, new moodle_url('/user/view.php', array('id'=>$user->id, 'course'=>$usercourse->id)), self::TYPE_CONTAINER);
@@ -2874,10 +2881,11 @@ class global_navigation_for_ajax extends global_navigation {
                 require_course_login($course, true, $cm, false, true);
                 $this->page->set_context(context_module::instance($cm->id));
                 $coursenode = $this->load_course($course);
-                if ($course->id != $SITE->id) {
-                    $this->load_course_sections($course, $coursenode, null, $cm);
+                $this->load_course_sections($course, $coursenode, null, $cm);
+                $activitynode = $coursenode->find($cm->id, self::TYPE_ACTIVITY);
+                if ($activitynode) {
+                    $modulenode = $this->load_activity($cm, $course, $activitynode);
                 }
-                $modulenode = $this->load_activity($cm, $course, $coursenode->find($cm->id, self::TYPE_ACTIVITY));
                 break;
             default:
                 throw new Exception('Unknown type');
@@ -3965,7 +3973,7 @@ class settings_navigation extends navigation_node {
         $featuresfunc = $this->page->activityname.'_supports';
         if (function_exists($featuresfunc) && $featuresfunc(FEATURE_ADVANCED_GRADING) && has_capability('moodle/grade:managegradingforms', $this->page->cm->context)) {
             require_once($CFG->dirroot.'/grade/grading/lib.php');
-            $gradingman = get_grading_manager($this->page->cm->context, $this->page->activityname);
+            $gradingman = get_grading_manager($this->page->cm->context, 'mod_'.$this->page->activityname);
             $gradingman->extend_settings_navigation($this, $modulenode);
         }
 
@@ -4127,8 +4135,16 @@ class settings_navigation extends navigation_node {
                 }
                 $canaccessallgroups = has_capability('moodle/site:accessallgroups', $coursecontext);
                 if (!$canaccessallgroups && groups_get_course_groupmode($course) == SEPARATEGROUPS) {
-                    // If groups are in use, make sure we can see that group
-                    return false;
+                    // If groups are in use, make sure we can see that group (MDL-45874).
+                    if ($courseid == $this->page->course->id) {
+                        $mygroups = get_fast_modinfo($this->page->course)->groups;
+                    } else {
+                        $mygroups = groups_get_user_groups($courseid);
+                    }
+                    $usergroups = groups_get_user_groups($courseid, $userid);
+                    if (!array_intersect_key($mygroups[0], $usergroups[0])) {
+                        return false;
+                    }
                 }
             }
         }

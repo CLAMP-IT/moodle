@@ -112,7 +112,7 @@ $users = array();
 $users_to_roles = array();
 $users_to_groups = array();
 
-$everyone = get_enrolled_users($context, '', 0, user_picture::fields('u'));
+$everyone = get_enrolled_users($context, '', 0, user_picture::fields('u', array('mailformat', 'maildisplay')), "", 0, 0, true);
 
 foreach ($everyone as $userid => $user) {
     $usergroups = groups_get_user_groups($courseid, $userid);
