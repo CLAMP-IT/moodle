@@ -1,0 +1,20 @@
+.report-roster {
+    list-style: none;
+    margin-top: 20px;
+    text-align: justify;
+    li {
+        display: inline-block;
+        max-width: 100px;
+        margin-bottom: 5px;
+        vertical-align: top;
+        span {
+            display: block;
+            text-align: center;
+        }
+    }
+    &:after {
+        content: '';
+        display: inline-block;
+        width: 100%;
+    }
+}

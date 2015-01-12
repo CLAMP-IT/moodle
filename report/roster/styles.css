@@ -1,23 +1,20 @@
-ul.report-roster {
-    list-style: none;
-    margin-top: 20px;
-    text-align: justify;
+.report-roster {
+  list-style: none;
+  margin-top: 20px;
+  text-align: justify;
 }
-
-ul.report-roster li {
-    display: inline-block;
-    max-width: 100px;
-    margin-bottom: 5px;
-    vertical-align: top;
+.report-roster li {
+  display: inline-block;
+  max-width: 100px;
+  margin-bottom: 5px;
+  vertical-align: top;
 }
-
-ul.report-roster li span {
-    display: block;
-    text-align: center;
+.report-roster li span {
+  display: block;
+  text-align: center;
 }
-
-ul.report-roster:after {
-    content: '';
-    width: 100%;
-    display: inline-block;
+.report-roster:after {
+  content: '';
+  display: inline-block;
+  width: 100%;
 }
