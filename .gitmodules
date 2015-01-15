@@ -1,0 +1,3 @@
+[submodule "mod/quiz/accessrule/offlinemode"]
+	path = mod/quiz/accessrule/offlinemode
+	url = https://github.com/timhunt/moodle-quizaccess_offlinemode
