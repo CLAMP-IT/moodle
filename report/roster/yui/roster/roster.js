@@ -13,5 +13,5 @@ YUI.add('moodle-report_roster-roster', function(Y) {
                 }
             });
         }
-    }
+    };
 });
