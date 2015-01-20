@@ -4,7 +4,7 @@ class block_wes_library_chat extends block_base
 {
 	public function init() 
 	{
-		$this->title = 'Ask a Librarian';
+		$this->title = 'Need Research Help?';
 	} // init
 
 	public function get_content() 
