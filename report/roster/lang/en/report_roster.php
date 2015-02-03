@@ -24,6 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+$string['allusers'] = 'All users';
 $string['displaymode'] = 'Display mode';
 $string['learningmodeoff'] = 'Learning mode off';
 $string['learningmodeon'] = 'Learning mode on';
