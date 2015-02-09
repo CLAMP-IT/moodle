@@ -34,3 +34,6 @@
 [submodule "theme/execedonline"]
 	path = theme/execedonline
 	url = http://kevinwiliarty.com/git/moodle-theme_execedonline.git
+[submodule "theme/execed"]
+	path = theme/execed
+	url = http://kevinwiliarty.com/git/moodle-theme_execed.git
