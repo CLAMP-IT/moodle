@@ -76,3 +76,6 @@
 [submodule "blocks/panopto"]
 	path = blocks/panopto
 	url = https://github.com/Panopto/Moodle-2.0-Plugin-for-Panopto.git
+[submodule "filter/collapsible"]
+	path = filter/collapsible
+	url = https://github.com/eberhardt/moodle-filter_collapsible.git
