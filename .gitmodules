@@ -1,7 +1,3 @@
-[submodule "blocks/panopto"]
-	path = blocks/panopto
-	url = https://github.com/Panopto/Moodle-2.0-Plugin-for-Panopto.git
-    url = https://github.com/kwiliarty/Moodle-2.0-Plugin-for-Panopto.git
 [submodule "blocks/federated_login"]
 	path = blocks/federated_login
 	url = https://github.com/kwiliarty/moodle-block_federated_login.git
@@ -77,3 +73,6 @@
 [submodule "report/editdates"]
 	path = report/editdates
 	url = https://github.com/moodleou/moodle-report_editdates.git
+[submodule "blocks/panopto"]
+	path = blocks/panopto
+	url = https://github.com/Panopto/Moodle-2.0-Plugin-for-Panopto.git
