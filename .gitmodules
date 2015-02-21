@@ -7,7 +7,7 @@
 	url = https://github.com/kwiliarty/moodle-block_federated_login.git
 [submodule "blocks/filtered_course_list"]
 	path = blocks/filtered_course_list
-	url = https://github.com/kwiliarty/moodle-block_filtered_course_list.git
+	url = https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list.git
 [submodule "mod/questionnaire"]
 	path = mod/questionnaire
 	url = https://github.com/remotelearner/moodle-mod_questionnaire.git
