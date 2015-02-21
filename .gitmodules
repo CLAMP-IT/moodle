@@ -74,3 +74,6 @@
 [submodule "report/roster"]
 	path = report/roster
 	url = https://github.com/LafColITS/moodle-report_roster.git
+[submodule "report/editdates"]
+	path = report/editdates
+	url = https://github.com/moodleou/moodle-report_editdates.git
