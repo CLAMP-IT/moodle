@@ -68,3 +68,6 @@
 [submodule "local/metasync"]
 	path = local/metasync
 	url = https://github.com/willylee/moodle-local_metasync.git
+[submodule "blocks/clampmail"]
+	path = blocks/clampmail
+	url = https://github.com/CLAMP-IT/clampmail.git
