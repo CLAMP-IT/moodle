@@ -136,7 +136,7 @@ class block_navigation extends block_base {
     function get_content() {
         global $CFG, $OUTPUT, $COURSE;
         // Test whether user can view blocks in course
-        $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        $context = context_course::instance($COURSE->id);
         if (!has_capability('moodle/block:view', $context)) {
             return '';
         }
