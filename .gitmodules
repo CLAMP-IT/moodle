@@ -37,3 +37,6 @@
 [submodule "theme/execed"]
 	path = theme/execed
 	url = http://kevinwiliarty.com/git/moodle-theme_execed.git
+[submodule "blocks/customcss"]
+	path = blocks/customcss
+	url = http://kevinwiliarty.com/git/moodle-block_customcss.git
