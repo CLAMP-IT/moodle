@@ -34,3 +34,6 @@
 [submodule "theme/execed"]
 	path = theme/execed
 	url = https://git.smith.edu/kwiliarty/moodle-theme_execed.git
+[submodule "blocks/customcss"]
+	path = blocks/customcss
+	url = https://git.smith.edu/kwiliarty/moodle-blocks_customcss.git
