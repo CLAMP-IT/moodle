@@ -41,16 +41,16 @@ require_once(__DIR__ . '/../../../../lib/clilib.php');
 require_once(__DIR__ . '/../../../../lib/behat/lib.php');
 
 // Changing the cwd to admin/tool/behat/cli.
+$cwd = getcwd();
+$output = null;
+
+// If behat dependencies not downloaded then do it first, else symfony/process can't be used.
+testing_update_composer_dependencies();
+
+// Check whether the behat test environment needs to be updated.
 chdir(__DIR__);
 $output = null;
 exec("php util.php --diag", $output, $code);
-
-// Ensure we have composer installed, before we install or re-install test site.
-if ($code == TESTING_EXITCODE_COMPOSER || $code == BEHAT_EXITCODE_INSTALL || $code == BEHAT_EXITCODE_REINSTALL) {
-    testing_update_composer_dependencies();
-    chdir(__DIR__);
-    exec("php util.php --diag", $output, $code);
-}
 
 if ($code == 0) {
     echo "Behat test environment already installed\n";
