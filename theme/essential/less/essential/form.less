@@ -1,0 +1,179 @@
+/* @group Forms */
+fieldset {
+    select,
+    textarea[cols],
+    input[size],
+    .form-item .form-description {
+        .fluid-span(8);
+    }
+}
+
+@media (max-width: 979px) {
+    fieldset {
+        select,
+        textarea[cols],
+        input[size],
+        .form-item .form-description {
+            .fluid-span(6);
+        }
+    }
+}
+
+@media (max-width: 767px) {
+    fieldset {
+        select,
+        textarea[cols],
+        input[size],
+        .form-item .form-description {
+            .fluid-span(5);
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    fieldset {
+        select,
+        textarea[cols],
+        input[size],
+        .form-item .form-description {
+            .fluid-span(3);
+        }
+    }
+}
+.form-item .form-label, .mform .fitem div.fitemtitle {
+  text-align: left;
+}
+
+.form-item .form-setting,
+.form-item .form-description,
+.mform .fitem .felement,
+#page-mod-forum-search .c1 {
+  margin-left: 180px;
+}
+
+.form-item .form-label .form-overridden {
+  font-size: 1em;
+  font-family: monospace;
+}
+
+#region-main {
+  form {
+    .form-buttons {
+      width: 400px;
+      border-radius: @baseBorderRadius * 2;
+      input {
+        margin: 0px;
+      }
+    }
+    table#form td.submit,
+    .form-buttons,
+    .path-admin .buttons,
+    #fitem_id_submitbutton,
+    .fp-content-center form+div,
+    div.backup-section+form,
+    #fgroup_id_buttonar {
+      width: 40%;
+      text-align: center;
+      margin-left: auto;
+      margin-right: auto;
+      z-index: 1;
+      padding: 20px;
+      border-radius: @baseBorderRadius * 2;
+      .felement {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      #id_previous,
+      #id_cancel {
+        //margin-left: 0px;
+        //float: left;
+      }
+      #id_next,
+      #id_submitbutton,
+      #id_submitbutton2 {
+        //float: right;
+        //margin-right: 0px;
+      }
+      > .fgroup {
+        margin: 0px;
+        padding-top: 15px;
+      }
+      input {
+        .btn-primary
+      }
+    }
+    .fdescription.required {
+      color: orangered;
+    }
+  }
+}
+
+body {
+  &.desktopdevice #region-main {
+    form {
+      table#form td.submit,
+      .form-buttons,
+      .path-admin .buttons,
+      #fitem_id_submitbutton,
+      .fp-content-center form+div,
+      div.backup-section+form,
+      #fgroup_id_buttonar {
+        position: fixed;
+        left: 30%;
+        bottom: 30px;
+      }
+    }
+  }
+  &#page-enrol-index.desktopdevice, &#page-mod-forum-post.desktopdevice {
+    #region-main {
+      form {
+        table#form td.submit,
+        .form-buttons,
+        .path-admin .buttons,
+        #fitem_id_submitbutton,
+        .fp-content-center form+div,
+        div.backup-section+form,
+        #fgroup_id_buttonar {
+          position: inherit;
+          left: inherit;
+          bottom: inherit;
+        }
+      }
+    }
+  }
+}
+
+#page-mod-assign-view.jsenabled .gradingoptionsform .fitem_actionbuttons {
+    display: none;  // When JS is disabled then there will be a button because of '.jsenabled .gradingoptionsform .fsubmit' in mod_assign styles.css.
+}
+
+.mform fieldset.collapsible legend a.fheader {
+  margin-left: 0px;
+}
+
+.mform fieldset {
+    a.visibleifjs img.smallicon {
+        padding-bottom: 6px;
+    }
+}
+
+// Checkbox labels. Bootstrap puts the associated checkbox inside the label.
+// Moodle puts it beside the label, so we need to make it inline-block
+// to keep it on the same horizontal level.
+input[type="radio"] + label,
+input[type="checkbox"] + label {
+  padding-right: 0.4em;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  margin-right: auto;
+}
+
+.path-mod-forum .forumheaderlist {
+  .author, .lastpost {
+    white-space: normal !important;  // Override mod style.css that comes afterwards, yuck '!important' :(.
+  }
+}
+
+/* @end */
