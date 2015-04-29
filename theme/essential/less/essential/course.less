@@ -1,0 +1,153 @@
+/* @group Course */
+
+.course-content ul li.section.main {
+  border-bottom: 0px none;
+}
+
+#course-category-listings .item-actions.show .menu a {
+  padding: 0px 5px;
+}
+
+div.mdl-align.title {
+  text-align: left;
+  border-bottom: 1px solid #e1e1e1;
+  margin-bottom: 15px;
+}
+
+.course-content ul.topics li.section.main.clearfix.current {
+  border-radius: 5px;
+}
+
+body {  // Inside a body tag so will be more specific and override core plugin styles that come afterwards without the use of 'important' and can then override again in pre-processed theme setting style if needed.
+    .course-content ul.topics li.section {
+        padding-bottom: 20px;
+        .content {
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+    }
+}
+
+.listitem-category {
+  .icon {
+    margin-right: 5px;
+    margin-left: 3px;
+  }
+}
+
+.editing {
+  .section {
+    .activity {
+      .activityinstance {
+        padding-right: 180px;
+      }
+      .contentwithoutlink {
+        padding-right: 100px;
+      }
+    }
+  }
+}
+
+.modeditingmenu.editing {
+  .section {
+    .activity {
+      .activityinstance {
+        padding-right: 80px;
+      }
+    }
+  }
+}
+
+// This drives me nuts!
+#page-course-index.pagelayout-coursecategory .category .coursebox, #page-course-index-category.pagelayout-coursecategory .coursebox.collapsed, #frontpage-category-combo .coursebox {
+    > .info > .coursename a {
+        background-position: left 0.2em;
+    }
+}
+
+.coursebox .content {
+    .summary.noteachers { // Class 'noteachers' is an Essential special in the overridded core_course_renderer.php.
+        width: 100%;
+        float: none;
+    }
+    .teachers .fa {
+        font-size: inherit;
+    }
+}
+
+/* @group Course Resource */
+
+/* mod_resource css */
+.path-mod-resource .resourcecontent {
+    overflow: auto;
+}
+
+/* @end */
+
+/* @group Course Footer */
+
+.section-navigation {
+  padding: 2em 0;
+  line-height: 1.5;
+  clear: both;
+
+  a {
+    font-style: normal;
+    text-decoration: none;
+  }
+}
+
+#previous_section,
+#next_section {
+  width: 50%;
+  display: block;
+}
+
+#next_section {
+  text-align: right;
+  float: right;
+  .nav_icon {
+    float: right;
+    margin-left: 0.3em;
+    border-left: 1px solid #eee;
+    font-size: 2em;
+  }
+
+  .text {
+    width: 74.05%;
+    float: right;
+  }
+}
+
+#previous_section {
+  float: left;
+  text-align: left;
+
+  .nav_icon {
+    float: left;
+    margin-right: 0.3em;
+    border-right: 1px solid #eee;
+    font-size: 2em;
+  }
+
+  .text {
+    width: 74.05%;
+    float: left;
+  }
+}
+
+.nav_guide {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-style: normal;
+}
+
+.nav_icon {
+  padding: 0.3em;
+  width: 8.3%;
+  text-align: center;
+}
+
+/* @end */
+
+/* @end */
