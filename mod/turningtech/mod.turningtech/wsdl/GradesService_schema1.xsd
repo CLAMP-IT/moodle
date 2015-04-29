@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema version="1.0" targetNamespace="http://ws.turningtool.turningtech.com/grades" xmlns:tns="http://ws.turningtool.turningtech.com/grades" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="AuthenticationException" type="tns:AuthenticationException"/>
+
+  <xs:element name="GradeException" type="tns:GradeException"/>
+
+  <xs:element name="SiteConnectException" type="tns:SiteConnectException"/>
+
+  <xs:element name="addToIndividualScore" type="tns:addToIndividualScore"/>
+
+  <xs:element name="addToIndividualScoreByDto" type="tns:addToIndividualScoreByDto"/>
+
+  <xs:element name="addToIndividualScoreByDtoResponse" type="tns:addToIndividualScoreByDtoResponse"/>
+
+  <xs:element name="addToIndividualScoreResponse" type="tns:addToIndividualScoreResponse"/>
+
+  <xs:element name="createGradebookItem" type="tns:createGradebookItem"/>
+
+  <xs:element name="createGradebookItemResponse" type="tns:createGradebookItemResponse"/>
+
+  <xs:element name="listGradebookItems" type="tns:listGradebookItems"/>
+
+  <xs:element name="listGradebookItemsResponse" type="tns:listGradebookItemsResponse"/>
+
+  <xs:element name="overrideIndividualScore" type="tns:overrideIndividualScore"/>
+
+  <xs:element name="overrideIndividualScoreByDto" type="tns:overrideIndividualScoreByDto"/>
+
+  <xs:element name="overrideIndividualScoreByDtoResponse" type="tns:overrideIndividualScoreByDtoResponse"/>
+
+  <xs:element name="overrideIndividualScoreResponse" type="tns:overrideIndividualScoreResponse"/>
+
+  <xs:element name="postIndividualScore" type="tns:postIndividualScore"/>
+
+  <xs:element name="postIndividualScoreByDto" type="tns:postIndividualScoreByDto"/>
+
+  <xs:element name="postIndividualScoreByDtoResponse" type="tns:postIndividualScoreByDtoResponse"/>
+
+  <xs:element name="postIndividualScoreResponse" type="tns:postIndividualScoreResponse"/>
+
+  <xs:element name="postScores" type="tns:postScores"/>
+  
+  <xs:element name="postScoresResponse" type="tns:postScoresResponse"/>
+  
+  <xs:element name="postScoresOverrideAll" type="tns:postScoresOverrideAll"/>
+
+  <xs:element name="postScoresOverrideAllResponse" type="tns:postScoresOverrideAllResponse"/>
+
+  <xs:element name="postScoresExt" type="tns:postScoresExt"/>
+  
+  <xs:element name="postScoresResponseExt" type="tns:postScoresResponseExt"/>
+  
+  <xs:element name="postScoresOverrideAllExt" type="tns:postScoresOverrideAllExt"/>
+
+  <xs:element name="postScoresOverrideAllResponseExt" type="tns:postScoresOverrideAllResponseExt"/>
+
+  <xs:element name="exportSessionData" type="tns:exportSessionData"/>
+
+  <xs:element name="exportSessionDataResponse" type="tns:exportSessionDataResponse"/>
+
+  <xs:complexType name="overrideIndividualScore">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="pointsEarned" type="xs:double"/>
+      <xs:element name="pointsPossible" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="overrideIndividualScoreResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="gradingErrorDto">
+    <xs:sequence>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="errorMessage" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="AuthenticationException">
+    <xs:sequence>
+      <xs:element name="message" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SiteConnectException">
+    <xs:sequence>
+      <xs:element name="message" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="addToIndividualScoreByDto">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="sessionGradeDto" type="tns:sessionGradeDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="sessionGradeDto">
+    <xs:sequence>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="pointsEarned" type="xs:double" minOccurs="0"/>
+      <xs:element name="pointsPossible" type="xs:double" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="sessionGradeDtoExt">
+    <xs:sequence>
+      <xs:element name="userId" type="xs:string" minOccurs="0"/>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="pointsEarned" type="xs:double" minOccurs="0"/>
+      <xs:element name="pointsPossible" type="xs:double" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="addToIndividualScoreByDtoResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postIndividualScoreByDto">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="sessionGradeDto" type="tns:sessionGradeDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postIndividualScoreByDtoResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postScores">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="sessionGradeDtos" type="tns:sessionGradeDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="postScoresResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="postScoresExt">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="sessionGradeDtosExt" type="tns:sessionGradeDtoExt" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="postScoresResponseExt">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="listGradebookItems">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="listGradebookItemsResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradebookItemView" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="gradebookItemView">
+    <xs:sequence>
+      <xs:element name="creator" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="points" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="GradeException">
+    <xs:sequence>
+      <xs:element name="message" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="createGradebookItem">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="pointsPossible" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="createGradebookItemResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="addToIndividualScore">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="pointsEarned" type="xs:double"/>
+      <xs:element name="pointsPossible" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="addToIndividualScoreResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postIndividualScore">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="itemTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="pointsEarned" type="xs:double"/>
+      <xs:element name="pointsPossible" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postIndividualScoreResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postScoresOverrideAll">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="sessionGradeDtos" type="tns:sessionGradeDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postScoresOverrideAllResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="postScoresOverrideAllExt">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="sessionGradeDtosExt" type="tns:sessionGradeDtoExt" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="postScoresOverrideAllResponseExt">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="overrideIndividualScoreByDto">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+      <xs:element name="sessionGradeDto" type="tns:sessionGradeDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="overrideIndividualScoreByDtoResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:gradingErrorDto" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="exportSessionData">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="exportData" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="exportSessionDataResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:exportSessionDataResponseDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="exportSessionDataResponseDto">
+    <xs:sequence>
+      <xs:element name="ExportedData" type="tns:exportSessionDataDto" minOccurs="0" />
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:complexType name="exportSessionDataDto">
+    <xs:sequence>
+      <xs:element name="courseId" type="xs:string" minOccurs="0"/>
+      <xs:element name="exportObject" type="xs:string" minOccurs="0"/>
+      <xs:element name="error" type="tns:exportSessionErrorDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="exportSessionErrorDto">
+    <xs:sequence>
+      <xs:element name="code" type="xs:string" minOccurs="0"/>
+      <xs:element name="desc" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
+

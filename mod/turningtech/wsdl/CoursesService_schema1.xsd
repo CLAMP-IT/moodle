@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema version="1.0" targetNamespace="http://ws.turningtool.turningtech.com/courses" xmlns:tns="http://ws.turningtool.turningtech.com/courses" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="AuthenticationException" type="tns:AuthenticationException"/>
+
+  <xs:element name="CourseException" type="tns:CourseException"/>
+
+  <xs:element name="SiteConnectException" type="tns:SiteConnectException"/>
+
+  <xs:element name="getClassRoster" type="tns:getClassRoster"/>
+
+  <xs:element name="getClassRosterResponse" type="tns:getClassRosterResponse"/>
+
+  <xs:element name="getClassRosterExt" type="tns:getClassRosterExt"/>
+
+  <xs:element name="getClassRosterExtResponse" type="tns:getClassRosterExtResponse"/>
+
+  <xs:element name="getTaughtCourses" type="tns:getTaughtCourses"/>
+
+  <xs:element name="getTaughtCoursesResponse" type="tns:getTaughtCoursesResponse"/>
+
+  <xs:element name="getTaughtCoursesExt" type="tns:getTaughtCoursesExt"/>
+
+  <xs:element name="getTaughtCoursesExtResponse" type="tns:getTaughtCoursesExtResponse"/>
+
+  <xs:complexType name="getTaughtCourses">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="getTaughtCoursesResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:courseSiteView" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="getTaughtCoursesExt">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="getTaughtCoursesExtResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:courseSiteView" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="courseSiteView">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string" minOccurs="0"/>
+      <xs:element name="providerGroupId" type="xs:string" minOccurs="0"/>
+      <xs:element name="reference" type="xs:string" minOccurs="0"/>
+      <xs:element name="title" type="xs:string" minOccurs="0"/>
+      <xs:element name="type" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="AuthenticationException">
+    <xs:sequence>
+      <xs:element name="message" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="CourseException">
+    <xs:sequence>
+      <xs:element name="message" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="getClassRoster">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="getClassRosterResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:courseParticipantDto" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="getClassRosterExt">
+    <xs:sequence>
+      <xs:element name="encryptedUserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="encryptedPassword" type="xs:string" minOccurs="0"/>
+      <xs:element name="siteId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="getClassRosterExtResponse">
+    <xs:sequence>
+      <xs:element name="return" type="tns:courseParticipantDtoExt" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="courseParticipantDto">
+    <xs:sequence>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="email" type="xs:string" minOccurs="0"/>
+      <xs:element name="firstName" type="xs:string" minOccurs="0"/>
+      <xs:element name="lastName" type="xs:string" minOccurs="0"/>
+      <xs:element name="loginId" type="xs:string" minOccurs="0"/>
+      <xs:element name="userId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="courseParticipantDtoExt">
+    <xs:sequence>
+      <xs:element name="deviceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="email" type="xs:string" minOccurs="0"/>
+      <xs:element name="firstName" type="xs:string" minOccurs="0"/>
+      <xs:element name="lastName" type="xs:string" minOccurs="0"/>
+      <xs:element name="userId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SiteConnectException">
+    <xs:sequence>
+      <xs:element name="message" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
+
