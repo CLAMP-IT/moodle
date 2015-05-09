@@ -79,3 +79,6 @@
 [submodule "filter/collapsible"]
 	path = filter/collapsible
 	url = https://github.com/eberhardt/moodle-filter_collapsible.git
+[submodule "enrol/lmb"]
+	path = enrol/lmb
+	url = https://github.com/merrill-oakland/Banner-Luminis-Message-Broker-for-Moodle.git
