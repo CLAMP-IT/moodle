@@ -82,3 +82,6 @@
 [submodule "enrol/lmb"]
 	path = enrol/lmb
 	url = https://github.com/merrill-oakland/Banner-Luminis-Message-Broker-for-Moodle.git
+[submodule "local/new_user"]
+	path = local/new_user
+	url = https://git.smith.edu/kwiliarty/moodle-local_new_user.git
