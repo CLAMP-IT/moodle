@@ -279,11 +279,11 @@ class auth_plugin_db extends auth_plugin_base {
                 $params['authtype'] = $this->authtype;
                 $sql = "SELECT u.*
                           FROM {user} u
-                         WHERE u.auth=:authtype AND u.deleted=0 AND u.mnethostid=:mnethostid $suspendselect AND u.username $notin_sql";
+                         WHERE (u.auth=:authtype OR u.auth='shibboleth') AND u.deleted=0 AND u.mnethostid=:mnethostid $suspendselect AND u.username $notin_sql";
             } else {
                 $sql = "SELECT u.*
                           FROM {user} u
-                         WHERE u.auth=:authtype AND u.deleted=0 AND u.mnethostid=:mnethostid $suspendselect";
+                         WHERE (u.auth=:authtype OR u.auth='shibboleth') AND u.deleted=0 AND u.mnethostid=:mnethostid $suspendselect";
                 $params = array();
                 $params['authtype'] = $this->authtype;
             }
@@ -335,7 +335,7 @@ class auth_plugin_db extends auth_plugin_base {
                 $params['authtype'] = $this->authtype;
                 $sql = "SELECT u.id, u.username
                           FROM {user} u
-                         WHERE u.auth=:authtype AND u.deleted=0 AND u.username {$in_sql}";
+                         WHERE (u.auth=:authtype OR u.auth='shibboleth') AND u.deleted=0 AND u.username {$in_sql}";
                 if ($update_users = $DB->get_records_sql($sql, $params)) {
                     $trace->output("User entries to update: ".count($update_users));
 
@@ -360,7 +360,7 @@ class auth_plugin_db extends auth_plugin_base {
         }
         $sql = "SELECT u.id, u.username
                   FROM {user} u
-                 WHERE u.auth=:authtype AND u.deleted='0' AND mnethostid=:mnethostid $suspendselect";
+                 WHERE (u.auth=:authtype OR u.auth='shibboleth') AND u.deleted='0' AND mnethostid=:mnethostid $suspendselect";
 
         $users = $DB->get_records_sql($sql, array('authtype'=>$this->authtype, 'mnethostid'=>$CFG->mnet_localhost_id));
 
