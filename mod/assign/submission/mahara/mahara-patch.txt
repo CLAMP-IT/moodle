@@ -1,0 +1,525 @@
+diff --git htdocs/api/xmlrpc/lib.php htdocs/api/xmlrpc/lib.php
+index 95e5ea2..1973007 100644
+--- htdocs/api/xmlrpc/lib.php
++++ htdocs/api/xmlrpc/lib.php
+@@ -570,7 +570,18 @@ function get_views_for_user($username, $query=null) {
+ 
+     $USER->reanimate($user->id, $authinstance->instanceid);
+     require_once('view.php');
+-    $data = View::view_search($query, null, (object) array('owner' => $USER->get('id')));
++    $data = View::view_search($query, null, (object) array('owner' => $USER->get('id')), null, null, 0, true, null, null, true);
++    require_once('collection.php');
++    $data->collections = Collection::get_mycollections_data(0, 0, $USER->get('id'));
++    foreach ($data->collections->data as $c) {
++        $cobj = new Collection($c->id);
++        if ($c->numviews > 0) {
++            $c->url = $cobj->get_url();
++        }
++        else {
++            $c->url = '';
++        }
++    }
+     $data->displayname = display_name($user);
+     return $data;
+ }
+@@ -677,7 +688,15 @@ function get_watchlist_for_user($username, $maxitems) {
+     return $data;
+ }
+ 
+-function submit_view_for_assessment($username, $viewid) {
++/**
++ * Submits a view or collection for assessment by a remote service
++ *
++ * @param string $username
++ * @param int $viewid The ID of the view or collection to be submitted
++ * @param boolean $iscollection Indicates whether it's a view or a collection
++ * @return array An array of data for the web service to consume
++ */
++function submit_view_for_assessment($username, $viewid, $iscollection = false) {
+     global $REMOTEWWWROOT;
+ 
+     list ($user, $authinstance) = find_remote_user($username, $REMOTEWWWROOT);
+@@ -691,61 +710,117 @@ function submit_view_for_assessment($username, $viewid) {
+     }
+ 
+     require_once('view.php');
++    $remotehost = $authinstance->config['wwwroot'];
++    $userid = $user->get('id');
++
++    db_begin();
++    if ($iscollection) {
++        require_once('collection.php');
++        $collection = new Collection($viewid);
++        $title = $collection->get('name');
++        $description = $collection->get('description');
++
++        // Check whether the collection is already submitted
++        if ($collection->is_submitted()) {
++            // If this is already submitted to something else, throw an exception
++            if ($collection->get('submittedgroup') || $collection->get('submittedhost') !== $REMOTEWWWROOT) {
++                throw new CollectionSubmissionException(get_string('collectionalreadysubmitted', 'view'));
++            }
++
++            // It may have been submitted to a different assignment in the same remote
++            // site, but there's no way we can tell. So we'll just send the access token
++            // back.
++            $access = $collection->get_invisible_token();
++        }
++        else {
++            $collection->submit(null, $remotehost, $userid);
++            $access = $collection->new_token(false);
++        }
++
++        // If the collection is empty, $access will be false
++        if (!$access) {
++            throw new CollectionSubmissionException(get_string('cantsubmitemptycollection', 'view'));
++        }
++    }
++    else {
+     $view = new View($viewid);
++        $title = $view->get('title');
++        $description = $view->get('description');
+ 
+-    $view->set('submittedhost', $authinstance->config['wwwroot']);
+-    $view->set('submittedtime', db_format_timestamp(time()));
++        if ($view->is_submitted()) {
++            // If this is already submitted to something else, throw an exception
++            if ($view->get('submittedgroup') || $view->get('submittedhost') !== $REMOTEWWWROOT) {
++                throw new ViewSubmissionException(get_string('viewalreadysubmitted', 'view'));
++            }
+ 
+-    // Create secret key
+-    $access = View::new_token($view->get('id'), false);
++            // It may have been submitted to a different assignment in the same remote
++            // site, but there's no way we can tell. So we'll just send the access token
++            // back.
++            $access = View::get_invisible_token($viewid);
++        }
++        else {
++            View::_db_submit(array($viewid), null, $remotehost, $userid);
++            $access = View::new_token($viewid, false);
++        }
++    }
+ 
+     $data = array(
+-        'id'          => $view->get('id'),
+-        'title'       => $view->get('title'),
+-        'description' => $view->get('description'),
+-        'fullurl'     => get_config('wwwroot') . 'view/view.php?id=' . $view->get('id') . '&mt=' . $access->token,
+-        'url'         => '/view/view.php?id=' . $view->get('id') . '&mt=' . $access->token,
++        'id'          => $viewid,
++        'title'       => $title,
++        'description' => $description,
++        'fullurl'     => get_config('wwwroot') . 'view/view.php?id=' . $viewid . '&mt=' . $access->token,
++        'url'         => '/view/view.php?id=' . $viewid . '&mt=' . $access->token,
+         'accesskey'   => $access->token,
+     );
+ 
++    // Provide each artefact plugin the opportunity to handle the remote submission and
++    // provide return data for the webservice caller
+     foreach (plugins_installed('artefact') as $plugin) {
+         safe_require('artefact', $plugin->name);
+         $classname = generate_class_name('artefact', $plugin->name);
+         if (is_callable($classname . '::view_submit_external_data')) {
+-            $data[$plugin->name] = call_static_method($classname, 'view_submit_external_data', $view->get('id'));
++            $data[$plugin->name] = call_static_method($classname, 'view_submit_external_data', $viewid, $iscollection);
+         }
+     }
+-
+-    $view->commit();
+-
+-    // Lock view contents
+-    require_once(get_config('docroot') . 'artefact/lib.php');
+-    ArtefactType::update_locked($user->get('id'));
++    db_commit();
+ 
+     return $data;
+ }
+ 
+-function release_submitted_view($viewid, $assessmentdata, $teacherusername) {
++/**
++ * Releases a submission to a remote host.
++ * @param int $viewid A view or collection id
++ * @param mixed $assessmentdata Assessment data from the remote host, for this assignment
++ * @param string $teacherusername The username of the teacher who is releasing the assignment
++ * @param boolean $iscollection Whether the $viewid is a view or a collection
++ */
++function release_submitted_view($viewid, $assessmentdata, $teacherusername, $iscollection = false) {
+     global $REMOTEWWWROOT, $USER;
++    list ($teacher, $authinstance) = find_remote_user($teacherusername, $REMOTEWWWROOT);
+ 
+     require_once('view.php');
+-    $view = new View($viewid);
+-    list ($teacher, $authinstance) = find_remote_user($teacherusername, $REMOTEWWWROOT);
+ 
+     db_begin();
++    if ($iscollection) {
++        require_once('collection.php');
++        $collection = new Collection($viewid);
++        $collection->release($teacher);
++    }
++    else {
++        $view = new View($viewid);
++        View::_db_release(array($viewid), $view->get('owner'));
++    }
++
++    // Provide each artefact plugin the opportunity to handle the remote submission release
+     foreach (plugins_installed('artefact') as $plugin) {
+         safe_require('artefact', $plugin->name);
+         $classname = generate_class_name('artefact', $plugin->name);
+         if (is_callable($classname . '::view_release_external_data')) {
+-            call_static_method($classname, 'view_release_external_data', $view, $assessmentdata, $teacher ? $teacher->id : 0);
++            call_static_method($classname, 'view_release_external_data', $viewid, $iscollection, $assessmentdata, $teacher ? $teacher->id : 0);
+         }
+     }
+ 
+     // Release the view for editing
+-    $view->set('submittedhost', null);
+-    $view->set('submittedtime', null);
+-    $view->commit();
+-    ArtefactType::update_locked($view->get('owner'));
+     db_commit();
+ }
+ 
+diff --git htdocs/lang/en.utf8/view.php htdocs/lang/en.utf8/view.php
+index bd0a9ba..0d0f629 100644
+--- htdocs/lang/en.utf8/view.php
++++ htdocs/lang/en.utf8/view.php
+@@ -160,7 +160,14 @@ $string['addaccessgroup'] = 'Add access for group "%s"';
+ $string['submitconfirm'] = 'If you submit \'%s\' to %s for assessment, you will not be able to edit its contents until your tutor has finished marking it. Are you sure you want to submit now?';
+ $string['viewsubmitted'] = 'Page submitted';
+ $string['collectionsubmitted'] = 'Collection submitted';
+-$string['viewsalreadysubmitted'] = 'Some pages in this collection have already been submitted:<br>%s<br>You cannot submit the collection until they have been released.';
++$string['collectionviewsalreadysubmitted'] = "Some pages in this collection have already been submitted: \"%s\"\nYou cannot submit the collection until they have been released, or removed from the collection.";
++$string['viewalreadysubmitted'] = 'This page has already been submitted to another assignment or Mahara group.';
++$string['collectionalreadysubmitted'] = 'This collection has already been submitted to another assignment or Mahara group.';
++$string['collectionsubmissionexceptiontitle'] = 'Could not submit collection';
++$string['collectionsubmissionexceptionmessage'] = 'This collection can not be submitted, for the following reason:';
++$string['cantsubmitemptycollection'] = 'This collection does not contain any pages.';
++$string['viewsubmissionexceptiontitle'] = 'Could not submit page';
++$string['viewsubmissionexceptionmessage'] = 'This page can not be submitted, for the following reason:';
+ $string['submitviewtogroup'] = 'Submit \'%s\' to \'%s\' for assessment';
+ $string['cantsubmitviewtogroup'] = 'You cannot submit this page to this group for assessment.';
+ $string['cantsubmitcollectiontogroup'] = 'You cannot submit this collection.';
+diff --git htdocs/lib/collection.php htdocs/lib/collection.php
+index aa635ca..95a27d2 100644
+--- htdocs/lib/collection.php
++++ htdocs/lib/collection.php
+@@ -345,7 +345,14 @@ class Collection {
+         $data = array();
+         if ($count > 0) {
+             $data = get_records_sql_assoc("
+-                SELECT c.id, c.description, c.name
++                SELECT
++                    c.id,
++                    c.description,
++                    c.name,
++                    c.submittedgroup,
++                    c.submittedhost,
++                    c.submittedtime,
++                    (SELECT COUNT(*) FROM {collection_view} cv WHERE cv.collection = c.id) AS numviews
+                 FROM {collection} c
+                 WHERE " . $wherestm .
+                 " ORDER BY c.name, c.ctime, c.id ASC
+@@ -784,6 +791,9 @@ class Collection {
+         View::_db_release($viewids, $this->owner, $this->submittedgroup);
+         db_commit();
+ 
++        // We don't send out notifications about the release of remote-submitted Views & Collections
++        // (though I'm not sure why)
++        if ($this->submittedgroup) {
+         $releaseuser = optional_userobj($releaseuser);
+         $releaseuserdisplay = display_name($releaseuser, $this->owner);
+         $submitinfo = $this->submitted_to();
+@@ -810,6 +820,7 @@ class Collection {
+             )
+         );
+     }
++    }
+ 
+     public function get_viewids() {
+         $ids = array();
+@@ -844,39 +855,68 @@ class Collection {
+         return $record;
+     }
+ 
+-    public function submit($group) {
++    /**
++     * Submit this collection to a group or a remote host (but only one or the other!)
++     * @param object $group
++     * @param string $submittedhost
++     * @param int $owner The owner of the collection (if not just $USER)
++     * @throws SystemException
++     */
++    public function submit($group = null, $submittedhost = null, $owner = null) {
+         global $USER;
+ 
+         if ($this->is_submitted()) {
+-            throw new SystemException('Attempting to submit a submitted collection');
++            throw new CollectionSubmissionException('Attempting to submit a submitted collection');
++        }
++        // Gotta provide one or the other
++        if (!$group && !$submittedhost) {
++            return false;
+         }
+ 
+         $viewids = $this->get_viewids();
++        if (!$viewids) {
++            throw new CollectionSubmissionException(get_string('cantsubmitemptycollection', 'view'));
++        }
+         $idstr = join(',', array_map('intval', $viewids));
++        $owner = ($owner == null) ? $USER->get('id') : $owner;
+ 
+         // Check that none of the views is submitted to some other group.  This is bound to happen to someone,
+         // because collection submission is being introduced at a time when it is still possible to submit
+         // individual views in a collection.
+-        $submittedtitles = get_column_sql("
+-            SELECT title FROM {view}
+-            WHERE id IN ($idstr) AND (submittedhost IS NOT NULL OR (submittedgroup IS NOT NULL AND submittedgroup != ?))",
+-            array($group->id)
+-        );
++        $sql = "SELECT title FROM {view} WHERE id IN ({$idstr}) AND (submittedhost IS NOT NULL OR (submittedgroup IS NOT NULL";
++        $params = array();
++        // To ease the transition, if you've submitted one page of the collection to this group already, you
++        // can submit the rest as well
++        if ($group) {
++            $sql .= ' AND submittedgroup != ?';
++            $params[] = $group->id;
++        }
++        $sql .= '))';
++        $submittedtitles = get_column_sql($sql, $params );
+ 
+         if (!empty($submittedtitles)) {
+-            die_info(get_string('viewsalreadysubmitted', 'view', implode('<br>', $submittedtitles)));
++            throw new CollectionSubmissionException(get_string('collectionviewsalreadysubmitted', 'view', implode('", "', $submittedtitles)));
+         }
+ 
++        if ($group) {
+         $group->roles = get_column('grouptype_roles', 'role', 'grouptype', $group->grouptype, 'see_submitted_views', 1);
++        }
+ 
+         db_begin();
+-        View::_db_submit($viewids, $group);
++        View::_db_submit($viewids, $group, $submittedhost, $owner);
++        if ($group) {
+         $this->set('submittedgroup', $group->id);
+         $this->set('submittedhost', null);
++        }
++        else {
++            $this->set('submittedgroup', null);
++            $this->set('submittedhost', $submittedhost);
++        }
+         $this->set('submittedtime', time());
+         $this->commit();
+         db_commit();
+ 
++        if ($group) {
+         activity_occurred(
+             'groupmessage',
+             array(
+@@ -906,6 +946,7 @@ class Collection {
+             )
+         );
+     }
++    }
+ 
+     /**
+      * Returns the collection tags
+@@ -919,4 +960,59 @@ class Collection {
+         return $this->tags;
+     }
+ 
++    /**
++     * Creates a new secret url for this collection
++     * @param int $collectionid
++     * @param false $visible
++     * @return object The view_access record for the first view's secret URL
++     */
++    public function new_token($visible=1) {
++        $viewids = $this->get_viewids();
++        // It's not possible to add a secret key to a collection with no pages
++        if (!$viewids) {
++            return false;
++        }
++
++        reset($viewids);
++        $access = View::new_token(current($viewids), $visible);
++        while (next($viewids)) {
++            $todb = new stdClass();
++            $todb->view = current($viewids);
++            $todb->visible = $access->visible;
++            $todb->token = $access->token;
++            $todb->ctime = $access->ctime;
++            insert_record('view_access', $todb);
++        }
++
++        return $access;
++    }
++
++    /**
++     * Retrieves the collection's invisible access token, if it has one. (Each
++     * collection can only have one, because invisible access tokens are used
++     * for submission access, and each collection can only be submitted to
++     * one place at a time.)
++     *
++     * @return mixed boolean FALSE if there is no token, a data object if there is
++     */
++    public function get_invisible_token() {
++        $viewids = $this->get_viewids();
++        if (!$viewids) {
++            return false;
++        }
++        reset($viewids);
++        return View::get_invisible_token(current($viewids));
++    }
++}
++
++class CollectionSubmissionException extends UserException {
++    public function strings() {
++        return array_merge(
++            parent::strings(),
++            array(
++                'title' => get_string('collectionsubmissionexceptiontitle', 'view'),
++                'message' => get_string('collectionsubmissionexceptionmessage', 'view'),
++            )
++        );
++    }
+ }
+diff --git htdocs/lib/view.php htdocs/lib/view.php
+index 18167a5..05e4075 100644
+--- htdocs/lib/view.php
++++ htdocs/lib/view.php
+@@ -3970,7 +3970,7 @@ class View {
+             SELECT
+                 v.id, v.title, v.description, v.owner, v.ownerformat, v.group, v.institution,
+                 v.template, v.mtime, v.ctime,
+-                c.id AS collid, c.name, v.type, v.urlid
++                c.id AS collid, c.name, v.type, v.urlid, v.submittedtime, v.submittedgroup, v.submittedhost
+             ' . $from . $where . '
+             ORDER BY ' . $orderby . ', v.id ASC',
+             $ph, $offset, $limit
+@@ -4626,6 +4626,16 @@ class View {
+         return false;
+     }
+ 
++    /**
++     * Retrieve the invisible key for this view, if there is one. (A view can only have one
++     * invisible key, because it can only be submitted to one place at a time.)
++     * @param int $viewid
++     * @return mixed Returns a boolean FALSE if there is no invisible token, a data object if there is one
++     */
++    public static function get_invisible_token($viewid) {
++        return get_record_select('view_access', 'view = ? AND token IS NOT NULL AND visible = 0', array($viewid), 'view, visible, token, ctime');
++    }
++
+     public function owner_link() {
+         if ($this->owner) {
+             return profile_url($this->get_owner_object());
+@@ -5200,26 +5210,47 @@ class View {
+         );
+     }
+ 
+-    public function _db_submit($viewids, $group) {
++    /**
++     * Lower-level function to handle all the DB changes that should occur when you submit a view or views
++     *
++     * @param array $viewids The views to submit. (Normally one view by itself, or all the views in a Collection)
++     * @param object $submittedgroupobj An object holding information about the group submitting to. Should contain id and roles array
++     * @param string $submittedhost Alternately, the name of the remote host the group is being submitted to (for MNet submission)
++     * @param int $owner The ID of the owner of the view. Used mostly for verification purposes.
++     */
++    public static function _db_submit($viewids, $submittedgroupobj = null, $submittedhost = null, $owner = null) {
+         global $USER;
+         require_once(get_config('docroot') . 'artefact/lib.php');
+ 
+-        if (empty($viewids) || empty($group->id)) {
++        $group = $submittedgroupobj;
++
++        // Gotta provide some viewids and/or a remote username
++        if (empty($viewids) || (empty($group->id) && empty($submittedhost))) {
+             return;
+         }
+ 
+         $idstr = join(',', array_map('intval', $viewids));
++        $userid = ($owner == null) ? $USER->get('id') : $owner;
++        $sql = 'UPDATE {view} SET submittedtime = current_timestamp ';
++        $params = array();
++
++        if ($group) {
+         $groupid = (int) $group->id;
+-        $userid = $USER->get('id');
++            $sql .= ', submittedgroup = ? ';
++            $params[] = $groupid;
++        }
++        else {
++            $sql .= ', submittedhost = ? ';
++            $params[] = $submittedhost;
++        }
++
++        $sql .= " WHERE id IN ({$idstr}) AND owner = ?";
++        $params[] = $userid;
+ 
+         db_begin();
+-        execute_sql("
+-            UPDATE {view}
+-            SET submittedgroup = ?, submittedtime = current_timestamp, submittedhost = NULL
+-            WHERE id IN ($idstr) AND owner = ?",
+-            array($groupid, $userid)
+-        );
++        execute_sql($sql, $params);
+ 
++        if ($group) {
+         foreach ($group->roles as $role) {
+             foreach ($viewids as $viewid) {
+                 $accessrecord = (object) array(
+@@ -5234,12 +5265,25 @@ class View {
+                 ensure_record_exists('view_access', $accessrecord, $accessrecord);
+             }
+         }
++        }
+ 
+         ArtefactType::update_locked($userid);
+         db_commit();
+     }
+ }
+ 
++class ViewSubmissionException extends UserException {
++    public function strings() {
++        return array_merge(
++            parent::strings(),
++            array(
++                'title' => get_string('viewsubmissionexceptiontitle', 'view'),
++                'message' => get_string('viewsubmissionexceptionmessage', 'view'),
++            )
++        );
++    }
++}
++
+ function create_view_form($group=null, $institution=null, $template=null, $collection=null) {
+     global $USER;
+     $form = array(
+diff --git htdocs/view/urls.php htdocs/view/urls.php
+index e8607b7..be9372b 100644
+--- htdocs/view/urls.php
++++ htdocs/view/urls.php
+@@ -220,17 +220,11 @@ function newurl_submit(Pieform $form, $values) {
+     $viewid = $view->get('id');
+ 
+     if ($collection) {
+-        $viewids = get_column('collection_view', 'view', 'collection', $collection->get('id'));
++        $collection->new_token();
++        $viewid = reset($collection->get_viewids());
+     }
+     else {
+-        $viewids = array($viewid);
+-    }
+-
+-    $access = View::new_token($viewids[0]);
+-    for ($i = 1; $i < count($viewids); $i++) {
+-        $access->view  = $viewids[$i];
+-        $access->ctime = db_format_timestamp(time());
+-        insert_record('view_access', $access);
++        View::new_token($viewid);
+     }
+ 
+     redirect('/view/urls.php?id=' . $viewid);
