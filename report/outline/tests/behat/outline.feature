@@ -10,9 +10,9 @@ Feature: View an outline report
       | Course 1 | C1 | topics |
     And the following "users" exist:
       | username | firstname | lastname | email |
-      | teacher1 | Teacher | 1 | teacher1@asd.com
-      | student1 | Student | 1 | student1@asd.com |
-      | student2 | Student | 2 | student2@asd.com |
+      | teacher1 | Teacher | 1 | teacher1@example.com
+      | student1 | Student | 1 | student1@example.com |
+      | student2 | Student | 2 | student2@example.com |
     And the following "course enrolments" exist:
       | user | course | role |
       | teacher1 | C1 | editingteacher |
@@ -33,8 +33,8 @@ Feature: View an outline report
     Given I navigate to "Manage log stores" node in "Site administration > Plugins > Logging"
     And I click on "Enable" "link" in the "Legacy log" "table_row"
     And I click on "Disable" "link" in the "Standard log" "table_row"
-    And I set the following administration settings values:
-      | Log legacy data | 1 |
+    And the following config values are set as admin:
+      | loglegacy | 1 | logstore_legacy |
     And I log out
     And I log in as "student1"
     And I follow "Course 1"
@@ -79,8 +79,8 @@ Feature: View an outline report
     Given I navigate to "Manage log stores" node in "Site administration > Plugins > Logging"
     And I click on "Enable" "link" in the "Legacy log" "table_row"
     And "Disable" "link" should exist in the "Standard log" "table_row"
-    And I set the following administration settings values:
-      | Log legacy data | 1 |
+    And the following config values are set as admin:
+      | loglegacy | 1 | logstore_legacy |
     And I log out
     And I log in as "student1"
     And I follow "Course 1"

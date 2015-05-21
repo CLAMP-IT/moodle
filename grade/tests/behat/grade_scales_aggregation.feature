@@ -10,8 +10,8 @@ Feature: Control the aggregation of the scales
       | Course 1 | C1        |
     And the following "users" exist:
       | username | firstname | lastname | email            | idnumber |
-      | teacher1 | Teacher   | 1        | teacher1@asd.com | t1       |
-      | student1 | Student   | 1        | student1@asd.com | s1       |
+      | teacher1 | Teacher   | 1        | teacher1@example.com | t1       |
+      | student1 | Student   | 1        | student1@example.com | s1       |
     And the following "course enrolments" exist:
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
@@ -32,13 +32,13 @@ Feature: Control the aggregation of the scales
     And the following "grade items" exist:
       | itemname | course | scale       |
       | Scale me | C1     | Letterscale |
+    And the following config values are set as admin:
+      | grade_includescalesinaggregation | 0 |
+    And I log out
 
   @javascript
   Scenario Outline: Scales can be exluded from aggregation
-    Given I set the following administration settings values:
-      | grade_includescalesinaggregation | 0 |
-    And I log out
-    And I log in as "teacher1"
+    Given I log in as "teacher1"
     And I follow "Course 1"
     And I follow "Grades"
     And I turn editing mode on
@@ -84,10 +84,7 @@ Feature: Control the aggregation of the scales
 
   @javascript
   Scenario: Weights of scales cannot be edited when they are not aggregated
-    Given I set the following administration settings values:
-      | grade_includescalesinaggregation | 0 |
-    And I log out
-    And I log in as "teacher1"
+    Given I log in as "teacher1"
     And I follow "Course 1"
     And I follow "Grades"
     And I turn editing mode on
@@ -101,12 +98,8 @@ Feature: Control the aggregation of the scales
     And I follow "Show more..."
     And I should not see "Weight adjusted"
     And I should not see "Weight"
-    And I log out
-    And I log in as "admin"
-    And I set the following administration settings values:
+    And the following config values are set as admin:
       | grade_includescalesinaggregation | 1 |
-    And I log out
-    And I log in as "teacher1"
     And I follow "Course 1"
     And I follow "Grades"
     And I navigate to "Categories and items" node in "Grade administration > Setup"

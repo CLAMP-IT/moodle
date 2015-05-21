@@ -1032,10 +1032,16 @@ function clean_param($param, $type) {
             // Allow http absolute, root relative and relative URLs within wwwroot.
             $param = clean_param($param, PARAM_URL);
             if (!empty($param)) {
+
+                // Simulate the HTTPS version of the site.
+                $httpswwwroot = str_replace('http://', 'https://', $CFG->wwwroot);
+
                 if (preg_match(':^/:', $param)) {
                     // Root-relative, ok!
-                } else if (preg_match('/^'.preg_quote($CFG->wwwroot, '/').'/i', $param)) {
+                } else if (preg_match('/^' . preg_quote($CFG->wwwroot, '/') . '/i', $param)) {
                     // Absolute, and matches our wwwroot.
+                } else if (!empty($CFG->loginhttps) && preg_match('/^' . preg_quote($httpswwwroot, '/') . '/i', $param)) {
+                    // Absolute, and matches our httpswwwroot.
                 } else {
                     // Relative - let's make sure there are no tricks.
                     if (validateUrlSyntax('/' . $param, 's-u-P-a-p-f+q?r?')) {
@@ -1102,7 +1108,7 @@ function clean_param($param, $type) {
             // Remove some nasties.
             $param = preg_replace('~[[:cntrl:]]|[<>`]~u', '', $param);
             // Convert many whitespace chars into one.
-            $param = preg_replace('/\s+/', ' ', $param);
+            $param = preg_replace('/\s+/u', ' ', $param);
             $param = core_text::substr(trim($param), 0, TAG_MAX_LENGTH);
             return $param;
 

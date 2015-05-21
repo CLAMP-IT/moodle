@@ -7,8 +7,8 @@ Feature: Expand the courses nodes within the navigation block
   Background:
     Given the following "users" exist:
       | username | firstname | lastname | email |
-      | teacher1 | Teacher | 1 | teacher1@local.host |
-      | student1 | Student | 1 | student1@local.host |
+      | teacher1 | Teacher | 1 | teacher1@example.com |
+      | student1 | Student | 1 | student1@example.com |
     And the following "categories" exist:
       | name   | category | idnumber | visible |
       | cat1   | 0        | cat1     | 1       |
@@ -34,6 +34,8 @@ Feature: Expand the courses nodes within the navigation block
       | student1 | c1     | student |
       | student1 | c2     | student |
       | student1 | c4     | student |
+    And the following config values are set as admin:
+      | navshowallcourses | 1 |
     And I log in as "admin"
     And I follow "Course 2"
     And I turn editing mode on

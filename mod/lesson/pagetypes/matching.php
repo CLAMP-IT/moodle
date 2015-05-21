@@ -181,6 +181,7 @@ class lesson_page_type_matching extends lesson_page {
         // get the user's exact responses for record keeping
         $hits = 0;
         $userresponse = array();
+        $result->studentanswerformat = FORMAT_HTML;
         foreach ($response as $id => $value) {
             if ($value == '') {
                 $result->noanswer = true;
@@ -517,6 +518,9 @@ class lesson_display_answer_form_matching extends moodleform {
         $responseoptions = $this->_customdata['responseoptions'];
         $lessonid = $this->_customdata['lessonid'];
         $contents = $this->_customdata['contents'];
+
+        // Disable shortforms.
+        $mform->setDisableShortforms();
 
         $mform->addElement('header', 'pageheader');
 

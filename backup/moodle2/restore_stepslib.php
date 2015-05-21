@@ -1472,13 +1472,31 @@ class restore_section_structure_step extends restore_structure_step {
 
     public function process_course_format_options($data) {
         global $DB;
-        $data = (object)$data;
-        $oldid = $data->id;
-        unset($data->id);
-        $data->sectionid = $this->task->get_sectionid();
-        $data->courseid = $this->get_courseid();
-        $newid = $DB->insert_record('course_format_options', $data);
-        $this->set_mapping('course_format_options', $oldid, $newid);
+        static $courseformats = array();
+        $courseid = $this->get_courseid();
+        if (!array_key_exists($courseid, $courseformats)) {
+            // It is safe to have a static cache of course formats because format can not be changed after this point.
+            $courseformats[$courseid] = $DB->get_field('course', 'format', array('id' => $courseid));
+        }
+        $data = (array)$data;
+        if ($courseformats[$courseid] === $data['format']) {
+            // Import section format options only if both courses (the one that was backed up
+            // and the one we are restoring into) have same formats.
+            $params = array(
+                'courseid' => $this->get_courseid(),
+                'sectionid' => $this->task->get_sectionid(),
+                'format' => $data['format'],
+                'name' => $data['name']
+            );
+            if ($record = $DB->get_record('course_format_options', $params, 'id, value')) {
+                // Do not overwrite existing information.
+                $newid = $record->id;
+            } else {
+                $params['value'] = $data['value'];
+                $newid = $DB->insert_record('course_format_options', $params);
+            }
+            $this->set_mapping('course_format_options', $data['id'], $newid);
+        }
     }
 
     protected function after_execute() {
@@ -2987,11 +3005,6 @@ class restore_activity_grades_structure_step extends restore_structure_step {
         $oldparentid = $data->categoryid;
         $courseid = $this->get_courseid();
 
-        // make sure top course category exists, all grade items will be associated
-        // to it. Later, if restoring the whole gradebook, categories will be introduced
-        $coursecat = grade_category::fetch_course_category($courseid);
-        $coursecatid = $coursecat->id; // Get the categoryid to be used
-
         $idnumber = null;
         if (!empty($data->idnumber)) {
             // Don't get any idnumber from course module. Keep them as they are in grade_item->idnumber
@@ -3016,8 +3029,18 @@ class restore_activity_grades_structure_step extends restore_structure_step {
             }
         }
 
+        if (!empty($data->categoryid)) {
+            // If the grade category id of the grade item being restored belongs to this course
+            // then it is a fair assumption that this is the correct grade category for the activity
+            // and we should leave it in place, if not then unset it.
+            // TODO MDL-34790 Gradebook does not import if target course has gradebook categories.
+            $conditions = array('id' => $data->categoryid, 'courseid' => $courseid);
+            if (!$this->task->is_samesite() || !$DB->record_exists('grade_categories', $conditions)) {
+                unset($data->categoryid);
+            }
+        }
+
         unset($data->id);
-        $data->categoryid   = $coursecatid;
         $data->courseid     = $this->get_courseid();
         $data->iteminstance = $this->task->get_activityid();
         $data->idnumber     = $idnumber;
@@ -3836,6 +3859,11 @@ class restore_create_categories_and_questions extends restore_structure_step {
 
         $data = (object)$data;
         $newquestion = $this->get_new_parentid('question');
+        $questioncreated = (bool) $this->get_mappingid('question_created', $this->get_old_parentid('question'));
+        if (!$questioncreated) {
+            // This question already exists in the question bank. Nothing for us to do.
+            return;
+        }
 
         if (!empty($CFG->usetags)) { // if enabled in server
             // TODO: This is highly inefficient. Each time we add one tag
