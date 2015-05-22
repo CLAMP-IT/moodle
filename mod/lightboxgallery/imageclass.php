@@ -131,7 +131,15 @@ class lightboxgallery_image {
     }
 
     public function delete_file() {
+        global $DB;
+
         $this->delete_thumbnail();
+
+        // Delete all image_meta records for this file.
+        $DB->delete_records('lightboxgallery_image_meta', array(
+            'gallery' => $this->cm->instance,
+            'image' => $this->stored_file->get_filename()));
+
         $this->stored_file->delete();
     }
 
@@ -271,6 +279,8 @@ class lightboxgallery_image {
     private function get_image_resized($height = THUMBNAIL_HEIGHT, $width = THUMBNAIL_WIDTH, $offsetx = 0, $offsety = 0) {
         $image = imagecreatefromstring($this->stored_file->get_content());
         $resized = imagecreatetruecolor($width, $height);
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
 
         $cx = $this->width / 2;
         $cy = $this->height / 2;
