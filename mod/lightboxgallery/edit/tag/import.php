@@ -114,10 +114,9 @@ if ($confirm && confirm_sesskey()) {
                 if (isset($iptc['2#025'])) {
                     sort($iptc['2#025']);
                     $errorlevel = error_reporting(E_PARSE);
-                    $textlib = textlib_get_instance();
 
                     foreach ($iptc['2#025'] as $tag) {
-                        $tag = $textlib->typo3cs->utf8_encode($tag, 'iso-8859-1');
+                        $tag = core_text::typo3cs->utf8_encode($tag, 'iso-8859-1');
                         $tag = clean_param($tag, PARAM_TAG);
                         $tag = trim(strip_tags($tag));
                         $tag = addslashes(strtolower($tag));
