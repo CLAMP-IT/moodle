@@ -162,7 +162,9 @@ class enrol_wessync_plugin extends enrol_plugin {
    }
 
     /* given an array of usernames, enrols and optionally unenrols the users from given role */
-    public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = false) {
+    public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = false,$create_users = false) {
+	$ldapauth = get_auth_plugin('cas');
+        $wesauth = get_auth_plugin('wes');
     	global $DB,$CFG;
         $result = array( 'errors' => array(), 'actions' => array(), 'failure' => 0, 'users_to_create' => array());
 	/* result hash gets merged into a larger hash sometimes; the below is a way to provide a unique key */
@@ -197,10 +199,17 @@ class enrol_wessync_plugin extends enrol_plugin {
       	    $user = $DB->get_record('user',array('username' => $member),'id,username');
             $this->wessync_cache_set('user',$member,$user);
           }
-          if (!$user) {
+          if (!$user && !$create_users) {
             $result['failure'] = 1;
             array_push($result['errors'],"User $member does not exist in Moodle");
             array_push($result['users_to_create'],$member);
+	 } else if (!$user && $create_users) {
+	    if ($wesauth->create_user_from_ad($ldapauth,$member)) {
+	       $user = $DB->get_record('user',array('username' => $member),'id,username');
+	     } else {
+		$result['failure'] = 1;
+                array_push($result['errors'],"User $member does not exist in Moodle and could not be created");
+  	    }
          } else if (!array_key_exists($user->id,$current_users)) {
             array_push($result['actions'],"Assigned $user->username role $roleid in course $moodle_course->shortname");
             $this->enrol_user($instance,$user->id,$roleid);
@@ -433,7 +442,11 @@ class enrol_wessync_plugin extends enrol_plugin {
       $term = $course['term'];
       var_dump($course);
       $glsp_types = array('GLSP','DCST','GLS');
+      /*ICPP is always explicitly GLS as of 20150521 */
+      $gls_subject = array('ICPP');
       if (isset($course['acad_career']) and in_array($course['acad_career'],$glsp_types)) {
+          $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term . '-gls'));
+      } else if (isset($course['wes_host_subject']) and in_array($course['wes_host_subject'],$gls_subject)) {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term . '-gls'));
       } else {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term));
