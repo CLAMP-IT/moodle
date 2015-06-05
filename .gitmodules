@@ -85,3 +85,6 @@
 [submodule "local/new_user"]
 	path = local/new_user
 	url = https://git.smith.edu/kwiliarty/moodle-local_new_user.git
+[submodule "course/format/topcoll"]
+	path = course/format/topcoll
+	url = https://github.com/gjb2048/moodle-format_topcoll.git
