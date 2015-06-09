@@ -30,7 +30,7 @@
 	url = https://github.com/patrickpollet/moodle_local_mass_enroll.git
 [submodule "filter/videojs"]
 	path = filter/videojs
-	url = http://kevinwiliarty.com/git/moodle-filter_videojs.git
+	url = https://github.com/kwiliarty/moodle-filter_videojs.git
 [submodule "theme/execedonline"]
 	path = theme/execedonline
 	url = http://kevinwiliarty.com/git/moodle-theme_execedonline.git
