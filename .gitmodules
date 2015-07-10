@@ -1,0 +1,3 @@
+[submodule "local/uploadcourse"]
+	path = local/uploadcourse
+	url = git@gitlab.hampshire.edu:moodle/local_uploadcourse.git
