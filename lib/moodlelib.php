@@ -408,7 +408,7 @@ define('FEATURE_COMPLETION_HAS_RULES', 'completion_has_rules');
 
 /** True if module has no 'view' page (like label) */
 define('FEATURE_NO_VIEW_LINK', 'viewlink');
-/** True if module supports outcomes */
+/** True (which is default) if the module wants support for setting the ID number for grade calculation purposes. */
 define('FEATURE_IDNUMBER', 'idnumber');
 /** True if module supports groups */
 define('FEATURE_GROUPS', 'groups');
@@ -1036,11 +1036,15 @@ function clean_param($param, $type) {
                 // Simulate the HTTPS version of the site.
                 $httpswwwroot = str_replace('http://', 'https://', $CFG->wwwroot);
 
-                if (preg_match(':^/:', $param)) {
+                if ($param === $CFG->wwwroot) {
+                    // Exact match;
+                } else if (!empty($CFG->loginhttps) && $param === $httpswwwroot) {
+                    // Exact match;
+                } else if (preg_match(':^/:', $param)) {
                     // Root-relative, ok!
-                } else if (preg_match('/^' . preg_quote($CFG->wwwroot, '/') . '/i', $param)) {
+                } else if (preg_match('/^' . preg_quote($CFG->wwwroot . '/', '/') . '/i', $param)) {
                     // Absolute, and matches our wwwroot.
-                } else if (!empty($CFG->loginhttps) && preg_match('/^' . preg_quote($httpswwwroot, '/') . '/i', $param)) {
+                } else if (!empty($CFG->loginhttps) && preg_match('/^' . preg_quote($httpswwwroot . '/', '/') . '/i', $param)) {
                     // Absolute, and matches our httpswwwroot.
                 } else {
                     // Relative - let's make sure there are no tricks.
@@ -5946,7 +5950,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
 
             // If the attachment is a full path to a file in the tempdir, use it as is,
             // otherwise assume it is a relative path from the dataroot (for backwards compatibility reasons).
-            if (strpos($attachpath, $temppath) !== 0) {
+            if (strpos($attachpath, realpath($temppath)) !== 0) {
                 $attachmentpath = $CFG->dataroot . '/' . $attachmentpath;
             }
 
