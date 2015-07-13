@@ -7,3 +7,6 @@
 [submodule "report/editdates"]
 	path = report/editdates
 	url = https://github.com/moodleou/moodle-report_editdates.git
+[submodule "blocks/clampmail"]
+	path = blocks/clampmail
+	url = https://github.com/CLAMP-IT/clampmail.git
