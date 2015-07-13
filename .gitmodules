@@ -28,3 +28,6 @@
 [submodule "blocks/course_description"]
 	path = blocks/course_description
 	url = git@gitlab.hampshire.edu:moodle/block_course_description.git
+[submodule "blocks/federated_login"]
+	path = blocks/federated_login
+	url = https://github.com/kwiliarty/moodle-block_federated_login.git
