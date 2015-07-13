@@ -13,3 +13,6 @@
 [submodule "report/roster"]
 	path = report/roster
 	url = https://github.com/LafColITS/moodle-report_roster.git
+[submodule "local/news_forum"]
+	path = local/news_forum
+	url = https://github.com/LafColITS/moodle-local_news_forum.git
