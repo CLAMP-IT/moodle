@@ -34,3 +34,6 @@
 [submodule "blocks/library"]
 	path = blocks/library
 	url = git@gitlab.hampshire.edu:moodle/block_library.git
+[submodule "course/format/class"]
+	path = course/format/class
+	url = git@gitlab.hampshire.edu:moodle/course_format_class.git
