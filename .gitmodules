@@ -16,3 +16,6 @@
 [submodule "local/news_forum"]
 	path = local/news_forum
 	url = https://github.com/LafColITS/moodle-local_news_forum.git
+[submodule "report/customsql"]
+	path = report/customsql
+	url = https://github.com/moodleou/moodle-report_customsql.git
