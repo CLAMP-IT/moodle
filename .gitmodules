@@ -1,3 +1,6 @@
 [submodule "local/uploadcourse"]
 	path = local/uploadcourse
 	url = git@gitlab.hampshire.edu:moodle/local_uploadcourse.git
+[submodule "blocks/filtered_course_list"]
+	path = blocks/filtered_course_list
+	url = https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list.git
