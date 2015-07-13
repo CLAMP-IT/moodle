@@ -19,3 +19,6 @@
 [submodule "report/customsql"]
 	path = report/customsql
 	url = https://github.com/moodleou/moodle-report_customsql.git
+[submodule "mod/attendance"]
+	path = mod/attendance
+	url = https://github.com/danmarsden/moodle-mod_attendance.git
