@@ -31,3 +31,6 @@
 [submodule "blocks/federated_login"]
 	path = blocks/federated_login
 	url = https://github.com/kwiliarty/moodle-block_federated_login.git
+[submodule "blocks/library"]
+	path = blocks/library
+	url = git@gitlab.hampshire.edu:moodle/block_library.git
