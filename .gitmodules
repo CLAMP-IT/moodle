@@ -25,3 +25,6 @@
 [submodule "blocks/attendance"]
 	path = blocks/attendance
 	url = https://github.com/danmarsden/moodle-block_attendance.git
+[submodule "blocks/course_description"]
+	path = blocks/course_description
+	url = git@gitlab.hampshire.edu:moodle/block_course_description.git
