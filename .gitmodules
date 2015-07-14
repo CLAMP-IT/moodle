@@ -43,3 +43,6 @@
 [submodule "mod/lightboxgallery"]
 	path = mod/lightboxgallery
 	url = https://github.com/netspotau/moodle-mod_lightboxgallery.git
+[submodule "mod/questionnaire"]
+	path = mod/questionnaire
+	url = https://github.com/remotelearner/moodle-mod_questionnaire.git
