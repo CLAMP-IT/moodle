@@ -46,3 +46,6 @@
 [submodule "mod/questionnaire"]
 	path = mod/questionnaire
 	url = https://github.com/remotelearner/moodle-mod_questionnaire.git
+[submodule "mod/scheduler"]
+	path = mod/scheduler
+	url = https://github.com/bostelm/moodle-mod_scheduler.git
