@@ -49,3 +49,6 @@
 [submodule "mod/scheduler"]
 	path = mod/scheduler
 	url = https://github.com/bostelm/moodle-mod_scheduler.git
+[submodule "theme/hampshire"]
+	path = theme/hampshire
+	url = git@gitlab.hampshire.edu:moodle/theme_hampshire.git
