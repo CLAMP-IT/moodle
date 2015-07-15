@@ -122,6 +122,7 @@
     $course->format = course_get_format($course)->get_format();
 
     $PAGE->set_pagetype('course-view-' . $course->format);
+    $PAGE->blocks->add_region('course-view-top');
     $PAGE->set_other_editing_capability('moodle/course:update');
     $PAGE->set_other_editing_capability('moodle/course:manageactivities');
     $PAGE->set_other_editing_capability('moodle/course:activityvisibility');
@@ -263,6 +264,8 @@
 
     // make sure that section 0 exists (this function will create one if it is missing)
     course_create_sections_if_missing($course, 0);
+
+    echo $OUTPUT->blocks_for_region('course-view-top');
 
     // get information about course modules and existing module types
     // format.php in course formats may rely on presence of these variables
