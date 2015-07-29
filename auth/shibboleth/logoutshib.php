@@ -8,6 +8,9 @@
 
 require_once("../../config.php");
 
+$PAGE->set_context(context_system::instance());
+$PAGE->set_url('/auth/shibboleth/logoutshib.php');
+
 /***************************
  * Begin Appliation logout *
  ***************************/
@@ -17,6 +20,7 @@ foreach($authsequence as $authname) {
 	$authplugin->logoutpage_hook();
 }
 require_logout();
+
 /***************************
  *  End Appliation logout  *
  ***************************/
@@ -24,7 +28,10 @@ require_logout();
 // If you would like to wrap the logout page with the header and footer of your application
 // Logs the user out and tells them to quit the browser
 
-print_header($SITE->fullname, $SITE->fullname, 'home');
+$PAGE->set_title("$SITE->shortname: Logout");
+$PAGE->set_heading("$SITE->fullname: Logout");
+
+echo $OUTPUT->header();
 
 // can be overriden by auth plugins
 $redirect = $CFG->wwwroot.'/';
@@ -40,7 +47,7 @@ $redirect = $CFG->wwwroot.'/';
 		console.log('logoutCallback - ' + status);
 	}
 </script>
-<?
+
+<?php
 echo('Please quit the browser to finish the log out process.');
-$OUTPUT->footer();
-?>
+echo $OUTPUT->footer();
