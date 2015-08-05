@@ -1,0 +1,8 @@
+.block-region .block_remote_courses .list li:first-child {
+    border-top-width: 0;
+ }
+
+.block-region .block_remote_courses .list li {
+    border-top: 1px solid [[setting:themetrimcolor]];
+    padding: 5px;
+}
