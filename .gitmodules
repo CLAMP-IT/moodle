@@ -52,3 +52,6 @@
 [submodule "theme/hampshire"]
 	path = theme/hampshire
 	url = git@gitlab.hampshire.edu:moodle/theme_hampshire.git
+[submodule "filter/ipa"]
+	path = filter/ipa
+	url = https://github.com/kwiliarty/moodle-filter_ipa.git
