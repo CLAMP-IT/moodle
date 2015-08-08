@@ -334,7 +334,40 @@ class user_picture implements renderable {
      * @return moodle_url
      */
     public function get_url(moodle_page $page, renderer_base $renderer = null) {
-        global $CFG;
+        global $CFG, $DB;
+
+        if (isset($CFG->hampshire_picture_salt)) {
+            // We need to make sure that we have the fields we want.
+            $user = $DB->get_record('user', array('id' => $this->user->id));
+
+            // Use a generic institutional image for 5C users.
+            $institutions = array('amherst', 'mtholyoke', 'smith', 'umass');
+            $institution = preg_replace('/.*@([^.]*).*/', "$1", $user->username);
+            if (in_array($institution, $institutions)) {
+                return "https://photos.hampshire.edu/photo_${institution}.jpg";
+            }
+
+            // Use a personal image, if available, for Hampshire users.
+            // Not-found will return a generic Hampshire image.
+            // None of the Moodle-native logic further below will have a chance to apply.
+            $sql = 'SELECT uid.data FROM {user_info_data} uid
+                        JOIN {user_info_field} uif
+                        ON uid.fieldid = uif.id
+                        WHERE uid.userid = :userid
+                        AND uif.shortname = :shortname';
+            $allowphoto = $DB->get_record_sql($sql, array(
+                                                        'userid'    => $user->id,
+                                                        'shortname' => 'allowphoto'
+                                                    ));
+            $hash = 'foobar';
+            if ($allowphoto) {
+                if ($allowphoto->data == 1) {
+                    $idbase = preg_replace('/@.*/', '', $user->idnumber);
+                    $hash = substr(sha1($CFG->hampshire_picture_salt . $idbase), 0, 10);
+                }
+            }
+            return "https://photos.hampshire.edu/${hash}.jpg";
+        }
 
         if (is_null($renderer)) {
             $renderer = $page->get_renderer('core');
