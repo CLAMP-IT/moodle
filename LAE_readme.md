@@ -1,4 +1,4 @@
-# [Moodle Liberal Arts Edition v2.8.6-LAE8.0.4]
+# [Moodle Liberal Arts Edition v2.8.7-LAE8.0.5]
 
 Welcome to the Moodle Liberal Arts Edition. The goal of the LAE is to provide a coherent package for modules, patches, and code developed (or improved) by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
@@ -16,7 +16,7 @@ Questions about the LAE can be sent to Ken Newquist at <newquisk@lafayette.edu> 
 
 ## Contents
 
-Moodle 2.8.6+LAE8.0.4 consists of the core Moodle 2.8.6 release plus a number of CLAMP-developed features and bug fixes.
+Moodle 2.8.7+LAE8.0.5 consists of the core Moodle 2.8.7 release plus a number of CLAMP-developed features and bug fixes.
 
 The following core features are included:
 
@@ -65,6 +65,10 @@ A course report which displays the user pictures for everyone enrolled in a cour
 
 This local module creates a news forum on course creation. It resolves the issue described in <https://tracker.moodle.org/browse/MDL-26707>.
 
+### Ad-hoc database queries (customsql)
+
+This report plugin, developed by Tim Hunt at the Open University,  allows Administrators to set up arbitrary database queries to act as ad-hoc reports.
+
 ## Downloading the LAE
 
 You can get the LAE in two ways:
@@ -72,10 +76,10 @@ You can get the LAE in two ways:
 * Download the tar and zip packages from the CLAMP web site: <http://www.clamp-it.org/code/>
 * Download the current release branch from the CLAMP code repository:
 
-    git clone https://github.com/CLAMP-IT/moodle v2.8.6-LAE8.0.4
-    git checkout -b v2.8.6-LAE8.0.4
+    git clone https://github.com/CLAMP-IT/moodle v2.8.7-LAE8.0.5
+    git checkout -b v2.8.7-LAE8.0.5
 
-By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v2.8.6-LAE8.0.4-base tag instead.
+By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v2.8.7-LAE8.0.5-base tag instead.
 
 CLAMP maintains two branches for each major version:
 
