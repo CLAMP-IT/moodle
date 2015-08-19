@@ -327,8 +327,22 @@ class user_picture implements renderable {
         // Use a personal image, if available, for Hampshire users.
         // Not-found will return a generic Hampshire image.
         // None of the Moodle-native logic further below will have a chance to apply.
-        $idbase = preg_replace('/@.*/', '', $user->idnumber);
-        $hash = substr(sha1('Un1d@t@!' . $idbase), 0, 10);
+        $sql = 'SELECT uid.data FROM {user_info_data} uid
+                    JOIN {user_info_field} uif
+                    ON uid.fieldid = uif.id
+                    WHERE uid.userid = :userid
+                    AND uif.shortname = :shortname';
+        $allowphoto = $DB->get_record_sql($sql, array(
+                                                    'userid'    => $user->id,
+                                                    'shortname' => 'allowphoto'
+                                                ));
+        $hash = 'foobar';
+        if ($allowphoto) {
+            if ($allowphoto->data == 1) {
+                $idbase = preg_replace('/@.*/', '', $user->idnumber);
+                $hash = substr(sha1('Un1d@t@!' . $idbase), 0, 10);
+            }
+        }
         return "https://photos.hampshire.edu/${hash}.jpg";
 
         if (is_null($renderer)) {
