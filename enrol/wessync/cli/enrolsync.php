@@ -187,10 +187,10 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
       continue;
     }
     /* role id 5 == student */
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5",false,true);
     $master_results[$courseinfo]['student_sync'] = $result;
     /* role id 3 == teacher */
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3");
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3",false,true);
     $master_results[$courseinfo]['teacher_sync'] = $result;
   }
   /* no need to notify on redirect course creation */ 
@@ -213,18 +213,20 @@ function ldap_enrol ($enrol,$lock) {
                           'Staff-Disc' => array('list_ben_astf'),
                           'AdHocCommRpts' => array ('list_all_faculty','list_admin_fac_priv'), 
                           'faculty-chair' => array('voting_faculty'),
-	                  'Hughes2013' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
-			   'ScienceResearch2014' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
+                          'Hughes2013' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
+                     'ScienceResearch2014' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
+                     'ScienceResearch2015' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
                           'Host-Training' => array('2015'),
                         'Inter' => array('department_chairs'),
-		        'TeachEval' => array('list_all_faculty'),
+                        'TeachEval' => array('list_all_faculty'),
                         'TenureReps' => array('tenure_track'),
-			'Moodle Help' => array('all-facstaff'),
-			'Intensive Semester' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
-			'Telepresence Teaching' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
-			'GWR' => array('ad_moodle_gwr'),
-			'Faculty Discussion Board' => array('list_all_faculty'),
-);
+                        'Moodle Help' => array('all-facstaff'),
+                        'Intensive Semester' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
+                        'Telepresence Teaching' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
+                        'GWR' => array('ad_moodle_gwr'),
+                        'FacultyDB' => array('list_all_faculty','list_admin_fac_priv'),
+                        'Coursera' => array('list_all_faculty','all-emeriti'),
+	);
 
 
   foreach ($one_off_syncs as $course => $ldap_groups) {
