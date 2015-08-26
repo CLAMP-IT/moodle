@@ -10,8 +10,10 @@ function get_peoplesoft_db() {
 /*fetches moodlecreate db object */
 function get_moodlecreate_db() {
   include "inc/db.conf.php";
-  $moodlecreate = new mysqli($moodlecreate_host,$moodlecreate_user,$moodlecreate_pass,$moodlecreate_db,$moodlecreate_port);
+  $moodlecreate = mysqli_connect($moodlecreate_host,$moodlecreate_user,$moodlecreate_pass,$moodlecreate_db,$moodlecreate_port);
+  
   return $moodlecreate;
+  
 }
 
 /* takes a hash of course data and returns hash with added peoplesoft data; certain key Moodle hash values will get filled in if empty */
@@ -120,8 +122,8 @@ function get_moodlecreate_courses( $db_handle = '', $term = '', $redirect=0) {
 #                                               order by c.CREATED_ON DESC, c.SHORT_NAME, i.USERNAME");
      $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y'");
   } else if (!$redirect && $term) {
-     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y' and TERM >= '$term'");
-	echo "Hmm";
+     /* hardcoded to only Create fall and up courses */
+     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y' and TERM >= '$term' and TERM > '1157'");
    #TO BE IMPLEMENTED
   } else if ($term == '' && $redirect) {
      $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='N' and TERM >= '$term'");
@@ -132,6 +134,7 @@ function get_moodlecreate_courses( $db_handle = '', $term = '', $redirect=0) {
      return false;
   }
   $stmt->bind_result($id,$term,$crse_id,$short_name,$long_name,$visible,$requested_by,$status,$alt_status);
+	
   $stmt->execute();
   while ($stmt->fetch()) {
     $course['id'] = $id;
