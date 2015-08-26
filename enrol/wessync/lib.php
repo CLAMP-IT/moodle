@@ -33,7 +33,7 @@ class enrol_wessync_plugin extends enrol_plugin {
     	 global $CFG;
          include $CFG->dirroot . '/enrol/wessync/inc/memcache.conf.php';
 	 $this->_cache_enabled = $memcache_enabled;
-	 if ($this->cache_enabled) {
+	 if ($this->_cache_enabled) {
            $this->_memcache = new Memcache;
 	   foreach ($memcache_servers as $server) {
              $this->_memcache->addServer($server);
@@ -54,7 +54,7 @@ class enrol_wessync_plugin extends enrol_plugin {
 
     public function wessync_cache_set ($type,$key,$value,$timeout = '3600') {
         $key = $type . "_" . $key;
-	if ($this->_memcache_enabled) {
+	if (isset($this->_memcache_enabled)) {
            $key = $this->_memcache_prefix . $key;
 	   $this->_memcache->set($key,$value,0,$timeout);
         } else {
@@ -63,11 +63,15 @@ class enrol_wessync_plugin extends enrol_plugin {
     }
     public function wessync_cache_get ($type,$key) {
 	$key = $type . "_" . $key;
-        if ($this->_memcache_enabled) {
+        if (isset($this->_memcache_enabled)) {
 	   $key = $this->_memcache_prefix . $key;
 	   return $this->_memcache->get($key);
 	} else {
-	   return $this->_selfcache[$key];
+	   if ((isset($this->_selfcache[$key]))) {
+  	     return $this->_selfcache[$key];
+           } else {
+	     return false;
+	   }
 	}
      }
      public function wessync_cache_del ($type,$key) {
@@ -162,7 +166,9 @@ class enrol_wessync_plugin extends enrol_plugin {
    }
 
     /* given an array of usernames, enrols and optionally unenrols the users from given role */
-    public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = false) {
+    public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = false,$create_users = false) {
+	$ldapauth = get_auth_plugin('cas');
+        $wesauth = get_auth_plugin('wes');
     	global $DB,$CFG;
         $result = array( 'errors' => array(), 'actions' => array(), 'failure' => 0, 'users_to_create' => array());
 	/* result hash gets merged into a larger hash sometimes; the below is a way to provide a unique key */
@@ -197,10 +203,17 @@ class enrol_wessync_plugin extends enrol_plugin {
       	    $user = $DB->get_record('user',array('username' => $member),'id,username');
             $this->wessync_cache_set('user',$member,$user);
           }
-          if (!$user) {
+          if (!$user && !$create_users) {
             $result['failure'] = 1;
             array_push($result['errors'],"User $member does not exist in Moodle");
             array_push($result['users_to_create'],$member);
+	 } else if (!$user && $create_users) {
+	    if ($wesauth->create_user_from_ad($ldapauth,$member)) {
+	       $user = $DB->get_record('user',array('username' => $member),'id,username');
+	     } else {
+		$result['failure'] = 1;
+                array_push($result['errors'],"User $member does not exist in Moodle and could not be created");
+  	    }
          } else if (!array_key_exists($user->id,$current_users)) {
             array_push($result['actions'],"Assigned $user->username role $roleid in course $moodle_course->shortname");
             $this->enrol_user($instance,$user->id,$roleid);
@@ -431,9 +444,12 @@ class enrol_wessync_plugin extends enrol_plugin {
   public function get_moodle_category ($course) {
       global $DB;
       $term = $course['term'];
-      var_dump($course);
       $glsp_types = array('GLSP','DCST','GLS');
+      /*ICPP is always explicitly GLS as of 20150521 */
+      $gls_subject = array('ICPP');
       if (isset($course['acad_career']) and in_array($course['acad_career'],$glsp_types)) {
+          $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term . '-gls'));
+      } else if (isset($course['wes_host_subject']) and in_array($course['wes_host_subject'],$gls_subject)) {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term . '-gls'));
       } else {
           $category_to_return = $DB->get_record('course_categories',array('idnumber' => $term));
