@@ -55,3 +55,6 @@
 [submodule "filter/ipa"]
 	path = filter/ipa
 	url = https://github.com/kwiliarty/moodle-filter_ipa.git
+[submodule "local/cohort_sync"]
+	path = local/cohort_sync
+	url = git@gitlab.hampshire.edu:moodle/local_cohort_sync.git
