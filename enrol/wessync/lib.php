@@ -42,7 +42,7 @@ class enrol_wessync_plugin extends enrol_plugin {
 	      $this->_selfcache = array();
 	      $this->_memcache_enabled = false;
            } else {
-	      $this->_memcache_prefix = 
+	      $this->_memcache_prefix = $memcache_prefix;
 	      $this->_memcache_enabled = true;
    	   }
         }
@@ -216,7 +216,7 @@ class enrol_wessync_plugin extends enrol_plugin {
   	    }
          } else if (!array_key_exists($user->id,$current_users)) {
             array_push($result['actions'],"Assigned $user->username role $roleid in course $moodle_course->shortname");
-            $this->enrol_user($instance,$user->id,$roleid);
+            $this->enrol_user($instance,$user->id,$roleid,0,0,null,false);
  	    /*activate it if user was unactivated before - since we can toggle between modes we just try both; should be
 	      harmless - should look into way to check to see if user is NOT in course at all, or simply suspended */
             $this->update_user_enrol($instance,$user->id,ENROL_USER_ACTIVE);
