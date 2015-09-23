@@ -315,6 +315,8 @@ class filter_rtmp extends moodle_text_filter
                 $retval .= "var filter_rtmp_flowplayer_$key='$relpath';";
             }
         }
+        $hls_fallback = $CFG->filter_rtmp_hls_fallback ? 'true' : 'false';
+        $retval .= "var filter_rtmp_hls_fallback={$hls_fallback};";
 
         return $retval;
 

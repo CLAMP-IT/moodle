@@ -1,0 +1,19 @@
+This repository contains Wesleyan-specific changes to the Moodle RTMP
+filter plugin, namely support for embedding a shared secret into
+Flowplayer.
+
+The branch `upstream` contains a copy of the upstream source code, and
+the branch `master` contains the source code with our changes applied.
+
+To upgrade, the following steps should be performed:
+
+    git remote add upstream https://github.com/appalachianstate/moodle-filter_rtmp.git
+    git pull upstream upstream
+    git checkout master
+    git rebase upstream
+
+Next, fix any merge conflicts that arise, and finish the rebase.
+
+Finally, copy in an appropriate version of 'flowplayer.securestreaming-*.swf'
+add it to the index, and commit it.  See the Wesleyan
+`academic-video-flowplayer` repository for how to produce said SWF file.

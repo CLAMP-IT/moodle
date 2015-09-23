@@ -79,7 +79,7 @@ class turnitintooltwo_view {
             $cssurl = new moodle_url('/mod/turnitintooltwo/css/hide_bg.css');
             $PAGE->requires->css($cssurl);
         }
-        $cssurl = new moodle_url('/mod/turnitintooltwo/css/styles.css');
+        $cssurl = new moodle_url('/mod/turnitintooltwo/styles.css');
         $PAGE->requires->css($cssurl);
         $cssurl = new moodle_url('/mod/turnitintooltwo/css/jquery-ui-1.8.4.custom.css');
         $PAGE->requires->css($cssurl);
@@ -319,7 +319,7 @@ class turnitintooltwo_view {
             $user = new turnitintooltwo_user($userid, "Learner");
             $coursedata = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
             $user->join_user_to_class($coursedata->turnitin_cid);
-            $eulaaccepted = (!$user->user_agreement_accepted) ? $user->get_accepted_user_agreement() : $user->user_agreement_accepted;
+            $eulaaccepted = ($user->user_agreement_accepted != 1) ? $user->get_accepted_user_agreement() : $user->user_agreement_accepted;
         }
 
         $parts = $turnitintooltwoassignment->get_parts_available_to_submit(0, $istutor);
@@ -331,7 +331,7 @@ class turnitintooltwo_view {
             $elements[] = array('hidden', 'submissionassignment', $turnitintooltwoassignment->turnitintooltwo->id);
             $elements[] = array('hidden', 'action', 'submission');
 
-            if ($istutor || $eulaaccepted) {
+            if ($istutor || $eulaaccepted == 1) {
                 // Upload type.
                 switch ($turnitintooltwoassignment->turnitintooltwo->type) {
                     case 0:
@@ -385,7 +385,7 @@ class turnitintooltwo_view {
                     $elements[] = array('hidden', 'submissionagreement', 1);
                     $customdata["checkbox_label_after"] = false;
                 } else {
-                    $elements[] = array('advcheckbox', 'submissionagreement', $config->agreement, '', array(0, 1),
+                    $elements[] = array('advcheckbox', 'submissionagreement', format_string( $config->agreement ), '', array(0, 1),
                                     'required', get_string('copyrightagreementerror', 'turnitintooltwo'), PARAM_INT);
                     $customdata["checkbox_label_after"] = true;
                 }
@@ -395,7 +395,7 @@ class turnitintooltwo_view {
             $noscriptula = "";
             $ula = "";
             if ($userid == $USER->id) {
-                if (!$eulaaccepted) {
+                if ($eulaaccepted != 1) {
                     $ula = html_writer::tag('p', get_string('turnitinula', 'turnitintooltwo'), array('class' => 'turnitin_ula_text'));
                     $ula .= html_writer::tag('div', turnitintooltwo_view::output_dv_launch_form("useragreement", 0, $user->tii_user_id,
                                 "Learner", get_string('turnitinula_btn', 'turnitintooltwo'), false),
@@ -489,6 +489,8 @@ class turnitintooltwo_view {
         $cells["checkbox"] = new html_table_cell( ($istutor) ? html_writer::checkbox(false, false, false, '', array("class" => "select_all_checkbox")) : '&nbsp;' );
         $cells["student"] = ($istutor) ? new html_table_cell(get_string('student', 'turnitintooltwo')) : new html_table_cell();
         $cells["student"]->attributes['class'] = 'left';
+        $cells["title_raw"] = new html_table_cell('&nbsp;');
+        $cells["title_raw"]->attributes['class'] = 'raw_data';
         $cells["title"] = new html_table_cell(get_string('submissiontitle', 'turnitintooltwo'));
         $cells["title"]->attributes['class'] = 'left';
         $cells["paper_id"] = new html_table_cell(get_string('objectid', 'turnitintooltwo'));
@@ -584,18 +586,18 @@ class turnitintooltwo_view {
                     $cells = array();
                     foreach ($submission as $cell) {
                         $cells[$j] = new html_table_cell($cell);
-                        if ($j == 2 || $j == 3) {
+                        if ($j == 2 || $j == 3 || $j == 4) {
                             $cells[$j]->attributes['class'] = "left";
-                        } else if ($j == 4 || $j == 6) {
+                        } else if ($j == 5 || $j == 7) {
                             $cells[$j]->attributes['class'] = "right";
-                        } else if (($j == 7 && $origreportenabled) || ($j == 7 && !$origreportenabled && $grademarkenabled) ||
-                                    ($j == 9 && $origreportenabled && $grademarkenabled)) {
+                        } else if (($j == 8 && $origreportenabled) || ($j == 8 && !$origreportenabled && $grademarkenabled) ||
+                                    ($j == 10 && $origreportenabled && $grademarkenabled)) {
                             $cells[$j]->attributes['class'] = "raw_data";
                         } else {
                             $cells[$j]->attributes['class'] = "centered_cell";
                         }
 
-                        if ((count($submission) == 15 && $j == 10) || (count($submission) == 14 && $j == 9)) {
+                        if ((count($submission) == 16 && $j == 11) || (count($submission) == 15 && $j == 10)) {
                             $cells[$j]->attributes['class'] = "noscript_hide";
                         }
 
@@ -635,7 +637,7 @@ class turnitintooltwo_view {
                                                         array('class' => 'refreshing_link', 'id' => 'refreshing_'.$partid));
 
                 //Output the links.
-                $output .= $OUTPUT->box($messagesinbox.$refreshlink.$refreshinglink, '', 'tii_table_functions');
+                $output .= $OUTPUT->box($messagesinbox.$refreshlink.$refreshinglink, 'tii_table_functions', 'tii_table_functions_'.$partid);
             }
         }
 
@@ -807,7 +809,12 @@ class turnitintooltwo_view {
                                      'tii_export_options_show' : 'tii_export_options_hide';
 
             $links = $OUTPUT->box_start($export_options, 'export_options');
-            $links .= $exportxlszip.$exportpdfzip.$exportoriginalzip;
+
+            // Show the export links if they should be available. 
+            if ($turnitintooltwoassignment->turnitintooltwo->anon == 0 || time() > $partdetails[$partid]->dtpost) {
+                $links .= $exportxlszip.$exportpdfzip.$exportoriginalzip;
+            }
+
             $links .= $OUTPUT->box_end(true);
 
             if ($turnitintooltwoassignment->count_submissions($cm, $partid) == 0) {
@@ -1105,11 +1112,13 @@ class turnitintooltwo_view {
         //submission title
         if ( !empty($submission->submission_objectid) AND !empty($submission->submission_objectid) ) {
             $title = $OUTPUT->box_start('default_open', 'default_'.$submission->submission_objectid.'_'.$partid.'_'.$moodleuserid);
-            $title .= $OUTPUT->box(format_string($submission->submission_title), 'submission_title');
+            $title .= $OUTPUT->box(format_string($submission->submission_title), 'submission_title underline');
             $title .= $OUTPUT->box($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id, 'dv_url', 'default_url_'.$submission->submission_objectid);
             $title .= $OUTPUT->box_end(true);
+            $rawtitle = $submission->submission_title;
         } else {
             $title = "--";
+            $rawtitle = "--";
         }
 
         $objectid = (!empty($submission->submission_objectid)) ? $submission->submission_objectid : "--";
@@ -1170,7 +1179,12 @@ class turnitintooltwo_view {
 
         // Show grade and link to DV.
         if ($config->usegrademark) {
-            if (isset($submission->submission_objectid) && ($istutor || (!$istutor && $parts[$partid]->dtpost < time()))) {
+            if ($turnitintooltwoassignment->turnitintooltwo->grade == 0) {
+                //We set the grade column to N/A if there is no grade type set.
+                $rawgrade = null;
+                $grade = $OUTPUT->box('N/A', '');
+            }
+            else if (isset($submission->submission_objectid) && ($istutor || (!$istutor && $parts[$partid]->dtpost < time()))) {
                 $submissiongrade = (!is_null($submission->submission_grade)) ? $submission->submission_grade : '';
 
                 if (is_null($submission->submission_grade) || ($submission->submission_gmimaged == 0 && !$istutor)) {
@@ -1270,9 +1284,10 @@ class turnitintooltwo_view {
                 $submission_user = new turnitintooltwo_user($submission->userid, "Learner");
                 $coursedata = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
                 $submission_user->join_user_to_class($coursedata->turnitin_cid);
-                $eulaaccepted = (!$submission_user->user_agreement_accepted) ? $submission_user->get_accepted_user_agreement() : $submission_user->user_agreement_accepted;
+                $eulaaccepted = ($submission_user->user_agreement_accepted == 0) ? 
+                                    $submission_user->get_accepted_user_agreement() : $submission_user->user_agreement_accepted;
 
-                $launcheula = ( ! $eulaaccepted) ? 1 : 0;
+                $launcheula = ($eulaaccepted != 1) ? 1 : 0;
             }
 
             $upload = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.'&part='.$partid.'&user='.
@@ -1346,7 +1361,7 @@ class turnitintooltwo_view {
             }
         }
 
-        $data = array($partid, $checkbox, $studentname, $title, $objectid, $rawmodified, $modified);
+        $data = array($partid, $checkbox, $studentname, $rawtitle, $title, $objectid, $rawmodified, $modified);
         if (($istutor) || (!$istutor && $turnitintooltwoassignment->turnitintooltwo->studentreports)) {
             $data[] = $rawscore;
             $data[] = $score;
@@ -1389,6 +1404,7 @@ class turnitintooltwo_view {
         if ($start == 0) {
             $submissions = $turnitintooltwoassignment->get_submissions($cm, $partid);
             $_SESSION["submissions"][$partid] = $submissions[$partid];
+            $_SESSION["num_submissions"][$partid] = count($submissions[$partid]);
         }
 
         $submissiondata = array();
@@ -1399,15 +1415,12 @@ class turnitintooltwo_view {
         foreach ($_SESSION["submissions"][$partid] as $submission) {
             $i++;
 
-            if ($i < $start) {
-                continue;
-            } else {
-
-                $data = $this->get_submission_inbox_row($cm, $turnitintooltwoassignment, $parts, $partid, $submission,
+            $data = $this->get_submission_inbox_row($cm, $turnitintooltwoassignment, $parts, $partid, $submission,
                                                         $useroverallgrades, $istutor);
-                $submissiondata[] = $data;
-                $j++;
-            }
+            $submissiondata[] = $data;
+            // Remove submission from session
+            unset($_SESSION["submissions"][$partid][$submission->userid]);
+            $j++;
 
             if ($j == TURNITINTOOLTWO_SUBMISSION_GET_LIMIT) {
                 break;
@@ -1708,7 +1721,6 @@ class turnitintooltwo_view {
     public function init_tii_member_by_role_table($cm, $turnitintooltwoassignment, $role = "Learner") {
         global $OUTPUT;
 
-        $_SESSION["ajax"]["tii_role"] = $role;
         $cellheader = ($role == "Instructor") ? get_string('turnitintutors', 'turnitintooltwo') :
                                                 get_string('turnitinstudents', 'turnitintooltwo');
         $output = "";

@@ -6,6 +6,10 @@
         Purpose of the stylesheet follows.
 */
 
+.forumpost .content .attachments {
+    text-align: left;
+}
+
 .tii_links_container .clear {
 	clear:both;
 }
@@ -15,7 +19,7 @@
 }
 
 .tii_links_container .launch_form, .tii_links_container .useragreement_form, .tii_links_container .turnitin_submit_error,
-.tii_links_container .turnitin_eula_link, .tii_links_container #useragreement_form form, 
+.tii_links_container .turnitin_eula_link, .tii_links_container #useragreement_form form,
 .tii_links_container .cmid, .tii_links_container .userid, .plagiarism_submission, .pp_turnitin_cmid, .tii_useragreement_form,
 #tii_view_context, .tii_links_container .grademark_forum_launch, .tii_links_container .origreport_forum_launch {
     display:none;
@@ -31,11 +35,6 @@
 	position: relative;
 }
 
-.forumpost .attachments .tii_links_container {
-	clear: both;
-	float: right;
-}
-
 .tii_links_container .row_rubric_view {
     position: relative;
     top:4px;
@@ -49,6 +48,20 @@
     display: block;
 }
 
+.tii_disclosure_links {
+    display:block;
+}
+
+.tii_disclosure_links .row_rubric_view {
+    float: none !important;
+    padding-left: 4px;
+}
+
+.tii_disclosure_links .row_rubric_view a {
+    width: 100%;
+    padding-left: 26px;
+}
+
 .tii_links_container a.rubric_view_pp_launch, .tii_links_container a.peermark_reviews_pp_launch {
     color:#000000;
 }
@@ -59,14 +72,6 @@
     padding: 4px 0 18px 36px;
     line-height: 28px;
     display: block;
-}
-
-.tii_links_container .attachments {
-	clear:both;
-}
-
-.tii_links_container .forumpost .attachments .tii_links_container {
-    float:right;
 }
 
 .tii_links_container .tii_links_container {
@@ -148,6 +153,10 @@
     margin-bottom:6px;
 }
 
+.forumpost .tii_links_container .success {
+    width:96%;
+}
+
 .tii_links_container #ppErrors {
     width:100%;
 }
@@ -217,6 +226,7 @@
 
 .pp_turnitin_ula {
 	display: none;
+    margin-bottom:16px;
 }
 
 noscript.turnitin_ula_noscript {

@@ -234,24 +234,27 @@ jQuery(document).ready(function($) {
     var visibleCols = [];
     var noOfColumns = $('table.submissionsDataTable th').length / $('table.submissionsDataTable').length;
     var showOrigReport = ($('table.submissionsDataTable th.creport').length > 0) ? true : false;
-    var useGrademark = ($('table.submissionsDataTable th.cgrade').length > 0) ? true : false;
+    var useGradeMark = ($('table.submissionsDataTable th.cgrade').length > 0) ? true : false;
     var multipleParts = ($('table.submissionsDataTable th.coverallgrade').length > 0) ? true : false;
     for (var i=0; i < noOfColumns; i++) {
-        if (i == 2 || i == 3) {
+        if (i == 2) {
             submissionsDataTableColumns.push(null);
             visibleCols.push(true);
         } else if (i == 4) {
+            submissionsDataTableColumns.push({"iDataSort": i-1, "sType":"string"});
+            visibleCols.push(true);
+        } else if (i == 5) {
             submissionsDataTableColumns.push({"sClass": "right"});
             visibleCols.push(true);
-        } else if (i == 6 || (i == 8 && showOrigReport) || ((i == 8 && !showOrigReport) || (i == 10 && useGrademark))) {
+        } else if (i == 7 || (i == 9 && showOrigReport) || ((i == 9 && !showOrigReport) || (i == 11 && useGradeMark))) {
             submissionsDataTableColumns.push({"sClass": "right", "iDataSort": i-1, "sType":"numeric"});
             visibleCols.push(true);
-        } else if (i == 1 || ((i >= 7 && !showOrigReport && !useGrademark)
-                                || (i >= 9 && ((!showOrigReport && useGrademark) || (showOrigReport && !useGrademark))) 
-                                || (i >= 11 && showOrigReport && useGrademark))) {
+        } else if (i == 1 || ((i >= 8 && !showOrigReport && !useGradeMark)
+                                || (i >= 10 && ((!showOrigReport && useGradeMark) || (showOrigReport && !useGradeMark))) 
+                                || (i >= 12 && showOrigReport && useGradeMark))) {
             submissionsDataTableColumns.push({"sClass": "center", "bSortable": false});
             visibleCols.push(true);
-        } else if ((i == 0) || (i == 5) || (i == 7 && showOrigReport) || ((i == 7 && !showOrigReport) || (i == 9 && useGrademark))) {
+        } else if ((i == 0) || (i == 3) || (i == 6) || (i == 8 && showOrigReport) || ((i == 8 && !showOrigReport) || (i == 10 && useGradeMark))) {
             submissionsDataTableColumns.push({"bVisible": false});
             visibleCols.push(false);
         }
@@ -271,7 +274,7 @@ jQuery(document).ready(function($) {
             "aaSorting": [[ 2, "asc" ],[ 4, "asc" ]],
             "sAjaxSource": "ajax.php",
             "oLanguage": dataTablesLang,
-            "sDom": "r<\"top navbar\"lf><\"dt_pagination\"pi>t<\"bottom\"><\"dt_pagination\"pi>",
+            "sDom": 'r<"listbar-container"<"top listbar clearfix"lf>><"dt_pagination clearfix"pi>t<"bottom"><"dt_pagination clearfix"pi>',
             "fnServerData": function ( sSource, aoData, fnCallback ) {
                 $.ajax({
                     "dataType": 'json',
@@ -283,7 +286,7 @@ jQuery(document).ready(function($) {
                         // We need to force showing of loading bar as if we place fnCallback after the table is populated it is wiped when refreshing
                         fnCallback(result);
                         $('#'+part_id+"_processing").attr('style', 'visibility: visible');
-                        getSubmissions(partTables[part_id], $('#assignment_id').html(), part_id, 0, refreshRequested[part_id], 0);
+                        getSubmissions(partTables[part_id], $('#assignment_id').html(), part_id, 0, refreshRequested, 0);
                     }
                 });
             },
@@ -330,12 +333,17 @@ jQuery(document).ready(function($) {
     }
 
     // Reposition links/divs
-    var tii_table_functions = $("#tii_table_functions").html();
-    $('#tii_table_functions').remove();
-    $('.dataTables_length').after(tii_table_functions);
-    $('.messages_inbox').show();
-    $('.refresh_link').show();
-    $('.refreshing_link').hide();
+    $('.tii_table_functions').each(function() {
+        var part_id = $(this).attr('id').split('tii_table_functions_')[1];
+
+        var tii_table_functions = $("#tii_table_functions_" + part_id).html();
+        $('#tii_table_functions_' + part_id).remove();
+        $('#'+part_id+'_length').after(tii_table_functions);
+        $('.messages_inbox').show();
+
+        $('#refresh_' + part_id).show();
+        $('#refreshing_' + part_id).hide();
+    });
 
     var zip_downloads = $(".zip_downloads");
 
@@ -351,10 +359,9 @@ jQuery(document).ready(function($) {
 
     // When the refresh submissions link is clicked, the data in each datatable needs to be reloaded
     $(".refresh_link").click(function () {
-        $(this).hide();
 
-        var part_id = $(this).attr("id").split("_")[1]; 
-        $('#refreshing_' + part_id).show();
+        $(".refresh_link").hide();
+        $(".refreshing_link").show();
 
         $('table.submissionsDataTable').each(function() {
             refreshRequested[$(this).attr("id")] = 1;
@@ -537,16 +544,20 @@ jQuery(document).ready(function($) {
     // Open the DV in a new window in such a way as to not be blocked by popups.
     $(document).on('click', '.default_open, .origreport_open, .grademark_open', function() {
         var proceed = true;
+        var idStr = $(this).attr("id").split("_");
+        var due_date = $('#date_due_'+idStr[2]).html();
+        var due_date_unix = moment(due_date).unix();
 
-        // Show resubmission grade warning.
-        if ($(this).hasClass('graded_warning')) {
-            if (!confirm(M.str.turnitintooltwo.resubmissiongradewarn)) {
-                proceed = false;
+        // Show resubmission grade warning if the due date has not passed.
+        if (due_date_unix > moment().unix()) {
+            if ($(this).hasClass('graded_warning')) {
+                if (!confirm(M.str.turnitintooltwo.resubmissiongradewarn)) {
+                     proceed = false;
+                }
             }
         }
 
         if (proceed) {
-            var idStr = $(this).attr("id").split("_");
             var url = $('#'+idStr[0]+'_url_'+idStr[1]).html()+'&viewcontext=box&do='+idStr[0]+'&submissionid='+idStr[1]+'&sesskey='+M.cfg.sesskey;
             var dvWindow = window.open('about:blank', 'dv_'+idStr[1]);
             var width = $(window).width();
@@ -607,9 +618,9 @@ jQuery(document).ready(function($) {
             }
         });
 
-        if ( $('#export_options').hasClass('tii_export_options_hide') ) {
+        if ($('#export_options').hasClass('tii_export_options_hide')) {
             $('#export_options').hide();
-            $('.export_data').append('<span class="empty-dash">--</span>');
+            $('.export_data').html('<span class="empty-dash">--</span>');
         }
 
         $('.editable_postdue').on("click", function() {
@@ -662,7 +673,7 @@ jQuery(document).ready(function($) {
 
                     if (response.export_option == "tii_export_options_hide") {
                         $('#export_options').hide();
-                        $('.export_data').append('<span class="empty-dash">--</span>');
+                        $('.export_data').html('<span class="empty-dash">--</span>');
                     } else {
                         $('.empty-dash').remove();
                         $('#export_options').show();
@@ -733,7 +744,7 @@ jQuery(document).ready(function($) {
             "url": "ajax.php",
             "async": true,
             "data": {action: "get_submissions", assignment: assignment_id, part: part_id, start: start,
-                        refresh_requested: refresh_requested, sesskey: M.cfg.sesskey, total: total},
+                        refresh_requested: refresh_requested[part_id], sesskey: M.cfg.sesskey, total: total},
             "success": function(result) {
                 eval(result);
                 start = result.end;
@@ -746,8 +757,21 @@ jQuery(document).ready(function($) {
                     getSubmissions(table, assignment_id, part_id, start, refresh_requested, result.total);
                 } else {
                     $('#'+part_id+"_processing").attr('style', 'visibility: hidden');
-                    $('#refreshing_' + part_id).hide();
-                    $('#refresh_'+part_id).show();
+
+                    refresh_requested[part_id] = 0;
+                    var allrefreshed = 1;
+                    
+                    $.each(refresh_requested, function(k, v) {
+                        if (v == 1) {
+                            allrefreshed = 0;    
+                        }
+                    });
+
+                    if (allrefreshed == 1) {
+                        $('.refreshing_link').hide();
+                        $('.refresh_link').show();
+                    }
+
                     enableEditingText(part_id);
                 }
             },
