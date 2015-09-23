@@ -101,7 +101,6 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
         $oldid = $data->id;
         $data->courseid = $this->get_courseid();
         $_SESSION['course_id'] = $data->courseid;
-        $_SESSION['course_owner_id'] = $data->ownerid;
 
         // Deleted user's emails are hashed so we need to grab username which isin the format email.timestamp
         if (empty($data->owneremail)) {
@@ -112,7 +111,7 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
         $owner = $DB->get_record('user', array('email' => $data->owneremail));
         if ($owner) {
             $data->ownerid = $owner->id;
-        } else { 
+        } else {
             // Turnitin class owner not found so use restoring user as owner
             $data->ownerid = $USER->id;
         }

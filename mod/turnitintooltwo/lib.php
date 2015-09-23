@@ -25,7 +25,7 @@
 require_once(__DIR__.'/turnitintooltwo_assignment.class.php');
 
 // Constants.
-define('TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE', 20971520);
+define('TURNITINTOOLTWO_MAX_FILE_UPLOAD_SIZE', 41943040);
 define('TURNITINTOOLTWO_DEFAULT_PSEUDO_DOMAIN', '@tiimoodle.com');
 define('TURNITINTOOLTWO_SUBMISSION_GET_LIMIT', 100);
 define('TURNITINTOOLTWO_MAX_FILENAME_LENGTH', 180);
@@ -152,7 +152,7 @@ function turnitintooltwo_activitylog($string, $activity) {
  * @param  boolean $nullifnone
  */
 function turnitintooltwo_update_grades($turnitintooltwo, $userid = 0, $nullifnone = true) {
-    global $DB, $USER;
+    global $DB, $USER, $CFG;
 
     $turnitintooltwoassignment = new turnitintooltwo_assignment($turnitintooltwo->id);
     $turnitintooltwoassignment->edit_moodle_assignment(false);
@@ -161,15 +161,25 @@ function turnitintooltwo_update_grades($turnitintooltwo, $userid = 0, $nullifnon
     $parts = $DB->get_records_select("turnitintooltwo_parts", " turnitintooltwoid = ? ",
                                         array($turnitintooltwo->id), 'id ASC');
     foreach ($parts as $part) {
-        $event = $DB->get_record_select("event",
-                                        " modulename = 'turnitintooltwo' AND instance = ? AND courseid = ? AND name LIKE ? ",
-                                        array($turnitintooltwo->id, $turnitintooltwo->course, '% - '.$part->partname));
-        $updatedevent = new stdClass();
-        $updatedevent->id = $event->id;
-        $updatedevent->userid = $USER->id;
-        $updatedevent->name = $turnitintooltwo->name." - ".$part->partname;
+        $dbselect = " modulename = ? AND instance = ? AND courseid = ? AND name LIKE ? ";
+        // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+        // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+        if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+            $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ?
+                            AND courseid = ? AND CAST(name AS nvarchar(max)) = ? ";
+        }
 
-        $DB->update_record('event', $updatedevent);
+        // Update event for assignment part
+        if ($event = $DB->get_record_select("event", $dbselect,
+                                    array('turnitintooltwo', $turnitintooltwo->id,
+                                                $turnitintooltwo->course, '% - '.$part->partname))) {
+            $updatedevent = new stdClass();
+            $updatedevent->id = $event->id;
+            $updatedevent->userid = $USER->id;
+            $updatedevent->name = $turnitintooltwo->name." - ".$part->partname;
+
+            $DB->update_record('event', $updatedevent);
+        }
     }
 }
 
@@ -485,7 +495,7 @@ function turnitintooltwo_reset_course_form_definition(&$mform) {
  * A Standard Moodle function that moodle executes at the time the cron runs
  */
 function turnitintooltwo_cron() {
-    global $DB;
+    global $DB, $CFG;
 
     // get assignment that needs updating and check whether it exists
     if ($assignment = $DB->get_record('turnitintooltwo', array("needs_updating" => 1), '*', IGNORE_MULTIPLE)) {
@@ -514,6 +524,7 @@ function turnitintooltwo_cron() {
             $grades->userid = $user->id;
             $params['idnumber'] = $cm->idnumber;
 
+            @include_once($CFG->dirroot."/lib/gradelib.php");
             grade_update('mod/turnitintooltwo', $turnitintooltwoassignment->turnitintooltwo->course, 'mod',
                 'turnitintooltwo', $turnitintooltwoassignment->turnitintooltwo->id, 0, $grades, $params);
         }
@@ -607,29 +618,40 @@ function turnitintooltwo_tempfile(array $filename, $suffix) {
 
     $filename = implode('_', $filename);
     $filename = str_replace(' ', '_', $filename);
-    
-    $fp = false;
-    $tempdir = $CFG->dataroot.'/temp/turnitintooltwo';
-    if (!file_exists($tempdir)) {
-        mkdir( $tempdir, $CFG->directorypermissions, true );
-    }
-    // Get file extension and shorten filename if too long.
+
+    $tempdir = make_temp_directory('turnitintooltwo');
+
+    // Get the file extension (if there is one).
     $pathparts = explode('.', $suffix);
-    $ext = array_pop($pathparts);
+    $ext = '';
+    if (count($pathparts) > 1) {
+        $ext = '.' . array_pop($pathparts);
+    }
 
     $permittedstrlength = TURNITINTOOLTWO_MAX_FILENAME_LENGTH - strlen($tempdir.DIRECTORY_SEPARATOR);
-    if (strlen($filename) > $permittedstrlength) {
-        $filename = substr($filename, 0, $permittedstrlength);
+    $extlength = strlen('_' . mt_getrandmax() . $ext);
+    if ($extlength > $permittedstrlength) {
+        // Someone has likely used a filename with an absurdly long extension, or the
+        // tempdir path is huge, so preserve the extension as much as possible.
+        $extlength = $permittedstrlength;
     }
 
-    // filename with random string at the end
-    $filename = $filename . '_' . mt_rand() . '.'.$ext;
+    // Shorten the filename as needed, taking the extension into consideration.
+    $permittedstrlength -= $extlength;
+    $filename = substr($filename, 0, $permittedstrlength);
 
-    while (!$fp) {
-        $file = $tempdir.DIRECTORY_SEPARATOR.$filename;
-        $fp = @fopen($file, 'w');
-    }
-    fclose($fp);
+    $tries = 0;
+    do {
+        if ($tries == 10) {
+            throw new invalid_dataroot_permissions("turnitintooltwo temporary file cannot be created.");
+        }
+        $tries++;
+
+        // Filename with random string at the end.
+        $file = $tempdir . DIRECTORY_SEPARATOR . $filename .
+            substr('_' . mt_rand() . $ext, 0, $extlength);
+    } while (!touch($file));
+
     return $file;
 }
 
@@ -1227,6 +1249,7 @@ function turnitintooltwo_print_overview($courses, &$htmlarray) {
         return;
     }
 
+    $submissioncount = array();
     foreach ($turnitintooltwos as $key => $turnitintooltwo) {
         $turnitintooltwoassignment = new turnitintooltwo_assignment($turnitintooltwo->id, $turnitintooltwo);
         $parts = $turnitintooltwoassignment->get_parts(false);
@@ -1243,8 +1266,7 @@ function turnitintooltwo_print_overview($courses, &$htmlarray) {
                             array($turnitintooltwo->id), '', 'id, submission_part, submission_grade, submission_gmimaged');
             foreach ($submissionsquery as $submission) {
                 if(!isset($submissioncount[$submission->submission_part])) {
-                    $submissioncount[$submission->submission_part]['graded'] = 0;
-                    $submissioncount[$submission->submission_part]['submitted'] = 0;
+                    $submissioncount[$submission->submission_part] = array('graded' => 0, 'submitted' => 0);
                 }
                 if ($submission->submission_grade != 'NULL' and $submission->submission_gmimaged == 1) {
                     $submissioncount[$submission->submission_part]['graded']++;
@@ -1252,7 +1274,12 @@ function turnitintooltwo_print_overview($courses, &$htmlarray) {
                 $submissioncount[$submission->submission_part]['submitted']++;
             }
         }
+
         foreach ($parts as $part) {
+
+            if(!isset($submissioncount[$part->id])) {
+                $submissioncount[$part->id] = array('graded' => 0, 'submitted' => 0);
+            }
 
             $partsarray[$part->id]['name'] = $part->partname;
             $partsarray[$part->id]['dtdue'] = $part->dtdue;
@@ -1452,7 +1479,7 @@ function turnitintooltwo_init_browser_assignment_table($tiicourseid) {
  * @return html
  */
 function turnitintooltwo_show_edit_course_end_date_form() {
-    $output = html_writer::tag("span", get_string('newenddatedesc', 'turnitintooltwo'), array("id" => "edit_end_date_desc"));
+    $output = html_writer::tag("div", get_string('newenddatedesc', 'turnitintooltwo'), array("id" => "edit_end_date_desc"));
 
     $elements = array();
     $dateoptions = array('startyear' => date( 'Y', strtotime( '-6 years' )), 'stopyear' => date( 'Y', strtotime( '+6 years' )));

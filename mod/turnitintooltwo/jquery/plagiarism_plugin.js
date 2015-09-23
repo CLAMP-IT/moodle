@@ -78,7 +78,9 @@ jQuery(document).ready(function($) {
     $(document).on('click', '.peermark_reviews_pp_launch', function() {
         $('.peermark_reviews_pp_launch').colorbox({
             open:true,iframe:true, width:"802px", height:"772px", opacity: "0.7", className: "peermark_reviews",
-            onLoad: function() { getLoadingGif(); },
+            onLoad: function() {
+                getLoadingGif();
+            },
             onCleanup: function() { hideLoadingGif(); }
         });
         return false;
@@ -87,9 +89,15 @@ jQuery(document).ready(function($) {
     // Open an iframe light box containing the Rubric View
     $(document).on('click', '.rubric_view_pp_launch', function() {
         $(this).colorbox({
-            open:true,iframe:true, width:"832px", height:"682px", opacity: "0.7", className: "rubric_view",
-            onLoad: function() { getLoadingGif(); },
-            onCleanup: function() { hideLoadingGif(); }
+            href: this.href, iframe:true, width:"832px", height:"682px", opacity: "0.7", className: "rubric_view",
+            onLoad: function() {
+                lightBoxCloseButton();
+                getLoadingGif();
+            },
+            onCleanup: function() {
+                $('#tii_close_bar').remove();
+                hideLoadingGif();
+            }
         });
         return false;
     });
@@ -101,7 +109,15 @@ jQuery(document).ready(function($) {
             onComplete: function() {
                 $(window).on("message", function(ev) {
                     var message = typeof ev.data === 'undefined' ? ev.originalEvent.data : ev.data;
-                    window.location.reload();
+
+                    $.ajax({
+                        type: "POST",
+                        url: M.cfg.wwwroot +"/plagiarism/turnitin/ajax.php",
+                        dataType: "json",
+                        data: {action: "actionuseragreement", message: message, sesskey: M.cfg.sesskey},
+                        success: function(data) { window.location.reload(); },
+                        error: function(data) { window.location.reload(); }
+                    });
                 });
             },
             onCleanup: function() { hideLoadingGif(); }
@@ -109,14 +125,18 @@ jQuery(document).ready(function($) {
         return false;
     });
 
-    // Launch the Turnitin EULA
-    if ($(".pp_turnitin_ula").length > 0) {
+    // Hide the submission form if the user has never accepted or declined the Turnitin EULA.
+    if ($(".pp_turnitin_ula_ignored").length > 0) {
         if ($('.editsubmissionform').length > 0) {
             $('.editsubmissionform').hide();
         }
         if ($('.pp_turnitin_ula').siblings('.mform').length > 0) {
             $('.pp_turnitin_ula').siblings('.mform').hide();
         }
+    }
+
+    function lightBoxCloseButton(closeBtnText) {
+        $('body').append('<div id="tii_close_bar"><a href="#" onclick="$.colorbox.close(); return false;">' + M.str.turnitintooltwo.closebutton + '</a></div>');
     }
 
     function getLoadingGif() {
@@ -145,11 +165,12 @@ jQuery(document).ready(function($) {
     function openDV(dvtype, submission_id, coursemoduleid, url) {
         var url = url+'&viewcontext=box&cmd='+dvtype+'&submissionid='+submission_id+'&sesskey='+M.cfg.sesskey;
 
-        var dvWindow = window.open(url, 'dv_'+submission_id);
+        var dvWindow = window.open('about:blank', 'dv_'+submission_id);
         var width = $(window).width();
         var height = $(window).height();
+        dvWindow.document.write('<title>Document Viewer</title>');
+        dvWindow.document.write('<style>html, body { margin: 0; padding: 0; border: 0; }</style>');
         dvWindow.document.write('<frameset><frame id="dvWindow" name="dvWindow"></frame></frameset>');
-        dvWindow.document.write('<script>document.body.style = \'margin: 0 0;\';</script'+'>'); 
         dvWindow.document.getElementById('dvWindow').src = url;
         dvWindow.document.close();
         if (navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {

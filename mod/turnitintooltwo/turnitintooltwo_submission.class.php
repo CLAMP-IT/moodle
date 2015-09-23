@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+require_once(__DIR__.'/classes/digitalreceipt/receipt_message.php');
+
 class turnitintooltwo_submission {
 
     public $id;
@@ -44,8 +46,11 @@ class turnitintooltwo_submission {
     public $submission_orcapable;
     public $submission_acceptnothing;
     public $overall_grade;
+    private $receipt;
 
     public function __construct($id = 0, $idtype = "moodle", $turnitintooltwoassignment = "", $partid = "") {
+        $this->receipt = new receipt_message();
+
         if ($idtype == "turnitin") {
             $this->submission_objectid = $id;
             $this->submission_part = $partid;
@@ -281,6 +286,8 @@ class turnitintooltwo_submission {
         $cm = get_coursemodule_from_instance("turnitintooltwo", $turnitintooltwoassignment->turnitintooltwo->id,
             $turnitintooltwoassignment->turnitintooltwo->course);
 
+        $istutor = has_capability('mod/turnitintooltwo:grade', context_module::instance($cm->id));
+
         turnitintooltwo_add_to_log($turnitintooltwoassignment->turnitintooltwo->course, "delete submission", 'view.php?id='.$cm->id, get_string('deletesubmissiondesc', 'turnitintooltwo') . " '$this->submission_title'", $cm->id, $this->userid);
 
         // Delete Moodle submission first.
@@ -316,19 +323,22 @@ class turnitintooltwo_submission {
                         'turnitintooltwo', $turnitintooltwoassignment->turnitintooltwo->id, 0, $grades, $params);
 
         // If we have a Turnitin Id then delete submission.
-        if (!empty($this->submission_objectid)) {
+        if ((!empty($this->submission_objectid)) && ($istutor)) {
             $submission = new TiiSubmission();
             $submission->setSubmissionId($this->submission_objectid);
 
             try {
                 $response = $turnitincall->deleteSubmission($submission);
 
-                $notice["message"] = get_string('submissiondeleted', 'turnitintooltwo');
+                $notice["type"] = "full-error";
+                $notice["message"] = get_string('submissiondeleted', 'turnitintooltwo').
+                                        ' ('.get_string('turnitinid', 'turnitintooltwo').
+                                            ': '.$this->submission_objectid.')';
 
                 // If we have no submissions to this part then reset submitted and unanon flag.
                 $numsubs = count($DB->get_records('turnitintooltwo_submissions',
                                             array('submission_part' => $partid), 'id'));
-                
+
                 return $notice;
             } catch (Exception $e) {
                 $turnitincomms->handle_exceptions($e, 'turnitindeletionerror');
@@ -346,7 +356,7 @@ class turnitintooltwo_submission {
      * @return integer $submissionid the submissions id for the submission
      */
     public function do_tii_nothing_submission($cm, $turnitintooltwoassignment, $partid, $userid) {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
 
         $context = context_module::instance($cm->id);
 
@@ -354,6 +364,7 @@ class turnitintooltwo_submission {
         $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
         $user = new turnitintooltwo_user($userid, 'Learner');
         $user->join_user_to_class($course->turnitin_cid);
+        $user->edit_tii_user();
 
         $part = $turnitintooltwoassignment->get_part_details($partid);
 
@@ -388,6 +399,28 @@ class turnitintooltwo_submission {
             $submission->submission_acceptnothing = 1;
             $submission->submission_orcapable = 0;
 
+            //Send a message to the user's Moodle inbox with the digital receipt.
+            if ( ! empty($CFG->smtphosts) && ! empty($CFG->smtpuser) && ! empty($CFG->smtppass) ) {
+                $partdetails = $turnitintooltwoassignment->get_part_details($partid);
+
+                $input = array(
+                    'firstname' => $user->firstname,
+                    'lastname' => $user->lastname,
+                    'submission_title' => get_string('gradingtemplate', 'turnitintooltwo'),
+                    'assignment_name' => $turnitintooltwoassignment->turnitintooltwo->name,
+                    'assignment_part' => $partdetails->partname,
+                    'course_fullname' => $course->fullname,
+                    'submission_date' => date('d-M-Y h:iA'),
+                    'submission_id' => $submission->submission_objectid
+                );
+
+                $message = $this->receipt->build_message($input);
+                $this->receipt->send_message($userid, $message);
+            }
+
+            //Add entry to log.
+            turnitintooltwo_add_to_log($turnitintooltwoassignment->turnitintooltwo->course, "add submission", 'view.php?id='.$cm->id, get_string('gradenosubmission', 'turnitintooltwo') . ": $userid", $cm->id, $userid);
+
             if (!$this->id = $DB->insert_record('turnitintooltwo_submissions', $submission)) {
                 return get_string('submissionupdateerror', 'turnitintooltwo');
             } else {
@@ -407,6 +440,7 @@ class turnitintooltwo_submission {
         } catch (Exception $e) {
             return $e->getMessage();
         }
+
         return $data;
     }
 
@@ -418,15 +452,16 @@ class turnitintooltwo_submission {
      * @return string $message to display to user
      */
     public function do_tii_submission($cm, $turnitintooltwoassignment) {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
 
-        $notice = array();
+        $notice = array("success" => false);
         $context = context_module::instance($cm->id);
 
         // Check if user is a member of class, if not then join them to it.
         $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
         $user = new turnitintooltwo_user($this->userid, 'Learner');
         $user->join_user_to_class($course->turnitin_cid);
+        $user->edit_tii_user();
 
         // Get the stored file and read it into a temp file for submitting to Turnitin.
         $fs = get_file_storage();
@@ -531,6 +566,31 @@ class turnitintooltwo_submission {
                 $notice["extract"] = $newsubmission->getTextExtract();
                 $notice["tii_submission_id"] = $submission->submission_objectid;
 
+                //Send a message to the user's Moodle inbox with the digital receipt.
+                if ( ! empty($CFG->smtphosts) && ! empty($CFG->smtpuser) && ! empty($CFG->smtppass) ) {
+                    $input = array(
+                        'firstname' => $user->firstname,
+                        'lastname' => $user->lastname,
+                        'submission_title' => $this->submission_title,
+                        'assignment_name' => $turnitintooltwoassignment->turnitintooltwo->name,
+                        'assignment_part' => $partdetails = $turnitintooltwoassignment->get_part_details($this->submission_part)->partname,
+                        'course_fullname' => $course->fullname,
+                        'submission_date' => date('d-M-Y h:iA'),
+                        'submission_id' => $submission->submission_objectid
+                    );
+
+                    $message = $this->receipt->build_message($input);
+
+                    $this->receipt->send_message(
+                        $this->userid,
+                        $message
+                    );
+                }
+
+                //Create a log entry for a resubmission.
+                if ($apimethod == "replaceSubmission") {
+                    turnitintooltwo_add_to_log($turnitintooltwoassignment->turnitintooltwo->course, "add submission", 'view.php?id='.$cm->id, get_string('addsubmissiondesc', 'turnitintooltwo') . " '" . $this->submission_title . "' (" . get_string('resubmission', 'turnitintooltwo') . ")", $cm->id, $user->id);
+                }
             } catch (Exception $e) {
                 if (!is_null($this->submission_objectid)) {
                     $errorstring = "updatesubmissionerror";
@@ -587,7 +647,8 @@ class turnitintooltwo_submission {
         global $DB, $CFG;
 
         static $part;
-        if (empty($part)) {
+        static $tiiassignid;
+        if ($tiiassignid != $tiisubmissiondata->getAssignmentId() || empty($part)) {
             $part = $DB->get_record("turnitintooltwo_parts", array("tiiassignid" => $tiisubmissiondata->getAssignmentId()));
         }
         $turnitintooltwoassignment = new turnitintooltwo_assignment($part->turnitintooltwoid);
@@ -633,6 +694,7 @@ class turnitintooltwo_submission {
         if ($save) {
             // If the user is not a moodle user then get their name from Tii - only do this on initial save.
             $sub->userid = turnitintooltwo_user::get_moodle_user_id($tiisubmissiondata->getAuthorUserId());
+
             if ($sub->userid == 0 && empty($this->id)) {
                 if ($tiisubmissiondata->getAuthorUserId() > 0) {
                     $sub->submission_nmuserid = $tiisubmissiondata->getAuthorUserId();
