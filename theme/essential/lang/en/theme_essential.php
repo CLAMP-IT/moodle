@@ -31,7 +31,7 @@ $string['choosereadme'] = '
 <div class="clearfix">
 <div class="well">
 <h2>Essential</h2>
-<p><img class="img-polaroid" src="essential/pix/screenshot.jpg" /></p>
+<p><img class="img-polaroid" src="essential/pix/screenshot.jpg" alt="Essential screen shot"/></p>
 </div>
 <div class="well">
 <h3>About Essential</h3>
@@ -45,15 +45,27 @@ David Bezemer<br>
 Work taken over on the 9th October 2014 by:<br>
 Gareth J. Barnard<br>
 </p>
-<h3>Donations</h3>
-<p>This theme is provided to you for free, and if you want to express your gratitude for using this theme, please consider donating by:
+<h3>Sponsorships</h3>
+<p>This theme is provided to you for free, and if you want to express your gratitude for using this theme, please consider sponsoring by:
 <h4>PayPal</h4>
-<p>Please contact me via my <a href="http://moodle.org/user/profile.php?id=442195" target="_blank">\'Moodle profile\'</a> for details as I am an individual and therefore am unable to have \'donation\' / \'buy me now\' buttons under their terms.</p>
+<p>Please contact me via my <a href="http://moodle.org/user/profile.php?id=442195" target="_blank">\'Moodle profile\'</a> for details as I am an individual and therefore am unable to have \'buy me now\' buttons under their terms.</p>
 <h4>Flattr</h4>
 <a href="https://flattr.com/profile/gjb2048" target="_blank">
-clicking here to donate.
+click here to sponsor.
 </a>
-<br>Donations help to facilitate maintenance and allow me to provide you with more and better features.  Without your support the theme cannot be maintained.</p>
+<br>Sponsorships help to facilitate maintenance and allow me to provide you with more and better features.  Without your support the theme cannot be maintained.</p>
+<p>
+<h3>Sponsors</h3>
+<p>Sponsorships gratefully received with thanks from:</p>
+<ul>
+<li>Mihai Bojonca, TCM International Institute.</li>
+<li>Guido Hornig, actXcellence <a href="//actxcellence.de" target="_blank">actxcellence.de</a></li>
+<li>Delvon Forrester, Esparanza co uk</li>
+<li>iZone</li>
+</ul>
+</p>
+<h3>Customisation</h3>
+<p>If you like this theme and would like me to customise it, transpose functionality to another theme or build a new theme from scratch, then I offer competitive rates.  Please contact me via \'www.gjbarnard.co.uk/contact/\' or \'gjbarnard at gmail dot com\' or \'about.me/gjbarnard\' to discuss your requirements.</p>
 </div></div>';
 
 // General.
@@ -114,10 +126,6 @@ $string['fontcharactersetgreek'] = 'Greek';
 $string['fontcharactersetgreekext'] = 'Greek Extended';
 $string['fontcharactersetvietnamese'] = 'Vietnamese';
 
-$string['bootstrapcdn'] = 'FontAwesome from CDN';
-$string['bootstrapcdndesc'] = 'If enabled this will load FontAwesome from the online Bootstrap CDN source.
-                               Enable this if you are having issues getting the Font Awesome icons to display in your site.';
-
 $string['copyright'] = 'Copyright';
 $string['copyrightdesc'] = 'The name of your organisation.';
 
@@ -177,14 +185,14 @@ $string['displaybeforelogin'] = 'Show before login only';
 $string['displayafterlogin'] = 'Show after login only';
 $string['dontdisplay'] = 'Never show';
 
-// Donate.
-$string['donate_title'] = 'Essential donations';
-$string['donate_desc'] = 'Please donate via PayPal by contacting me via my \'';
-$string['donate_desc2'] = ' to keep the Essential development going, or simply to express your gratitude.';
-$string['paypal_desc'] = '{$a->url}\' for details as I am an individual and therefore am unable to have \'donation\' / \'buy me now\' buttons under their terms or ';
+// Sponsor.
+$string['sponsor_title'] = 'Sponsor Essential';
+$string['sponsor_desc'] = 'Please sponsor via PayPal by contacting me via my \'';
+$string['sponsor_desc2'] = ' to keep the Essential development going, or simply to express your gratitude.';
+$string['paypal_desc'] = '{$a->url}\' for details as I am an individual and therefore am unable to have \'buy me now\' buttons under their terms or ';
 $string['flattr_desc'] = '{$a->url}';
 $string['paypal_click'] = 'Moodle profile';
-$string['flattr_click'] = 'donate via Flattr';
+$string['flattr_click'] = 'sponsor via Flattr';
 
 // Readme.
 $string['readme_title'] = 'Essential read-me';
@@ -265,8 +273,8 @@ $string['themehovercolor'] = 'Theme hover colour';
 $string['themehovercolordesc'] = 'What colour should your theme hovers be. This is used for links, menus, etc.';
 $string['themeiconcolor'] = 'Icon colour';
 $string['themeiconcolordesc'] = 'Set the colour for all icons.';
-$string['themenavcolor'] = 'Navigation colour';
-$string['themenavcolordesc'] = 'Set the colour for navigation.  Being the navigation bar and the breadcrumb fancy style.';
+$string['themenavcolor'] = 'Navigation text colour';
+$string['themenavcolordesc'] = 'Set the text colour for navigation.  Being the navigation bar and the breadcrumb fancy style.';
 
 $string['footercolor'] = 'Footer background colour';
 $string['footercolordesc'] = 'Set what colour the background of the Footer box should be.';
@@ -305,10 +313,14 @@ $string['alternativethemecolors'] = 'Alternative theme colours';
 $string['alternativethemecolorsdesc'] = 'Defines theme colours alternative that the user may select.';
 $string['alternativethemecolorname'] = 'Name of alternative colour set {$a}';
 $string['alternativethemecolornamedesc'] = 'Provide a recognisable name for this set of alternative theme colours';
-$string['alternativethemetextcolor'] = 'Alternative text colour  {$a}';
+$string['alternativethemetextcolor'] = 'Alternative text colour {$a}';
 $string['alternativethemetextcolordesc'] = 'Set the colour for your alternative text {$a}.';
 $string['alternativethemeurlcolor'] = 'Alternative link colour {$a}';
 $string['alternativethemeurlcolordesc'] = 'Set the colour for your alternative linked text {$a}.';
+$string['alternativethemeiconcolor'] = 'Alternative icon colour {$a}';
+$string['alternativethemeiconcolordesc'] = 'Set the alternative {$a} colour for all icons.';
+$string['alternativethemenavcolor'] = 'Navigation text colour {$a}';
+$string['alternativethemenavcolordesc'] = 'Set the alternative {$a} text colour for navigation.  Being the navigation bar and the breadcrumb fancy style.';
 $string['alternativethemehovercolor'] = 'Alternative theme hover colour {$a}';
 $string['alternativethemehovercolordesc'] = 'What colour should your theme hovers be for the alternative theme colours {$a}.';
 $string['enablealternativethemecolors'] = 'Enable alternative theme colours {$a}';
@@ -596,6 +608,10 @@ $string['alerttextdesc'] = 'What is the text you wish to display in your alert.'
 $string['alert_info'] = 'Information';
 $string['alert_warning'] = 'Warning';
 $string['alert_general'] = 'Announcement';
+
+$string['versionalerttitle'] = 'Version warning: ';
+$string['versionalerttext1'] = 'Theme not designed for Moodle version.';
+$string['versionalerttext2'] = 'Unexpected issues may occur, please get the correct theme version for your Moodle version.';
 
 // Message Menu.
 $string['unreadnewnotification'] = 'New notification';

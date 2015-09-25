@@ -9,8 +9,7 @@ i > img {
   text-decoration: none !important;
 }
 
-#page-mod-glossary-view .commands img,
-#page-calendar-view .commands img {
+#page-mod-glossary-view .commands img {
   display: inline;
 }
 
@@ -82,7 +81,7 @@ a.action-icon,
 
 .moodle-core-dragdrop-draghandle:before {
   font-family: 'FontAwesome';
-  content: "\f047 ";
+  content: "\f047";
   margin-right: 5px;
   cursor: move;
 }
@@ -90,9 +89,12 @@ a.action-icon,
 .course-content .section .moodle-core-dragdrop-draghandle {
   &:before {
     font-family: 'FontAwesome';
-    content: "\f07d ";
-    margin-right: 5px;
-    cursor: move;
+    content: "\f07d";
+    font-size: 1.4em;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-right: 0px;
+    cursor: n-resize;
   }
   img {
     display: none;
