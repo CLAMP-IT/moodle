@@ -66,24 +66,27 @@ As Essential is licensed under the GNU GPLv3 License it comes with NO support.  
 me then I'm happy to provide it for a fee (please see my contact details above).  Otherwise, the 'Themes' forum:
 moodle.org/mod/forum/view.php?id=46 is an excellent place to ask questions.
 
-Donations
-=========
-This theme is provided to you for free, and if you want to express your gratitude for using this theme, please consider donating
+Sponsorships
+============
+This theme is provided to you for free, and if you want to express your gratitude for using this theme, please consider sponsoring
 by:
 
 PayPal - Please contact me via my 'Moodle profile' (above) for details as I am an individual and therefore am unable to have
-'donation' / 'buy me now' buttons under their terms.
+'buy me now' buttons under their terms.
 
 Flattr - https://flattr.com/profile/gjb2048
 
-Donations help to facilitate maintenance and allow me to provide you with more and better features.  Without your support the theme
+Sponsorships help to facilitate maintenance and allow me to provide you with more and better features.  Without your support the theme
 cannot be maintained.
 
-Donators
+Sponsors
 ========
-Donations gratefully received with thanks from:
+Sponsorships gratefully received with thanks from:
 Mihai Bojonca, TCM International Institute.
 Guido Hornig, actXcellence http://actxcellence.de
+Delvon Forrester, Esparanza co uk
+iZone
+Anis Jradah
 
 Required version of Moodle
 ==========================
@@ -178,6 +181,81 @@ issue.
 It is essential that you provide as much information as possible, the critical information being the contents of the theme's 
 'version.php' file.  Other version information such as specific Moodle version, theme name and version also helps.  A screen shot
 can be really useful in visualising the issue along with any files you consider to be relevant.
+
+New in 2.8.1.10
+===============
+- FIX: Issue #486: Update grade.less in light of MDL-49926.
+- FIX: Issue #529: Divider does not show.
+- FIX: Issue #535: Group mode icons not different.
+- FIX: Issue #536: FitVids targets players with mp3 files.
+- FIX: Issue #537: Activities and resources in 'stealth section' are shown in the course menu.  Partial fix, see: MDL-51465.
+- FIX: Issue #538: Problem in core_renderer when outputs the messages menu containing HTML special chars.
+- FIX: MDL-42634.
+- NEW: Reduced size of floating button area.
+
+New in 2.8.1.9
+==============
+- FIX: Issue #530: Essential Custom Menu Hamburger Behaviour.
+- NEW: Improve code used in #530 to use CSS and not JS solution.
+
+New in 2.8.1.8
+==============
+- FIX: Issue #523: Forum grids do not wrap.
+- NEW: Issue #524: MDL-48202.
+- NEW: Issue #525: MDL-46860.
+- FIX: Issue #527: ###### are not converted to dividers.
+- NEW: Update to FontAwesome 4.4.0.
+- NEW: Version alert on admin pages if installed on wrong Moodle version as per 'Required version of Moodle' above.
+
+New in 2.8.1.7
+==============
+- FIX: Regression of initital fix for issue 517 whereby dropdown menus cannot be seen over the carousel when screen width is less
+       than the @navbarCollapseWidth, see: https://moodle.org/mod/forum/discuss.php?d=317306#p1272655.
+
+New in 2.8.1.6
+==============
+- FIX: Issue #514: Quiz feedback colours are not accessible.
+- FIX: Issue #515: Gradebook Tabs Not Left Justified.
+- FIX: Issue #517: Mobile nav button overflow.
+- FIX: Issue #518: Lesson table padding removed.
+- FIX: No 'loginas' URL when logged in as another user, ref: https://moodle.org/mod/forum/discuss.php?d=315453.
+- FIX: More colour adjustments to navigation menus with alternative colours.
+- FIX: #adminsettings h3 colour in alternative colours.
+- FIX: Course drag and drop icon tricky to use.
+- FIX: Action menu hover text colour.
+- FIX: Navbar and dropdown adjustments to make cohesive with alternative colours.
+- FIX: More navbar and breadcrumb colour fixes.
+- FIX: Drag and Drop Image Qtype Drop Zones entry boxes too big.
+- FIX: Quiz navigation block preview icon not FontAwesome instance.
+- FIX: MDL-50869.
+- NEW: MDL-37832.
+- NEW: MDL-50711.
+- NEW: Added alternative icon color setting.
+
+New in 2.8.1.5
+==============
+- FIX: Issue #469: Top menu bar message Update notifications messages blank.
+- FIX: Issue #473: Cloze answer fields overflow to the right on mobiles.
+- FIX: Issue #478: Unable to find CSS when themedir set but theme is in default dir.  Thanks to Tyler Bannister.
+- FIX: Issue #479: "This Course" menu only displays on course home page.
+- FIX: Issue #480: Calendar issues.
+- FIX: Issue #481: Drag and drop img handle shown on front page calendar when editing.
+- FIX: Issue #483: Colouring a heading in TinyMCE reverts back to paragraph / body font.
+- FIX: Issue #485: My courses not using correct context for view hidden courses capability.
+- FIX: Issue #490: Availability date selection dropdowns.
+- FIX: Issue #496: Category icons number of courses not shown on front page category list.
+- FIX: Issue #504: Essentials child theme will not inherit parent settings.  Thanks to Brendan Anderson.
+- FIX: Issue #506: Essential Summary error.
+- FIX: Tidy up alternative colours.
+- FIX: Carousel control icons slightly clipped.
+- FIX: Enrol users icon -> FontAwesome one.
+- FIX: Slight tweak to floating headers in gradebook.
+- FIX: Production LESS -> CSS issues when generating 'background:' attributes for colours, resulting in 'background:0 0;'.
+- FIX: Responsive form issues as reported here: https://moodle.org/mod/forum/discuss.php?d=315157.
+- FIX: Alternative colours in dock.
+- FIX: Removed out of date 'bootstrapcdn' setting.
+- NEW: Issue #503: Use Alternate Name in user menu as the main name.  Gratefully funded by Mark Whitington.
+- NEW: Styled 'Exit Activity' link for SCORM activities.
 
 New in 2.8.1.4
 ==============

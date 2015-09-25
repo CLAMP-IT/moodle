@@ -45,6 +45,8 @@ M.format_grid = M.format_grid || {
     shadebox_shown_array: null,
     // DOM reference to the #gridshadebox_content element.
     shadebox_content: null,
+    // Right to left languages.
+    rtl: false
 };
 
 /**
@@ -55,26 +57,23 @@ M.format_grid = M.format_grid || {
  * @param {Integer} the_num_sections the number of sections in the course.
  * @param {Array} the_shadebox_shown_array States what sections are not shown (value of 1) and which are (value of 2)
  *                                         index is the section no.
+ * @param {Boolean} the_rtl True if a right to left language.
  */
-M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_sections, the_shadebox_shown_array) {
+M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_sections, the_shadebox_shown_array, the_rtl) {
     "use strict";
     this.ourYUI = Y;
     this.editing_on = the_editing_on;
     this.section_redirect = the_section_redirect;
     this.selected_section = null;
     this.num_sections = parseInt(the_num_sections);
-    //console.log("the_num_sections parameter: " + the_num_sections);
-    //console.log("SSA parameter: " + the_shadebox_shown_array);
-    //this.shadebox_shown_array = JSON.parse(the_shadebox_shown_array);
     this.shadebox_shown_array = the_shadebox_shown_array;
+    this.rtl = the_rtl;
     Y.use('json-parse', function (Y) {
         M.format_grid.shadebox_shown_array = Y.JSON.parse(M.format_grid.shadebox_shown_array);
     });
-    //console.log("SSA var: " + this.shadebox_shown_array);
 
     if (this.num_sections > 0) {
         this.set_selected_section(this.num_sections, true, true);  // Section 0 can be in the grid.
-        //console.log("init() - selected section no: " + this.selected_section_no);
     } else {
         this.selected_section_no = -1;
     }
@@ -106,10 +105,11 @@ M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_s
             document.getElementById("gridshadebox_right").style.display = "";
         }
         // Remove href link from icon anchors so they don't compete with JavaScript onlick calls.
-        var icon_links = getElementsByClassName(document.getElementById("gridiconcontainer"), "a", "gridicon_link");
-        for(var i = 0; i < icon_links.length; i++) {
-            icon_links[i].href = "#";
-        }
+        var gridiconcontainer = Y.one("#gridiconcontainer");
+        var icon_links = gridiconcontainer.all("a.gridicon_link");
+        icon_links.each(function (node) {
+            node.setAttribute("href", "#");
+        });
 
         M.format_grid.shadebox.initialize_shadebox();
         M.format_grid.shadebox.update_shadebox();
@@ -136,8 +136,22 @@ M.format_grid.icon_click = function(e) {
 };
 
 /**
+ * Called when the user tabs and the item is a grid icon, set up in the init() method.
+ */
+M.format_grid.tab = function(index) {
+    "use strict";
+    this.ourYUI.log('M.format_grid.tab: ' + index);
+    var previous_no = this.selected_section_no;
+    this.selected_section_no = index;
+    this.update_selected_background(previous_no);
+    if (M.format_grid.shadebox.shadebox_open == true) {
+         this.change_shown();
+    }
+};
+
+/**
  * Toggles the shade box on / off.
- * Called when the user clicks on a grid icon or presses the Esc or Enter keys - see 'gridkeys.js'.
+ * Called when the user clicks on a grid icon or presses the Esc or Space keys - see 'gridkeys.js'.
  * @param {Object} e Event object.
  */
 M.format_grid.icon_toggle = function(e) {
@@ -155,7 +169,7 @@ M.format_grid.icon_toggle = function(e) {
             this.shadebox.toggle_shadebox();
         } else {
             //console.log("Shadebox was closed");
-            this.icon_change_shown();
+            this.change_shown();
             this.shadebox.toggle_shadebox();
         }
     } //else {
@@ -165,24 +179,32 @@ M.format_grid.icon_toggle = function(e) {
 
 /**
  * Called when the user clicks on the left arrow on the shade box or when they press the left
- * cursor key or Shift-TAB on the keyboard - see 'gridkeys.js'.
+ * cursor key on the keyboard - see 'gridkeys.js'.
  * Moves to the previous visible section - looping to the last if the current is the first.
  * @param {Object} e Event object.
  */
 M.format_grid.arrow_left = function(e) {
     "use strict";
-    this.change_selected_section(false);
+    if (this.rtl) {
+        this.change_selected_section(true);
+    } else {
+        this.change_selected_section(false);
+    }
 };
 
 /**
  * Called when the user clicks on the right arrow on the shade box or when they press the right
- * cursor key or TAB on the keyboard - see 'gridkeys.js'.
+ * cursor key on the keyboard - see 'gridkeys.js'.
  * Moves to the next visible section - looping to the first if the current is the last.
  * @param {Object} e Event object.
  */
 M.format_grid.arrow_right = function(e) {
     "use strict";
-    this.change_selected_section(true);
+    if (this.rtl) {
+        this.change_selected_section(false);
+    } else {
+        this.change_selected_section(true);
+    }
 };
 
 /**
@@ -195,7 +217,7 @@ M.format_grid.change_selected_section = function(increase_section) {
         this.set_selected_section(this.selected_section_no, increase_section, false);
         //console.log("Selected section no is now: " + this.selected_section_no);
         if (M.format_grid.shadebox.shadebox_open == true) {
-            this.icon_change_shown();
+            this.change_shown();
         }
     } //else {
         //console.log("Grid format:change_selected_section() - no selected section to show.");
@@ -205,13 +227,24 @@ M.format_grid.change_selected_section = function(increase_section) {
 /**
  * Changes the shown section within the shade box to the new one defined in 'selected_section_no'.
  */
-M.format_grid.icon_change_shown = function() {
+M.format_grid.change_shown = function() {
     "use strict";
     // Make the selected section visible, scroll to it and hide all other sections.
     if(this.selected_section != null) {
         this.selected_section.addClass('hide_section');
     }
     this.selected_section = this.ourYUI.one("#section-" + this.selected_section_no);
+
+    // Focus on the first element in the shade box.
+    //this.selected_section.focus();
+    //document.getElementById("section-" + this.selected_section_no).focus();
+    //document.querySelectorAll("section-" + this.selected_section_no + " a:first-of-type")[0].focus();
+    var firstactivity = document.getElementById("section-" + this.selected_section_no).getElementsByTagName('a')[0];
+    if (firstactivity) {
+        //console.log("First activity: " + firstactivity);
+        firstactivity.focus();
+    }
+    //console.log("Active element: " + document.activeElement);
 
     this.selected_section.removeClass('hide_section');
 };
