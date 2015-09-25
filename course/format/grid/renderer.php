@@ -196,9 +196,10 @@ class format_grid_renderer extends format_section_renderer_base {
             $PAGE->user_is_editing(),
             $sectionredirect,
             $course->numsections,
-            json_encode($this->shadeboxshownarray)));
+            json_encode($this->shadeboxshownarray),
+            right_to_left()));
         // Initialise the key control functionality...
-        $PAGE->requires->yui_module('moodle-format_grid-gridkeys', 'M.format_grid.gridkeys.init', null, null, true);
+        $PAGE->requires->yui_module('moodle-format_grid-gridkeys', 'M.format_grid.gridkeys.init', array(array('editing' => $PAGE->user_is_editing())), null, true);
     }
 
     /**
@@ -356,8 +357,9 @@ class format_grid_renderer extends format_section_renderer_base {
             $thissection = $modinfo->get_section_info($section);
 
             // Check if section is visible to user.
-            $showsection = $hascapvishidsect || ($thissection->visible && ($thissection->available ||
-                    $thissection->showavailability || !$course->hiddensections));
+            $showsection = $hascapvishidsect || ($thissection->uservisible ||
+                    ($thissection->visible && !$thissection->available &&
+                    !empty($thissection->availableinfo)));
 
             if ($showsection) {
                 // We now know the value for the grid shade box shown array.
