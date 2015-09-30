@@ -1,6 +1,6 @@
 [submodule "local/uploadcourse"]
 	path = local/uploadcourse
-	url = https://gitlab.hamsphire.edu/moodle/local_uploadcourse.git
+	url = https://gitlab.hampshire.edu/moodle/local_uploadcourse.git
 [submodule "blocks/filtered_course_list"]
 	path = blocks/filtered_course_list
     url = https://github.com/kwiliarty/moodle-blocks_filtered_course_list.git
@@ -27,16 +27,16 @@
 	url = https://github.com/danmarsden/moodle-block_attendance.git
 [submodule "blocks/course_description"]
 	path = blocks/course_description
-	url = https://gitlab.hamsphire.edu/moodle/block_course_description.git
+	url = https://gitlab.hampshire.edu/moodle/block_course_description.git
 [submodule "blocks/federated_login"]
 	path = blocks/federated_login
 	url = https://github.com/kwiliarty/moodle-block_federated_login.git
 [submodule "blocks/library"]
 	path = blocks/library
-	url = https://gitlab.hamsphire.edu/moodle/block_library.git
+	url = https://gitlab.hampshire.edu/moodle/block_library.git
 [submodule "course/format/class"]
 	path = course/format/class
-	url = https://gitlab.hamsphire.edu/moodle/course_format_class.git
+	url = https://gitlab.hampshire.edu/moodle/course_format_class.git
 [submodule "course/format/topcoll"]
 	path = course/format/topcoll
 	url = https://github.com/gjb2048/moodle-format_topcoll.git
@@ -51,10 +51,10 @@
 	url = https://github.com/bostelm/moodle-mod_scheduler.git
 [submodule "theme/hampshire"]
 	path = theme/hampshire
-	url = https://gitlab.hamsphire.edu/moodle/theme_hampshire.git
+	url = https://gitlab.hampshire.edu/moodle/theme_hampshire.git
 [submodule "filter/ipa"]
 	path = filter/ipa
 	url = https://github.com/kwiliarty/moodle-filter_ipa.git
 [submodule "local/cohort_sync"]
 	path = local/cohort_sync
-	url = https://gitlab.hamsphire.edu/moodle/local_cohort_sync.git
+	url = https://gitlab.hampshire.edu/moodle/local_cohort_sync.git
