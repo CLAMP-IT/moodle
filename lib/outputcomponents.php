@@ -340,7 +340,7 @@ class user_picture implements renderable {
         if ($allowphoto) {
             if ($allowphoto->data == 1) {
                 $idbase = preg_replace('/@.*/', '', $user->idnumber);
-                $hash = substr(sha1('Un1d@t@!' . $idbase), 0, 10);
+                $hash = substr(sha1($CFG->hampshire_picture_salt . $idbase), 0, 10);
             }
         }
         return "https://photos.hampshire.edu/${hash}.jpg";
