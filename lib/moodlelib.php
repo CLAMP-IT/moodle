@@ -2842,6 +2842,11 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
         $preventredirect = true;
     }
 
+    if (AJAX_SCRIPT) {
+        // We cannot redirect for AJAX scripts either.
+        $preventredirect = true;
+    }
+
     // Setup global $COURSE, themes, language and locale.
     if (!empty($courseorid)) {
         if (is_object($courseorid)) {
@@ -2881,11 +2886,15 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
     }
 
     // Redirect to the login page if session has expired, only with dbsessions enabled (MDL-35029) to maintain current behaviour.
-    if ((!isloggedin() or isguestuser()) && !empty($SESSION->has_timed_out) && !$preventredirect && !empty($CFG->dbsessions)) {
-        if ($setwantsurltome) {
-            $SESSION->wantsurl = qualified_me();
+    if ((!isloggedin() or isguestuser()) && !empty($SESSION->has_timed_out) && !empty($CFG->dbsessions)) {
+        if ($preventredirect) {
+            throw new require_login_session_timeout_exception();
+        } else {
+            if ($setwantsurltome) {
+                $SESSION->wantsurl = qualified_me();
+            }
+            redirect(get_login_url());
         }
-        redirect(get_login_url());
     }
 
     // If the user is not even logged in yet then make sure they are.
@@ -2909,8 +2918,10 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
             if ($setwantsurltome) {
                 $SESSION->wantsurl = qualified_me();
             }
-            if (!empty($_SERVER['HTTP_REFERER'])) {
-                $SESSION->fromurl  = $_SERVER['HTTP_REFERER'];
+
+            $referer = get_local_referer(false);
+            if (!empty($referer)) {
+                $SESSION->fromurl = $referer;
             }
             redirect(get_login_url());
             exit; // Never reached.
@@ -4324,8 +4335,11 @@ function delete_user(stdClass $user) {
     // Force logout - may fail if file based sessions used, sorry.
     \core\session\manager::kill_user_sessions($user->id);
 
+    // Generate username from email address, or a fake email.
+    $delemail = !empty($user->email) ? $user->email : $user->username . '.' . $user->id . '@unknownemail.invalid';
+    $delname = clean_param($delemail . "." . time(), PARAM_USERNAME);
+
     // Workaround for bulk deletes of users with the same email address.
-    $delname = clean_param($user->email . "." . time(), PARAM_USERNAME);
     while ($DB->record_exists('user', array('username' => $delname))) { // No need to use mnethostid here.
         $delname++;
     }
@@ -5946,11 +5960,11 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
             // Before doing the comparison, make sure that the paths are correct (Windows uses slashes in the other direction).
             $attachpath = str_replace('\\', '/', $attachmentpath);
             // Make sure both variables are normalised before comparing.
-            $temppath = str_replace('\\', '/', $CFG->tempdir);
+            $temppath = str_replace('\\', '/', realpath($CFG->tempdir));
 
             // If the attachment is a full path to a file in the tempdir, use it as is,
             // otherwise assume it is a relative path from the dataroot (for backwards compatibility reasons).
-            if (strpos($attachpath, realpath($temppath)) !== 0) {
+            if (strpos($attachpath, $temppath) !== 0) {
                 $attachmentpath = $CFG->dataroot . '/' . $attachmentpath;
             }
 
@@ -7818,14 +7832,16 @@ function count_letters($string) {
  * @param int $length The length of the string to be created.
  * @return string
  */
-function random_string ($length=15) {
+function random_string($length=15) {
+    $randombytes = random_bytes_emulate($length);
     $pool  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $pool .= 'abcdefghijklmnopqrstuvwxyz';
     $pool .= '0123456789';
     $poollen = strlen($pool);
     $string = '';
     for ($i = 0; $i < $length; $i++) {
-        $string .= substr($pool, (mt_rand()%($poollen)), 1);
+        $rand = ord($randombytes[$i]);
+        $string .= substr($pool, ($rand%($poollen)), 1);
     }
     return $string;
 }
@@ -7846,11 +7862,54 @@ function complex_random_string($length=null) {
     if ($length===null) {
         $length = floor(rand(24, 32));
     }
+    $randombytes = random_bytes_emulate($length);
     $string = '';
     for ($i = 0; $i < $length; $i++) {
-        $string .= $pool[(mt_rand()%$poollen)];
+        $rand = ord($randombytes[$i]);
+        $string .= $pool[($rand%$poollen)];
     }
     return $string;
+}
+
+/**
+ * Try to generates cryptographically secure pseudo-random bytes.
+ *
+ * Note this is achieved by fallbacking between:
+ *  - PHP 7 random_bytes().
+ *  - OpenSSL openssl_random_pseudo_bytes().
+ *  - In house random generator getting its entropy from various, hard to guess, pseudo-random sources.
+ *
+ * @param int $length requested length in bytes
+ * @return string binary data
+ */
+function random_bytes_emulate($length) {
+    global $CFG;
+    if ($length <= 0) {
+        debugging('Invalid random bytes length', DEBUG_DEVELOPER);
+        return '';
+    }
+    if (function_exists('random_bytes')) {
+        // Use PHP 7 goodness.
+        $hash = @random_bytes($length);
+        if ($hash !== false) {
+            return $hash;
+        }
+    }
+    if (function_exists('openssl_random_pseudo_bytes')) {
+        // For PHP 5.3 and later with openssl extension.
+        $hash = openssl_random_pseudo_bytes($length);
+        if ($hash !== false) {
+            return $hash;
+        }
+    }
+
+    // Bad luck, there is no reliable random generator, let's just hash some unique stuff that is hard to guess.
+    $hash = sha1(serialize($CFG) . serialize($_SERVER) . microtime(true) . uniqid('', true), true);
+    // NOTE: the last param in sha1() is true, this means we are getting 20 bytes, not 40 chars as usual.
+    if ($length <= 20) {
+        return substr($hash, 0, $length);
+    }
+    return $hash . random_bytes_emulate($length - 20);
 }
 
 /**
