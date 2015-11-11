@@ -17,9 +17,8 @@
 /**
  * Database upgrades.
  *
- * @package report
- * @subpackage customsql
- * @copyright 2012 The Open University
+ * @package report_customsql
+ * @copyright 2015 The Open University
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -36,7 +35,7 @@ function xmldb_report_customsql_upgrade($oldversion) {
 
     if ($oldversion < 2012011900) {
 
-        // Add field to report_customsql_queries
+        // Add field to report_customsql_queries.
         $table = new xmldb_table('report_customsql_queries');
         if ($dbman->table_exists($table)) {
             // Define and add the field 'queryparams'.
@@ -76,7 +75,7 @@ function xmldb_report_customsql_upgrade($oldversion) {
     }
 
     if ($oldversion < 2013062300) {
-        require_once($CFG->dirroot . '/report/customsql/lib.php');
+        require_once($CFG->dirroot . '/report/customsql/locallib.php');
         $table = new xmldb_table('report_customsql_queries');
         $field = new xmldb_field('querylimit', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED,
                 XMLDB_NOTNULL, null, REPORT_CUSTOMSQL_MAX_RECORDS, 'queryparams');
@@ -134,7 +133,7 @@ function xmldb_report_customsql_upgrade($oldversion) {
 
     // Repeat upgrade step that might have got missed on some branches.
     if ($oldversion < 2014020300) {
-        require_once($CFG->dirroot . '/report/customsql/lib.php');
+        require_once($CFG->dirroot . '/report/customsql/locallib.php');
         $table = new xmldb_table('report_customsql_queries');
         $field = new xmldb_field('querylimit', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED,
                 XMLDB_NOTNULL, null, REPORT_CUSTOMSQL_MAX_RECORDS, 'queryparams');
@@ -144,6 +143,21 @@ function xmldb_report_customsql_upgrade($oldversion) {
         }
 
         upgrade_plugin_savepoint(true, 2014020300, 'report', 'customsql');
+    }
+
+    if ($oldversion < 2015062900) {
+
+        // Define field descriptionformat to be added to report_customsql_queries.
+        $table = new xmldb_table('report_customsql_queries');
+        $field = new xmldb_field('descriptionformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'description');
+
+        // Conditionally launch add field descriptionformat.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Customsql savepoint reached.
+        upgrade_plugin_savepoint(true, 2015062900, 'report', 'customsql');
     }
 
     return true;
