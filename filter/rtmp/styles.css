@@ -1,0 +1,16 @@
+.filter_rtmp_video { display: inline-block; border: solid 10px #292929; font-size: 0px; vertical-align:top; min-height: 180px; background-color: #292929; }
+.filter_rtmp_video_playlist { display: inline-block; float: left; border: solid 10px #292929; background-color: #292929; width: 260px; overflow-y: scroll; }
+.filter_rtmp_video_playlist a { display: block; padding: .3em; background: url([[pix:filter_rtmp|gradient_h]]) repeat-x #eaeaea; border-bottom: solid 1px #333; text-decoration: none; color: #333333; cursor: pointer; line-height: 1.2em; }
+.filter_rtmp_video_playlist a.playing, .filter_rtmp_video_playlist a.paused, .filter_rtmp_video_playlist a.progress { background: url([[pix:filter_rtmp|gradient]]) repeat-x #fff; color: #666; font-weight: bold; }
+.filter_rtmp_video_playlist a.progress { opacity: 0.6; }
+.filter_rtmp_video_playlist a:hover { background-color: #cfcfcf; background: url([[pix:filter_rtmp|gradient]]) repeat-x #fff; color: #000; }
+.filter_rtmp_video_playlist a.playing:hover, .filter_rtmp_video_playlist a.paused:hover, .filter_rtmp_video_playlist a.progress:hover { background-color: transparent !important; }
+.filter_rtmp_wrapper .filter_rtmp_video { border-left: none }
+.filter_rtmp_audio { display: inline-block; width: 400px; height: 25px; }
+.filter_rtmp_audio_playlist { display: block; height: 250px; width: 390px; border: solid 5px #292929; overflow-y: scroll; background-color: #292929; }
+.filter_rtmp_audio_playlist a { display:block; padding: .3em; background: url([[pix:filter_rtmp|gradient_h]]) repeat-x #eaeaea; border-bottom: solid 1px #333; text-decoration: none; color: #333333; cursor: pointer; }
+.filter_rtmp_audio_playlist a.playing, .filter_rtmp_audio_playlist a.paused, .filter_rtmp_audio_playlist a.progress { background: url([[pix:filter_rtmp|gradient]]) repeat-x #fff; color: #666; font-weight: bold; }
+.filter_rtmp_audio_playlist a.progress { opacity: 0.6; }
+.filter_rtmp_audio_playlist a:hover { background-color: #cfcfcf; color: #000; background: url([[pix:filter_rtmp|gradient]]) repeat-x #fff; }
+.filter_rtmp_audio_playlist a.playing:hover, .filter_rtmp_audio_playlist a.paused:hover, .filter_rtmp_audio_playlist a.progress:hover { background-color: transparent !important; }
+.filter_rtmp_video .mediafallbacklink, .filter_rtmp_audio .mediafallbacklink { visibility: hidden; }
