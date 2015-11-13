@@ -899,6 +899,11 @@ function data_add_instance($data, $mform = null) {
         $data->assessed = 0;
     }
 
+    if (empty($data->ratingtime) || empty($data->assessed)) {
+        $data->assesstimestart  = 0;
+        $data->assesstimefinish = 0;
+    }
+
     $data->timemodified = time();
 
     $data->id = $DB->insert_record('data', $data);
@@ -1538,6 +1543,11 @@ function mod_data_rating_can_see_item_ratings($params) {
     if (!$info = $DB->get_record_sql($datasql, $dataparams)) {
         // Item doesn't exist
         throw new rating_exception('invaliditemid');
+    }
+
+    // User can see ratings of all participants.
+    if ($info->groupid == 0) {
+        return true;
     }
 
     $course = $DB->get_record('course', array('id' => $info->course), '*', MUST_EXIST);
