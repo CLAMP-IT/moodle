@@ -247,6 +247,9 @@ class mod_forum_post_form extends moodleform {
 
         $mform->addElement('hidden', 'reply');
         $mform->setType('reply', PARAM_INT);
+
+        $mform->addElement('hidden', 'hiddenuserid');
+        $mform->setType('hiddenuserid', PARAM_INT);
     }
 
     /**
