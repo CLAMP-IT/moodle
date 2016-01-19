@@ -2590,6 +2590,9 @@ class assign {
         // More efficient to load this here.
         require_once($CFG->libdir.'/filelib.php');
 
+        // Increase the server timeout to handle the creation and sending of large zip files.
+        core_php_time_limit::raise();
+
         $this->require_view_grades();
 
         // Load all users with submit.
@@ -5537,7 +5540,7 @@ class assign {
         require_once($CFG->dirroot . '/mod/assign/gradingoptionsform.php');
 
         // Need submit permission to submit an assignment.
-        require_capability('mod/assign:grade', $this->context);
+        $this->require_view_grades();
         require_sesskey();
 
         // Is advanced grading enabled?
