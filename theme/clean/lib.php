@@ -29,6 +29,17 @@
  */
 
 /**
+ * Loads jquery
+ *
+ * We need to do this to make it available to our custom course format
+ *
+ * @return void
+ */
+function theme_clean_page_init(moodle_page $page) {
+    $page->requires->jquery();
+}
+
+/**
  * Parses CSS before it is cached.
  *
  * This function can make alterations and replace patterns within the CSS.
