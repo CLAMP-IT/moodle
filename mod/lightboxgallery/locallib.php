@@ -40,26 +40,39 @@ define('AUTO_RESIZE_SCREEN', 1);
 define('AUTO_RESIZE_UPLOAD', 2);
 define('AUTO_RESIZE_BOTH', 3);
 
-function lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $resize = 0) {
+/**
+ * Add a set of uploaded files to the gallery.
+ *
+ * @param array $files A list of stored_file objects.
+ * @param context $context
+ * @param cm_info $cm
+ * @param $gallery
+ * @param int $resize
+ * @access public
+ * @return void
+ */
+function lightboxgallery_add_images($files, $context, $cm, $gallery, $resize = 0) {
     require_once(dirname(__FILE__).'/imageclass.php');
 
     $fs = get_file_storage();
 
     $images = array();
-    if ($stored_file->get_mimetype() == 'application/zip') {
-        // Unpack.
-        $packer = get_file_packer('application/zip');
-        $fs->delete_area_files($context->id, 'mod_lightboxgallery', 'unpacktemp', 0);
-        $stored_file->extract_to_storage($packer, $context->id, 'mod_lightboxgallery', 'unpacktemp', 0, '/');
-        $images = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'unpacktemp', 0);
-        $stored_file->delete();
-    } else {
-        $images[] = $stored_file;
+    foreach ($files as $storedfile) {
+        if ($storedfile->get_mimetype() == 'application/zip') {
+            // Unpack.
+            $packer = get_file_packer('application/zip');
+            $fs->delete_area_files($context->id, 'mod_lightboxgallery', 'unpacktemp', 0);
+            $storedfile->extract_to_storage($packer, $context->id, 'mod_lightboxgallery', 'unpacktemp', 0, '/');
+            $images = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'unpacktemp', 0);
+            $storedfile->delete();
+        } else {
+            $images[] = $storedfile;
+        }
     }
 
-    foreach ($images as $stored_file) {
-        if ($stored_file->is_valid_image()) {
-            $filename = $stored_file->get_filename();
+    foreach ($images as $storedfile) {
+        if ($storedfile->is_valid_image()) {
+            $filename = $storedfile->get_filename();
             $fileinfo = array(
                 'contextid'     => $context->id,
                 'component'     => 'mod_lightboxgallery',
@@ -69,8 +82,8 @@ function lightboxgallery_add_images($stored_file, $context, $cm, $gallery, $resi
                 'filename'      => $filename
             );
             if (!$fs->get_file($context->id, 'mod_lightboxgallery', 'gallery_images', 0, '/', $filename)) {
-                $stored_file = $fs->create_file_from_storedfile($fileinfo, $stored_file);
-                $image = new lightboxgallery_image($stored_file, $gallery, $cm);
+                $storedfile = $fs->create_file_from_storedfile($fileinfo, $storedfile);
+                $image = new lightboxgallery_image($storedfile, $gallery, $cm);
 
                 if ($resize > 0) {
                     $resizeoptions = lightboxgallery_resize_options();

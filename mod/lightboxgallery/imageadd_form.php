@@ -40,7 +40,7 @@ class mod_lightboxgallery_imageadd_form extends moodleform {
         $handlecollisions = !get_config('lightboxgallery', 'overwritefiles');
         $mform->addElement('header', 'general', get_string('addimage', 'lightboxgallery'));
 
-        $mform->addElement('filepicker', 'image', get_string('file'), '0',
+        $mform->addElement('filemanager', 'image', get_string('file'), '0',
                            array('maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('web_image', 'archive')));
         $mform->addRule('image', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('image', 'addimage', 'lightboxgallery');
@@ -58,7 +58,7 @@ class mod_lightboxgallery_imageadd_form extends moodleform {
         }
 
         $mform->addElement('hidden', 'id', $cm->id);
-        $mform->setType('id',PARAM_INT);
+        $mform->setType('id', PARAM_INT);
 
         $this->add_action_buttons(true, get_string('addimage', 'lightboxgallery'));
 
@@ -96,4 +96,3 @@ class mod_lightboxgallery_imageadd_form extends moodleform {
         return !in_array($gallery->autoresize, array(AUTO_RESIZE_UPLOAD, AUTO_RESIZE_BOTH));
     }
 }
-
