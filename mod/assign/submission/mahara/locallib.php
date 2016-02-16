@@ -99,7 +99,12 @@ class assign_submission_mahara extends assign_submission_plugin {
             $mform->disabledIf('assignsubmission_mahara_mnethostid', 'assignsubmission_mahara_enabled', 'notchecked');
 
             // Menu to select whether to lock Mahara pages or not
-            $mform->addElement('selectyesno', 'assignsubmission_mahara_lockpages', new lang_string('lockpages', 'assignsubmission_mahara'));
+            $locksettings = array(
+                ASSIGNSUBMISSION_MAHARA_SETTING_DONTLOCK => new lang_string('no'),
+                ASSIGNSUBMISSION_MAHARA_SETTING_KEEPLOCKED => new lang_string('yeskeeplocked', 'assignsubmission_mahara'),
+                ASSIGNSUBMISSION_MAHARA_SETTING_UNLOCK => new lang_string('yesunlock', 'assignsubmission_mahara')
+            );
+            $mform->addElement('select', 'assignsubmission_mahara_lockpages', get_string('lockpages', 'assignsubmission_mahara'), $locksettings);
             $mform->setDefault('assignsubmission_mahara_lockpages', $locked);
             $mform->addHelpButton('assignsubmission_mahara_lockpages', 'lockpages', 'assignsubmission_mahara');
             $mform->disabledIf('assignsubmission_mahara_lockpages', 'assignsubmission_mahara_enabled', 'notchecked');
@@ -274,8 +279,34 @@ class assign_submission_mahara extends assign_submission_plugin {
      * @return mixed
      */
     public function mnet_get_views($query = '') {
-        global $USER;
-        return $this->mnet_send_request('get_views_for_user', array($USER->username, $query));
+        global $USER, $DB;
+        static $mnetwwwroot = null;
+        $result = $this->mnet_send_request('get_views_for_user', array($USER->username, $query));
+
+        // HACK: Mahara get_views_for_user() has a bug where it returns the full URL for collections
+        // instead of the partial URL. Check to see if we're dealing with an unpatched Mahara and deal with it
+        // if so.
+        if (
+                is_array($result)
+                && array_key_exists('collections', $result)
+                && array_key_exists('data', $result['collections'])
+        ) {
+            foreach ($result['collections']['data'] as $i => $coll) {
+                // Check to see if the URL is absolute
+                if (strpos($coll['url'], 'http://') === 0 || strpos($coll['url'], 'https://') === 0) {
+
+                    // Cache the mnet wwwroot
+                    if ($mnetwwwroot == null) {
+                        $mnetwwwroot = $DB->get_field('mnet_host', 'wwwroot', array('id'=>$this->get_config('mnethostid')), MUST_EXIST);
+                    }
+
+                    $result['collections']['data'][$i]['fullurl'] = $coll['url'];
+                    $result['collections']['data'][$i]['url'] = substr($coll['url'], strlen($mnetwwwroot));
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
