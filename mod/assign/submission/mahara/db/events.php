@@ -15,17 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file contains the version information for Mahara submission plugin
+ * Events subscription.
  *
  * @package    assignsubmission_mahara
- * @copyright  2012 Lancaster University
+ * @copyright  2015 Lancaster University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version   = 2015021005;
-$plugin->requires  = 2014051200;
-$plugin->component = 'assignsubmission_mahara';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.2.1-mdl2.7+'; // Plugin version 1.2.x, for Moodle 2.7+
+$observers = array(
+    array(
+        'eventname'   => '\mod_assign\event\submission_graded',
+        'callback'    => 'assignsubmission_mahara_observers::submission_graded',
+    ),
+    array(
+        'eventname'   => '\mod_assign\event\workflow_state_updated',
+        'callback'    => 'assignsubmission_mahara_observers::workflow_state_updated',
+    ),
+);

@@ -23,6 +23,11 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
+// Statuses for locking setting.
+define('ASSIGNSUBMISSION_MAHARA_SETTING_DONTLOCK', 0);
+define('ASSIGNSUBMISSION_MAHARA_SETTING_KEEPLOCKED', 1);
+define('ASSIGNSUBMISSION_MAHARA_SETTING_UNLOCK', 2);
+
 /**
  * Get the list of MNet hosts that we are allowed to retrieve Mahara pages from.
  * (Only hosts that subscribe to the correct flags)
