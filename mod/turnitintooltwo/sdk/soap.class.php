@@ -20,6 +20,9 @@ class Soap extends SoapClient {
     private $httpheaders;
     private $language;
 
+    private $integrationversion;
+    private $pluginversion;
+
     private $proxyhost;
     private $proxyport;
     private $proxytype;
@@ -41,6 +44,22 @@ class Soap extends SoapClient {
 
     public function setLanguage($language) {
         $this->language = $language;
+    }
+
+    public function setIntegrationVersion( $integrationversion = null ) {
+        $this->integrationversion = $integrationversion;
+    }
+
+    public function getIntegrationVersion() {
+        return (empty($this->integrationversion)) ? 'Not provided' : $this->integrationversion;
+    }
+
+    public function setPluginVersion( $pluginversion = null ) {
+        $this->pluginversion = $pluginversion;
+    }
+
+    public function getPluginVersion() {
+        return (empty($this->pluginversion)) ? 'Not provided' : $this->pluginversion;
     }
 
     public function setIntegrationId( $product ) {
@@ -250,10 +269,17 @@ class Soap extends SoapClient {
                         'AllowNonOrSubmissions' => 'Boolean',
                         'Submitter' => 'Integer',
                         'OriginalityReportCapable' => 'Boolean',
-                        'AcceptNothingSubmission' => 'Boolean'
+                        'AcceptNothingSubmission' => 'Boolean',
+                        'EraterPromptId' => 'String',
+                        'EraterClientId' => 'String',
+                        'EraterUsername' => 'String',
+                        'EraterPassword' => 'String'
                         );
         $this->istestingconnection = false;
         $this->perflog = null;
+        $this->integrationversion = '';
+        $this->pluginversion = '';
+
         parent::__construct( $wsdl, $options );
     }
 
@@ -266,6 +292,8 @@ class Soap extends SoapClient {
             'Pragma: no-cache',
             'SOAPAction: "'.$action.'"',
             'Content-length: '.strlen($request),
+            'X-Integration-Version: '.$this->getIntegrationVersion(),
+            'X-Plugin-Version: '.$this->getPluginVersion()
         );
 
         $location .= ( !is_null( $this->language ) ) ? '?lang='.$this->language : '';
@@ -330,3 +358,5 @@ class Soap extends SoapClient {
     }
 
 }
+
+//?>

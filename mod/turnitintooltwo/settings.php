@@ -37,7 +37,7 @@ if ($ADMIN->fulltree) {
     $tabmenu = $turnitintooltwoview->draw_settings_menu($module, 'settings').
                 html_writer::tag('noscript', get_string('noscript', 'turnitintooltwo')).$library_warning.
                 html_writer::tag('link', '', array("rel" => "stylesheet", "type" => "text/css",
-                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/css/styles.css"));
+                                            "href" => $CFG->wwwroot."/mod/turnitintooltwo/styles.css"));
 
     $current_section = optional_param('section', '', PARAM_ALPHAEXT);
 
@@ -48,7 +48,7 @@ if ($ADMIN->fulltree) {
             $tabmenu .= html_writer::tag('script', '', array("type" => "text/javascript",
                                                     "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/jquery-1.8.2.min.js")).
                         html_writer::tag('script', '', array("type" => "text/javascript",
-                                                    "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/turnitintooltwo_settings.js"));
+                                                    "src" => $CFG->wwwroot."/mod/turnitintooltwo/jquery/turnitintooltwo_settings.min.js"));
         } else {
             $PAGE->requires->jquery();
             $PAGE->requires->jquery_plugin('turnitintooltwo-turnitintooltwo_settings', 'mod_turnitintooltwo');
@@ -111,7 +111,7 @@ if ($ADMIN->fulltree) {
 
     $testoptions = array(
         'https://api.turnitin.com' => 'https://api.turnitin.com',
-        'https://submit.ac.uk' => 'https://submit.ac.uk',
+        'https://api.turnitinuk.com' => 'https://api.turnitinuk.com',
         'https://sandbox.turnitin.com' => 'https://sandbox.turnitin.com'
     );
 
@@ -184,6 +184,16 @@ if ($ADMIN->fulltree) {
                                                     get_string('turnitintooltwoagreement', 'turnitintooltwo'),
                                                     get_string('turnitintooltwoagreement_desc', 'turnitintooltwo'), ''));
 
+    $layoutoptions = array(
+            0 => get_string('layoutoptions_0', 'turnitintooltwo'),
+            1 => get_string('layoutoptions_1', 'turnitintooltwo')
+        );
+
+    $settings->add(new admin_setting_configselect('turnitintooltwo/inboxlayout',
+                                                    get_string('turnitininboxlayout', 'turnitintooltwo'),
+                                                    get_string('turnitininboxlayout_desc', 'turnitintooltwo'),
+                                                    0, $layoutoptions));
+
     // Following are values for student privacy settings.
     $settings->add(new admin_setting_heading('turnitintooltwo_privacy', get_string('studentdataprivacy', 'turnitintooltwo'),
                        get_string('studentdataprivacy_desc', 'turnitintooltwo')));
@@ -209,13 +219,10 @@ if ($ADMIN->fulltree) {
     $settings->add($pseudoselect);
 
     if (isset($config->enablepseudo) AND $config->enablepseudo) {
-        $config->pseudofirstname = ( isset( $config->pseudofirstname ) ) ?
-                                        $config->pseudofirstname : get_string('defaultcoursestudent');
-
         $settings->add(new admin_setting_configtext('turnitintooltwo/pseudofirstname',
                                                         get_string('pseudofirstname', 'turnitintooltwo'),
                                                         get_string('pseudofirstname_desc', 'turnitintooltwo'),
-                                                        get_string('defaultcoursestudent')));
+                                                        TURNITINTOOLTWO_DEFAULT_PSEUDO_FIRSTNAME));
 
         $lnoptions = array( 0 => get_string('user') );
 
@@ -268,12 +275,12 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_grade', get_string('overallgrade', 'turnitintooltwo'),
                        '', 100, $options));
 
-    if (!empty($config->useanon)) {
+    if (!empty($config->useanon) && $current_section == 'modsettingturnitintooltwo') {
         $settings->add(new admin_setting_configselect('turnitintooltwo/default_anon', get_string('anon', 'turnitintooltwo'),
                         '', 0, $ynoptions ));
     }
 
-    if (!empty($config->transmatch)) {
+    if (!empty($config->transmatch) && $current_section == 'modsettingturnitintooltwo') {
         $settings->add(new admin_setting_configselect('turnitintooltwo/default_transmatch',
                                                         get_string('transmatch', 'turnitintooltwo'),
                                                         '', 0, $ynoptions ));
@@ -282,6 +289,12 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_studentreports',
                                                     get_string('studentreports', 'turnitintooltwo'),
                                                     '', 0, $ynoptions ));
+
+    $gradedisplayoptions = array(1 => get_string('displaygradesaspercent', 'turnitintooltwo'),
+                                 2 => get_string('displaygradesasfraction', 'turnitintooltwo'));
+    $settings->add(new admin_setting_configselect('turnitintooltwo/default_gradedisplay',
+                                                    get_string('displaygradesas', 'turnitintooltwo'),
+                                                    '', 2, $gradedisplayoptions ));
 
     $settings->add(new admin_setting_configselect('turnitintooltwo/default_allownonor',
                                                     get_string('allownonor', 'turnitintooltwo'),

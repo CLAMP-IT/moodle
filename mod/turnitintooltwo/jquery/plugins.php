@@ -17,16 +17,14 @@
 $plugins = array(
 	'turnitintooltwo-dataTables'				=> array('files' => array('jquery.dataTables.js', 'jquery.dataTables.css')),
 	'turnitintooltwo-dataTables_plugins'		=> array('files' => array('jquery.dataTables.plugins.js')),
-	'turnitintooltwo-turnitintooltwo'			=> array('files' => array('turnitintooltwo.js')),
-	'turnitintooltwo-turnitintooltwo_extra'		=> array('files' => array('turnitintooltwo_extra.js')),
-	'turnitintooltwo-turnitintooltwo_settings'	=> array('files' => array('turnitintooltwo_settings.js')),
+	'turnitintooltwo-turnitintooltwo'			=> array('files' => array('turnitintooltwo.min.js')),
+	'turnitintooltwo-turnitintooltwo_extra'		=> array('files' => array('turnitintooltwo_extra.min.js')),
+	'turnitintooltwo-turnitintooltwo_settings'	=> array('files' => array('turnitintooltwo_settings.min.js')),
 	'turnitintooltwo-datatables_columnfilter'	=> array('files' => array('jquery.dataTables.columnFilter.js')),
 	'turnitintooltwo-cookie'					=> array('files' => array('jquery.cookie.js')),
 	'turnitintooltwo-colorbox'  				=> array('files' => array('jquery.colorbox.js', 'colorbox.css')),
 	'turnitintooltwo-uieditable'				=> array('files' => array('jqueryui-editable.js', 'jqueryui-editable.css')),
 	'turnitintooltwo-moment'					=> array('files' => array('moment.js')),
 	'turnitintooltwo-block'						=> array('files' => array('block_turnitin.js')),
-	'turnitintooltwo-plagiarism_plugin'			=> array('files' => array('plagiarism_plugin.js')),
-	'turnitintooltwo-tooltipster'				=> array('files' => array('tooltipster.js', 'tooltipster.css')),
-	'turnitintooltwo-plagiarism_submission'		=> array('files' => array('plagiarism_submission.js'))
+	'turnitintooltwo-tooltipster'				=> array('files' => array('tooltipster.js', 'tooltipster.css'))
 );

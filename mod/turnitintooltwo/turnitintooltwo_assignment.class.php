@@ -189,7 +189,7 @@ class turnitintooltwo_assignment {
         $newassignment["turnitintooltwo"]->course = $courseid;
         $newassignment["turnitintooltwo"]->name = $assignmentname;
         $newassignment["turnitintooltwo"]->numparts = count($partids);
-        $newassignment["turnitintooltwo"]->gradedisplay = 1;
+        $newassignment["turnitintooltwo"]->gradedisplay = $config->default_gradedisplay;
         $newassignment["turnitintooltwo"]->shownonsubmission = 1;
         $newassignment["turnitintooltwo"]->usegrademark = $config->usegrademark;
         // Get maximum grade.
@@ -338,7 +338,7 @@ class turnitintooltwo_assignment {
      * @param string $coursetype whether the course is TT (Turnitintool) or PP (Plagiarism Plugin)
      * @return object the turnitin course if created
      */
-    public function create_tii_course($course, $ownerid, $coursetype = "TT", $workflowcontext = "site") {
+    public static function create_tii_course($course, $ownerid, $coursetype = "TT", $workflowcontext = "site") {
         global $DB;
 
         $turnitincomms = new turnitintooltwo_comms();
@@ -396,7 +396,7 @@ class turnitintooltwo_assignment {
      * @param var $course The course object
      * @param string $coursetype whether the course is TT (Turnitintool) or PP (Plagiarism Plugin)
      */
-    public function edit_tii_course($course, $coursetype = "TT") {
+    public static function edit_tii_course($course, $coursetype = "TT") {
         global $DB;
 
         $turnitincomms = new turnitintooltwo_comms();
@@ -470,6 +470,8 @@ class turnitintooltwo_assignment {
      * @return array $users
      */
     public function get_tii_users_by_role($role = "Learner") {
+        global $DB;
+
         $users = array();
         // Get Moodle Course Object.
         $course = $this->get_course_data($this->turnitintooltwo->course);
@@ -481,13 +483,26 @@ class turnitintooltwo_assignment {
         $membership = new TiiMembership();
         $membership->setMembershipIds($classmembers);
 
+        // Get Enrolled users from Turnitin.
         try {
             $response = $turnitincall->readMemberships($membership);
             $readmemberships = $response->getMemberships();
-            foreach ($readmemberships as $readmembership) {
+        } catch (Exception $e) {
+            $turnitincomms->handle_exceptions($e, 'membercheckerror');
+        }
 
-                if ($readmembership->getRole() == $role) {
+        // Add each user to an array.
+        foreach ($readmemberships as $readmembership) {
+            if ($readmembership->getRole() == $role) {
 
+                // Check user is a Moodle user. otherwise we have to go to Turnitin for their name.
+                $moodleuserid = turnitintooltwo_user::get_moodle_user_id($readmembership->getUserId());
+                if (!empty($moodleuserid)) {
+                    $user = $DB->get_record('user', array('id' => $moodleuserid));
+                    $users[$readmembership->getUserId()]["firstname"] = $user->firstname;
+                    $users[$readmembership->getUserId()]["lastname"] = $user->lastname;
+                    $users[$readmembership->getUserId()]["membership_id"] = $readmembership->getMembershipId();
+                } else {
                     $user = new TiiUser();
                     $user->setUserId($readmembership->getUserId());
 
@@ -499,16 +514,38 @@ class turnitintooltwo_assignment {
                         $users[$readmembership->getUserId()]["lastname"] = $readuser->getLastName();
                         $users[$readmembership->getUserId()]["membership_id"] = $readmembership->getMembershipId();
 
-                    } catch (InnerException $e) {
-                        $turnitincomms->handle_exceptions($e, 'tiiusergeterror');
+                    } catch (Exception $e) {
+                        // A read user exception occurs when users are inactive. Re-enrol user to make them active.
+                        $membership = new TiiMembership();
+                        $membership->setClassId($course->turnitin_cid);
+                        $membership->setUserId($readmembership->getUserId());
+                        $membership->setRole($role);
+
+                        try {
+                            $turnitincall->createMembership($membership);
+                        } catch ( InnerException $e ) {
+                            // Ignore excepion.
+                        }
+
+                        try {
+                            $user = new TiiUser();
+                            $user->setUserId($readmembership->getUserId());
+
+                            $response = $turnitincall->readUser($user);
+                            $readuser = $response->getUser();
+
+                            $users[$readmembership->getUserId()]["firstname"] = $readuser->getFirstName();
+                            $users[$readmembership->getUserId()]["lastname"] = $readuser->getLastName();
+                            $users[$readmembership->getUserId()]["membership_id"] = $readmembership->getMembershipId();
+                        } catch ( InnerException $e ) {
+                            $turnitincomms->handle_exceptions($e, 'tiiusergeterror');
+                        }
                     }
                 }
             }
-            return $users;
-
-        } catch (Exception $e) {
-            $turnitincomms->handle_exceptions($e, 'membercheckerror');
         }
+
+        return $users;
     }
 
     /**
@@ -619,7 +656,6 @@ class turnitintooltwo_assignment {
         // Insert the default options for the assignment.
         $this->turnitintooltwo->timecreated = time();
         $this->turnitintooltwo->dateformat = "d/m/Y";
-        $this->turnitintooltwo->gradedisplay = 1;
         $this->turnitintooltwo->commentedittime = 1800;
         $this->turnitintooltwo->commentmaxsize = 800;
         $this->turnitintooltwo->autosubmission = 1;
@@ -843,7 +879,14 @@ class turnitintooltwo_assignment {
         }
 
         // Delete events for this assignment / part.
-        $DB->delete_records('event', array('modulename' => 'turnitintooltwo', 'instance' => $id));
+        $dbselect = " modulename = ? AND instance = ? ";
+        // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+        // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+        if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+            $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? ";
+        }
+
+        $DB->delete_records_select('event', $dbselect, array('turnitintooltwo', $id));
         if (!$DB->delete_records("turnitintooltwo", array("id" => $id))) {
             $result = false;
         }
@@ -883,7 +926,7 @@ class turnitintooltwo_assignment {
      * @return boolean
      */
     public function delete_moodle_assignment_part($toolid, $partid) {
-        global $DB;
+        global $DB, $CFG;;
 
         // Delete submissions.
         $DB->delete_records('turnitintooltwo_submissions', array('turnitintooltwoid' => $toolid, 'submission_part' => $partid));
@@ -899,8 +942,14 @@ class turnitintooltwo_assignment {
 
         // Delete event.
         $turnitintooltwonow = $DB->get_record("turnitintooltwo", array("id" => $toolid));
-        $DB->delete_records_select('event', " modulename = 'turnitintooltwo' AND instance = ? AND name = ? ",
-                        array($toolid, $turnitintooltwonow->name.' - '.$part->partname));
+        $dbselect = " modulename = ? AND instance = ? AND name LIKE ? ";
+        // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+        // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+        if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+            $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? AND CAST(name AS nvarchar(max)) = ? ";
+        }
+        $DB->delete_records_select('event', $dbselect,
+                        array('turnitintooltwo', $toolid, $turnitintooltwonow->name.' - '.$part->partname));
 
         // Update number of parts for the turnitintooltwo.
         $turnitintooltwo = new stdClass();
@@ -939,7 +988,8 @@ class turnitintooltwo_assignment {
      */
     public function get_parts($peermarks = true) {
         global $DB;
-        if ($parts = $DB->get_records("turnitintooltwo_parts", array("turnitintooltwoid" => $this->turnitintooltwo->id))) {
+        if ($parts = $DB->get_records("turnitintooltwo_parts",
+                                        array("turnitintooltwoid" => $this->turnitintooltwo->id), 'id ASC')) {
             if ($peermarks) {
                 foreach ($parts as $part) {
                     $parts[$part->id]->peermark_assignments = $this->get_peermark_assignments($part->tiiassignid);
@@ -1123,13 +1173,22 @@ class turnitintooltwo_assignment {
 
         // Update existing events for this assignment part if title or due date changed.
         if ($fieldname == "partname" || $fieldname == "dtdue") {
-            $event = $DB->get_record_select("event", " modulename = 'turnitintooltwo' AND instance = ? AND name = ?",
-                                                        array($this->turnitintooltwo->id, $currenteventname));
 
-            $event->name = $this->turnitintooltwo->name." - ".$partdetails->partname;
-            $event->timestart = $partdetails->dtdue;
-            $event->userid = $USER->id;
-            $DB->update_record('event', $event);
+            $dbselect = " modulename = ? AND instance = ? AND name LIKE ? ";
+            // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+            // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+            if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+                $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? AND CAST(name AS nvarchar(max)) = ? ";
+            }
+
+            if ($event = $DB->get_record_select("event", $dbselect,
+                                                array('turnitintooltwo', $this->turnitintooltwo->id, $currenteventname))) {
+
+                $event->name = $this->turnitintooltwo->name." - ".$partdetails->partname;
+                $event->timestart = $partdetails->dtdue;
+                $event->userid = $USER->id;
+                $DB->update_record('event', $event);
+            }
         }
 
         // Update grade settings.
@@ -1182,7 +1241,7 @@ class turnitintooltwo_assignment {
         }
         $partids = array_keys($parts);
 
-        // Update Grademark setting depending on config setting.
+        // Update GradeMark setting depending on config setting.
         $this->turnitintooltwo->usegrademark = $config->usegrademark;
 
         // Set the checkbox settings for updates.
@@ -1266,7 +1325,9 @@ class turnitintooltwo_assignment {
                 $part->submitted = $partdetails->submitted;
                 $part->unanon = $partdetails->unanon;
                 // Set anonymous marking depending on whether part has been unanonymised.
-                if ($config->useanon && $partdetails->unanon != 1) {
+                if ($config->useanon
+                    && $partdetails->unanon != 1
+                    && $partdetails->submitted != 1 ) {
                     $assignment->setAnonymousMarking($this->turnitintooltwo->anon);
                 }
                 $parttiiassignid = $partdetails->tiiassignid;
@@ -1274,13 +1335,14 @@ class turnitintooltwo_assignment {
 
             if ($parttiiassignid > 0) {
                 $assignment->setAssignmentId($parttiiassignid);
+
                 $this->edit_tii_assignment($assignment);
             } else {
                 $parttiiassignid = $this->create_tii_assignment($assignment, $this->id, $i);
                 $part->submitted = 0;
             }
 
-            $part->tiiassignid = $parttiiassignid;            
+            $part->tiiassignid = $parttiiassignid;
 
             // Unanonymise part if necessary.
             if ($part->dtpost < time() && $part->submitted == 1) {
@@ -1317,8 +1379,14 @@ class turnitintooltwo_assignment {
 
                 // Delete existing events for this assignment part.
                 $eventname = $turnitintooltwonow->name." - ".$partnow->partname;
-                $DB->delete_records_select('event', " modulename = 'turnitintooltwo' AND instance = ? AND name = ? ",
-                                              array($this->id, $eventname));
+                $dbselect = " modulename = ? AND instance = ? AND name LIKE ? ";
+                // Moodle pre 2.5 on SQL Server errors here as queries weren't allowed on ntext fields, the relevant fields
+                // are nvarchar from 2.6 onwards so we have to cast the relevant fields in pre 2.5 SQL Server setups.
+                if ($CFG->branch <= 25 && $CFG->dbtype == "sqlsrv") {
+                    $dbselect = " CAST(modulename AS nvarchar(max)) = ? AND instance = ? AND CAST(name AS nvarchar(max)) = ? ";
+                }
+
+                $DB->delete_records_select('event', $dbselect, array('turnitintooltwo', $this->id, $eventname));
             } else {
                 if (!$dbpart = $DB->insert_record('turnitintooltwo_parts', $part)) {
                     turnitintooltwo_print_error('partdberror', 'turnitintooltwo', null, $i, __FILE__, __LINE__);
