@@ -1,4 +1,4 @@
-@block @block_filtered_course_list
+@block @block_filtered_course_list @block_filtered_course_list_instancename
 Feature: Each instance of the block can have a custom name
     In order to rename a Filtered course list block
     As an admin
@@ -7,7 +7,7 @@ Feature: Each instance of the block can have a custom name
     @javascript
     Scenario: Renaming a block
         Given I log in as "admin"
-        And I am on homepage
+        And I am on site homepage
         And I follow "Turn editing on"
         And I add the "filtered_course_list" block
         And I configure the "block_filtered_course_list" block

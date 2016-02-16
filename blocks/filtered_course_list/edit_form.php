@@ -14,10 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * This file defines the form for editing block instances.
+ *
+ * @package    block_filtered_course_list
+ * @copyright  2015 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 defined('MOODLE_INTERNAL') || die;
 
+/**
+ * Form for editing Filtered course list block instances
+ *
+ * @package    block_filtered_course_list
+ * @copyright  2015 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class block_filtered_course_list_edit_form extends block_edit_form {
 
+    /**
+     * Builds the form to edit instance settings
+     *
+     * @param MoodleQuickForm $mform
+     */
     protected function specific_definition($mform) {
 
         // Section header title according to language file.

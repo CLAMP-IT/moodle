@@ -14,8 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-$plugin->version   = 2015010700;
-$plugin->requires  = 2013111800; // Requires Moodle 2.6.
+/**
+ * This file contains version information for the Filtered course list block.
+ *
+ * @package    block_filtered_course_list
+ * @copyright  2015 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+$plugin->version   = 2016010300;
+$plugin->requires  = 2014111000; // Requires Moodle 2.8.
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '2.5.0';
+$plugin->release   = 'v2.8.1';
 $plugin->component = 'block_filtered_course_list';

@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * This file define the capabilities used by the Filtered course list block.
+ *
+ * @package    block_filtered_course_list
+ * @copyright  2015 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 $capabilities = array(
 
     'block/filtered_course_list:myaddinstance' => array(

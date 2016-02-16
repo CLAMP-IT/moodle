@@ -26,9 +26,8 @@
 /**
  * Upgrade code for the section links block.
  *
- * @global moodle_database $DB
  * @param int $oldversion
- * @param object $block
+ * @return bool
  */
 function xmldb_block_filtered_course_list_upgrade($oldversion) {
 
@@ -43,9 +42,9 @@ function xmldb_block_filtered_course_list_upgrade($oldversion) {
 
     if ($oldversion < 2014010601) {
 
-        $oldfiltertype = get_config('moodle', 'block_filtered_course_list_filtertype');
+        $oldfiltertype = get_config('moodle', 'block_filtered_course_list/filtertype');
         if ($oldfiltertype == 'term') {
-            set_config('block_filtered_course_list_filtertype', 'shortname');
+            set_config('block_filtered_course_list/filtertype', 'shortname');
         }
 
         $oldtermcurrent = get_config('moodle', 'block_filtered_course_list_termcurrent');
@@ -67,6 +66,53 @@ function xmldb_block_filtered_course_list_upgrade($oldversion) {
 
     // Moodle v2.6.0 release upgrade line.
     // Put any upgrade step following this.
+
+    if ($oldversion < 2015102002) {
+
+        $fclsettings = array(
+            'filtertype',
+            'hideallcourseslink',
+            'hidefromguests',
+            'hideothercourses',
+            'useregex',
+            'currentshortname',
+            'currentexpanded',
+            'futureshortname',
+            'futureexpanded',
+            'labelscount',
+            'categories',
+            'adminview',
+            'maxallcourse',
+            'collapsible',
+        );
+
+        $customrubrics = array(
+            'customlabel',
+            'customshortname',
+            'labelexpanded',
+        );
+
+        foreach ($fclsettings as $name) {
+            $value = get_config('moodle', 'block_filtered_course_list_' . $name);
+            set_config($name, $value, 'block_filtered_course_list');
+            unset_config('block_filtered_course_list_' . $name);
+        }
+
+        for ($i = 1; $i <= 10; $i++) {
+            foreach ($customrubrics as $setting) {
+                $name = $setting . $i;
+                $value = get_config('moodle', 'block_filtered_course_list_' . $name);
+                if (!empty($value)) {
+                    set_config($name, $value, 'block_filtered_course_list');
+                    unset_config('block_filtered_course_list_' . $name);
+                }
+            }
+        }
+
+        // Main savepoint reached.
+        upgrade_block_savepoint(true, 2015102002, 'filtered_course_list');
+
+    }
 
     return true;
 }
