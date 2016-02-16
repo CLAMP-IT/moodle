@@ -22,15 +22,10 @@ $id      = required_param('id', PARAM_INT);
 $delete  = optional_param('delete', 0, PARAM_INT);
 $confirm = optional_param('confirm', 0, PARAM_INT);
 
-if (! $gallery = $DB->get_record('lightboxgallery', array('id' => $id))) {
+if (!$gallery = $DB->get_record('lightboxgallery', array('id' => $id))) {
     print_error('invalidlightboxgalleryid', 'lightboxgallery');
 }
-if (! $course = $DB->get_record('course', array('id' => $gallery->course))) {
-    print_error('invalidcourseid');
-}
-if (! $cm = get_coursemodule_from_instance('lightboxgallery', $gallery->id, $course->id)) {
-    print_error('invalidcoursemodule');
-}
+list($course, $cm) = get_course_and_cm_from_instance($gallery, 'lightboxgallery');
 
 if ($delete && ! $comment = $DB->get_record('lightboxgallery_comments', array('gallery' => $gallery->id, 'id' => $delete))) {
     print_error('Invalid comment ID');
@@ -38,11 +33,11 @@ if ($delete && ! $comment = $DB->get_record('lightboxgallery_comments', array('g
 
 require_login($course->id);
 
+$PAGE->set_cm($cm);
 $PAGE->set_url('/mod/lightboxgallery/view.php', array('id' => $id));
 $PAGE->set_title($gallery->name);
 $PAGE->set_heading($course->shortname);
-$PAGE->set_button(update_module_button($cm->id, $course->id, get_string('modulename', 'lightboxgallery')));
-
+$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'lightboxgallery'));
 
 $context = context_module::instance($cm->id);
 
