@@ -156,5 +156,40 @@ function xmldb_assignsubmission_mahara_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2014082000, 'assignsubmission', 'mahara');
     }
 
+    if ($oldversion < 2015021002) {
+        // First of all, fetch assignments that have assignfeedback enabled.
+        $sql = 'SELECT assignment FROM {assign_plugin_config} WHERE plugin = ? AND subtype = ? AND name = ? AND value = ?';
+        $records = $DB->get_recordset_sql($sql, array(
+                $DB->sql_compare_text('mahara'), $DB->sql_compare_text('assignfeedback'),
+                $DB->sql_compare_text('enabled'), $DB->sql_compare_text('1')));
+        // Now update assignment settings, making unlocking enabled in assignment lock
+        // setting for those where assignfeedback_mahara was enabled.
+        foreach ($records as $record) {
+            $sql = "UPDATE {assign_plugin_config} SET value = '2' WHERE plugin = 'mahara' AND subtype = 'assignsubmission' AND name = 'lock' AND value = '1' AND assignment = ?";
+            $DB->execute($sql, array($record->assignment));
+        }
+        upgrade_plugin_savepoint(true, 2015021002, 'assignsubmission', 'mahara');
+    }
+
+    if ($oldversion < 2015021003) {
+        $result = true;
+        $feedbackplugins = core_component::get_plugin_list('assignfeedback');
+        if (!empty($feedbackplugins['mahara'])) {
+            $pluginman = core_plugin_manager::instance();
+            $uninstallurl = $pluginman->get_uninstall_url('assignfeedback_mahara', 'overview');
+            $uninstall = html_writer::link($uninstallurl, 'uninstall');
+            echo html_writer::div("It seems you are using assignfeedback_mahara plugin. "
+                    . "This plugin is no longer required for Mahara pages unlocking and conflicting "
+                    . "with this upgrade. Please " . $uninstall . " assignfeedback_mahara "
+                    . "plugin first, remove its installation directory, and then proceed "
+                    . "with upgrading by navigating to \"Site adminstration\" > \"Notifications\".",
+                    'alert alert-error');
+            $result = false;
+        }
+
+        // Mahara savepoint reached.
+        upgrade_plugin_savepoint($result, 2015021003, 'assignsubmission', 'mahara');
+    }
+
     return true;
 }
