@@ -29,7 +29,11 @@ function theme_essentials_process_css($css, $theme) {
 
     if ($usingessentialsettings) {
         require_once(dirname(__FILE__) . '/../essential/lib.php');
-        $css = theme_essential_process_css($css, $theme);
+        static $parenttheme;
+        if (empty($parenttheme)) {
+            $parenttheme = theme_config::load('essential'); 
+        }
+        $css = theme_essential_process_css($css, $parenttheme);
     }
 
     // If you have your own settings, then add them here.
@@ -44,11 +48,6 @@ function theme_essentials_set_fontwww($css) {
 
     $tag = '[[setting:fontwww]]';
 
-    if (theme_essential_get_setting('bootstrapcdn')) {
-        $css = str_replace($tag, '//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/fonts/', $css);
-    } else {
-        $css = str_replace($tag, $fontwww, $css);
-    }
     return $css;
 }
 

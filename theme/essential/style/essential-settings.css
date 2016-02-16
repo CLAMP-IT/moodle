@@ -163,11 +163,12 @@
 /* @group Breadcrumb Button */
 .breadcrumb-button input[type="submit"] {
   color: [[setting:themenavcolor]];
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
+  background-image: none;
 }
 .breadcrumb-button input[type="submit"]:hover {
   color: [[setting:themecolor]];
-  background: [[setting:themenavcolor]];
+  background-color: [[setting:themenavcolor]];
 }
 /* @end */
 /* @group Breadcrumb */
@@ -176,7 +177,7 @@
 }
 .breadcrumb-nav ul.breadcrumb.style1 li {
   color: [[setting:themenavcolor]];
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
 }
 .breadcrumb-nav ul.breadcrumb.style1 li a {
   color: [[setting:themenavcolor]];
@@ -195,7 +196,7 @@
 }
 .breadcrumb-nav ul.breadcrumb.style1 li:hover {
   color: [[setting:themecolor]];
-  background: [[setting:themenavcolor]];
+  background-color: [[setting:themenavcolor]];
 }
 .breadcrumb-nav ul.breadcrumb.style1 li:hover a {
   color: [[setting:themecolor]];
@@ -270,17 +271,17 @@ ul.breadcrumb.style2 li a:hover {
 /* @end */
 /* @group Core */
 .moodle-actionmenu[data-enhanced].show .menu {
-  background-color: #fff;
+  background-color: #ffffff;
 }
 .moodle-actionmenu[data-enhanced].show .menu a {
   color: [[setting:themeurlcolor]];
 }
 .moodle-actionmenu[data-enhanced].show .menu a:hover {
-  color: [[setting:themenavcolor]];
-  background-color: [[setting:themecolor]];
+  color: #ffffff;
+  background-color: [[setting:themeurlcolor]];
 }
 .moodle-actionmenu[data-enhanced].show .menu a:hover .fa:before {
-  color: [[setting:themenavcolor]];
+  color: #ffffff;
 }
 /* @end */
 /* @group Course */
@@ -316,6 +317,63 @@ body.has_dock #dock .dockedtitle.active,
 body.has_dock #dock .dockedtitle.disabled,
 body.has_dock #dock .dockedtitle[disabled] {
   background-color: [[setting:themehovercolor]];
+}
+body.has_dock.essential-colours-alternative1 #dock {
+  background-color: [[setting:alternativethemecolor1]];
+}
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle h2,
+body.has_dock.essential-colours-alternative1 #dock .dockeditempanel_hd h2 {
+  color: [[setting:alternativethemetextcolor1]];
+}
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle h2:before,
+body.has_dock.essential-colours-alternative1 #dock .dockeditempanel_hd h2:before {
+  color: [[setting:alternativethemecolor1]];
+}
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle:hover,
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle:focus,
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle:active,
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle.active,
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle.disabled,
+body.has_dock.essential-colours-alternative1 #dock .dockedtitle[disabled] {
+  background-color: [[setting:alternativethemehovercolor1]];
+}
+body.has_dock.essential-colours-alternative2 #dock {
+  background-color: [[setting:alternativethemecolor2]];
+}
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle h2,
+body.has_dock.essential-colours-alternative2 #dock .dockeditempanel_hd h2 {
+  color: [[setting:alternativethemetextcolor2]];
+}
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle h2:before,
+body.has_dock.essential-colours-alternative2 #dock .dockeditempanel_hd h2:before {
+  color: [[setting:alternativethemecolor2]];
+}
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle:hover,
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle:focus,
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle:active,
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle.active,
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle.disabled,
+body.has_dock.essential-colours-alternative2 #dock .dockedtitle[disabled] {
+  background-color: [[setting:alternativethemehovercolor2]];
+}
+body.has_dock.essential-colours-alternative3 #dock {
+  background-color: [[setting:alternativethemecolor3]];
+}
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle h2,
+body.has_dock.essential-colours-alternative3 #dock .dockeditempanel_hd h2 {
+  color: [[setting:alternativethemetextcolor3]];
+}
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle h2:before,
+body.has_dock.essential-colours-alternative3 #dock .dockeditempanel_hd h2:before {
+  color: [[setting:alternativethemecolor3]];
+}
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle:hover,
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle:focus,
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle:active,
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle.active,
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle.disabled,
+body.has_dock.essential-colours-alternative3 #dock .dockedtitle[disabled] {
+  background-color: [[setting:alternativethemehovercolor3]];
 }
 /* @end */
 /* @group Edit Buttons */
@@ -424,14 +482,6 @@ input[type="color"],
 .navbar .navbar-inner .btn-navbar .icon-bar {
   background-color: [[setting:themecolor]];
 }
-.navbar .navbar-inner .nav-collapse .nav > li.dropdown > a:hover,
-.navbar .navbar-inner .dropdown-menu > li > a:hover,
-.navbar .navbar-inner .dropdown-menu > li > a:focus,
-.navbar .navbar-inner .dropdown-submenu:hover > a,
-.navbar .navbar-inner .dropdown-submenu:focus > a {
-  color: [[setting:themenavcolor]];
-  background-color: [[setting:themecolor]];
-}
 .navbar .navbar-inner .dropdown-menu {
   border: 1px solid [[setting:themecolor]];
 }
@@ -439,20 +489,58 @@ input[type="color"],
 .navbar .navbar-inner .nav > li > a {
   color: [[setting:themenavcolor]];
 }
+.navbar .navbar-inner .nav > li.dropdown a i,
+.navbar .navbar-inner .nav > li > a i {
+  color: inherit;
+}
+.navbar .navbar-inner .nav > li.dropdown a:hover,
+.navbar .navbar-inner .nav > li > a:hover {
+  color: [[setting:themecolor]];
+  background-color: [[setting:themenavcolor]];
+}
+.navbar .navbar-inner .nav > li.dropdown a:hover i,
+.navbar .navbar-inner .nav > li > a:hover i {
+  color: inherit;
+}
 .navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a {
   color: [[setting:themeurlcolor]];
 }
 .navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:hover {
-  color: [[setting:themenavcolor]];
+  color: #ffffff;
+  background-color: [[setting:themeurlcolor]];
+}
+.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:focus,
+.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a.open {
+  color: #ffffff;
+  background-color: [[setting:themeurlcolor]];
+}
+.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:focus i,
+.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a.open i {
+  color: #ffffff;
+}
+.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:hover .dimmed_text {
+  color: #eeeeee;
+}
+.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a i {
+  color: [[setting:themeiconcolor]];
 }
 .navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li.dropdown-submenu:hover > a {
-  color: [[setting:themenavcolor]];
+  color: #ffffff;
+  background-color: [[setting:themeurlcolor]];
+}
+.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li.dropdown-submenu:hover > a i {
+  color: inherit;
 }
 .navbar .navbar-inner .nav li.dropdown.open > .dropdown-toggle,
 .navbar .navbar-inner .nav li.dropdown.active > .dropdown-toggle,
 .navbar .navbar-inner .nav li.dropdown.open.active > .dropdown-toggle {
-  background-color: [[setting:themenavcolor]];
-  color: [[setting:themecolor]];
+  color: #ffffff;
+  background-color: [[setting:themehovercolor]];
+}
+.navbar .navbar-inner .nav li.dropdown.open > .dropdown-toggle i,
+.navbar .navbar-inner .nav li.dropdown.active > .dropdown-toggle i,
+.navbar .navbar-inner .nav li.dropdown.open.active > .dropdown-toggle i {
+  color: inherit;
 }
 .navbar .navbar-inner .usermenu .dropdown img.userpicture {
   border: 1px solid [[setting:themenavcolor]];
@@ -471,8 +559,8 @@ input[type="color"],
 }
 .navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message,
 .navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification {
-  color: [[setting:themenavcolor]];
-  background-color: [[setting:themecolor]];
+  color: #ffffff;
+  background-color: [[setting:themehovercolor]];
 }
 .navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message img.userpicture,
 .navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification img.userpicture,
@@ -499,6 +587,10 @@ input[type="color"],
     color: [[setting:themenavcolor]];
     background-color: [[setting:themecolor]];
   }
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a:hover .fa,
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a.open .fa {
+    color: inherit;
+  }
   .navbar .navbar-inner .nav-collapse .nav li.dropdown ul.dropdown-menu {
     background-color: [[setting:themenavcolor]];
     color: [[setting:themecolor]];
@@ -521,10 +613,6 @@ body {
 }
 .container-fluid {
   max-width: [[setting:pagewidth]];
-}
-h1,
-h2 {
-  font-family: [[setting:headingfont]];
 }
 h1,
 h2,
@@ -585,16 +673,16 @@ button.website:focus {
 /* @end */
 /* @group Theme Colours Menu */
 a .colours-default {
-  color: [[setting:themetextcolor]] !important;
+  color: [[setting:themecolor]] !important;
 }
 a .colours-alternative1 {
-  color: [[setting:alternativethemeurlcolor1]] !important;
+  color: [[setting:alternativethemecolor1]] !important;
 }
 a .colours-alternative2 {
-  color: [[setting:alternativethemeurlcolor2]] !important;
+  color: [[setting:alternativethemecolor2]] !important;
 }
 a .colours-alternative3 {
-  color: [[setting:alternativethemeurlcolor3]] !important;
+  color: [[setting:alternativethemecolor3]] !important;
 }
 /* @end */
 /* @group Navbar
@@ -628,14 +716,14 @@ h2.pagetitle {
 /* @group Buttons */
 .button a,
 .button a:visited {
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
 }
 a.marketing-button,
 a.marketing-button:visited {
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
 }
 a.marketing-button:hover {
-  background: [[setting:themehovercolor]];
+  background-color: [[setting:themehovercolor]];
 }
 /* @end */
 /* @group Blocks */
@@ -650,17 +738,17 @@ a.marketing-button:hover {
   color: [[setting:themeiconcolor]];
 }
 .block_rss_client .footer a {
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
 }
 .block_rss_client .footer a:hover {
-  background: [[setting:themehovercolor]];
+  background-color: [[setting:themehovercolor]];
 }
 .block_login .content .footer a {
   background-color: [[setting:themecolor]];
   font-family: [[setting:bodyfont]];
 }
 .block_login .content .footer a:hover {
-  background: [[setting:themehovercolor]];
+  backgroundcolor: [[setting:themehovercolor]];
 }
 .block_login .content form input[type="submit"] {
   background-color: [[setting:themecolor]];
@@ -685,7 +773,7 @@ a.marketing-button:hover {
 /* @end */
 /* @group Footer */
 #page-footer {
-  background: [[setting:footercolor]];
+  background-color: [[setting:footercolor]];
   color: [[setting:footertextcolor]];
   border-top: 2px solid [[setting:themecolor]];
   border-bottom: 3px solid [[setting:themecolor]];
@@ -720,7 +808,7 @@ a.marketing-button:hover {
 }
 #page-footer .block_html ul li:before,
 #greyboxright ul li:before {
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
 }
 /* @group Footer Block Formatting */
 #page-footer .block .header {
@@ -733,10 +821,10 @@ a.marketing-button:hover {
   color: [[setting:themecolor]];
 }
 #page-footer .block_login input[type="submit"] {
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
 }
 #page-footer .block_login input[type="submit"]:hover {
-  background: [[setting:themehovercolor]];
+  background-color: [[setting:themehovercolor]];
 }
 #page-footer .block_rss_client .content a {
   color: [[setting:themeurlcolor]];
@@ -820,7 +908,7 @@ a.marketing-button:hover {
 /* @end */
 /* @group Quiz */
 #page-mod-quiz-edit .questionbankwindow.block div.header {
-  background: [[setting:themecolor]];
+  background-color: [[setting:themecolor]];
   border: 1px solid [[setting:themeiconcolor]];
 }
 #page-mod-quiz-edit .questionbankwindow.block div.header div.title h2 {
@@ -848,7 +936,7 @@ table#user-grades th.courseitem {
   border-right-color: [[setting:themecolor]];
 }
 .path-grade-report-grader .grade_icons img {
-  background: #fff;
+  background-color: #fff;
   padding: 3px;
   border-radius: 3px;
 }
@@ -875,6 +963,14 @@ h6,
 .forumpost .subject,
 .block_login label {
   font-family: [[setting:headingfont]];
+}
+h1 span,
+h2 span,
+h3 span,
+h4 span,
+h5 span,
+h6 span {
+  font-family: inherit;
 }
 /* @end */
 /* @group Editicons */
@@ -904,7 +1000,7 @@ h6,
 /* @end */
 /* @group Chat */
 #chat-input-area table.generaltable td.cell {
-  background: [[setting:themecolor]] !important;
+  background-color: [[setting:themecolor]] !important;
 }
 /* @end */
 /* @end */
