@@ -15,20 +15,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * report_editdates version information.
+ * Definition of Report Custom SQL scheduled tasks.
  *
- * @package   report_editdates
- * @copyright 2011 The Open University
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package report_customsql
+ * @category task
+ * @copyright 2015 The Open University
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2015121500;
-$plugin->requires  = 2014041100;
-$plugin->cron      = 0;
-$plugin->component = 'report_editdates';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '2.4 for Moodle 2.7+';
-
-$plugin->outestssufficient = true;
+$tasks = array(
+    array(
+        'classname' => 'report_customsql\task\run_reports',
+        'blocking' => 0,
+        'minute' => '10',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*'
+    )
+);
