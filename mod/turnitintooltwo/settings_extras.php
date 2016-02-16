@@ -136,7 +136,7 @@ switch ($cmd) {
     case "activitylog":
     case "perflog":
 
-        $logsdir = $CFG->dataroot . "/temp/turnitintooltwo/logs/";
+        $logsdir = $CFG->tempdir . "/turnitintooltwo/logs/";
         $savefile = $cmd.'_'.$filedate.'.txt';
 
         if (!is_null($filedate)) {
@@ -205,7 +205,13 @@ switch ($cmd) {
                     }
 
                     // Unlink user from Turnitin.
-                    $user = new turnitintooltwo_user($muser->id);
+                    $user = new turnitintooltwo_user(
+                        $muser->id,
+                        $role = null,
+                        $enrol = null,
+                        $workflowcontext = null,
+                        $finduser = false
+                    );
                     $user->unlink_user($tiiid);
 
                     // Relink user.

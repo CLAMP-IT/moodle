@@ -92,12 +92,12 @@ class backup_turnitintooltwo_activity_structure_step extends backup_activity_str
 
         $part->set_source_table('turnitintooltwo_parts', array('turnitintooltwoid' => backup::VAR_ACTIVITYID));
 
-        $course->set_source_sql('
+        $course->set_source_sql("
             SELECT  t.id, t.courseid, t.ownerid, tu.turnitin_uid AS ownertiiuid,
                     u.email AS owneremail, u.firstname AS ownerfn, u.lastname AS ownerln,
                     u.username AS ownerun, t.turnitin_ctl, t.turnitin_cid
               FROM {turnitintooltwo_courses} t, {user} u, {turnitintooltwo_users} tu
-             WHERE t.ownerid=u.id AND tu.userid=t.ownerid AND t.courseid = ?',
+             WHERE t.ownerid=u.id AND tu.userid=t.ownerid AND t.courseid = ? AND t.course_type = 'TT'",
             array(backup::VAR_COURSEID));
 
         // All the rest of elements only happen if we are including user info
@@ -115,7 +115,7 @@ class backup_turnitintooltwo_activity_structure_step extends backup_activity_str
 
         // Define file annotations
         $turnitintooltwo->annotate_files('mod_turnitintooltwo', 'intro', null); // This file area hasn't itemid
-        $submission->annotate_files('mod_turnitintooltwo', 'submission', 'id');
+        $submission->annotate_files('mod_turnitintooltwo', 'submissions', 'id');
 
         // Return the root element (turnitintooltwo), wrapped into standard activity structure
         return $this->prepare_activity_structure($turnitintooltwo);

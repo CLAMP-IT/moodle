@@ -36,59 +36,6 @@ $return = array();
 $pluginturnitin = new plagiarism_plugin_turnitin();
 
 switch ($action) {
-    case "process_submission":
-        if (!confirm_sesskey()) {
-            throw new moodle_exception('invalidsesskey', 'error');
-        }
-
-        $cansubmit = ($cm->modname == "forum") ? has_capability('mod/'.$cm->modname.':replypost', $context) :
-                                            (has_capability('mod/'.$cm->modname.':submit', $context) ||
-                                                    has_capability('mod/'.$cm->modname.':grade', $context));
-
-        $textcontent = ($cm->modname == "forum") ? optional_param('textcontent', "", PARAM_ALPHAEXT) : '';
-
-        if ($cansubmit) {
-            // Create the course/class in Turnitin if it doesn't already exist.
-            $coursedata = turnitintooltwo_assignment::get_course_data($cm->course, 'PP');
-
-            if (empty($coursedata->turnitin_cid)) {
-                // Course may existed in a previous incarnation of this plugin so the Turnitin id may be located
-                // in the config table. Get this and save it in courses table if so.
-                if ($turnitincid = $pluginturnitin->get_previous_course_id($cm)) {
-                    $coursedata = $pluginturnitin->migrate_previous_course($coursedata, $turnitincid);
-                } else {
-                    $tiicoursedata = $pluginturnitin->create_tii_course($cm, $coursedata);
-                    $coursedata->turnitin_cid = $tiicoursedata->turnitin_cid;
-                    $coursedata->turnitin_ctl = $tiicoursedata->turnitin_ctl;
-                }
-            }
-
-            // Check whether the file needs to be submitted to Turnitin.
-            if ($pluginturnitin->check_if_submitting($cm, $USER->id, $pathnamehash, $submissiontype)
-                                        && $coursedata->turnitin_cid != 0) {
-                // Create/Edit user within Turnitin and join the user to the course/class if necessary.
-                $user = new turnitintooltwo_user($USER->id, 'Learner');
-                $user->join_user_to_class($coursedata->turnitin_cid);
-
-                // Create/Edit the module as an assignment in Turnitin.
-                $assignmentid = $pluginturnitin->sync_tii_assignment($cm, $coursedata->turnitin_cid);
-
-                $title = '';
-                if ($cm->modname == "forum") {
-                    $moduledata = $DB->get_record($cm->modname, array('id' => $cm->instance));
-                    $title = 'forumpost_'.$user->id."_".$cm->id."_".$moduledata->id."_".$itemid.'.txt';
-                }
-
-                // Submit or resubmit file to Turnitin.
-                $return = $pluginturnitin->tii_submission($cm, $assignmentid, $user, $pathnamehash, $submissiontype,
-                                                            $itemid, $title, $textcontent);
-
-            } else {
-                $return = array("success" => true);
-            }
-        }
-        break;
-
     case "origreport":
     case "grademark":
         $submissionid = optional_param('submission', 0, PARAM_INT);
@@ -112,6 +59,7 @@ switch ($action) {
             $coursedata = turnitintooltwo_assignment::get_course_data($cm->course, 'PP');
 
             $user->join_user_to_class($coursedata->turnitin_cid);
+            $user->edit_tii_user();
 
             echo turnitintooltwo_view::output_dv_launch_form($action, $submissionid, $user->tii_user_id, $role);
         }
@@ -173,24 +121,12 @@ switch ($action) {
         }
 
         if ($istutor) {
-            // Create the course/class in Turnitin if it doesn't already exist.
-            $coursedata = turnitintooltwo_assignment::get_course_data($cm->course, 'PP');
+            $plagiarism_plugin_turnitin = new plagiarism_plugin_turnitin();
+            $coursedata = $plagiarism_plugin_turnitin->get_course_data($cm->id, $cm->course);
 
             $tiiassignment = $DB->get_record('plagiarism_turnitin_config', array('cm' => $cm->id, 'name' => 'turnitin_assignid'));
 
             if (!$tiiassignment) {
-                if (empty($coursedata->turnitin_cid)) {
-                    // Course may existed in a previous incarnation of this plugin so the Turnitin id may be located
-                    // in the config table. Get this and save it in courses table if so.
-                    if ($turnitincid = $pluginturnitin->get_previous_course_id($cm)) {
-                        $coursedata = $pluginturnitin->migrate_previous_course($coursedata, $turnitincid);
-                    } else {
-                        $tiicoursedata = $pluginturnitin->create_tii_course($cm, $coursedata);
-                        $coursedata->turnitin_cid = $tiicoursedata->turnitin_cid;
-                        $coursedata->turnitin_ctl = $tiicoursedata->turnitin_ctl;
-                    }
-                }
-
                 // Create the module as an assignment in Turnitin.
                 $tiiassignment->value = $pluginturnitin->sync_tii_assignment($cm, $coursedata->turnitin_cid);
             }
@@ -254,20 +190,63 @@ switch ($action) {
         }
         break;
 
-    case "acceptuseragreement":
-        $eula_user_id = required_param('user_id', PARAM_INT);
+    case "actionuseragreement":
+        if (!confirm_sesskey()) {
+            throw new moodle_exception('invalidsesskey', 'error');
+        }
+
+        $message = optional_param('message', '', PARAM_ALPHAEXT);
 
         // Get the id from the turnitintooltwo_users table so we can update
-        $turnitin_user = $DB->get_record('turnitintooltwo_users', array('userid' => $eula_user_id));
+        $turnitin_user = $DB->get_record('turnitintooltwo_users', array('userid' => $USER->id));
 
         // Build user object for update
         $eula_user = new object();
-        $eula_user->id += $turnitin_user->id;
-        $eula_user->userid = $eula_user_id;
-        $eula_user->user_agreement_accepted = 1;
+        $eula_user->id = $turnitin_user->id;
+        $eula_user->user_agreement_accepted = 0;
+        if ($message == 'turnitin_eula_accepted') {
+            $eula_user->user_agreement_accepted = 1;
+        } else if ($message == 'turnitin_eula_declined') {
+            $eula_user->user_agreement_accepted = -1;
+        }
 
         // Update the user using the above object
         $DB->update_record('turnitintooltwo_users', $eula_user, $bulk=false);
+        break;
+
+    case "resubmit_event":
+        if (!confirm_sesskey()) {
+            throw new moodle_exception('invalidsesskey', 'error');
+        }
+
+        $forumdata = optional_param('forumdata', '', PARAM_ALPHAEXT);
+        $forumpost = optional_param('forumpost', '', PARAM_ALPHAEXT);
+        $submissionid = required_param('submissionid', PARAM_INT);
+
+        $tiisubmission = new turnitin_submission($submissionid,
+                                                array('forumdata' => $forumdata, 'forumpost' => $forumpost));
+        $tiisubmission->recreate_submission_event();
+        break;
+
+    case "resubmit_events":
+
+        if (!confirm_sesskey()) {
+            throw new moodle_exception('invalidsesskey', 'error');
+        }
+
+        $submissionids = optional_param_array('submission_ids', array(), PARAM_INT);
+
+        $submissionids = optional_param_array('submission_ids', array(), PARAM_INT);
+        $errors = array();
+        $return['success'] = true;
+        foreach ($submissionids as $submissionid) {
+            $tiisubmission = new turnitin_submission($submissionid);
+            if (!$tiisubmission->recreate_submission_event()) {
+                $return['success'] = false;
+                $errors[] = $submissionid;
+            }
+        }
+        $return['errors'] = $errors;
         break;
 }
 

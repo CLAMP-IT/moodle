@@ -101,7 +101,6 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
         $oldid = $data->id;
         $data->courseid = $this->get_courseid();
         $_SESSION['course_id'] = $data->courseid;
-        $_SESSION['course_owner_id'] = $data->ownerid;
 
         // Deleted user's emails are hashed so we need to grab username which isin the format email.timestamp
         if (empty($data->owneremail)) {
@@ -112,7 +111,7 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
         $owner = $DB->get_record('user', array('email' => $data->owneremail));
         if ($owner) {
             $data->ownerid = $owner->id;
-        } else { 
+        } else {
             // Turnitin class owner not found so use restoring user as owner
             $data->ownerid = $USER->id;
         }
@@ -122,7 +121,7 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
         if (!$tiiuser = $DB->get_record('turnitintooltwo_users', array('userid' => $data->ownerid))) {
             $DB->insert_record('turnitintooltwo_users',$tiiowner);
         }
-        if (!$DB->get_records('turnitintooltwo_courses', array('courseid' => $data->courseid))) {
+        if (!$DB->get_records('turnitintooltwo_courses', array('courseid' => $data->courseid, 'course_type' => 'TT'))) {
             $data->course_type = 'TT';
             $newitemid = $DB->insert_record('turnitintooltwo_courses', $data);
             $this->set_mapping('turnitintooltwo_courses', $oldid, $newitemid);
@@ -157,7 +156,7 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
         }
 
         $newitemid = $DB->insert_record('turnitintooltwo_submissions', $data);
-        $this->set_mapping('turnitintooltwo_submissions', $oldid, $newitemid);
+        $this->set_mapping('turnitintooltwo_submissions', $oldid, $newitemid, true);
     }
 
     protected function after_execute() {
@@ -166,5 +165,8 @@ class restore_turnitintooltwo_activity_structure_step extends restore_activity_s
             $_SESSION["assignments_to_create"][] = $_SESSION['assignment_id'];
             unset($_SESSION['assignment_id']);
         }
+
+        // Add turnitin related files, itemid based on mapping 'turnitintooltwo_submissions'.
+        $this->add_related_files('mod_turnitintooltwo', 'submissions', 'turnitintooltwo_submissions');
     }
 }
