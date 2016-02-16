@@ -177,14 +177,24 @@ class theme_essential_core_renderer extends core_renderer {
             }
             $content .= '</ul>';
         } else {
-            $content = '<li>';
-            // The node doesn't have children so produce a final menuitem.
-            if ($menunode->get_url() !== null) {
-                $url = $menunode->get_url();
+            // Also, if the node's text matches '####', add a class so we can treat it as a divider.
+            $content = '';
+            if (preg_match("/^#+$/", $menunode->get_text())) {
+                // This is a divider.
+                $content = html_writer::start_tag('li', array('class' => 'divider'));
             } else {
-                $url = '#';
+                $content = html_writer::start_tag('li');
+                // The node doesn't have children so produce a final menuitem.
+                $class = '';
+                if ($menunode->get_url() !== null) {
+                    $url = $menunode->get_url();
+                    $class = $url->get_param('essentialcolours');
+                } else {
+                    $url = '#';
+                }
+                $content .= html_writer::link($url, $menunode->get_text(), array('title' => $menunode->get_title(), 'class' => $class));
             }
-            $content .= html_writer::link($url, $menunode->get_text(), array('title' => $menunode->get_title()));
+            $content .= html_writer::end_tag('li');
         }
         return $content;
     }
@@ -265,7 +275,7 @@ class theme_essential_core_renderer extends core_renderer {
                     if ($course->visible) {
                         $branch->add('<i class="fa fa-graduation-cap"></i>' . format_string($course->fullname), new moodle_url('/course/view.php?id=' . $course->id), format_string($course->shortname));
                         $numcourses += 1;
-                    } else if (has_capability('moodle/course:viewhiddencourses', context_system::instance())) {
+                    } else if (has_capability('moodle/course:viewhiddencourses', context_course::instance($course->id))) {
                         $branchtitle = format_string($course->shortname);
                         $branchlabel = '<span class="dimmed_text"><i class="fa fa-eye-slash"></i>' . format_string($course->fullname) . '</span>';
                         $branchurl = new moodle_url('/course/view.php', array('id' =>$course->id));
@@ -325,7 +335,7 @@ class theme_essential_core_renderer extends core_renderer {
      * @return custom_menu object
      */
     public function custom_menu_activitystream() {
-        if ($this->page->pagelayout != 'course') {
+        if (($this->page->pagelayout != 'course') && ($this->page->pagelayout != 'incourse') && ($this->page->pagelayout != 'report')) {
             return '';
         }
 
@@ -366,25 +376,33 @@ class theme_essential_core_renderer extends core_renderer {
         $course = $this->page->course;
         $content = new stdClass();
         $modinfo = get_fast_modinfo($course);
+        $course = course_get_format($course)->get_course();
         $modfullnames = array();
         $archetypes = array();
-        foreach ($modinfo->cms as $cm) {
-            // Exclude activities which are not visible or have no link (=label).
-            if (!$cm->uservisible or !$cm->has_view()) {
+        foreach ($modinfo->get_section_info_all() as $section => $thissection) {
+            if (($section > $course->numsections) or (empty($modinfo->sections[$section]))) {
+                // This is a stealth section or is empty.
                 continue;
             }
-            if (array_key_exists($cm->modname, $modfullnames)) {
-                continue;
-            }
-            if (!array_key_exists($cm->modname, $archetypes)) {
-                $archetypes[$cm->modname] = plugin_supports('mod', $cm->modname, FEATURE_MOD_ARCHETYPE, MOD_ARCHETYPE_OTHER);
-            }
-            if ($archetypes[$cm->modname] == MOD_ARCHETYPE_RESOURCE) {
-                if (!array_key_exists('resources', $modfullnames)) {
-                    $modfullnames['resources'] = get_string('resources');
+            foreach ($modinfo->sections[$thissection->section] as $modnumber) {
+                $cm = $modinfo->cms[$modnumber];
+                // Exclude activities which are not visible or have no link (=label).
+                if (!$cm->uservisible or !$cm->has_view()) {
+                    continue;
                 }
-            } else {
-                $modfullnames[$cm->modname] = $cm->modplural;
+                if (array_key_exists($cm->modname, $modfullnames)) {
+                    continue;
+                }
+                if (!array_key_exists($cm->modname, $archetypes)) {
+                    $archetypes[$cm->modname] = plugin_supports('mod', $cm->modname, FEATURE_MOD_ARCHETYPE, MOD_ARCHETYPE_OTHER);
+                }
+                if ($archetypes[$cm->modname] == MOD_ARCHETYPE_RESOURCE) {
+                    if (!array_key_exists('resources', $modfullnames)) {
+                        $modfullnames['resources'] = get_string('resources');
+                    }
+                } else {
+                    $modfullnames[$cm->modname] = $cm->modplural;
+                }
             }
         }
         core_collator::asort($modfullnames);
@@ -449,7 +467,7 @@ class theme_essential_core_renderer extends core_renderer {
                     $messagecontent .= html_writer::tag('i', '', array('class' => 'fa fa-comment' . $iconadd));
                     $messagecontent .= $this->get_time_difference($message->date);
                     $messagecontent .= html_writer::end_span();
-                    $messagecontent .= html_writer::span($message->text, 'notification-text');
+                    $messagecontent .= html_writer::span(htmlspecialchars($message->text, ENT_COMPAT | ENT_HTML401, 'UTF-8'), 'notification-text');
                     $messagecontent .= html_writer::end_div();
                 } else {
                     if (!is_object($message->from) || !empty($message->from->deleted)) {
@@ -467,12 +485,12 @@ class theme_essential_core_renderer extends core_renderer {
                     $messagecontent .= $this->get_time_difference($message->date);
                     $messagecontent .= html_writer::end_span();
                     $messagecontent .= html_writer::span($message->from->firstname, 'msg-sender');
-                    $messagecontent .= html_writer::span($message->text, 'msg-text');
+                    $messagecontent .= html_writer::span(htmlspecialchars($message->text, ENT_COMPAT | ENT_HTML401, 'UTF-8'), 'msg-text');
                     $messagecontent .= html_writer::end_span();
                     $messagecontent .= html_writer::end_div();
                 }
 
-                $messagesubmenu->add($messagecontent, $message->url, $message->text);
+                $messagesubmenu->add($messagecontent, $message->url, htmlspecialchars($message->text, ENT_COMPAT | ENT_HTML401, 'UTF-8'));
             }
         }
         return $this->render_custom_menu($messagemenu);
@@ -502,7 +520,7 @@ class theme_essential_core_renderer extends core_renderer {
         if ($messagelist['newmessages'] < $maxmessages) {
             $maxmessages = 5 - $messagelist['newmessages'];
 
-            $readmessagesql = "SELECT id, smallmessage, useridfrom, useridto, timecreated,timeread, fullmessageformat, notification, contexturl
+            $readmessagesql = "SELECT id, smallmessage, useridfrom, useridto, timecreated, timeread, fullmessageformat, notification, contexturl
                                FROM {message_read}
                                WHERE useridto = :userid
                                ORDER BY timecreated DESC";
@@ -510,7 +528,9 @@ class theme_essential_core_renderer extends core_renderer {
             $messages = $DB->get_records_sql($readmessagesql, array('userid' => $USER->id), 0, $maxmessages);
 
             foreach ($messages as $message) {
-                $messagelist['messages'][] = $this->process_message($message);
+                if (!$message->notification) {
+                    $messagelist['messages'][] = $this->process_message($message);
+                }
             }
         }
 
@@ -547,6 +567,10 @@ class theme_essential_core_renderer extends core_renderer {
             $messagecontent->from = $DB->get_record('user', array('id' => $message->useridfrom));
             $messagecontent->url = new moodle_url('/message/index.php', array('user1' => $USER->id, 'user2' => $message->useridfrom));
         }
+
+        $options = new stdClass();
+        $options->para = false;
+        $messagecontent->text = format_text($messagecontent->text, FORMAT_PLAIN, $options);
 
         $messagecontent->date = $message->timecreated;
         $messagecontent->unread = empty($message->timeread);
@@ -668,7 +692,11 @@ class theme_essential_core_renderer extends core_renderer {
             $caret = '<i class="fa fa-caret-right"></i>';
             $userclass = array('class' => 'dropdown-toggle', 'data-toggle' => 'dropdown');
 
-            $usermenu .= html_writer::link($userurl, $userpic . $USER->firstname . $caret, $userclass);
+            if (!empty($USER->alternatename)) {
+                $usermenu .= html_writer::link($userurl, $userpic . $USER->alternatename . $caret, $userclass);
+            } else {
+                $usermenu .= html_writer::link($userurl, $userpic . $USER->firstname . $caret, $userclass);
+            }
 
             // Start dropdown menu items
             $usermenu .= html_writer::start_tag('ul', array('class' => 'dropdown-menu pull-right'));
@@ -676,13 +704,11 @@ class theme_essential_core_renderer extends core_renderer {
             if (\core\session\manager::is_loggedinas()) {
                 $realuser = \core\session\manager::get_realuser();
                 $branchlabel = '<em><i class="fa fa-key"></i>' . fullname($realuser, true) . get_string('loggedinas', 'theme_essential') . fullname($USER, true) . '</em>';
-                $branchurl = new moodle_url('/user/profile.php', array('id' => $USER->id));
-                $usermenu .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
             } else {
                 $branchlabel = '<em><i class="fa fa-user"></i>' . fullname($USER, true) . '</em>';
-                $branchurl = new moodle_url('/user/profile.php', array('id' => $USER->id));
-                $usermenu .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
             }
+            $branchurl = new moodle_url('/user/profile.php', array('id' => $USER->id));
+            $usermenu .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
 
             if (is_mnet_remote_user($USER) && $idprovider = $DB->get_record('mnet_host', array('id' => $USER->mnethostid))) {
                 $branchlabel = '<em><i class="fa fa-users"></i>' . get_string('loggedinfrom', 'theme_essential') . $idprovider->name . '</em>';
@@ -767,7 +793,11 @@ class theme_essential_core_renderer extends core_renderer {
 
             // Render direct logout link
             $branchlabel = '<em><i class="fa fa-sign-out"></i>' . get_string('logout') . '</em>';
-            $branchurl = new moodle_url('/login/logout.php?sesskey=' . sesskey());
+            if (\core\session\manager::is_loggedinas()) {
+                $branchurl = new moodle_url('/course/loginas.php', array('id' => $course->id, 'sesskey' => sesskey()));
+            } else {
+                $branchurl = new moodle_url('/login/logout.php', array('sesskey' => sesskey()));
+            }
             $usermenu .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
 
             // Render Help Link
@@ -944,17 +974,19 @@ class theme_essential_core_renderer extends core_renderer {
             'i/backup' => 'cloud-download',
             'i/checkpermissions' => 'user',
             'i/edit' => 'pencil',
+            'i/enrolusers' => 'user-plus',
             'i/filter' => 'filter',
             'i/grades' => 'table',
             'i/group' => 'group',
-            'i/groupn' => 'group',
-            'i/groupv' => 'group',
-            'i/groups' => 'group',
+            'i/groupn' => 'user',
+            'i/groupv' => 'user-plus',
+            'i/groups' => 'user-secret',
             'i/hide' => 'eye',
             'i/import' => 'upload',
             'i/move_2d' => 'arrows',
             'i/navigationitem' => 'file',
             'i/outcomes' => 'magic',
+            'i/preview' => 'search',
             'i/publish' => 'globe',
             'i/reload' => 'refresh',
             'i/report' => 'list-alt',
@@ -973,9 +1005,9 @@ class theme_essential_core_renderer extends core_renderer {
             't/edit_menu' => 'cogs',
             'i/withsubcat' => 'indent',
             'i/permissions' => 'key',
-            't/cohort' => 'users',
             'i/assignroles' => 'lock',
             't/assignroles' => 'lock',
+            't/cohort' => 'users',
             't/delete' => 'times-circle',
             't/edit' => 'cog',
             't/hide' => 'eye',
@@ -988,7 +1020,7 @@ class theme_essential_core_renderer extends core_renderer {
             't/sort_asc' => 'sort-asc',
             't/sort_desc' => 'sort-desc',
             't/grades' => 'th-list',
-            't/preview' => 'search',
+            't/preview' => 'search'
         );
         if (array_key_exists($icon, $icons)) {
             return "<i class=\"fa fa-$icons[$icon] icon\" title=\"$alt\">";
@@ -1555,6 +1587,25 @@ class theme_essential_core_renderer extends core_renderer {
     }
 
     /**
+     * Returns the alert markup if outside of the Moodle version supported as can cause issues.
+     */
+    public function version_alert() {
+        global $CFG;
+        $result = '';
+
+        if (($CFG->version < 2014111000.00) || ($CFG->version >= 2015051100.00)) {
+            $result = '<div class="useralerts alert alert-error">';
+            $result .= '<a class="close" data-dismiss="alert" href="#"><i class="fa fa-times-circle"></i></a>';
+            $result .= '<span class="fa-stack"><i class="fa fa-square fa-stack-2x"></i><i class="fa fa-warning fa-stack-1x fa-inverse"></i></span>';
+            $result .= '<span class="title">'.get_string('versionalerttitle', 'theme_essential').'</span><br />'.
+                       get_string('versionalerttext1', 'theme_essential').'<br />'.get_string('versionalerttext2', 'theme_essential');
+            $result .= '</div>';
+        }
+
+        return $result;
+    }
+
+    /**
      * States if the browser is not IE9 or less.
      */
     public function theme_essential_not_lte_ie9() {
@@ -1589,5 +1640,4 @@ class theme_essential_core_renderer extends core_renderer {
             return $properties;
         }
     }
-
 }
