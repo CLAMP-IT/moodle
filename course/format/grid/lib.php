@@ -1279,101 +1279,94 @@ class format_grid extends format_base {
         require_once($CFG->dirroot . '/repository/lib.php');
         require_once($CFG->libdir . '/gdlib.php');
 
-        try {
-            // Set up the displayed image:...
-            $fs = get_file_storage();
-            if ($imagecontainerpathfile = $fs->get_file($contextid, 'course', 'section', $sectionimage->sectionid, '/',
-                    $sectionimage->newimage)) {
-                $gridimagepath = $this->get_image_path();
-                $convertsuccess = true;
-                $mime = $imagecontainerpathfile->get_mimetype();
+        // Set up the displayed image:...
+        $fs = get_file_storage();
+        if ($imagecontainerpathfile = $fs->get_file($contextid, 'course', 'section', $sectionimage->sectionid, '/',
+                $sectionimage->newimage)) {
+            $gridimagepath = $this->get_image_path();
+            $convertsuccess = true;
+            $mime = $imagecontainerpathfile->get_mimetype();
 
-                if (self::is_developer_debug()) {
-                    $imagecontainerpathfileinfo = $imagecontainerpathfile->get_imageinfo();
-                    error_log('format_grid::setup_displayed_image - original image size: ' . print_r($imagecontainerpathfileinfo,
-                                    true));
-                }
+            if (self::is_developer_debug()) {
+                $imagecontainerpathfileinfo = $imagecontainerpathfile->get_imageinfo();
+                error_log('format_grid::setup_displayed_image - original image size: ' . print_r($imagecontainerpathfileinfo,
+                                true));
+            }
 
-                // Updated image.
-                $sectionimage->displayedimageindex++;
-                $created = time();
-                $displayedimagefilerecord = array(
-                    'contextid' => $contextid,
-                    'component' => 'course',
-                    'filearea' => 'section',
-                    'itemid' => $sectionimage->sectionid,
-                    'filepath' => $gridimagepath,
-                    'filename' => $sectionimage->displayedimageindex . '_' . $sectionimage->newimage,
-                    'timecreated' => $created,
-                    'timemodified' => $created,
-                    'mimetype' => $mime);
+            // Updated image.
+            $sectionimage->displayedimageindex++;
+            $created = time();
+            $displayedimagefilerecord = array(
+                'contextid' => $contextid,
+                'component' => 'course',
+                'filearea' => 'section',
+                'itemid' => $sectionimage->sectionid,
+                'filepath' => $gridimagepath,
+                'filename' => $sectionimage->displayedimageindex . '_' . $sectionimage->newimage,
+                'timecreated' => $created,
+                'timemodified' => $created,
+                'mimetype' => $mime);
 
-                $displayedimageinfo = $this->get_displayed_image_container_properties($settings);
+            $displayedimageinfo = $this->get_displayed_image_container_properties($settings);
 
-                if (self::is_developer_debug()) {
-                    error_log('format_grid::setup_displayed_image - new image container size, width:' .
-                            $displayedimageinfo['width'] . ' height:' . $displayedimageinfo['height']);
-                }
+            if (self::is_developer_debug()) {
+                error_log('format_grid::setup_displayed_image - new image container size, width:' .
+                        $displayedimageinfo['width'] . ' height:' . $displayedimageinfo['height']);
+            }
 
-                $tmproot = make_temp_directory('gridformatdisplayedimagecontainer');
-                $tmpfilepath = $tmproot . '/' . $imagecontainerpathfile->get_contenthash();
-                $imagecontainerpathfile->copy_content_to($tmpfilepath);
+            $tmproot = make_temp_directory('gridformatdisplayedimagecontainer');
+            $tmpfilepath = $tmproot . '/' . $imagecontainerpathfile->get_contenthash();
+            $imagecontainerpathfile->copy_content_to($tmpfilepath);
 
-                if ($settings['imageresizemethod'] == 1) {
-                    $crop = false;
-                } else {
-                    $crop = true;
-                }
-                $data = self::generate_image($tmpfilepath, $displayedimageinfo['width'], $displayedimageinfo['height'], $crop);
-                if (!empty($data)) {
-                    if ($fs->file_exists($displayedimagefilerecord['contextid'], $displayedimagefilerecord['component'],
-                                    $displayedimagefilerecord['filearea'], $displayedimagefilerecord['itemid'],
-                                    $displayedimagefilerecord['filepath'], $displayedimagefilerecord['filename'])) {
-                        /* This can happen with previous CONTRIB-4099 versions where it was possible for the backup file to
-                           have the 'gridimage' files too.  Therefore without this, then 'create_file_from_string' below will
-                           baulk as the file already exists.   Unfortunately has to be here as the restore mechanism restores
-                           the grid format data for the database and then the files.  And the Grid code is called at the 'data'
-                           stage. */
-                        if (self::is_developer_debug()) {
-                            error_log('format_grid::setup_displayed_image - removed old file, name:' .
-                                    $displayedimagefilerecord['filename'] . ' section id:' . $displayedimagefilerecord['itemid'] .
-                                    ' context id:' . $displayedimagefilerecord['contextid'] . ' course id:' . $this->courseid);
-                        }
-                        // Delete old file.
-                        if ($oldfile = $fs->get_file($displayedimagefilerecord['contextid'],
-                                $displayedimagefilerecord['component'], $displayedimagefilerecord['filearea'],
-                                $displayedimagefilerecord['itemid'], $displayedimagefilerecord['filepath'],
-                                $displayedimagefilerecord['filename'])) {
-                            $oldfile->delete();
-                        }
+            if ($settings['imageresizemethod'] == 1) {
+                $crop = false;
+            } else {
+                $crop = true;
+            }
+            $data = self::generate_image($tmpfilepath, $displayedimageinfo['width'], $displayedimageinfo['height'], $crop);
+            if (!empty($data)) {
+                if ($fs->file_exists($displayedimagefilerecord['contextid'], $displayedimagefilerecord['component'],
+                                $displayedimagefilerecord['filearea'], $displayedimagefilerecord['itemid'],
+                                $displayedimagefilerecord['filepath'], $displayedimagefilerecord['filename'])) {
+                    /* This can happen with previous CONTRIB-4099 versions where it was possible for the backup file to
+                       have the 'gridimage' files too.  Therefore without this, then 'create_file_from_string' below will
+                       baulk as the file already exists.   Unfortunately has to be here as the restore mechanism restores
+                       the grid format data for the database and then the files.  And the Grid code is called at the 'data'
+                       stage. */
+                    if (self::is_developer_debug()) {
+                        error_log('format_grid::setup_displayed_image - removed old file, name:' .
+                                $displayedimagefilerecord['filename'] . ' section id:' . $displayedimagefilerecord['itemid'] .
+                                ' context id:' . $displayedimagefilerecord['contextid'] . ' course id:' . $this->courseid);
                     }
-                    $fs->create_file_from_string($displayedimagefilerecord, $data);
-                } else {
-                    $convertsuccess = false;
-                }
-                unlink($tmpfilepath);
-
-                if ($convertsuccess == true) {
-                    // Now safe to delete old file if it exists.
-                    if ($oldfile = $fs->get_file($contextid, 'course', 'section', $sectionimage->sectionid, $gridimagepath,
-                            ($sectionimage->displayedimageindex - 1) . '_' . $sectionimage->image)) {
+                    // Delete old file.
+                    if ($oldfile = $fs->get_file($displayedimagefilerecord['contextid'],
+                            $displayedimagefilerecord['component'], $displayedimagefilerecord['filearea'],
+                            $displayedimagefilerecord['itemid'], $displayedimagefilerecord['filepath'],
+                            $displayedimagefilerecord['filename'])) {
                         $oldfile->delete();
                     }
-                    $DB->set_field('format_grid_icon', 'displayedimageindex', $sectionimage->displayedimageindex,
-                            array('sectionid' => $sectionimage->sectionid));
-                } else {
-                    print_error('cannotconvertuploadedimagetodisplayedimage', 'format_grid',
-                            $CFG->wwwroot . "/course/view.php?id=" . $this->courseid);
                 }
+                $fs->create_file_from_string($displayedimagefilerecord, $data);
             } else {
-                print_error('cannotfinduploadedimage', 'format_grid', $CFG->wwwroot . "/course/view.php?id=" . $this->courseid);
+                $convertsuccess = false;
             }
-        } catch (Exception $e) {
-            print('Grid Format Setup Displayed Image Exception:...');
-            debugging($e->getMessage());
-            debugging(print_r($contextid, true));
-            debugging(print_r($sectionimage, true));
-            debugging(print_r($e, true));
+            unlink($tmpfilepath);
+
+            if ($convertsuccess == true) {
+                // Now safe to delete old file if it exists.
+                if ($oldfile = $fs->get_file($contextid, 'course', 'section', $sectionimage->sectionid, $gridimagepath,
+                        ($sectionimage->displayedimageindex - 1) . '_' . $sectionimage->image)) {
+                    $oldfile->delete();
+                }
+                $DB->set_field('format_grid_icon', 'displayedimageindex', $sectionimage->displayedimageindex,
+                        array('sectionid' => $sectionimage->sectionid));
+            } else {
+                error_log(get_string('cannotconvertuploadedimagetodisplayedimage', 'format_grid').' ConxID: '.$contextid.' CID: '.$this->courseid.' SID: '.$sectionimage->sectionid.' DIX: '.$sectionimage->displayedimageindex.' IMG: '.$sectionimage->newimage.' - Please send this information along with a dump of the \'grid_icon\', \'course_section\' and \'files\' DB tables to the developer.  Also look in the moodledata \'filedir\' folder for the \'file\' with the \'contenthash\' from the \'files\' table where the \'itemid\' is the same as the \'SID\' and \'component\' is \'course\' and \'filearea\' is \'section\' and see if it exists.');
+                print_error('cannotconvertuploadedimagetodisplayedimage', 'format_grid',
+                        $CFG->wwwroot . "/course/view.php?id=" . $this->courseid);
+            }
+        } else {
+            error_log(get_string('cannotfinduploadedimage', 'format_grid').' ConxID: '.$contextid.' CID: '.$this->courseid.' SID: '.$sectionimage->sectionid.' DIX: '.$sectionimage->displayedimageindex.' IMG: '.$sectionimage->newimage.' - Please send this information along with a dump of the \'grid_icon\', \'course_section\' and \'files\' DB tables to the developer.  Also look in the moodledata \'filedir\' folder for the \'file\' with the \'contenthash\' from the \'files\' table where the \'itemid\' is the same as the \'SID\' and \'component\' is \'course\' and \'filearea\' is \'section\' and see if it exists.');
         }
 
         return $sectionimage;  // So that the caller can know the new value of displayedimageindex.
@@ -1395,7 +1388,7 @@ class format_grid extends format_base {
                         $sectionimage->displayedimageindex . '_' . $sectionimage->image)) {
                     $file->delete();
                 }
-                $DB->set_field('format_grid_icon', 'displayedimageindex', 0, array('sectionid' => $sectionimage->sectionid));
+                $DB->delete_records("format_grid_icon", array('courseid' => $this->courseid, 'sectionid' => $sectionimage->sectionid));
             }
         }
     }
@@ -1421,7 +1414,7 @@ class format_grid extends format_base {
                     }
                 }
             }
-            $DB->delete_records("format_grid_icon", array("courseid" => $this->courseid));
+            $DB->delete_records("format_grid_icon", array('courseid' => $this->courseid));
         }
     }
 

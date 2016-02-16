@@ -68,8 +68,8 @@ $string['numbersections'] = 'Number of sections';
 
 // Exception messages.
 $string['imagecannotbeused'] = 'Image cannot be used, must be a PNG, JPG or GIF and the GD PHP extension must be installed.';
-$string['cannotfinduploadedimage'] = 'Cannot find the uploaded original image.  Please report error details to developer.';
-$string['cannotconvertuploadedimagetodisplayedimage'] = 'Cannot convert uploaded image to displayed image.  Please report error details to developer.';
+$string['cannotfinduploadedimage'] = 'Cannot find the uploaded original image.  Please report error details and the information contained in the php.log file to developer.  Refresh the page and upload a fresh copy of the image.';
+$string['cannotconvertuploadedimagetodisplayedimage'] = 'Cannot convert uploaded image to displayed image.  Please report error details and the information contained in the php.log file to developer.';
 $string['cannotgetimagesforcourse'] = 'Cannot get images for course.  Please report error details to developer.';
 
 // CONTRIB-4099 Image container size change improvement.
