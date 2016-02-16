@@ -33,19 +33,14 @@ require_once(dirname(__FILE__).'/imageclass.php');
 
 global $DB;
 
-$id = optional_param('id', 0, PARAM_INT); // Course module id.
-$l = optional_param('l', 0, PARAM_INT); // instance id.
+$id = optional_param('id', 0, PARAM_INT);
+$l = optional_param('l', 0, PARAM_INT);
 $page = optional_param('page', 0, PARAM_INT);
 $search  = optional_param('search', '', PARAM_TEXT);
 $editing = optional_param('editing', 0, PARAM_BOOL);
 
 if ($id) {
-    if (!$cm = get_coursemodule_from_id('lightboxgallery', $id)) {
-        print_error('invalidcoursemodule');
-    }
-    if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
-        print_error('coursemisconf');
-    }
+    list($course, $cm) = get_course_and_cm_from_cmid($id, 'lightboxgallery');
     if (!$gallery = $DB->get_record('lightboxgallery', array('id' => $cm->instance))) {
         print_error('invalidcoursemodule');
     }
@@ -53,12 +48,7 @@ if ($id) {
     if (!$gallery = $DB->get_record('lightboxgallery', array('id' => $l))) {
         print_error('invalidlightboxgalleryid', 'lightboxgallery');
     }
-    if (!$course = $DB->get_record('course', array('id' => $gallery->course))) {
-        print_error('invalidcourseid');
-    }
-    if (!$cm = get_coursemodule_from_instance("lightboxgallery", $gallery->id, $course->id)) {
-        print_error('invalidcoursemodule');
-    }
+    list($course, $cm) = get_course_and_cm_from_instance($gallery, 'lightboxgallery');
 }
 
 
@@ -108,7 +98,7 @@ if (has_capability('mod/lightboxgallery:edit', $context)) {
     $strediting = get_string('turnediting'.($editing ? 'off' : 'on'));
     $button = $OUTPUT->single_button($url, $strediting, 'get').' ';
 }
-$button .= update_module_button($cm->id, $course->id, get_string('modulename', 'lightboxgallery'));
+$button .= $OUTPUT->update_module_button($cm->id, 'lightboxgallery');
 $PAGE->set_button($button);
 $PAGE->requires->css('/mod/lightboxgallery/assets/skins/sam/gallery-lightbox-skin.css');
 $PAGE->requires->yui_module('moodle-mod_lightboxgallery-lightbox', 'M.mod_lightboxgallery.init');
