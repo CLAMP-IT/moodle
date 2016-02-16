@@ -26,13 +26,95 @@
 M.format_grid = M.format_grid || {};
 M.format_grid.gridkeys = M.format_grid.gridkeys || {};
 M.format_grid.gridkeys = {
-    init: function() {
-        Y.on('esc', function (e) {
-            e.preventDefault();
-            Y.log("Esc pressed");
-            Y.log("Selected section no: " + M.format_grid.selected_section_no);
-            M.format_grid.icon_toggle(e);
-        });
+    currentGridBox: false,
+    currentGridBoxIndex: 0,
+    findfocused: function() {
+        var focused = document.activeElement;
+        if (!focused || focused == document.body) {
+            focused = null;
+        } else if (document.querySelector) {
+            focused = document.querySelector(":focus");
+        }
+        M.format_grid.gridkeys.currentGridBox = false;
+        if (focused && focused.id) {
+            Y.log(focused.id);
+            if (focused.id.indexOf('gridsection-') > -1) {
+                Y.log('Grid id:'  + focused.id);
+                M.format_grid.gridkeys.currentGridBox = true;
+                M.format_grid.gridkeys.currentGridBoxIndex = parseInt(focused.id.replace("gridsection-", ""));
+            }
+        }
+        return M.format_grid.gridkeys.currentGridBox;
+    },
+    init: function(params) {
+        //console.log(JSON.stringify(params));
+        if (!params.editing) {
+            Y.on('esc', function (e) {
+                e.preventDefault();
+                Y.log("Esc pressed");
+                Y.log("Selected section no: " + M.format_grid.selected_section_no);
+                M.format_grid.icon_toggle(e);
+            });
+            // Initiated in CONTRIB-3240...
+            Y.on('enter', function (e) {
+                if (M.format_grid.gridkeys.currentGridBox) {
+                    e.preventDefault();
+                    if (M.format_grid.shadebox.shadebox_open == false) {
+                        Y.log("Enter pressed");
+                        Y.log("Selected section no: " + M.format_grid.selected_section_no);
+                        M.format_grid.icon_toggle(e);
+                    } else if (e.shiftKey) {
+                        Y.log("Shift Enter pressed");
+                        Y.log("Selected section no: " + M.format_grid.selected_section_no);
+                        M.format_grid.icon_toggle(e);
+                    }
+                }
+            });
+            Y.on('tab', function (e) {
+                //e.preventDefault();
+                //window.dispatchEvent(e);
+                setTimeout(function() {
+                    // Cope with the fact that the default event happens after us.
+                    // Therefore we need to react after focus has moved.
+                    if (M.format_grid.gridkeys.findfocused()) {
+                        //e.preventDefault();
+                        M.format_grid.tab(M.format_grid.gridkeys.currentGridBoxIndex);
+                    /*
+                    if (e.shiftKey) {
+                        Y.log("Shift Tab pressed");
+                        M.format_grid.arrow_left(e);
+                    } else {
+                        Y.log("Tab pressed");
+                        M.format_grid.arrow_right(e);
+                    }
+                    */
+                    }
+                }, 250);
+            });
+            Y.on('space', function (e) {
+                /*
+                var focused = document.activeElement;
+                if (!focused || focused == document.body) {
+                    focused = null;
+                } else if (document.querySelector) {
+                    focused = document.querySelector(":focus");
+                }
+                Y.log(focused);
+                if (focused.id) {
+                    Y.log(focused.id);
+                    if (focused.id.indexOf('gridsection-') > -1) {
+                        Y.log('Grid id:'  + focused.id);
+                    }
+                }
+                */
+                if (M.format_grid.gridkeys.currentGridBox) {
+                    e.preventDefault();
+                    Y.log("Space pressed");
+                    Y.log("Selected section no: " + M.format_grid.selected_section_no);
+                    M.format_grid.icon_toggle(e);
+                }
+            });
+        }
         Y.on('left', function (e) {
             e.preventDefault();
             Y.log("Left pressed");
@@ -43,34 +125,5 @@ M.format_grid.gridkeys = {
             Y.log("Right pressed");
             M.format_grid.arrow_right(e);
         });
-        /* Deferred functionality - see CONTRIB-3240...
-        Y.on('enter', function (e) {
-            //var ae = document.activeElement;
-            if (M.format_grid.shadebox.shadebox_open == false) {
-                e.preventDefault();
-                Y.log("Enter pressed");
-                Y.log("Selected section no: " + M.format_grid.selected_section_no);
-                M.format_grid.icon_toggle(e);
-            } else if (e.shiftKey) {
-                e.preventDefault();
-                Y.log("Shift Enter pressed");
-                Y.log("Selected section no: " + M.format_grid.selected_section_no);
-                M.format_grid.icon_toggle(e);
-            }
-        });
-        Y.on('tab', function (e) {
-            //var ae = document.activeElement;
-            if (M.format_grid.shadebox.shadebox_open == false) {
-                e.preventDefault();
-                if (e.shiftKey) {
-                    Y.log("Shift Tab pressed");
-                    M.format_grid.arrow_left(e);
-                } else {
-                    Y.log("Tab pressed");
-                    M.format_grid.arrow_right(e);
-                }
-            }
-        });
-        */
     }
 };
