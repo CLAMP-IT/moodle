@@ -1,54 +1,59 @@
 /* @group Forms */
 fieldset {
-    select,
     textarea[cols],
-    input[size],
     .form-item .form-description {
         .fluid-span(8);
     }
 }
 
+body#page-admin-setting-messageinbound_mailsettings fieldset select {
+    .fluid-span(8);
+}
+
 @media (max-width: 979px) {
     fieldset {
-        select,
         textarea[cols],
         input[size],
         .form-item .form-description {
             .fluid-span(6);
         }
     }
+    body#page-admin-setting-messageinbound_mailsettings fieldset select {
+        .fluid-span(6);
+    }
+}
+
+.form-item .form-label, .mform .fitem div.fitemtitle {
+  text-align: right;
 }
 
 @media (max-width: 767px) {
     fieldset {
-        select,
         textarea[cols],
         input[size],
         .form-item .form-description {
             .fluid-span(5);
         }
     }
+    body#page-admin-setting-messageinbound_mailsettings fieldset select {
+        .fluid-span(5);
+    }
+    .form-item .form-label, .mform .fitem div.fitemtitle {
+        text-align: left;
+    }
 }
 
 @media (max-width: 480px) {
     fieldset {
-        select,
         textarea[cols],
         input[size],
         .form-item .form-description {
             .fluid-span(3);
         }
     }
-}
-.form-item .form-label, .mform .fitem div.fitemtitle {
-  text-align: left;
-}
-
-.form-item .form-setting,
-.form-item .form-description,
-.mform .fitem .felement,
-#page-mod-forum-search .c1 {
-  margin-left: 180px;
+    body#page-admin-setting-messageinbound_mailsettings fieldset select {
+        .fluid-span(3);
+    }
 }
 
 .form-item .form-label .form-overridden {
@@ -72,13 +77,13 @@ fieldset {
     .fp-content-center form+div,
     div.backup-section+form,
     #fgroup_id_buttonar {
-      width: 40%;
+      width: 30%;
       text-align: center;
       margin-left: auto;
       margin-right: auto;
       z-index: 1;
-      padding: 20px;
-      border-radius: @baseBorderRadius * 2;
+      padding: 10px;
+      border-radius: @baseBorderRadius;
       .felement {
         margin-left: auto;
         margin-right: auto;
@@ -119,7 +124,7 @@ body {
       div.backup-section+form,
       #fgroup_id_buttonar {
         position: fixed;
-        left: 30%;
+        left: 35%;
         bottom: 30px;
       }
     }
@@ -174,6 +179,14 @@ input[type="checkbox"] {
   .author, .lastpost {
     white-space: normal !important;  // Override mod style.css that comes afterwards, yuck '!important' :(.
   }
+}
+
+.form-item .form-setting .form-colourpicker.defaultsnext {
+  margin-right: 0;
+}
+
+select {
+  max-width: 570px;
 }
 
 /* @end */
