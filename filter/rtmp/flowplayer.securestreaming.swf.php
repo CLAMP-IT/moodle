@@ -21,16 +21,25 @@
  *  a media plugin that plays that media inline
  *
  * @package    filter_rtmp
- * @author     Lacey Vickery, Fred Woolard (based on mediaplugin filter {@link http://moodle.com})
- * @copyright  2012 Appalachian State University
+ * @author     Fred Woolard <woolardfa@appstate.edu>
+ * @copyright  2015 Appalachian State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['filtername']    = 'Streaming media filter (RTMP)';
+define('NO_DEBUG_DISPLAY', true);
+define('NO_MOODLE_COOKIES', true);
+define('NO_UPGRADE_CHECK', true);
 
-$string['rtmp_audio']    = 'Filter audio (.mp3)';
-$string['rtmp_video']    = 'Filter video (.flv|.mp4|.f4v)';
-$string['rtmp_defcc']    = 'Closed captions on by default';
+// // No query str or post vars accepted as those could
+// be initialized by the plugin as Flash vars in the
+// .swf code 
+if (!empty($_GET) or !empty($_POST) or !empty($_REQUEST)) {
+    header("HTTP/1.1 404 Not Found");
+    die;
+}
 
-$string['rtmp_hls_fallback'] = 'Fallback to HLS';
-$string['rtmp_hls_urlfmt']   = 'HLS Url Style';
+// Will need following for referrer restrictions
+require('../../config.php');
+require('./lib.php');
+
+send_flash_content('flowplayer.securestreaming-3.2.9.swf');
