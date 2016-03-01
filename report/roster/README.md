@@ -1,6 +1,8 @@
 Roster report
 =============
 
+[![Build Status](https://api.travis-ci.org/LafColITS/moodle-report_roster.png)](https://api.travis-ci.org/LafColITS/moodle-report_roster)
+
 This is a simple report which displays the user pictures for everyone enrolled in the given course.
 
 You can install it using git. In the top-level folder of your

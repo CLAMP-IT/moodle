@@ -1,12 +1,18 @@
-# [Filtered Course List v2.5]
+# [Filtered Course List v2.8.0]
 
-for Moodle 2.6 or higher
+[![Build Status](https://travis-ci.org/CLAMP-IT/moodle-blocks_filtered_course_list.svg?branch=master)](https://travis-ci.org/CLAMP-IT/moodle-blocks_filtered_course_list)
 
-This is a block which displays a configurable list of courses. It is intended as a replacement for the My Courses block, although both may be used. It is maintained by the Collaborative Liberal Arts Moodle Project (CLAMP).
+for Moodle 2.8 or higher
+
+The Filtered Course List block displays a configurable list of courses. It is intended as a replacement for the My Courses block, although both may be used. It is maintained by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
 ## Installation
 
-Unzip files into your Moodle blocks directory. This will create a folder called filtered_course_list. Alternatively, you may install it with git. In the top-level folder of your Moodle install, type the command: git clone https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list blocks/filtered_course_list.
+Unzip files into your Moodle blocks directory. This will create a folder called filtered_course_list. Alternatively, you may install it with git. In the top-level folder of your Moodle install, type the command: 
+
+```
+git clone https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list blocks/filtered_course_list.
+```
 
 Then visit the admin screen to allow the install to complete.
 
@@ -20,11 +26,11 @@ To configure the block, go to Site Administration > Modules > Blocks > Current C
 
 On this page, you can choose to filter by Shortnames or by Categories.
 
-Choose "shortnames" if you organize courses by including a certain string within the course shortname (e.g. BIO101-01S09, where the S09 at the end indicates the semester).
+Choose "shortnames" if you organize courses by including a certain string within the course shortname (e.g. BIO101-01S09, where the S09 at the end indicates the semester). If you activate the relevant setting, you can also use regex for these matches.
 
 Choose "categories" if you organize your courses into categories.
 
-If you choose "categories" the block will display subcategories as well.
+If you choose "categories" the block will also display any subcategories of the main category you select.
 
 You may also choose whether to suppress "Other Courses", whether to hide the block from guests, whether to hide the "all courses" link that appears at the bottom of the box, and whether admins will see all courses or only their own.
 
@@ -37,6 +43,24 @@ To change the name of the block, turn editing on on a screen that displays the b
 Please report any bugs or feature requests to the public repository page: <https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list>.
 
 ## Changelog ##
+
+### [v2.8.0] ###
+* Back end: The FCL block now stores preferences in Moodle's plugin config table. Settings from older versions should migrate seamlessly.
+* Back end: Automated testing has been considerably expanded.
+
+### [v2.7.0] ###
+* Feature: An admin can set arbitrary rubrics to be expanded by default
+* Feature: Aria accessibility improvements 
+* Bug fix: Admins should see a block under all circumstances
+* Back end: Continuous integration with Travis CI
+
+### [v2.6.0] ###
+Dependency: Requires Moodle 2.8
+Behind the scenes: Updates automated testing for newer Moodles
+
+### [v2.5.1] ###
+* Feature: Admin can designate "Top" when organizing by categories
+* Behind the scenes: automated testing and healthier code
 
 ### [v2.5] ###
 * Feature: Course rubrics can now be set to be collapsible

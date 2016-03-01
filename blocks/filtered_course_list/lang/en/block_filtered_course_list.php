@@ -15,6 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 $string['filtered_course_list:addinstance'] = 'Add a new Filtered Course List block';
+$string['filtered_course_list:myaddinstance'] = 'Add a new Filtered Course List block to My home';
 $string['adminview']                = 'Admin view';
 $string['allcourses']               = 'Admin user sees all courses';
 $string['blockname']                = 'Filtered Course List';
@@ -22,12 +23,13 @@ $string['categories']               = 'Current category';
 $string['categorysettings']         = 'Category settings';
 $string['categorysettingsinfo']     = 'These settings apply only when using the category filter type.';
 $string['collapsible']              = 'Collapsible sections';
-$string['configadminview']          = 'What should the admin see in the course list block?';
+$string['configadminview']          = 'What should the admin see in the course list block? Note that admins who are not enrolled in any courses will still see the generic list.';
 $string['configcollapsible']        = 'Should the course groupings be collapsible?';
 $string['configcategories']         = 'Select the category you want to display as current.';
 $string['configcurrentshortname']   = 'Enter the string that designates the current term. <br>This must be part of the course shortname.';
 $string['configcustomlabel']        = 'Enter a custom section title under which to organize courses. <br />[No HTML.]';
 $string['configcustomshortname']    = 'Enter a shortname string match for the corresponding custom label.';
+$string['configexpanded']           = 'Check to expand this rubric by default when using collapsible rubrics.';
 $string['configfiltertype']         = 'Select the type of course filter you would like to use.';
 $string['configfutureshortname']    = 'Enter the string that designates the next term. <br>This must be part of the course shortname.';
 $string['confighideallcourseslink'] = 'Hide "All courses" link at the bottom of the block. <br>Link hiding does not affect Admin\'s view';
@@ -41,6 +43,7 @@ $string['currentcourses']           = 'Current courses';
 $string['currentshortname']         = 'Current shortname';
 $string['customlabel']              = 'Custom label';
 $string['customshortname']          = 'Custom shortname';
+$string['expanded']                 = 'Expand by default';
 $string['filtercategories']         = 'Category';
 $string['filtercustom']             = 'Custom';
 $string['filtershortname']          = 'Shortname';
@@ -58,4 +61,5 @@ $string['owncourses']               = 'Admin user sees own courses';
 $string['pluginname']               = 'Filtered course list';
 $string['shortnamesettings']        = 'Shortname settings';
 $string['shortnamesettingsinfo']    = 'These settings apply only when using the shortname filter type.';
+$string['top']                      = 'Top';
 $string['useregex']                 = 'Use regex';
