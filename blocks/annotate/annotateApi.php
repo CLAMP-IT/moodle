@@ -52,15 +52,16 @@ function signRequest( $phpfn, $apiuser, $apikey, $annotateuser, $validfor=0) {
   $requesttime = time() + $validfor;
 
   $stringToSign = "$phpfn\n$apiuser\n$requesttime\n$annotateuser";
-  
-  $hasher =& new Crypt_HMAC($apikey, "sha1");
+  $t=new Crypt_HMAC($apikey, "sha1");
+  $hasher =& $t;
   $signature = hex2b64($hasher->hash($stringToSign));
 
   return "api-user=".rawurlencode($apiuser)."&api-requesttime=".$requesttime."&api-annotateuser=".rawurlencode($annotateuser)."&api-auth=".rawurlencode($signature);
 }
  
 function signString($apikey, $msg) {
-  $hasher =& new Crypt_HMAC($apikey, "sha1");
+  $t=new Crypt_HMAC($apikey, "sha1");
+  $hasher =& $t;
   $signature = hex2b64($hasher->hash($msg));
   return $signature;
 }
@@ -109,7 +110,8 @@ function checkRequest($phpfn, $apiuser, $apikey, $get) {
   
   $nowtime = time();
  
-  $hasher =& new Crypt_HMAC($apikey, "sha1");
+  $t=new Crypt_HMAC($apikey, "sha1");
+  $hasher =& $t;
   $signature = hex2b64($hasher->hash($stringToSign));
   
   if ($signature == $apiauth) {

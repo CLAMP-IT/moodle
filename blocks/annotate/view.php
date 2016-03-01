@@ -1,7 +1,9 @@
 <?php   
 require_once("../../config.php");
 require_once($CFG->dirroot.'/mod/resource/locallib.php');
- 
+require_once($CFG->dirroot.'/course/lib.php');
+require_once($CFG->dirroot.'/course/format/lib.php');
+
 require_once('annotateUtil.php');
     
 
@@ -52,6 +54,11 @@ $pathnamehash = $file->get_pathnamehash();
 	}
     $docpath = '/'.$context->id.'/resources/'.$resource->revision.$file->get_filepath().$file->get_filename();   
     $code = uniqid();
-    
-    exposeFileAndRedirect($docpath, $code, $pathnamehash, $owner);     
+
+    $nameOfCourse = $course->fullname;
+
+    exposeFileAndRedirect($docpath, $code, $pathnamehash, $owner , $nameOfCourse,$id);  
+
+
+
 ?>
