@@ -38,39 +38,41 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_default_settings() {
 
-        global $CFG;
-
          // Confirm expected defaults.
 
-        $settings = array (
+        $fclconfig = get_config('block_filtered_course_list');
+
+        $configdefaults = array (
             'hideallcourseslink' => 0,
+            'filtertype'         => 'shortname',
             'hidefromguests'     => 0,
             'hideothercourses'   => 0,
-            'maxallcourse'       => 10,
-            'collapsible'        => 1,
-            'adminview'          => 'all',
-            'filtertype'         => 'shortname',
             'useregex'           => 0,
             'currentshortname'   => '',
             'futureshortname'    => '',
+            'currentexpanded'    => 0,
+            'futureexpanded'     => 0,
             'labelscount'        => 2,
+            'categories'         => 0,
+            'adminview'          => 'all',
+            'maxallcourse'       => 10,
+            'collapsible'        => 1,
             'customlabel1'       => '',
             'customshortname1'   => '',
+            'labelexpanded1'     => 0,
             'customlabel2'       => '',
             'customshortname2'   => '',
-            'categories'         => 1
+            'labelexpanded2'     => 0,
         );
 
-        foreach ($settings as $setting => $value) {
-            $scoped = 'block_filtered_course_list_' . $setting;
-            $this->assertEquals($CFG->$scoped, $value, "$scoped should be set to $value." );
+        foreach ($configdefaults as $name => $value) {
+            $expected = $configdefaults[$name];
+            $actual = $fclconfig->$name;
+            $this->assertEquals($expected, $actual, "$actual should be set to $expected");
         }
-
     }
 
     public function test_site_with_no_courses() {
-
-        global $CFG;
 
         // On a site with no courses, no users should see a block.
         $this->_noblock ( array (
@@ -220,11 +222,10 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_rich_site_filtered_by_category() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // Change setting to filter by categories.
-        $CFG->block_filtered_course_list_filtertype = 'categories';
+        set_config('filtertype', 'categories', 'block_filtered_course_list');
 
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
@@ -243,12 +244,21 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
         // Regular users should see links to visible courses under corresponding visible categories.
         // Teachers should see links to all their courses, visible or hidden, and under hidden categories.
+        // Courses under a hidden category will appear under "Other courses" to those who can't see the category.
+        // With admins_sees_own an admin should see hidden courses under hidden categories.
+
+        // Change the adminview setting to 'own'.
+        set_config('adminview', 'own', 'block_filtered_course_list');
+
+        // Enroll admin in 'hc_1'.
+        $this->getDataGenerator()->enrol_user( $this->adminid, $this->courses['hc_1']->id, 3 );
+
         $this->_courseunderrubric( array(
             'user1' => array(
                 'c_1'   => 'Miscellaneous',
                 'cc1_2' => 'Child category 1',
                 'gc1_1' => 'Grandchild category 1',
-                'sc_2'  => 'Other courses',
+                'sc_2'  => 'Sibling category',
             ),
             'user2' => array(
                 'c_1'   => 'Miscellaneous',
@@ -256,7 +266,10 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
                 'gc1_1' => 'Grandchild category 1',
                 'hc_1'  => 'Other courses',
                 'hcc_3' => 'Other courses',
-                'sc_2'  => 'Other courses',
+                'sc_2'  => 'Sibling category',
+            ),
+            'admin' => array(
+                'hc_1' => 'Hidden category'
             )
         ));
 
@@ -277,7 +290,7 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Now try switching the root category setting.
-        $CFG->block_filtered_course_list_categories = $this->categories['cc2']->id;
+        set_config('categories', $this->categories['cc2']->id, 'block_filtered_course_list');
 
         // There should be no rubric for Miscellaneous.
         $this->_courselistexcludes( array (
@@ -298,12 +311,11 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_rich_site_current_and_future_shortnames() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // Set a current and future shortname.
-        $CFG->block_filtered_course_list_currentshortname = '_1';
-        $CFG->block_filtered_course_list_futureshortname  = '_2';
+        set_config('currentshortname', '_1', 'block_filtered_course_list');
+        set_config('futureshortname', '_2', 'block_filtered_course_list');
 
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
@@ -345,14 +357,13 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_rich_site_custom_shortnames() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // Set two custom shortnames and rubric labels.
-        $CFG->block_filtered_course_list_customlabel1     = 'Child courses';
-        $CFG->block_filtered_course_list_customshortname1 = 'cc';
-        $CFG->block_filtered_course_list_customlabel2     = 'Unnumbered categories';
-        $CFG->block_filtered_course_list_customshortname2 = 'c_';
+        set_config('customlabel1', 'Child courses', 'block_filtered_course_list');
+        set_config('customshortname1', 'cc', 'block_filtered_course_list');
+        set_config('customlabel2', 'Unnumbered categories', 'block_filtered_course_list');
+        set_config('customshortname2', 'c_', 'block_filtered_course_list');
 
         // Test against expectations.
         $this->_courseunderrubric ( array (
@@ -368,8 +379,8 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Set a third custom shortname and label.
-        $CFG->block_filtered_course_list_customlabel3     = 'Threes';
-        $CFG->block_filtered_course_list_customshortname3 = '3';
+        set_config('customlabel3', 'Threes', 'block_filtered_course_list');
+        set_config('customshortname3', '3', 'block_filtered_course_list');
 
         // This setting should not apply because labelscount is still set at 2.
         $this->_courselistexcludes ( array (
@@ -377,7 +388,7 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Increase the number of custom labels.
-        $CFG->block_filtered_course_list_labelscount = 4;
+        set_config('labelscount', 4, 'block_filtered_course_list');
 
         // The 'Threes' should appear now.
         // Courses should appear under all applicable matches.
@@ -395,9 +406,9 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         // So this may be a job for behat testing instead.
 
         // Use regex for shortname matches.
-        $CFG->block_filtered_course_list_useregex = 1;
-        $CFG->block_filtered_course_list_customlabel4 = 'All but default';
-        $CFG->block_filtered_course_list_customshortname4 = '[a-z]{2}';
+        set_config('useregex', 1, 'block_filtered_course_list');
+        set_config('customlabel4', 'All but default', 'block_filtered_course_list');
+        set_config('customshortname4', '[a-z]{2}', 'block_filtered_course_list');
 
         // This new rubric should exclude courses with a shortname like 'c_1'.
         // It does not begin with two lowercase letters.
@@ -421,7 +432,6 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_setting_hideallcourseslink() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // Any user who sees the should also see the "All courses" link.
@@ -434,7 +444,7 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Hide the All-courses link from all but admins.
-        $CFG->block_filtered_course_list_hideallcourseslink = 1;
+        set_config('hideallcourseslink', 1, 'block_filtered_course_list');
 
         // Only an admin should see the "All courses" link.
         $this->_allcourseslink ( array (
@@ -448,7 +458,6 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_setting_hidefromguests() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // All users (except a regular user enrolled in no courses) should see the block.
@@ -461,7 +470,7 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Change the setting to hide the block from guests and anonymous visitors.
-        $CFG->block_filtered_course_list_hidefromguests = 1;
+        set_config('hidefromguests', 1, 'block_filtered_course_list');
 
         // Now only admins and regular enrolled users should see the block.
         $this->_noblock ( array (
@@ -476,11 +485,10 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_setting_hideothercourses() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // Set a shortname match.
-        $CFG->block_filtered_course_list_currentshortname = 'gc';
+        set_config('currentshortname', 'gc', 'block_filtered_course_list');
 
         // Enrollments that do not match appear under 'Other courses'.
         $this->_courseunderrubric ( array (
@@ -490,7 +498,7 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Hide the catch-all 'Other courses' rubric.
-        $CFG->block_filtered_course_list_hideothercourses = 1;
+        set_config('hideothercourses', 1, 'block_filtered_course_list');
 
         // No other courses are listed.
         $this->_courselistexcludes ( array (
@@ -501,7 +509,6 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     public function test_setting_collapsible_sections() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // For users enrolled in courses the various rubrics are collapsible.
@@ -510,7 +517,7 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Change the collapsibility setting.
-        $CFG->block_filtered_course_list_collapsible = 0;
+        set_config('collapsible', 0, 'block_filtered_course_list');
 
         // The rubrics are no longer collapsible.
         $this->_courselistexcludes ( array (
@@ -518,9 +525,42 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
     }
 
+    public function test_setting_expanded_section() {
+
+        $this->_create_rich_site();
+
+        // Set up some shortname rubrics.
+        set_config('currentshortname', '_1', 'block_filtered_course_list');
+        set_config('futureshortname', '_2', 'block_filtered_course_list');
+        set_config('customlabel1', 'Child courses', 'block_filtered_course_list');
+        set_config('customshortname1', 'cc', 'block_filtered_course_list');
+        set_config('customlabel2', 'Unnumbered categories', 'block_filtered_course_list');
+        set_config('customshortname2', 'c_', 'block_filtered_course_list');
+
+        // All sections should be collapsed.
+        $this->_sectionexpanded ( array(
+            'Current courses'       => 'collapsed',
+            'Future courses'        => 'collapsed',
+            'Child courses'         => 'collapsed',
+            'Unnumbered categories' => 'collapsed'
+        ));
+
+        // Now set a couple sections to be expanded by default.
+        set_config('currentexpanded', 1, 'block_filtered_course_list');
+        set_config('labelexpanded2', 1, 'block_filtered_course_list');
+
+        // The corresponding sections should be expanded.
+        $this->_sectionexpanded ( array(
+            'Current courses'       => 'expanded',
+            'Future courses'        => 'collapsed',
+            'Child courses'         => 'collapsed',
+            'Unnumbered categories' => 'expanded'
+        ));
+
+    }
+
     public function test_setting_adminview() {
 
-        global $CFG;
         $this->_create_rich_site();
 
         // The block should not display links to categories below the top level.
@@ -534,11 +574,15 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         ));
 
         // Change the adminview setting to 'own'.
-        $CFG->block_filtered_course_list_adminview = 'own';
+        set_config('adminview', 'own', 'block_filtered_course_list');
 
-        // An admin enrolled in no courses will not see the block.
-        $this->_noblock ( array (
-            'admin' => true,
+        // An admin enrolled in no courses should still see only the top level.
+        $this->_courselistexcludes ( array (
+            'admin' => array ( 'Course', 'Child', 'Grandchild' )
+        ));
+
+        $this->_courselistincludes ( array (
+            'admin' => array ( 'Miscellaneous', 'Sibling' )
         ));
 
         // Put the admin in a course.
@@ -555,9 +599,39 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
     }
 
+    public function test_setting_cfg_disablemycourses() {
+
+        global $CFG;
+        $this->_create_rich_site();
+
+        $CFG->disablemycourses = 1;
+
+        // Enrolled users, like guests, should see a generic list of categories.
+        $this->_courselistincludes ( array (
+            'user1' => array ( 'Miscellaneous', 'Sibling' )
+        ));
+
+        // Enrolled users, like guests, should not see subcategories or specific courses.
+        $this->_courselistexcludes ( array (
+            'user1' => array ( 'Course', 'Child', 'Grandchild' )
+        ));
+
+        // On the other hand, adminview = own trumps disablemycourses.
+        set_config('adminview', 'own', 'block_filtered_course_list');
+
+        // Enroll admin in 'hc_1'.
+        $this->getDataGenerator()->enrol_user( $this->adminid, $this->courses['hc_1']->id, 3 );
+
+        $this->_courseunderrubric ( array (
+            'admin' => array (
+                'hc_1' => 'Other courses'
+            )
+        ));
+    }
+
     private function _setupusers() {
 
-        global $CFG, $USER;
+        global $USER;
 
         // Get the admin id.
         $this->setAdminUser();
@@ -699,7 +773,9 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
     private function _noblock ( $expectations=array() ) {
         foreach ($expectations as $user => $result) {
             $this->_switchuser ( $user );
-            $bi     = new block_filtered_course_list;
+            $bi = new block_filtered_course_list;
+            $bi->instance = new StdClass;
+            $bi->instance->id = 17;
             if ( $result === true ) {
                 if ( isset ( $bi->get_content()->text ) ) {
                     // In some cases the text exists but is empty.
@@ -717,7 +793,9 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
     private function _allcourseslink ( $expectations=array() ) {
         foreach ($expectations as $user => $result) {
             $this->_switchuser ( $user );
-            $bi     = new block_filtered_course_list;
+            $bi = new block_filtered_course_list;
+            $bi->instance = new StdClass;
+            $bi->instance->id = 17;
             $footer = $bi->get_content()->footer;
             if ( $result === true ) {
                 $this->assertContains ( 'All courses' , $footer , "$user should see the All-courses link." );
@@ -730,7 +808,9 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
     private function _courselistincludes ( $expectations=array() ) {
         foreach ($expectations as $user => $courses) {
             $this->_switchuser ( $user );
-            $bi     = new block_filtered_course_list;
+            $bi = new block_filtered_course_list;
+            $bi->instance = new StdClass;
+            $bi->instance->id = 17;
             foreach ($courses as $course) {
                 $this->assertContains ( $course , $bi->get_content()->text , "$user should see $course." );
             }
@@ -740,7 +820,9 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
     private function _courselistexcludes ( $expectations=array() ) {
         foreach ($expectations as $user => $courses) {
             $this->_switchuser ( $user );
-            $bi     = new block_filtered_course_list;
+            $bi = new block_filtered_course_list;
+            $bi->instance = new StdClass;
+            $bi->instance->id = 17;
             foreach ($courses as $course) {
                 $this->assertNotContains ( $course , $bi->get_content()->text , "$user should not see $course." );
             }
@@ -763,6 +845,8 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         foreach ($expectations as $user => $courses) {
             $this->_switchuser ( $user );
             $bi = new block_filtered_course_list;
+            $bi->instance = new StdClass;
+            $bi->instance->id = 17;
             $html = new DOMDocument;
             $html->loadHTML( $bi->get_content()->text );
             $rubrics = $html->getElementsByTagName('div');
@@ -770,7 +854,7 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
                 $hits = 0;
                 foreach ($rubrics as $rubric) {
                     $rubrictitle = $rubric->nodeValue;
-                    if ( $rubrictitle != $rubricmatch ) {
+                    if ( $rubrictitle != $rubricmatch || $rubric->getAttribute('class') == 'tablist') {
                         continue;
                     }
                     $ul = $rubric->nextSibling;
@@ -790,6 +874,29 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
                 } else {
                     $this->assertGreaterThan( 0, $hits, "$user should see $course under $rubricmatch" );
                 }
+            }
+        }
+    }
+
+    private function _sectionexpanded ( $expectations=array(), $operator='' ) {
+        $this->_switchuser('user1');
+        $bi = new block_filtered_course_list;
+        $bi->instance = new StdClass;
+        $bi->instance->id = 17;
+        $html = new DOMDocument;
+        $html->loadHTML( $bi->get_content()->text );
+        $rubrics = $html->getElementsByTagName('div');
+        foreach ($rubrics as $rubric) {
+            $title = $rubric->textContent;
+            if (!(array_key_exists($title, $expectations))) {
+                continue;
+            }
+            $state = $expectations[$title];
+            $class = $rubric->getAttribute('class');
+            if ($operator == 'not') {
+                $this->assertNotContains ( $state , $class, "The class attribute of '$title' should not contain $state.");
+            } else {
+                $this->assertContains ( $state , $class, "The class attribute of '$title' should contain $state.");
             }
         }
     }
