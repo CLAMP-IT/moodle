@@ -262,6 +262,10 @@ class mod_forum_generator extends testing_module_generator {
             $record['mailnow'] = 0;
         }
 
+        if (!isset($record['hiddenuserid'])) {
+           $record['hiddenuserid'] = ''; 
+        }
+
         $record = (object) $record;
 
         // Add the post.
