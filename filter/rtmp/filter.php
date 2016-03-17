@@ -300,12 +300,10 @@ class filter_rtmp extends moodle_text_filter
         $filterpath     = $CFG->dirroot . "/filter/rtmp";
 
         $glob_paths = array(
-                'js'   => $flowlibpath . "/flowplayer-[0-9].[0-9].?*.min.js",
-                'swf'  => $flowlibpath . "/flowplayer-[0-9].[0-9].?*.swf",
-                'rtmp' => $filterpath  . "/flowplayer.rtmp-[0-9].[0-9].?*.swf",
-                'caption' => $filterpath  . "/flowplayer.captions-[0-9].[0-9].?*.swf",
-                'content' => $filterpath  . "/flowplayer.content-[0-9].[0-9].?*.swf",
-                'secure'  => $filterpath  . "/flowplayer.securestreaming-[0-9].[0-9].?*.swf"
+            'js'        => $flowlibpath . "/flowplayer-[0-9].[0-9].?*.min.js",
+            'playswf'   => $flowlibpath . "/flowplayer-[0-9].[0-9].?*.swf.php",
+            'ctrlswf'   => $flowlibpath . "/flowplayer.controls-[0-9].[0-9].?*.swf.php",
+            'secure'  => $filterpath  . "/flowplayer.securestreaming-[0-9].[0-9].?*.swf.php"
         );
 
         $retval = '';
@@ -315,6 +313,8 @@ class filter_rtmp extends moodle_text_filter
                 $retval .= "var filter_rtmp_flowplayer_$key='$relpath';";
             }
         }
+        $hls_fallback = $CFG->filter_rtmp_hls_fallback ? 'true' : 'false';
+        $retval .= "var filter_rtmp_hls_fallback={$hls_fallback};";
 
         return $retval;
 

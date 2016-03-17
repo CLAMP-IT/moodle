@@ -61,6 +61,32 @@ class filter_rtmp_renderer extends core_media_renderer
         );
     }
 
+
+    static function get_hls_url($media_conx, $media_path)
+    {
+        global $CFG;
+
+
+
+        if (empty($CFG->filter_rtmp_hls_fallback) || !$CFG->filter_rtmp_hls_fallback) {
+            return '';
+        }
+
+        $hls_url = preg_replace('/^rtmp:\/\//i', 'http://', $media_conx, 1);
+
+        switch($CFG->filter_rtmp_hls_urlfmt) {
+            case 'fms' : // Adobe Media Server
+                $hls_url .= "/$media_path.m38u";
+                break;
+            default    : // Wowza Streaming Engine (wse)
+                $hls_url .= "/_definst_/$media_path/playlist.m3u8";
+
+        }
+
+        return $hls_url;
+
+    }
+
 } // class filter_rtmp_renderer
 
 
@@ -229,14 +255,20 @@ class filter_rtmp_player_video extends core_media_player
 
         // For situation where one item in clip array, render
         // only a span tag with the needed data- attributes
-        $playlist_open = $playlist_close = $content = '';
+        $playlist_wrapper = $playlist_open = $playlist_close = $span_content = '';
         $player_elem_attrs = array('id' => $unique_id, 'class' => 'mediaplugin filter_rtmp_video', 'data-media-height' => $height, 'data-media-width' => $width, 'data-media-autosize' => $autosize, 'data-media-securestreaming' => $secure_streaming);
         if (count($clip_array) == 1) {
 
-            $player_elem_attrs['data-media-conx']  = $clip_array[0]['conx'];
-            $player_elem_attrs['data-media-path']  = $clip_array[0]['path'];
-            $player_elem_attrs['data-media-title'] = $clip_array[0]['title'];
-            $player_elem_attrs['data-media-captions'] = $clip_array[0]['captions'];
+            $player_elem_attrs['data-media-conx']       = $clip_array[0]['conx'];
+            $player_elem_attrs['data-media-path']       = $clip_array[0]['path'];
+            $player_elem_attrs['data-media-title']      = $clip_array[0]['title'];
+            $player_elem_attrs['data-media-captions']   = $clip_array[0]['captions'];
+            if ($CFG->filter_rtmp_hls_fallback) {
+                $player_elem_attrs['data-media-hls-url'] = filter_rtmp_renderer::get_hls_url($clip_array[0]['conx'], $clip_array[0]['path']);
+                $span_content                            = "<a href=\"{$player_elem_attrs['data-media-hls-url']}\">{$player_elem_attrs['data-media-hls-url']}</a>";
+            } else {
+                $span_content                            = core_media_player::PLACEHOLDER;
+            }
 
         } elseif ($clip_array) {
 
@@ -244,18 +276,21 @@ class filter_rtmp_player_video extends core_media_player
             // so render a list of <a> tags with the needed data-
             // attrs and wrap them in a span with a _playlist CSS
             // class attribute so JavaScript can detect them
-            $playlist_open  = "<span class=\"filter_rtmp_wrapper\">\n"
-                            . "<span class=\"filter_rtmp_video_playlist {$unique_id}\">\n";
+            $playlist_wrapper = "<span class=\"filter_rtmp_wrapper\">\n";
+            $playlist_open = "<span class=\"filter_rtmp_video_playlist {$unique_id}\">\n";
             for ($clip_index = 0; $clip_index < count($clip_array); $clip_index++) {
-                $playlist_open .= "<a class=\"clip\" href=\"#\" data-media-path=\"{$clip_array[$clip_index]['path']}\" data-media-conx=\"{$clip_array[$clip_index]['conx']}\" data-media-captions=\"{$clip_array[$clip_index]['captions']}\">{$clip_array[$clip_index]['title']}</a>\n";
+                $clip_hls_url   = $CFG->filter_rtmp_hls_fallback ? " data-media-hls-url=\"" . filter_rtmp_renderer::get_hls_url($clip_array[$clip_index]['conx'], $clip_array[$clip_index]['path']) . "\"" : '';
+                $playlist_open .= "<a class=\"clip\" href=\"#\" data-media-conx=\"{$clip_array[$clip_index]['conx']}\" data-media-path=\"{$clip_array[$clip_index]['path']}\" data-media-captions=\"{$clip_array[$clip_index]['captions']}\"{$clip_hls_url}>{$clip_array[$clip_index]['title']}</a>\n";
             }
             $playlist_open .= "</span>\n";
             $playlist_close = "</span>\n";
+            $span_content   = core_media_player::PLACEHOLDER;
 
         }
 
-        return $playlist_open
-             . html_writer::tag('span', core_media_player::PLACEHOLDER, $player_elem_attrs)
+        return $playlist_wrapper
+             . html_writer::tag('span', $span_content, $player_elem_attrs)
+             . $playlist_open
              . $playlist_close;
 
     }
@@ -363,13 +398,17 @@ class filter_rtmp_player_audio extends core_media_player
 
         // For situation where one item in clip array, render
         // only a span tag with the needed data- attributes
-        $playlist_open = $playlist_close = $content = '';
+        $playlist_open = $playlist_close = $span_content = '';
         $player_elem_attrs = array('id' => $unique_id, 'class' => 'mediaplugin filter_rtmp_audio');
         if (count($clip_array) == 1) {
 
             $player_elem_attrs['data-media-conx']  = $clip_array[0]['conx'];
             $player_elem_attrs['data-media-path']  = $clip_array[0]['path'];
             $player_elem_attrs['data-media-title'] = $clip_array[0]['title'];
+            if ($CFG->filter_rtmp_hls_fallback) {
+                $player_elem_attrs['data-media-hls-url'] = filter_rtmp_renderer::get_hls_url($clip_array[0]['conx'], $clip_array[0]['path']);
+                $span_content                            = "<a href=\"{$player_elem_attrs['data-media-hls-url']}\">{$player_elem_attrs['data-media-hls-url']}</a>";
+            }
 
         } elseif ($clip_array) {
 
@@ -380,14 +419,16 @@ class filter_rtmp_player_audio extends core_media_player
             $playlist_open  = "<span class=\"filter_rtmp_wrapper\">\n";
             $playlist_close = "<span class=\"filter_rtmp_audio_playlist {$unique_id}\">";
             for ($clip_index = 0; $clip_index < count($clip_array); $clip_index++) {
-                $playlist_close .= "<a class=\"clip\" href=\"#\" data-media-path=\"{$clip_array[$clip_index]['path']}\" data-media-conx=\"{$clip_array[$clip_index]['conx']}\">{$clip_array[$clip_index]['title']}</a>\n";
+                $clip_hls_url    = $CFG->filter_rtmp_hls_fallback ? " data-media-hls-url=\"" . filter_rtmp_renderer::get_hls_url($clip_array[$clip_index]['conx'], $clip_array[$clip_index]['path']) . "\"" : '';
+                $playlist_close .= "<a class=\"clip\" href=\"#\" data-media-path=\"{$clip_array[$clip_index]['path']}\" data-media-conx=\"{$clip_array[$clip_index]['conx']}\"{$clip_hls_url}>{$clip_array[$clip_index]['title']}</a>\n";
             }
             $playlist_close .= "</span>\n</span>\n";
+            $span_content    = core_media_player::PLACEHOLDER;
 
         }
 
         return $playlist_open
-             . html_writer::tag('span', core_media_player::PLACEHOLDER, $player_elem_attrs)
+             . html_writer::tag('span', $span_content, $player_elem_attrs)
              . $playlist_close;
 
     }
@@ -458,4 +499,3 @@ class filter_rtmp_player_link extends core_media_player
     }
 
 } // class filter_rtmp_player_link
-
