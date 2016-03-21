@@ -946,6 +946,16 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
 
         $this->assertEquals(0, count($result));
 
+        // Set up a due and cutoff passed date.
+        $instance->duedate = time() - WEEKSECS;
+        $instance->cutoffdate = time() - WEEKSECS;
+        $DB->update_record('assign', $instance);
+
+        $result = mod_assign_external::save_submission($instance->id, $submissionpluginparams);
+        $result = external_api::clean_returnvalue(mod_assign_external::save_submission_returns(), $result);
+
+        $this->assertCount(1, $result);
+        $this->assertEquals(get_string('duedatereached', 'assign'), $result[0]['item']);
     }
 
     /**
@@ -1544,13 +1554,15 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         // Test user with no capabilities.
         // We need a explicit prohibit since this capability is only defined in authenticated user and guest roles.
         assign_capability('mod/assign:view', CAP_PROHIBIT, $teacherrole->id, $context->id);
+        // Empty all the caches that may be affected by this change.
         accesslib_clear_all_caches_for_unit_testing();
+        course_modinfo::clear_instance_cache();
 
         try {
             mod_assign_external::view_grading_table($assign->id);
-            $this->fail('Exception expected due to missing capability.');
+            $this->fail('Exception expected due to missing view capability.');
         } catch (moodle_exception $e) {
-            $this->assertEquals('nopermissions', $e->errorcode);
+            $this->assertEquals('requireloginerror', $e->errorcode);
         }
 
     }

@@ -764,12 +764,6 @@ function forum_cron() {
                     'Auto-Submitted: auto-generated',
                 );
 
-                if ($post->parent) {
-                    // This post is a reply, so add headers for threading (see MDL-22551).
-                    $userfrom->customheaders[] = 'In-Reply-To: ' . forum_get_email_message_id($post->parent, $userto->id, $hostname);
-                    $userfrom->customheaders[] = 'References: '  . forum_get_email_message_id($post->parent, $userto->id, $hostname);
-                }
-
                 $shortname = format_string($course->shortname, true, array('context' => context_course::instance($course->id)));
 
                 // Generate a reply-to address from using the Inbound Message handler.
@@ -807,6 +801,30 @@ function forum_cron() {
                 $a->forumname = $cleanforumname;
                 $a->subject = $data->get_subject();
                 $postsubject = html_to_text(get_string('postmailsubject', 'forum', $a), 0);
+
+                $rootid = forum_get_email_message_id($discussion->firstpost, $userto->id, $hostname);
+
+                if ($post->parent) {
+                    // This post is a reply, so add reply header (RFC 2822).
+                    $parentid = forum_get_email_message_id($post->parent, $userto->id, $hostname);
+                    $userfrom->customheaders[] = "In-Reply-To: $parentid";
+
+                    // If the post is deeply nested we also reference the parent message id and
+                    // the root message id (if different) to aid threading when parts of the email
+                    // conversation have been deleted (RFC1036).
+                    if ($post->parent != $discussion->firstpost) {
+                        $userfrom->customheaders[] = "References: $rootid $parentid";
+                    } else {
+                        $userfrom->customheaders[] = "References: $parentid";
+                    }
+                }
+
+                // MS Outlook / Office uses poorly documented and non standard headers, including
+                // Thread-Topic which overrides the Subject and shouldn't contain Re: or Fwd: etc.
+                $a->subject = $discussion->name;
+                $postsubject = html_to_text(get_string('postmailsubject', 'forum', $a), 0);
+                $userfrom->customheaders[] = "Thread-Topic: $postsubject";
+                $userfrom->customheaders[] = "Thread-Index: " . substr($rootid, 1, 28);
 
                 // Send the post now!
                 mtrace('Sending ', '');
@@ -1398,8 +1416,11 @@ function forum_print_overview($courses,&$htmlarray) {
                 .'JOIN {forum_posts} p ON p.discussion = d.id '
                 ."WHERE ($coursessql) "
                 .'AND p.userid != ? '
+                .'AND (d.timestart <= ? AND (d.timeend = 0 OR d.timeend > ?)) '
                 .'GROUP BY d.id, d.forum, d.course, d.groupid '
                 .'ORDER BY d.course, d.forum';
+    $params[] = time();
+    $params[] = time();
 
     // Avoid warnings.
     if (!$discussions = $DB->get_records_sql($sql, $params)) {
@@ -1444,8 +1465,12 @@ function forum_print_overview($courses,&$htmlarray) {
             $params[] = $groupid;
         }
         $sql = substr($sql,0,-3); // take off the last OR
-        $sql .= ') AND p.modified >= ? AND r.id is NULL GROUP BY d.forum,d.course';
+        $sql .= ') AND p.modified >= ? AND r.id is NULL ';
+        $sql .= 'AND (d.timestart < ? AND (d.timeend = 0 OR d.timeend > ?)) ';
+        $sql .= 'GROUP BY d.forum,d.course';
         $params[] = $cutoffdate;
+        $params[] = time();
+        $params[] = time();
 
         if (!$unread = $DB->get_records_sql($sql, $params)) {
             $unread = array();
@@ -2095,18 +2120,21 @@ function forum_get_unmailed_posts($starttime, $endtime, $now=null) {
         if (empty($now)) {
             $now = time();
         }
+        $selectsql = "AND (p.created >= :ptimestart OR d.timestart >= :pptimestart)";
+        $params['pptimestart'] = $starttime;
         $timedsql = "AND (d.timestart < :dtimestart AND (d.timeend = 0 OR d.timeend > :dtimeend))";
         $params['dtimestart'] = $now;
         $params['dtimeend'] = $now;
     } else {
         $timedsql = "";
+        $selectsql = "AND p.created >= :ptimestart";
     }
 
     return $DB->get_records_sql("SELECT p.*, d.course, d.forum
                                  FROM {forum_posts} p
                                  JOIN {forum_discussions} d ON d.id = p.discussion
                                  WHERE p.mailed = :mailed
-                                 AND p.created >= :ptimestart
+                                 $selectsql
                                  AND (p.created < :ptimeend OR p.mailnow = :mailnow)
                                  $timedsql
                                  ORDER BY p.modified ASC", $params);

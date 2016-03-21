@@ -2094,4 +2094,481 @@ class mod_forum_lib_testcase extends advanced_testcase {
         $this->assertArrayHasKey('forumposts', $nodes->getValue($tree));
         $this->assertArrayHasKey('forumdiscussions', $nodes->getValue($tree));
     }
+
+    public function test_print_overview() {
+        $this->resetAfterTest();
+        $course1 = self::getDataGenerator()->create_course();
+        $course2 = self::getDataGenerator()->create_course();
+
+        // Create an author user.
+        $author = self::getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($author->id, $course1->id);
+        $this->getDataGenerator()->enrol_user($author->id, $course2->id);
+
+        // Create a viewer user.
+        $viewer = self::getDataGenerator()->create_user((object) array('trackforums' => 1));
+        $this->getDataGenerator()->enrol_user($viewer->id, $course1->id);
+        $this->getDataGenerator()->enrol_user($viewer->id, $course2->id);
+
+        // Create two forums - one in each course.
+        $record = new stdClass();
+        $record->course = $course1->id;
+        $forum1 = self::getDataGenerator()->create_module('forum', (object) array('course' => $course1->id));
+        $forum2 = self::getDataGenerator()->create_module('forum', (object) array('course' => $course2->id));
+
+        // A standard post in the forum.
+        $record = new stdClass();
+        $record->course = $course1->id;
+        $record->userid = $author->id;
+        $record->forum = $forum1->id;
+        $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
+
+        $this->setUser($viewer->id);
+        $courses = array(
+            $course1->id => clone $course1,
+            $course2->id => clone $course2,
+        );
+
+        foreach ($courses as $courseid => $course) {
+            $courses[$courseid]->lastaccess = 0;
+        }
+        $results = array();
+        forum_print_overview($courses, $results);
+
+        // There should be one entry for course1, and no others.
+        $this->assertCount(1, $results);
+
+        // There should be one entry for a forum in course1.
+        $this->assertCount(1, $results[$course1->id]);
+        $this->assertArrayHasKey('forum', $results[$course1->id]);
+    }
+
+    public function test_print_overview_groups() {
+        $this->resetAfterTest();
+        $course1 = self::getDataGenerator()->create_course();
+        $group1 = $this->getDataGenerator()->create_group(array('courseid' => $course1->id));
+        $group2 = $this->getDataGenerator()->create_group(array('courseid' => $course1->id));
+
+        // Create an author user.
+        $author = self::getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($author->id, $course1->id);
+
+        // Create two viewer users - one in each group.
+        $viewer1 = self::getDataGenerator()->create_user((object) array('trackforums' => 1));
+        $this->getDataGenerator()->enrol_user($viewer1->id, $course1->id);
+        $this->getDataGenerator()->create_group_member(array('userid' => $viewer1->id, 'groupid' => $group1->id));
+
+        $viewer2 = self::getDataGenerator()->create_user((object) array('trackforums' => 1));
+        $this->getDataGenerator()->enrol_user($viewer2->id, $course1->id);
+        $this->getDataGenerator()->create_group_member(array('userid' => $viewer2->id, 'groupid' => $group2->id));
+
+        // Create a forum.
+        $record = new stdClass();
+        $record->course = $course1->id;
+        $forum1 = self::getDataGenerator()->create_module('forum', (object) array(
+            'course'        => $course1->id,
+            'groupmode'     => SEPARATEGROUPS,
+        ));
+
+        // A post in the forum for group1.
+        $record = new stdClass();
+        $record->course     = $course1->id;
+        $record->userid     = $author->id;
+        $record->forum      = $forum1->id;
+        $record->groupid    = $group1->id;
+        $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
+
+        $course1->lastaccess = 0;
+        $courses = array($course1->id => $course1);
+
+        // As viewer1 (same group as post).
+        $this->setUser($viewer1->id);
+        $results = array();
+        forum_print_overview($courses, $results);
+
+        // There should be one entry for course1.
+        $this->assertCount(1, $results);
+
+        // There should be one entry for a forum in course1.
+        $this->assertCount(1, $results[$course1->id]);
+        $this->assertArrayHasKey('forum', $results[$course1->id]);
+
+        $this->setUser($viewer2->id);
+        $results = array();
+        forum_print_overview($courses, $results);
+
+        // There should be one entry for course1.
+        $this->assertCount(0, $results);
+    }
+
+    /**
+     * @dataProvider print_overview_timed_provider
+     */
+    public function test_print_overview_timed($config, $hasresult) {
+        $this->resetAfterTest();
+        $course1 = self::getDataGenerator()->create_course();
+
+        // Create an author user.
+        $author = self::getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($author->id, $course1->id);
+
+        // Create a viewer user.
+        $viewer = self::getDataGenerator()->create_user((object) array('trackforums' => 1));
+        $this->getDataGenerator()->enrol_user($viewer->id, $course1->id);
+
+        // Create a forum.
+        $record = new stdClass();
+        $record->course = $course1->id;
+        $forum1 = self::getDataGenerator()->create_module('forum', (object) array('course' => $course1->id));
+
+        // A timed post with a timestart in the past (24 hours ago).
+        $record = new stdClass();
+        $record->course = $course1->id;
+        $record->userid = $author->id;
+        $record->forum = $forum1->id;
+        if (isset($config['timestartmodifier'])) {
+            $record->timestart = time() + $config['timestartmodifier'];
+        }
+        if (isset($config['timeendmodifier'])) {
+            $record->timeend = time() + $config['timeendmodifier'];
+        }
+        $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
+
+        $course1->lastaccess = 0;
+        $courses = array($course1->id => $course1);
+
+        // As viewer, check the forum_print_overview result.
+        $this->setUser($viewer->id);
+        $results = array();
+        forum_print_overview($courses, $results);
+
+        if ($hasresult) {
+            // There should be one entry for course1.
+            $this->assertCount(1, $results);
+
+            // There should be one entry for a forum in course1.
+            $this->assertCount(1, $results[$course1->id]);
+            $this->assertArrayHasKey('forum', $results[$course1->id]);
+        } else {
+            // There should be no entries for any course.
+            $this->assertCount(0, $results);
+        }
+    }
+
+    /**
+     * @dataProvider print_overview_timed_provider
+     */
+    public function test_print_overview_timed_groups($config, $hasresult) {
+        $this->resetAfterTest();
+        $course1 = self::getDataGenerator()->create_course();
+        $group1 = $this->getDataGenerator()->create_group(array('courseid' => $course1->id));
+        $group2 = $this->getDataGenerator()->create_group(array('courseid' => $course1->id));
+
+        // Create an author user.
+        $author = self::getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($author->id, $course1->id);
+
+        // Create two viewer users - one in each group.
+        $viewer1 = self::getDataGenerator()->create_user((object) array('trackforums' => 1));
+        $this->getDataGenerator()->enrol_user($viewer1->id, $course1->id);
+        $this->getDataGenerator()->create_group_member(array('userid' => $viewer1->id, 'groupid' => $group1->id));
+
+        $viewer2 = self::getDataGenerator()->create_user((object) array('trackforums' => 1));
+        $this->getDataGenerator()->enrol_user($viewer2->id, $course1->id);
+        $this->getDataGenerator()->create_group_member(array('userid' => $viewer2->id, 'groupid' => $group2->id));
+
+        // Create a forum.
+        $record = new stdClass();
+        $record->course = $course1->id;
+        $forum1 = self::getDataGenerator()->create_module('forum', (object) array(
+            'course'        => $course1->id,
+            'groupmode'     => SEPARATEGROUPS,
+        ));
+
+        // A post in the forum for group1.
+        $record = new stdClass();
+        $record->course     = $course1->id;
+        $record->userid     = $author->id;
+        $record->forum      = $forum1->id;
+        $record->groupid    = $group1->id;
+        if (isset($config['timestartmodifier'])) {
+            $record->timestart = time() + $config['timestartmodifier'];
+        }
+        if (isset($config['timeendmodifier'])) {
+            $record->timeend = time() + $config['timeendmodifier'];
+        }
+        $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
+
+        $course1->lastaccess = 0;
+        $courses = array($course1->id => $course1);
+
+        // As viewer1 (same group as post).
+        $this->setUser($viewer1->id);
+        $results = array();
+        forum_print_overview($courses, $results);
+
+        if ($hasresult) {
+            // There should be one entry for course1.
+            $this->assertCount(1, $results);
+
+            // There should be one entry for a forum in course1.
+            $this->assertCount(1, $results[$course1->id]);
+            $this->assertArrayHasKey('forum', $results[$course1->id]);
+        } else {
+            // There should be no entries for any course.
+            $this->assertCount(0, $results);
+        }
+
+        $this->setUser($viewer2->id);
+        $results = array();
+        forum_print_overview($courses, $results);
+
+        // There should be one entry for course1.
+        $this->assertCount(0, $results);
+    }
+
+    public function print_overview_timed_provider() {
+        return array(
+            'timestart_past' => array(
+                'discussionconfig' => array(
+                    'timestartmodifier' => -86000,
+                ),
+                'hasresult'         => true,
+            ),
+            'timestart_future' => array(
+                'discussionconfig' => array(
+                    'timestartmodifier' => 86000,
+                ),
+                'hasresult'         => false,
+            ),
+            'timeend_past' => array(
+                'discussionconfig' => array(
+                    'timeendmodifier'   => -86000,
+                ),
+                'hasresult'         => false,
+            ),
+            'timeend_future' => array(
+                'discussionconfig' => array(
+                    'timeendmodifier'   => 86000,
+                ),
+                'hasresult'         => true,
+            ),
+        );
+    }
+
+    /**
+     * @dataProvider forum_get_unmailed_posts_provider
+     */
+    public function test_forum_get_unmailed_posts($discussiondata, $enabletimedposts, $expectedcount, $expectedreplycount) {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+
+        // Configure timed posts.
+        $CFG->forum_enabletimedposts = $enabletimedposts;
+
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id]);
+        $user = $this->getDataGenerator()->create_user();
+        $forumgen = $this->getDataGenerator()->get_plugin_generator('mod_forum');
+
+        // Keep track of the start time of the test. Do not use time() after this point to prevent random failures.
+        $time = time();
+
+        $record = new stdClass();
+        $record->course = $course->id;
+        $record->userid = $user->id;
+        $record->forum = $forum->id;
+        if (isset($discussiondata['timecreated'])) {
+            $record->timemodified = $time + $discussiondata['timecreated'];
+        }
+        if (isset($discussiondata['timestart'])) {
+            $record->timestart = $time + $discussiondata['timestart'];
+        }
+        if (isset($discussiondata['timeend'])) {
+            $record->timeend = $time + $discussiondata['timeend'];
+        }
+        if (isset($discussiondata['mailed'])) {
+            $record->mailed = $discussiondata['mailed'];
+        }
+
+        $discussion = $forumgen->create_discussion($record);
+
+        // Fetch the unmailed posts.
+        $timenow   = $time;
+        $endtime   = $timenow - $CFG->maxeditingtime;
+        $starttime = $endtime - 2 * DAYSECS;
+
+        $unmailed = forum_get_unmailed_posts($starttime, $endtime, $timenow);
+        $this->assertCount($expectedcount, $unmailed);
+
+        // Add a reply just outside the maxeditingtime.
+        $replyto = $DB->get_record('forum_posts', array('discussion' => $discussion->id));
+        $reply = new stdClass();
+        $reply->userid = $user->id;
+        $reply->discussion = $discussion->id;
+        $reply->parent = $replyto->id;
+        $reply->created = max($replyto->created, $endtime - 1);
+        $forumgen->create_post($reply);
+
+        $unmailed = forum_get_unmailed_posts($starttime, $endtime, $timenow);
+        $this->assertCount($expectedreplycount, $unmailed);
+    }
+
+    public function forum_get_unmailed_posts_provider() {
+        return [
+            'Untimed discussion; Single post; maxeditingtime not expired' => [
+                'discussion'        => [
+                ],
+                'timedposts'        => false,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+            'Untimed discussion; Single post; maxeditingtime expired' => [
+                'discussion'        => [
+                    'timecreated'   => - DAYSECS,
+                ],
+                'timedposts'        => false,
+                'postcount'         => 1,
+                'replycount'        => 2,
+            ],
+            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime not expired' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => 0,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => - DAYSECS,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 1,
+                'replycount'        => 2,
+            ],
+            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend not reached' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => - DAYSECS,
+                    'timeend'       => + DAYSECS
+                ],
+                'timedposts'        => true,
+                'postcount'         => 1,
+                'replycount'        => 2,
+            ],
+            'Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend passed' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => - DAYSECS,
+                    'timeend'       => - HOURSECS,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+            'Timed discussion; Single post; Posted 1 week ago; timeend not reached' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timeend'       => + DAYSECS
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 1,
+            ],
+            'Timed discussion; Single post; Posted 1 week ago; timeend passed' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timeend'       => - DAYSECS,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+
+            'Previously mailed; Untimed discussion; Single post; maxeditingtime not expired' => [
+                'discussion'        => [
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => false,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+
+            'Previously mailed; Untimed discussion; Single post; maxeditingtime expired' => [
+                'discussion'        => [
+                    'timecreated'   => - DAYSECS,
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => false,
+                'postcount'         => 0,
+                'replycount'        => 1,
+            ],
+            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime not expired' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => 0,
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => - DAYSECS,
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 1,
+            ],
+            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend not reached' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => - DAYSECS,
+                    'timeend'       => + DAYSECS,
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 1,
+            ],
+            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timestart maxeditingtime expired; timeend passed' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timestart'     => - DAYSECS,
+                    'timeend'       => - HOURSECS,
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timeend not reached' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timeend'       => + DAYSECS,
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 1,
+            ],
+            'Previously mailed; Timed discussion; Single post; Posted 1 week ago; timeend passed' => [
+                'discussion'        => [
+                    'timecreated'   => - WEEKSECS,
+                    'timeend'       => - DAYSECS,
+                    'mailed'        => 1,
+                ],
+                'timedposts'        => true,
+                'postcount'         => 0,
+                'replycount'        => 0,
+            ],
+        ];
+    }
 }
