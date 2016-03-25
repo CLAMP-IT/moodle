@@ -275,6 +275,7 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
         }
         $mform->addRule($fullname, $strmissingfield, 'required', null, 'client');
         $mform->setType($fullname, PARAM_NOTAGS);
+        $mform->addHelpButton($fullname, $fullname);
     }
 
     $enabledusernamefields = useredit_get_enabled_name_fields();
