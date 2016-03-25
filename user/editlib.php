@@ -197,6 +197,7 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
         $mform->addElement('text', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
         $mform->addRule($fullname, $strrequired, 'required', null, 'client');
         $mform->setType($fullname, PARAM_NOTAGS);
+        $mform->addHelpButton($fullname, $fullname);
     }
 
     $enabledusernamefields = useredit_get_enabled_name_fields();
@@ -205,6 +206,7 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
         $mform->addElement('text', $addname,  get_string($addname), 'maxlength="100" size="30"');
         $mform->setType($addname, PARAM_NOTAGS);
     }
+    $mform->addHelpButton('alternatename', 'alternatename');
 
     // Do not show email field if change confirmation is pending.
     if (!empty($CFG->emailchangeconfirmation) and !empty($user->preference_newemail)) {
