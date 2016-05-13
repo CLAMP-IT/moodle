@@ -1,0 +1,10 @@
+Change List
+=========
+
+Version 2015121102
+Fixed a big that caused PoodLL repo to fail, and
+set whiteboard to drawingboard.js
+
+Version 2015121101
+Support for refactored PoodLL filter and support for Moodle 3.0
+

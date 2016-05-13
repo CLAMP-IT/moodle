@@ -1,0 +1,153 @@
+body {
+	background: none transparent;
+}
+.poodll_audiosdk_actionbuttons {
+	display: flex;
+	float: right;
+}
+.poodll_audiosdk_controlpanel{
+	margin: auto;
+    text-align: center;
+	border-radius: 18px;
+	padding: 5px;
+	background-color: #E8E8E8;
+	/* display: inline-table; */
+}
+.btn-group>.btn:first-child {
+    border-radius: 18px 0px 0px 18px;
+}
+.btn-group>.btn:last-child {
+    border-radius: 0px 18px 18px 0px;
+}
+.btn-group-lg>.btn {
+	font-size: 14px;
+}
+/* Edits to recorder button */
+.btn-danger {
+	color: white;
+	background-color: #F15C2C;
+}
+/* recorder button caption text */
+.poodll_audiosdk_record_button_text{
+	 position: relative;
+    top: 1px;
+    display: inline-block;
+    /* font-family: 'Glyphicons Halflings'; */
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+}
+/* Edits to default button */
+.btn-default {
+	  color: #8F1E94;
+}
+
+.btn-default:hover, .btn-default:focus, .btn-default:active, .btn-default.active, .open .dropdown-toggle.btn-default {
+  background-color: #F1F1F1;
+  /*border-color: #31347B;*/
+ }
+
+ .poodll_audiosdk_recorder_status_panel{
+	text-align: center;
+ }
+  .poodll_audiosdk_recorder_error_message{
+	color: red;
+ }
+ .poodll_audiosdk_recorder_recording_message{
+	color: blue;
+ }
+ .poodll_audiosdk_recorder_plain_message{
+	color: black;
+ }
+ 
+.poodll_audiosdk_recording_cont {
+	display: block;
+	margin: auto;
+	text-align: center;
+	width: 240px;
+}
+
+.poodll_audiosdk_recorder_cont {
+	/*float: left;*/
+	margin: auto;
+    width: 240px;
+}
+
+.poodll_audiosdk_getpermissionmode{
+	background-color: red;
+	height: 170px;
+}
+
+.poodll_audiosdk_start_button_cont,
+.poodll_audiosdk_record_button_cont,
+.poodll_audiosdk_stop_button_cont{
+	clear: both;
+	padding: 5px;
+	text-align: center;
+	width: 100%;
+}
+.poodll_audiosdk_stop_button,
+.poodll_audiosdk_play_button,
+.poodll_audiosdk_record_button
+{
+	margin: auto;
+	width: 60px;
+}
+
+.poodll_audiosdk_record_button
+{
+/*	border-radius: 6px 0px 0px 6px; */
+}
+.poodll_audiosdk_stop_button
+{
+	/* border-radius: 0px; */
+}
+
+.poodll_audiosdk_play_button
+{
+	/* border-radius: 0px 6px 6px 0px; */
+}
+
+.poodll_audiosdk_error_cont {
+	display: none;
+}
+.poodll_audiosdk_error_cont h3{
+	color: red;
+}
+
+#poodll_audiosdk_hider
+    {
+        display: none;
+		position:absolute;
+        top: 0%;
+        left: 0%;
+        width: 1600px;
+        height: 2000px;
+        margin-top: -1000px; /*set to a negative number 1/2 of your height*/
+        margin-left: 0px; /*set to a negative number 1/2 of your width*/
+        /*
+        z- index must be lower than pop up box
+       */
+        z-index: 99;
+       background-color:Black;
+       opacity: 0.6;
+    }
+
+#poodll_audiosdk_progress_cont
+    {
+	display: none;
+    position:absolute;
+		text-align: center;
+        top: 50%;
+        left: 50%;
+        width:300px;
+        height:200px;
+        margin-top: -100px; /*set to a negative number 1/2 of your height*/
+        margin-left: -150px; /*set to a negative number 1/2 of your width*/
+        border: 1px solid #ccc;
+        border:  2px solid black;
+        z-index:100; 
+		background-color: white;
+
+    }

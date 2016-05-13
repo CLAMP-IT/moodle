@@ -1,0 +1,6 @@
+Change List
+=========
+
+Version 2015121101
+Support for refactored PoodLL filter and support for Moodle 3.0
+

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/assign/submission/onlinepoodll/db" VERSION="20140524" COMMENT="XMLDB file for Moodle mod/assign/submission/onlinepoodll"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="assignsubmission_onlinepoodl" COMMENT="Info about onlinepoodll submission">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="assignment"/>
+        <FIELD NAME="assignment" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="submission"/>
+        <FIELD NAME="submission" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="assignment" NEXT="recorder"/>
+        <FIELD NAME="recorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="submission" NEXT="filename"/>
+        <FIELD NAME="filename" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="The filename of the recorded file." PREVIOUS="recorder" NEXT="vectordata"/>
+        <FIELD NAME="vectordata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="for whiteboard vectordata" PREVIOUS="filename"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="The unique id for this onlinepoodll submission." NEXT="assignment"/>
+        <KEY NAME="assignment" TYPE="foreign" FIELDS="assignment" REFTABLE="assign" REFFIELDS="id" COMMENT="The assignment instance this online text submission relates to." PREVIOUS="primary" NEXT="submission"/>
+        <KEY NAME="submission" TYPE="foreign" FIELDS="submission" REFTABLE="assign_submission" REFFIELDS="id" COMMENT="The submission this online text submission relates to." PREVIOUS="assignment" />
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>

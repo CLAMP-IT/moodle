@@ -1,0 +1,20 @@
+.que.poodllrecording textarea.qtype_poodllrecording_response {
+    width: 100%;
+}
+.que.poodllrecording textarea.qtype_poodllrecording_response.qtype_poodllrecording_plain {
+    white-space: pre-wrap;
+    font: inherit;
+}
+.que.poodllrecording textarea.qtype_poodllrecording_response.qtype_poodllrecording_monospaced {
+    white-space: pre;
+    font-family: Andale Mono, Monaco, Courier New, DejaVu Sans Mono, monospace;
+}
+.que.poodllrecording .qtype_poodllrecording_response {
+    min-height: 3em;
+}
+.que.poodllrecording .qtype_poodllrecording_response.readonly {
+    background-color: white;
+}
+.que.poodllrecording div.qtype_poodllrecording_response textarea {
+    width: 100%;
+}

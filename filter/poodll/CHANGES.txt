@@ -1,0 +1,23 @@
+Change List
+=========
+Version 2015121106
+Fixed a bug that caused the whiteboard and recorders to fail to submit their media, when jquery was not present.
+
+Version 2015121105
+Fixed a bug that caused widgets(once player etc) to never evaluate registration properly, and fail to load with a registration error.
+Removed erroneous message from settings that talked about a literally canvas issue that no longer exists
+Made the default whiteboard literally canvas again
+
+Version 2015121104
+Fixed a bug preventing LiterallyCanvas from saving images properly in questions
+Fixed bug that prevented mobile devices being detected properly
+
+Version 2015121103
+Fixed bug that affected repository and atto file inserts
+
+Version 2015121102
+Removed drawingbpard.js files that were breaking require.js
+
+Version 2015121101
+Lots of refacoring and support for Moodle 3.0
+
