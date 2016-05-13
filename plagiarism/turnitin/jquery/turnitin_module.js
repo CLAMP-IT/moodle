@@ -77,7 +77,7 @@ jQuery(document).ready(function($) {
     // Open an iframe light box containing the Peermark reviews
     $(document).on('click', '.peermark_reviews_pp_launch', function() {
         $('.peermark_reviews_pp_launch').colorbox({
-            open:true,iframe:true, width:"802px", height:"772px", opacity: "0.7", className: "peermark_reviews",
+            open:true, iframe:true, width:"802px", height:"772px", opacity: "0.7", className: "peermark_reviews",
             onLoad: function() {
                 getLoadingGif();
             },
@@ -87,9 +87,9 @@ jQuery(document).ready(function($) {
     });
 
     // Open an iframe light box containing the Rubric View
-    $(document).on('click', '.rubric_view_pp_launch', function() {
-        $(this).colorbox({
-            href: this.href, iframe:true, width:"832px", height:"682px", opacity: "0.7", className: "rubric_view",
+    if ($('.rubric_view_pp_launch').length > 0) {
+        $('.rubric_view_pp_launch').colorbox({
+            iframe:true, width:"832px", height:"772px", opacity: "0.7", className: "rubric_view",
             onLoad: function() {
                 lightBoxCloseButton();
                 getLoadingGif();
@@ -100,7 +100,7 @@ jQuery(document).ready(function($) {
             }
         });
         return false;
-    });
+    }
 
     // Create new event for submission to be re-sent to Turnitin.
     $(document).on('click', '.pp_resubmit_link', function() {
@@ -131,9 +131,10 @@ jQuery(document).ready(function($) {
         return false;
     });
 
-    $(document).on('click', '.pp_turnitin_eula_link', function() {
-        $(this).colorbox({
-            open:true,iframe:true, width:"766px", height:"596px", opacity: "0.7", className: "eula_view", scrolling: "false",
+    // Open an iframe light box containing the EULA View
+    if ($('.pp_turnitin_eula_link').length > 0) {
+        $('.pp_turnitin_eula_link').colorbox({
+            iframe:true, width:"766px", height:"596px", opacity: "0.7", className: "eula_view", scrolling: "false",
             onLoad: function() { getLoadingGif(); },
             onComplete: function() {
                 $(window).on("message", function(ev) {
@@ -151,8 +152,7 @@ jQuery(document).ready(function($) {
             },
             onCleanup: function() { hideLoadingGif(); }
         });
-        return false;
-    });
+    }
 
     // Hide the submission form if the user has never accepted or declined the Turnitin EULA.
     if ($(".pp_turnitin_ula_ignored").length > 0) {
@@ -165,7 +165,7 @@ jQuery(document).ready(function($) {
     }
 
     function lightBoxCloseButton(closeBtnText) {
-        $('body').append('<div id="tii_close_bar"><a href="#" onclick="$.colorbox.close(); return false;">' + M.str.turnitintooltwo.closebutton + '</a></div>');
+        $('body').append('<div id="tii_close_bar"><a href="#" onclick="$.colorbox.close(); return false;">' + M.str.plagiarism_turnitin.closebutton + '</a></div>');
     }
 
     function getLoadingGif() {
@@ -191,26 +191,39 @@ jQuery(document).ready(function($) {
     }
 
     // Open the DV in a new window in such a way as to not be blocked by popups.
-    function openDV(dvtype, submission_id, coursemoduleid, url) {
-        var url = url+'&viewcontext=box&cmd='+dvtype+'&submissionid='+submission_id+'&sesskey='+M.cfg.sesskey;
+    function openDV(dvtype, submissionid, coursemoduleid, url) {
+        dvWindow = window.open('', '_blank');
+        var loading = '<div class="tii_dv_loading" style="text-align:center;">';
+        loading += '<img src="'+M.cfg.wwwroot+'/plagiarism/turnitin/pix/tiiIcon.svg" style="width:100px; height: 100px">';
+        loading += '<p style="font-family: Arial, Helvetica, sans-serif;">'+M.str.plagiarism_turnitin.loadingdv+'</p>';
+        loading += '</div>';
+        $(dvWindow.document.body).html(loading);
 
-        var dvWindow = window.open('about:blank', 'dv_'+submission_id);
-        var width = $(window).width();
-        var height = $(window).height();
-        dvWindow.document.write('<title>Document Viewer</title>');
-        dvWindow.document.write('<style>html, body { margin: 0; padding: 0; border: 0; }</style>');
-        dvWindow.document.write('<frameset><frame id="dvWindow" name="dvWindow"></frame></frameset>');
-        dvWindow.document.getElementById('dvWindow').src = url;
-        dvWindow.document.close();
-        if (navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
-            // beforeunload event does not work in Safari.
-            $(dvWindow).bind('unload', function() {
-                refreshScores(submission_id, coursemoduleid);
-            });
+        // Get html to launch DV
+        $.ajax({
+            type: "POST",
+            url: M.cfg.wwwroot+"/plagiarism/turnitin/ajax.php",
+            dataType: "json",
+            data: {action: "get_dv_html", submissionid: submissionid, dvtype: dvtype,
+                    cmid: coursemoduleid, sesskey: M.cfg.sesskey},
+            success: function(data) {
+                $(dvWindow.document.body).html(loading+data);
+                dvWindow.document.forms[0].submit();
+                dvWindow.document.close();
+
+                checkDVClosed(submissionid, coursemoduleid);
+            }
+        });
+    }
+
+    // Check whether the DV is still open, refresh the opening window when it closes.
+    function checkDVClosed(submissionid, coursemoduleid) {
+        if (window.dvWindow.closed) {
+            refreshScores(submissionid, coursemoduleid);
         } else {
-            $(dvWindow).bind('beforeunload', function() {
-                refreshScores(submission_id, coursemoduleid);
-            });
+            setTimeout( function(){
+                            checkDVClosed(submissionid, coursemoduleid);
+                        }, 500);
         }
     }
 

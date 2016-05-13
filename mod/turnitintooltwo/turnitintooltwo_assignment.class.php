@@ -345,8 +345,15 @@ class turnitintooltwo_assignment {
         $turnitincall = $turnitincomms->initialise_api();
 
         $class = new TiiClass();
-        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100)
-        $class->setTitle( mb_strlen( $course->fullname ) > 80 ? mb_substr( $course->fullname, 0, 80 ) . "..." : $course->fullname . " (Moodle " . $coursetype . ")" );
+        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100).
+        $title = "";
+        if ( mb_strlen( $course->fullname, 'UTF-8' ) > 80 ) {
+            $title .= mb_substr( $course->fullname, 0, 80, 'UTF-8' ) . "...";
+        } else {
+            $title .= $course->fullname;
+        }
+        $title .= " (Moodle " . $coursetype . ")";
+        $class->setTitle( $title );
 
         try {
             $response = $turnitincall->createClass($class);
@@ -404,8 +411,15 @@ class turnitintooltwo_assignment {
 
         $class = new TiiClass();
         $class->setClassId($course->turnitin_cid);
-        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100)
-        $class->setTitle( mb_strlen( $course->fullname ) > 80 ? mb_substr( $course->fullname, 0, 80 ) . "..." : $course->fullname . " (Moodle " . $coursetype . ")" );
+        // Need to truncate the moodle class title to be compatible with a Turnitin class (max length 100).
+        $title = "";
+        if ( mb_strlen( $course->fullname, 'UTF-8' ) > 80 ) {
+            $title .= mb_substr( $course->fullname, 0, 80, 'UTF-8' ) . "...";
+        } else {
+            $title .= $course->fullname;
+        }
+        $title .= " (Moodle " . $coursetype . ")";
+        $class->setTitle( $title );
 
         try {
             $turnitincall->updateClass($class);
@@ -467,9 +481,10 @@ class turnitintooltwo_assignment {
      * and loops through them to get each user
      *
      * @param string $role the user has in the class
+     * @param string $idkey whether to use moodle or turnitin ids as the array key
      * @return array $users
      */
-    public function get_tii_users_by_role($role = "Learner") {
+    public function get_tii_users_by_role($role = "Learner", $idkey = "tii") {
         global $DB;
 
         $users = array();
@@ -495,13 +510,14 @@ class turnitintooltwo_assignment {
         foreach ($readmemberships as $readmembership) {
             if ($readmembership->getRole() == $role) {
 
-                // Check user is a Moodle user. otherwise we have to go to Turnitin for their name.
+                // Check user is a Moodle user. Otherwise we have to go to Turnitin for their name.
                 $moodleuserid = turnitintooltwo_user::get_moodle_user_id($readmembership->getUserId());
                 if (!empty($moodleuserid)) {
                     $user = $DB->get_record('user', array('id' => $moodleuserid));
-                    $users[$readmembership->getUserId()]["firstname"] = $user->firstname;
-                    $users[$readmembership->getUserId()]["lastname"] = $user->lastname;
-                    $users[$readmembership->getUserId()]["membership_id"] = $readmembership->getMembershipId();
+                    $arraykey = ($idkey == "mdl") ? $user->id : $readmembership->getUserId();
+                    $users[$arraykey]["firstname"] = $user->firstname;
+                    $users[$arraykey]["lastname"] = $user->lastname;
+                    $users[$arraykey]["membership_id"] = $readmembership->getMembershipId();
                 } else {
                     $user = new TiiUser();
                     $user->setUserId($readmembership->getUserId());
@@ -795,7 +811,7 @@ class turnitintooltwo_assignment {
      * @param object $assignment add assignment instance
      * @param var $toolid turnitintooltwo id
      */
-    public static function create_tii_assignment($assignment, $toolid, $partnumber, 
+    public static function create_tii_assignment($assignment, $toolid, $partnumber,
                                                 $usecontext = "turnitintooltwo", $workflowcontext = "site") {
         global $DB;
         // Initialise Comms Object.
@@ -820,7 +836,7 @@ class turnitintooltwo_assignment {
             }
             $toscreen = true;
             if ($workflowcontext == "cron") {
-                mtrace(get_string('pp_assignmentcreateerror', 'turnitintooltwo'));
+                mtrace(get_string('ppassignmentcreateerror', 'turnitintooltwo'));
                 $toscreen = false;
             }
             $turnitincomms->handle_exceptions($e, 'createassignmenterror', $toscreen);
@@ -843,13 +859,33 @@ class turnitintooltwo_assignment {
             $_SESSION["assignment_updated"][$assignment->getAssignmentId()] = time();
 
             turnitintooltwo_activitylog("Turnitin Assignment part updated - id: ".$assignment->getAssignmentId(), "REQUEST");
+
+            return array('success' => true, 'tiiassignmentid' => $assignment->getAssignmentId());
+
         } catch (Exception $e) {
             $toscreen = true;
+
+            // Separate error handling for the Plagiarism plugin.
             if ($workflowcontext == "cron") {
-                mtrace(get_string('pp_assignmentediterror', 'turnitintooltwo'));
+
+                $error = new stdClass();
+                $error->title = $assignment->getTitle();
+                $error->assignmentid = $assignment->getAssignmentId();
+                $errorstr = get_string('ppassignmentediterror', 'turnitintooltwo', $error);
+
+                mtrace($errorstr);
                 $toscreen = false;
             }
+
             $turnitincomms->handle_exceptions($e, 'editassignmenterror', $toscreen);
+
+            // Return error string as we use this in the plagiarism plugin.
+            if ($workflowcontext == "cron") {
+                return array('success' => false, 'error' => $errorstr,
+                            'tiiassignmentid' => $assignment->getAssignmentId());
+            } else {
+                return array('success' => false, 'error' => get_string('editassignmenterror', 'turnitintooltwo'));
+            }
         }
     }
 
@@ -1137,6 +1173,14 @@ class turnitintooltwo_assignment {
                 // Disable anonymous marking in Moodle if the post date has passed.
                 if ($this->turnitintooltwo->anon && $partdetails->submitted == 1 && $fieldvalue < time()) {
                     $partdetails->unanon = 1;
+                }
+
+                // If post date is moved beyond the current time, reset anon gradebook flag.
+                if ($fieldvalue > time()) {
+                    $update_assignment = new stdClass();
+                    $update_assignment->id = $partdetails->turnitintooltwoid;
+                    $update_assignment->anongradebook = 0;
+                    $DB->update_record("turnitintooltwo", $update_assignment);
                 }
 
                 $assignment->setFeedbackReleaseDate(gmdate("Y-m-d\TH:i:s\Z", $fieldvalue));

@@ -1,3 +1,63 @@
+### Date:       2016-April-11
+### Release:    v2016011105
+
+- Added support form to contact Tii support directly from the plugin.
+- Datatables styling now specific to Turnitin tables to avoid conflict.
+- Activity logs for submissions are now more informative.
+- Created warning on config page for the customer to check whether translated matching and ETS are configured at account level
+- Fixes:
+	- Fixed issue with postdate in anonymous marking mode - the page now warns the user the impact on anonymity of moving the post-date.
+	- Enrolls user if necessary when performing a course restoration.
+	- Fixed cron logic to prevent multiple assignment creation upon cron event failure.
+
+
+---
+
+### Date:       2016-February-23
+### Release:    v2016011104
+
+- Grade display help text is now wrapped.
+- Links to migration tool have been renamed to course restoration.
+- Block JavaScipt code has been moved out of the direct package as part of our efforts to separate plugins.
+- Cron functionality has been moved to scheduled tasks (Thanks to mwehr).
+- Allow emails to be sent from the noreply address.
+- Fixes:
+	- Fixed an issue where the file name would be appending multiple times if the temp file can't be created.
+	- Fixed cron warning message regarding REQUEST_URI (Thanks to AviMoto).
+	- Query fixed during cron for Postgres (Thanks to mwehr).
+
+---
+
+### Date:       2016-January-25
+### Release:    v2016011102
+
+- Fixes:
+	- Reworked DV launchers to remove cross domain iframe problem preventing opening in Safari.
+
+---
+
+### Date:       2016-January-12
+### Release:    v2016011101
+
+- Instructors to be notified when a submission has been made.
+- Contrast changed for inbox error messages.
+- Check added to verify if php_mbstring is enabled.
+- Ensure filename to be sent to Turnitin is UTF-8 encoded
+- Unnecessary addition of user being updated in Turnitin and submission inbox being viewed removed from plugin activity logs.
+- Unused (pre Moodle 2.6) $module settings removed from version.php.
+- Moodle's cron will update OR scores if necessary after the due date has passed.
+- Use default values if user has no firstname or lastname.
+- Fixes:
+	- Anonymous grades to gradebook after post date has passed processed by cron.
+	- Grademark icon visibility now dependent on whether GradeMark feedback exists rather than a grade.
+    - Multi-part assignment Delete icon missing from "delete parts".
+    - Table sorting images shown in Submission inbox.
+    - Fix object variable in ajax request for PHP7 compatability.
+    - Additional user status checking added to view.php functions (Thanks to Skylar Kelty)
+	- Replace deprecated mime_content_type function in submission to Turnitin process.
+
+---
+
 ### Date:       2015-November-30
 ### Release:    v2015040111
 
@@ -335,7 +395,7 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 - Error indicators and rollover messages now displayed in inbox.
 - Error messages saved and displayed in settings area.
 - EULA moved to submission declaration and submission form hidden.
-- Turnitin Paper Id now shown next to submission to show that paper has been submitted. 
+- Turnitin Paper Id now shown next to submission to show that paper has been submitted.
 - Fixes:
 	- Long assignment titles are now truncated.
 	- Link to a file in Assignment Summary now renders correctly.
@@ -369,7 +429,7 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 - User creation removed from restore procedure.
 - Additonal indexes added to database tables
 - Extra permission checks added for migration tool
-- Error message now shown if ajax request to get submissions times out 
+- Error message now shown if ajax request to get submissions times out
 - Improved CSS to scope only to plugins and files added to jQuery plugin organisation
 - Forum posts are now submitted to Turnitin when posted
 - Database dump added to PP settings page
@@ -411,10 +471,10 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 - Submissions in Plagiarism plugin stopped if there has been 5 unsuccessful attempts.
 - Link removed for Originality Report if there is no score.
 - Fixes:
-	- Incorrect links to GradeMark and Originality Report for students have been hidden. 
+	- Incorrect links to GradeMark and Originality Report for students have been hidden.
 	- Conflicts with Bootstrap theme for tooltips and fixed grademark link position.
 	- Incorrect settings link in the Plagiarism plugin.
-	- Timestamp was being incorrectly set preventing more than 1 batch of submissions updating from Turnitin. 
+	- Timestamp was being incorrectly set preventing more than 1 batch of submissions updating from Turnitin.
 	- Student is now enrolled on the class when checking EULA acceptance to ensure they are on account.
 
 ---
@@ -447,10 +507,10 @@ Releases before version 2015040106 will refer to changes made to the Turnitin's 
 ###Release:    v2014012401
 
 - File type limit removed.
-- Ability to accept no file added so that marks / grades can be allocated to non file submissions 
+- Ability to accept no file added so that marks / grades can be allocated to non file submissions
 - Dependencies added to plagiarism plugin and blocks
 - Fixes:
-	- Error occurring in course reset 
+	- Error occurring in course reset
 
 ---
 
