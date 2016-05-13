@@ -1,0 +1,10 @@
+{
+  "name": "moodle-atto_poodll-button",
+  "builds": {
+    "moodle-atto_poodll-button": {
+      "jsfiles": [
+        "button.js"
+      ]
+    }
+  }
+}

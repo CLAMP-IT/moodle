@@ -16,13 +16,13 @@
     $temp_dir = "$CFG->dataroot/temp/annotate";
     $filepath = "$temp_dir/$filecode";
     
-    // Only serve the target file if the temp file was created in the last 60 seconds. 
+    // Only serve the target file if the temp file was created in the last 3 minutes. 
     // It was made by the page that redirected to annotate, so this should only fail if 
     // there is a problem with that connection. 
 
     $xcontent = "";
     
-    if (file_exists($filepath)  && (time() - filemtime($filepath)) < 60) {
+    if (file_exists($filepath)  && (time() - filemtime($filepath)) < 60*3) {
           $bits = file($filepath);
    //      unlink($filepath);
      } else {
@@ -45,7 +45,7 @@
 	    } 
      } 
     
-    function not_found($fullpath) {
+    function not_found($fullpath="") {
         header('HTTP/1.0 404 not found');
         print_error('filenotfound', 'error');  
     }

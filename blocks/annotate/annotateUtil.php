@@ -2,7 +2,6 @@
  
 require_once('annotateApi.php');
 
-
 function makeLoginLink($user, $loc, $errloc, $sig) {
   global $CFG;
   
@@ -73,8 +72,7 @@ function simpleLoginURL() {
 }
 
 
-
-function exposeFileAndRedirect($docpath, $code, $pnhash="", $owner="") {
+function exposeFileAndRedirect($docpath, $code, $pnhash="", $owner="" , $nameOfCourse="",$courseID="") {
 	global $CFG;
 	global $USER;
 	
@@ -103,19 +101,40 @@ function exposeFileAndRedirect($docpath, $code, $pnhash="", $owner="") {
      // and only the x argument is used to look up what to actually send.
      
      $shortname = basename($docpath);
-     $niceurl = $CFG->wwwroot.'/blocks/annotate/file.php'.$docpath;
-     $realurl = $niceurl.'?x='.$code;
-  
-     $uploadurl = $CFG->block_annotate_server_url . '/php/swfupload.php' .
+     //foksot keep it short the url in order to have a small get
+     $postParams = array(
+     "fmt" => "redir"  ,
+     "hash" => $pnhash,
+     "xCode" => $code,
+     "type" => "moodle",
+     "courseName" => $nameOfCourse,
+     "moodleId" => $CFG->block_moodle_id,
+     "courseId" =>$courseID,
+     "fname" => $shortname,
+     "fuser" => $USER->email,
+     "uname" => $USER->firstname,
+     "ulname" => $USER->lastname);
+    if($owner){
+      $postParams["sluser"] = $owner;
+      $postParams["slshared"] = 1; 
+    }
+    $uploadurl = $CFG->block_annotate_server_url.'/php/lmsConnector.php?install='.rawurlencode($CFG->wwwroot);
+    foreach ($postParams as $key => $value) {
+       $uploadurl .="&$key=".rawurlencode($value);
+    }  
+/*    
+     $uploadurl = $CFG->block_annotate_server_url . '/php/lmsConnector.php' .
                "?url=".rawurlencode($realurl)."&fmt=redir&furi=".rawurlencode($niceurl).
-    	       "&fname=".$shortname;
-     
+    	       "&fname=".$shortname;*/
+ /*    
 	if ($owner) {	
      	$uploadurl = $uploadurl . "&fuser=" . $USER->email;
         $uploadurl = $uploadurl . "&sluser=" . $owner;
    		$uploadurl = $uploadurl . "&slshared=1";
-	}  
+	}  */
       
+
+
       
  //   print "upload url is : " . $uploadurl;
      
@@ -132,7 +151,6 @@ function exposeFileAndRedirect($docpath, $code, $pnhash="", $owner="") {
      
      
      // redirecting to this url should transfer the file if necessary and go to the annotate page.
-     
 	 if (strlen(trim($CFG->block_annotate_apiuser)) > 10) {
 	 	  // we have a master user and API key, so we can auto-create accounts and auto-login
           $errurl = $CFG->wwwroot.'/blocks/annotate/error.php';
@@ -140,16 +158,9 @@ function exposeFileAndRedirect($docpath, $code, $pnhash="", $owner="") {
          	
           header("Location:" . $loginurl);
      
-     } else {
+  } else {
      	// no master user configured. Just ask the user to create an account or log in.
       	header("Location:" . $uploadurl);
-     }
+  }
   
 }
-
-
-
-
-
-
-?>
