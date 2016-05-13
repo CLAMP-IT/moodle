@@ -1,0 +1,71 @@
+/*
+/**
+ * PoodLL Audio Recording SDK
+ *
+* @author Justin Hunt (@link http://www.poodll.com)
+* @copyright 2013 onwards Justin Hunt http://www.poodll.com
+* @license JustinsPlainEnglishLicense ( http://www.poodll.com/justinsplainenglishlicense.txt )
+ */
+
+/* For HTML5 Uploads */
+.p_progress p
+{
+	display: none;
+	width: 240px;
+	padding: 2px 5px;
+	margin: 2px 0;
+	border: 1px inset #446;
+	border-radius: 5px;
+	background: #eee url("progress.png") 100% 0 repeat-y;
+}
+
+.p_progress p.success
+{
+	background: #0c0 none 0 0 no-repeat;
+}
+
+.p_progress p.failed
+{
+	background: #c00 none 0 0 no-repeat;
+}
+
+.p_btn {
+display: inline-block;
+cursor: pointer;
+padding: 7px 10px;
+font-weight: 700;
+line-height: 1;
+color: white;
+background: #345;
+border: 0;
+-moz-border-radius: 4px;
+-webkit-border-radius: 4px;
+border-radius: 4px;
+}
+
+
+.p_btn_wrapper {
+display: inline-block;
+margin: 0;
+position: relative;
+overflow: hidden;
+cursor: pointer;
+}
+
+.p_btn_wrapper [type="file"] {
+position: absolute;
+top: 0;
+left: 0;
+height: 45px;
+filter: alpha(opacity=0);
+-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+opacity: 0;
+cursor: pointer;
+}
+
+.os_version_warning { 
+	border: 1px solid #ff0000; 
+	font-size:14px; 
+	font-weight:bold; 
+	margin:10px; 
+}

@@ -26,6 +26,9 @@ $settings->add(new admin_setting_configtext('block_annotate_apiuser', 'API user 
 $akmsg = 'The API key can be found at the bottom of the account page when logged in to A.nnotate as the administrator';
 $settings->add(new admin_setting_configtext('block_annotate_apikey', 'API key', $akmsg, ''));
 
+$akmsg = 'Moodle Identifier. (If you have multiple moodle installations or you reinstall the moodle plugin)';
+$code = sha1($CFG->wwwroot);
+$settings->add(new admin_setting_configtext('block_moodle_id', 'Moodle Id', $akmsg, $code));
 /*
 
 // this to go in per-instance configuration

@@ -1,0 +1,137 @@
+
+.poodll_audiosdk_listbuttons input[type="submit"]{
+	width: 400px;
+	/*float: left;*/
+}
+
+.poodll_audiosdk_actionbuttons {
+	display: flex;
+	float: right;
+}
+.poodll_audiosdk_controlpanel{
+	margin: auto;
+    width: 400px;
+    text-align: center;
+}
+
+.poodll_audiosdk_recording_cont {
+	display: block;
+	margin: auto;
+	text-align: center;
+	width: 720px;
+}
+
+.poodll_audiosdk_recorder_cont {
+	float: left;
+}
+.poodll_audiosdk_recorder_spacer_right,
+.poodll_audiosdk_recorder_spacer_left {
+	float: left;
+	width: 240px;
+	height: 100px; 
+}
+.poodll_audiosdk_dummyrecorder {
+	float: left;
+}
+.poodll_audiosdk_dummy_recorder_hidden {
+	display: none;
+}
+.poodll_audiosdk_dummy_recorder_recording {
+	display: table-cell;
+	float: left; 
+	width: 239px;
+	height: 100px;
+	vertical-align: middle;
+	background-size: 90px 90px;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-color: red;
+}
+.poodll_audiosdk_dummy_recorder_stopped {
+	display: table-cell;
+	float: left;
+	width: 239px;
+	height: 100px;
+	vertical-align: middle;
+	background-size: 90px 90px;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-color: grey;
+}
+.poodll_audiosdk_getpermissionmode{
+	background-color: red;
+	height: 170px;
+}
+
+.poodll_audiosdk_start_button_cont,
+.poodll_audiosdk_record_button_cont,
+.poodll_audiosdk_stop_button_cont{
+	clear: both;
+	padding: 5px;
+	text-align: center;
+	width: 100%;
+}
+.poodll_audiosdk_stop_button,
+.poodll_audiosdk_start_button,
+.poodll_audiosdk_record_button
+{
+	margin: auto;
+	width: 200px;
+}
+.poodll_audiosdk_voicecanvas {
+	width: 239px;
+	height: 100px;
+	z-index: 8;
+}
+.poodll_audiosdk_passage_cont {
+	display: none;
+}
+.poodll_audiosdk_passage_finished {
+	background-color: #CCCCCC;
+	padding: 2px;
+}
+.poodll_audiosdk_feedback_cont {
+	display: none;
+}
+.poodll_audiosdk_error_cont {
+	display: none;
+}
+.poodll_audiosdk_error_cont h3{
+	color: red;
+}
+
+#poodll_audiosdk_hider
+    {
+        display: none;
+		position:absolute;
+        top: 0%;
+        left: 0%;
+        width: 1600px;
+        height: 2000px;
+        margin-top: -1000px; /*set to a negative number 1/2 of your height*/
+        margin-left: 0px; /*set to a negative number 1/2 of your width*/
+        /*
+        z- index must be lower than pop up box
+       */
+        z-index: 99;
+       background-color:Black;
+       opacity: 0.6;
+    }
+
+#poodll_audiosdk_progress_cont
+    {
+	display: none;
+    position:absolute;
+		text-align: center;
+        top: 50%;
+        left: 50%;
+        width:300px;
+        height:200px;
+        margin-top: -100px; /*set to a negative number 1/2 of your height*/
+        margin-left: -150px; /*set to a negative number 1/2 of your width*/
+        border: 1px solid #ccc;
+        border:  2px solid black;
+        z-index:100; 
+		background-color: white;
+
+    }

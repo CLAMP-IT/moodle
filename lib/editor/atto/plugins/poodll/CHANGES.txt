@@ -1,0 +1,8 @@
+Change List
+=========
+Version 2015121102
+Added jquery so that the drawingboard.js doesn't fail
+
+Version 2015121101
+Support for refactored PoodLL filter and support for Moodle 3.0
+

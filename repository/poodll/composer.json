@@ -1,0 +1,10 @@
+{
+    "name": "justinhunt/moodle-repository_poodll",
+    "type": "moodle-repository",
+    "require": {
+        "composer/installers": "~1.0"
+    },
+    "extra": {
+        "installer-name": "poodll"
+    }
+}

@@ -1,0 +1,10 @@
+.fp-poodllmp3-recorder {display:none;}
+.repository_poodll .fp-poodllmp3-recorder {display:table-row;}
+.repository_poodll .fp-content {position:relative;}
+.file-picker .repository_poodll .fp-login-form p {
+    margin-top: 0em;
+    text-align: center;
+}
+.fp-login-input .control-group .repository_poodll{
+    display: none;
+}
