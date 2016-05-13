@@ -27,7 +27,20 @@ $itemid = optional_param('itemid', 0, PARAM_INT);
 if( !empty( $cmid ) ){
     $cm = get_coursemodule_from_id('', $cmid);
     $context = context_course::instance($cm->course);
+
+    // Work out user role.
+    $userrole = '';
+    switch ($cm->modname) {
+        case "forum":
+        case "workshop":
+            $userrole = (has_capability('plagiarism/turnitin:viewfullreport', $context)) ? 'Instructor' : 'Learner';
+            break;
+        default:
+            $userrole = (has_capability('mod/'.$cm->modname.':grade', $context)) ? 'Instructor' : 'Learner';
+            break;
+    }
 }
+
 $pathnamehash = optional_param('pathnamehash', "", PARAM_ALPHANUM);
 $submissiontype = optional_param('submission_type', "", PARAM_ALPHAEXT);
 $return = array();
@@ -36,32 +49,25 @@ $return = array();
 $pluginturnitin = new plagiarism_plugin_turnitin();
 
 switch ($action) {
-    case "origreport":
-    case "grademark":
-        $submissionid = optional_param('submission', 0, PARAM_INT);
+    case "get_dv_html":
+        $submissionid = required_param('submissionid', PARAM_INT);
+        $dvtype = optional_param('dvtype', 'default', PARAM_ALPHAEXT);
+        $user = new turnitintooltwo_user($USER->id, $userrole);
+        $coursedata = turnitintooltwo_assignment::get_course_data($cm->course, 'PP');
 
-        switch ($cm->modname) {
-            case "forum":
-            case "workshop":
-                $istutor = has_capability('plagiarism/turnitin:viewfullreport', $context);
-                break;
-            default:
-                $istutor = has_capability('mod/'.$cm->modname.':grade', $context);
-                break;
+        if ($userrole == 'Instructor') {
+            $user->join_user_to_class($coursedata->turnitin_cid);
         }
 
-        $isstudent = ($cm->modname == "forum") ? has_capability('mod/'.$cm->modname.':replypost', $context) :
-                                                has_capability('mod/'.$cm->modname.':submit', $context);
+        // Edit assignment in Turnitin in case any changes have been made that would affect DV.
+        $pluginturnitin = new plagiarism_plugin_turnitin();
+        $syncassignment = $pluginturnitin->sync_tii_assignment($cm, $coursedata->turnitin_cid);
 
-        if ($istutor || $isstudent) {
-            $role = ($istutor) ? "Instructor" : "Learner";
-            $user = new turnitintooltwo_user($USER->id, $role);
-            $coursedata = turnitintooltwo_assignment::get_course_data($cm->course, 'PP');
-
-            $user->join_user_to_class($coursedata->turnitin_cid);
-            $user->edit_tii_user();
-
-            echo turnitintooltwo_view::output_dv_launch_form($action, $submissionid, $user->tii_user_id, $role);
+        if ($syncassignment['success']) {
+            $turnitintooltwoview = new turnitintooltwo_view();
+            $return = html_writer::tag("div",
+                                        $turnitintooltwoview->output_dv_launch_form($dvtype, $submissionid, $user->tii_user_id,
+                                                                    $userrole, ''), array('style' => 'display: none'));
         }
         break;
 
@@ -74,10 +80,7 @@ switch ($action) {
 
         $submissionid = optional_param('submission', 0, PARAM_INT);
 
-        $istutor = ($cm->modname == "assign") ? $istutor = has_capability('mod/'.$cm->modname.':grade', $context) :
-                                                        has_capability('plagiarism/turnitin:viewfullreport', $context);
-
-        if ($istutor && $cm->modname == "assign") {
+        if ($userrole == 'Instructor' && $cm->modname == "assign") {
             $return["status"] = $pluginturnitin->update_grades_from_tii($cm);
 
             $moduleconfigvalue = new stdClass();
@@ -110,32 +113,26 @@ switch ($action) {
         break;
 
     case "peermarkmanager":
-        switch ($cm->modname) {
-            case "forum":
-            case "workshop":
-                $istutor = has_capability('plagiarism/turnitin:viewfullreport', $context);
-                break;
-            default:
-                $istutor = has_capability('mod/'.$cm->modname.':grade', $context);
-                break;
-        }
 
-        if ($istutor) {
+        if ($userrole == 'Instructor') {
             $plagiarism_plugin_turnitin = new plagiarism_plugin_turnitin();
             $coursedata = $plagiarism_plugin_turnitin->get_course_data($cm->id, $cm->course);
 
             $tiiassignment = $DB->get_record('plagiarism_turnitin_config', array('cm' => $cm->id, 'name' => 'turnitin_assignid'));
 
-            if (!$tiiassignment) {
+            if ($tiiassignment) {
+                $tiiassignmentid = $tiiassignment->value;
+            } else {
                 // Create the module as an assignment in Turnitin.
-                $tiiassignment->value = $pluginturnitin->sync_tii_assignment($cm, $coursedata->turnitin_cid);
+                $tiiassignment = $pluginturnitin->sync_tii_assignment($cm, $coursedata->turnitin_cid);
+                $tiiassignmentid = $tiiassignment['tiiassignmentid'];
             }
 
             $user = new turnitintooltwo_user($USER->id, "Instructor");
             $user->join_user_to_class($coursedata->turnitin_cid);
 
             echo html_writer::tag("div", turnitintooltwo_view::output_lti_form_launch('peermark_manager',
-                                                        'Instructor', $tiiassignment->value),
+                                                        'Instructor', $tiiassignmentid),
                                                         array("class" => "launch_form", "style" => "display:none;"));
             echo html_writer::script("<!--
                                     window.document.forms[0].submit();
@@ -163,20 +160,11 @@ switch ($action) {
         break;
 
     case "peermarkreviews":
-        switch ($cm->modname) {
-            case "forum":
-            case "workshop":
-                $istutor = has_capability('plagiarism/turnitin:viewfullreport', $context);
-                break;
-            default:
-                $istutor = has_capability('mod/'.$cm->modname.':grade', $context);
-                break;
-        }
 
         $isstudent = ($cm->modname == "forum") ? has_capability('mod/'.$cm->modname.':replypost', $context) :
                                                 has_capability('mod/'.$cm->modname.':submit', $context);
 
-        if ($istutor || $isstudent) {
+        if ($userrole == 'Instructor' || $isstudent) {
             $role = ($istutor) ? 'Instructor' : 'Learner';
 
             $tiiassignment = $DB->get_record('plagiarism_turnitin_config', array('cm' => $cm->id, 'name' => 'turnitin_assignid'));
@@ -206,8 +194,10 @@ switch ($action) {
         $eula_user->user_agreement_accepted = 0;
         if ($message == 'turnitin_eula_accepted') {
             $eula_user->user_agreement_accepted = 1;
+            turnitintooltwo_activitylog("User ".$USER->id." (".$turnitin_user->turnitin_uid.") accepted the EULA.", "PP_EULA_ACCEPTANCE");
         } else if ($message == 'turnitin_eula_declined') {
             $eula_user->user_agreement_accepted = -1;
+            turnitintooltwo_activitylog("User ".$USER->id." (".$turnitin_user->turnitin_uid.") declined the EULA.", "PP_EULA_ACCEPTANCE");
         }
 
         // Update the user using the above object

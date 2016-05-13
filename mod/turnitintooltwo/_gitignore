@@ -1,0 +1,8 @@
+.DS_Store
+.git
+
+# Ignore Node.js modules
+node_modules/
+/.settings/
+/.buildpath
+/.project

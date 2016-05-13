@@ -9,13 +9,14 @@ class receipt_message {
      * @return void
      */
     public function send_message($userid, $message) {
+        global $CFG;
 
         $subject = get_string('digital_receipt_subject', 'turnitintooltwo');
 
         $eventdata = new stdClass();
         $eventdata->component         = 'mod_turnitintooltwo'; //your component name
         $eventdata->name              = 'submission'; //this is the message name from messages.php
-        $eventdata->userfrom          = get_admin();
+        $eventdata->userfrom          = \core_user::get_noreply_user();
         $eventdata->userto            = $userid;
         $eventdata->subject           = $subject;
         $eventdata->fullmessage       = $message;
@@ -50,5 +51,4 @@ class receipt_message {
 
         return get_string('digital_receipt_message', 'turnitintooltwo', $message);
     }
-
 }
