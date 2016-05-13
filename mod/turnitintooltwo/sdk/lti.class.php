@@ -39,8 +39,8 @@ class LTI extends OAuthSimple {
     protected $proxybypass;
     protected $sslcertificate;
 
-    protected $istestingconnection;
-    protected $perflog;
+    protected $testingconnection;
+    protected $performancelog;
 
     public function __construct( $apibaseurl ) {
         $this->setApiBaseUrl( $apibaseurl );
@@ -48,8 +48,8 @@ class LTI extends OAuthSimple {
             'lti_version'      => 'LTI-1p0',
             'resource_link_id' => $this->genUuid()
         );
-        $this->istestingconnection = false;
-        $this->perflog = null;
+        $this->testingconnection = false;
+        $this->performancelog = null;
         $this->integrationversion = '';
         $this->pluginversion = '';
     }
@@ -537,7 +537,8 @@ class LTI extends OAuthSimple {
 
             // CURL uploading with @ has been deprecated in PHP 5.5
             if (class_exists('CURLFile')) {
-                $mimetype = mime_content_type( $submission->getSubmissionDataPath() );
+                $finfo = new finfo( FILEINFO_MIME );
+                $mimetype = $finfo->file( $submission->getSubmissionDataPath() );
                 $params_merge['custom_submission_data'] = new CurlFile($submission->getSubmissionDataPath(), $mimetype);
             } else {
                 $params_merge['custom_submission_data'] = '@'.$submission->getSubmissionDataPath();
@@ -568,7 +569,8 @@ class LTI extends OAuthSimple {
         } else if ( is_null( $submission->getSubmissionDataUrl() ) ) {
             // CURL uploading with @ has been deprecated in PHP 5.5
             if (class_exists('CURLFile')) {
-                $mimetype = mime_content_type( $submission->getSubmissionDataPath() );
+                $finfo = new finfo( FILEINFO_MIME );
+                $mimetype = $finfo->file( $submission->getSubmissionDataPath() );
                 $params_merge['custom_submission_data'] = new CurlFile($submission->getSubmissionDataPath(), $mimetype);
             } else {
                 $params_merge['custom_submission_data'] = '@'.$submission->getSubmissionDataPath();
@@ -905,24 +907,24 @@ class LTI extends OAuthSimple {
      *
      * @return string
      */
-    public function getIsTestingConnection() {
-        return $this->$istestingconnection;
+    public function getTestingConnection() {
+        return $this->$testingconnection;
     }
 
-    public function setIsTestingConnection($istestingconnection) {
-        $this->istestingconnection = $istestingconnection;
+    public function setTestingConnection($testingconnection) {
+        $this->testingconnection = $testingconnection;
     }
 
     /**
      *
      * @return string
      */
-    public function getPerflog() {
-        return $this->perflog;
+    public function getPerformanceLog() {
+        return $this->performancelog;
     }
 
-    public function setPerflog($perflog) {
-        $this->perflog = $perflog;
+    public function setPerformanceLog($performancelog) {
+        $this->performancelog = $performancelog;
     }
 
     /**
@@ -950,14 +952,14 @@ class LTI extends OAuthSimple {
             curl_setopt($ch, CURLOPT_PROXYUSERPWD, sprintf('%s:%s', $this->proxyuser, $this->proxypassword));
         }
 
-        if ($this->perflog !== null) {
-            $this->perflog->start_timer();
+        if ($this->performancelog !== null) {
+            $this->performancelog->start_timer();
         }
 
         $result = curl_exec($ch);
 
-        if ($this->perflog !== null) {
-            $this->perflog->stop_timer($ch);
+        if ($this->performancelog !== null) {
+            $this->performancelog->stop_timer($ch);
         }
 
         if( $result === false) {
