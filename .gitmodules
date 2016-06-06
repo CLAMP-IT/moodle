@@ -58,3 +58,6 @@
 [submodule "local/cohort_sync"]
 	path = local/cohort_sync
 	url = https://gitlab.hampshire.edu/moodle/local_cohort_sync.git
+[submodule "local/provisional_enrolments"]
+	path = local/provisional_enrolments
+	url = https://gitlab.hampshire.edu/moodle/local_provisional_enrolments.git
