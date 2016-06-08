@@ -6,6 +6,8 @@ before_script:
   - cd /var/www/moodle
   - if [ ! -d htdocs ]; then cp -r /builds/moodle/moodle htdocs; fi
   - cd htdocs
+  - git fetch --all --prune
+  - git reset --hard $CI_BUILD_REF
   - git submodule sync
   - git submodule update --init
   - cp -f config-dist.php config.php
