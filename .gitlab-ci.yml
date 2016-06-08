@@ -2,6 +2,7 @@ image:
   hampshire/selenium-firefox:latest
 
 before_script:
+  - mkdir -p /var/www/moodle
   - cd /var/www/moodle
   - if [ ! -d htdocs ]; then cp -r /builds/moodle/moodle htdocs; fi
   - cd htdocs
