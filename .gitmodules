@@ -1,3 +1,9 @@
 [submodule "blocks/export_forum"]
 	path = blocks/export_forum
 	url = https://github.com/lsuits/export_forum
+[submodule "local/remote_courses"]
+	path = local/remote_courses
+	url = https://github.com/LafColITS/moodle-local_remote_courses.git
+[submodule "blocks/remote_courses"]
+	path = blocks/remote_courses
+	url = https://github.com/LafColITS/moodle-block_remote_courses
