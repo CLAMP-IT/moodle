@@ -102,10 +102,10 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
 	  print "Could not recover for $student\n";
 	}
     }*/
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5");
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"student");
     $master_results[$courseinfo]['student_sync'] = $result;
     /* role id 3 == teacher */
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3");
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"teacher");
     $master_results[$courseinfo]['teacher_sync'] = $result;
   }
   return $master_results;
@@ -187,10 +187,10 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
       continue;
     }
     /* role id 5 == student */
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"5",false,true);
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"student",false,true);
     $master_results[$courseinfo]['student_sync'] = $result;
     /* role id 3 == teacher */
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"3",false,true);
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"teacher",false,true);
     $master_results[$courseinfo]['teacher_sync'] = $result;
   }
   /* no need to notify on redirect course creation */ 
@@ -210,6 +210,7 @@ function ldap_enrol ($enrol,$lock) {
   $ldapconnection = $ldapauth->ldap_connect();
   #format is Moodle ShortName => array of AD groups
   $one_off_syncs = array( 'CBC-Disc' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
+			  'MattTest' => array('ITS-Group'),
                           'Staff-Disc' => array('list_ben_astf'),
                           'AdHocCommRpts' => array ('list_all_faculty','list_admin_fac_priv'), 
                           'faculty-chair' => array('voting_faculty'),
@@ -240,7 +241,7 @@ function ldap_enrol ($enrol,$lock) {
       $group_members = get_from_ad($ldap_group,$ldapconnection);
       $authoritative_members = array_merge($authoritative_members,$group_members);
     }
-    $results = $enrol->sync_course_membership_by_role($moodle_course,$authoritative_members,"5");
+    $results = $enrol->sync_course_membership_by_role($moodle_course,$authoritative_members,"student");
     $master_results[$results['courseinfo']]['student_sync'] = $results;
   }
   return $master_results;
@@ -259,7 +260,7 @@ function fy_enrol ($enrol,$lock) {
   $fy_courses = wes_get_first_year_courses($semester);
   $fy_students = wes_get_first_year_students($psdb,$semester);
   foreach ($fy_courses as $moodle_course) {
-     $result = $enrol->sync_course_membership_by_role($moodle_course,$fy_students,"5");
+     $result = $enrol->sync_course_membership_by_role($moodle_course,$fy_students,"student");
      $master_results[$result['courseinfo']]['student_sync'] = $result;
   }
   return $master_results;

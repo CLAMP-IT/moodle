@@ -166,9 +166,22 @@ class enrol_wessync_plugin extends enrol_plugin {
    }
 
     /* given an array of usernames, enrols and optionally unenrols the users from given role */
-    public function sync_course_membership_by_role($moodle_course,$members,$roleid,$unenrol = false,$create_users = false) {
+    public function sync_course_membership_by_role($moodle_course,$members,$rolename,$unenrol = false,$create_users = false) {
 	$ldapauth = get_auth_plugin('cas');
         $wesauth = get_auth_plugin('wes');
+	$cache = cache::make_from_params(cache_store::MODE_APPLICATION,'enrol_wessync','roles');
+	
+	if (($roles = $cache->get('roles')) === false ) {
+	  $roles= array();
+	  $rolesraw = get_all_roles();
+
+   	  foreach ($rolesraw as $role) {
+	      $roles[$role->shortname] = $role->id;
+	  }
+	  $cache->set('roles', $roles);
+        }
+        $roleid = $roles[$rolename];
+	
     	global $DB,$CFG;
         $result = array( 'errors' => array(), 'actions' => array(), 'failure' => 0, 'users_to_create' => array());
 	/* result hash gets merged into a larger hash sometimes; the below is a way to provide a unique key */
