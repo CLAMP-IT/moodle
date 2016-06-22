@@ -24,17 +24,20 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/** Prevent direct access to this script */
 defined('MOODLE_INTERNAL') || die();
 
-// get parent class
+/** Include required files */
 require_once($CFG->dirroot.'/mod/hotpot/attempt/hp/6/renderer.php');
 
 /**
  * mod_hotpot_attempt_hp_6_jcloze_renderer
  *
- * @copyright 2010 Gordon Bateson
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since     Moodle 2.0
+ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.0
+ * @package    mod
+ * @subpackage hotpot
  */
 class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_renderer {
     public $icon = 'pix/f/jcl.gif';
@@ -44,7 +47,7 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
     public $templatestrings = 'PreloadImageList';
 
     // Glossary autolinking settings
-    public $headcontent_strings = 'Feedback|Correct|Incorrect|GiveHint|YourScoreIs|Guesses|(?:I\[\d+\]\[1\]\[\d+\]\[2\])';
+    public $headcontent_strings = 'Feedback|Correct|Incorrect|GiveHint|YourScoreIs|Guesses|(?:I\[\d+\]\[[12]\])';
     public $headcontent_arrays = '';
 
     /**
@@ -135,7 +138,6 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
         //   ClueNum : JCross (has its own fix function)
         // so it is safest to refer to it using "ShowClue.arguments[0]"
 
-
         // intercept Clues
         if ($pos = strpos($substr, '{')) {
             $insert = "\n"
@@ -185,12 +187,7 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
     function fix_js_Show_Solution(&$str, $start, $length) {
         $substr = substr($str, $start, $length);
 
-        if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-            $flag = 1; // set form values only
-        } else {
-            $flag = 0; // set form values and send form
-        }
-        $substr = str_replace('Finish()', "HP.onunload(".hotpot::STATUS_ABANDONED.",$flag)", $substr);
+        $substr = str_replace('Finish()', "HP_send_results(HP.EVENT_ABANDONED)", $substr);
 
         $str = substr_replace($str, $substr, $start, $length);
     }
@@ -479,14 +476,9 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
         $substr = substr($str, $start, $length);
 
         if ($pos = strrpos($substr, '}')) {
-            if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-                $flag = 1; // set form values only
-            } else {
-                $flag = 0; // set form values and send form
-            }
             $append = "\n"
                 ."// send results after delay\n"
-                ."	setTimeout('HP.onunload(".hotpot::STATUS_ABANDONED.",$flag)',SubmissionTimeout);\n"
+                ."	setTimeout('HP_send_results('+HP.EVENT_ABANDONED+')',SubmissionTimeout);\n"
                 ."	return false;\n"
             ;
             $substr = substr_replace($substr, $append, $pos, 0);
@@ -533,13 +525,8 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
         }
 
         if ($pos = strrpos($substr, '}')) {
-            if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-                $flag = 1; // set form values only
-            } else {
-                $flag = 0; // set form values and send form
-            }
             $insert = ''
-                ."	HP.onunload(".hotpot::STATUS_TIMEDOUT.",$flag);\n"
+                ."	HP_send_results(HP.EVENT_TIMEDOUT);\n"
                 ."	ShowMessage('$msg');\n"
             ;
             $substr = substr_replace($substr, $insert, $pos, 0);
@@ -601,10 +588,50 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
             $substr = substr_replace($substr, $insert, $pos+1, 0);
         }
 
-        // shift feedback box right of mouse instead of left,
-        // to prevent flickering when feedback contains image
-        if ($pos = strpos($substr, "-10+'px'")) {
-            $substr = substr_replace($substr, '+5', $pos, 3);
+        //$substr = str_replace('C.IE', 'C.ie', $substr);
+        $substr = $this->fix_js_if_then_else($substr);
+        $substr = $this->fix_js_clientXY($substr, 'Pos.X', 'Evt');
+
+        // remove the following lines
+        $search = array('/var Pos = .*;/',
+                        '/Pos\\.(X|Y) = .*;/',
+                        '/var VertPos = .*;/',
+                        '/FDiv.style.(top|left) = .*;/',
+                        '/FDiv.style.(top|left) = .*;/',
+                        '/if \\(parseInt\\(FDiv\\.style\\.left\\) < 5\\)\\{/',
+                        "/document.getElementById\\('FeedbackOKButton'\\)\\.style\\.display = .*;/"
+        );
+        $substr = preg_replace($search, '', $substr);
+
+        // improve readability and robustness of code to update feedback element
+        $search = "\tdocument.getElementById('FeedbackContent').innerHTML = '<p>' + I[id][2] + '</p>';";
+        if ($pos = strpos($substr, $search)) {
+            $insert = "\tvar FContent = document.getElementById('FeedbackContent');\n".
+                      "\tif (FContent) {\n".
+                      "\t\tFContent.innerHTML = '<p>' + I[id][2] + '</p>';\n".
+                      "\t}\n".
+                      "\tvar FButton = document.getElementById('FeedbackOKButton');\n".
+                      "\tif (FButton) {\n".
+                      "\t\tFButton.style.display = 'none';\n".
+                      "\t}\n";
+            $substr = substr_replace($substr, $insert, $pos, strlen($search));
+        }
+
+        // we must position the feedback AFTER making it visible
+        // also use setOffset(), instead of FDiv.style.left/top
+        $search = "FDiv.style.display = 'block';";
+        if ($pos = strpos($substr, $search)) {
+            $insert = "\n".
+                      "\tx = Math.min(x + 10, getOffset(FDiv.offsetParent, 'Right'));\n".
+                      "\ty = Math.min(y - 10, getOffset(FDiv.offsetParent, 'Bottom'));\n".
+                      "\tx = Math.max(x - getOffset(FDiv, 'Width'), getOffset(FDiv.offsetParent, 'Left'));\n".
+                      "\ty = Math.max(y - getOffset(FDiv, 'Height'), getOffset(FDiv.offsetParent, 'Top'));\n".
+                      "\tsetOffset(FDiv, 'Left', x);\n".
+                      "\tsetOffset(FDiv, 'Top',  y);\n".
+                      "\tFContent = null;\n".
+                      "\tFButton = null;\n".
+                      "\tFDiv = null;\n";
+            $substr = substr_replace($substr, $insert, $pos + strlen($search), 0);
         }
 
         $str = substr_replace($str, $substr, $start, $length);

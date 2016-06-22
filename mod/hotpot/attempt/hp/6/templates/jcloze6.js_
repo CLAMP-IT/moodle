@@ -128,7 +128,7 @@ function CompileGuesses(){
 				if (j>0){Temp += '| ';}
 				Temp += State[i].Guesses[j] + ' ';
 			}
-  		Temp += '</fielddata></field>';
+			Temp += '</fielddata></field>';
 		}
 		Temp += '</fields></hpnetresult>';
 		Detail = Temp;

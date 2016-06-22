@@ -25,9 +25,9 @@
  * JQuiz
  *
  * @param xxx sendallclicks
- * @param xxx forceajax
+ * @param xxx ajax
  */
-function JQuiz(sendallclicks, forceajax) {
+function JQuiz(sendallclicks, ajax) {
     this.quiztype = 'JQuiz';
 
     /**
@@ -163,6 +163,6 @@ function JQuiz(sendallclicks, forceajax) {
         this.penalties = window.Penalties || 0;
     }
 
-    this.init(State.length, sendallclicks, forceajax);
+    this.init(State.length, sendallclicks, ajax);
 }
 JQuiz.prototype = new hpQuizAttempt();

@@ -304,8 +304,8 @@ class mod_hotpot_attempt_html_renderer extends mod_hotpot_attempt_renderer {
         // prepare form parameters and attributes
         $params = array(
             'id' => $this->hotpot->create_attempt(),
-            $this->scorefield => '0', 'detail' => '0', 'status' => '0',
-            'starttime' => '0', 'endtime' => '0', 'redirect' => '0',
+            $this->scorefield => '0', 'detail'  => '0', 'status'   => hotpot::STATUS_COMPLETED,
+            'starttime'       => '0', 'endtime' => '0', 'redirect' => '1',
         );
 
         // add scorefield to params, if necessary (usually it is necessary)

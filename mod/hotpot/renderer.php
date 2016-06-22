@@ -321,14 +321,14 @@ class mod_hotpot_renderer extends plugin_renderer_base {
 
             if ($hotpot->timeopen) {
                 $table->data[] = new html_table_row(array(
-                    new html_table_cell(get_string('timeopen', 'hotpot').':'),
+                    new html_table_cell(get_string('timeopen', 'mod_hotpot').':'),
                     new html_table_cell(userdate($hotpot->timeopen, $dateformat))
                 ));
             }
 
             if ($hotpot->timeclose) {
                 $table->data[] = new html_table_row(array(
-                    new html_table_cell(get_string('timeclose', 'hotpot').':'),
+                    new html_table_cell(get_string('timeclose', 'mod_hotpot').':'),
                     new html_table_cell(userdate($hotpot->timeclose, $dateformat))
                 ));
             }
@@ -346,14 +346,14 @@ class mod_hotpot_renderer extends plugin_renderer_base {
 
             if ($hotpot->timelimit > 0) {
                 $table->data[] = new html_table_row(array(
-                    new html_table_cell(get_string('timelimit', 'hotpot').':'),
+                    new html_table_cell(get_string('timelimit', 'mod_hotpot').':'),
                     new html_table_cell(format_time($hotpot->timelimit))
                 ));
             }
 
             if ($hotpot->gradeweighting && $hotpot->attemptlimit != 1) {
                 $table->data[] = new html_table_row(array(
-                    new html_table_cell(get_string('grademethod', 'hotpot').':'),
+                    new html_table_cell(get_string('grademethod', 'mod_hotpot').':'),
                     new html_table_cell($hotpot->format_grademethod())
                 ));
             }
@@ -491,16 +491,16 @@ class mod_hotpot_renderer extends plugin_renderer_base {
         $table = new html_table();
         $table->attributes['class'] = 'hotpotattemptssummary';
         $table->head = array(
-            get_string('attemptnumber', 'hotpot'),
-            get_string('status', 'hotpot'),
-            get_string('duration', 'hotpot'),
-            get_string('lastaccess', 'hotpot')
+            get_string('attemptnumber', 'mod_hotpot'),
+            get_string('status', 'mod_hotpot'),
+            get_string('duration', 'mod_hotpot'),
+            get_string('lastaccess', 'mod_hotpot')
         );
         $table->align = array('center', 'center', 'left', 'left');
         $table->size = array('', '', '', '');
         if ($hotpot->gradeweighting) {
             // insert grade column
-            array_splice($table->head, 1, 0, array(get_string('score', 'hotpot')));
+            array_splice($table->head, 1, 0, array(get_string('score', 'mod_hotpot')));
             array_splice($table->align, 1, 0, array('center'));
             array_splice($table->size, 1, 0, array(''));
         }
@@ -576,11 +576,11 @@ class mod_hotpot_renderer extends plugin_renderer_base {
                         ."}"
                     ."}"
                     ."if(!x){"
-                        ."alert('".get_string('checksomeboxes', 'hotpot')."');"
+                        ."alert('".get_string('checksomeboxes', 'mod_hotpot')."');"
                     ."}"
                 ."}"
                 ."if(x){"
-                    ."x=confirm('".get_string('confirmdeleteattempts', 'hotpot')."');"
+                    ."x=confirm('".get_string('confirmdeleteattempts', 'mod_hotpot')."');"
                 ."}"
                 ."if(this.elements['confirmed']){"
                     ."this.elements['confirmed'].value=(x?1:0);"
@@ -657,7 +657,7 @@ class mod_hotpot_renderer extends plugin_renderer_base {
                             $options['all'] .= " ($total)";
                         }
                     } else {
-                        $options[$type.':'.implode(',', $ids)] = get_string($type, 'hotpot')." ($total)";
+                        $options[$type.':'.implode(',', $ids)] = get_string($type, 'mod_hotpot')." ($total)";
                     }
                 }
             }
@@ -667,7 +667,7 @@ class mod_hotpot_renderer extends plugin_renderer_base {
             $table->attributes['class'] = 'hotpotdeleteattempts';
 
             $table->data[] = new html_table_row(array(
-                new html_table_cell(get_string('selectattempts', 'hotpot').':'),
+                new html_table_cell(get_string('selectattempts', 'mod_hotpot').':'),
                 new html_table_cell(html_writer::select($options, 'selectattempts', null, array(''=>'choosedots'), array('onchange'=>$onchange)))
             ));
             // original onselect was 'return hotpot_set_checked_attempts(this)'
@@ -678,7 +678,7 @@ class mod_hotpot_renderer extends plugin_renderer_base {
 
             $table->data[] = new html_table_row(array(
                 new html_table_cell('&nbsp;'),
-                new html_table_cell(html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('deleteattempts', 'hotpot'))))
+                new html_table_cell(html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('deleteattempts', 'mod_hotpot'))))
             ));
 
             $output .= html_writer::table($table);
@@ -737,18 +737,18 @@ class mod_hotpot_renderer extends plugin_renderer_base {
     public function whatnext($str='') {
         switch ($str) {
             case '':
-                $whatnext = get_string('exit_whatnext_default', 'hotpot');
+                $whatnext = get_string('exit_whatnext_default', 'mod_hotpot');
                 break;
 
             case 'exit_whatnext':
                 switch (mt_rand(0,1)) { // random 0 or 1. You can add more if you like
-                    case 0: $whatnext = get_string('exit_whatnext_0', 'hotpot'); break;
-                    case 1: $whatnext = get_string('exit_whatnext_1', 'hotpot'); break;
+                    case 0: $whatnext = get_string('exit_whatnext_0', 'mod_hotpot'); break;
+                    case 1: $whatnext = get_string('exit_whatnext_1', 'mod_hotpot'); break;
                 }
                 break;
 
             default:
-                $whatnext = get_string($str, 'hotpot');
+                $whatnext = get_string($str, 'mod_hotpot');
         }
 
         return html_writer::tag('h3', $whatnext, array('class'=>'hotpotwhatnext'));
@@ -769,28 +769,28 @@ class mod_hotpot_renderer extends plugin_renderer_base {
 
         if ($hotpot->gradeweighting==0) {
             if ($hotpot->exitoptions & hotpot::EXITOPTIONS_ATTEMPTSCORE || $hotpot->exitoptions & hotpot::EXITOPTIONS_HOTPOTGRADE) {
-                $text = get_string('exit_noscore', 'hotpot');
+                $text = get_string('exit_noscore', 'mod_hotpot');
                 $feedback[] = html_writer::tag('li', $text);
             }
         } else if ($hotpot->get_gradeitem() && $hotpot->get_attempt()) {
             if ($hotpot->exitoptions & hotpot::EXITOPTIONS_ENCOURAGEMENT) {
                 switch (true) {
                     case $hotpot->attempt->score >= 90:
-                        $text = get_string('exit_excellent', 'hotpot');
+                        $text = get_string('exit_excellent', 'mod_hotpot');
                         break;
                     case $hotpot->attempt->score >= 60:
-                        $text = get_string('exit_welldone', 'hotpot');
+                        $text = get_string('exit_welldone', 'mod_hotpot');
                         break;
                     case $hotpot->attempt->score > 0:
-                        $text = get_string('exit_goodtry', 'hotpot');
+                        $text = get_string('exit_goodtry', 'mod_hotpot');
                         break;
                     default:
-                        $text = get_string('exit_areyouok', 'hotpot');
+                        $text = get_string('exit_areyouok', 'mod_hotpot');
                 }
                 $feedback[] = html_writer::tag('li', $text, array('class' => 'hotpotexitencouragement'));
             }
             if ($hotpot->exitoptions & hotpot::EXITOPTIONS_ATTEMPTSCORE) {
-                $text = get_string('exit_attemptscore', 'hotpot', $hotpot->attempt->score.$percentsign);
+                $text = get_string('exit_attemptscore', 'mod_hotpot', $hotpot->attempt->score.$percentsign);
                 $feedback[] = html_writer::tag('li', $text);
             }
             if ($hotpot->exitoptions & hotpot::EXITOPTIONS_HOTPOTGRADE) {
@@ -798,11 +798,11 @@ class mod_hotpot_renderer extends plugin_renderer_base {
                     case hotpot::GRADEMETHOD_HIGHEST:
                         if ($hotpot->attempt->score < $hotpot->gradeitem->percent) {
                             // current attempt is less than the highest so far
-                            $text = get_string('exit_hotpotgrade_highest', 'hotpot', $hotpot->gradeitem->percent.$percentsign);
+                            $text = get_string('exit_hotpotgrade_highest', 'mod_hotpot', $hotpot->gradeitem->percent.$percentsign);
                             $feedback[] = html_writer::tag('li', $text);
                         } else if ($hotpot->attempt->score==0) {
                             // zero score is best so far
-                            $text = get_string('exit_hotpotgrade_highest_zero', 'hotpot', $hotpot->attempt->score.$percentsign);
+                            $text = get_string('exit_hotpotgrade_highest_zero', 'mod_hotpot', $hotpot->attempt->score.$percentsign);
                             $feedback[] = html_writer::tag('li', $text);
                         } else if ($hotpot->get_attempts()) {
                             // current attempt is highest so far
@@ -819,10 +819,10 @@ class mod_hotpot_renderer extends plugin_renderer_base {
                                 // do nothing (no previous attempt)
                             } else if ($maxscore==$hotpot->attempt->score) {
                                 // attempt grade equals previous best
-                                $text = get_string('exit_hotpotgrade_highest_equal', 'hotpot');
+                                $text = get_string('exit_hotpotgrade_highest_equal', 'mod_hotpot');
                                 $feedback[] = html_writer::tag('li', $text);
                             } else {
-                                $text = get_string('exit_hotpotgrade_highest_previous', 'hotpot', $maxscore.$percentsign);
+                                $text = get_string('exit_hotpotgrade_highest_previous', 'mod_hotpot', $maxscore.$percentsign);
                                 $feedback[] = html_writer::tag('li', $text);
                             }
                         } else {
@@ -830,14 +830,14 @@ class mod_hotpot_renderer extends plugin_renderer_base {
                         }
                         break;
                     case hotpot::GRADEMETHOD_AVERAGE:
-                        $text = get_string('exit_hotpotgrade_average', 'hotpot', $hotpot->gradeitem->percent.$percentsign);
+                        $text = get_string('exit_hotpotgrade_average', 'mod_hotpot', $hotpot->gradeitem->percent.$percentsign);
                         $feedback[] = html_writer::tag('li', $text);
                         break;
                     // case hotpot::GRADEMETHOD_TOTAL:
                     // case hotpot::GRADEMETHOD_FIRST:
                     // case hotpot::GRADEMETHOD_LAST:
                     default:
-                        $text = get_string('exit_hotpotgrade', 'hotpot', $hotpot->gradeitem->percent.$percentsign);
+                        $text = get_string('exit_hotpotgrade', 'mod_hotpot', $hotpot->gradeitem->percent.$percentsign);
                         $feedback[] = html_writer::tag('li', $text);
                         break;
                 }
@@ -873,7 +873,7 @@ class mod_hotpot_renderer extends plugin_renderer_base {
             if ($cm) {
                 $url = new moodle_url('/mod/'.$cm->modname.'/view.php', array('id' => $cm->id));
                 $table->data[] = new html_table_row(array(
-                    new html_table_cell(html_writer::link($url, get_string('exit_next', 'hotpot'))),
+                    new html_table_cell(html_writer::link($url, get_string('exit_next', 'mod_hotpot'))),
                     new html_table_cell(html_writer::link($url, format_string(urldecode($cm->name))))
                 ));
             }
@@ -883,7 +883,7 @@ class mod_hotpot_renderer extends plugin_renderer_base {
             // retry this hotpot, if allowed
             if ($hotpot->attemptlimit==0 || empty($hotpot->attempts) || $hotpot->attemptlimit < count($hotpot->attempts)) {
                 $table->data[] = new html_table_row(array(
-                    new html_table_cell(html_writer::link($hotpot->view_url(), get_string('exit_retry', 'hotpot'))),
+                    new html_table_cell(html_writer::link($hotpot->view_url(), get_string('exit_retry', 'mod_hotpot'))),
                     new html_table_cell(html_writer::link($hotpot->view_url(), format_string($hotpot->name))),
                 ));
             }
@@ -891,15 +891,15 @@ class mod_hotpot_renderer extends plugin_renderer_base {
 
         if ($hotpot->exitoptions & hotpot::EXITOPTIONS_INDEX) {
             $table->data[] = new html_table_row(array(
-                new html_table_cell(html_writer::link($hotpot->index_url(), get_string('exit_index', 'hotpot'))),
-                new html_table_cell(html_writer::link($hotpot->index_url(), get_string('exit_index_text', 'hotpot')))
+                new html_table_cell(html_writer::link($hotpot->index_url(), get_string('exit_index', 'mod_hotpot'))),
+                new html_table_cell(html_writer::link($hotpot->index_url(), get_string('exit_index_text', 'mod_hotpot')))
             ));
         }
 
         if ($hotpot->exitoptions & hotpot::EXITOPTIONS_COURSE) {
             $table->data[] = new html_table_row(array(
-                new html_table_cell(html_writer::link($hotpot->course_url(), get_string('exit_course', 'hotpot'))),
-                new html_table_cell(html_writer::link($hotpot->course_url(), get_string('exit_course_text', 'hotpot')))
+                new html_table_cell(html_writer::link($hotpot->course_url(), get_string('exit_course', 'mod_hotpot'))),
+                new html_table_cell(html_writer::link($hotpot->course_url(), get_string('exit_course_text', 'mod_hotpot')))
             ));
         }
 
@@ -907,8 +907,8 @@ class mod_hotpot_renderer extends plugin_renderer_base {
             if ($hotpot->course->showgrades && $hotpot->gradeweighting) {
                 $url = new moodle_url($hotpot->grades_url());
                 $table->data[] = new html_table_row(array(
-                    new html_table_cell(html_writer::link($url, get_string('exit_grades', 'hotpot'))),
-                    new html_table_cell(html_writer::link($url, get_string('exit_grades_text', 'hotpot')))
+                    new html_table_cell(html_writer::link($url, get_string('exit_grades', 'mod_hotpot'))),
+                    new html_table_cell(html_writer::link($url, get_string('exit_grades_text', 'mod_hotpot')))
                 ));
             }
         }

@@ -64,11 +64,11 @@ class mod_hotpot_report_responses_renderer extends mod_hotpot_report_renderer {
         static $str = null;
         if (is_null($str)) {
             $str = (object)array(
-                'correct' => get_string('correct', 'hotpot'),
-                'wrong'   => get_string('wrong', 'hotpot'),
-                'ignored' => get_string('ignored', 'hotpot'),
-                'score'   => get_string('score', 'hotpot'),
-                'hintsclueschecks' => get_string('clues', 'hotpot').','.get_string('hints', 'hotpot').','.get_string('checks', 'hotpot')
+                'correct' => get_string('correct', 'mod_hotpot'),
+                'wrong'   => get_string('wrong', 'mod_hotpot'),
+                'ignored' => get_string('ignored', 'mod_hotpot'),
+                'score'   => get_string('score', 'mod_hotpot'),
+                'hintsclueschecks' => get_string('clues', 'mod_hotpot').','.get_string('hints', 'mod_hotpot').','.get_string('checks', 'mod_hotpot')
             );
         }
 

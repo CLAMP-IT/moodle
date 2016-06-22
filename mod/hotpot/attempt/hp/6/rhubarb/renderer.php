@@ -98,14 +98,9 @@ class mod_hotpot_attempt_hp_6_rhubarb_renderer extends mod_hotpot_attempt_hp_6_r
         $substr = substr($str, $start, $length);
 
         if ($pos = strpos($substr, '	ShowMessage')) {
-            if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-                $flag = 1; // set form values only
-            } else {
-                $flag = 0; // set form values and send form
-            }
             $insert = ''
                 ."	Finished = true;\n"
-                ."	HP.onunload(".hotpot::STATUS_TIMEDOUT.",$flag);\n"
+                ."	HP_send_results(HP.EVENT_TIMEDOUT);\n"
             ;
             $substr = substr_replace($substr, $insert, $pos, 0);
         }
@@ -187,7 +182,7 @@ class mod_hotpot_attempt_hp_6_rhubarb_renderer extends mod_hotpot_attempt_hp_6_r
      * @param xxx $length
      */
     function fix_js_CheckFinished(&$str, $start, $length)  {
-        parent::$this->fix_js_CheckAnswers($str, $start, $length);
+        parent::fix_js_CheckAnswers($str, $start, $length);
     }
 
     /**
@@ -196,7 +191,7 @@ class mod_hotpot_attempt_hp_6_rhubarb_renderer extends mod_hotpot_attempt_hp_6_r
      * @return xxx
      */
     function get_stop_function_intercept()  {
-        // intercept is not required in the giveup function of JQuiz
+        // intercept is not required in the giveup function of Rhubarb
         // because the checks are intercepted by CheckFinished (see above)
         return '';
     }
@@ -216,7 +211,7 @@ class mod_hotpot_attempt_hp_6_rhubarb_renderer extends mod_hotpot_attempt_hp_6_r
      * @return xxx
      */
     function get_stop_function_args()  {
-        return hotpot::STATUS_ABANDONED;
+        return 'HP.EVENT_ABANDONED';
     }
 
     /**

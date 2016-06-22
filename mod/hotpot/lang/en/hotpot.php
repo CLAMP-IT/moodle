@@ -1,7 +1,10 @@
 <?php
+
+// ===================
 // essential strings
+// ===================
+//
 $string['modulename'] = 'HotPot';
-$string['modulenameplural'] = 'HotPots';
 $string['modulename_help'] = 'The HotPot module allows teachers to distribute interactive learning materials to their students via Moodle and view reports on the students\' responses and results. .
 
 A single HotPot activity consists of an optional entry page, a single elearning exercise, and an optional exit page. The elearning exercise may be a static web page or an interactive web page which offers students text, audio and visual prompts and records their responses. The elearning exercise is created on the teacher\'s computer using authoring software and then uploaded to Moodle.
@@ -14,10 +17,14 @@ A HotPot activity can handle exercises created with the following authoring soft
 * iSpring
 * any HTML editor';
 $string['modulename_link'] = 'mod/hotpot/view';
+$string['modulenameplural'] = 'HotPots';
 $string['pluginadministration'] = 'HotPot administration';
 $string['pluginname'] = 'HotPot module';
 
+// ===================
 // subplugin strings
+// ===================
+//
 $string['subplugintype_hotpotattempt'] = 'Output format';
 $string['subplugintype_hotpotattempt_plural'] = 'Output formats';
 $string['subplugintype_hotpotreport'] = 'Report';
@@ -25,7 +32,10 @@ $string['subplugintype_hotpotreport_plural'] = 'Reports';
 $string['subplugintype_hotpotsource'] = 'Source file';
 $string['subplugintype_hotpotsource_plural'] = 'Source files';
 
+// ===================
 // roles strings
+// ===================
+//
 $string['hotpot:addinstance'] = 'Add a new HotPot activity';
 $string['hotpot:attempt'] = 'Attempt a HotPot activity and submit results';
 $string['hotpot:deleteallattempts'] = 'Delete any user\'s attempts at a HotPot activity';
@@ -37,7 +47,47 @@ $string['hotpot:reviewallattempts'] = 'View any user\'s attempts at a HotPot act
 $string['hotpot:reviewmyattempts'] = 'View your own attempts at a HotPot activity';
 $string['hotpot:view'] = 'View the entry page of a HotPot activity';
 
+// ===================
+// config strings
+// ===================
+//
+$string['configbodystyles'] = 'By default, Moodle theme styles will override HotPot activity styles. However, for any styles selected here, the HotPot activity styles will be given priority over the Moodle theme styles.';
+$string['configenablecache'] = 'Maintaining a cache of HotPot quizzes can dramatically speed up the delivery of quizzes to the students.';
+$string['configenablecron'] = 'Specify the hours in your time zone at which the HotPot cron script may run';
+$string['configenablemymoodle'] = 'This settings controls whether HotPots are listed on the MyMoodle page or not';
+$string['configenableobfuscate'] = 'Obfuscating the text strings and URLs in javascript code makes it more difficult to guess answers by viewing the source of the HTML page in the browser.';
+$string['configenableswf'] = 'Allow embedding of SWF files in HotPot activities. If enabled, this setting overrides filter_mediaplugin_enable_swf.';
+$string['configfile'] = 'Configuration file';
+$string['configframeheight'] = 'When a quiz is displayed within a frame, this value is the height (in pixels) of the top frame which contains the Moodle navigation bar.';
+$string['configlocation'] = 'Configuration file location';
+$string['configlockframe'] = 'If this setting is enabled, then the navigation frame, if used, will be locked so that it is not scrollable, not resizeable and has no border';
+$string['configmaxeventlength'] = 'If a HotPot has both an open and a close time specified, and the difference between the two times is greater than the number of days specified here, then two separate calendar events will be added to the course calendar. For shorter durations, or when just one time is specified, only one calendar event will be added. If neither time is specified, no calendar event will be added.';
+$string['configstoredetails'] = 'If this setting is enabled, then the raw XML details of attempts at HotPot quizzes will be stored in the hotpot_details table. This allows quiz attempts to be regraded in the future to reflect changes in the HotPot quiz scoring system. However, enabling this option on a busy site will cause the hotpot_details table to grow very quickly.';
+
+// ===================
+// event strings
+// ===================
+//
+$string['event_attempt_reviewed'] = 'HotPot attempt reviewed';
+$string['event_attempt_reviewed_description'] = 'The user with id "{$a->userid}" reviewed an attempt at the "hotpot" activity with course module id "{$a->cmid}"';
+$string['event_attempt_reviewed_explanation'] = 'A user has just reviewed an attempt at a HotPot activity';
+$string['event_attempt_started'] = 'HotPot attempt started';
+$string['event_attempt_started_description'] = 'The user with id "{$a->userid}" started an attempt at the "hotpot" activity with course module id "{$a->cmid}"';
+$string['event_attempt_started_explanation'] = 'A user has just started an attempt at a HotPot activity';
+$string['event_attempt_submitted'] = 'HotPot attempt submitted';
+$string['event_attempt_submitted_description'] = 'The user with id "{$a->userid}" submitted an attempt at the "hotpot" activity with course module id "{$a->cmid}"';
+$string['event_attempt_submitted_explanation'] = 'A user has just submitted an attempt at a HotPot activity';
+$string['event_base'] = 'HotPot event detected';
+$string['event_base_description'] = 'The user with id "{$a->userid}" initiated an event in the "hotpot" activity with course module id "{$a->cmid}"';
+$string['event_base_explanation'] = 'An event was  detected by the HotPot module';
+$string['event_report_viewed'] = 'HotPot report viewed';
+$string['event_report_viewed_description'] = 'The user with id "{$a->userid}" viewed a report on attempts at the "hotpot" activity with course module id "{$a->cmid}"';
+$string['event_report_viewed_explanation'] = 'A user has just viewed a report about attempts at a HotPot activity';
+
+// ===================
 // more strings
+// ===================
+//
 $string['abandoned'] = 'Abandoned';
 $string['abandonhotpot'] = 'Your results so far will be saved but you cannot resume or restart this activity later.';
 $string['activitycloses'] = 'Activity closes';
@@ -56,9 +106,12 @@ $string['addquizchain_help'] = 'Should all the quizzes in a quiz chain be added?
 If the source file is a **folder**, all recognizable quizzes in the folder will be added to the course to form a chain of quizzes with identical settings.
 
 If the source file is a **unit file**, such as a Hot Potatoes masher file or index.html, quizzes listed in the unit file will be added to the course as a chain of quizzes with identical settings.';
+$string['allowpaste'] = 'Allow paste';
+$string['allowpaste_help'] = 'If this setting is enabled, students will be allowed to copy, paste and drag text into text input boxes.';
 $string['allowreview'] = 'Allow review';
 $string['allowreview_help'] = 'If enabled, students may review their quiz attempts after the quiz is closed.';
 $string['analysisreport'] = 'Item Analysis';
+$string['attempted'] = 'Attempted';
 $string['attemptlimit'] = 'Attempt limit';
 $string['attemptlimit_help'] = 'The maximum number of attempts a student may have at this HotPot activity';
 $string['attemptnumber'] = 'Attempt number';
@@ -87,18 +140,10 @@ $string['clicktrailreport'] = 'Click trails';
 $string['closed'] = 'This activity has closed';
 $string['clues'] = 'Clues';
 $string['completed'] = 'Completed';
-$string['configbodystyles'] = 'By default, Moodle theme styles will override HotPot activity styles. However, for any styles selected here, the HotPot activity styles will be given priority over the Moodle theme styles.';
-$string['configenablecache'] = 'Maintaining a cache of HotPot quizzes can dramatically speed up the delivery of quizzes to the students.';
-$string['configenablecron'] = 'Specify the hours in your time zone at which the HotPot cron script may run';
-$string['configenablemymoodle'] = 'This settings controls whether HotPots are listed on the MyMoodle page or not';
-$string['configenableobfuscate'] = 'Obfuscating the javascript code to insert media players makes it more difficult to determine the media file name and guess what the file contains.';
-$string['configenableswf'] = 'Allow embedding of SWF files in HotPot activities. If enabled, this setting overrides filter_mediaplugin_enable_swf.';
-$string['configfile'] = 'Configuration file';
-$string['configframeheight'] = 'When a quiz is displayed within a frame, this value is the height (in pixels) of the top frame which contains the Moodle navigation bar.';
-$string['configlocation'] = 'Configuration file location';
-$string['configlockframe'] = 'If this setting is enabled, then the navigation frame, if used, will be locked so that it is not scrollable, not resizeable and has no border';
-$string['configmaxeventlength'] = 'If a HotPot has both an open and a close time specified, and the difference between the two times is greater than the number of days specified here, then two separate calendar events will be added to the course calendar. For shorter durations, or when just one time is specified, only one calendar event will be added. If neither time is specified, no calendar event will be added.';
-$string['configstoredetails'] = 'If this setting is enabled, then the raw XML details of attempts at HotPot quizzes will be stored in the hotpot_details table. This allows quiz attempts to be regraded in the future to reflect changes in the HotPot quiz scoring system. However, enabling this option on a busy site will cause the hotpot_details table to grow very quickly.';
+$string['completioncompleted'] = 'Require completed status';
+$string['completionmingrade'] = 'Require minimum grade';
+$string['completionpass'] = 'Require passing grade';
+$string['completionwarning'] = 'These fields are disabled if the grade limit for this activity is "No grade" or the grade weighting is "No weighting"';
 $string['confirmdeleteattempts'] = 'Do you really want to delete these attempts?';
 $string['confirmstop'] = 'Are you sure you want to navigate away from this page?';
 $string['correct'] = 'Correct';
@@ -113,8 +158,8 @@ $string['delay2summary'] = 'Time delay between later attempts';
 $string['delay3'] = 'Delay 3';
 $string['delay3_help'] = 'The setting specifies the delay between finishing the quiz and returning control of the display to Moodle.
 
-**Use specific time (in seconds)**
-: control will be returned to Moodle after the specified number of seconds.
+**Use specific delay**
+: control will be returned to Moodle after the specified delay.
 
 **Use settings in source/template file**
 : control will be returned to Moodle after the number of seconds specified in the source file or the template files for this output format.
@@ -128,7 +173,7 @@ $string['delay3_help'] = 'The setting specifies the delay between finishing the 
 Note, the quiz results are always returned to Moodle immediately the quiz is completed or abandoned, regardless of this setting.';
 $string['delay3afterok'] = 'Wait till student clicks OK';
 $string['delay3disable'] = 'Do not continue automatically';
-$string['delay3specific'] = 'Use specific time (in seconds)';
+$string['delay3specific'] = 'Use specific delay';
 $string['delay3summary'] = 'Time delay at the end of the quiz';
 $string['delay3template'] = 'Use settings in source/template file';
 $string['deleteallattempts'] = 'Delete all attempts';
@@ -138,7 +183,7 @@ $string['duration'] = 'Duration';
 $string['enablecache'] = 'Enable HotPot cache';
 $string['enablecron'] = 'Enable HotPot cron';
 $string['enablemymoodle'] = 'Show HotPots on MyMoodle';
-$string['enableobfuscate'] = 'Enable obfuscation of media player code';
+$string['enableobfuscate'] = 'Enable obfuscation of text and media players';
 $string['enableswf'] = 'Allow embedding of SWF files in HotPot activities';
 $string['entry_attempts'] = 'Attempts';
 $string['entry_dates'] = 'Dates';
@@ -316,6 +361,7 @@ $string['maxeventlength'] = 'Maximum number of days for a single calendar event'
 $string['mediafilter_hotpot'] = 'HotPot media filter';
 $string['mediafilter_moodle'] = 'Moodle\'s standard media filters';
 $string['migratingfiles'] = 'Migrating Hot Potatoes quiz files';
+$string['migratinglogs'] = 'Migrating Hot Potatoes logs';
 $string['missingsourcetype'] = 'HotPot record is missing sourcetype';
 $string['nameadd'] = 'Name';
 $string['nameadd_help'] = 'The name can be specfic text entered by the teacher or it can be automatically generated.
@@ -368,6 +414,7 @@ $string['noreview'] = 'Sorry, you are not allowed to view details of this quiz a
 $string['noreviewafterclose'] = 'Sorry, this quiz has closed. You are no longer allowed to view details of this quiz attempt.';
 $string['noreviewbeforeclose'] = 'Sorry, you are not allowed to view details this quiz attempt until {$a}';
 $string['nosourcefilesettings'] = 'HotPot record is missing source file information';
+$string['notattemptedyet'] = 'Not attempted yet';
 $string['notavailable'] = 'Sorry, this activity is not currently available to you.';
 $string['outputformat'] = 'Output format';
 $string['outputformat_best'] = 'Best';
@@ -376,32 +423,30 @@ $string['outputformat_help'] = 'The output format specifies how the content will
 The output formats that are available depend on the type of the source file. Some types of source file have just one output format, while other types of source file have several output formats.
 
 The "best" setting will display the content using the optimal output format for the student\'s browser.';
-
-$string['outputformat_html_xhtml'] = 'Standard HTML file';
-$string['outputformat_html_xerte'] = 'Xerte HTML file';
-$string['outputformat_html_ispring'] = 'iSpring HTML file';
-$string['outputformat_qedoc'] = 'Qedoc file';
-
+$string['outputformat_hp_6_jcloze_html_findit_a'] = 'FindIt (a) from html';
+$string['outputformat_hp_6_jcloze_html_findit_b'] = 'FindIt (b) from html';
 $string['outputformat_hp_6_jcloze_html'] = 'JCloze (v6) from html';
 $string['outputformat_hp_6_jcloze_xml_anctscan'] = 'ANCT-Scan from HP6 JCloze xml';
 $string['outputformat_hp_6_jcloze_xml_dropdown'] = 'DropDown from HP6 JCloze xml';
 $string['outputformat_hp_6_jcloze_xml_findit_a'] = 'FindIt (a) from HP6 JCloze xml';
 $string['outputformat_hp_6_jcloze_xml_findit_b'] = 'FindIt (b) from HP6 JCloze xml';
 $string['outputformat_hp_6_jcloze_xml_jgloss'] = 'JGloss from HP6 JCloze xml';
-$string['outputformat_hp_6_jcloze_xml_v6'] = 'JCloze (v6) from HP6 xml';
 $string['outputformat_hp_6_jcloze_xml_v6_autoadvance'] = 'JCloze (v6) from HP6 xml (Auto-advance)';
+$string['outputformat_hp_6_jcloze_xml_v6'] = 'JCloze (v6) from HP6 xml';
 $string['outputformat_hp_6_jcross_html'] = 'JCross (v6) from html';
 $string['outputformat_hp_6_jcross_xml_v6'] = 'JCross (v6) from xml';
 $string['outputformat_hp_6_jmatch_html'] = 'JMatch (v6) from html';
 $string['outputformat_hp_6_jmatch_xml_flashcard'] = 'JMatch (flashcard) from xml';
 $string['outputformat_hp_6_jmatch_xml_jmemori'] = 'JMemori from xml';
+$string['outputformat_hp_6_jmatch_xml_sort'] = 'JMatch Sort from xml';
 $string['outputformat_hp_6_jmatch_xml_v6'] = 'JMatch (v6) from xml';
 $string['outputformat_hp_6_jmatch_xml_v6_plus'] = 'JMatch (v6+) from xml';
+$string['outputformat_hp_6_jmatch_html_sort'] = 'JMatch Sort from html';
 $string['outputformat_hp_6_jmix_html'] = 'JMix (v6) from html';
 $string['outputformat_hp_6_jmix_xml_v6'] = 'JMix (v6) from xml';
 $string['outputformat_hp_6_jmix_xml_v6_plus'] = 'JMix (v6+) from xml';
-$string['outputformat_hp_6_jmix_xml_v6_plus_keypress'] = 'JMix (v6+ with key press) from xml';
 $string['outputformat_hp_6_jmix_xml_v6_plus_deluxe'] = 'JMix (v6+ with prefix, suffix with distractors) from xml';
+$string['outputformat_hp_6_jmix_xml_v6_plus_keypress'] = 'JMix (v6+ with key press) from xml';
 $string['outputformat_hp_6_jquiz_html'] = 'JQuiz (v6) from html';
 $string['outputformat_hp_6_jquiz_xml_v6'] = 'JQuiz (v6) from xml';
 $string['outputformat_hp_6_jquiz_xml_v6_autoadvance'] = 'JQuiz (v6) from xml (Auto-advance)';
@@ -412,6 +457,10 @@ $string['outputformat_hp_6_sequitur_html'] = 'Sequitur (v6) from html';
 $string['outputformat_hp_6_sequitur_html_incremental'] = 'Sequitur (v6) from html, incremental scoring';
 $string['outputformat_hp_6_sequitur_xml'] = 'Sequitur (v6) from xml';
 $string['outputformat_hp_6_sequitur_xml_incremental'] = 'Sequitur (v6) from xml, incremental scoring';
+$string['outputformat_html_ispring'] = 'iSpring HTML file';
+$string['outputformat_html_xerte'] = 'Xerte HTML file';
+$string['outputformat_html_xhtml'] = 'Standard HTML file';
+$string['outputformat_qedoc'] = 'Qedoc file';
 $string['overviewreport'] = 'Overview';
 $string['penalties'] = 'Penalties';
 $string['percent'] = 'Percent';
@@ -419,20 +468,17 @@ $string['pressoktocontinue'] = 'Press OK to continue, or Cancel to stay on the c
 $string['questionshort'] = 'Q-{$a}';
 $string['quizname_help'] = 'help text for Quiz name';
 $string['quizzes'] = 'Quizzes';
-$string['removegradeitem'] = 'Remove grade item';
-$string['removegradeitem_help'] = 'Should the grade item for this activity be removed?
-
-**No**
-: the grade item for this activity in the Moodle gradebook will not be removed
-
-**Yes**
-: If the maximum grade or the grade weighting for this HotPot is set to zero, then the grade item for this activity will be removed from the Moodle gradebook';
+$string['responses'] = 'Responses';
 $string['responsesreport'] = 'Responses';
+$string['reviewafterattempt'] = 'Allow review after attempt';
+$string['reviewafterclose'] = 'Allow review after HotPot closes';
+$string['reviewduringattempt'] = 'Allow review during attempt';
+$string['reviewoptions'] = 'Review options';
 $string['score'] = 'Score';
 $string['scoresreport'] = 'Scores';
 $string['selectattempts'] = 'Select attempts';
 $string['showerrormessage'] = 'HotPot error: {$a}';
-$string['sourcefile'] = 'Source file name';
+$string['sourcefile'] = 'Source file';
 $string['sourcefile_help'] = 'This setting specifies the file containing the content that will be shown to the students.
 
 Usually the source file will have been created outside of Moodle, and then uploaded to the files area of a Moodle course.
@@ -512,9 +558,11 @@ $string['title_help'] = 'This setting specifies the title to be displayed on the
 
 **Use source file path**
 : the source file path, including any folder names, will be used as the web page title.';
+$string['toolsindex'] = 'HotPot Tools index';
 $string['unitname_help'] = 'help text for unit name';
 $string['unrecognizedsourcefile'] = 'Sorry, the HotPot module could not detect the type of the source file: {$a}';
 $string['updated'] = 'Updated';
+$string['updatinggrades'] = 'Updating HotPot grades';
 $string['usefilters'] = 'Use filters';
 $string['usefilters_help'] = 'If this setting is enabled, the content will be passed through the Moodle filters before being sent to the browser.';
 $string['useglossary'] = 'Use glossary';
@@ -557,7 +605,6 @@ The square-bracket notation has the following syntax:
 : a comma-separated list options to be passed to the player. Each option can be a simple on/off switch, or a name value pair.
 : **name=value
 : **name="some value with spaces"';
-$string['utilitiesindex'] = 'HotPot Utilities index';
 $string['viewreports'] = 'View reports for {$a} user(s)';
 $string['views'] = 'Views';
 $string['weighting'] = 'Weighting';

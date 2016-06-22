@@ -86,8 +86,11 @@ class mod_hotpot_attempt_hp_6_jquiz_renderer extends mod_hotpot_attempt_hp_6_ren
     function fix_headcontent() {
         if ($pos = strrpos($this->headcontent, '</style>')) {
             $insert = ''
-                .'ol.QuizQuestions{'."\n"
-                .'	margin-bottom:0px;'."\n"
+                .'#'.$this->themecontainer.' ol.QuizQuestions{'."\n"
+                .'	margin-bottom: 0px;'."\n"
+                .'}'."\n"
+                .'#'.$this->themecontainer.' li.QuizQuestion{'."\n"
+                .'	overflow: auto;'."\n"
                 .'}'."\n"
             ;
             $this->headcontent = substr_replace($this->headcontent, $insert, $pos, 0);
@@ -171,19 +174,21 @@ class mod_hotpot_attempt_hp_6_jquiz_renderer extends mod_hotpot_attempt_hp_6_ren
     function fix_js_SetUpQuestions(&$str, $start, $length)  {
         $substr = substr($str, $start, $length);
 
-        // catch FF errors due to invalid XHTML syntax (e.g. inclosed <font> tags)
-        $search = "QList.push(Qs.removeChild(Qs.getElementsByTagName('li')[0]));";
-        if ($pos = strrpos($substr, $search)) {
-            $replace = ''
-                ."try {\n\t\t"
-                ."	".$search."\n\t\t"
-                ."} catch(err) {\n\t\t"
-                ."	alert('Sorry, SetUpQuestions() failed.'+'\\n'+'Perhaps the XHTML of this quiz file is not valid?');\n\t\t"
-                ."	return;\n\t\t"
-                ."}"
-            ;
-            $substr = substr_replace($substr, $replace, $pos, strlen($search));
-        }
+        // catch errors due to invalid XHTML syntax (e.g. unclosed <font> tags)
+        $search  = "/\s+while \(Qs\.getElementsByTagName\('li'\)\.length > 0\)\{.*?\}/s";
+        $replace = "\n"
+            ."	while (Qs.firstChild) {\n"
+            ."		var Q = Qs.removeChild(Qs.firstChild);\n"
+            ."		if (Q.nodeType==1) {\n"
+            ."			if (Q.tagName=='LI') {\n"
+            ."				QList.push(Q);\n"
+            ."			} else {\n"
+            ."				alert('Sorry, SetUpQuestions() failed.\\n\\n'+'Perhaps there are some invalid\\n'+'HTML tags in question ' + QList.length + ' ?');\n"
+            ."			}\n"
+            ."		}\n"
+            ."	}\n"
+        ;
+        $substr = preg_replace($search, $replace, $substr, 1);
 
         // hide bottom border of question (override class="QuizQuestion")
         if ($pos = strpos($substr, "Qs.appendChild(QList[i]);")) {

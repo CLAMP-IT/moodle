@@ -47,7 +47,7 @@ class mod_hotpot_attempt_html_xerte_renderer extends mod_hotpot_attempt_html_ren
      * @param xxx $quiz (passed by reference)
      */
     function init($hotpot) {
-        $quiz->usemediafilter = 0;
+        $hotpot->usemediafilter = 0;
         parent::init($hotpot);
     }
 
@@ -99,14 +99,18 @@ class mod_hotpot_attempt_html_xerte_renderer extends mod_hotpot_attempt_html_ren
         //  - convert MainPreloader.swf to absolute URL
         //  - break up "script" strings to prevent unwanted HotPot postprocessing
         $search = array(
-            ' style="'."width:' + rloWidth + 'px; height:' + rloHeight + 'px; ".'"',
-            'var FileLocation = getLocation();',
+            'style="'."padding:0px; width:' + rloWidth + 'px; height:' + rloHeight + 'px;".'"', // NEW
+            ' style="'."width:' + rloWidth + 'px; height:' + rloHeight + 'px; ".'"',            // OLD
+            'var FileLocation = xmlPath;',       // NEW
+            'var FileLocation = getLocation();', // OLD
             'MainPreloader.swf',
             'script', 'Script', 'SCRIPT',
         );
         $replace = array(
-            ' style="'."width:' + rloWidth + 'px; height:' + rloHeight + 'px; margin:auto;".'"',
-            "var FileLocation = '$baseurl';",
+            'style="'."padding:0px; width:' + rloWidth + 'px; height:' + rloHeight + 'px; margin:auto;".'"', // NEW
+            ' style="'."width:' + rloWidth + 'px; height:' + rloHeight + 'px; margin:auto;".'"', // OLD
+            "var FileLocation = '$baseurl';", // NEW
+            "var FileLocation = '$baseurl';", // OLD
             $baseurl.'MainPreloader.swf',
             "scr' + 'ipt", "Scr' + 'ipt", "SCR' + 'IPT",
         );
@@ -115,7 +119,7 @@ class mod_hotpot_attempt_html_xerte_renderer extends mod_hotpot_attempt_html_ren
             // remove "id" to prevent resizing of Flash object
             // there might be another way to do this
             // e.g. using js to stretch canvas area
-            $search[] = ' id="'."rlo' + rloID + '".'"';
+            $search[] = 'id="'."rlo' + rloID + '".'"';
             $replace[] = '';
         }
 

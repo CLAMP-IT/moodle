@@ -40,7 +40,7 @@ require_capability('mod/hotpot:attempt', $PAGE->context);
 $hotpot = hotpot::create($hotpot, $cm, $course, $PAGE->context, $attempt);
 
 // Log this request
-add_to_log($course->id, 'hotpot', 'submit', 'view.php?id='.$cm->id, $hotpot->id, $cm->id);
+hotpot_add_to_log($course->id, 'hotpot', 'submit', 'view.php?id='.$cm->id, $hotpot->id, $cm->id);
 
 // Set editing mode
 if ($PAGE->user_allowed_editing()) {
@@ -65,9 +65,16 @@ $output = $PAGE->get_renderer('mod_hotpot', $subtype);
 // Guests can't do a HotPot, so offer them a choice of logging in or going back.
 if (isguestuser()) {
     echo $output->header();
+    if (function_exists('get_local_referer')) {
+        // Moodle >= 2.8
+        $referer = get_local_referer(false);
+    } else {
+        // Moodle <= 2.7
+        $referer = get_referer(false);
+    }
     $message = html_writer::tag('p', get_string('guestsno', 'quiz')).
                html_writer::tag('p', get_string('liketologin'));
-    echo $output->confirm($message, get_login_url(), get_referer(false));
+    echo $output->confirm($message, get_login_url(), $referer);
     echo $output->footer();
     exit;
 }
@@ -85,6 +92,9 @@ if (! ($hotpot->can_attempt() || $hotpot->can_preview())) {
 // store the results (use call_user_func to prevent syntax errors in PHP 5.2.x)
 $class = 'mod_hotpot_'.$subtype.'_storage';
 $storage = call_user_func(array($class, 'store'), $hotpot);
+
+$completion = new completion_info($course);
+$hotpot->update_completion_state($completion);
 
 // redirect the browser (only if necessary)
 if ($response = $output->require_response($hotpot)) {

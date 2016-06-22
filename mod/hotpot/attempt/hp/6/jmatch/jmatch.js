@@ -25,10 +25,10 @@
  * JMatch
  *
  * @param xxx sendallclicks
- * @param xxx forceajax
+ * @param xxx ajax
  * @return xxx
  */
-function JMatch(sendallclicks, forceajax) {
+function JMatch(sendallclicks, ajax) {
     this.quiztype = 'JMatch';
 
     /**
@@ -121,37 +121,37 @@ function JMatch(sendallclicks, forceajax) {
             }
         } else if (window.Status) {
             // v6 (=plain old select elements)
-    		var obj = document.getElementById(Status[q][2]);
-    		if (obj) { // not correct yet
-    			if (getCorrect) {
-    				var k = GetKeyFromSelect(obj); // HP function
-    				var i_max = obj.options.length;
-    				for (var i=0; i<i_max; i++) {
-    					if (obj.options[i].value==k) {
+            var obj = document.getElementById(Status[q][2]);
+            if (obj) { // not correct yet
+                if (getCorrect) {
+                    var k = GetKeyFromSelect(obj); // HP function
+                    var i_max = obj.options.length;
+                    for (var i=0; i<i_max; i++) {
+                        if (obj.options[i].value==k) {
                             break;
                         }
-    				}
-    				if (i>=i_max) {
+                    }
+                    if (i>=i_max) {
                         i = 0; // shouldn't happen
                     }
-    			} else {
-    				// get current guess, if any
-    				var i = obj.selectedIndex;
-    			}
-    			if (i) {
+                } else {
+                    // get current guess, if any
+                    var i = obj.selectedIndex;
+                }
+                if (i) {
                     rhs = obj.options[i].innerHTML;
                 }
-    		} else { // correct
+            } else { // correct
                 rhs = GetTextFromNodeN(document.getElementById('Questions'), 'RightItem', q);
-    		}
+            }
         }
         return rhs;
     }
 
     if (window.F) {
-        this.init(F.length, sendallclicks, forceajax);
+        this.init(F.length, sendallclicks, ajax);
     } else if (window.Status) {
-        this.init(Status.length, sendallclicks, forceajax);
+        this.init(Status.length, sendallclicks, ajax);
     }
 }
 JMatch.prototype = new hpQuizAttempt();
