@@ -24,22 +24,22 @@
  */
 
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
-require_once(dirname(__FILE__).'/lib.php');
+require_once(dirname(__FILE__).'/locallib.php');
 
 $id = required_param('id', PARAM_INT);   // course
 
 if (! $course = $DB->get_record('course', array('id' => $id))) {
-    error('Course ID is incorrect');
+    print_error('invalidcourseid');
 }
 
 require_course_login($course);
 
-add_to_log($course->id, 'hotpot', 'index', "index.php?id=$course->id", '');
+hotpot_add_to_log($course->id, 'hotpot', 'view all', "index.php?id=$course->id", '');
 
 $PAGE->set_url('/mod/hotpot/index.php', array('id' => $course->id));
 $PAGE->set_title($course->fullname);
 $PAGE->set_heading($course->shortname);
-$PAGE->navbar->add(get_string('modulenameplural', 'hotpot'));
+$PAGE->navbar->add(get_string('modulenameplural', 'mod_hotpot'));
 
 /// Output starts here
 
@@ -48,7 +48,7 @@ echo $OUTPUT->header();
 /// Get all the appropriate data
 
 if (! $hotpots = get_all_instances_in_course('hotpot', $course)) {
-    echo $OUTPUT->heading(get_string('nohotpots', 'hotpot'), 2);
+    echo $OUTPUT->heading(get_string('nohotpots', 'mod_hotpot'), 2);
     echo $OUTPUT->continue_button(new moodle_url('/course/view.php', array('id' => $course->id)));
     echo $OUTPUT->footer();
     die();
@@ -137,29 +137,46 @@ foreach ($hotpots as $hotpot) {
     $text = html_writer::tag('a', $hotpot->name, $params);
     $row->cells[] = new html_table_cell($text);
 
+    // Create an object to represent this attempt at the current HotPot activity
+    $cm = get_coursemodule_from_instance('hotpot', $hotpot->id, $course->id, false, MUST_EXIST);
+    $hotpot = hotpot::create($hotpot, $cm, $course, $PAGE->context);
+
     if (empty($aggregates[$hotpot->id]) || empty($aggregates[$hotpot->id]->attemptcount)) {
         $row->cells[] = new html_table_cell('0'); // average score
         $row->cells[] = new html_table_cell('0'); // max score
         $row->cells[] = new html_table_cell('&nbsp;'); // reports
     } else {
-        $href = new moodle_url('/mod/hotpot/report.php', array('id' => $hotpot->coursemodule));
+        $reviewoptions = $hotpot->can_reviewhotpot();
+
+        $href = new moodle_url('/mod/hotpot/report.php', array('id' => $hotpot->cm->id));
         $params = array('href' => $href, 'class' => $class);
 
-        $text = html_writer::tag('a', $aggregates[$hotpot->id]->maxscore, $params);
+        $text = $aggregates[$hotpot->id]->maxscore;
+        if ($reviewoptions) {
+            $text = html_writer::tag('a', $text, $params);
+        }
         $row->cells[] = new html_table_cell($text);
 
-        $text = html_writer::tag('a', $aggregates[$hotpot->id]->averagescore, $params);
+        $text = $aggregates[$hotpot->id]->averagescore;
+        if ($reviewoptions) {
+            $text = html_writer::tag('a', $text, $params);
+        }
         $row->cells[] = new html_table_cell($text);
 
-        $text = get_string('viewreports', 'hotpot', $aggregates[$hotpot->id]->usercount);
-        $text = html_writer::tag('a', $text, $params);
+        if ($reviewoptions) {
+            $text = $aggregates[$hotpot->id]->usercount;
+            $text = get_string('viewreports', 'mod_hotpot', $text);
+            $text = html_writer::tag('a', $text, $params);
+        } else {
+            $text = '&nbsp;';
+        }
         $row->cells[] = new html_table_cell($text);
     }
 
     $table->data[] = $row;
 }
 
-echo $OUTPUT->heading(get_string('modulenameplural', 'hotpot'), 2);
+echo $OUTPUT->heading(get_string('modulenameplural', 'mod_hotpot'), 2);
 echo html_writer::table($table);
 
 /// Finish the page

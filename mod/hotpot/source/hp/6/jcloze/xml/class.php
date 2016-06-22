@@ -44,16 +44,16 @@ class hotpot_source_hp_6_jcloze_xml extends hotpot_source_hp_6_jcloze {
      * @param xxx $sourcefile
      * @return xxx
      */
-    public static function is_quizfile($sourcefile)  {
+    static public function is_quizfile($sourcefile)  {
         return preg_match('/\.jcl$/', $sourcefile->get_filename());
     }
 
     /**
      * compact_filecontents
      */
-    function compact_filecontents()  {
+    function compact_filecontents($tags=null) {
         // remove white space within tags
-        parent::compact_filecontents();
+        parent::compact_filecontents($tags);
 
         // fix white space and html entities in open text
 

@@ -46,30 +46,38 @@ defined('MOODLE_INTERNAL') || die();
  * @return mixed true if the feature is supported, null if unknown
  */
 function hotpot_supports($feature) {
-    switch($feature) {
-        // enable features whose default is "false"
-        case FEATURE_GRADE_HAS_GRADE:   return true;
-        case FEATURE_GROUPINGS:         return true;
-        case FEATURE_GROUPMEMBERSONLY:  return true;
-        case FEATURE_BACKUP_MOODLE2:    return true;
 
-        // use default for these features whose default is "false"
-        //case FEATURE_RATE:              return false;
-        //case FEATURE_GRADE_HAS_GRADE:   return false;
-        //case FEATURE_COMPLETION_TRACKS_VIEWS: return false;
-
-        // disable features whose default is "true"
-        case FEATURE_MOD_INTRO:         return false;
-
-        // use default for these features whose default is "true"
-        //case FEATURE_GROUPS:            return true;
-        //case FEATURE_IDNUMBER:          return true;
-        //case FEATURE_GRADE_OUTCOMES:    return true;
-        //case FEATURE_MODEDIT_DEFAULT_COMPLETION: return true;
-
-        // otherwise, this is some feature we do not know about
-        default:                        return null;
+    // these constants are defined in "lib/moodlelib.php"
+    // they are not all defined in Moodle 2.0, so we
+    // check each one is defined before trying to use it
+    $constants = array(
+        'FEATURE_ADVANCED_GRADING' => false,
+        'FEATURE_BACKUP_MOODLE2'   => true, // default=false
+        'FEATURE_COMMENT'          => true,
+        'FEATURE_COMPLETION_HAS_RULES' => true,
+        'FEATURE_COMPLETION_TRACKS_VIEWS' => true,
+        'FEATURE_CONTROLS_GRADE_VISIBILITY' => false,
+        'FEATURE_GRADE_HAS_GRADE'  => true, // default=false
+        'FEATURE_GRADE_OUTCOMES'   => true,
+        'FEATURE_GROUPINGS'        => true, // default=false
+        'FEATURE_GROUPMEMBERSONLY' => true, // default=false
+        'FEATURE_GROUPS'           => true,
+        'FEATURE_IDNUMBER'         => true,
+        'FEATURE_MOD_ARCHETYPE'    => MOD_ARCHETYPE_OTHER,
+        'FEATURE_MOD_INTRO'        => false, // default=true
+        'FEATURE_MODEDIT_DEFAULT_COMPLETION' => true,
+        'FEATURE_NO_VIEW_LINK'     => false,
+        'FEATURE_PLAGIARISM'       => false,
+        'FEATURE_RATE'             => false,
+        'FEATURE_SHOW_DESCRIPTION' => true, // default=false (Moodle 2.2)
+        'FEATURE_USES_QUESTIONS'   => false
+    );
+    foreach ($constants as $constant => $value) {
+        if (defined($constant) && $feature==constant($constant)) {
+            return $value;
+        }
     }
+    return false;
 }
 
 /**
@@ -219,7 +227,7 @@ function hotpot_process_formdata(stdclass &$data, $mform) {
 
         // default activity name is simply "HotPot"
         if ($textfield=='name' && $data->$textfield=='') {
-            $data->$textfield = get_string('modulename', 'hotpot');
+            $data->$textfield = get_string('modulename', 'mod_hotpot');
         }
     }
 
@@ -323,6 +331,21 @@ function hotpot_process_formdata(stdclass &$data, $mform) {
         }
     }
 
+    // set review options
+    $data->reviewoptions = 0;
+    list($times, $items) = hotpot::reviewoptions_times_items();
+    foreach ($times as $timename => $timevalue) {
+        foreach ($items as $itemname => $itemvalue) {
+            $name = $timename.$itemname; // e.g. duringattemptresponses
+            if (isset($data->$name)) {
+                if ($data->$name) {
+                    $data->reviewoptions += ($timevalue & $itemvalue);
+                }
+                unset($data->$name);
+            }
+        }
+    }
+
     // save these form settings as user preferences
     $preferences = array();
     foreach (hotpot::user_preferences_fieldnames() as $fieldname) {
@@ -407,9 +430,9 @@ function hotpot_user_outline($course, $user, $mod, $hotpot) {
         $scores[] = hotpot::format_score($attempt);
     }
     if (count($scores)) {
-        $info = get_string('score', 'hotpot').': '.implode(', ', $scores);
+        $info = get_string('score', 'mod_hotpot').': '.implode(', ', $scores);
     } else {
-        $info = get_string('noactivity', 'hotpot');
+        $info = get_string('noactivity', 'mod_hotpot');
     }
 
     return (object)array('time'=>$time, 'info'=>$info);
@@ -424,7 +447,7 @@ function hotpot_user_outline($course, $user, $mod, $hotpot) {
 function hotpot_user_complete($course, $user, $mod, $hotpot) {
     $report = hotpot_user_outline($course, $user, $mod, $hotpot);
     if (empty($report)) {
-        echo get_string("noactivity", 'hotpot');
+        echo get_string("noactivity", 'mod_hotpot');
     } else {
         $date = userdate($report->time, get_string('strftimerecentfull'));
         echo $report->info.' '.get_string('mostrecently').': '.$date;
@@ -453,7 +476,7 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
     //     log_timcoumodact_ix : time, course, module, action
 
     // log records are added by the following function in "lib/datalib.php":
-    //     add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0)
+    //     hotpot_add_to_log($courseid, $module, $action, $url='', $info='', $cm=0, $user=0)
 
     // log records are added by the following HotPot scripts:
     //     (scriptname : log action)
@@ -465,42 +488,47 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
     //     view.php    : view
     // all these actions have a record in the "log_display" table
 
-    $select = "time>? AND course=? AND module=? AND action IN (?, ?, ?, ?, ?)";
+    $select = "time > ? AND course = ? AND module = ? AND action IN (?, ?, ?, ?, ?)";
     $params = array($timestart, $course->id, 'hotpot', 'add', 'update', 'view', 'attempt', 'submit');
 
     if ($logs = $DB->get_records_select('log', $select, $params, 'time ASC')) {
 
-        $coursecontext = hotpot_get_context(CONTEXT_COURSE, $course->id);
-        $viewhiddensections = has_capability('moodle/course:viewhiddensections', $coursecontext);
-
-        if ($modinfo = unserialize($course->modinfo)) {
-            $coursemoduleids = array_keys($modinfo);
-        } else {
-            $coursemoduleids = array();
-        }
+        $modinfo = get_fast_modinfo($course);
+        $cmids   = array_keys($modinfo->get_cms());
 
         $stats = array();
         foreach ($logs as $log) {
             $cmid = $log->cmid;
-            if (! array_key_exists($cmid, $modinfo)) {
+            if (! in_array($cmid, $cmids)) {
                 continue; // invalid $cmid - shouldn't happen !!
             }
-            if (! $viewhiddensections && ! $modinfo[$cmid]->visible) {
+            $cm = $modinfo->get_cm($cmid);
+            if (! $cm->uservisible) {
                 continue; // coursemodule is hidden from user
             }
-            $sortorder = array_search($cmid, $coursemoduleids);
+            $sortorder = array_search($cmid, $cmids);
             if (! array_key_exists($sortorder, $stats)) {
-                $context = hotpot_get_context(CONTEXT_MODULE, $cmid);
-                if (has_capability('mod/hotpot:reviewmyattempts', $context) || has_capability('mod/hotpot:reviewallattempts', $context)) {
+                if (has_capability('mod/hotpot:reviewmyattempts', $cm->context) || has_capability('mod/hotpot:reviewallattempts', $cm->context)) {
                     $viewreport = true;
                 } else {
                     $viewreport = false;
                 }
+                $options = array('context' => $cm->context);
+                if (method_exists($cm, 'get_formatted_name')) {
+                    $name = $cm->get_formatted_name($options);
+                } else {
+                    $name = format_string($cm->name, true,  $options);
+                }
                 $stats[$sortorder] = (object)array(
-                    'name' => format_string(urldecode($modinfo[$cmid]->name)),
-                    'cmid' => $cmid, 'add'=>0, 'update'=>0, 'view'=>0, 'attempt'=>0, 'submit'=>0,
-                    'viewreport' => $viewreport,
-                    'users' => array()
+                    'name'    => $name,
+                    'cmid'    => $cmid,
+                    'add'     => 0,
+                    'update'  => 0,
+                    'view'    => 0,
+                    'attempt' => 0,
+                    'submit'  => 0,
+                    'users'   => array(),
+                    'viewreport' => $viewreport
                 );
             }
             $action = $log->action;
@@ -521,11 +549,11 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
         }
 
         $strusers     = get_string('users');
-        $stradded     = get_string('added',    'hotpot');
-        $strupdated   = get_string('updated',  'hotpot');
-        $strviews     = get_string('views',    'hotpot');
-        $strattempts  = get_string('attempts', 'hotpot');
-        $strsubmits   = get_string('submits',  'hotpot');
+        $stradded     = get_string('added',    'mod_hotpot');
+        $strupdated   = get_string('updated',  'mod_hotpot');
+        $strviews     = get_string('views',    'mod_hotpot');
+        $strattempts  = get_string('attempts', 'mod_hotpot');
+        $strsubmits   = get_string('submits',  'mod_hotpot');
 
         $print_headline = true;
         ksort($stats);
@@ -559,7 +587,7 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
             if (count($li)) {
                 if ($print_headline) {
                     $print_headline = false;
-                    echo $OUTPUT->heading(get_string('modulenameplural', 'hotpot').':', 3);
+                    echo $OUTPUT->heading(get_string('modulenameplural', 'mod_hotpot').':', 3);
                 }
 
                 $url = new moodle_url('/mod/hotpot/view.php', array('id'=>$stat->cmid));
@@ -614,14 +642,6 @@ function hotpot_print_recent_activity($course, $viewfullnames, $timestart) {
 function hotpot_get_recent_mod_activity(&$activities, &$index, $timestart, $courseid, $coursemoduleid=0, $userid=0, $groupid=0) {
     global $CFG, $DB, $USER;
 
-    if (! $course = $DB->get_record('course', array('id'=>$courseid))) {
-        return; // invalid course id - shouldn't happen !!
-    }
-
-    if (! $modinfo = unserialize($course->modinfo)) {
-        return; // no activity mods
-    }
-
     // CONTRIB-4025 don't allow students to see each other's scores
     $coursecontext = hotpot_get_context(CONTEXT_COURSE, $courseid);
     if (! has_capability('mod/hotpot:reviewmyattempts', $coursecontext)) {
@@ -631,17 +651,35 @@ function hotpot_get_recent_mod_activity(&$activities, &$index, $timestart, $cour
         $userid = $USER->id; // force this user only
     }
 
-    $hotpots = array(); // hotpotid => cmid
+    // we want to detect Moodle >= 2.4
+    // method_exists('course_modinfo', 'get_used_module_names')
+    // method_exists('cm_info', 'get_modue_type_name')
+    // method_exists('cm_info', 'is_user_access_restricted_by_capability')
 
-    foreach (array_keys($modinfo) as $cmid) {
-        if ($modinfo[$cmid]->mod=='hotpot' && ($coursemoduleid==0 || $coursemoduleid==$cmid)) {
+    $reflector = new ReflectionFunction('get_fast_modinfo');
+    if ($reflector->getNumberOfParameters() >= 3) {
+        // Moodle >= 2.4 has 3rd parameter ($resetonly)
+        $modinfo = get_fast_modinfo($courseid);
+        $course  = $modinfo->get_course();
+    } else {
+        // Moodle <= 2.3
+        $course = $DB->get_record('course', array('id' => $courseid));
+        $modinfo = get_fast_modinfo($course);
+    }
+    $cms = $modinfo->get_cms();
+
+    $hotpots = array(); // hotpotid => cmid
+    $users   = array(); // cmid => array(userids)
+
+    foreach ($cms as $cmid => $cm) {
+        if ($cm->modname=='hotpot' && ($coursemoduleid==0 || $coursemoduleid==$cmid)) {
             // save mapping from hotpotid => coursemoduleid
-            $hotpots[$modinfo[$cmid]->id] = $cmid;
+            $hotpots[$cm->instance] = $cmid;
             // initialize array of users who have recently attempted this HotPot
-            $modinfo[$cmid]->users = array();
+            $users[$cmid] = array();
         } else {
             // we are not interested in this mod
-            unset($modinfo[$cmid]);
+            unset($cms[$cmid]);
         }
     }
 
@@ -649,28 +687,34 @@ function hotpot_get_recent_mod_activity(&$activities, &$index, $timestart, $cour
         return; // no hotpots
     }
 
-    list($filter, $params) = $DB->get_in_or_equal(array_keys($hotpots));
-    $duration = '(ha.timemodified - ha.timestart) AS duration';
-    $select = 'ha.*, '.$duration.', u.firstname, u.lastname, u.picture, u.imagealt, u.email';
-    $from   = "{hotpot_attempts} ha, {user} u";
-    $where  = "ha.hotpotid $filter AND ha.userid=u.id";
-    $orderby = 'ha.userid, ha.attempt';
+    $select = 'ha.*, (ha.timemodified - ha.timestart) AS duration, ';
+    if (class_exists('user_picture')) {
+        // Moodle >= 2.6
+        $select .= user_picture::fields('u', null, 'useruserid');
+    } else {
+        // Moodle <= 2.5
+        $select .= 'u.firstname, u.lastname, u.picture, u.imagealt, u.email';
+    }
+    $from   = '{hotpot_attempts} ha JOIN {user} u ON ha.userid = u.id';
+    list($where, $params) = $DB->get_in_or_equal(array_keys($hotpots));
+    $where  = 'ha.hotpotid '.$where;
+    $order  = 'ha.userid, ha.attempt';
 
     if ($groupid) {
         // restrict search to a users from a particular group
         $from   .= ', {groups_members} gm';
-        $where  .= ' AND ha.userid=gm.userid AND gm.id=?';
+        $where  .= ' AND ha.userid = gm.userid AND gm.id = ?';
         $params[] = $groupid;
     }
     if ($userid) {
         // restrict search to a single user
-        $where .= ' AND ha.userid=?';
+        $where .= ' AND ha.userid = ?';
         $params[] = $userid;
     }
-    $where .= ' AND ha.timemodified>?';
+    $where .= ' AND ha.timemodified > ?';
     $params[] = $timestart;
 
-    if (! $attempts = $DB->get_records_sql("SELECT $select FROM $from WHERE $where ORDER BY $orderby", $params)) {
+    if (! $attempts = $DB->get_records_sql("SELECT $select FROM $from WHERE $where ORDER BY $order", $params)) {
         return; // no recent attempts at these hotpots
     }
 
@@ -680,58 +724,58 @@ function hotpot_get_recent_mod_activity(&$activities, &$index, $timestart, $cour
         if (! array_key_exists($attempt->hotpotid, $hotpots)) {
             continue; // invalid hotpotid - shouldn't happen !!
         }
+
         $cmid = $hotpots[$attempt->hotpotid];
-
-        if (! array_key_exists($cmid, $modinfo)) {
-            continue; // invalid cmid - shouldn't happen !!
-        }
-        $mod = &$modinfo[$cmid];
-
         $userid = $attempt->userid;
-        if (! array_key_exists($userid, $mod->users)) {
-            $mod->users[$userid] = (object)array(
-                'id' => $userid,
-                'userid' => $userid,
+        if (! array_key_exists($userid, $users[$cmid])) {
+            $users[$cmid][$userid] = (object)array(
+                'id'        => $userid,
+                'userid'    => $userid,
                 'firstname' => $attempt->firstname,
-                'lastname' => $attempt->lastname,
-                'fullname' => fullname($attempt),
-                'picture' => $attempt->picture,
-                'imagealt' => $attempt->imagealt,
-                'email' => $attempt->email,
-                'attempts' => array()
+                'lastname'  => $attempt->lastname,
+                'fullname'  => fullname($attempt),
+                'picture'   => $attempt->picture,
+                'imagealt'  => $attempt->imagealt,
+                'email'     => $attempt->email,
+                'attempts'  => array()
             );
         }
         // add this attempt by this user at this course module
-        $mod->users[$userid]->attempts[$attempt->attempt] = &$attempt;
+        $users[$cmid][$userid]->attempts[$attempt->attempt] = &$attempt;
     }
 
-    foreach (array_keys($modinfo) as $cmid) {
-        $mod = &$modinfo[$cmid];
-        if (empty($mod->users)) {
+    foreach ($cms as $cmid => $cm) {
+        if (empty($users[$cmid])) {
             continue;
         }
         // add an activity object for each user's attempts at this hotpot
-        foreach (array_keys($mod->users) as $userid) {
-            $user = &$mod->users[$userid];
+        foreach ($users[$cmid] as $userid => $user) {
 
             // get index of last (=most recent) attempt
             $max_unumber = max(array_keys($user->attempts));
 
+            $options = array('context' => $cm->context);
+            if (method_exists($cm, 'get_formatted_name')) {
+                $name = $cm->get_formatted_name($options);
+            } else {
+                $name = format_string($cm->name, true,  $options);
+            }
+
             $activities[$index++] = (object)array(
                 'type' => 'hotpot',
                 'cmid' => $cmid,
-                'name' => format_string(urldecode($mod->name)),
+                'name' => $name,
                 'user' => (object)array(
-                    'id' => $user->id,
-                    'userid' => $user->userid,
+                    'id'        => $user->id,
+                    'userid'    => $user->userid,
                     'firstname' => $user->firstname,
-                    'lastname' => $user->lastname,
-                    'fullname' => $user->fullname,
-                    'picture' => $user->picture,
-                    'imagealt' => $user->imagealt,
-                    'email' => $user->email
+                    'lastname'  => $user->lastname,
+                    'fullname'  => $user->fullname,
+                    'picture'   => $user->picture,
+                    'imagealt'  => $user->imagealt,
+                    'email'     => $user->email
                 ),
-                'attempts' => $user->attempts,
+                'attempts'  => $user->attempts,
                 'timestamp' => $user->attempts[$max_unumber]->timemodified
             );
         }
@@ -843,7 +887,7 @@ function hotpot_print_recent_mod_activity($activity, $courseid, $detail, $modnam
 * @return array(string) of text strings used to log HotPot view actions
 */
 function hotpot_get_view_actions() {
-    return array('view', 'viewindex', 'report', 'review');
+    return array('view', 'index', 'report', 'review');
 }
 
 /*
@@ -855,6 +899,117 @@ function hotpot_get_view_actions() {
 */
 function hotpot_get_post_actions() {
     return array('submit');
+}
+
+/*
+ * For the given list of courses, this function creates an HTML report
+ * of which HotPot activities have been completed and which have not
+
+ * This function is called from: {@link course/lib.php}
+ *
+ * @param array(object) $courses records from the "course" table
+ * @param array(array(string)) $htmlarray array, indexed by courseid, of arrays, indexed by module name (e,g, "hotpot), of HTML strings
+ *     each HTML string shows a list of the following information about each open HotPot in the course
+ *         HotPot name and link to the activity  + open/close dates, if any
+ *             for teachers:
+ *                 how many students have attempted/completed the HotPot
+ *             for students:
+ *                 which HotPots have been completed
+ *                 which HotPots have not been completed yet
+ *                 the time remaining for incomplete HotPots
+ * @return no return value is required, but $htmlarray may be updated
+ */
+function hotpot_print_overview($courses, &$htmlarray) {
+    global $CFG, $DB, $USER;
+    require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+
+    if (empty($CFG->hotpot_enablemymoodle)) {
+        return; // HotPots are not shown on MyMoodle on this site
+    }
+
+    if (! isset($courses) || ! is_array($courses) || ! count($courses)) {
+        return; // no courses
+    }
+
+    if (! $hotpots = get_all_instances_in_courses('hotpot', $courses)) {
+        return; // no hotpots
+    }
+
+    $strhotpot     = get_string('modulename', 'mod_hotpot');
+    $strtimeopen   = get_string('timeopen',   'mod_hotpot');
+    $strtimeclose  = get_string('timeclose',  'mod_hotpot');
+    $strdateformat = get_string('strftimerecentfull');
+    $strattempted  = get_string('attempted',  'mod_hotpot');
+    $strcompleted  = get_string('completed',  'mod_hotpot');
+    $strnotattemptedyet = get_string('notattemptedyet', 'mod_hotpot');
+
+    $now = time();
+    foreach ($hotpots as $hotpot) {
+
+        if ($hotpot->timeopen > $now || $hotpot->timeclose < $now) {
+            continue; // skip activities that are not open, or are closed
+        }
+
+        $str = ''
+            .'<div class="hotpot overview">'
+            .'<div class="name">'.$strhotpot. ': '
+            .'<a '.($hotpot->visible ? '':' class="dimmed"')
+            .'title="'.$strhotpot.'" href="'.$CFG->wwwroot
+            .'/mod/hotpot/view.php?id='.$hotpot->coursemodule.'">'
+            .format_string($hotpot->name).'</a></div>'
+        ;
+        if ($hotpot->timeopen) {
+            $str .= '<div class="info">'.$strtimeopen.': '.userdate($hotpot->timeopen, $strdateformat).'</div>';
+        }
+        if ($hotpot->timeclose) {
+            $str .= '<div class="info">'.$strtimeclose.': '.userdate($hotpot->timeclose, $strdateformat).'</div>';
+        }
+
+        $modulecontext = hotpot_get_context(CONTEXT_MODULE, $hotpot->coursemodule);
+        if (has_capability('mod/hotpot:reviewallattempts', $modulecontext)) {
+            // manager: show class grades stats
+            // attempted: 99/99, completed: 99/99
+            if ($students = get_users_by_capability($modulecontext, 'mod/hotpot:attempt', 'u.id,u.id', 'u.id', '', '', 0, '', false)) {
+                $count = count($students);
+                $attempted = 0;
+                $completed = 0;
+                // search hotpot_attempts for highest status for each userid
+                list($where, $params) = $DB->get_in_or_equal(array_keys($students));
+                $select = 'userid, SUM(CASE WHEN status = '.hotpot::STATUS_COMPLETED.' THEN 1 ELSE 0 END) AS iscompleted';
+                $from   = '{hotpot_attempts}';
+                $where  = 'userid '.$where.' AND hotpotid = ?';
+                $params[] = $hotpot->id;
+                if ($attempts = $DB->get_records_sql("SELECT $select FROM $from WHERE $where GROUP BY userid", $params)) {
+                    $attempted = count($attempts);
+                    foreach ($attempts as $attempt) {
+                        if ($attempt->iscompleted) {
+                            $completed++;
+                        }
+                    }
+                }
+                unset($attempts);
+                unset($students);
+                $str .= '<div class="info">'.$strattempted.': '.$attempted.' / '.$count.', '.$strcompleted.': '.$completed.' / '.$count.'</div>';
+            }
+        } else {
+            // student: show grade and status
+            if ($grade = hotpot_get_grades($hotpot, $USER->id, 'timestart')) {
+                $grade = $grade[$USER->id];
+                $href = new moodle_url('/mod/hotpot/report.php', array('hp' => $hotpot->id));
+                if ($hotpot->gradeweighting) {
+                    $str .= '<div class="info">'.get_string('grade').': '.'<a href="'.$href.'">'.$grade->rawgrade.'%</a></div>';
+                }
+                $str .= '<div class="info">'.get_string('status', 'hotpot').': '.'<a href="'.$href.'">'.hotpot::format_status($grade->maxstatus).'</a></div>';
+            }
+        }
+        $str .= "</div>\n";
+
+        if (empty($htmlarray[$hotpot->course]['hotpot'])) {
+            $htmlarray[$hotpot->course]['hotpot'] = $str;
+        } else {
+            $htmlarray[$hotpot->course]['hotpot'] .= $str;
+        }
+    }
 }
 
 /**
@@ -942,10 +1097,11 @@ function hotpot_grade_item_update($hotpot, $grades=null) {
     require_once($CFG->dirroot.'/lib/gradelib.php');
 
     // sanity check on $hotpot->id
-    if (! isset($hotpot->id)) {
+    if (empty($hotpot->id) || empty($hotpot->course)) {
         return;
     }
 
+    // set up params for grade_update()
     $params = array(
         'itemname' => $hotpot->name
     );
@@ -953,40 +1109,36 @@ function hotpot_grade_item_update($hotpot, $grades=null) {
         $params['reset'] = true;
         $grades = null;
     }
-    if (property_exists($hotpot, 'cmidnumber')) {
+    if (isset($hotpot->cmidnumber)) {
         //cmidnumber may not be always present
         $params['idnumber'] = $hotpot->cmidnumber;
     }
-    if ($hotpot->gradeweighting > 0) {
+    if ($hotpot->gradeweighting) {
         $params['gradetype'] = GRADE_TYPE_VALUE;
         $params['grademax']  = $hotpot->gradeweighting;
         $params['grademin']  = 0;
-
     } else {
         $params['gradetype'] = GRADE_TYPE_NONE;
+        // Note: when adding a new activity, a gradeitem will *not*
+        // be created in the grade book if gradetype==GRADE_TYPE_NONE
+        // A gradeitem will be created later if gradetype changes to GRADE_TYPE_VALUE
+        // However, the gradeitem will *not* be deleted if the activity's
+        // gradetype changes back from GRADE_TYPE_VALUE to GRADE_TYPE_NONE
+        // Therefore, we force the removal of empty gradeitems
+        $params['deleted'] = true;
     }
     return grade_update('mod/hotpot', $hotpot->course, 'mod', 'hotpot', $hotpot->id, 0, $grades, $params);
 }
 
 /**
- * Update hotpot grades in the gradebook
+ * hotpot_get_grades
  *
- * Needed by grade_update_mod_grades() in lib/gradelib.php
- *
- * @param stdclass $hotpot instance object with extra cmidnumber and modname property
- * @param int $userid update grade of specific user only, 0 means all participants
- * @return void
+ * @param  stdclass  $hotpot      instance object with extra cmidnumber and modname property
+ * @param  integer   $userid      >0 update grade of specific user only, 0 means all participants
+ * @return array     $grades
  */
-function hotpot_update_grades($hotpot, $userid=0, $nullifnone=true) {
-    global $CFG, $DB;
-
-    // get hotpot object
-    require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
-
-    // sanity check on $hotpot->id
-    if (! isset($hotpot->id)) {
-        return;
-    }
+function hotpot_get_grades($hotpot, $userid, $timefield='timefinish') {
+    global $DB;
 
     if ($hotpot->grademethod==hotpot::GRADEMETHOD_AVERAGE || $hotpot->gradeweighting<100) {
         $precision = 1;
@@ -998,45 +1150,128 @@ function hotpot_update_grades($hotpot, $userid=0, $nullifnone=true) {
     // set the SQL string to determine the $grade
     switch ($hotpot->grademethod) {
         case hotpot::GRADEMETHOD_HIGHEST:
-            $gradefield = "ROUND(MAX(score) * $weighting, $precision) AS grade";
+            $gradefield = "ROUND(MAX(score) * $weighting, $precision) AS rawgrade";
             break;
         case hotpot::GRADEMETHOD_AVERAGE:
             // the 'AVG' function skips abandoned quizzes, so use SUM(score)/COUNT(id)
-            $gradefield = "ROUND(SUM(score)/COUNT(id) * $weighting, $precision) AS grade";
+            $gradefield = "ROUND(SUM(score)/COUNT(id) * $weighting, $precision) AS rawgrade";
             break;
         case hotpot::GRADEMETHOD_FIRST:
             $gradefield = "ROUND(score * $weighting, $precision)";
             $gradefield = $DB->sql_concat('timestart', "'_'", $gradefield);
-            $gradefield = "MIN($gradefield) AS grade";
+            $gradefield = "MIN($gradefield) AS rawgrade";
             break;
         case hotpot::GRADEMETHOD_LAST:
             $gradefield = "ROUND(score * $weighting, $precision)";
             $gradefield = $DB->sql_concat('timestart', "'_'", $gradefield);
-            $gradefield = "MAX($gradefield) AS grade";
+            $gradefield = "MAX($gradefield) AS rawgrade";
             break;
         default:
             return false; // shouldn't happen !!
     }
+    $statusfield = 'MAX(status) AS maxstatus';
 
-    $select = 'timefinish>0 AND hotpotid= ?';
-    $params = array($hotpot->id);
+    $select = "$timefield > ? AND hotpotid= ?";
+    $params = array(0, $hotpot->id);
     if ($userid) {
         $select .= ' AND userid = ?';
         $params[] = $userid;
     }
-    $sql = "SELECT userid, $gradefield FROM {hotpot_attempts} WHERE $select GROUP BY userid";
+    $sql = "SELECT userid, $gradefield, $statusfield FROM {hotpot_attempts} WHERE $select GROUP BY userid";
 
     $grades = array();
-    if ($hotpotgrades = $DB->get_records_sql_menu($sql, $params)) {
-        foreach ($hotpotgrades as $hotpotuserid => $hotpotgrade) {
+    if ($aggregates = $DB->get_records_sql($sql, $params)) {
+        foreach ($aggregates as $hotpotuserid => $aggregate) {
             if ($hotpot->grademethod==hotpot::GRADEMETHOD_FIRST || $hotpot->grademethod==hotpot::GRADEMETHOD_LAST) {
                 // remove left hand characters in $gradefield (up to and including the underscore)
-                $pos = strpos($hotpotgrade, '_') + 1;
-                $hotpotgrade = substr($hotpotgrade, $pos);
+                $pos = strpos($aggregate->rawgrade, '_') + 1;
+                $aggregate->rawgrade = substr($aggregate->rawgrade, $pos);
             }
-            $grades[$hotpotuserid] = (object)array('userid'=>$hotpotuserid, 'rawgrade'=>$hotpotgrade);
+            $grades[$hotpotuserid] = (object)array('userid'=>$hotpotuserid, 'rawgrade'=>$aggregate->rawgrade, 'maxstatus' => $aggregate->maxstatus);
         }
     }
+    return $grades;
+}
+
+/**
+ * Update hotpot grades in the gradebook
+ *
+ * Needed by grade_update_mod_grades() in lib/gradelib.php
+ *
+ * @param stdclass  $hotpot      instance object with extra cmidnumber and modname property
+ * @param integer   $userid      >0 update grade of specific user only, 0 means all participants
+ * @param boolean   $nullifnone  TRUE = force creation of NULL grade if this user has no grade
+ * @return boolean  TRUE if successful, FALSE otherwise
+ * @return void
+ */
+function hotpot_update_grades($hotpot=null, $userid=0, $nullifnone=true) {
+    global $CFG, $DB;
+
+    // get hotpot object
+    require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+
+    if ($hotpot===null) {
+        // update/create grades for all hotpots
+
+        // set up sql strings
+        $strupdating = get_string('updatinggrades', 'mod_hotpot');
+        $select = 'h.*, cm.idnumber AS cmidnumber';
+        $from   = '{hotpot} h, {course_modules} cm, {modules} m';
+        $where  = 'h.id = cm.instance AND cm.module = m.id AND m.name = ?';
+        $params = array('hotpot');
+
+        // get previous record index (if any)
+        $configname = 'update_grades';
+        $configvalue = get_config('mod_hotpot', $configname);
+        if (is_numeric($configvalue)) {
+            $i_min = intval($configvalue);
+        } else {
+            $i_min = 0;
+        }
+
+        if ($i_max = $DB->count_records_sql("SELECT COUNT('x') FROM $from WHERE $where", $params)) {
+            if ($rs = $DB->get_recordset_sql("SELECT $select FROM $from WHERE $where", $params)) {
+                if (defined('CLI_SCRIPT') && CLI_SCRIPT) {
+                    $bar = false;
+                } else {
+                    $bar = new progress_bar('hotpotupgradegrades', 500, true);
+                }
+                $i = 0;
+                foreach ($rs as $hotpot) {
+
+                    // update grade
+                    if ($i >= $i_min) {
+                        upgrade_set_timeout(); // apply for more time (3 mins)
+                        hotpot_update_grades($hotpot, $userid, $nullifnone);
+                    }
+
+                    // update progress bar
+                    $i++;
+                    if ($bar) {
+                        $bar->update($i, $i_max, $strupdating.": ($i/$i_max)");
+                    }
+
+                    // update record index
+                    if ($i > $i_min) {
+                        set_config($configname, $i, 'mod_hotpot');
+                    }
+                }
+                $rs->close();
+            }
+        }
+
+        // delete the record index
+        unset_config($configname, 'mod_hotpot');
+
+        return; // finish here
+    }
+
+    // sanity check on $hotpot->id
+    if (! isset($hotpot->id)) {
+        return false;
+    }
+
+    $grades = hotpot_get_grades($hotpot, $userid);
 
     if (count($grades)) {
         hotpot_grade_item_update($hotpot, $grades);
@@ -1068,9 +1303,9 @@ function hotpot_update_grades($hotpot, $userid=0, $nullifnone=true) {
  */
 function hotpot_get_file_areas($course, $cm, $context) {
     return array(
-        'entry'      => get_string('entrytext',  'hotpot'),
-        'exit'       => get_string('exittext',   'hotpot'),
-        'sourcefile' => get_string('sourcefile', 'hotpot')
+        'entry'      => get_string('entrytext',  'mod_hotpot'),
+        'exit'       => get_string('exittext',   'mod_hotpot'),
+        'sourcefile' => get_string('sourcefile', 'mod_hotpot')
     );
 }
 
@@ -1185,10 +1420,9 @@ function hotpot_pluginfile($course, $cm, $context, $filearea, $args, $forcedownl
  * @param string $filearea  'sourcefile', 'entrytext' or 'exittext'
  * @param string $filepath  despite the name, this is a dir path with leading and trailing "/"
  * @param string $filename
- * @param array $file_record
  * @return stdclass if external file found, false otherwise
  */
-function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepath, $filename, $file_record) {
+function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepath, $filename) {
 
     // get file storage
     $fs = get_file_storage();
@@ -1224,6 +1458,14 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
             $type = ''; // shouldn't happen !!
     }
 
+    // "user" and "coursefiles" repositories
+    // will set this flag to TRUE
+    $encodepath = false;
+
+    // "filesytem" repository on Moodle >= 3.1
+    // will set this flag to 'browse'
+    $nodepathmode = '';
+
     // set paths (within repository) to required file
     // how we do this depends on the repository $typename
     // "filesystem" path is in plain text, others are encoded
@@ -1231,14 +1473,16 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
     $mainreference = $mainfile->get_reference();
     switch ($type) {
         case 'filesystem':
-            $maindirname   = dirname($mainreference);
-            $encodepath    = false;
+            $maindirname = dirname($mainreference);
+            if (method_exists($repository, 'build_node_path')) {
+                $nodepathmode = 'browse';
+            }
             break;
-        case 'user':
         case 'coursefiles':
-            $params        = file_storage::unpack_reference($mainreference, true);
-            $maindirname   = $params['filepath'];
-            $encodepath    = true;
+        case 'user':
+            $params      = file_storage::unpack_reference($mainreference, true);
+            $maindirname = $params['filepath'];
+            $encodepath  = true;
             break;
         default:
             echo 'unknown repository type in hotpot_pluginfile_externalfile(): '.$type;
@@ -1305,41 +1549,59 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
     $params = array();
     if ($encodepath) {
         $listing = $repository->get_listing();
-        if (isset($listing['list'][0]['path'])) {
-            $params = file_storage::unpack_reference($listing['list'][0]['path'], true);
+        switch (true) {
+            case isset($listing['list'][0]['source']): $param = 'source'; break; // file
+            case isset($listing['list'][0]['path']):   $param = 'path';   break; // dir
+            default: return false; // shouldn't happen !!
         }
+        $params = $listing['list'][0][$param];
+        $params = json_decode(base64_decode($params), true);
     }
 
     foreach ($paths as $path => $source) {
 
-        if (! hotpot_pluginfile_dirpath_exists($path, $repository, $encodepath, $params)) {
+        if (! hotpot_pluginfile_dirpath_exists($path, $repository, $type, $encodepath, $nodepathmode, $params)) {
             continue;
         }
 
         if ($encodepath) {
             $params['filepath'] = '/'.$path.($path=='' ? '' : '/');
             $params['filename'] = '.'; // "." signifies a directory
-            $path = file_storage::pack_reference($params);
+            $path = base64_encode(json_encode($params));
+        }
+
+        if ($nodepathmode) {
+            // for "filesystem" repository on Moodle >= 3.1
+            // the following code mimics the protected method
+            // $repository->build_node_path($nodepathmode, $dirpath)
+            $path = $nodepathmode.':'.base64_encode($path).':';
         }
 
         $listing = $repository->get_listing($path);
         foreach ($listing['list'] as $file) {
 
-            if (empty($file['source'])) {
-                continue; // a directory - shouldn't happen !!
+            switch (true) {
+                case isset($file['source']): $param = 'source'; break; // file
+                case isset($file['path']):   $param = 'path';   break; // dir
+                default: continue; // shouldn't happen !!
             }
 
             if ($encodepath) {
-                $file['source'] = file_storage::unpack_reference($file['source']);
-                $file['source'] = trim($file['source']['filepath'], '/').'/'.$file['source']['filename'];
+                $file[$param] = json_decode(base64_decode($file[$param]), true);
+                $file[$param] = trim($file[$param]['filepath'], '/').'/'.$file[$param]['filename'];
             }
 
-            if ($file['source']==$source) {
+            if ($file[$param]==$source) {
 
                 if ($encodepath) {
                     $params['filename'] = $filename;
                     $source = file_storage::pack_reference($params);
                 }
+
+                $file_record = array(
+                    'contextid' => $context->id, 'component' => $component, 'filearea' => $filearea,
+                    'sortorder' => 0, 'itemid' => 0, 'filepath' => $filepath, 'filename' => $filename
+                );
 
                 if ($file = $fs->create_file_from_reference($file_record, $repositoryid, $source)) {
                     return $file;
@@ -1358,11 +1620,12 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
  *
  * @param string   $dirpath
  * @param stdclass $repository
+ * @param string   $type ("user" or "coursefiles")
  * @param boolean  $encodepath
  * @param array    $params
  * @return boolean true if dir path exists in repository, false otherwise
  */
-function hotpot_pluginfile_dirpath_exists($dirpath, $repository, $encodepath, $params) {
+function hotpot_pluginfile_dirpath_exists($dirpath, $repository, $type, $encodepath, $nodepathmode, $params) {
     $dirs = explode('/', $dirpath);
     foreach ($dirs as $i => $dir) {
         $dirpath = implode('/', array_slice($dirs, 0, $i));
@@ -1370,17 +1633,22 @@ function hotpot_pluginfile_dirpath_exists($dirpath, $repository, $encodepath, $p
         if ($encodepath) {
             $params['filepath'] = '/'.$dirpath.($dirpath=='' ? '' : '/');
             $params['filename'] = '.'; // "." signifies a directory
-            $dirpath = file_storage::pack_reference($params);
+            $dirpath = base64_encode(json_encode($params));
+        }
+
+        if ($nodepathmode) {
+            // for "filesystem" repository on Moodle >= 3.1
+            // the following code mimics the protected method
+            // $repository->build_node_path($nodepathmode, $dirpath)
+            $dirpath = $nodepathmode.':'.base64_encode($dirpath).':';
         }
 
         $exists = false;
         $listing = $repository->get_listing($dirpath);
         foreach ($listing['list'] as $file) {
-            if (empty($file['source'])) {
-                if ($file['title']==$dir) {
-                    $exists = true;
-                    break;
-                }
+            if (empty($file['source']) && $file['title']==$dir) {
+                $exists = true;
+                break;
             }
         }
         if (! $exists) {
@@ -1406,13 +1674,30 @@ function hotpot_pluginfile_mainfile($context, $component, $filearea) {
     // (file with lowest sortorder in $filearea)
     $mainfile = false;
 
+    // these file types can't be the mainfile
+    $media_filetypes = array('fla', 'flv', 'gif', 'jpeg', 'jpg', 'mp3', 'png', 'swf', 'wav');
+
     $area_files = $fs->get_area_files($context->id, $component, $filearea);
     foreach ($area_files as $file) {
-        if ($file->is_directory() || $file->get_sortorder()==0) {
+        if ($file->is_directory()) {
             continue;
         }
-        if (empty($mainfile) || $file->get_sortorder() < $mainfile->get_sortorder()) {
-            $mainfile  = $file;
+        $filename = $file->get_filename();
+        if (substr($filename, 0, 1)=='.') {
+            continue; // hidden file
+        }
+        $filetype = strtolower(substr($filename, -3));
+        if (in_array($filetype, $media_filetypes)) {
+            continue; // media file
+        }
+        if (empty($mainfile)) { // || $mainfile->get_content()==''
+            $mainfile = $file;
+        } else if ($file->get_sortorder()==0) {
+            // unsorted file - do nothing
+        } else if ($mainfile->get_sortorder()==0) {
+            $mainfile = $file;
+        } else if ($file->get_sortorder() < $mainfile->get_sortorder()) {
+            $mainfile = $file;
         }
     }
 
@@ -1466,9 +1751,9 @@ function hotpot_get_file_info($browser, $areas, $course, $cm, $context, $fileare
  * @param navigation_node $navref An object representing the navigation tree node of the hotpot module instance
  * @param stdclass $course
  * @param stdclass $module
- * @param stdclass $cm
+ * @param cm_info  $cm
  */
-function hotpot_extend_navigation(navigation_node $hotpotnode, stdclass $course, stdclass $module, stdclass $cm) {
+function hotpot_extend_navigation(navigation_node $hotpotnode, stdclass $course, stdclass $module, cm_info $cm) {
     global $CFG, $DB;
     require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
 
@@ -1480,7 +1765,7 @@ function hotpot_extend_navigation(navigation_node $hotpotnode, stdclass $course,
         $type = navigation_node::TYPE_SETTING;
         foreach ($hotpot->get_report_modes() as $mode) {
             $url = $hotpot->report_url($mode);
-            $label = get_string($mode.'report', 'hotpot');
+            $label = get_string($mode.'report', 'mod_hotpot');
             $hotpotnode->add($label, $url, $type, null, null, $icon);
         }
     }
@@ -1508,8 +1793,8 @@ function hotpot_extend_settings_navigation(settings_navigation $settingsnav, nav
  * @param xxx $mform (passed by reference)
  */
 function hotpot_reset_course_form_definition(&$mform) {
-    $mform->addElement('header', 'hotpotheader', get_string('modulenameplural', 'hotpot'));
-    $mform->addElement('checkbox', 'reset_hotpot_deleteallattempts', get_string('deleteallattempts', 'hotpot'));
+    $mform->addElement('header', 'hotpotheader', get_string('modulenameplural', 'mod_hotpot'));
+    $mform->addElement('checkbox', 'reset_hotpot_deleteallattempts', get_string('deleteallattempts', 'mod_hotpot'));
 }
 
 /**
@@ -1567,8 +1852,8 @@ function hotpot_reset_userdata($data) {
     }
 
     return array(array(
-        'component' => get_string('modulenameplural', 'hotpot'),
-        'item' => get_string('deleteallattempts', 'hotpot'),
+        'component' => get_string('modulenameplural', 'mod_hotpot'),
+        'item' => get_string('deleteallattempts', 'mod_hotpot'),
         'error' => false
     ));
 }
@@ -1676,8 +1961,8 @@ function hotpot_update_events(&$hotpot, &$eventids, $delete) {
         // set $maxduration (secs) from $maxeventlength (days)
         $maxduration = $maxeventlength * 24 * 60 * 60;
 
-        $stropens = get_string('activityopens', 'hotpot');
-        $strcloses = get_string('activitycloses', 'hotpot');
+        $stropens = get_string('activityopens', 'mod_hotpot');
+        $strcloses = get_string('activitycloses', 'mod_hotpot');
     }
 
     // array to hold events for this hotpot
@@ -1812,8 +2097,9 @@ function hotpot_get_context($contextlevel, $instanceid=0, $strictness=0) {
  * textlib
  *
  * a wrapper method to offer consistent API for textlib class
- * in Moodle 2.0 and 2.1, $textlib is first initiated, then called.
- * in Moodle >= 2.2, we use only static methods of the "textlib" class.
+ * in Moodle 2.0 - 2.1, $textlib is first initiated, then called.
+ * in Moodle 2.2 - 2.5, we use only static methods of the "textlib" class.
+ * in Moodle >= 2.6, we use only static methods of the "core_text" class.
  *
  * @param string $method
  * @param mixed any extra params that are required by the textlib $method
@@ -1821,13 +2107,191 @@ function hotpot_get_context($contextlevel, $instanceid=0, $strictness=0) {
  * @todo Finish documenting this function
  */
 function hotpot_textlib() {
-    if (method_exists('textlib', 'textlib')) {
+    if (class_exists('core_text')) {
+        // Moodle >= 2.6
+        $textlib = 'core_text';
+    } else if (method_exists('textlib', 'textlib')) {
+        // Moodle 2.0 - 2.1
         $textlib = textlib_get_instance();
     } else {
-        $textlib = 'textlib'; // Moodle >= 2.2
+        // Moodle 2.2 - 2.5
+        $textlib = 'textlib';
     }
     $args = func_get_args();
     $method = array_shift($args);
     $callback = array($textlib, $method);
     return call_user_func_array($callback, $args);
 }
+
+/**
+ * hotpot_add_to_log
+ *
+ * @param integer $courseid
+ * @param string  $module name e.g. "hotpot"
+ * @param string  $action
+ * @param string  $url (optional, default='')
+ * @param string  $info (optional, default='') often a hotpot id
+ * @param string  $cmid (optional, default=0)
+ * @param integer $userid (optional, default=0)
+ */
+function hotpot_add_to_log($courseid, $module, $action, $url='', $info='', $cmid=0, $userid=0) {
+    global $DB, $PAGE;
+
+    // detect new event API (Moodle >= 2.6)
+    if (function_exists('get_log_manager')) {
+
+        // map old $action to new $eventname
+        switch ($action) {
+            case 'attempt':  $eventname = 'attempt_started';      break;
+            case 'report':   $eventname = 'report_viewed';        break;
+            case 'review':   $eventname = 'attempt_reviewed';     break;
+            case 'submit':   $eventname = 'attempt_submitted';    break;
+            case 'view':     $eventname = 'course_module_viewed'; break;
+            case 'index':    // legacy $action
+            case 'view all': $eventname = 'course_module_instance_list_viewed'; break;
+            default: $eventname = $action;
+        }
+
+        $classname = '\\mod_hotpot\\event\\'.$eventname;
+        if (class_exists($classname)) {
+
+            $context = null;
+            $course = null;
+            $hotpot = null;
+            $params = null;
+            $objectid = 0;
+
+            if ($action=='index' || $action=='view all') {
+                // course context
+                if (isset($PAGE->course) && $PAGE->course->id==$courseid) {
+                    // normal Moodle use
+                    $context  = $PAGE->context;
+                    $course   = $PAGE->course;
+                } else if ($courseid) {
+                    // Moodle upgrade
+                    $context  = hotpot_get_context(CONTEXT_COURSE, $courseid);
+                    $course   = $DB->get_record('course', array('id' => $courseid));
+                }
+                if ($context) {
+                    $params = array('context' => $context);
+                }
+            } else {
+                // course module context
+                if (isset($PAGE->cm) && $PAGE->cm->id==$cmid) {
+                    // normal Moodle use
+                    $objectid = $PAGE->cm->instance;
+                    $context  = $PAGE->context;
+                    $course   = $PAGE->course;
+                    $hotpot   = $PAGE->activityrecord;
+                } else if ($cmid) {
+                    // Moodle upgrade
+                    $objectid = $DB->get_field('course_modules', 'instance', array('id' => $cmid));
+                    $context  = hotpot_get_context(CONTEXT_MODULE, $cmid);
+                    $course   = $DB->get_record('course', array('id' => $courseid));
+                    $hotpot   = $DB->get_record('hotpot', array('id' => $objectid));
+                }
+                if ($context && $objectid) {
+                    $params = array('context' => $context, 'objectid' => $objectid);
+                }
+            }
+
+            if ($params) {
+                if ($userid) {
+                    $params['relateduserid'] = $userid;
+                }
+                // use call_user_func() to prevent syntax error in PHP 5.2.x
+                $event = call_user_func(array($classname, 'create'), $params);
+                if ($course) {
+                    $event->add_record_snapshot('course', $course);
+                }
+                if ($hotpot) {
+                    $event->add_record_snapshot('hotpot', $hotpot);
+                }
+                $event->trigger();
+            }
+        }
+
+    } else if (function_exists('add_to_log')) {
+        // Moodle <= 2.5
+        add_to_log($courseid, $module, $action, $url, $info, $cmid, $userid);
+    }
+}
+
+/**
+ * Obtains the automatic completion state for this hotpot
+ * based on the conditions in hotpot settings.
+ *
+ * @param  object  $course record from "course" table
+ * @param  object  $cm     record from "course_modules" table
+ * @param  integer $userid id from "user" table
+ * @param  bool    $type   of comparison (used as return value if there are no conditions)
+ *                         COMPLETION_AND (=true) or COMPLETION_OR (=false)
+ * @return mixed   TRUE if completed, FALSE if not, or $type if no conditions are set
+ */
+function hotpot_get_completion_state($course, $cm, $userid, $type) {
+    global $CFG, $DB;
+    require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+
+    // set default return $state
+    $state = $type;
+
+    // get the hotpot record
+    if ($hotpot = $DB->get_record('hotpot', array('id' => $cm->instance))) {
+
+        // get grade, if necessary
+        $grade = false;
+        if ($hotpot->completionmingrade > 0.0 || $hotpot->completionpass) {
+            require_once($CFG->dirroot.'/lib/gradelib.php');
+            $params = array('courseid'     => $course->id,
+                            'itemtype'     => 'mod',
+                            'itemmodule'   => 'hotpot',
+                            'iteminstance' => $cm->instance);
+            if ($grade_item = grade_item::fetch($params)) {
+                $grades = grade_grade::fetch_users_grades($grade_item, array($userid), false);
+                if (isset($grades[$userid])) {
+                    $grade = $grades[$userid];
+                }
+                unset($grades);
+            }
+            unset($grade_item);
+        }
+
+        // the HotPot completion conditions
+        $conditions = array('completionmingrade',
+                            'completionpass',
+                            'completioncompleted');
+
+        foreach ($conditions as $condition) {
+            // decimal (e.g. completionmingrade) fields are returned by MySQL as a string
+            // and since empty('0.0') returns false (!!), so we must use numeric comparison
+            if (empty($hotpot->$condition) || floatval($hotpot->$condition)==0.0) {
+                continue;
+            }
+            switch ($condition) {
+                case 'completionmingrade':
+                    $state = ($grade && $grade->finalgrade >= $hotpot->completionmingrade);
+                    break;
+                case 'completionpass':
+                    $state = ($grade && $grade->is_passed());
+                    break;
+                case 'completioncompleted':
+                    $params = array('hotpotid' => $cm->instance,
+                                    'userid'   => $userid,
+                                    'status'   => hotpot::STATUS_COMPLETED);
+                    $state = $DB->record_exists('hotpot_attempts', $params);
+                    break;
+
+            }
+            // finish early if possible
+            if ($type==COMPLETION_AND && $state==false) {
+                return false;
+            }
+            if ($type==COMPLETION_OR && $state) {
+                return true;
+            }
+        }
+    }
+
+    return $state;
+}
+

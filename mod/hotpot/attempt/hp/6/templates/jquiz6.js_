@@ -80,16 +80,16 @@ function CompleteEmptyFeedback(){
 	for (QNum=0; QNum<I.length; QNum++){
 //Only do this if not multi-select
 		if (I[QNum][2] != '3'){
-  		for (ANum = 0; ANum<I[QNum][3].length; ANum++){
-  			if (I[QNum][3][ANum][1].length < 1){
-  				if (I[QNum][3][ANum][2] > 0){
-  					I[QNum][3][ANum][1] = DefaultRight;
-  				}
-  				else{
-  					I[QNum][3][ANum][1] = DefaultWrong;
-  				}
-  			}
-  		}
+			for (ANum = 0; ANum<I[QNum][3].length; ANum++){
+			if (I[QNum][3][ANum][1].length < 1){
+					if (I[QNum][3][ANum][2] > 0){
+						I[QNum][3][ANum][1] = DefaultRight;
+					}
+					else{
+						I[QNum][3][ANum][1] = DefaultWrong;
+					}
+				}
+			}
 		}
 	}
 }
@@ -121,7 +121,7 @@ function SetUpQuestions(){
 		for (var i=0; i<QList.length; i++){
 			As = QList[i].getElementsByTagName('ol')[0];
 			if (As != null){
-  			AList.length = 0;
+				AList.length = 0;
 				while (As.getElementsByTagName('li').length > 0){
 					AList.push(As.removeChild(As.getElementsByTagName('li')[0]));
 				}
@@ -160,8 +160,8 @@ function SetFocusToTextbox(){
 		}
 	}
 	else{
-  	if (QArray[CurrQNum].getElementsByTagName('textarea')[0] != null){
-  		QArray[CurrQNum].getElementsByTagName('textarea')[0].focus();
+		if (QArray[CurrQNum].getElementsByTagName('textarea')[0] != null){
+			QArray[CurrQNum].getElementsByTagName('textarea')[0].focus();
 //and show a keypad if there is one
 			if (document.getElementById('CharacterKeypad') != null){
 				document.getElementById('CharacterKeypad').style.display = 'block';

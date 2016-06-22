@@ -100,11 +100,14 @@ class mod_hotpot_attempt_hp_6_rhubarb_xml_renderer extends mod_hotpot_attempt_hp
     function expand_WordsArray()  {
         $str = '';
 
+        $text = $this->hotpot->source->xml_value('data,rhubarb-text');
+        $text = hotpot_textlib('entities_to_utf8', $text);
+
         $space = ' \\x09\\x0A\\x0C\\x0D'; // " \t\n\r\l"
         $punc = preg_quote('!"#$%&()*+,-./:;+<=>?@[]\\^_`{|}~', '/'); // not apostrophe \'
         $search = '/([^'.$punc.$space.']+)|(['.$punc.']['.$punc.$space.']*)/s';
 
-        if (preg_match_all($search, $this->hotpot->source->xml_value('data,rhubarb-text'), $matches)) {
+        if (preg_match_all($search, $text, $matches)) {
             foreach ($matches[0] as $i => $word) {
                 $str .= "Words[$i] = '".$this->hotpot->source->js_value_safe($word, true)."';\n";
             }

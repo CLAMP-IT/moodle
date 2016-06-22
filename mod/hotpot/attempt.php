@@ -42,7 +42,7 @@ if ($id) {
 // Check login
 require_login($course, true, $cm);
 require_capability('mod/hotpot:attempt', $PAGE->context);
-add_to_log($course->id, 'hotpot', 'attempt', 'view.php?id='.$cm->id, $hotpot->id, $cm->id);
+hotpot_add_to_log($course->id, 'hotpot', 'attempt', 'view.php?id='.$cm->id, $hotpot->id, $cm->id);
 
 // Set editing mode
 if ($PAGE->user_allowed_editing()) {
@@ -71,7 +71,7 @@ $hotpot->set_preferred_pagelayout($PAGE);
 // and load the appropriate renderer class for this attempt
 if (! $subtype = $hotpot->get_attempt_renderer_subtype()) {
     echo $OUTPUT->header();
-    echo get_string('unrecognizedsourcefile', 'hotpot', $hotpot->sourcefile);
+    echo get_string('unrecognizedsourcefile', 'mod_hotpot', $hotpot->sourcefile);
     echo $OUTPUT->footer();
     exit;
 }

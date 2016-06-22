@@ -27,42 +27,127 @@
  * @return xxx
  */
 function hpQuizAttempt() {
+
+    /**#@+
+    * values to be returned in the results form
+    *
+    * @var integer
+    */
     this.status    = 0;
     this.redirect  = 0;
     this.penalties = 0;
     this.score     = 0;
-    this.forceajax = false;
+    /**#@-*/
+
+    /**
+    * if clickreport is enabled we want to send all clicks
+    *
+    * @var boolean
+    */
     this.sendallclicks = false;
 
+    /**
+    * if delay3 is disabled we want to send results via ajax and not change browser page
+    *
+    * @var boolean TRUE=send final results via ajax; FALSE=send final results via HTTP form
+    */
+    this.ajax = false;
+
+    /**
+    * array of question objects
+    *
+    * @var array
+    */
     this.questions = new Array();
 
-    this.quiztype  = ''; // JCloze JCross JMatch JMix JQuiz
-    this.form      = null; // reference to document.forms['store']
-    this.formlock  = false; // prevents duplicate sets of results being sent
-    this.starttime = null; // Date object for start time as recorded by client
-    this.endtime   = null; // Date object for end time as recorded by client
+    this.quiztype  = '';    // JCloze JCross JMatch JMix JQuiz
+    this.form      = null;  // reference to document.forms['store']
+    this.starttime = null;  // Date object for start time as recorded by client
+    this.endtime   = null;  // Date object for end time as recorded by client
+    this.evt       = 0;     // most recent quiz event (see EVENT_xxx constants below)
+
+    /**#@+
+    * constants for STATUS values
+    *
+    * @var integer
+    */
+    this.STATUS_NONE        = 0;
+    this.STATUS_INPROGRESS  = 1;
+    this.STATUS_TIMEDOUT    = 2;
+    this.STATUS_ABANDONED   = 3;
+    this.STATUS_COMPLETED   = 4;
+    /**#@-*/
+
+    /**#@+
+    * constants for FLAG values
+    *
+    * @var integer
+    */
+    this.FLAG_SETVALUES  = -1;
+    this.FLAG_SETANDSEND =  0;
+    this.FLAG_SENDVALUES =  1;
+    /**#@-*/
+
+    /**#@+
+    * constants for end-of-quiz EVENT values
+    *
+    * @var integer
+    */
+    this.EVENT_TIMEDOUT   = 11; // timer has finished
+    this.EVENT_ABANDONED  = 12; // STOP button
+    this.EVENT_COMPLETED  = 13; // normal completion (set and send form)
+    this.EVENT_SETVALUES  = 14; // normal completion (set values in form)
+    this.EVENT_SENDVALUES = 15; // normal completion (send values in form)
+    /**#@-*/
+
+    /**#@+
+    * constants for navigation EVENT values
+    *
+    * @var integer
+    */
+    this.EVENT_BEFOREUNLOAD = 21;
+    this.EVENT_PAGEHIDE     = 22;
+    this.EVENT_UNLOAD       = 23;
+
+    /**#@+
+    * constants for button EVENT values
+    *
+    * @var integer
+    */
+    this.EVENT_EMPTY = 0;
+    this.EVENT_CHECK = 31;
+    this.EVENT_HINT  = 32;
+    this.EVENT_CLUE  = 33;
+    this.EVENT_SHOW  = 34;
+    /**#@-*/
+
+    /**#@+
+    * constants for input event values
+    *
+    * @var integer
+    */
+    this.EVENT_FOCUS     = 41;
+    this.EVENT_KEYDOWN   = 42;
+    this.EVENT_MOUSEDOWN = 43;
+    /**#@-*/
 
     /**
      * init
      *
-     * @param xxx questionCount
-     * @param xxx sendallclicks
-     * @param xxx forceajax
+     * @param integer questionCount number of questions in this HP quiz
+     * @param boolean sendallclicks if clickreport is enabled then TRUE; otherwise FALSE
+     * @param boolean ajax       if delay3 is disabled then TRUE; otherwise FALSE
      */
-    this.init = function (questionCount, sendallclicks, forceajax) {
+    this.init = function (questionCount, sendallclicks, ajax) {
         this.form = this.findForm('store', self);
         if (questionCount) {
             this.initQuestions(questionCount);
         }
-        if ((typeof(sendallclicks)=='string' && parseInt(sendallclicks)) || (typeof(sendallclicks)=='number' && sendallclicks) || (typeof(sendallclicks)=='boolean' && sendallclicks)) {
-            this.sendallclicks = true;
-        }
-        if ((typeof(forceajax)=='string' && parseInt(forceajax)) || (typeof(forceajax)=='number' && forceajax) || (typeof(forceajax)=='boolean' && forceajax)) {
-            this.forceajax = true;
-        }
-        this.status = 1; // in progress
+        this.sendallclicks = sendallclicks;
+        this.ajax = ajax;
         this.starttime = new Date();
-    }
+        this.status = this.STATUS_INPROGRESS;
+    };
 
     /**
      * initQuestions
@@ -74,7 +159,7 @@ function hpQuizAttempt() {
             this.addQuestion(i);
             this.initQuestion(i);
         }
-    }
+    };
 
     /**
      * initQuestion
@@ -83,7 +168,7 @@ function hpQuizAttempt() {
      */
     this.initQuestion = function (i) {
         // this function will be "overloaded" by subclass
-    }
+    };
 
     /**
      * addQuestion
@@ -92,7 +177,7 @@ function hpQuizAttempt() {
      */
     this.addQuestion = function (i) {
         this.questions[i] = new hpQuestion();
-    }
+    };
 
     /**
      * onclickClue
@@ -101,10 +186,8 @@ function hpQuizAttempt() {
      */
     this.onclickClue = function (i) {
         this.questions[i].clues++;
-        if (this.sendallclicks) {
-            this.onunload(0);
-        }
-    }
+        HP_send_results(this.EVENT_CLUE);
+    };
 
     /**
      * onclickHint
@@ -113,10 +196,8 @@ function hpQuizAttempt() {
      */
     this.onclickHint = function (i) {
         this.questions[i].hints++;
-        if (this.sendallclicks) {
-            this.onunload(0);
-        }
-    }
+        HP_send_results(this.EVENT_HINT);
+    };
 
     /**
      * onclickCheck
@@ -125,7 +206,7 @@ function hpQuizAttempt() {
      */
     this.onclickCheck = function (setScores) {
         // this function will be "overloaded" by subclass
-    }
+    };
 
     /**
      * addFields
@@ -152,7 +233,7 @@ function hpQuizAttempt() {
                     break;
             }
         }
-    }
+    };
 
     /**
      * getQuestionPrefix
@@ -162,7 +243,7 @@ function hpQuizAttempt() {
      */
     this.getQuestionPrefix = function (i) {
         return this.quiztype + '_q' + (parseInt(i)<9 ? '0' : '') + (parseInt(i)+1) + '_';
-    }
+    };
 
     /**
      * setQuestionScore
@@ -171,7 +252,7 @@ function hpQuizAttempt() {
      */
     this.setQuestionScore = function (q) {
         this.questions[q].score = 0;
-    }
+    };
 
     /**
      * setScoreAndPenalties
@@ -185,85 +266,29 @@ function hpQuizAttempt() {
         }
         this.score = window.Score || 0;
         this.penalties = window.Penalties || 0;
-    }
+    };
 
     /**
-     * lock
-     */
-    this.lock = function () {
-        this.formlock = true;
-    }
-
-    /**
-     * unlock
-     */
-    this.unlock = function () {
-        this.formlock = false;
-    }
-
-    /**
-     * islocked
+     * send_results
      *
+     * @param integer evt    one of the HP.EVENT_xxx contants
+     * @param integer status one of the HP.STATUS_xxx contants
      * @return xxx
      */
-    this.islocked = function () {
-        return this.formlock;
-    }
-
-    /**
-     * onunload
-     *
-     * @param xxx status   0=undefined, 1=in progress, 2=timed out, 3=abandoned, 4=completed
-     * @param xxx flag     0=do everything, 1=set form values, -1=send form
-     * @param xxx redirect 0=NO, 1=YES
-     * @return xxx
-     */
-    this.onunload = function (status, flag, redirect) {
+    this.send_results = function (evt, status) {
         if (! this.form) {
-            // results have already been submitted
-            return true;
+            return true; // shouldn't happen !!
         }
 
-        if (this.islocked()) {
-            // results have just been submitted so don't send duplicates
-            // this may happen if user clicks on a link away from the page
-            // both the "onclick" and the "onunload" event call this function
-            return true;
-        }
+        var flag = this.get_flag(evt);
+        var ajax = this.get_ajax(evt);
 
-        // make sure flag is set : 0=do everything, 1=set form values, -1=send form
-        if (typeof(flag)=='undefined') {
-            flag = 0;
-        }
+        // update event and status
+        this.evt = evt;
+        this.status = status;
 
-        // lock the form for 2 seconds
-        if (flag<=0) {
-            this.lock();
-            setTimeout('if(window.HP)HP.unlock();', 2000);
-        }
-
-        // set form values if necessary
-        if (flag>=0) {
-
-            // set status : 0=undefined, 1=in progress, 2=timed out, 3=abandoned, 4=completed
-            if (status) {
-                this.status = status;
-                if (status>1) {
-                    // we set the redirect flag here to tell the server to redirect or not,
-                    //however, whether we actually get redirected or not is up to the server
-                    if (typeof(redirect)=='number' || typeof(redirect)=='string') {
-                        this.redirect = redirect;
-                    } else {
-                        this.redirect = 1;
-                    }
-                }
-                var forceRecalculate = false;
-            } else {
-                // onunload has been triggered by user navigating away from this page
-                // so we want to try to send results and let them continue
-                var forceRecalculate = true;
-                this.forceajax = true;
-            }
+        // set form values if required
+        if (flag==this.FLAG_SETVALUES || flag==this.FLAG_SETANDSEND) {
 
             // get end time and round down duration to exact number of seconds
             this.endtime = new Date();
@@ -278,7 +303,7 @@ function hpQuizAttempt() {
             }
 
             // set score and penalties
-            this.setScoreAndPenalties(forceRecalculate);
+            this.setScoreAndPenalties(this.navigation_event(evt));
 
             // create XML
             var XML = new hpXML();
@@ -288,76 +313,108 @@ function hpQuizAttempt() {
             this.form.mark.value = this.score;
             this.form.detail.value = XML.getXML();
             this.form.status.value = this.status;
-            this.form.redirect.value = this.redirect;
             this.form.starttime.value = this.getTimeString(this.starttime);
             this.form.endtime.value = this.getTimeString(this.endtime);
-        } // end if flag>=0 (set values)
+        }
 
-        // send form if necessary
-        if (flag<=0) {
-            // submit results to Moodle
+        // send form values if required
+        if (flag==this.FLAG_SENDVALUES || flag==this.FLAG_SETANDSEND) {
 
-             // cancel the check for navigating away from this page
-            window.onbeforeunload = null;
+            // cancel the check for navigating away from this page
+            HP_remove_listener(window, 'beforeunload', HP_send_results);
 
-            // based on http://www.captain.at/howto-ajax-form-post-request.php
-            var useajax = false;
-            if (typeof(window.HP_httpRequest)=='undefined') {
-                window.HP_httpRequest = false;
-                if (this.forceajax || this.redirect==0) {
-                    if (window.XMLHttpRequest) { // Mozilla, Safari,...
-                        HP_httpRequest = new XMLHttpRequest();
-                    } else if (window.ActiveXObject) { // IE
-                        try {
-                            HP_httpRequest = new ActiveXObject("Msxml2.XMLHTTP");
-                        } catch (e) {
-                            try {
-                                HP_httpRequest = new ActiveXObject("Microsoft.XMLHTTP");
-                            } catch (e) {
-                                HP_httpRequest = false;
-                            }
-                        }
-                    }
-                }
-                if (HP_httpRequest) {
-                    useajax = true;
-                }
-            }
-
-            if (useajax) {
-                var parameters = '';
-                var i_max = this.form.elements.length;
-                for (var i=0; i<i_max; i++) {
-                    var obj = this.form.elements[i];
-                    if (! obj.name) {
-                        continue;
-                    }
-                    var value = this.getFormElementValue(obj);
-                    if (! value) {
-                        continue;
-                    }
-                    parameters += (parameters=='' ? '' : '&') + obj.name + '=' + escape(value); // encodeURI
-                }
-                HP_httpRequest.onreadystatechange = HP_onreadystatechange;
-                HP_httpRequest.open(this.form.method, this.form.action, true); // ! this.redirect
-                HP_httpRequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                HP_httpRequest.setRequestHeader("Content-length", parameters.length);
-                HP_httpRequest.setRequestHeader("Connection", "close");
-                HP_httpRequest.send(parameters);
+            if (ajax) {
+                var use_asynchronous = (evt==this.EVENT_BEFOREUNLOAD ? false : true);
+                this.send_results_ajax(use_asynchronous);
             } else {
+                this.form.redirect.value = 1;
                 this.form.submit();
             }
 
-            if (this.status>1) {
-                // quiz is finished, so ensure results do not get submitted again
-                this.form = null;
-            } else if (window.hotpotbeforeunload) {
-                // quiz is not finished yet, so restore onbeforeunload
-               window.onbeforeunload = window.hotpotbeforeunload;
+            if (evt==this.EVENT_COMPLETED || evt==this.EVENT_SENDVALUES) {
+                this.form = null; // we don't need this any more
+            } else if (ajax) {
+                HP_add_listener('window', 'beforeunload', HP_send_results);
             }
-       }
+        }
+    };
 
-    } // end function onunload
+    /**
+     * get_flag
+     *
+     * @param integer evt on of this.EVENT_xxx constants
+     * @return xxx
+     */
+    this.get_flag = function (evt) {
+        switch (evt) {
+            case this.EVENT_SETVALUES:  return this.FLAG_SETVALUES;
+            case this.EVENT_SENDVALUES: return this.FLAG_SENDVALUES;
+            default:                    return this.FLAG_SETANDSEND;
+        }
+    }
+
+    /**
+     * get_ajax
+     *
+     * @param integer evt on of this.EVENT_xxx constants
+     * @return xxx
+     */
+    this.get_ajax = function (evt) {
+        switch (evt) {
+            case this.EVENT_SENDVALUES: return this.ajax;
+            case this.EVENT_COMPLETED:  return this.ajax;
+            case this.EVENT_ABANDONED:  return 0;
+            case this.EVENT_TIMEDOUT:   return 0;
+            default:                    return 1;
+        }
+    }
+
+    /**
+     * send_results_ajax
+     *
+     * @param boolean use_asynchrounous
+     * @return xxx
+     */
+    this.send_results_ajax = function (use_asynchrounous) {
+        // based on http://www.captain.at/howto-ajax-form-post-request.php
+        if (window.HP_xmlhttp===undefined || window.HP_xmlhttp===null) {
+            window.HP_xmlhttp = false;
+            if (window.XMLHttpRequest) { // modern browser (incl. IE7+)
+                HP_xmlhttp = new XMLHttpRequest();
+            } else if (window.ActiveXObject) { // IE
+                try {
+                    HP_xmlhttp = new ActiveXObject("Msxml2.XMLHTTP"); // IE6
+                } catch (e) {
+                    try {
+                        HP_xmlhttp = new ActiveXObject("Microsoft.XMLHTTP"); // IE5
+                    } catch (e) {
+                        HP_xmlhttp = false;
+                    }
+                }
+            }
+        }
+        if (HP_xmlhttp) {
+            var params = new Array();
+            var i_max = this.form.elements.length;
+            for (var i=0; i<i_max; i++) {
+                var obj = this.form.elements[i];
+                if (! obj.name) {
+                    continue;
+                }
+                var value = this.getFormElementValue(obj);
+                if (! value) {
+                    continue;
+                }
+                params.push(obj.name + '=' + escape(value)); // encodeURI
+            }
+            if (use_asynchrounous) {
+                HP_xmlhttp.onreadystatechange = HP_onreadystatechange;
+            }
+            HP_xmlhttp.open(this.form.method, this.form.action, use_asynchrounous);
+            HP_xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            HP_xmlhttp.send(params.join('&'));
+        }
+    }
 
     /**
      * getFormElementValue
@@ -368,19 +425,19 @@ function hpQuizAttempt() {
     this.getFormElementValue = function (obj) {
         var v = ''; // value
         var t = obj.type;
-		if (t=='text' || t=='textarea' || t=='password' || t=='hidden') {
-			v = obj.value;
+        if (t=='text' || t=='textarea' || t=='password' || t=='hidden') {
+            v = obj.value;
         } else if (t=='radio' || t=='checkbox') {
-			if (obj.checked) {
+            if (obj.checked) {
                 v = obj.value;
             }
         } else if (t=='select-one' || t=='select-multiple') {
-			var i_max = obj.options.length;
-			for (var i=0; i<i_max; i++) {
-				if (obj.options[i].selected) {
-					v += (v=='' ? '' : ',') + obj.options[i].value;
-				}
-			}
+            var i_max = obj.options.length;
+            for (var i=0; i<i_max; i++) {
+                if (obj.options[i].selected) {
+                    v += (v=='' ? '' : ',') + obj.options[i].value;
+                }
+            }
         } else if (t=='button' || t=='reset' || t=='submit') {
             // do nothing
         } else {
@@ -393,7 +450,7 @@ function hpQuizAttempt() {
             }
         }
         return v;
-    }
+    };
 
     /**
      * getTimeString
@@ -418,7 +475,7 @@ function hpQuizAttempt() {
             s += pad(parseInt(x/60), 2) + pad(x - (parseInt(x/60)*60), 2);
         }
         return s;
-    }
+    };
 
     /**
      * findForm
@@ -429,15 +486,70 @@ function hpQuizAttempt() {
      */
     this.findForm = function (id, w) {
         var f = w.document.forms[id];
-        if (! f) {
-            var i_max = (w.frames ? w.frames.length : 0);
-            for (var i=0; i<i_max; i++) {
-                f = this.findForm(id, w.frames[i]);
-                if (f) break;
+        if (f) {
+            return f;
+        }
+        var i_max = (w.frames ? w.frames.length : 0);
+        for (var i=0; i<i_max; i++) {
+            f = this.findForm(id, w.frames[i]);
+            if (f) {
+                return f;
             }
         }
-        return f;
-    }
+        return null; // shouldn't happen !!
+    };
+
+    /**
+     * end_of_quiz
+     *
+     * @param integer evt (optional, default=null)
+     * @return boolean TRUE if (current) evt is end-of-quiz event; otherwise FALSE
+     */
+    this.end_of_quiz = function (evt) {
+        if (evt==null) {
+            return (this.form==null || this.evt==this.EVENT_COMPLETED || this.evt==this.EVENT_SENDVALUES);
+        }
+        return (evt==this.EVENT_ABANDONED || evt==this.EVENT_TIMEDOUT || evt==this.EVENT_COMPLETED || evt==this.EVENT_SETVALUES || evt==this.EVENT_SENDVALUES);
+    };
+
+    /**
+     * navigation_event
+     *
+     * @param integer evt (optional, default=null)
+     * @return boolean TRUE if (current) evt is navigation event; otherwise FALSE
+     */
+    this.navigation_event = function (evt) {
+        if (evt==null) {
+            evt = this.evt;
+        }
+        return (evt==this.EVENT_BEFOREUNLOAD || evt==this.EVENT_PAGEHIDE || evt==this.EVENT_UNLOAD);
+    };
+
+    /**
+     * quiz_button_event
+     *
+     * @param integer evt (optional, default=null)
+     * @return boolean TRUE if (current) evt is quiz-button event; otherwise FALSE
+     */
+    this.quiz_button_event = function (evt) {
+        if (evt==null) {
+            evt = this.evt;
+        }
+        return (evt==this.EVENT_CHECK || evt==this.EVENT_HINT || evt==this.EVENT_CLUE || evt==this.EVENT_SHOW || evt==this.EVENT_EMPTY);
+    };
+
+    /**
+     * quiz_input_event
+     *
+     * @param integer evt (optional, default=null)
+     * @return boolean TRUE if (current) evt is quiz-input event; otherwise FALSE
+     */
+    this.quiz_input_event = function (evt) {
+        if (evt==null) {
+            evt = this.evt;
+        }
+        return (evt==this.EVENT_FOCUS || evt==this.EVENT_KEYDOWN || evt==this.EVENT_MOUSEDOWN);
+    };
 }
 
 /**
@@ -447,24 +559,24 @@ function hpQuizAttempt() {
  */
 function HP_onreadystatechange() {
     // http://www.webdeveloper.com/forum/showthread.php?t=108334
-    if (! window.HP_httpRequest) {
+    if (! window.HP_xmlhttp) {
         return false;
     }
-    if (HP_httpRequest.readyState==4) {
-        switch (HP_httpRequest.status) {
+    if (HP_xmlhttp.readyState==4) {
+        switch (HP_xmlhttp.status) {
             case 200:
                 // we do not expect to get any real content on this channel
                 // it is probably an error message from the server, so display it
-                document.write(HP_httpRequest.responseText);
+                document.write(HP_xmlhttp.responseText);
                 document.close();
                 break;
             case 204:
                 // the server has fulfilled the request
-                // we can unset the HP_httpRequest object
-                window.HP_httpRequest = null;
+                // we can unset the HP_xmlhttp object
+                window.HP_xmlhttp = null;
                 break;
             default:
-                // alert('Unexpected httpRequest.status: '+HP_httpRequest.status);
+                // alert('Unexpected httpRequest.status: '+HP_xmlhttp.status);
         }
     }
 }
@@ -512,7 +624,7 @@ function hpQuestion() {
             }
         }
     }
-}
+};
 
 /**
  * hpXML
@@ -547,7 +659,7 @@ function hpXML() {
         this.xml += '</fields></hpjsresult>\n';
         return this.xml;
     }
-}
+};
 
 /**
  * hpField
@@ -625,7 +737,258 @@ function hpField(name, value) {
         }
         return s_out;
     }
+};
+
+///////////////////////////////////////////
+// cross-platform/device event API
+///////////////////////////////////////////
+
+/**
+ * HP_fix_function
+ *
+ * @param  mixed fnc : the function (object) or code (string)
+ * @return function
+ */
+function HP_fix_function(fnc) {
+    if (typeof(fnc)=='function') {
+        return fnc;
+    } else {
+        return new Function('event', fnc);
+    }
 }
+
+/**
+ * HP_fix_event
+ *
+ * @param  string evt : the name of the event (without leading 'on')
+ * @param  object obj : the destination object for evt
+ * @return array evts : names of events which obj can handle
+ */
+function HP_fix_event(evt, obj) {
+    var i = 0;
+    var evts = new Array();
+
+    switch (evt) {
+        case 'click'      : if ('ontap'        in obj) evts[i++] = 'tap';        break;
+        case 'mousedown'  : if ('ontouchstart' in obj) evts[i++] = 'touchstart'; break;
+        case 'mousemove'  : if ('ontouchmove'  in obj) evts[i++] = 'touchmove';  break;
+        case 'mouseup'    : if ('ontouchend'   in obj) evts[i++] = 'touchend';   break;
+        case 'tap'        : if ('onclick'      in obj) evts[i++] = 'click';      break;
+        case 'touchend'   : if ('onmouseup'    in obj) evts[i++] = 'mouseup';    break;
+        case 'touchmove'  : if ('onmousemove'  in obj) evts[i++] = 'mousemove';  break;
+        case 'touchstart' : if ('onmousedown'  in obj) evts[i++] = 'mousedown';  break;
+    }
+
+    var onevent = 'on' + evt;
+    if (onevent in obj) {
+        evts[i++] = evt;
+    }
+
+    return evts;
+}
+
+/**
+ * HP_add_listener
+ *
+ * @param  object obj : an HTML element
+ * @param  string evt : the name of the event (without leading 'on')
+ * @param  string fnc : the name of the event handler funtion
+ * @param  boolean useCapture (optional, default = false)
+ * @return void, but may add event handler to DOM
+ */
+function HP_add_listener(obj, evt, fnc, useCapture) {
+
+    // convert fnc to Function, if necessary
+    fnc = HP_fix_function(fnc);
+
+    // convert mouse <=> touch events
+    var evts = HP_fix_event(evt, obj);
+
+    // add event handler(s)
+    var i_max = evts.length;
+    for (var i=0; i<i_max; i++) {
+        evt = evts[i];
+
+        // transfer object's old event handler (if any)
+        var onevent = 'on' + evt;
+        if (obj[onevent]) {
+            var old_fnc = obj[onevent];
+            obj[onevent] = null;
+            HP_add_listener(obj, evt, old_fnc, useCapture);
+        }
+
+        // add new event handler
+        if (obj.addEventListener) {
+            obj.addEventListener(evt, fnc, (useCapture ? true : false));
+        } else if (obj.attachEvent) {
+            obj.attachEvent(onevent, fnc);
+        } else { // old browser NS4, IE5 ...
+            if (! obj.evts) {
+                obj.evts = new Array();
+            }
+            if (obj.evts && ! obj.evts[onevent]) {
+                obj.evts[onevent] = new Array();
+            }
+            if (obj.evts && obj.evts[onevent] && ! obj.evts[onevent]) {
+                obj.evts[onevent][obj.evts[onevent].length] = fnc;
+                obj[onevent] = new Function('HP_handle_event(this, \"'+onevent+'\")');
+            }
+        }
+    }
+}
+
+/**
+ * HP_remove_listener
+ *
+ * @param  object obj : an HTML element
+ * @param  string evt : the name of the event (without leading 'on')
+ * @param  string fnc : the name of the event handler funtion
+ * @param  boolean useCapture (optional, default = false)
+ * @return void, but may remove event handler to DOM
+ */
+function HP_remove_listener(obj, evt, fnc, useCapture) {
+
+    // convert fnc to Function, if necessary
+    fnc = HP_fix_function(fnc);
+
+    // convert mouse <=> touch events
+    var evts = HP_fix_event(evt, obj);
+
+    // remove event handler(s)
+    var i_max = evts.length;
+    for (var i=0; i<i_max; i++) {
+        evt = evts[i];
+
+        var onevent = 'on' + evt;
+        if (obj.removeEventListener) {
+            obj.removeEventListener(evt, fnc, (useCapture ? true : false));
+        } else if (obj.attachEvent) {
+            obj.detachEvent(onevent, fnc);
+        } else if (obj.evts && obj.evts[onevent]) {
+            var i_max = obj.evts[onevent].length;
+            for (var i=(i_max - 1); i>=0; i--) {
+                if (obj.evts[onevent][i]==fnc) {
+                    obj.evts[onevent].splice(i, 1);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * HP_handle_event
+ *
+ * @param  object obj : an HTML element
+ * @param  string onevent : the name of the event
+ * @return void, but may execute event handler
+ */
+function HP_handle_event(obj, onevent) {
+    if (obj.evts[onevent]) {
+        var i_max = obj.evts[onevent].length
+        for (var i=0; i<i_max; i++) {
+            obj.evts[onevent][i]();
+        }
+    }
+}
+
+/**
+ * HP_disable_event
+ *
+ * @param  object evt : an javascript event object
+ * @return may return false (older browsers)
+ */
+function HP_disable_event(evt) {
+    if (evt==null) {
+        evt = window.event;
+    }
+    if (evt.preventDefault) {
+        evt.preventDefault();
+    } else { // IE <= 8
+        evt.returnValue = false;
+    }
+    return false;
+}
+
+///////////////////////////////////////////
+// handle quiz events and send results
+///////////////////////////////////////////
+
+/**
+ * HP_send_results
+ *
+ * @param integer evt one of the HP.EVENT_xxx contants
+ * @return boolean
+ */
+function HP_send_results(evt) {
+    if (evt==null || window.HP==null) {
+        return ''; // shouldn't happen !!
+    }
+
+    // extract and convert event type, if necessary
+    if (typeof(evt)=='object') {
+        evt = (evt.type ? evt.type.toUpperCase() : '');
+        evt = (HP['EVENT_' + evt] || HP.EVENT_EMPTY);
+    }
+
+    // default status
+    var status = HP.STATUS_NONE;
+
+    // default action is not to send results
+    var send_results = false;
+
+    switch (true) {
+
+        case HP.end_of_quiz():
+            // quiz is already finished
+            break;
+
+        case HP.end_of_quiz(evt):
+            // quiz has just finished
+            send_results = true;
+            switch (evt) {
+                case HP.EVENT_TIMEDOUT:   status = HP.STATUS_TIMEDOUT;  break;
+                case HP.EVENT_ABANDONED:  status = HP.STATUS_ABANDONED; break;
+                case HP.EVENT_COMPLETED:  status = HP.STATUS_COMPLETED; break;
+                case HP.EVENT_SETVALUES:  status = HP.STATUS_COMPLETED; break;
+                case HP.EVENT_SENDVALUES: status = HP.STATUS_COMPLETED; break;
+            }
+            break;
+
+        case HP.navigation_event(evt) && (HP.quiz_input_event() || HP.quiz_button_event()):
+            // navigation event, following a button or input event
+            // we need to set status to ABANDONED, because this may be our last chance
+            send_results = true;
+            status = HP.STATUS_ABANDONED;
+            break;
+
+        case (HP.quiz_input_event(evt) || HP.quiz_button_event(evt)) && HP.navigation_event():
+            // button or input event, following a navigation event
+            // we need to set status to INPROGRESS, in case it was set to ABANDONED above
+            send_results = true;
+            status = HP.STATUS_INPROGRESS;
+            break;
+
+        case HP.sendallclicks && HP.quiz_button_event(evt):
+            // send all button events for the "click report"
+            send_results = true;
+            status = HP.STATUS_INPROGRESS;
+            break;
+    }
+
+    if (send_results) {
+        HP.send_results(evt, status);
+    }
+
+    if (evt==HP.EVENT_BEFOREUNLOAD && window.HP_beforeunload) {
+        return HP_beforeunload();
+    } else {
+        return evt;
+    }
+};
+
+///////////////////////////////////////////
+// DOM extraction utilities
+///////////////////////////////////////////
 
 /**
  * GetTextFromNodeN
@@ -648,7 +1011,7 @@ function GetTextFromNodeN(obj, className, n) {
         }
     }
     return txt;
-}
+};
 
 /**
  * GetNodesByClassName
@@ -670,7 +1033,7 @@ function GetNodesByClassName(obj, className) {
         }
     }
     return nodes;
-}
+};
 
 /**
  * GetTextFromNode
@@ -692,8 +1055,11 @@ function GetTextFromNode(obj) {
         }
     }
     return txt;
-}
+};
+
+///////////////////////////////////////////
 // object / array  manipulation utilities
+///////////////////////////////////////////
 
 /**
  * print_object
@@ -742,7 +1108,7 @@ function print_object(obj, name, tabs) {
             s += 'unrecognized object type:' + t + '\n';
     }
     return s;
-}
+};
 
 /**
  * print_object_keys
@@ -759,7 +1125,7 @@ function print_object_keys(obj, flag) {
         s += ', ' + x;
     }
     return s.substring(2);
-}
+};
 
 /**
  * object_keys
@@ -833,7 +1199,7 @@ function object_keys(obj, flag) {
 
     } // end if obj
     return keys;
-}
+};
 
 /**
  * object_destroy
@@ -852,8 +1218,11 @@ function object_destroy(obj) {
         }
         obj = null;
     }
-}
+};
+
+///////////////////////////////////////////
 // string formatting utilities
+///////////////////////////////////////////
 
 /**
  * pad
@@ -868,7 +1237,7 @@ function pad(i, l) {
         s = '0' + s;
     }
     return s;
-}
+};
 
 /**
  * trim
@@ -878,11 +1247,8 @@ function pad(i, l) {
  */
 function trim(s) {
     switch (typeof(s)) {
-        case 'string':
-            return s.replace(new RegExp('^\\s+|\\s+$', 'g'), '');
-        case 'undefined':
-            return '';
-        default:
-            return s;
+        case 'string'   : return s.replace(new RegExp('^\\s+|\\s+$', 'g'), '');
+        case 'undefined': return '';
+        default         : return s;
     }
-}
+};

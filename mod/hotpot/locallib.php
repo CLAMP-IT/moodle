@@ -42,18 +42,23 @@ require_once($CFG->libdir . '/gradelib.php');   // we use some rounding and comp
  */
 class hotpot {
 
-    /**
+    /**#@+
      * internal codes to indicate what text is to be used
      * for the name and introduction of a HotPot instance
+     *
+     * @var integer
      */
     const TEXTSOURCE_FILE           = 0; // was TEXTSOURCE_QUIZ
     const TEXTSOURCE_FILENAME       = 1;
     const TEXTSOURCE_FILEPATH       = 2;
     const TEXTSOURCE_SPECIFIC       = 3;
+    /**#@-*/
 
-    /**
+    /**#@+
      * database codes to indicate what navigation aids are used
      * when the quiz apears in the browser
+     *
+     * @var integer
      */
     const NAVIGATION_NONE           = 0; // was 6
     const NAVIGATION_MOODLE         = 1; // was NAVIGATION_BAR
@@ -61,74 +66,134 @@ class hotpot {
     const NAVIGATION_EMBED          = 3; // was NAVIGATION_IFRAME
     const NAVIGATION_ORIGINAL       = 4;
     const NAVIGATION_TOPBAR         = 5; // was NAVIGATION_GIVEUP but that was replaced by stopbutton
+    /**#@-*/
 
-    /**
+    /**#@+
      * database codes to indicate the grading method for a HotPot instance
+     *
+     * @var integer
      */
     const GRADEMETHOD_HIGHEST       = 1;
     const GRADEMETHOD_AVERAGE       = 2;
     const GRADEMETHOD_FIRST         = 3;
     const GRADEMETHOD_LAST          = 4;
+    /**#@-*/
 
-    /**
+    /**#@+
      * database codes to indicate the source/config location for a HotPot instance
+     *
+     * @var integer
      */
     const LOCATION_COURSEFILES      = 0;
     const LOCATION_SITEFILES        = 1;
     const LOCATION_WWW              = 2;
+    /**#@-*/
 
-    /**
+    /**#@+
      * bit-masks used to extract bits from the hotpot "title" setting
+     *
+     * @var integer
      */
     const TITLE_SOURCE              = 0x03; // 1st - 2nd bits
     const TITLE_UNITNAME            = 0x04; // 3rd bit
     const TITLE_SORTORDER           = 0x08; // 4th bit
+    /**#@-*/
 
-    /**
+    /**#@+
      * database codes for the following time fields
      *  - timelimit : the maximum length of one attempt
      *  - delay3 : the delay after end of quiz before control returns to Moodle
+     *
+     * @var integer
      */
     const TIME_SPECIFIC             = 0;
     const TIME_TEMPLATE             = -1;
     const TIME_AFTEROK              = -2;
     const TIME_DISABLE              = -3;
+    /**#@-*/
 
+    /**#@+
+     * internal codes to indicate whether a HotPot can resume or restart
+     *
+     * @var integer
+     */
     const CONTINUE_RESUMEQUIZ       = 1;
     const CONTINUE_RESTARTQUIZ      = 2;
     const CONTINUE_RESTARTUNIT      = 3;
     const CONTINUE_ABANDONUNIT      = 4;
+    /**#@-*/
 
+    /**#@+
+     * internal codes to refer to the HTTP return code
+     *
+     * @var integer
+     */
     const HTTP_NO_RESPONSE          = 0; // was false
     const HTTP_204_RESPONSE         = 1; // was true
+    /**#@-*/
 
+    /**#@+
+     * database code to indicate current state of HotPot attempt
+     *
+     * @var integer
+     */
     const STATUS_INPROGRESS         = 1;
     const STATUS_TIMEDOUT           = 2;
     const STATUS_ABANDONED          = 3;
     const STATUS_COMPLETED          = 4;
     const STATUS_PAUSED             = 5;
+    /**#@-*/
 
+    /**#@+
+     * database code to indicate the kind of feedback link, if any
+     *
+     * @var integer
+     */
     const FEEDBACK_NONE             = 0;
     const FEEDBACK_WEBPAGE          = 1;
     const FEEDBACK_FORMMAIL         = 2;
     const FEEDBACK_MOODLEFORUM      = 3;
     const FEEDBACK_MOODLEMESSAGING  = 4;
+    /**#@-*/
 
+    /**#@+
+     * database code to indicate the kind of STOP button
+     *
+     * @var integer
+     */
     const STOPBUTTON_NONE           = 0;
     const STOPBUTTON_LANGPACK       = 1;
     const STOPBUTTON_SPECIFIC       = 2;
+    /**#@-*/
 
+    /**#@+
+     * database code to indicate the kind of previous/next activity
+     *
+     * @var integer
+     */
     const ACTIVITY_NONE             = 0;
     const ACTIVITY_COURSE_ANY       = -1;
     const ACTIVITY_SECTION_ANY      = -2;
     const ACTIVITY_COURSE_HOTPOT    = -3;
     const ACTIVITY_SECTION_HOTPOT   = -4;
+    /**#@-*/
 
+    /**#@+
+     * database code to indicate options on the entry page
+     *
+     * @var integer
+     */
     const ENTRYOPTIONS_TITLE        = 0x01;
     const ENTRYOPTIONS_GRADING      = 0x02;
     const ENTRYOPTIONS_DATES        = 0x04;
     const ENTRYOPTIONS_ATTEMPTS     = 0x08;
+    /**#@-*/
 
+    /**#@+
+     * database code to indicate options on the exit page
+     *
+     * @var integer
+     */
     const EXITOPTIONS_TITLE         = 0x01;
     const EXITOPTIONS_ENCOURAGEMENT = 0x02;
     const EXITOPTIONS_ATTEMPTSCORE  = 0x04;
@@ -137,28 +202,41 @@ class hotpot {
     const EXITOPTIONS_INDEX         = 0x20;
     const EXITOPTIONS_COURSE        = 0x40;
     const EXITOPTIONS_GRADES        = 0x80;
+    /**#@-*/
 
+    /**#@+
+     * database code to indicate which CSS styles should be overridden
+     *
+     * @var integer
+     */
     const BODYSTYLES_BACKGROUND     = 0x01;
     const BODYSTYLES_COLOR          = 0x02;
     const BODYSTYLES_FONT           = 0x04;
     const BODYSTYLES_MARGIN         = 0x08;
+    /**#@-*/
 
-    /**
+    /**#@+
      * three sets of 6 bits define the times at which a quiz may be reviewed
      * e.g. 0x3f = 0011 1111 (i.e. right most 6 bits)
+     *
+     * @var integer
      */
     const REVIEW_DURINGATTEMPT = 0x0003f; // 1st set of 6 bits : during attempt
     const REVIEW_AFTERATTEMPT  = 0x00fc0; // 2nd set of 6 bits : after attempt (but before quiz closes)
     const REVIEW_AFTERCLOSE    = 0x3f000; // 3rd set of 6 bits : after the quiz closes
+    /**#@-*/
 
-    /**
+    /**#@+
      * within each group of 6 bits we determine what should be shown
      * e.g. 0x1041 = 00-0001 0000-01 00-0001 (i.e. 3 sets of 6 bits)
+     *
+     * @var integer
      */
     const REVIEW_RESPONSES = 0x1041; // 1*0x1041 : 1st bit of each 6-bit set : Show student responses
     const REVIEW_ANSWERS   = 0x2082; // 2*0x1041 : 2nd bit of each 6-bit set : Show correct answers
     const REVIEW_SCORES    = 0x4104; // 3*0x1041 : 3rd bit of each 6-bit set : Show scores
     const REVIEW_FEEDBACK  = 0x8208; // 4*0x1041 : 4th bit of each 6-bit set : Show feedback
+    /**#@-*/
 
     /** @var stdclass course module record */
     public $cm;
@@ -241,6 +319,9 @@ class hotpot {
     /** @var string the string to be displayed on the stop button */
     public $stoptext;
 
+    /** @var boolean flag to indicate copy-paste should be allowed or not */
+    public $allowpaste;
+
     /** @var boolean flag to indicate quiz content should be run processed by Moodle filters */
     public $usefilters;
 
@@ -304,6 +385,12 @@ class hotpot {
     /** @var int timestamp of when the module was created */
     public $timecreated;
 
+    /**#@+ @var int completion settings */
+    public $completionmingrade;
+    public $completionpass;
+    public $completioncompleted;
+    /**#@-*/
+
     /** @var int timestamp of when this object was created */
     public $time;
 
@@ -364,7 +451,7 @@ class hotpot {
      * @param stdclass $context  The context of the hotpot instance
      * @param stdclass $attempt  attempt data from the {hotpot_attempts} table
      */
-    private function __construct(stdclass $dbrecord, stdclass $cm, stdclass $course, stdclass $context=null, stdclass $attempt=null) {
+    private function __construct($dbrecord, $cm, $course, $context=null, $attempt=null) {
         foreach ($dbrecord as $field => $value) {
             if (property_exists('hotpot', $field)) {
                 $this->$field = $value;
@@ -397,7 +484,7 @@ class hotpot {
      * @param stdclass $course a row from the course table
      * @return hotpot the new hotpot object
      */
-    static public function create(stdclass $dbrecord, stdclass $cm, stdclass $course, stdclass $context=null, stdclass $attempt=null) {
+    static public function create($dbrecord, $cm, $course, $context=null, $attempt=null) {
         return new hotpot($dbrecord, $cm, $course, $context, $attempt);
     }
 
@@ -417,14 +504,14 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_navigations_list() {
+    static public function available_navigations_list() {
         return array (
-            self::NAVIGATION_MOODLE   => get_string('navigation_moodle', 'hotpot'),
-            self::NAVIGATION_TOPBAR   => get_string('navigation_topbar', 'hotpot'),
-            self::NAVIGATION_FRAME    => get_string('navigation_frame', 'hotpot'),
-            self::NAVIGATION_EMBED    => get_string('navigation_embed', 'hotpot'),
-            self::NAVIGATION_ORIGINAL => get_string('navigation_original', 'hotpot'),
-            self::NAVIGATION_NONE     => get_string('navigation_none', 'hotpot')
+            self::NAVIGATION_MOODLE   => get_string('navigation_moodle', 'mod_hotpot'),
+            self::NAVIGATION_TOPBAR   => get_string('navigation_topbar', 'mod_hotpot'),
+            self::NAVIGATION_FRAME    => get_string('navigation_frame', 'mod_hotpot'),
+            self::NAVIGATION_EMBED    => get_string('navigation_embed', 'mod_hotpot'),
+            self::NAVIGATION_ORIGINAL => get_string('navigation_original', 'mod_hotpot'),
+            self::NAVIGATION_NONE     => get_string('navigation_none', 'mod_hotpot')
         );
     }
 
@@ -433,16 +520,16 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_feedbacks_list() {
+    static public function available_feedbacks_list() {
         global $CFG;
         $list = array (
             self::FEEDBACK_NONE        => get_string('none'),
-            self::FEEDBACK_WEBPAGE     => get_string('feedbackwebpage',  'hotpot'),
-            self::FEEDBACK_FORMMAIL    => get_string('feedbackformmail', 'hotpot'),
-            self::FEEDBACK_MOODLEFORUM => get_string('feedbackmoodleforum', 'hotpot')
+            self::FEEDBACK_WEBPAGE     => get_string('feedbackwebpage',  'mod_hotpot'),
+            self::FEEDBACK_FORMMAIL    => get_string('feedbackformmail', 'mod_hotpot'),
+            self::FEEDBACK_MOODLEFORUM => get_string('feedbackmoodleforum', 'mod_hotpot')
         );
         if ($CFG->messaging) {
-            $list[self::FEEDBACK_MOODLEMESSAGING] = get_string('feedbackmoodlemessaging', 'hotpot');
+            $list[self::FEEDBACK_MOODLEMESSAGING] = get_string('feedbackmoodlemessaging', 'mod_hotpot');
         }
         return $list;
     }
@@ -452,7 +539,7 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_mediafilters_list() {
+    static public function available_mediafilters_list() {
         $plugins = get_list_of_plugins('mod/hotpot/mediafilter'); // sorted
 
         if (in_array('moodle', $plugins)) {
@@ -464,7 +551,7 @@ class hotpot {
         // define element type for list of mediafilters (select, radio, checkbox)
         $options = array('' => get_string('none'));
         foreach ($plugins as $plugin) {
-            $options[$plugin] = get_string('mediafilter_'.$plugin, 'hotpot');
+            $options[$plugin] = get_string('mediafilter_'.$plugin, 'mod_hotpot');
         }
         return $options;
     }
@@ -474,10 +561,10 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_outputformats_list($sourcetype) {
+    static public function available_outputformats_list($sourcetype) {
 
         $outputformats = array(
-            '0' => get_string('outputformat_best', 'hotpot')
+            '0' => get_string('outputformat_best', 'mod_hotpot')
         );
         if ($sourcetype) {
             $classes = self::get_classes('hotpotattempt', 'renderer.php', 'mod_', '_renderer');
@@ -487,7 +574,7 @@ class hotpot {
                 if (in_array($sourcetype, $sourcetypes)) {
                     // strip prefix, "mod_hotpot_attempt_", and suffix, "_renderer"
                     $outputformat = substr($class, 19, -9);
-                    $outputformats[$outputformat] = get_string('outputformat_'.$outputformat, 'hotpot');
+                    $outputformats[$outputformat] = get_string('outputformat_'.$outputformat, 'mod_hotpot');
                 }
             }
             // remove "best" if there is only one compatible output format
@@ -503,9 +590,9 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_attemptlimits_list() {
+    static public function available_attemptlimits_list() {
         $options = array(
-            0 => get_string('attemptsunlimited', 'hotpot'),
+            0 => get_string('attemptsunlimited', 'mod_hotpot'),
         );
         for ($i=1; $i<=10; $i++) {
             $options[$i] = "$i";
@@ -518,12 +605,12 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_grademethods_list() {
+    static public function available_grademethods_list() {
         return array (
-            self::GRADEMETHOD_HIGHEST => get_string('highestscore', 'hotpot'),
-            self::GRADEMETHOD_AVERAGE => get_string('averagescore', 'hotpot'),
-            self::GRADEMETHOD_FIRST   => get_string('firstattempt', 'hotpot'),
-            self::GRADEMETHOD_LAST    => get_string('lastattempt', 'hotpot'),
+            self::GRADEMETHOD_HIGHEST => get_string('highestscore', 'mod_hotpot'),
+            self::GRADEMETHOD_AVERAGE => get_string('averagescore', 'mod_hotpot'),
+            self::GRADEMETHOD_FIRST   => get_string('firstattempt', 'mod_hotpot'),
+            self::GRADEMETHOD_LAST    => get_string('lastattempt', 'mod_hotpot'),
         );
     }
 
@@ -532,12 +619,12 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_statuses_list() {
+    static public function available_statuses_list() {
         return array (
-            self::STATUS_INPROGRESS => get_string('inprogress', 'hotpot'),
-            self::STATUS_TIMEDOUT   => get_string('timedout', 'hotpot'),
-            self::STATUS_ABANDONED  => get_string('abandoned', 'hotpot'),
-            self::STATUS_COMPLETED  => get_string('completed', 'hotpot')
+            self::STATUS_INPROGRESS => get_string('inprogress', 'mod_hotpot'),
+            self::STATUS_TIMEDOUT   => get_string('timedout', 'mod_hotpot'),
+            self::STATUS_ABANDONED  => get_string('abandoned', 'mod_hotpot'),
+            self::STATUS_COMPLETED  => get_string('completed', 'mod_hotpot')
         );
     }
 
@@ -546,12 +633,12 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_namesources_list() {
+    static public function available_namesources_list() {
         return array (
-            self::TEXTSOURCE_FILE     => get_string('textsourcefile', 'hotpot'),
-            self::TEXTSOURCE_FILENAME => get_string('textsourcefilename', 'hotpot'),
-            self::TEXTSOURCE_FILEPATH => get_string('textsourcefilepath', 'hotpot'),
-            self::TEXTSOURCE_SPECIFIC => get_string('textsourcespecific', 'hotpot')
+            self::TEXTSOURCE_FILE     => get_string('textsourcefile', 'mod_hotpot'),
+            self::TEXTSOURCE_FILENAME => get_string('textsourcefilename', 'mod_hotpot'),
+            self::TEXTSOURCE_FILEPATH => get_string('textsourcefilepath', 'mod_hotpot'),
+            self::TEXTSOURCE_SPECIFIC => get_string('textsourcespecific', 'mod_hotpot')
         );
     }
 
@@ -560,12 +647,12 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_titles_list() {
+    static public function available_titles_list() {
         return array (
-            self::TEXTSOURCE_SPECIFIC => get_string('hotpotname', 'hotpot'),
-            self::TEXTSOURCE_FILE     => get_string('textsourcefile', 'hotpot'),
-            self::TEXTSOURCE_FILENAME => get_string('textsourcefilename', 'hotpot'),
-            self::TEXTSOURCE_FILEPATH => get_string('textsourcefilepath', 'hotpot')
+            self::TEXTSOURCE_SPECIFIC => get_string('hotpotname', 'mod_hotpot'),
+            self::TEXTSOURCE_FILE     => get_string('textsourcefile', 'mod_hotpot'),
+            self::TEXTSOURCE_FILENAME => get_string('textsourcefilename', 'mod_hotpot'),
+            self::TEXTSOURCE_FILEPATH => get_string('textsourcefilepath', 'mod_hotpot')
         );
     }
 
@@ -574,7 +661,7 @@ class hotpot {
      *
      * @return array
      */
-    public static function available_gradeweightings_list() {
+    static public function available_gradeweightings_list() {
         $options = array();
         for ($i=100; $i>=1; $i--) {
             $options[$i] = $i;
@@ -589,7 +676,7 @@ class hotpot {
      * @param stored_file $sourcefile the file that has just been uploaded and stored
      * @return string the type of the source file (e.g. hp_6_jcloze_xml)
      */
-    public static function get_sourcetype($sourcefile) {
+    static public function get_sourcetype($sourcefile) {
         // include all the hotpot_source classes
         $classes = self::get_classes('hotpotsource');
 
@@ -617,7 +704,7 @@ class hotpot {
      *        array('flagged', 'question')
      *    )
      */
-    public static function get_js_module(array $requires = null, array $strings = null) {
+    static public function get_js_module(array $requires = null, array $strings = null) {
         return array(
             'name' => 'mod_hotpot',
             'fullpath' => '/mod/hotpot/module.js',
@@ -632,12 +719,12 @@ class hotpot {
      * @param xxx $info
      * @return xxx
      */
-    public static function get_version_info($info)  {
+    static public function get_version_info($info)  {
         global $CFG;
 
         static $module = null;
         if (is_null($module)) {
-            $module = new stdClass();
+            $plugin = new stdClass();
             require($CFG->dirroot.'/mod/hotpot/version.php');
         }
 
@@ -653,7 +740,7 @@ class hotpot {
     *
     * @param xxx $classname
     */
-   public static function load_mediafilter_filter($classname)  {
+   static public function load_mediafilter_filter($classname)  {
         global $CFG;
         $path = $CFG->dirroot.'/mod/hotpot/mediafilter/'.$classname.'/class.php';
 
@@ -672,7 +759,7 @@ class hotpot {
      * @param xxx $context
      * @return xxx
      */
-    public static function sourcefile_options() {
+    static public function sourcefile_options() {
         return array('subdirs' => 1, 'maxbytes' => 0, 'maxfiles' => -1);
     }
 
@@ -682,7 +769,7 @@ class hotpot {
      * @param xxx $context
      * @return xxx
      */
-    public static function text_editors_options($context)  {
+    static public function text_editors_options($context)  {
         return array('subdirs' => 1, 'maxbytes' => 0, 'maxfiles' => EDITOR_UNLIMITED_FILES,
                      'changeformat' => 1, 'context' => $context, 'noclean' => 1, 'trusttext' => 0);
     }
@@ -692,7 +779,7 @@ class hotpot {
      *
      * @return xxx
      */
-    public static function text_page_types() {
+    static public function text_page_types() {
         return array('entry', 'exit');
     }
 
@@ -702,7 +789,7 @@ class hotpot {
      * @param xxx $type
      * @return xxx
      */
-    public static function text_page_options($type)  {
+    static public function text_page_options($type)  {
         if ($type=='entry') {
             return array(
                 'title'         => self::ENTRYOPTIONS_TITLE,
@@ -727,11 +814,32 @@ class hotpot {
     }
 
     /**
+     * reviewoptions_timesitems
+     *
+     * @return xxx
+     */
+    static public function reviewoptions_times_items() {
+        return array(
+            array( // times
+                'duringattempt' => self::REVIEW_DURINGATTEMPT,
+                'afterattempt'  => self::REVIEW_AFTERATTEMPT,
+                'afterclose'    => self::REVIEW_AFTERCLOSE
+            ),
+            array( // items
+                'responses'     => self::REVIEW_RESPONSES,
+                'answers'       => self::REVIEW_ANSWERS,
+                'scores'        => self::REVIEW_SCORES,
+                'feedback'      => self::REVIEW_FEEDBACK
+            )
+        );
+    }
+
+    /**
      * user_preferences_fields
      *
      * @return array of user_preferences used by the HotPot module
      */
-    public static function user_preferences_fieldnames() {
+    static public function user_preferences_fieldnames() {
         return array(
             // fields used only when adding a new HotPot
             'namesource','entrytextsource','exittextsource','quizchain',
@@ -745,7 +853,7 @@ class hotpot {
             'entrycm','entrygrade','exitcm','exitgrade',
 
             // display
-            'outputformat','navigation','title','stopbutton','stoptext',
+            'outputformat','navigation','title','stopbutton','stoptext','allowpaste',
             'usefilters','useglossary','usemediafilter','studentfeedback','studentfeedbackurl',
 
             // access restrictions
@@ -763,7 +871,7 @@ class hotpot {
      * @param xxx $field_value
      * @return xxx
      */
-    public static function string_ids($field_value, $max_field_length=255)  {
+    static public function string_ids($field_value, $max_field_length=255)  {
         $ids = array();
 
         $strings = explode(',', $field_value);
@@ -803,7 +911,7 @@ class hotpot {
      * @param xxx $str
      * @return xxx
      */
-    public static function string_id($str)  {
+    static public function string_id($str)  {
         global $DB;
 
         if (! isset($str) || ! is_string($str) || trim($str)=='') {
@@ -835,7 +943,7 @@ class hotpot {
      * @param xxx $ids
      * @return xxx
      */
-    public static function get_strings($ids)  {
+    static public function get_strings($ids)  {
         global $DB;
 
         // convert $ids to an array, if necessary
@@ -848,8 +956,8 @@ class hotpot {
         if (empty($ids)) {
             return array();
         } else {
-            list($filter, $params) = $DB->get_in_or_equal($ids);
-            return $DB->get_records_select('hotpot_strings', "id $filter", $params, '', 'id,string');
+            list($select, $params) = $DB->get_in_or_equal($ids);
+            return $DB->get_records_select('hotpot_strings', "id $select", $params, '', 'id,string');
         }
     }
 
@@ -1029,7 +1137,7 @@ class hotpot {
      *
      * @return string
      */
-    public static function format_status($status) {
+    static public function format_status($status) {
         $options = self::available_statuses_list();
         if (array_key_exists($status, $options)) {
             return $options[$status];
@@ -1046,7 +1154,7 @@ class hotpot {
      * @param string $notime return value if $time==0
      * @return string
      */
-    public static function format_time($time, $format=null, $notime='&nbsp;') {
+    static public function format_time($time, $format=null, $notime='&nbsp;') {
         if ($time>0) {
             return format_time($time, $format);
         } else {
@@ -1061,7 +1169,7 @@ class hotpot {
      * @param string $noscore return value if $record->score is not set
      * @return string
      */
-    function format_score($record, $default='&nbsp;') {
+    static function format_score($record, $default='&nbsp;') {
         if (isset($record->score)) {
             return $record->score;
         } else {
@@ -1250,6 +1358,81 @@ class hotpot {
         }
         return $this->canreviewmyattempts;
     }
+
+    /**
+     * can_reviewattempt
+     *
+     * @param object $attempt (optional, default=null) record from "hotpot_attempts" table
+     * @return integer $reviewoptions currently available for this user at this attempt
+     */
+    function can_reviewhotpot() {
+        if ($this->can_reviewallattempts()) {
+            // teacher can view always review everything
+            return (self::REVIEW_DURINGATTEMPT | self::REVIEW_AFTERATTEMPT | self::REVIEW_AFTERCLOSE);
+        }
+        if ($this->can_reviewmyattempts()) {
+            if ($this->timeclose && $this->timeclose > $this->time) {
+                // quiz is still open
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_DURINGATTEMPT)) {
+                    return $reviewoptions;
+                }
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_AFTERATTEMPT)) {
+                    return $reviewoptions;
+                }
+            } else {
+                // quiz is already closed
+                if ($reviewoptions = $this->reviewoptions & self::REVIEW_AFTERCLOSE) {
+                    return $reviewoptions;
+                }
+            }
+        }
+        return 0; // review not available (to this user)
+    }
+
+    /**
+     * can_reviewattempt
+     *
+     * @param object $attempt (optional, default=null) record from "hotpot_attempts" table
+     * @return integer $reviewoptions currently available for this user at this attempt
+     */
+    function can_reviewattempt($attempt=null) {
+        if ($this->can_reviewattempts()) {
+            if ($attempt===null && isset($this->attempt)) {
+                $attempt = $this->attempt;
+            }
+            if ($attempt) {
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_DURINGATTEMPT)) {
+                    // during attempt
+                    if ($attempt->status==self::STATUS_INPROGRESS) {
+                        return $reviewoptions;
+                    }
+                }
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_AFTERATTEMPT)) {
+                    // after attempt (but before quiz closes)
+                    if ($attempt->status==self::STATUS_COMPLETED) {
+                        return $reviewoptions;
+                    }
+                    if ($attempt->status==self::STATUS_ABANDONED) {
+                        return $reviewoptions;
+                    }
+                    if ($attempt->status==self::STATUS_TIMEDOUT) {
+                        return $reviewoptions;
+                    }
+                    if ($attempt->status==self::STATUS_INPROGRESS) {
+                        return $reviewoptions;
+                    }
+                }
+                if ($reviewoptions = ($this->reviewoptions & self::REVIEW_AFTERCLOSE)) {
+                    // after the quiz closes
+                    if ($this->timeclose < $this->time) {
+                        return $reviewoptions;
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
 
     /**
      * can_view
@@ -1499,7 +1682,7 @@ class hotpot {
             }
 
             // set previous "in progress" attempt(s) to adandoned
-            $select = 'hotpotid=? AND userid=? AND attempt<=? AND status=?';
+            $select = 'hotpotid=? AND userid=? AND attempt<? AND status=?';
             $params = array($this->id, $USER->id, $max_attempt, self::STATUS_INPROGRESS);
             if ($attempts = $DB->get_records_select('hotpot_attempts', $select, $params)) {
                 foreach ($attempts as $attempt) {
@@ -1719,7 +1902,7 @@ class hotpot {
     public function require_isopen() {
         if ($this->timeopen && $this->timeopen > $this->time) {
             // unit/quiz is not yet open
-            return get_string('notavailable', 'hotpot', userdate($this->timeopen));
+            return get_string('notavailable', 'mod_hotpot', userdate($this->timeopen));
         }
         return false;
     }
@@ -1732,7 +1915,7 @@ class hotpot {
     public function require_notclosed() {
         if ($this->timeclose && $this->timeclose < $this->time) {
             // unit/quiz is already closed
-            return get_string('closed', 'hotpot', userdate($this->timeclose));
+            return get_string('closed', 'mod_hotpot', userdate($this->timeclose));
         }
         return false;
     }
@@ -1771,7 +1954,7 @@ class hotpot {
                             'entrygrade' => $this->entrygrade,
                             'entryactivity' => html_writer::tag('a', format_string(urldecode($cm->name)), array('href' => $href))
                         );
-                        return get_string('entrygradewarning', 'hotpot', $a);
+                        return get_string('entrygradewarning', 'mod_hotpot', $a);
                     }
                 }
             }
@@ -1796,7 +1979,7 @@ class hotpot {
             if ($table && $select && ! $DB->record_exists_select($table, $select, $params)) {
                 // user has not viewed or completed this activity yet
                 $a = html_writer::tag('a', format_string(urldecode($cm->name)), array('href' => $href->out()));
-                return get_string('entrycompletionwarning', 'hotpot', $a);
+                return get_string('entrycompletionwarning', 'mod_hotpot', $a);
             }
         }
 
@@ -1878,11 +2061,11 @@ class hotpot {
 
         // maximum number of unit/quiz attempts reached
         if ($shorterror) {
-            return get_string('nomoreattempts', 'hotpot');
+            return get_string('nomoreattempts', 'mod_hotpot');
         } else {
-            $attemptlimitstr = hotpot_textlib('moodle_strtolower', get_string('attemptlimit', 'hotpot'));
+            $attemptlimitstr = hotpot_textlib('moodle_strtolower', get_string('attemptlimit', 'mod_hotpot'));
             $msg = html_writer::tag('b', format_string($this->name))." ($attemptlimitstr = $this->attemptlimit)";
-            return html_writer::tag('p', get_string('nomoreattempts', 'hotpot')).html_writer::tag('p', $msg);
+            return html_writer::tag('p', get_string('nomoreattempts', 'mod_hotpot')).html_writer::tag('p', $msg);
         }
     }
 
@@ -1975,7 +2158,14 @@ class hotpot {
                 continue; // skip labels
             }
             if ($found || $cm->id==$id) {
-                if (coursemodule_visible_for_user($cm)) {
+                if (class_exists('\core_availability\info_module')) {
+                    // Moodle >= 2.7
+                    $is_visible = \core_availability\info_module::is_user_visible($cm);
+                } else {
+                    // Moodle <= 2.6
+                    $is_visible = coursemodule_visible_for_user($cm);
+                }
+                if ($is_visible) {
                     return $cm;
                 }
                 if ($cm->id==$id) {
@@ -2029,5 +2219,19 @@ class hotpot {
             }
         }
         return $this->gradeitem;
+    }
+
+    /**
+     * update_completion_state
+     *
+     * @param object $completion
+     * @return void, but may updated completion status
+     */
+    public function update_completion_state($completion) {
+        if ($this->completionmingrade > 0.0 || $this->completionpass || $this->completioncompleted) {
+            if ($completion->is_enabled($this->cm) && ($this->cm->completion==COMPLETION_TRACKING_AUTOMATIC)) {
+                $completion->update_state($this->cm);
+            }
+        }
     }
 }

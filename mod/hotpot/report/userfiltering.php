@@ -67,10 +67,10 @@ class hotpot_user_filtering extends user_filtering {
             case 'status':
                 return new hotpot_filter_status($fieldname, $advanced, $default);
             case 'duration':
-                $label = get_string('duration', 'hotpot');
+                $label = get_string('duration', 'mod_hotpot');
                 return new hotpot_filter_duration($fieldname, $label, $advanced, $default);
             case 'penalties':
-                $label = get_string('penalties', 'hotpot');
+                $label = get_string('penalties', 'mod_hotpot');
                 return new hotpot_filter_number($fieldname, $label, $advanced, $default);
             case 'score':
                 $label = get_string('score', 'quiz');
@@ -290,7 +290,7 @@ class hotpot_filter_status extends user_filter_select {
      * @param mixed $default option
      */
     function __construct($name, $advanced, $default=null) {
-        $label = get_string($name, 'hotpot');
+        $label = get_string($name, 'mod_hotpot');
         $options = hotpot::available_statuses_list();
         parent::__construct($name, $label, $advanced, '', $options, $default);
     }
@@ -362,9 +362,9 @@ class hotpot_filter_number extends user_filter_select {
      */
     function get_operators() {
         return array(0 => get_string('isanyvalue','filters'),
-                     1 => get_string('islessthan', 'hotpot'),
+                     1 => get_string('islessthan', 'mod_hotpot'),
                      2 => get_string('isequalto','filters'),
-                     3 => get_string('isgreaterthan', 'hotpot'));
+                     3 => get_string('isgreaterthan', 'mod_hotpot'));
     }
 
     /**

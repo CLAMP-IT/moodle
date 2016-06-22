@@ -99,6 +99,20 @@ class mod_hotpot_attempt_hp_6_jmix_renderer extends mod_hotpot_attempt_hp_6_rend
             ."	var obj = document.getElementsByTagName('div');\n"
             ."	if (obj && obj.length) {\n"
             ."		myParentNode = obj[obj.length - 1].parentNode;\n"
+            ."		var css_prefix = new Array('webkit', 'khtml', 'moz', 'ms', 'o', '');\n"
+            ."		for (var i=0; i<css_prefix.length; i++) {\n"
+            ."			if (css_prefix[i]=='') {\n"
+            ."				var userSelect = 'userSelect';\n"
+            ."			} else {\n"
+            ."				var userSelect = css_prefix[i] + 'UserSelect';\n"
+            ."			}\n"
+            ."			if (typeof(myParentNode.style[userSelect]) != 'undefined') {\n"
+            ."				myParentNode.style[userSelect] = 'none';\n"
+            ."				break;\n"
+            ."			}\n"
+            ."		}\n"
+            ."		userSelect = null;\n"
+            ."		css_prefix = null;\n"
             ."	}\n"
             ."}\n"
             ."for (var i=0; i<DropTotal; i++){\n"
@@ -138,8 +152,8 @@ class mod_hotpot_attempt_hp_6_jmix_renderer extends mod_hotpot_attempt_hp_6_rend
             ."		var div = document.createElement('div');\n"
             ."		div.setAttribute('id', 'D' + i);\n"
             ."		div.setAttribute('class', 'CardStyle');\n"
-            ."		div.setAttribute('onmousedown', 'beginDrag(event, ' + i + ')');\n"
-            ."		myParentNode.appendChild(div);\n"
+            ."		div = myParentNode.appendChild(div);\n"
+            ."		HP_add_listener(div, 'mousedown', 'beginDrag(event, ' + i + ')');\n"
             ."	} else {\n"
             ."		document.write('".'<div id="'."D' + i + '".'" class="CardStyle" onmousedown="'."beginDrag(event, ' + i + ')".'"'."></div>');\n"
             ."	}\n"
@@ -166,15 +180,57 @@ class mod_hotpot_attempt_hp_6_jmix_renderer extends mod_hotpot_attempt_hp_6_rend
     }
 
     /**
+     * fix_navigation_buttons
+     *
+     * @return xxx
+     */
+    function fix_navigation_buttons()  {
+        parent::fix_navigation_buttons();
+
+        // replace location.reload() in <button class="FuncButton" ... onclick="location.reload()" ...">
+        // with javascript code to return all tiles/segments to their starting positions
+        $search = '/(?<='.'onclick=")location.reload\(\);?'.'(?=")/';
+        if (strpos(get_class($this), '_plus_')) {
+            // Drag and Drop
+            $replace = 'for (var i=0; i<Cds.length; i++) Cds[i].GoHome(); return false;';
+        } else {
+            // clickety-click
+            $replace = 'GuessSequence = new Array();'.
+                       'BuildCurrGuess();'.
+                       'BuildExercise();'.
+                       'DisplayExercise(Exercise);'.
+                       "WriteToGuess('<span class=&quot;Answer&quot;>' + Output + '</span>');".
+                       'return false;';
+        }
+        $this->bodycontent = preg_replace($search, $replace, $this->bodycontent);
+    }
+
+    /**
      * get_js_functionnames
      *
      * @return xxx
      */
     function get_js_functionnames()  {
+        // Note that the drag functions get added twice to the html
+        // once from hp6card.js_ (this is actually the JMatch version)
+        // and once from djmix6.js_. Consequently, we need to process
+        // these functions twice: once to delete, and then again to modify
+        $drag = 'beginDrag,doDrag,endDrag';
         // start list of function names
         $names = parent::get_js_functionnames();
-        $names .= ($names ? ',' : '').'CheckAnswer,TimesUp,WriteToGuess';
+        $names .= ($names ? ',' : '')."CardSetHTML,$drag,CheckAnswer,TimesUp,WriteToGuess,$drag";
         return $names;
+    }
+
+    /**
+     * get_beginDrag_target
+     * for drag-and-drop JMatch and JMix
+     *
+     * @return string
+     * @todo Finish documenting this function
+     */
+    public function get_beginDrag_target() {
+        return 'Cds[CurrDrag]';
     }
 
     /**
@@ -208,14 +264,9 @@ class mod_hotpot_attempt_hp_6_jmix_renderer extends mod_hotpot_attempt_hp_6_rend
         }
 
         if ($pos = strrpos($substr, '}')) {
-            if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-                $flag = 1; // set form values only
-            } else {
-                $flag = 0; // set form values and send form
-            }
             $insert = ''
                 ."	Finished = true;\n"
-                ."	HP.onunload(".hotpot::STATUS_TIMEDOUT.",$flag);\n"
+                ."	HP_send_results(HP.EVENT_TIMEDOUT);\n"
                 ."	ShowMessage('$msg');\n"
             ;
             $substr = substr_replace($substr, $insert, $pos, 0);
@@ -270,7 +321,7 @@ class mod_hotpot_attempt_hp_6_jmix_renderer extends mod_hotpot_attempt_hp_6_rend
         // this must come after call to $this->fix_js_CheckAnswers()
         $search = 'TimeOver == true';
         if ($pos = strpos($substr, $search)) {
-            $replace = $search.' || ForceQuizStatus';
+            $replace = $search.' || ForceQuizEvent';
             $substr = substr_replace($substr, $replace, $pos, strlen($search));
         }
 
@@ -405,7 +456,7 @@ class mod_hotpot_attempt_hp_6_jmix_renderer extends mod_hotpot_attempt_hp_6_rend
      * @return xxx
      */
     function get_stop_function_args()  {
-        return '0,'.hotpot::STATUS_ABANDONED;
+        return 'HP.EVENT_ABANDONED';
     }
 
     /**
