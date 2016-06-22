@@ -44,7 +44,7 @@ class mod_hotpot_attempt_hp_6_jmix_xml_v6_plus_keypress_renderer extends mod_hot
      * @return xxx
      */
     function fix_bodycontent() {
-        parent::$this->fix_bodycontent_DragAndDrop();
+        parent::fix_bodycontent_DragAndDrop();
 
         $search = 'onclick="location.reload()"';
         $replace = 'onclick="hotpot_jmix_restart()"';

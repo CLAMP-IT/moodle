@@ -19,22 +19,27 @@
  * Render an attempt at a HotPot quiz
  * Output format: hp_6
  *
- * @package   mod-hotpot
- * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage hotpot
+ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.0
  */
 
+/** Prevent direct access to this script */
 defined('MOODLE_INTERNAL') || die();
 
-// get parent class
+/** Include required files */
 require_once($CFG->dirroot.'/mod/hotpot/attempt/hp/renderer.php');
 
 /**
  * mod_hotpot_attempt_hp_6_renderer
  *
- * @copyright 2010 Gordon Bateson
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since     Moodle 2.0
+ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.0
+ * @package    mod
+ * @subpackage hotpot
  */
 class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
 
@@ -179,7 +184,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         // Each function name requires an corresponding function called:
         // fix_js_{$name}
 
-        return 'Client,ShowElements,GetViewportHeight,PageDim,TrimString,RemoveBottomNavBarForIE,StartUp,GetUserName,PreloadImages,ShowMessage,HideFeedback,SendResults,Finish,WriteToInstructions,ShowSpecialReadingForQuestion';
+        return 'Client,ShowElements,GetViewportHeight,SuppressBackspace,PageDim,TrimString,RemoveBottomNavBarForIE,StartUp,GetUserName,PreloadImages,ShowMessage,HideFeedback,SendResults,Finish,WriteToInstructions,ShowSpecialReadingForQuestion';
     }
 
     /**
@@ -361,11 +366,11 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             ."	switch (type){\n"
             ."		case 'Width':\n"
             ."		case 'Height':\n"
-            ."			return eval('(obj.offset'+type+'||0)');\n"
+            ."			return (obj['offset'+type]||0);\n"
             ."\n"
             ."		case 'Top':\n"
             ."		case 'Left':\n"
-            ."			return eval('(obj.offset'+type+'||0) + getOffset(obj.offsetParent, type)');\n"
+            ."			return (obj['offset'+type]||0) + getOffset(obj.offsetParent, type);\n"
             ."\n"
             ."		case 'Right':\n"
             ."			return getOffset(obj, 'Left') + getOffset(obj, 'Width');\n"
@@ -456,6 +461,58 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             ."}"
         ;
         $str = substr_replace($str, $replace, $start, $length);
+    }
+
+    /**
+     * fix_js_SuppressBackspace
+     *
+     * @param xxx $str (passed by reference)
+     * @param xxx $start
+     * @param xxx $length
+     * @return xxx
+     */
+    function fix_js_SuppressBackspace(&$str, $start, $length)  {
+        // could also check "window.InTextBox" which is HP's standard way of detecting INPUT and TEXTAREA
+        $replace = ''
+            ."function SuppressBackspace(evt) {\n"
+            ."	if (evt==null) {\n"
+            ."		evt = window.event;\n"
+            ."	}\n"
+            ."	if (evt.target) {\n"
+            ."		var evtTarget = evt.target;\n"
+            ."	} else if (evt.srcElement) {\n"
+            ."		var evtTarget = evt.srcElement;\n"
+            ."	} else {\n"
+            ."		return true;\n" // shouldn't happen !!
+            ."	}\n"
+            ."	if (evt.keyCode != 8) {\n"
+            ."		return true;\n" // not the delete key
+            ."	}\n"
+            ."	if (evtTarget.nodeType==3) {\n" // Safari quirk
+            ."		evtTarget = evtTarget.parentNode;\n"
+            ."	}\n"
+            ."	if (evtTarget.tagName=='INPUT' || evtTarget.tagName=='TEXTAREA') {\n"
+            ."		return true;\n" // allow delete key in text input / textarea
+            ."	}\n"
+            ."	if (evt.preventDefault) {\n"
+            ."		evt.preventDefault();\n"
+            ."	} else if (window.event) {\n"
+            ."		window.event.returnValue = false;\n"
+            ."		window.event.cancelBubble = true;\n"
+            ."	}\n"
+            ."	return false;\n"
+            ."}\n"
+        ;
+        $str = substr_replace($str, $replace, $start, $length);
+
+        // remove standard HP code that assigns event keypress/keydown handler
+        $offset = $start + strlen($replace);
+        list($start, $finish) = $this->locate_js_block('if', 'C.ie', $str, true, $offset);
+
+        if ($finish) {
+            $length = $finish - $start;
+            $str = substr_replace($str, '', $start, $length);
+        }
     }
 
     /**
@@ -763,14 +820,30 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
     function fix_js_StartUp(&$str, $start, $length)  {
         $substr = substr($str, $start, $length);
 
+        // ensure StartUp is not called more than once
+        if ($pos = strpos($substr, '{')) {
+            $insert = "\n"
+                ."	if (window.StartedUp) {\n"
+                ."		return;\n"
+                ."	}\n"
+                ."	window.StartedUp = true;"
+            ;
+            $substr = substr_replace($substr, $insert, $pos+1, 0);
+        }
+
         // if necessary, fix drag area for JMatch or JMix drag-and-drop
         $this->fix_js_StartUp_DragAndDrop($substr);
 
         if ($pos = strrpos($substr, '}')) {
             if ($this->hotpot->delay3==hotpot::TIME_DISABLE) {
-                $forceajax = 1;
+                $ajax = 1;
             } else {
-                $forceajax = 0;
+                $ajax = 0;
+            }
+            if ($this->can_clickreport()) {
+                $sendallclicks = 1;
+            } else {
+                $sendallclicks = 0;
             }
             if ($this->can_continue()==hotpot::CONTINUE_RESUMEQUIZ) {
                 $onunload_status = hotpot::STATUS_INPROGRESS;
@@ -802,25 +875,13 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
                 ."		FDiv.style.display = 'none';\n"
                 ."	}\n"
                 ."\n"
-                ."// create HP object (to collect and send responses)\n"
-                ."	window.HP = new ".$this->js_object_type."('".$this->can_clickreport()."','".$forceajax."');\n"
+                ."	// create HP object (to collect and send responses)\n"
+                ."	window.HP = new ".$this->js_object_type."($sendallclicks,$ajax);\n"
                 ."\n"
-                //."// call HP.onunload to send results when this page unloads\n"
-                //."	var s = '';\n"
-                //."	if (typeof(window.onunload)=='function'){\n"
-                //."		window.onunload_StartUp = onunload;\n"
-                //."		s += 'window.onunload_StartUp();'\n"
-                //."	}\n"
-                //."	window.onunload = new Function(s + 'if(window.HP){HP.status=$onunload_status;HP.onunload();object_destroy(HP);}return true;');\n"
-                //."\n"
-                ."	window.onunload = function() {\n"
-                ."		if (window.HP) {\n"
-                ."			HP.status=$onunload_status;\n"
-                ."			HP.onunload();\n"
-                ."			object_destroy(HP);\n"
-                ."		}\n"
-                ."		return true;\n"
-                ."	}\n"
+                ."	// define event handlers to try to send results if quiz finishes unexpectedly\n"
+                ."	HP_add_listener(window, 'beforeunload', HP_send_results);\n" // modern browsers
+                ."	HP_add_listener(window, 'pagehide', HP_send_results);\n"     // modern browsers that don't allow actions in "onbeforeunload"
+                ."	HP_add_listener(window, 'unload', HP_send_results);\n"       // old browsers that don't have "onbeforeunload" or "pagehide"
                 ."\n"
             ;
             $substr = substr_replace($substr, $append, $pos, 0);
@@ -906,6 +967,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
     /**
      * fix_js_HideFeedback
      *
+     * @uses $CFG
      * @param xxx $str (passed by reference)
      * @param xxx $start
      * @param xxx $length
@@ -926,8 +988,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
 
         $search = '/('.'\s*if \(Finished == true\){\s*)(?:.*?)(\s*})/s';
         if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-            // -1 : send form only (do not set form values, as that has already been done)
-            $replace = '$1'.'HP.onunload(HP.status,-1);'.'$2';
+            $replace = '$1'.'HP_send_results(HP.EVENT_SENDVALUES);'.'$2';
         } else {
             $replace = ''; // i.e. remove this if-block
         }
@@ -1069,9 +1130,9 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function fix_js_CheckAnswers_arguments($match)  {
         if (empty($match[2])) {
-            return $match[1].'ForceQuizStatus'.$match[3];
+            return $match[1].'ForceQuizEvent'.$match[3];
         } else {
-            return $match[1].$match[2].',ForceQuizStatus'.$match[3];
+            return $match[1].$match[2].',ForceQuizEvent'.$match[3];
         }
     }
 
@@ -1084,7 +1145,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         if ($name = $this->get_stop_function_name()) {
             return 'if('.$this->get_stop_function_confirm().')'.$name.'('.$this->get_stop_function_args().')';
         } else {
-            return 'if(window.HP)HP.onunload('.hotpot::STATUS_ABANDONED.')';
+            return 'HP_send_results(HP.EVENT_ABANDONED)';
         }
     }
 
@@ -1097,9 +1158,9 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         // Note: "&&" in onclick must be encoded as html-entities for strict XHTML
         return ''
             ."confirm("
-            ."'".$this->hotpot->source->js_value_safe(get_string('confirmstop', 'hotpot'), true)."'"
-            ."+'\\n\\n'+(window.onbeforeunload &amp;&amp; onbeforeunload()?(onbeforeunload()+'\\n\\n'):'')+"
-            ."'".$this->hotpot->source->js_value_safe(get_string('pressoktocontinue', 'hotpot'), true)."'"
+            ."'".$this->hotpot->source->js_value_safe(get_string('confirmstop', 'mod_hotpot'), true)."'"
+            ."+'\\n\\n'+(window.HP_beforeunload &amp;&amp; HP_beforeunload()?(HP_beforeunload()+'\\n\\n'):'')+"
+            ."'".$this->hotpot->source->js_value_safe(get_string('pressoktocontinue', 'mod_hotpot'), true)."'"
             .")"
         ;
     }
@@ -1121,7 +1182,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      */
     function get_stop_function_args()  {
         // the arguments required by the javascript function which the stop_function() code calls
-        return hotpot::STATUS_ABANDONED;
+        return 'HP.EVENT_ABANDONED';
     }
 
     /**
@@ -1148,7 +1209,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         // JMatch : AllDone || TimeOver
         // JMix : AllDone || TimeOver (in the CheckAnswer function)
         // JQuiz : AllDone (in the CheckFinished function)
-        return '/\s*if \(\((\w+) == true\)\|\|\(\w+ == true\)\)({).*?}\s*/s';
+        return '/\s*if *\(\((\w+) *== *true\) *\|\| *\(\w+ *== *true\)\) *({).*?}\s*/s';
     }
 
     /**
@@ -1160,27 +1221,18 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         // $1 : name of the "all correct/done" variable
         // $2 : opening curly brace of if-block plus any following text to be kept
 
-        if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-            $flag = 1; // set form values only
-        } else {
-            $flag = 0; // set form values and send form
-        }
-        if ($this->hotpot->delay3==hotpot::TIME_DISABLE) {
-            $forceredirect = '(ForceQuizStatus ? 1 : 0)';
-        } else {
-            $forceredirect = 1;
-        }
+        $event = $this->get_send_results_event();
         return "\n"
             ."	if ($1){\n"
-            ."		var QuizStatus = 4; // completed\n"
-            ."	} else if (ForceQuizStatus){\n"
-            ."		var QuizStatus = ForceQuizStatus; // 3=abandoned\n"
+            ."		var QuizEvent = $event;\n" // COMPLETED or SETVALUES
+            ."	} else if (ForceQuizEvent){\n"
+            ."		var QuizEvent = ForceQuizEvent;\n" // TIMEDOUT or ABANDONED
             ."	} else if (TimeOver){\n"
-            ."		var QuizStatus = 2; // timed out\n"
+            ."		var QuizEvent = HP.EVENT_TIMEDOUT;\n"
             ."	} else {\n"
-            ."		var QuizStatus = 1; // in progress\n"
+            ."		var QuizEvent = HP.EVENT_CHECK;\n"
             ."	}\n"
-            ."	if (QuizStatus > 1) $2\n"
+            ."	if (HP.end_of_quiz(QuizEvent)) $2\n"
             ."		if (window.Interval) {\n"
             ."			clearInterval(window.Interval);\n"
             ."		}\n"
@@ -1189,16 +1241,213 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
             ."		Finished = true;\n"
             ."	}\n"
             ."	if (Finished || HP.sendallclicks){\n"
-            ."		var ForceRedirect = $forceredirect;\n"
-            ."		if (ForceQuizStatus || QuizStatus==1){\n"
-            ."			// send results immediately\n"
-            ."			HP.onunload(QuizStatus, 0, ForceRedirect);\n"
+            ."		if (QuizEvent==HP.EVENT_COMPLETED){\n"
+            ."			// send results after delay (quiz completed as expected)\n"
+            ."			setTimeout('HP_send_results('+QuizEvent+')', SubmissionTimeout);\n"
             ."		} else {\n"
-            ."			// send results after delay\n"
-            ."			setTimeout('HP.onunload('+QuizStatus+',$flag,'+ForceRedirect+')', SubmissionTimeout);\n"
+            ."			// send results immediately (quiz finished unexpectedly)\n"
+            ."			HP_send_results(QuizEvent);\n"
             ."		}\n"
             ."	}\n"
         ;
+    }
+
+    /**
+     * fix_js_CardSetHTML
+     * for drag-and-drop JMatch and JMix
+     *
+     * @param xxx $str (passed by reference)
+     * @param xxx $start
+     * @param xxx $length
+     * @return xxx
+     * @todo Finish documenting this function
+     */
+    public function fix_js_CardSetHTML(&$str, $start, $length)  {
+        $substr = substr($str, $start, $length);
+        $search = '/(DragImgs\[i\]). onmousedown = (.*)/';
+        $replace = "HP_add_listener(DragImgs[i], 'mousedown', 'return false');";
+        $substr = preg_replace($search, $replace, $substr);
+        $str = substr_replace($str, $substr, $start, $length);
+    }
+
+    /**
+     * fix_js_beginDrag
+     * for drag-and-drop JMatch and JMix
+     *
+     * @param xxx $str (passed by reference)
+     * @param xxx $start
+     * @param xxx $length
+     * @return xxx
+     * @todo Finish documenting this function
+     */
+    public function fix_js_beginDrag(&$str, $start, $length)  {
+        $substr = substr($str, $start, $length);
+        if (strpos($str, 'function beginDrag', $start + $length)) {
+            $substr = ''; // remove first occurrence of this function
+        } else {
+            // add event handlers for touch screens
+            $search = '/(\s*)([a-z]+).on(mouse[a-z]+)=([a-z]+Drag);?/s';
+            //$replace = '$1$2.onmouse$3 = $4;$1$2.touch$3 = $4;';
+            $replace = '$1HP_add_listener($2, \'$3\', $4);';
+            $substr = preg_replace($search, $replace, $substr);
+
+            // detect drag position for mouse AND touch
+            if ($target = $this->get_beginDrag_target()) {
+                $substr = $this->fix_js_clientXY($substr, $target);
+            }
+
+            // disable scrolling on touch screens
+            $substr = $this->fix_js_disable_event($substr);
+
+            if ($pos = strpos($substr, '{')) {
+                $insert = "\n"
+                    ."	if (e && e.target && e.target.tagName) {\n"
+                    ."		var tagname = e.target.tagName.toUpperCase();\n"
+                    ."		if (tagname=='EMBED' || tagname=='OBJECT') {\n"
+                    ."			return false;\n"
+                    ."		}\n"
+                    ."		if (tagname=='AUDIO' || tagname=='VIDEO') {\n"
+                    ."			return false;\n"
+                    ."		}\n"
+                    ."	}\n"
+                ;
+                $substr = substr_replace($substr, $insert, $pos+1, 0);
+            }
+        }
+        $str = substr_replace($str, $substr, $start, $length);
+    }
+
+    /**
+     * get_beginDrag_target
+     * for drag-and-drop JMatch and JMix
+     *
+     * @return string
+     * @todo Finish documenting this function
+     */
+    public function get_beginDrag_target() {
+        return '';
+    }
+
+    /**
+     * fix_js_doDrag
+     * for drag-and-drop JMatch and JMix
+     *
+     * @param xxx $str (passed by reference)
+     * @param xxx $start
+     * @param xxx $length
+     * @return xxx
+     * @todo Finish documenting this function
+     */
+    public function fix_js_doDrag(&$str, $start, $length)  {
+        $substr = substr($str, $start, $length);
+        if (strpos($str, 'function doDrag', $start + $length)) {
+             $substr = ''; // remove first occurrence of this function
+        } else {
+            // reformat single line if (C.ie){...}else{...}
+            $substr = $this->fix_js_if_then_else($substr);
+
+            // detect drag position for mouse AND touch
+            $substr = $this->fix_js_clientXY($substr, 'var difX');
+
+            // disable scrolling on touch screens
+            $substr = $this->fix_js_disable_event($substr);
+        }
+        $str = substr_replace($str, $substr, $start, $length);
+    }
+
+    /**
+     * fix_js_endDrag
+     * for drag-and-drop JMatch and JMix
+     *
+     * @param xxx $str (passed by reference)
+     * @param xxx $start
+     * @param xxx $length
+     * @return xxx
+     * @todo Finish documenting this function
+     */
+    public function fix_js_endDrag(&$str, $start, $length)  {
+        $substr = substr($str, $start, $length);
+
+        if (strpos($str, 'function endDrag', $start + $length)) {
+            $substr = ''; // remove first occurrence of this function
+        } else {
+            // reformat single line if (C.ie){...}else{...}
+            $substr = $this->fix_js_if_then_else($substr);
+
+            // add event handlers for touch screens
+            $search = '/(\s*)([a-z]+).on(mouse[a-z]+)=([a-z]+);?/';
+            //$replace = '$1$2.onmouse$3=$4;$1$2.touch$3=$4;';
+            $replace = '$1HP_remove_listener($2, \'$3\', doDrag);';
+            $substr = preg_replace($search, $replace, $substr);
+
+            // disable scrolling on touch screens
+            $substr = $this->fix_js_disable_event($substr);
+        }
+
+        $str = substr_replace($str, $substr, $start, $length);
+    }
+
+    /**
+     * fix_js_clientXY
+     * for drag-and-drop JMatch and JMix
+     *
+     * @param string $str
+     * @param string $target
+     * @param string $e (optional, default="Ev")
+     * @param string $x (optional, default="x")
+     * @param string $y (optional, default="y")
+     * @return string
+     * @todo Finish documenting this function
+     */
+    function fix_js_clientXY($str, $target, $e='Ev', $x='x', $y='y') {
+        // replace Ev.client(X|Y) with "x" and "y" variables
+        $search = array("$e.clientX", "$e.clientY");
+        $replace = array($x, $y);
+        $str = str_replace($search, $replace, $str);
+
+        // set "x" and "y" for mouse or touch device
+        $search = '/(\s*)'.preg_quote($target, '/').'/s';
+        $replace = '$1'."if ($e.changedTouches) {".
+                   '$1'."	var $x = $e.changedTouches[0].clientX;".
+                   '$1'."	var $y = $e.changedTouches[0].clientY".
+                   '$1'."} else {".
+                   '$1'."	var $x = $e.clientX;".
+                   '$1'."	var $y = $e.clientY;".
+                   '$1'.'}'.
+                   '$0';
+
+        return preg_replace($search, $replace, $str, 1);
+    }
+
+    /**
+     * fix_js_if_then_else
+     * for drag-and-drop JMatch and JMix
+     *
+     * @param string $str
+     * @return string
+     * @todo Finish documenting this function
+     */
+    public function fix_js_if_then_else($str)  {
+        $search = '/(\s*)if *\(C.ie\) *\{(.*?);?\}[\n\r\t ]*else *\{(.*?);?\}/is';
+        $replace = '$1if (C.ie) {$1'."\t".'$2;$1} else {$1'."\t".'$3;$1}';
+        return preg_replace($search, $replace, $str);
+    }
+
+    /**
+     * fix_js_disable_event
+     *
+     * for drag-and-drop JMatch and JMix
+     * adjust mouse events and cursor position
+     * so they work on touch devices too
+     *
+     * @param xxx $substr (passed by reference)
+     * @return xxx
+     * @todo Finish documenting this function
+     */
+    public function fix_js_disable_event($substr)  {
+        $search = '/return (true|false);/';
+        $replace = 'HP_disable_event(e);';
+        return preg_replace($search, $replace, $substr);
     }
 
     /**
@@ -1313,9 +1562,9 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
                 $stoptext = $this->hotpot->stoptext;
             }
             if (trim($stoptext)=='') {
-                $stoptext = get_string('giveup', 'hotpot');
+                $stoptext = get_string('giveup', 'mod_hotpot');
             }
-            $confirm = get_string('confirmstop', 'hotpot');
+            $confirm = get_string('confirmstop', 'mod_hotpot');
             //$search = '/<!-- BeginTopNavButtons -->'.'.*?'.'<!-- EndTopNavButtons -->/s';
             $search = '/<(div class="Titles")>/s';
             $replace = '<$1 style="position: relative">'."\n\t"
@@ -1470,9 +1719,8 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         $search = '/\\\\u([0-9a-f]{4})/i';
         $str = $this->filter_text_to_utf8($str, $search);
 
-        // convert html entities
-        $search = '/&#x([0-9a-f]+);/i';
-        $str = $this->filter_text_to_utf8($str, $search);
+        // convert dec, hex and named entities to unicode chars
+        $str = hotpot_textlib('entities_to_utf8', $str, true);
 
         // fix relative urls
         $str = $this->fix_relativeurls($str);
@@ -1485,7 +1733,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
     }
 
     /**
-     * filter_text_bodycontent
+     * filter_text_to_utf8
      *
      * @param xxx $str
      * @param xxx $search
@@ -1509,10 +1757,103 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      * filter_text_bodycontent
      */
     function filter_text_bodycontent()  {
-        // convert entities to utf8, filter text and convert back
-        //$this->bodycontent = hotpot_textlib('entities_to_utf8', $this->bodycontent);
-        //$this->bodycontent = filter_text($this->bodycontent);
-        //$this->bodycontent = hotpot_textlib('utf8_to_entities', $this->bodycontent);
+
+        // prevent faulty conversion of HTML entities with leading zero in Moodle <= 2.5
+        // specifically, this affects non-breaking spaces (&#0160;) in a JCloze WordList
+        if (hotpot_textlib('entities_to_utf8', '&#0160;')=='p') {
+            $this->bodycontent = preg_replace('/(?<=&#)0+([0-9]+)(?=;)/', '$1', $this->bodycontent);
+        }
+
+        // convert entities to utf8
+        $this->bodycontent = hotpot_textlib('entities_to_utf8', $this->bodycontent);
+
+        // fix faulty conversion of non-breaking space (&nbsp;) in Moodle <= 2.0
+        $twobyte = chr(194).chr(160);
+        $fourbyte = chr(195).chr(130).$twobyte;
+        if (hotpot_textlib('entities_to_utf8', '&nbsp;')==$fourbyte) {
+            $this->bodycontent = str_replace($fourbyte, $twobyte, $this->bodycontent);
+        }
+
+        // we will skip these tags and everything they contain
+        $tags = array('audio'  => '</audio>',
+                      'button' => '</button>',
+                      'embed'  => '</embed>',
+                      'object' => '</object>',
+                      'script' => '</script>',
+                      'style'  => '</style>',
+                      'video'  => '</video>',
+                      '!--'    => '-->',
+                      ''       => '>');
+
+        // cache the lengths of the tag strings
+        $len = array();
+        foreach ($tags as $tag => $end) {
+            $len[$tag] = strlen($tag);
+            $len[$end] = strlen($end);
+        }
+
+        // array to store start and end positions
+        // of $texts passed to the Moodle filters
+        $texts = array();
+
+        // detect start and end of all $texts[$i] = $ii;
+        //   $i  : start position
+        //   $ii : end position
+        $i = 0;
+        $i_max = strlen($this->bodycontent);
+        while ($i < $i_max) {
+            $ii = strpos($this->bodycontent, '<', $i);
+            if ($ii===false) {
+                $ii = $i_max;
+            }
+            $texts[$i] = $ii;
+            if ($i < $i_max) {
+                foreach ($tags as $tag => $end) {
+                    if ($len[$tag]==0 || substr($this->bodycontent, $ii+1, $len[$tag])==$tag) {
+                        $char = substr($this->bodycontent, $ii + $len[$tag] + 1, 1);
+                        if ($len[$tag]==0 || $char==' ' || $char=='>') {
+                            if ($ii = strpos($this->bodycontent, $end, $ii + $len[$tag])) {
+                                $ii += $len[$end];
+                            } else {
+                                $ii = $i_max; // no end tag - shouldn't happen !!
+                            }
+                            break; // foreach loop
+                        }
+                    }
+                }
+            }
+            $i = $ii;
+        }
+        unset($tags, $len);
+
+        // reverse the $texts array (preserve keys)
+        $texts = array_reverse($texts, true);
+
+        // cache filter and context
+        $filter = filter_manager::instance();
+        $context = $this->hotpot->context;
+
+        // setup filter (Moodle >= 2.3)
+        if (method_exists($filter, 'setup_page_for_filters')) {
+            $filter->setup_page_for_filters($this->page, $context);
+        }
+
+        // whitespace and punctuation chars
+        $trimchars = "\0\t\n\r !\"#$%&'()*+,-./:;<=>?@[\\]^_`{¦}~\x0B";
+
+        // filter all $texts
+        foreach ($texts as $i => $ii) {
+            $len = ($ii - $i);
+            $text = substr($this->bodycontent, $i, $len);
+            // ignore strings that contain only whitespace and punctuation
+            if (trim($text, $trimchars)) {
+                $text = $filter->filter_text($text, $context);
+                $this->bodycontent = substr_replace($this->bodycontent, $text, $i, $len);
+            }
+        }
+
+        // convert back to HTML entities
+        $this->bodycontent = hotpot_textlib('utf8_to_entities', $this->bodycontent);
     }
 
     /**
@@ -1610,10 +1951,10 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
         } else {
             // complete remaining feedback fields
             if ($this->hotpot->studentfeedback==hotpot::FEEDBACK_MOODLEFORUM) {
-                $feedback[6] = "'".addslashes_js(get_string('feedbackdiscuss', 'hotpot'))."'";
+                $feedback[6] = "'".addslashes_js(get_string('feedbackdiscuss', 'mod_hotpot'))."'";
             } else {
                 // FEEDBACK_WEBPAGE, FEEDBACK_FORMMAIL, FEEDBACK_MOODLEMESSAGING
-                $feedback[6] = "'".addslashes_js(get_string('feedbacksendmessage', 'hotpot'))."'";
+                $feedback[6] = "'".addslashes_js(get_string('feedbacksendmessage', 'mod_hotpot'))."'";
             }
             $feedback[7] = "'".addslashes_js(get_string('feedback'))."'";
             $feedback[8] = "'".addslashes_js(get_string('defaultcourseteacher'))."'";
@@ -1664,7 +2005,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
      * fix_reviewoptions
      */
     function fix_reviewoptions()  {
-        // enable / disable review options
+        // enable/disable review options
     }
 
     /**
@@ -2763,7 +3104,15 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
     function hotpot_keypad_char_value($char)  {
 
         $char = hotpot_textlib('entities_to_utf8', $char);
-        $ord = ord($char);
+        if (class_exists('core_text')) {
+            // Moodle >= 2.6
+            $ord = hotpot_textlib('utf8ord', $char);
+        } else {
+            // Moodle <= 2.5
+            $ord = hotpot_textlib('convert', $char, 'UTF-8', 'UCS-4BE');
+            $ord = unpack('N', $ord);
+            $ord = reset($ord); // get first char
+        }
 
         // lowercase letters (plain or accented)
         if (($ord>=97 && $ord<=122) || ($ord>=224 && $ord<=255)) {

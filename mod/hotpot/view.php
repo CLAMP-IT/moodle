@@ -44,8 +44,15 @@ if ($id) {
 require_login($course, true, $cm);
 require_capability('mod/hotpot:view', $PAGE->context);
 
+// Log this request
+hotpot_add_to_log($course->id, 'hotpot', 'view', 'view.php?id='.$cm->id, $hotpot->id, $cm->id);
+
 // Create an object to represent the current HotPot activity
 $hotpot = hotpot::create($hotpot, $cm, $course, $PAGE->context);
+
+// Update 'viewed' state if required by completion system
+$completion = new completion_info($course);
+$completion->set_module_viewed($cm);
 
 if (empty($hotpot->entrypage)) {
     // go straight to attempt.php
@@ -64,17 +71,11 @@ if ($action=='deleteselected') {
     require_sesskey();
     if ($confirmed) {
         $hotpot->delete_attempts($selected);
+        $hotpot->update_completion_state($completion);
     } else {
         // show a confirm button ?
     }
 }
-
-// Log this request
-add_to_log($course->id, 'hotpot', 'view', 'view.php?id='.$cm->id, $hotpot->id, $cm->id);
-
-// Update 'viewed' state if required by completion system
-$completion = new completion_info($course);
-$completion->set_module_viewed($cm);
 
 // Set editing mode
 if ($PAGE->user_allowed_editing()) {
@@ -96,9 +97,16 @@ echo $output->header();
 
 // Guests can't do a HotPot, so offer them a choice of logging in or going back.
 if (isguestuser()) {
+    if (function_exists('get_local_referer')) {
+        // Moodle >= 2.8
+        $referer = get_local_referer(false);
+    } else {
+        // Moodle <= 2.7
+        $referer = get_referer(false);
+    }
     $message = html_writer::tag('p', get_string('guestsno', 'quiz'));
     $message .= html_writer::tag('p', get_string('liketologin'));
-    echo $output->confirm($message, get_login_url(), get_referer(false));
+    echo $output->confirm($message, get_login_url(), $referer);
     echo $output->footer();
     exit;
 }

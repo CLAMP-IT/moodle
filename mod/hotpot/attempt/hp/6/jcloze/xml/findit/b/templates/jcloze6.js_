@@ -140,7 +140,7 @@ function Markup_Text(Node){
 			case 'span' :
 					if (Node.childNodes[x].attributes.length > 0){
 						if ((Node.childNodes[x].getAttribute('id').substr(0, 7) != 'GapSpan')){
-							Node.replaceNode(Markup_Text(Node.childNodes[x]), Node.childNodes[x]);
+							Node.replaceChild(Markup_Text(Node.childNodes[x]), Node.childNodes[x]);
 							}
 						}
 				break;

@@ -39,6 +39,12 @@ function xmldb_hotpot_upgrade($oldversion) {
 
     $dbman = $DB->get_manager();
 
+    if (defined('STDIN') && defined('CLI_SCRIPT')) {
+        $interactive = false;
+    } else {
+        $interactive = true;
+    }
+
     //===== 1.9.0 upgrade line ======//
 
     // update hotpot grades from sites earlier than Moodle 1.9, 27th March 2008
@@ -402,7 +408,7 @@ function xmldb_hotpot_upgrade($oldversion) {
         /////////////////////////////////////
 
         // set up sql strings to select HotPots with Moodle 1.x file paths (i.e. no leading slash)
-        $strupdating = get_string('migratingfiles', 'hotpot');
+        $strupdating = get_string('migratingfiles', 'mod_hotpot');
         $select = 'h.*, cm.id AS cmid';
         $from   = '{hotpot} h, {course_modules} cm, {modules} m';
         $where  = 'm.name=? AND m.id=cm.module AND cm.instance=h.id AND h.sourcefile<>?'.
@@ -410,40 +416,50 @@ function xmldb_hotpot_upgrade($oldversion) {
         $params = array('hotpot', '', '/%', 0);
         $orderby = 'h.course, h.id';
 
-        // get HotPot records to update
+        // get HotPot records that need to be updated
         if ($count = $DB->count_records_sql("SELECT COUNT('x') FROM $from WHERE $where", $params)) {
             $rs = $DB->get_recordset_sql("SELECT $select FROM $from WHERE $where ORDER BY $orderby", $params);
         } else {
             $rs = false;
         }
-
-        // loop through HotPot records that need to be updated
         if ($rs) {
-            $i = 0;
-            $bar = new progress_bar('hotpotmigratefiles', 500, true);
+            if ($interactive) {
+                $i = 0;
+                $bar = new progress_bar('hotpotmigratefiles', 500, true);
+            }
 
             // get file storage object
             $fs = get_file_storage();
 
+            if (class_exists('context_course')) {
+                $sitecontext = context_course::instance(SITEID);
+            } else {
+                $sitecontext = get_context_instance(CONTEXT_COURSE, SITEID);
+            }
+
             $coursecontext = null;
+            $modulecontext = null;
             foreach ($rs as $hotpot) {
 
                 // apply for more script execution time (3 mins)
                 upgrade_set_timeout();
 
-                // set $courseid from $hotpot->sourcelocation
-                //   0 : HOTPOT_LOCATION_COURSEFILES
-                //   1 : HOTPOT_LOCATION_SITEFILES
-                //   2 : HOTPOT_LOCATION_WWW (not used)
-                if ($hotpot->sourcelocation) {
-                    $courseid = SITEID;
-                } else {
-                    $courseid = $hotpot->course;
+                // get course context for this $hotpot
+                if ($coursecontext===null || $coursecontext->instanceid != $hotpot->course) {
+                    if (class_exists('context_course')) {
+                        $coursecontext = context_course::instance($hotpot->course);
+                    } else {
+                        $coursecontext = get_context_instance(CONTEXT_COURSE, $hotpot->course);
+                    }
                 }
 
-                // get course context (only if we need to)
-                if (is_null($coursecontext) || $coursecontext->instanceid != $courseid) {
-                    $coursecontext  = get_context_instance(CONTEXT_COURSE, $courseid);
+                // get module context for this $hotpot/$task
+                if ($modulecontext===null || $modulecontext->instanceid != $hotpot->cmid) {
+                    if (class_exists('context_module')) {
+                        $modulecontext = context_module::instance($hotpot->cmid);
+                    } else {
+                        $modulecontext = get_context_instance(CONTEXT_MODULE, $hotpot->cmid);
+                    }
                 }
 
                 // actually there shouldn't be any urls in HotPot activities,
@@ -467,16 +483,36 @@ function xmldb_hotpot_upgrade($oldversion) {
                     $old_filepath = '/'.ltrim($old_filepath, '/'); // require leading slash
                     $old_filepath = rtrim($old_filepath, '/').'/'; // require trailing slash
                 }
-                $filehash = sha1('/'.$coursecontext->id.'/course/legacy/0'.$old_filepath.$old_filename);
 
-                // we might need the old file path, if the file has not been migrated
+                // update $hotpot->sourcefile, if necessary
+                if ($hotpot->sourcefile != $old_filepath.$old_filename) {
+                    $hotpot->sourcefile = $old_filepath.$old_filename;
+                    $DB->set_field('hotpot', 'sourcefile', $hotpot->sourcefile, array('id' => $hotpot->id));
+                }
+
+                // set $courseid and $contextid from $task->$location
+                // of where we expect to find the $file
+                //   0 : HOTPOT_LOCATION_COURSEFILES
+                //   1 : HOTPOT_LOCATION_SITEFILES
+                //   2 : HOTPOT_LOCATION_WWW (not used)
+                if ($hotpot->sourcelocation) {
+                    $courseid = SITEID;
+                    $contextid = $sitecontext->id;
+                } else {
+                    $courseid = $hotpot->course;
+                    $contextid = $coursecontext->id;
+                }
+
+                // we expect to need the $filehash to get a file that has been migrated
+                $filehash = sha1('/'.$contextid.'/course/legacy/0'.$old_filepath.$old_filename);
+
+                // we might also need the old file path, if the file has not been migrated
                 $oldfilepath = $CFG->dataroot.'/'.$courseid.$old_filepath.$old_filename;
 
                 // set parameters used to add file to filearea
                 // (sortorder=1 siginifies the "mainfile" in this filearea)
-                $context  = get_context_instance(CONTEXT_MODULE, $hotpot->cmid);
                 $file_record = array(
-                    'contextid'=>$context->id, 'component'=>'mod_hotpot', 'filearea'=>'sourcefile',
+                    'contextid'=>$modulecontext->id, 'component'=>'mod_hotpot', 'filearea'=>'sourcefile',
                     'sortorder'=>1, 'itemid'=>0, 'filepath'=>$old_filepath, 'filename'=>$old_filename
                 );
 
@@ -485,13 +521,15 @@ function xmldb_hotpot_upgrade($oldversion) {
                 $hotpot->sourcetype = '';
                 $hotpot->sourceitemid = 0;
 
-                if ($file = $fs->get_file($context->id, 'mod_hotpot', 'sourcefile', 0, $old_filepath, $old_filename)) {
+                if ($file = $fs->get_file($modulecontext->id, 'mod_hotpot', 'sourcefile', 0, $old_filepath, $old_filename)) {
                     // file already exists for this context - shouldn't happen !!
                     // maybe an earlier upgrade failed for some reason ?
                     // anyway we must do this check, so that create_file_from_xxx() does not abort
                 } else if ($url) {
                     // file is on an external url - unusual ?!
-                    $file = false; // $fs->create_file_from_url($file_record, $url);
+                    $file = $fs->create_file_from_url($file_record, $url);
+                } else if ($file = xmldb_hotpot_locate_externalfile($modulecontext->id, 'mod_hotpot', 'sourcefile', 0, $old_filepath, $old_filename)) {
+                    // file exists in external repository - great !
                 } else if ($file = $fs->get_file_by_hash($filehash)) {
                     // $file has already been migrated to Moodle's file system
                     // this is the route we expect most people to come :-)
@@ -513,7 +551,7 @@ function xmldb_hotpot_upgrade($oldversion) {
                     }
                     $params = array('update'=>$hotpot->cmid, 'onclick'=>'this.target="_blank"');
                     $msg = html_writer::link(new moodle_url('/course/modedit.php', $params), $msg);
-                    $msg = get_string('sourcefilenotfound', 'hotpot', $msg);
+                    $msg = get_string('sourcefilenotfound', 'mod_hotpot', $msg);
                     echo html_writer::tag('div', $msg, array('class'=>'notifyproblem'));
                 }
 
@@ -532,7 +570,7 @@ function xmldb_hotpot_upgrade($oldversion) {
                         case 'html':
                         default:
                             if ($file) {
-                                $pathnamehash = $fs->get_pathname_hash($context->id, 'mod_hotpot', 'sourcefile', 0, $old_filepath, $old_filename);
+                                $pathnamehash = $fs->get_pathname_hash($modulecontext->id, 'mod_hotpot', 'sourcefile', 0, $old_filepath, $old_filename);
                                 if ($contenthash = $DB->get_field('files', 'contenthash', array('pathnamehash'=>$pathnamehash))) {
                                     $l1 = $contenthash[0].$contenthash[1];
                                     $l2 = $contenthash[2].$contenthash[3];
@@ -545,7 +583,7 @@ function xmldb_hotpot_upgrade($oldversion) {
                                         );
                                         $msg .= html_writer::empty_tag('br');
                                         $msg .= "filedir path=$l1/$l2/$contenthash";
-                                        $msg = get_string('sourcefilenotfound', 'hotpot', $msg);
+                                        $msg = get_string('sourcefilenotfound', 'mod_hotpot', $msg);
                                         echo html_writer::tag('div', $msg, array('class'=>'notifyproblem'));
                                     }
                                 }
@@ -572,8 +610,10 @@ function xmldb_hotpot_upgrade($oldversion) {
                 $DB->update_record('hotpot', $hotpot);
 
                 // update progress bar
-                $i++;
-                $bar->update($i, $count, $strupdating.": ($i/$count)");
+                if ($interactive) {
+                    $i++;
+                    $bar->update($i, $count, $strupdating.": ($i/$count)");
+                }
             }
             $rs->close();
         }
@@ -744,7 +784,236 @@ function xmldb_hotpot_upgrade($oldversion) {
         upgrade_mod_savepoint(true, "$newversion", 'hotpot');
     }
 
-    $newversion = 2010080365;
+    $newversion = 2010080366;
+    if ($oldversion < $newversion) {
+        if ($hotpots = $DB->get_records_select('hotpot', $DB->sql_like('sourcefile', '?'), array('%http://localhost/19/99/%'))) {
+            foreach ($hotpots as $hotpot) {
+                $sourcefile = str_replace('http://localhost/19/99/', '', $hotpot->sourcefile);
+                $DB->set_field('hotpot', 'sourcefile', $sourcefile, array('id' => $hotpot->id));
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2010080370;
+    if ($oldversion < $newversion) {
+        require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+
+        $reviewoptions = 0;
+        list($times, $items) = hotpot::reviewoptions_times_items();
+        foreach ($times as $timename => $timevalue) {
+            foreach ($items as $itemname => $itemvalue) {
+                $reviewoptions += ($timevalue & $itemvalue);
+            }
+        }
+        // $reviewoptions should now be set to 62415
+        $DB->set_field('hotpot', 'reviewoptions', $reviewoptions);
+
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2013111685;
+    if ($oldversion < $newversion) {
+        $tables = array(
+            'hotpot' => array(
+                new xmldb_field('allowpaste', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'stoptext')
+            ),
+            'hotpot_cache' => array(
+                new xmldb_field('hotpot_bodystyles',  XMLDB_TYPE_CHAR,    '8',  null, XMLDB_NOTNULL, null, null, 'slasharguments'),
+                new xmldb_field('sourcerepositoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0',  'sourcelocation'),
+                new xmldb_field('configrepositoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0',  'configlocation'),
+                new xmldb_field('allowpaste',         XMLDB_TYPE_INTEGER, '2',  null, XMLDB_NOTNULL, null, '0',  'stoptext')
+            ),
+        );
+        foreach ($tables as $table => $fields) {
+            $table = new xmldb_table($table);
+            foreach ($fields as $field) {
+                xmldb_hotpot_fix_previous_field($dbman, $table, $field);
+                if ($dbman->field_exists($table, $field)) {
+                    $dbman->change_field_type($table, $field);
+                } else {
+                    $dbman->add_field($table, $field);
+                }
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2014011694;
+    if ($oldversion < $newversion) {
+        require_once($CFG->dirroot.'/mod/hotpot/lib.php');
+        hotpot_update_grades();
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2014111133;
+    if ($oldversion < $newversion) {
+        // fix all hotpots with view completion
+        if (defined('COMPLETION_VIEW_REQUIRED')) {
+            $moduleid = $DB->get_field('modules', 'id', array('name' => 'hotpot'));
+            $params = array('module' => $moduleid, 'completionview' => COMPLETION_VIEW_REQUIRED);
+            if ($cms = $DB->get_records('course_modules', $params, 'course,section')) {
+                $time = time();
+                $course = null;
+                foreach ($cms as $cm) {
+                    $params = array('coursemoduleid'  => $cm->id,
+                                    'viewed'          => COMPLETION_VIEWED,
+                                    'completionstate' => COMPLETION_INCOMPLETE);
+                    if ($userids = $DB->get_records_menu('course_modules_completion', $params, '', 'id,userid')) {
+                        if ($course===null || $course->id != $cm->course) {
+                            $params = array('id' => $cm->course);
+                            $course = $DB->get_record('course', $params);
+                            $completion = new completion_info($course);
+                        }
+                        $userids = array_values($userids);
+                        $userids = array_unique($userids);
+                        foreach ($userids as $userid) {
+                            // mimic "set_module_viewed($cm, $userid)"
+                            // but without the warnings about headers
+                            $data = $completion->get_data($cm, false, $userid);
+                            $data->viewed = COMPLETION_VIEWED;
+                            $completion->internal_set_data($cm, $data);
+                            $completion->update_state($cm, COMPLETION_COMPLETE, $userid);
+                        }
+                    }
+                }
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2014112837;
+    if ($oldversion < $newversion) {
+        require_once($CFG->dirroot.'/mod/hotpot/lib.php');
+
+        if (function_exists('get_log_manager')) {
+
+            if ($loglegacy = get_config('loglegacy', 'logstore_legacy')) {
+                set_config('loglegacy', 0, 'logstore_legacy');
+            }
+
+            $legacy_log_tablename = 'log';
+            $legacy_log_table = new xmldb_table($legacy_log_tablename);
+
+            $standard_log_tablename = 'logstore_standard_log';
+            $standard_log_table = new xmldb_table($standard_log_tablename);
+
+            if ($dbman->table_exists($legacy_log_table) && $dbman->table_exists($standard_log_table)) {
+
+                $select = 'module = ?';
+                $params = array('hotpot');
+
+                if ($time = $DB->get_field($standard_log_tablename, 'MAX(timecreated)', array('component' => 'hotpot'))) {
+                    $select .= ' AND time > ?';
+                    $params[] = $time;
+                } else if ($time = $DB->get_field($standard_log_tablename, 'MIN(timecreated)', array())) {
+                    $select .= ' AND time > ?';
+                    $params[] = $time;
+                }
+
+                if ($count = $DB->count_records_select($legacy_log_tablename, $select, $params)) {
+                    $rs = $DB->get_recordset_select($legacy_log_tablename, $select, $params);
+                } else {
+                    $rs = false;
+                }
+
+                if ($rs) {
+                    if ($interactive) {
+                        $i = 0;
+                        $bar = new progress_bar('hotpotmigratelogs', 500, true);
+                    }
+                    $strupdating = get_string('migratinglogs', 'mod_hotpot');
+                    foreach ($rs as $log) {
+                        upgrade_set_timeout(); // 3 mins
+                        hotpot_add_to_log($log->course,
+                                          $log->module,
+                                          $log->action,
+                                          $log->url,
+                                          $log->info,
+                                          $log->cmid,
+                                          $log->userid);
+                        if ($interactive) {
+                            $i++;
+                            $bar->update($i, $count, $strupdating.": ($i/$count)");
+                        }
+                    }
+                    $rs->close();
+                }
+            }
+
+            // reset loglegacy config setting
+            if ($loglegacy) {
+                set_config('loglegacy', $loglegacy, 'logstore_legacy');
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2014121044;
+    if ($oldversion < $newversion) {
+        if (function_exists('get_log_manager')) {
+            if ($dbman->table_exists('log')) {
+                $select = 'module = ? AND '.$DB->sql_like('action', '?');
+                $DB->set_field_select('log', 'action', 'attempt', $select, array('hotpot', '%attempt_started'));
+                $DB->set_field_select('log', 'action', 'report',  $select, array('hotpot', '%report_viewed'));
+                $DB->set_field_select('log', 'action', 'review',  $select, array('hotpot', '%attempt_reviewed'));
+                $DB->set_field_select('log', 'action', 'submit',  $select, array('hotpot', '%attempt_submitted'));
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2015102678;
+    if ($oldversion < $newversion) {
+        // add custom completion fields for TaskChain module
+        $table = new xmldb_table('hotpot');
+        $fields = array(
+            new xmldb_field('completionmingrade',  XMLDB_TYPE_FLOAT, '6,2', null, XMLDB_NOTNULL, null, 0.00, 'timemodified'),
+            new xmldb_field('completionpass',      XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, 0,    'completionmingrade'),
+            new xmldb_field('completioncompleted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, 0,    'completionpass')
+        );
+        foreach ($fields as $field) {
+            xmldb_hotpot_fix_previous_field($dbman, $table, $field);
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->change_field_type($table, $field);
+            } else {
+                $dbman->add_field($table, $field);
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2015110382;
+    if ($oldversion < $newversion) {
+        $select = 'cm.*, m.name AS modname';
+        $from   = '{course_modules} cm '.
+                  'JOIN {modules} m ON cm.module = m.id '.
+                  'JOIN {hotpot} h ON cm.instance = h.id';
+        $where  = 'm.name = ? AND (h.completionmingrade > ? OR h.completionpass = ? OR h.completioncompleted = ?)';
+        $order  = 'cm.course';
+        $params = array('hotpot', 0.00, 1, 1);
+        if ($cms = $DB->get_records_sql("SELECT $select FROM $from WHERE $where ORDER BY $order", $params)) {
+            $course = null;
+            $completion = null;
+            foreach ($cms as $cm) {
+                if ($course && $course->id==$cm->course) {
+                    // same course as previous $cm
+                } else {
+                    if ($course = $DB->get_record('course', array('id' => $cm->course))) {
+                        $completion = new completion_info($course);
+                    } else {
+                        $completion = null; // shouldn't happen !!
+                    }
+                }
+                if ($completion) {
+                    $completion->reset_all_state($cm);
+                }
+            }
+        }
+        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+    }
+
+    $newversion = 2016011287;
     if ($oldversion < $newversion) {
         $empty_cache = true;
         upgrade_mod_savepoint(true, "$newversion", 'hotpot');
@@ -755,6 +1024,156 @@ function xmldb_hotpot_upgrade($oldversion) {
     }
 
     return true;
+}
+
+function xmldb_hotpot_locate_externalfile($contextid, $component, $filearea, $itemid, $filepath, $filename) {
+    global $CFG, $DB;
+
+    if (! class_exists('repository')) {
+        return false; // Moodle <= 2.2 has no repositories
+    }
+
+    static $repositories = null;
+    if ($repositories===null) {
+        $exclude_types = array('recent', 'upload', 'user', 'areafiles');
+        $repositories = repository::get_instances();
+        foreach (array_keys($repositories) as $id) {
+            if (method_exists($repositories[$id], 'get_typename')) {
+                $type = $repositories[$id]->get_typename();
+            } else {
+                $type = $repositories[$id]->options['type'];
+            }
+            if (in_array($type, $exclude_types)) {
+                unset($repositories[$id]);
+            }
+        }
+        // ensure upgraderunning is set
+        if (empty($CFG->upgraderunning)) {
+            $CFG->upgraderunning = null;
+        }
+    }
+
+    // get file storage
+    $fs = get_file_storage();
+
+    // the following types repository use encoded params
+    $encoded_types = array('user', 'areafiles', 'coursefiles');
+
+    foreach ($repositories as $id => $repository) {
+
+        // "filesystem" path is in plain text, others are encoded
+        if (method_exists($repositories[$id], 'get_typename')) {
+            $type = $repositories[$id]->get_typename();
+        } else {
+            $type = $repositories[$id]->options['type'];
+        }
+        $encodepath = in_array($type, $encoded_types);
+
+        // save $root_path, because it may get messed up by
+        // $repository->get_listing($path), if $path is non-existant
+        if (method_exists($repository, 'get_rootpath')) {
+            $root_path = $repository->get_rootpath();
+        } else if (isset($repository->root_path)) {
+            $root_path = $repository->root_path;
+        } else {
+            $root_path = false;
+        }
+
+        // get repository type
+        switch (true) {
+            case isset($repository->options['type']):
+                $type = $repository->options['type'];
+                break;
+            case isset($repository->instance->typeid):
+                $type = repository::get_type_by_id($repository->instance->typeid);
+                $type = $type->get_typename();
+                break;
+            default:
+                $type = ''; // shouldn't happen !!
+        }
+
+        $path = $filepath;
+        $source = trim($filepath.$filename, '/');
+
+        // setup $params for path encoding, if necessary
+        $params = array();
+        if ($encodepath) {
+            $listing = $repository->get_listing();
+            switch (true) {
+                case isset($listing['list'][0]['source']): $param = 'source'; break; // file
+                case isset($listing['list'][0]['path']):   $param = 'path';   break; // dir
+                default: return false; // shouldn't happen !!
+            }
+            $params = file_storage::unpack_reference($listing['list'][0][$param], true);
+
+            $params['filepath'] = '/'.$path.($path=='' ? '' : '/');
+            $params['filename'] = '.'; // "." signifies a directory
+            $path = file_storage::pack_reference($params);
+        }
+
+        // set $nodepathmode for filesystem repository on Moodle >= 3.1
+        $nodepathmode = '';
+        if ($type=='filesystem') {
+            if (method_exists($repository, 'build_node_path')) {
+                $nodepathmode = 'browse';
+                // the following code mimics the protected method
+                // $repository->build_node_path($nodepathmode, $path)
+                $path = $nodepathmode.':'.base64_encode($path).':';
+            }
+        }
+
+        // reset $repository->root_path (filesystem repository only)
+        if ($root_path) {
+            $repository->root_path = $root_path;
+        }
+
+        // unset upgraderunning because it can cause get_listing() to fail
+        $upgraderunning = $CFG->upgraderunning;
+        $CFG->upgraderunning = null;
+
+        // Note: we use "@" to suppress warnings in case $path does not exist
+        $listing = @$repository->get_listing($path);
+
+        // restore upgraderunning flag
+        $CFG->upgraderunning = $upgraderunning;
+
+        // check each file to see if it is the one we want
+        foreach ($listing['list'] as $file) {
+
+            switch (true) {
+                case isset($file['source']): $param = 'source'; break; // file
+                case isset($file['path']):   $param = 'path';   break; // dir
+                default: continue; // shouldn't happen !!
+            }
+
+            if ($encodepath) {
+                $file[$param] = file_storage::unpack_reference($file[$param]);
+                $file[$param] = trim($file[$param]['filepath'], '/').'/'.$file[$param]['filename'];
+            }
+
+            if ($file[$param]==$source) {
+
+                if ($encodepath) {
+                    $params['filename'] = $filename;
+                    $source = file_storage::pack_reference($params);
+                }
+
+                $file_record = array(
+                    'contextid' => $contextid, 'component' => $component, 'filearea' => $filearea,
+                    'sortorder' => 0, 'itemid' => 0, 'filepath' => $filepath, 'filename' => $filename
+                );
+
+                if ($file = $fs->create_file_from_reference($file_record, $id, $source)) {
+                    return $file;
+                }
+
+                break; // try another repository
+            }
+        }
+    }
+
+    // external file not found (or found but not created)
+    return false;
 }
 
 /**

@@ -16,25 +16,29 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Class to represent the source of a HotPot quiz
- * Source type: hp
+ * mod/hotpot/source/hp/class.php
  *
- * @package   mod-hotpot
- * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod
+ * @subpackage hotpot
+ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.0
  */
 
+/** Prevent direct access to this script */
 defined('MOODLE_INTERNAL') || die();
 
-// get parent class
+/** Include required files */
 require_once($CFG->dirroot.'/mod/hotpot/source/class.php');
 
 /**
  * hotpot_source_hp
  *
- * @copyright 2010 Gordon Bateson
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since     Moodle 2.0
+ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 2.0
+ * @package    mod
+ * @subpackage hotpot
  */
 class hotpot_source_hp extends hotpot_source {
     public $xml; // an array containing the xml tree for hp xml files
@@ -42,6 +46,44 @@ class hotpot_source_hp extends hotpot_source {
 
     public $hbs_software; // hotpot or textoys
     public $hbs_quiztype; //  jcloze, jcross, jmatch, jmix, jquiz, quandary, rhubarb, sequitur
+
+    // encode a string for javascript
+    public $javascript_replace_pairs = array(
+        // backslashes and quotes
+        '\\'=>'\\\\', "'"=>"\\'", '"'=>'\\"',
+        // newlines (win = "\r\n", mac="\r", linux/unix="\n")
+        "\r\n"=>'\\n', "\r"=>'\\n', "\n"=>'\\n',
+        // other (closing tag is for XHTML compliance)
+        "\0"=>'\\0', '</'=>'<\\/'
+    );
+
+    // unicode characters can be detected by checking the hex value of a character
+    //  00 - 7F : ascii char (roman alphabet + punctuation)
+    //  80 - BF : byte 2, 3 or 4 of a unicode char
+    //  C0 - DF : 1st byte of 2-byte char
+    //  E0 - EF : 1st byte of 3-byte char
+    //  F0 - FF : 1st byte of 4-byte char
+    // if the string doesn't match any of the above, it might be
+    //  80 - FF : single-byte, non-ascii char
+    public $search_unicode_chars = '/[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xff][\x80-\xbf]{3}|[\x00-\xff]/';
+
+    // array used to figure what number to decrement from character order value
+    // according to number of characters used to map unicode to ascii by utf-8
+    public $utf8_decrement = array(
+        1 => 0,
+        2 => 192,
+        3 => 224,
+        4 => 240
+    );
+
+    // the number of bits to shift each character by
+    public $utf8_shift = array(
+        1 => array(0=>0),
+        2 => array(0=>6,  1=>0),
+        3 => array(0=>12, 1=>6,  2=>0),
+        4 => array(0=>18, 1=>12, 2=>6, 3=>0)
+    );
+
 
     /**
      * is_html
@@ -333,18 +375,20 @@ class hotpot_source_hp extends hotpot_source {
             $this->compact_filecontents();
             $this->pre_xmlize_filecontents();
 
+            // define root of XML tree
+            $this->xml_root = $this->hbs_software.'-'.$this->hbs_quiztype.'-file';
+
+            // convert to XML tree using xmlize()
             if (! $this->xml = xmlize($this->filecontents, 0)) {
                 debugging('Could not parse XML file: '.$this->filepath);
-            }
-
-            $this->xml_root = $this->hbs_software.'-'.$this->hbs_quiztype.'-file';
-            if (! array_key_exists($this->xml_root, $this->xml)) {
+            } else if (! array_key_exists($this->xml_root, $this->xml)) {
                 debugging('Could not find XML root node: '.$this->xml_root);
             }
 
-            if (isset($this->config) && $this->config->get_filecontents()) {
+            // merge config settings, if necessary
+            if (isset($this->config) && $this->config && $this->config->get_filecontents()) {
 
-                $this->config->compact_filecontents();
+                $this->config->compact_filecontents(array('header-code'));
                 $xml = xmlize($this->config->filecontents, 0);
 
                 $config_file = $this->hbs_software.'-config-file';
@@ -390,12 +434,8 @@ class hotpot_source_hp extends hotpot_source {
             $search = '/&(?!(?:[a-zA-Z]+|#[0-9]+|#x[0-9a-fA-F]+);)/';
             $this->filecontents = preg_replace($search, '&amp;', $this->filecontents);
 
-            //$this->filecontents = $hotpot_textlib('utf8_to_entities', $this->filecontents);
-            // unfortunately textlib does not convert single-byte non-ascii chars
-            // i.e. "Latin-1 Supplement" e.g. latin small letter with acute (&#237;)
-
             // unicode characters can be detected by checking the hex value of a character
-            //  00 - 7F : ascii char (roman alphabet + punctuation)
+            //  00 - 7F : ascii char (control chars + roman alphabet + punctuation)
             //  80 - BF : byte 2, 3 or 4 of a unicode char
             //  C0 - DF : 1st byte of 2-byte char
             //  E0 - EF : 1st byte of 3-byte char
@@ -408,39 +448,27 @@ class hotpot_source_hp extends hotpot_source {
                           '[\x80-\xff]'.'/';
             $callback = array($this, 'utf8_char_to_html_entity');
             $this->filecontents = preg_replace_callback($search, $callback, $this->filecontents);
+
+            // the following control characters are not allowed in XML
+            // and need to be removed because they will break xmlize()
+            // basically this is the range 00-1F and the delete key 7F
+            // but excluding tab 09, newline 0A and carriage return 0D
+            $search = '/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/';
+            $this->filecontents = preg_replace($search, '', $this->filecontents);
         }
     }
 
     function utf8_char_to_html_entity($char, $ampersand='&') {
         // thanks to: http://www.zend.com/codex.php?id=835&single=1
-
         if (is_array($char)) {
             $char = $char[0];
         }
-
-        // array used to figure what number to decrement from character order value
-        // according to number of characters used to map unicode to ascii by utf-8
-        static $HOTPOT_UTF8_DECREMENT = array(
-            1 => 0,
-            2 => 192,
-            3 => 224,
-            4 => 240
-        );
-
-        // the number of bits to shift each character by
-        static $HOTPOT_UTF8_SHIFT = array(
-            1 => array(0=>0),
-            2 => array(0=>6,  1=>0),
-            3 => array(0=>12, 1=>6,  2=>0),
-            4 => array(0=>18, 1=>12, 2=>6, 3=>0)
-        );
-
         $dec = 0;
         $len = strlen($char);
         for ($pos=0; $pos<$len; $pos++) {
             $ord = ord ($char{$pos});
-            $ord -= ($pos ? 128 : $HOTPOT_UTF8_DECREMENT[$len]);
-            $dec += ($ord << $HOTPOT_UTF8_SHIFT[$len][$pos]);
+            $ord -= ($pos ? 128 : $this->utf8_decrement[$len]);
+            $dec += ($ord << $this->utf8_shift[$len][$pos]);
         }
 
         return $ampersand.'#x'.sprintf('%04X', $dec).';';
@@ -449,9 +477,11 @@ class hotpot_source_hp extends hotpot_source {
     /**
      * xml_value
      *
+     * @uses $CFG
      * @param xxx $tags
      * @param xxx $more_tags (optional, default=null)
      * @param xxx $default (optional, default='')
+     * @param xxx $nl2br (optional, default=true)
      * @return xxx
      */
     function xml_value($tags, $more_tags=null, $default='', $nl2br=true) {
@@ -479,7 +509,7 @@ class hotpot_source_hp extends hotpot_source {
             if (! is_array($value)) {
                 return null;
             }
-            if(! array_key_exists($tag, $value)) {
+            if (! array_key_exists($tag, $value)) {
                 return null;
             }
             $value = $value[$tag];
@@ -527,6 +557,10 @@ class hotpot_source_hp extends hotpot_source {
                 $callback = array($this, 'xml_value_nl2br');
                 $value = preg_replace_callback($search, $callback, $value);
             }
+
+            // encode unicode characters as HTML entities
+            // (in particular, accented charaters that have not been encoded by HP)
+            $value = hotpot_textlib('utf8_to_entities', $value);
         }
         return $value;
     }
@@ -585,7 +619,7 @@ class hotpot_source_hp extends hotpot_source {
      *
      * @param xxx $tags
      * @param xxx $more_tags (optional, default=null)
-     * @param xxx $default (optional, default='')
+     * @param xxx $default (optional, default=0)
      * @return xxx
      */
     function xml_value_int($tags, $more_tags=null, $default=0) {
@@ -603,7 +637,8 @@ class hotpot_source_hp extends hotpot_source {
      * @param xxx $tags
      * @param xxx $more_tags (optional, default=null)
      * @param xxx $default (optional, default='')
-     * @param xxx $convert_to_unicode (optional, default=false)
+     * @param xxx $nl2br (optional, default=true)
+     * @param xxx $convert_to_unicode (optional, default=true)
      * @return xxx
      */
     function xml_value_js($tags, $more_tags=null, $default='', $nl2br=true, $convert_to_unicode=true) {
@@ -619,31 +654,20 @@ class hotpot_source_hp extends hotpot_source {
      * @return xxx
      */
     function js_value_safe($str, $convert_to_unicode=false) {
-        // encode a string for javascript
-        static $replace_pairs = array(
-            // backslashes and quotes
-            '\\'=>'\\\\', "'"=>"\\'", '"'=>'\\"',
-            // newlines (win = "\r\n", mac="\r", linux/unix="\n")
-            "\r\n"=>'\\n', "\r"=>'\\n', "\n"=>'\\n',
-            // other (closing tag is for XHTML compliance)
-            "\0"=>'\\0', '</'=>'<\\/'
-        );
+        global $CFG;
 
-        // convert unicode chars to html entities, if required
-        // Note that this will also decode named entities such as &apos; and &quot;
-        // so we have to put "strtr()" AFTER this call to textlib::utf8_to_entities()
-        if ($convert_to_unicode) {
-            $str = hotpot_textlib('utf8_to_entities', $str, false, true);
-        }
-
-        $str = strtr($str, $replace_pairs);
-
-        // convert (hex and decimal) html entities to javascript unicode, if required
-        if ($convert_to_unicode) {
-            $search = '/&#x([0-9A-F]+);/i';
+        if ($convert_to_unicode && $CFG->hotpot_enableobfuscate) {
+            // CONTRIB-6084 unencode HTML entities
+            // before converting to JavaScript unicode
+            $str = hotpot_textlib('entities_to_utf8', $str, true);
+            // convert ALL chars to Javascript unicode
             $callback = array($this, 'js_unicode_char');
-            $str = preg_replace_callback($search, $callback, $str);
+            $str = preg_replace_callback($this->search_unicode_chars, $callback, $str);
+        } else {
+            // escape backslashes, quotes, etc
+            $str = strtr($str, $this->javascript_replace_pairs);
         }
+
         return $str;
     }
 
@@ -654,7 +678,10 @@ class hotpot_source_hp extends hotpot_source {
      * @return xxx
      */
     function js_unicode_char($match) {
-        return sprintf('\\u%04s', $match[1]);
+        $num = $match[0]; // the UTF-8 char
+        $num = hotpot_textlib('utf8ord', $num);
+        $num = strtoupper(dechex($num));
+        return sprintf('\\u%04s', $num);
     }
 
     /**

@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * mod/hotpot/utilities/index.php
+ * mod/hotpot/tools/index.php
  *
  * @package   mod-hotpot
  * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
@@ -37,23 +37,24 @@ $PAGE->set_url($CFG->wwwroot.$SCRIPT);
 $title = 'HotPot Utilities index';
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
+$PAGE->set_pagelayout('admin');
 
 echo $OUTPUT->header();
 echo $OUTPUT->box_start();
 
 // get path to this directory
 $dirname = dirname($SCRIPT);
-$dirpath = $CFG->dirroot.'/'.$dirname;
+$dirpath = $CFG->dirroot.$dirname;
 
 echo html_writer::start_tag('ul')."\n";
 
 $items = new DirectoryIterator($dirpath);
 foreach ($items as $item) {
-    if ($item->isDot() || substr($item, 0, 1)=='.' || $item=='index.php') {
+    if ($item->isDot() || substr($item, 0, 1)=='.' || $item=='index.php' || trim($item)=='') {
         continue;
     }
     if ($item->isFile()) {
-        $href = $CFG->wwwroot.'/'.$dirname.'/'.$item;
+        $href = $CFG->wwwroot.$dirname.'/'.$item;
         echo html_writer::tag('li', html_writer::tag('a', $item, array('href' => $href)))."\n";
     }
 }

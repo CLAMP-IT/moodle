@@ -26,11 +26,24 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// prevent direct access to this script
 defined('MOODLE_INTERNAL') || die();
 
-$module->cron      = 0;
-$module->component = 'mod_hotpot';
-$module->maturity  = MATURITY_STABLE; // = 200
-$module->release   = 'v3.0.65';
-$module->requires  = 2010112400; // Moodle 2.0
-$module->version   = 2010080365;
+if (empty($CFG)) {
+    global $CFG;
+}
+
+if (empty($CFG->branch) || $CFG->branch <= 26) {
+    $plugin = new stdClass();
+}
+
+$plugin->cron      = 0;
+$plugin->component = 'mod_hotpot';
+$plugin->maturity  = MATURITY_STABLE; // ALPHA=50, BETA=100, RC=150, STABLE=200
+$plugin->requires  = 2010112400;      // Moodle 2.0
+$plugin->release   = '2016-06-14 (96)';
+$plugin->version   = 2016061496;
+
+if (empty($CFG->branch) || $CFG->branch <= 26) {
+    $module = clone($plugin);
+}

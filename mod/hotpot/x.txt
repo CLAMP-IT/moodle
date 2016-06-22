@@ -1,0 +1,2396 @@
+diff --git a/attempt/hp/6/jcloze/renderer.php b/attempt/hp/6/jcloze/renderer.php
+index a45ee8e..3bb60a7 100644
+--- a/attempt/hp/6/jcloze/renderer.php
++++ b/attempt/hp/6/jcloze/renderer.php
+@@ -24,17 +24,20 @@
+  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+  */
+ 
++/** Prevent direct access to this script */
+ defined('MOODLE_INTERNAL') || die();
+ 
+-// get parent class
++/** Include required files */
+ require_once($CFG->dirroot.'/mod/hotpot/attempt/hp/6/renderer.php');
+ 
+ /**
+  * mod_hotpot_attempt_hp_6_jcloze_renderer
+  *
+- * @copyright 2010 Gordon Bateson
+- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+- * @since     Moodle 2.0
++ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @since      Moodle 2.0
++ * @package    mod
++ * @subpackage hotpot
+  */
+ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_renderer {
+     public $icon = 'pix/f/jcl.gif';
+@@ -44,7 +47,7 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
+     public $templatestrings = 'PreloadImageList';
+ 
+     // Glossary autolinking settings
+-    public $headcontent_strings = 'Feedback|Correct|Incorrect|GiveHint|YourScoreIs|Guesses|(?:I\[\d+\]\[1\]\[\d+\]\[2\])';
++    public $headcontent_strings = 'Feedback|Correct|Incorrect|GiveHint|YourScoreIs|Guesses|(?:I\[\d+\]\[[12]\])';
+     public $headcontent_arrays = '';
+ 
+     /**
+@@ -135,7 +138,6 @@ class mod_hotpot_attempt_hp_6_jcloze_renderer extends mod_hotpot_attempt_hp_6_re
+         //   ClueNum : JCross (has its own fix function)
+         // so it is safest to refer to it using "ShowClue.arguments[0]"
+ 
+-
+         // intercept Clues
+         if ($pos = strpos($substr, '{')) {
+             $insert = "\n"
+diff --git a/attempt/hp/6/jcloze/xml/findit/b/templates/jcloze6.js_ b/attempt/hp/6/jcloze/xml/findit/b/templates/jcloze6.js_
+index 8650368..7bdf4a2 100644
+--- a/attempt/hp/6/jcloze/xml/findit/b/templates/jcloze6.js_
++++ b/attempt/hp/6/jcloze/xml/findit/b/templates/jcloze6.js_
+@@ -140,7 +140,7 @@ function Markup_Text(Node){
+ 			case 'span' :
+ 					if (Node.childNodes[x].attributes.length > 0){
+ 						if ((Node.childNodes[x].getAttribute('id').substr(0, 7) != 'GapSpan')){
+-							Node.replaceNode(Markup_Text(Node.childNodes[x]), Node.childNodes[x]);
++							Node.replaceChild(Markup_Text(Node.childNodes[x]), Node.childNodes[x]);
+ 							}
+ 						}
+ 				break;
+diff --git a/attempt/hp/6/jcross/renderer.php b/attempt/hp/6/jcross/renderer.php
+index e987989..b275827 100644
+--- a/attempt/hp/6/jcross/renderer.php
++++ b/attempt/hp/6/jcross/renderer.php
+@@ -19,22 +19,27 @@
+  * Render an attempt at a HotPot quiz
+  * Output format: hp_6_jcross
+  *
+- * @package   mod-hotpot
+- * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
+- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @package    mod
++ * @subpackage hotpot
++ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @since      Moodle 2.0
+  */
+ 
++/** Prevent direct access to this script */
+ defined('MOODLE_INTERNAL') || die();
+ 
+-// get parent class
++/** Include required files */
+ require_once($CFG->dirroot.'/mod/hotpot/attempt/hp/6/renderer.php');
+ 
+ /**
+  * mod_hotpot_attempt_hp_6_jcross_renderer
+  *
+- * @copyright 2010 Gordon Bateson
+- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+- * @since     Moodle 2.0
++ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @since      Moodle 2.0
++ * @package    mod
++ * @subpackage hotpot
+  */
+ class mod_hotpot_attempt_hp_6_jcross_renderer extends mod_hotpot_attempt_hp_6_renderer {
+     public $icon = 'pix/f/jcw.gif';
+diff --git a/attempt/hp/6/jmatch/jmatch.js b/attempt/hp/6/jmatch/jmatch.js
+index d37b8b6..c5a1a6e 100644
+--- a/attempt/hp/6/jmatch/jmatch.js
++++ b/attempt/hp/6/jmatch/jmatch.js
+@@ -121,29 +121,29 @@ function JMatch(sendallclicks, ajax) {
+             }
+         } else if (window.Status) {
+             // v6 (=plain old select elements)
+-    		var obj = document.getElementById(Status[q][2]);
+-    		if (obj) { // not correct yet
+-    			if (getCorrect) {
+-    				var k = GetKeyFromSelect(obj); // HP function
+-    				var i_max = obj.options.length;
+-    				for (var i=0; i<i_max; i++) {
+-    					if (obj.options[i].value==k) {
++            var obj = document.getElementById(Status[q][2]);
++            if (obj) { // not correct yet
++                if (getCorrect) {
++                    var k = GetKeyFromSelect(obj); // HP function
++                    var i_max = obj.options.length;
++                    for (var i=0; i<i_max; i++) {
++                        if (obj.options[i].value==k) {
+                             break;
+                         }
+-    				}
+-    				if (i>=i_max) {
++                    }
++                    if (i>=i_max) {
+                         i = 0; // shouldn't happen
+                     }
+-    			} else {
+-    				// get current guess, if any
+-    				var i = obj.selectedIndex;
+-    			}
+-    			if (i) {
++                } else {
++                    // get current guess, if any
++                    var i = obj.selectedIndex;
++                }
++                if (i) {
+                     rhs = obj.options[i].innerHTML;
+                 }
+-    		} else { // correct
++            } else { // correct
+                 rhs = GetTextFromNodeN(document.getElementById('Questions'), 'RightItem', q);
+-    		}
++            }
+         }
+         return rhs;
+     }
+diff --git a/attempt/hp/6/jquiz/renderer.php b/attempt/hp/6/jquiz/renderer.php
+index 9749014..9297d43 100644
+--- a/attempt/hp/6/jquiz/renderer.php
++++ b/attempt/hp/6/jquiz/renderer.php
+@@ -86,8 +86,11 @@ class mod_hotpot_attempt_hp_6_jquiz_renderer extends mod_hotpot_attempt_hp_6_ren
+     function fix_headcontent() {
+         if ($pos = strrpos($this->headcontent, '</style>')) {
+             $insert = ''
+-                .'ol.QuizQuestions{'."\n"
+-                .'	margin-bottom:0px;'."\n"
++                .'#'.$this->themecontainer.' ol.QuizQuestions{'."\n"
++                .'	margin-bottom: 0px;'."\n"
++                .'}'."\n"
++                .'#'.$this->themecontainer.' li.QuizQuestion{'."\n"
++                .'	overflow: auto;'."\n"
+                 .'}'."\n"
+             ;
+             $this->headcontent = substr_replace($this->headcontent, $insert, $pos, 0);
+diff --git a/attempt/hp/6/renderer.php b/attempt/hp/6/renderer.php
+index 88fcf3c..f9dad27 100644
+--- a/attempt/hp/6/renderer.php
++++ b/attempt/hp/6/renderer.php
+@@ -19,22 +19,27 @@
+  * Render an attempt at a HotPot quiz
+  * Output format: hp_6
+  *
+- * @package   mod-hotpot
+- * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
+- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @package    mod
++ * @subpackage hotpot
++ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @since      Moodle 2.0
+  */
+ 
++/** Prevent direct access to this script */
+ defined('MOODLE_INTERNAL') || die();
+ 
+-// get parent class
++/** Include required files */
+ require_once($CFG->dirroot.'/mod/hotpot/attempt/hp/renderer.php');
+ 
+ /**
+  * mod_hotpot_attempt_hp_6_renderer
+  *
+- * @copyright 2010 Gordon Bateson
+- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+- * @since     Moodle 2.0
++ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @since      Moodle 2.0
++ * @package    mod
++ * @subpackage hotpot
+  */
+ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
+ 
+@@ -361,11 +366,11 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
+             ."	switch (type){\n"
+             ."		case 'Width':\n"
+             ."		case 'Height':\n"
+-            ."			return eval('(obj.offset'+type+'||0)');\n"
++            ."			return (obj['offset'+type]||0);\n"
+             ."\n"
+             ."		case 'Top':\n"
+             ."		case 'Left':\n"
+-            ."			return eval('(obj.offset'+type+'||0) + getOffset(obj.offsetParent, type)');\n"
++            ."			return (obj['offset'+type]||0) + getOffset(obj.offsetParent, type);\n"
+             ."\n"
+             ."		case 'Right':\n"
+             ."			return getOffset(obj, 'Left') + getOffset(obj, 'Width');\n"
+@@ -962,6 +967,7 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
+     /**
+      * fix_js_HideFeedback
+      *
++     * @uses $CFG
+      * @param xxx $str (passed by reference)
+      * @param xxx $start
+      * @param xxx $length
+@@ -1713,9 +1719,8 @@ class mod_hotpot_attempt_hp_6_renderer extends mod_hotpot_attempt_hp_renderer {
+         $search = '/\\\\u([0-9a-f]{4})/i';
+         $str = $this->filter_text_to_utf8($str, $search);
+ 
+-        // convert html entities
+-        $search = '/&#x([0-9a-f]+);/i';
+-        $str = $this->filter_text_to_utf8($str, $search);
++        // convert dec, hex and named entities to unicode chars
++        $str = hotpot_textlib('entities_to_utf8', $str, true);
+ 
+         // fix relative urls
+         $str = $this->fix_relativeurls($str);
+diff --git a/attempt/hp/feedback.js b/attempt/hp/feedback.js
+index b49b460..aa4b5ae 100644
+--- a/attempt/hp/feedback.js
++++ b/attempt/hp/feedback.js
+@@ -38,78 +38,78 @@
+  * hpFeedback
+  */
+ function hpFeedback() {
+-	if (FEEDBACK[0]) {
+-		var url = '';
+-		var html = '';
+-		if (FEEDBACK[1] && FEEDBACK[2]) { // formmail
+-			html += '<html><body>'
+-				+ '<form action="' + FEEDBACK[0] + '" method="POST">'
+-				+ '<table border="0">'
+-				+ '<tr><th valign="top" align="right">' + FEEDBACK[7] + ':</th><td>' + document.title + '</td></tr>'
+-				+ '<tr><th valign="top" align="right">' + FEEDBACK[8] + ': </th><td>'
+-			;
+-			if (typeof(FEEDBACK[1])=='string') {
+-				html += FEEDBACK[1] + hpHiddenField('recipient', FEEDBACK[1], ',', true);
+-			} else if (typeof(FEEDBACK[1])=='object') {
+-				var i_max = FEEDBACK[1].length;
+-				if (i_max==1) { // one teacher
+-					html += FEEDBACK[1][0][0] + hpHiddenField('recipient', FEEDBACK[1][0][0]+' &lt;'+FEEDBACK[1][0][1]+'&gt;', ',', true);
+-				} else if (i_max>1) { // several teachers
+-					html += '<select name="recipient">';
+-					for (var i=0; i<i_max; i++) {
+-						html += '<option value="'+FEEDBACK[1][i][1]+'">' + FEEDBACK[1][i][0] + '</option>';
+-					}
+-					html += '</select>';
+-				}
+-			}
+-			html += '</td></tr>'
+-				+ '<tr><th valign="top" align="right">' + FEEDBACK[9] + ':</th>'
+-				+ '<td><TEXTAREA name="message" rows="10" cols="40"></TEXTAREA></td></tr>'
+-				+ '<tr><td>&nbsp;</td><td><input type="submit" value="' + FEEDBACK[6] + '">'
+-				+ hpHiddenField('realname', FEEDBACK[2], ',', true)
+-				+ hpHiddenField('email', FEEDBACK[3], ',', true)
+-				+ hpHiddenField('subject', document.title, ',', true)
+-				+ hpHiddenField('title', document.title, ',', true)
+-				+ hpHiddenField('return_link_title', FEEDBACK[10], ',', true)
+-				+ hpHiddenField('return_link_url', 'javascript:self.close()', ',', true)
+-				+ '</td></tr></table></form></body></html>'
+-			;
+-		} else if (FEEDBACK[1]) { // url only
+-			if (typeof(FEEDBACK[1])=='object') {
+-				var i_max = FEEDBACK[1].length;
+-				if (i_max>1) { // several teachers
+-					html += '<html><body>'
+-						+ '<form action="' + FEEDBACK[0] + '" method="POST" onsubmit="this.action+=this.recipient.options[this.recipient.selectedIndex].value">'
+-						+ '<table border="0">'
+-						+ '<tr><th valign="top" align="right">' + FEEDBACK[7] + ':</th><td>' + document.title + '</td></tr>'
+-						+ '<tr><th valign="top" align="right">' + FEEDBACK[8] + ': </th><td>'
+-					;
+-					html += '<select name="recipient">';
+-					for (var i=0; i<i_max; i++) {
+-						html += '<option value="'+FEEDBACK[1][i][1]+'">' + FEEDBACK[1][i][0] + '</option>';
+-					}
+-					html += '</select>';
+-					html += '</td></tr>'
+-						+ '<tr><td>&nbsp;</td><td><input type="submit" value="' + FEEDBACK[6] + '">'
+-						+ '</td></tr></table></form></body></html>'
+-					;
+-				} else if (i_max==1) { // one teacher
+-					url = FEEDBACK[0] + FEEDBACK[1][0][1];
+-				}
+-			} else if (typeof(FEEDBACK[1])=='string') {
+-				url = FEEDBACK[0] + FEEDBACK[1];
+-			}
+-		} else {
+-			url = FEEDBACK[0];
+-		}
+-		if (url || html) {
+-			var w = openWindow(url, 'feedback', FEEDBACK[4], FEEDBACK[5], 'RESIZABLE,SCROLLBARS', html);
+-			if (! w) {
+-				 // unable to open popup window
++    if (FEEDBACK[0]) {
++        var url = '';
++        var html = '';
++        if (FEEDBACK[1] && FEEDBACK[2]) { // formmail
++            html += '<html><body>'
++                + '<form action="' + FEEDBACK[0] + '" method="POST">'
++                + '<table border="0">'
++                + '<tr><th valign="top" align="right">' + FEEDBACK[7] + ':</th><td>' + document.title + '</td></tr>'
++                + '<tr><th valign="top" align="right">' + FEEDBACK[8] + ': </th><td>'
++            ;
++            if (typeof(FEEDBACK[1])=='string') {
++                html += FEEDBACK[1] + hpHiddenField('recipient', FEEDBACK[1], ',', true);
++            } else if (typeof(FEEDBACK[1])=='object') {
++                var i_max = FEEDBACK[1].length;
++                if (i_max==1) { // one teacher
++                    html += FEEDBACK[1][0][0] + hpHiddenField('recipient', FEEDBACK[1][0][0]+' &lt;'+FEEDBACK[1][0][1]+'&gt;', ',', true);
++                } else if (i_max>1) { // several teachers
++                    html += '<select name="recipient">';
++                    for (var i=0; i<i_max; i++) {
++                        html += '<option value="'+FEEDBACK[1][i][1]+'">' + FEEDBACK[1][i][0] + '</option>';
++                    }
++                    html += '</select>';
++                }
++            }
++            html += '</td></tr>'
++                + '<tr><th valign="top" align="right">' + FEEDBACK[9] + ':</th>'
++                + '<td><TEXTAREA name="message" rows="10" cols="40"></TEXTAREA></td></tr>'
++                + '<tr><td>&nbsp;</td><td><input type="submit" value="' + FEEDBACK[6] + '">'
++                + hpHiddenField('realname', FEEDBACK[2], ',', true)
++                + hpHiddenField('email', FEEDBACK[3], ',', true)
++                + hpHiddenField('subject', document.title, ',', true)
++                + hpHiddenField('title', document.title, ',', true)
++                + hpHiddenField('return_link_title', FEEDBACK[10], ',', true)
++                + hpHiddenField('return_link_url', 'javascript:self.close()', ',', true)
++                + '</td></tr></table></form></body></html>'
++            ;
++        } else if (FEEDBACK[1]) { // url only
++            if (typeof(FEEDBACK[1])=='object') {
++                var i_max = FEEDBACK[1].length;
++                if (i_max>1) { // several teachers
++                    html += '<html><body>'
++                        + '<form action="' + FEEDBACK[0] + '" method="POST" onsubmit="this.action+=this.recipient.options[this.recipient.selectedIndex].value">'
++                        + '<table border="0">'
++                        + '<tr><th valign="top" align="right">' + FEEDBACK[7] + ':</th><td>' + document.title + '</td></tr>'
++                        + '<tr><th valign="top" align="right">' + FEEDBACK[8] + ': </th><td>'
++                    ;
++                    html += '<select name="recipient">';
++                    for (var i=0; i<i_max; i++) {
++                        html += '<option value="'+FEEDBACK[1][i][1]+'">' + FEEDBACK[1][i][0] + '</option>';
++                    }
++                    html += '</select>';
++                    html += '</td></tr>'
++                        + '<tr><td>&nbsp;</td><td><input type="submit" value="' + FEEDBACK[6] + '">'
++                        + '</td></tr></table></form></body></html>'
++                    ;
++                } else if (i_max==1) { // one teacher
++                    url = FEEDBACK[0] + FEEDBACK[1][0][1];
++                }
++            } else if (typeof(FEEDBACK[1])=='string') {
++                url = FEEDBACK[0] + FEEDBACK[1];
++            }
++        } else {
++            url = FEEDBACK[0];
++        }
++        if (url || html) {
++            var w = openWindow(url, 'feedback', FEEDBACK[4], FEEDBACK[5], 'RESIZABLE,SCROLLBARS', html);
++            if (! w) {
++                 // unable to open popup window
+                 alert('Please enable pop-up windows on your browser');
+-			}
+-		}
+-	}
++            }
++        }
++    }
+ }
+ 
+ /**
+@@ -137,57 +137,57 @@ function hpHiddenField(name, value, comma, forceHTML) {
+  * @return xxx
+  */
+ function openWindow(url, name, width, height, attributes, html) {
+-	// set height, width and attributes
+-	if (window.screen && width && height) {
+-		var W = screen.availWidth;
+-		var H = screen.availHeight;
+-		width = Math.min(width, W);
+-		height = Math.min(height, H);
+-		attributes = ''
+-			+ (attributes ? (attributes+',') : '')
+-			+ 'WIDTH='+width+',HEIGHT='+height
+-		;
+-	}
+-	// create global hpWindows object, if necessary
+-	if (! window.hpWindows) window.hpWindows = new Array();
+-	// initialize window object
+-	var w = null;
+-	// has a window with this name been opened before?
+-	if (name && hpWindows[name]) {
+-		// http://www.webreference.com/js/tutorial1/exist.html
+-		if (hpWindows[name].open && ! hpWindows[name].closed) {
+-			w = hpWindows[name];
+-			w.focus();
+-		} else {
+-			hpWindows[name] = null;
+-		}
+-	}
+-	// check window is not already open
+-	if (w==null) {
+-		// workaround for "Access is denied" errors in IE when offline
+-		// based on an idea seen at http://www.devshed.com/Client_Side/JavaScript/Mini_FAQ
+-		var ie_offline = (document.all && location.protocol=='file:');
+-		// try and open the new window
+-		w = window.open((ie_offline ? '' : url), name, attributes);
+-		// check window opened OK (user may have prevented popups)
+-		if (w) {
+-			// center the window
+-			if (window.screen && width && height) {
+-				w.moveTo((W-width)/2, (H-height)/2);
+-			}
+-			// add content, if required
+-			if (html) {
+-				with (w.document) {
+-					clear();
+-					open();
+-					write(html);
+-					close();
+-				}
+-			} else if (url && ie_offline) {
+-				w.location = url;
+-			}
+-			if (name) hpWindows[name] = w;
+-		}
+-	}
+-	return w;
++    // set height, width and attributes
++    if (window.screen && width && height) {
++        var W = screen.availWidth;
++        var H = screen.availHeight;
++        width = Math.min(width, W);
++        height = Math.min(height, H);
++        attributes = ''
++            + (attributes ? (attributes+',') : '')
++            + 'WIDTH='+width+',HEIGHT='+height
++        ;
++    }
++    // create global hpWindows object, if necessary
++    if (! window.hpWindows) window.hpWindows = new Array();
++    // initialize window object
++    var w = null;
++    // has a window with this name been opened before?
++    if (name && hpWindows[name]) {
++        // http://www.webreference.com/js/tutorial1/exist.html
++        if (hpWindows[name].open && ! hpWindows[name].closed) {
++            w = hpWindows[name];
++            w.focus();
++        } else {
++            hpWindows[name] = null;
++        }
++    }
++    // check window is not already open
++    if (w==null) {
++        // workaround for "Access is denied" errors in IE when offline
++        // based on an idea seen at http://www.devshed.com/Client_Side/JavaScript/Mini_FAQ
++        var ie_offline = (document.all && location.protocol=='file:');
++        // try and open the new window
++        w = window.open((ie_offline ? '' : url), name, attributes);
++        // check window opened OK (user may have prevented popups)
++        if (w) {
++            // center the window
++            if (window.screen && width && height) {
++                w.moveTo((W-width)/2, (H-height)/2);
++            }
++            // add content, if required
++            if (html) {
++                with (w.document) {
++                    clear();
++                    open();
++                    write(html);
++                    close();
++                }
++            } else if (url && ie_offline) {
++                w.location = url;
++            }
++            if (name) hpWindows[name] = w;
++        }
++    }
++    return w;
+ }
+diff --git a/attempt/hp/hp.js b/attempt/hp/hp.js
+index 65427f9..fcc284c 100644
+--- a/attempt/hp/hp.js
++++ b/attempt/hp/hp.js
+@@ -425,19 +425,19 @@ function hpQuizAttempt() {
+     this.getFormElementValue = function (obj) {
+         var v = ''; // value
+         var t = obj.type;
+-		if (t=='text' || t=='textarea' || t=='password' || t=='hidden') {
+-			v = obj.value;
++        if (t=='text' || t=='textarea' || t=='password' || t=='hidden') {
++            v = obj.value;
+         } else if (t=='radio' || t=='checkbox') {
+-			if (obj.checked) {
++            if (obj.checked) {
+                 v = obj.value;
+             }
+         } else if (t=='select-one' || t=='select-multiple') {
+-			var i_max = obj.options.length;
+-			for (var i=0; i<i_max; i++) {
+-				if (obj.options[i].selected) {
+-					v += (v=='' ? '' : ',') + obj.options[i].value;
+-				}
+-			}
++            var i_max = obj.options.length;
++            for (var i=0; i<i_max; i++) {
++                if (obj.options[i].selected) {
++                    v += (v=='' ? '' : ',') + obj.options[i].value;
++                }
++            }
+         } else if (t=='button' || t=='reset' || t=='submit') {
+             // do nothing
+         } else {
+@@ -750,11 +750,11 @@ function hpField(name, value) {
+  * @return function
+  */
+ function HP_fix_function(fnc) {
+-	if (typeof(fnc)=='function') {
+-		return fnc;
+-	} else {
+-		return new Function('event', fnc);
+-	}
++    if (typeof(fnc)=='function') {
++        return fnc;
++    } else {
++        return new Function('event', fnc);
++    }
+ }
+ 
+ /**
+@@ -768,22 +768,15 @@ function HP_fix_event(evt, obj) {
+     var i = 0;
+     var evts = new Array();
+ 
+-    if ('onmousedown' in obj) {
+-        switch (evt) {
+-            case 'tap'        : evts[i++] = 'click';     break;
+-            case 'touchstart' : evts[i++] = 'mousedown'; break;
+-            case 'touchmove'  : evts[i++] = 'mousemove'; break;
+-            case 'touchend'   : evts[i++] = 'mouseup';   break;
+-        }
+-    }
+-
+-    if ('ontouchstart' in obj) {
+-        switch (evt) {
+-            case 'click'      : evts[i++] = 'tap';        break;
+-            case 'mousedown'  : evts[i++] = 'touchstart'; break;
+-            case 'mousemove'  : evts[i++] = 'touchmove';  break;
+-            case 'mouseup'    : evts[i++] = 'touchend';   break;
+-        }
++    switch (evt) {
++        case 'click'      : if ('ontap'        in obj) evts[i++] = 'tap';        break;
++        case 'mousedown'  : if ('ontouchstart' in obj) evts[i++] = 'touchstart'; break;
++        case 'mousemove'  : if ('ontouchmove'  in obj) evts[i++] = 'touchmove';  break;
++        case 'mouseup'    : if ('ontouchend'   in obj) evts[i++] = 'touchend';   break;
++        case 'tap'        : if ('onclick'      in obj) evts[i++] = 'click';      break;
++        case 'touchend'   : if ('onmouseup'    in obj) evts[i++] = 'mouseup';    break;
++        case 'touchmove'  : if ('onmousemove'  in obj) evts[i++] = 'mousemove';  break;
++        case 'touchstart' : if ('onmousedown'  in obj) evts[i++] = 'mousedown';  break;
+     }
+ 
+     var onevent = 'on' + evt;
+@@ -806,15 +799,15 @@ function HP_fix_event(evt, obj) {
+ function HP_add_listener(obj, evt, fnc, useCapture) {
+ 
+     // convert fnc to Function, if necessary
+-	fnc = HP_fix_function(fnc);
++    fnc = HP_fix_function(fnc);
+ 
+     // convert mouse <=> touch events
+-	var evts = HP_fix_event(evt, obj);
++    var evts = HP_fix_event(evt, obj);
+ 
+     // add event handler(s)
+-	var i_max = evts.length;
+-	for (var i=0; i<i_max; i++) {
+-	    evt = evts[i];
++    var i_max = evts.length;
++    for (var i=0; i<i_max; i++) {
++        evt = evts[i];
+ 
+         // transfer object's old event handler (if any)
+         var onevent = 'on' + evt;
+@@ -841,7 +834,7 @@ function HP_add_listener(obj, evt, fnc, useCapture) {
+                 obj[onevent] = new Function('HP_handle_event(this, \"'+onevent+'\")');
+             }
+         }
+-	}
++    }
+ }
+ 
+ /**
+@@ -856,15 +849,15 @@ function HP_add_listener(obj, evt, fnc, useCapture) {
+ function HP_remove_listener(obj, evt, fnc, useCapture) {
+ 
+     // convert fnc to Function, if necessary
+-	fnc = HP_fix_function(fnc);
++    fnc = HP_fix_function(fnc);
+ 
+     // convert mouse <=> touch events
+-	var evts = HP_fix_event(evt, obj);
++    var evts = HP_fix_event(evt, obj);
+ 
+     // remove event handler(s)
+-	var i_max = evts.length;
+-	for (var i=0; i<i_max; i++) {
+-	    evt = evts[i];
++    var i_max = evts.length;
++    for (var i=0; i<i_max; i++) {
++        evt = evts[i];
+ 
+         var onevent = 'on' + evt;
+         if (obj.removeEventListener) {
+@@ -879,7 +872,7 @@ function HP_remove_listener(obj, evt, fnc, useCapture) {
+                 }
+             }
+         }
+-	}
++    }
+ }
+ 
+ /**
+@@ -890,12 +883,12 @@ function HP_remove_listener(obj, evt, fnc, useCapture) {
+  * @return void, but may execute event handler
+  */
+ function HP_handle_event(obj, onevent) {
+-	if (obj.evts[onevent]) {
+-		var i_max = obj.evts[onevent].length
+-		for (var i=0; i<i_max; i++) {
+-			obj.evts[onevent][i]();
+-		}
+-	}
++    if (obj.evts[onevent]) {
++        var i_max = obj.evts[onevent].length
++        for (var i=0; i<i_max; i++) {
++            obj.evts[onevent][i]();
++        }
++    }
+ }
+ 
+ /**
+@@ -905,15 +898,15 @@ function HP_handle_event(obj, onevent) {
+  * @return may return false (older browsers)
+  */
+ function HP_disable_event(evt) {
+-	if (evt==null) {
+-		evt = window.event;
+-	}
+-	if (evt.preventDefault) {
+-		evt.preventDefault();
+-	} else { // IE <= 8
+-		evt.returnValue = false;
+-	}
+-	return false;
++    if (evt==null) {
++        evt = window.event;
++    }
++    if (evt.preventDefault) {
++        evt.preventDefault();
++    } else { // IE <= 8
++        evt.returnValue = false;
++    }
++    return false;
+ }
+ 
+ ///////////////////////////////////////////
+diff --git a/attempt/html/renderer.php b/attempt/html/renderer.php
+index 2817ac1..50367b4 100644
+--- a/attempt/html/renderer.php
++++ b/attempt/html/renderer.php
+@@ -304,7 +304,7 @@ class mod_hotpot_attempt_html_renderer extends mod_hotpot_attempt_renderer {
+         // prepare form parameters and attributes
+         $params = array(
+             'id' => $this->hotpot->create_attempt(),
+-            $this->scorefield => '0', 'detail'  => '0', 'status'   => '0',
++            $this->scorefield => '0', 'detail'  => '0', 'status'   => hotpot::STATUS_COMPLETED,
+             'starttime'       => '0', 'endtime' => '0', 'redirect' => '1',
+         );
+ 
+diff --git a/db/install.xml b/db/install.xml
+index e73ba01..12207d2 100644
+--- a/db/install.xml
++++ b/db/install.xml
+@@ -52,7 +52,10 @@
+         <FIELD NAME="clickreporting" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="gradeweighting" NEXT="discarddetails"/>
+         <FIELD NAME="discarddetails" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="clickreporting" NEXT="timecreated"/>
+         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="discarddetails" NEXT="timemodified"/>
+-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="timecreated"/>
++        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="timecreated" NEXT="completionmingrade"/>
++        <FIELD NAME="completionmingrade" TYPE="number" LENGTH="6" NOTNULL="true" DEFAULT="0.00" SEQUENCE="false" DECIMALS="2" PREVIOUS="timemodified" NEXT="completionpass"/>
++        <FIELD NAME="completionpass" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="completionmingrade" NEXT="completioncompleted"/>
++        <FIELD NAME="completioncompleted" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="completionpass"/>
+       </FIELDS>
+       <KEYS>
+         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+diff --git a/db/upgrade.php b/db/upgrade.php
+index 3c4c3f8..9955d20 100644
+--- a/db/upgrade.php
++++ b/db/upgrade.php
+@@ -527,7 +527,9 @@ function xmldb_hotpot_upgrade($oldversion) {
+                     // anyway we must do this check, so that create_file_from_xxx() does not abort
+                 } else if ($url) {
+                     // file is on an external url - unusual ?!
+-                    $file = false; // $fs->create_file_from_url($file_record, $url);
++                    $file = $fs->create_file_from_url($file_record, $url);
++                } else if ($file = xmldb_hotpot_locate_externalfile($modulecontext->id, 'mod_hotpot', 'sourcefile', 0, $old_filepath, $old_filename)) {
++                    // file exists in external repository - great !
+                 } else if ($file = $fs->get_file_by_hash($filehash)) {
+                     // $file has already been migrated to Moodle's file system
+                     // this is the route we expect most people to come :-)
+@@ -961,7 +963,27 @@ function xmldb_hotpot_upgrade($oldversion) {
+         upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+     }
+ 
+-    $newversion = 2015021162;
++    $newversion = 2015102678;
++    if ($oldversion < $newversion) {
++        // add custom completion fields for TaskChain module
++        $table = new xmldb_table('hotpot');
++        $fields = array(
++            new xmldb_field('completionmingrade',  XMLDB_TYPE_FLOAT, '6,2', null, XMLDB_NOTNULL, null, 0.00, 'timemodified'),
++            new xmldb_field('completionpass',      XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, 0,    'completionmingrade'),
++            new xmldb_field('completioncompleted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, 0,    'completionpass')
++        );
++        foreach ($fields as $field) {
++            xmldb_hotpot_fix_previous_field($dbman, $table, $field);
++            if ($dbman->field_exists($table, $field)) {
++                $dbman->change_field_type($table, $field);
++            } else {
++                $dbman->add_field($table, $field);
++            }
++        }
++        upgrade_mod_savepoint(true, "$newversion", 'hotpot');
++    }
++
++    $newversion = 2015102879;
+     if ($oldversion < $newversion) {
+         $empty_cache = true;
+         upgrade_mod_savepoint(true, "$newversion", 'hotpot');
+@@ -974,6 +996,145 @@ function xmldb_hotpot_upgrade($oldversion) {
+     return true;
+ }
+ 
++function xmldb_hotpot_locate_externalfile($contextid, $component, $filearea, $itemid, $filepath, $filename) {
++    global $CFG, $DB;
++
++    if (! class_exists('repository')) {
++        return false; // Moodle <= 2.2 has no repositories
++    }
++
++    static $repositories = null;
++    if ($repositories===null) {
++        $exclude_types = array('recent', 'upload', 'user', 'areafiles');
++        $repositories = repository::get_instances();
++        foreach (array_keys($repositories) as $id) {
++            if (method_exists($repositories[$id], 'get_typename')) {
++                $type = $repositories[$id]->get_typename();
++            } else {
++                $type = $repositories[$id]->options['type'];
++            }
++            if (in_array($type, $exclude_types)) {
++                unset($repositories[$id]);
++            }
++        }
++        // ensure upgraderunning is set
++        if (empty($CFG->upgraderunning)) {
++            $CFG->upgraderunning = null;
++        }
++    }
++
++    // get file storage
++    $fs = get_file_storage();
++
++    // the following types repository use encoded params
++    $encoded_types = array('user', 'areafiles', 'coursefiles');
++
++    foreach ($repositories as $id => $repository) {
++
++        // "filesystem" path is in plain text, others are encoded
++        if (method_exists($repositories[$id], 'get_typename')) {
++            $type = $repositories[$id]->get_typename();
++        } else {
++            $type = $repositories[$id]->options['type'];
++        }
++        $encodepath = in_array($type, $encoded_types);
++
++        // save $root_path, because it may get messed up by
++        // $repository->get_listing($path), if $path is non-existant
++        if (method_exists($repository, 'get_rootpath')) {
++            $root_path = $repository->get_rootpath();
++        } else if (isset($repository->root_path)) {
++            $root_path = $repository->root_path;
++        } else {
++            $root_path = false;
++        }
++
++        // get repository type
++        switch (true) {
++            case isset($repository->options['type']):
++                $type = $repository->options['type'];
++                break;
++            case isset($repository->instance->typeid):
++                $type = repository::get_type_by_id($repository->instance->typeid);
++                $type = $type->get_typename();
++                break;
++            default:
++                $type = ''; // shouldn't happen !!
++        }
++
++        $path = $filepath;
++        $source = trim($filepath.$filename, '/');
++
++        // setup $params for path encoding, if necessary
++        $params = array();
++        if ($encodepath) {
++            $listing = $repository->get_listing();
++            switch (true) {
++                case isset($listing['list'][0]['source']): $param = 'source'; break; // file
++                case isset($listing['list'][0]['path']):   $param = 'path';   break; // dir
++                default: return false; // shouldn't happen !!
++            }
++            $params = file_storage::unpack_reference($listing['list'][0][$param], true);
++
++            $params['filepath'] = '/'.$path.($path=='' ? '' : '/');
++            $params['filename'] = '.'; // "." signifies a directory
++            $path = file_storage::pack_reference($params);
++        }
++
++        // reset $repository->root_path (filesystem repository only)
++        if ($root_path) {
++            $repository->root_path = $root_path;
++        }
++
++        // unset upgraderunning because it can cause get_listing() to fail
++        $upgraderunning = $CFG->upgraderunning;
++        $CFG->upgraderunning = null;
++
++        // Note: we use "@" to suppress warnings in case $path does not exist
++        $listing = @$repository->get_listing($path);
++
++        // restore upgraderunning flag
++        $CFG->upgraderunning = $upgraderunning;
++
++        // check each file to see if it is the one we want
++        foreach ($listing['list'] as $file) {
++
++            switch (true) {
++                case isset($file['source']): $param = 'source'; break; // file
++                case isset($file['path']):   $param = 'path';   break; // dir
++                default: continue; // shouldn't happen !!
++            }
++
++            if ($encodepath) {
++                $file[$param] = file_storage::unpack_reference($file[$param]);
++                $file[$param] = trim($file[$param]['filepath'], '/').'/'.$file[$param]['filename'];
++            }
++
++            if ($file[$param]==$source) {
++
++                if ($encodepath) {
++                    $params['filename'] = $filename;
++                    $source = file_storage::pack_reference($params);
++                }
++
++                $file_record = array(
++                    'contextid' => $contextid, 'component' => $component, 'filearea' => $filearea,
++                    'sortorder' => 0, 'itemid' => 0, 'filepath' => $filepath, 'filename' => $filename
++                );
++
++                if ($file = $fs->create_file_from_reference($file_record, $id, $source)) {
++                    return $file;
++                }
++
++                break; // try another repository
++            }
++        }
++    }
++
++    // external file not found (or found but not created)
++    return false;
++}
++
+ /**
+  * xmldb_hotpot_move_file
+  *
+diff --git a/lang/en/hotpot.php b/lang/en/hotpot.php
+index 52fcc3d..f0b438d 100644
+--- a/lang/en/hotpot.php
++++ b/lang/en/hotpot.php
+@@ -55,7 +55,7 @@ $string['configbodystyles'] = 'By default, Moodle theme styles will override Hot
+ $string['configenablecache'] = 'Maintaining a cache of HotPot quizzes can dramatically speed up the delivery of quizzes to the students.';
+ $string['configenablecron'] = 'Specify the hours in your time zone at which the HotPot cron script may run';
+ $string['configenablemymoodle'] = 'This settings controls whether HotPots are listed on the MyMoodle page or not';
+-$string['configenableobfuscate'] = 'Obfuscating the javascript code to insert media players makes it more difficult to determine the media file name and guess what the file contains.';
++$string['configenableobfuscate'] = 'Obfuscating the text strings and URLs in javascript code makes it more difficult to guess answers by viewing the source of the HTML page in the browser.';
+ $string['configenableswf'] = 'Allow embedding of SWF files in HotPot activities. If enabled, this setting overrides filter_mediaplugin_enable_swf.';
+ $string['configfile'] = 'Configuration file';
+ $string['configframeheight'] = 'When a quiz is displayed within a frame, this value is the height (in pixels) of the top frame which contains the Moodle navigation bar.';
+@@ -140,6 +140,10 @@ $string['clicktrailreport'] = 'Click trails';
+ $string['closed'] = 'This activity has closed';
+ $string['clues'] = 'Clues';
+ $string['completed'] = 'Completed';
++$string['completioncompleted'] = 'Require completed status';
++$string['completionmingrade'] = 'Require minimum grade';
++$string['completionpass'] = 'Require passing grade';
++$string['completionwarning'] = 'These fields are disabled if the grade limit for this activity is "No grade" or the grade weighting is "No weighting"';
+ $string['confirmdeleteattempts'] = 'Do you really want to delete these attempts?';
+ $string['confirmstop'] = 'Are you sure you want to navigate away from this page?';
+ $string['correct'] = 'Correct';
+@@ -154,8 +158,8 @@ $string['delay2summary'] = 'Time delay between later attempts';
+ $string['delay3'] = 'Delay 3';
+ $string['delay3_help'] = 'The setting specifies the delay between finishing the quiz and returning control of the display to Moodle.
+ 
+-**Use specific time (in seconds)**
+-: control will be returned to Moodle after the specified number of seconds.
++**Use specific delay**
++: control will be returned to Moodle after the specified delay.
+ 
+ **Use settings in source/template file**
+ : control will be returned to Moodle after the number of seconds specified in the source file or the template files for this output format.
+@@ -169,7 +173,7 @@ $string['delay3_help'] = 'The setting specifies the delay between finishing the
+ Note, the quiz results are always returned to Moodle immediately the quiz is completed or abandoned, regardless of this setting.';
+ $string['delay3afterok'] = 'Wait till student clicks OK';
+ $string['delay3disable'] = 'Do not continue automatically';
+-$string['delay3specific'] = 'Use specific time (in seconds)';
++$string['delay3specific'] = 'Use specific delay';
+ $string['delay3summary'] = 'Time delay at the end of the quiz';
+ $string['delay3template'] = 'Use settings in source/template file';
+ $string['deleteallattempts'] = 'Delete all attempts';
+@@ -179,7 +183,7 @@ $string['duration'] = 'Duration';
+ $string['enablecache'] = 'Enable HotPot cache';
+ $string['enablecron'] = 'Enable HotPot cron';
+ $string['enablemymoodle'] = 'Show HotPots on MyMoodle';
+-$string['enableobfuscate'] = 'Enable obfuscation of media player code';
++$string['enableobfuscate'] = 'Enable obfuscation of text and media players';
+ $string['enableswf'] = 'Allow embedding of SWF files in HotPot activities';
+ $string['entry_attempts'] = 'Attempts';
+ $string['entry_dates'] = 'Dates';
+@@ -419,14 +423,16 @@ $string['outputformat_help'] = 'The output format specifies how the content will
+ The output formats that are available depend on the type of the source file. Some types of source file have just one output format, while other types of source file have several output formats.
+ 
+ The "best" setting will display the content using the optimal output format for the student\'s browser.';
++$string['outputformat_hp_6_jcloze_html_findit_a'] = 'FindIt (a) from html';
++$string['outputformat_hp_6_jcloze_html_findit_b'] = 'FindIt (b) from html';
+ $string['outputformat_hp_6_jcloze_html'] = 'JCloze (v6) from html';
+ $string['outputformat_hp_6_jcloze_xml_anctscan'] = 'ANCT-Scan from HP6 JCloze xml';
+ $string['outputformat_hp_6_jcloze_xml_dropdown'] = 'DropDown from HP6 JCloze xml';
+ $string['outputformat_hp_6_jcloze_xml_findit_a'] = 'FindIt (a) from HP6 JCloze xml';
+ $string['outputformat_hp_6_jcloze_xml_findit_b'] = 'FindIt (b) from HP6 JCloze xml';
+ $string['outputformat_hp_6_jcloze_xml_jgloss'] = 'JGloss from HP6 JCloze xml';
+-$string['outputformat_hp_6_jcloze_xml_v6'] = 'JCloze (v6) from HP6 xml';
+ $string['outputformat_hp_6_jcloze_xml_v6_autoadvance'] = 'JCloze (v6) from HP6 xml (Auto-advance)';
++$string['outputformat_hp_6_jcloze_xml_v6'] = 'JCloze (v6) from HP6 xml';
+ $string['outputformat_hp_6_jcross_html'] = 'JCross (v6) from html';
+ $string['outputformat_hp_6_jcross_xml_v6'] = 'JCross (v6) from xml';
+ $string['outputformat_hp_6_jmatch_html'] = 'JMatch (v6) from html';
+diff --git a/lib.php b/lib.php
+index f27eb8e..1c4cdc2 100644
+--- a/lib.php
++++ b/lib.php
+@@ -51,12 +51,12 @@ function hotpot_supports($feature) {
+     // they are not all defined in Moodle 2.0, so we
+     // check each one is defined before trying to use it
+     $constants = array(
+-        'FEATURE_ADVANCED_GRADING' => true, // default=false
++        'FEATURE_ADVANCED_GRADING' => false,
+         'FEATURE_BACKUP_MOODLE2'   => true, // default=false
+         'FEATURE_COMMENT'          => true,
+-        'FEATURE_COMPLETION_HAS_RULES' => false, // requires "hotpot_get_completion_state()"
++        'FEATURE_COMPLETION_HAS_RULES' => true,
+         'FEATURE_COMPLETION_TRACKS_VIEWS' => true,
+-        'FEATURE_CONTROLS_GRADE_VISIBILITY' => true,
++        'FEATURE_CONTROLS_GRADE_VISIBILITY' => false,
+         'FEATURE_GRADE_HAS_GRADE'  => true, // default=false
+         'FEATURE_GRADE_OUTCOMES'   => true,
+         'FEATURE_GROUPINGS'        => true, // default=false
+@@ -1468,8 +1468,8 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
+             $maindirname   = dirname($mainreference);
+             $encodepath    = false;
+             break;
+-        case 'user':
+         case 'coursefiles':
++        case 'user':
+             $params        = file_storage::unpack_reference($mainreference, true);
+             $maindirname   = $params['filepath'];
+             $encodepath    = true;
+@@ -1545,14 +1545,7 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
+             default: return false; // shouldn't happen !!
+         }
+         $params = $listing['list'][0][$param];
+-        switch ($type) {
+-            case 'user':
+-                $params = json_decode(base64_decode($params), true);
+-                break;
+-            case 'coursefiles':
+-                $params = file_storage::unpack_reference($params, true);
+-                break;
+-        }
++        $params = json_decode(base64_decode($params), true);
+     }
+ 
+     foreach ($paths as $path => $source) {
+@@ -1564,14 +1557,7 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
+         if ($encodepath) {
+             $params['filepath'] = '/'.$path.($path=='' ? '' : '/');
+             $params['filename'] = '.'; // "." signifies a directory
+-            switch ($type) {
+-                case 'user':
+-                    $path = base64_encode(json_encode($params));
+-                    break;
+-                case 'coursefiles':
+-                    $path = file_storage::pack_reference($params);
+-                    break;
+-            }
++            $path = base64_encode(json_encode($params));
+         }
+ 
+         $listing = $repository->get_listing($path);
+@@ -1584,14 +1570,7 @@ function hotpot_pluginfile_externalfile($context, $component, $filearea, $filepa
+             }
+ 
+             if ($encodepath) {
+-                switch ($type) {
+-                    case 'user':
+-                        $file[$param] = json_decode(base64_decode($file[$param]), true);
+-                        break;
+-                    case 'coursefiles':
+-                        $file[$param] = file_storage::unpack_reference($file[$param]);
+-                        break;
+-                }
++                $file[$param] = json_decode(base64_decode($file[$param]), true);
+                 $file[$param] = trim($file[$param]['filepath'], '/').'/'.$file[$param]['filename'];
+             }
+ 
+@@ -1637,14 +1616,7 @@ function hotpot_pluginfile_dirpath_exists($dirpath, $repository, $type, $encodep
+         if ($encodepath) {
+             $params['filepath'] = '/'.$dirpath.($dirpath=='' ? '' : '/');
+             $params['filename'] = '.'; // "." signifies a directory
+-            switch ($type) {
+-                case 'user':
+-                    $dirpath = base64_encode(json_encode($params));
+-                    break;
+-                case 'coursefiles':
+-                    $dirpath = file_storage::pack_reference($params);
+-                    break;
+-            }
++            $dirpath = base64_encode(json_encode($params));
+         }
+ 
+         $exists = false;
+@@ -2231,7 +2203,7 @@ function hotpot_add_to_log($courseid, $module, $action, $url='', $info='', $cmid
+  * @param bool $type Type of comparison (or/and; can be used as return value if no conditions)
+  * @return bool True if completed, false if not, $type if conditions not set
+  */
+-function hotpot_get_completion_state($course, $cm, $userid, $type) {
++function hotpot_get_completion_state_old($course, $cm, $userid, $type) {
+     global $CFG, $DB;
+     require_once($CFG->dirroot.'/mod/hotpot/locallib.php');
+     $params = array('hotpotid'   => $cm->instance,
+@@ -2239,3 +2211,77 @@ function hotpot_get_completion_state($course, $cm, $userid, $type) {
+                     'status'     => hotpot::STATUS_COMPLETED);
+     return $DB->record_exists('hotpot_attempts', $params);
+ }
++/**
++ * Obtains the automatic completion state for this hotpot
++ * based on the conditions in hotpot settings.
++ *
++ * @param  object  $course record from "course" table
++ * @param  object  $cm     record from "course_modules" table
++ * @param  integer $userid id from "user" table
++ * @param  bool    $type   of comparison (or/and; used as return value if there are no conditions)
++ * @return mixed   TRUE if completed, FALSE if not, or $type if no conditions are set
++ */
++function hotpot_get_completion_state($course, $cm, $userid, $type) {
++    global $CFG, $DB;
++
++    // set default return $state
++    $state = $type;
++
++    // get the hotpot record
++    if ($hotpot = $DB->get_record('hotpot', array('id' => $cm->instance))) {
++
++        // get grade, if necessary
++        $grade = false;
++        if ($hotpot->completionmingrade || $hotpot->completionpass) {
++            require_once($CFG->dirroot.'/lib/gradelib.php');
++            $params = array('courseid'     => $course->id,
++                            'itemtype'     => 'mod',
++                            'itemmodule'   => 'hotpot',
++                            'iteminstance' => $cm->instance);
++            if ($grade_item = grade_item::fetch($params)) {
++                $grades = grade_grade::fetch_users_grades($grade_item, array($userid), false);
++                if (isset($grades[$userid])) {
++                    $grade = $grades[$userid];
++                }
++                unset($grades);
++            }
++            unset($grade_item);
++        }
++
++        // the HotPot completion conditions
++        $conditions = array('completionmingrade',
++                            'completionpass',
++                            'completioncompleted');
++
++        foreach ($conditions as $condition) {
++            if (empty($hotpot->$condition)) {
++                continue;
++            }
++            switch ($condition) {
++                case 'completionmingrade':
++                    $state = ($grade && $grade->finalgrade >= $hotpot->completionmingrade);
++                    break;
++                case 'completionpass':
++                    $state = ($grade && $grade->is_passed());
++                    break;
++                case 'completioncompleted':
++                    $params = array('id'     => $cm->instance,
++                                    'userid' => $userid,
++                                    'status' => $hotpot->$condition);
++                    $state = $DB->record_exists('hotpot_attempts', $params);
++                    break;
++
++            }
++            // finish early if possible
++            if ($type==COMPLETION_AND && $state==false) {
++                return false;
++            }
++            if ($type==COMPLETION_OR && $state) {
++                return true;
++            }
++        }
++    }
++
++    return $state;
++}
++
+diff --git a/locallib.php b/locallib.php
+index 3ab6806..3b09cb2 100644
+--- a/locallib.php
++++ b/locallib.php
+@@ -2074,7 +2074,14 @@ class hotpot {
+                 continue; // skip labels
+             }
+             if ($found || $cm->id==$id) {
+-                if (coursemodule_visible_for_user($cm)) {
++                if (class_exists('\core_availability\info_module')) {
++                    // Moodle >= 2.7
++                    $is_visible = \core_availability\info_module::is_user_visible($cm);
++                } else {
++                    // Moodle <= 2.6
++                    $is_visible = coursemodule_visible_for_user($cm);
++                }
++                if ($is_visible) {
+                     return $cm;
+                 }
+                 if ($cm->id==$id) {
+diff --git a/mediafilter/ufo.js b/mediafilter/ufo.js
+index 6ee6664..99e5a30 100644
+--- a/mediafilter/ufo.js
++++ b/mediafilter/ufo.js
+@@ -1,383 +1,383 @@
+-/*	Unobtrusive Flash Objects (UFO) v3.22 <http://www.bobbyvandersluis.com/ufo/>
+-	Copyright 2005-2007 Bobby van der Sluis
+-	This software is licensed under the CC-GNU LGPL <http://creativecommons.org/licenses/LGPL/2.1/>
++/*    Unobtrusive Flash Objects (UFO) v3.22 <http://www.bobbyvandersluis.com/ufo/>
++    Copyright 2005-2007 Bobby van der Sluis
++    This software is licensed under the CC-GNU LGPL <http://creativecommons.org/licenses/LGPL/2.1/>
+ 
+     CONTAINS MINOR CHANGE FOR MOODLE (bottom code for MDL-9825)
+ */
+ 
+ var UFO = {
+-	req: ["movie", "width", "height", "majorversion", "build"],
+-	opt: ["play", "loop", "menu", "quality", "scale", "salign", "wmode", "bgcolor", "base", "flashvars", "devicefont", "allowscriptaccess", "seamlesstabbing", "allowfullscreen", "allownetworking"],
+-	optAtt: ["id", "name", "align"],
+-	optExc: ["swliveconnect"],
+-	ximovie: "ufo.swf",
+-	xiwidth: "215",
+-	xiheight: "138",
+-	ua: navigator.userAgent.toLowerCase(),
+-	pluginType: "",
+-	fv: [0,0],
+-	foList: [],
++    req: ["movie", "width", "height", "majorversion", "build"],
++    opt: ["play", "loop", "menu", "quality", "scale", "salign", "wmode", "bgcolor", "base", "flashvars", "devicefont", "allowscriptaccess", "seamlesstabbing", "allowfullscreen", "allownetworking"],
++    optAtt: ["id", "name", "align"],
++    optExc: ["swliveconnect"],
++    ximovie: "ufo.swf",
++    xiwidth: "215",
++    xiheight: "138",
++    ua: navigator.userAgent.toLowerCase(),
++    pluginType: "",
++    fv: [0,0],
++    foList: [],
+ 
+-	/**
+-	 * create
+-	 *
+-	 * @param xxx FO
+-	 * @param xxx id
+-	 */
+-	create: function(FO, id) {
+-		if (!UFO.uaHas("w3cdom") || UFO.uaHas("ieMac")) return;
+-		UFO.getFlashVersion();
+-		UFO.foList[id] = UFO.updateFO(FO);
+-		UFO.createCSS("#" + id, "visibility:hidden;");
+-		UFO.domLoad(id);
+-	},
++    /**
++     * create
++     *
++     * @param xxx FO
++     * @param xxx id
++     */
++    create: function(FO, id) {
++        if (!UFO.uaHas("w3cdom") || UFO.uaHas("ieMac")) return;
++        UFO.getFlashVersion();
++        UFO.foList[id] = UFO.updateFO(FO);
++        UFO.createCSS("#" + id, "visibility:hidden;");
++        UFO.domLoad(id);
++    },
+ 
+-	/**
+-	 * updateFO
+-	 *
+-	 * @param xxx FO
+-	 * @return xxx
+-	 */
+-	updateFO: function(FO) {
+-		if (typeof FO.xi != "undefined" && FO.xi == "true") {
+-			if (typeof FO.ximovie == "undefined") FO.ximovie = UFO.ximovie;
+-			if (typeof FO.xiwidth == "undefined") FO.xiwidth = UFO.xiwidth;
+-			if (typeof FO.xiheight == "undefined") FO.xiheight = UFO.xiheight;
+-		}
+-		FO.mainCalled = false;
+-		return FO;
+-	},
++    /**
++     * updateFO
++     *
++     * @param xxx FO
++     * @return xxx
++     */
++    updateFO: function(FO) {
++        if (typeof FO.xi != "undefined" && FO.xi == "true") {
++            if (typeof FO.ximovie == "undefined") FO.ximovie = UFO.ximovie;
++            if (typeof FO.xiwidth == "undefined") FO.xiwidth = UFO.xiwidth;
++            if (typeof FO.xiheight == "undefined") FO.xiheight = UFO.xiheight;
++        }
++        FO.mainCalled = false;
++        return FO;
++    },
+ 
+-	/**
+-	 * domLoad
+-	 *
+-	 * @param xxx id
+-	 */
+-	domLoad: function(id) {
+-		var _t = setInterval(function() {
+-			if ((document.getElementsByTagName("body")[0] != null || document.body != null) && document.getElementById(id) != null) {
+-				UFO.main(id);
+-				clearInterval(_t);
+-			}
+-		}, 250);
+-		if (typeof document.addEventListener != "undefined") {
+-			document.addEventListener("DOMContentLoaded", function() { UFO.main(id); clearInterval(_t); } , null); // Gecko, Opera 9+
+-		}
+-	},
++    /**
++     * domLoad
++     *
++     * @param xxx id
++     */
++    domLoad: function(id) {
++        var _t = setInterval(function() {
++            if ((document.getElementsByTagName("body")[0] != null || document.body != null) && document.getElementById(id) != null) {
++                UFO.main(id);
++                clearInterval(_t);
++            }
++        }, 250);
++        if (typeof document.addEventListener != "undefined") {
++            document.addEventListener("DOMContentLoaded", function() { UFO.main(id); clearInterval(_t); } , null); // Gecko, Opera 9+
++        }
++    },
+ 
+-	/**
+-	 * main
+-	 *
+-	 * @param xxx id
+-	 */
+-	main: function(id) {
+-		if (! document.getElementById(id)) {
+-		    if(!window.gdb)window.gdb=!confirm("Oops, document.getElementById("+id+") not found");
+-		    return;
+-		}
+-		var _fo = UFO.foList[id];
+-		if (_fo.mainCalled) return;
+-		UFO.foList[id].mainCalled = true;
+-		document.getElementById(id).style.visibility = "hidden";
+-		if (UFO.hasRequired(id)) {
+-			if (UFO.hasFlashVersion(parseInt(_fo.majorversion, 10), parseInt(_fo.build, 10))) {
+-				if (typeof _fo.setcontainercss != "undefined" && _fo.setcontainercss == "true") UFO.setContainerCSS(id);
+-				UFO.writeSWF(id);
+-			}
+-			else if (_fo.xi == "true" && UFO.hasFlashVersion(6, 65)) {
+-				UFO.createDialog(id);
+-			}
+-		}
+-		document.getElementById(id).style.visibility = "visible";
+-	},
++    /**
++     * main
++     *
++     * @param xxx id
++     */
++    main: function(id) {
++        if (! document.getElementById(id)) {
++            if(!window.gdb)window.gdb=!confirm("Oops, document.getElementById("+id+") not found");
++            return;
++        }
++        var _fo = UFO.foList[id];
++        if (_fo.mainCalled) return;
++        UFO.foList[id].mainCalled = true;
++        document.getElementById(id).style.visibility = "hidden";
++        if (UFO.hasRequired(id)) {
++            if (UFO.hasFlashVersion(parseInt(_fo.majorversion, 10), parseInt(_fo.build, 10))) {
++                if (typeof _fo.setcontainercss != "undefined" && _fo.setcontainercss == "true") UFO.setContainerCSS(id);
++                UFO.writeSWF(id);
++            }
++            else if (_fo.xi == "true" && UFO.hasFlashVersion(6, 65)) {
++                UFO.createDialog(id);
++            }
++        }
++        document.getElementById(id).style.visibility = "visible";
++    },
+ 
+-	/**
+-	 * createCSS
+-	 *
+-	 * @param xxx selector
+-	 * @param xxx declaration
+-	 */
+-	createCSS: function(selector, declaration) {
+-		var _h = document.getElementsByTagName("head")[0];
+-		var _s = UFO.createElement("style");
+-		if (!UFO.uaHas("ieWin")) _s.appendChild(document.createTextNode(selector + " {" + declaration + "}")); // bugs in IE/Win
+-		_s.setAttribute("type", "text/css");
+-		_s.setAttribute("media", "screen");
+-		_h.appendChild(_s);
+-		if (UFO.uaHas("ieWin") && document.styleSheets && document.styleSheets.length > 0) {
+-			var _ls = document.styleSheets[document.styleSheets.length - 1];
+-			if (typeof _ls.addRule == "object") _ls.addRule(selector, declaration);
+-		}
+-	},
++    /**
++     * createCSS
++     *
++     * @param xxx selector
++     * @param xxx declaration
++     */
++    createCSS: function(selector, declaration) {
++        var _h = document.getElementsByTagName("head")[0];
++        var _s = UFO.createElement("style");
++        if (!UFO.uaHas("ieWin")) _s.appendChild(document.createTextNode(selector + " {" + declaration + "}")); // bugs in IE/Win
++        _s.setAttribute("type", "text/css");
++        _s.setAttribute("media", "screen");
++        _h.appendChild(_s);
++        if (UFO.uaHas("ieWin") && document.styleSheets && document.styleSheets.length > 0) {
++            var _ls = document.styleSheets[document.styleSheets.length - 1];
++            if (typeof _ls.addRule == "object") _ls.addRule(selector, declaration);
++        }
++    },
+ 
+-	/**
+-	 * setContainerCSS
+-	 *
+-	 * @param xxx id
+-	 */
+-	setContainerCSS: function(id) {
+-		var _fo = UFO.foList[id];
+-		var _w = /%/.test(_fo.width) ? "" : "px";
+-		var _h = /%/.test(_fo.height) ? "" : "px";
+-		UFO.createCSS("#" + id, "width:" + _fo.width + _w +"; height:" + _fo.height + _h +";");
+-		if (_fo.width == "100%") {
+-			UFO.createCSS("body", "margin-left:0; margin-right:0; padding-left:0; padding-right:0;");
+-		}
+-		if (_fo.height == "100%") {
+-			UFO.createCSS("html", "height:100%; overflow:hidden;");
+-			UFO.createCSS("body", "margin-top:0; margin-bottom:0; padding-top:0; padding-bottom:0; height:100%;");
+-		}
+-	},
++    /**
++     * setContainerCSS
++     *
++     * @param xxx id
++     */
++    setContainerCSS: function(id) {
++        var _fo = UFO.foList[id];
++        var _w = /%/.test(_fo.width) ? "" : "px";
++        var _h = /%/.test(_fo.height) ? "" : "px";
++        UFO.createCSS("#" + id, "width:" + _fo.width + _w +"; height:" + _fo.height + _h +";");
++        if (_fo.width == "100%") {
++            UFO.createCSS("body", "margin-left:0; margin-right:0; padding-left:0; padding-right:0;");
++        }
++        if (_fo.height == "100%") {
++            UFO.createCSS("html", "height:100%; overflow:hidden;");
++            UFO.createCSS("body", "margin-top:0; margin-bottom:0; padding-top:0; padding-bottom:0; height:100%;");
++        }
++    },
+ 
+-	/**
+-	 * createElement
+-	 *
+-	 * @param xxx el
+-	 * @return xxx
+-	 */
+-	createElement: function(el) {
+-		return (UFO.uaHas("xml") && typeof document.createElementNS != "undefined") ?  document.createElementNS("http://www.w3.org/1999/xhtml", el) : document.createElement(el);
+-	},
++    /**
++     * createElement
++     *
++     * @param xxx el
++     * @return xxx
++     */
++    createElement: function(el) {
++        return (UFO.uaHas("xml") && typeof document.createElementNS != "undefined") ?  document.createElementNS("http://www.w3.org/1999/xhtml", el) : document.createElement(el);
++    },
+ 
+-	/**
+-	 * createObjParam
+-	 *
+-	 * @param xxx el
+-	 * @param xxx aName
+-	 * @param xxx aValue
+-	 */
+-	createObjParam: function(el, aName, aValue) {
+-		var _p = UFO.createElement("param");
+-		_p.setAttribute("name", aName);
+-		_p.setAttribute("value", aValue);
+-		el.appendChild(_p);
+-	},
++    /**
++     * createObjParam
++     *
++     * @param xxx el
++     * @param xxx aName
++     * @param xxx aValue
++     */
++    createObjParam: function(el, aName, aValue) {
++        var _p = UFO.createElement("param");
++        _p.setAttribute("name", aName);
++        _p.setAttribute("value", aValue);
++        el.appendChild(_p);
++    },
+ 
+-	/**
+-	 * uaHas
+-	 *
+-	 * @param xxx ft
+-	 * @return xxx
+-	 */
+-	uaHas: function(ft) {
+-		var _u = UFO.ua;
+-		switch(ft) {
+-			case "w3cdom":
+-				return (typeof document.getElementById != "undefined" && typeof document.getElementsByTagName != "undefined" && (typeof document.createElement != "undefined" || typeof document.createElementNS != "undefined"));
+-			case "xml":
+-				var _m = document.getElementsByTagName("meta");
+-				var _l = _m.length;
+-				for (var i = 0; i < _l; i++) {
+-					if (/content-type/i.test(_m[i].getAttribute("http-equiv")) && /xml/i.test(_m[i].getAttribute("content"))) return true;
+-				}
+-				return false;
+-			case "ieMac":
+-				return /msie/.test(_u) && !/opera/.test(_u) && /mac/.test(_u);
+-			case "ieWin":
+-				return /msie/.test(_u) && !/opera/.test(_u) && /win/.test(_u);
+-			case "gecko":
+-				return /gecko/.test(_u) && !/applewebkit/.test(_u);
+-			case "opera":
+-				return /opera/.test(_u);
+-			case "safari":
+-				return /applewebkit/.test(_u);
+-			default:
+-				return false;
+-		}
+-	},
++    /**
++     * uaHas
++     *
++     * @param xxx ft
++     * @return xxx
++     */
++    uaHas: function(ft) {
++        var _u = UFO.ua;
++        switch(ft) {
++            case "w3cdom":
++                return (typeof document.getElementById != "undefined" && typeof document.getElementsByTagName != "undefined" && (typeof document.createElement != "undefined" || typeof document.createElementNS != "undefined"));
++            case "xml":
++                var _m = document.getElementsByTagName("meta");
++                var _l = _m.length;
++                for (var i = 0; i < _l; i++) {
++                    if (/content-type/i.test(_m[i].getAttribute("http-equiv")) && /xml/i.test(_m[i].getAttribute("content"))) return true;
++                }
++                return false;
++            case "ieMac":
++                return /msie/.test(_u) && !/opera/.test(_u) && /mac/.test(_u);
++            case "ieWin":
++                return /msie/.test(_u) && !/opera/.test(_u) && /win/.test(_u);
++            case "gecko":
++                return /gecko/.test(_u) && !/applewebkit/.test(_u);
++            case "opera":
++                return /opera/.test(_u);
++            case "safari":
++                return /applewebkit/.test(_u);
++            default:
++                return false;
++        }
++    },
+ 
+-	/**
+-	 * getFlashVersion
+-	 */
+-	getFlashVersion: function() {
+-		if (UFO.fv[0] != 0) return;
+-		if (navigator.plugins && typeof navigator.plugins["Shockwave Flash"] == "object") {
+-			UFO.pluginType = "npapi";
+-			var _d = navigator.plugins["Shockwave Flash"].description;
+-			if (typeof _d != "undefined") {
+-				_d = _d.replace(/^.*\s+(\S+\s+\S+$)/, "$1");
+-				var _m = parseInt(_d.replace(/^(.*)\..*$/, "$1"), 10);
+-				var _r = /r/.test(_d) ? parseInt(_d.replace(/^.*r(.*)$/, "$1"), 10) : 0;
+-				UFO.fv = [_m, _r];
+-			}
+-		}
+-		else if (window.ActiveXObject) {
+-			UFO.pluginType = "ax";
+-			try { // avoid fp 6 crashes
+-				var _a = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.7");
+-			}
+-			catch(e) {
+-				try {
+-					var _a = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.6");
+-					UFO.fv = [6, 0];
+-					_a.AllowScriptAccess = "always"; // throws if fp < 6.47
+-				}
+-				catch(e) {
+-					if (UFO.fv[0] == 6) return;
+-				}
+-				try {
+-					var _a = new ActiveXObject("ShockwaveFlash.ShockwaveFlash");
+-				}
+-				catch(e) {}
+-			}
+-			if (typeof _a == "object") {
+-				var _d = _a.GetVariable("$version"); // bugs in fp 6.21/6.23
+-				if (typeof _d != "undefined") {
+-					_d = _d.replace(/^\S+\s+(.*)$/, "$1").split(",");
+-					UFO.fv = [parseInt(_d[0], 10), parseInt(_d[2], 10)];
+-				}
+-			}
+-		}
+-	},
++    /**
++     * getFlashVersion
++     */
++    getFlashVersion: function() {
++        if (UFO.fv[0] != 0) return;
++        if (navigator.plugins && typeof navigator.plugins["Shockwave Flash"] == "object") {
++            UFO.pluginType = "npapi";
++            var _d = navigator.plugins["Shockwave Flash"].description;
++            if (typeof _d != "undefined") {
++                _d = _d.replace(/^.*\s+(\S+\s+\S+$)/, "$1");
++                var _m = parseInt(_d.replace(/^(.*)\..*$/, "$1"), 10);
++                var _r = /r/.test(_d) ? parseInt(_d.replace(/^.*r(.*)$/, "$1"), 10) : 0;
++                UFO.fv = [_m, _r];
++            }
++        }
++        else if (window.ActiveXObject) {
++            UFO.pluginType = "ax";
++            try { // avoid fp 6 crashes
++                var _a = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.7");
++            }
++            catch(e) {
++                try {
++                    var _a = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.6");
++                    UFO.fv = [6, 0];
++                    _a.AllowScriptAccess = "always"; // throws if fp < 6.47
++                }
++                catch(e) {
++                    if (UFO.fv[0] == 6) return;
++                }
++                try {
++                    var _a = new ActiveXObject("ShockwaveFlash.ShockwaveFlash");
++                }
++                catch(e) {}
++            }
++            if (typeof _a == "object") {
++                var _d = _a.GetVariable("$version"); // bugs in fp 6.21/6.23
++                if (typeof _d != "undefined") {
++                    _d = _d.replace(/^\S+\s+(.*)$/, "$1").split(",");
++                    UFO.fv = [parseInt(_d[0], 10), parseInt(_d[2], 10)];
++                }
++            }
++        }
++    },
+ 
+-	/**
+-	 * hasRequired
+-	 *
+-	 * @param xxx id
+-	 * @return xxx
+-	 */
+-	hasRequired: function(id) {
+-		var _l = UFO.req.length;
+-		for (var i = 0; i < _l; i++) {
+-			if (typeof UFO.foList[id][UFO.req[i]] == "undefined") return false;
+-		}
+-		return true;
+-	},
++    /**
++     * hasRequired
++     *
++     * @param xxx id
++     * @return xxx
++     */
++    hasRequired: function(id) {
++        var _l = UFO.req.length;
++        for (var i = 0; i < _l; i++) {
++            if (typeof UFO.foList[id][UFO.req[i]] == "undefined") return false;
++        }
++        return true;
++    },
+ 
+-	/**
+-	 * hasFlashVersion
+-	 *
+-	 * @param xxx major
+-	 * @param xxx release
+-	 * @return xxx
+-	 */
+-	hasFlashVersion: function(major, release) {
+-		return (UFO.fv[0] > major || (UFO.fv[0] == major && UFO.fv[1] >= release)) ? true : false;
+-	},
++    /**
++     * hasFlashVersion
++     *
++     * @param xxx major
++     * @param xxx release
++     * @return xxx
++     */
++    hasFlashVersion: function(major, release) {
++        return (UFO.fv[0] > major || (UFO.fv[0] == major && UFO.fv[1] >= release)) ? true : false;
++    },
+ 
+-	/**
+-	 * writeSWF
+-	 *
+-	 * @param xxx id
+-	 */
+-	writeSWF: function(id) {
+-		var _fo = UFO.foList[id];
+-		var _e = document.getElementById(id);
+-		if (UFO.pluginType == "npapi") {
+-			if (UFO.uaHas("gecko") || UFO.uaHas("xml")) {
+-				while(_e.hasChildNodes()) {
+-					_e.removeChild(_e.firstChild);
+-				}
+-				var _obj = UFO.createElement("object");
+-				_obj.setAttribute("type", "application/x-shockwave-flash");
+-				_obj.setAttribute("data", _fo.movie);
+-				_obj.setAttribute("width", _fo.width);
+-				_obj.setAttribute("height", _fo.height);
+-				var _l = UFO.optAtt.length;
+-				for (var i = 0; i < _l; i++) {
+-					if (typeof _fo[UFO.optAtt[i]] != "undefined") _obj.setAttribute(UFO.optAtt[i], _fo[UFO.optAtt[i]]);
+-				}
+-				var _o = UFO.opt.concat(UFO.optExc);
+-				var _l = _o.length;
+-				for (var i = 0; i < _l; i++) {
+-					if (typeof _fo[_o[i]] != "undefined") UFO.createObjParam(_obj, _o[i], _fo[_o[i]]);
+-				}
+-				_e.appendChild(_obj);
+-			}
+-			else {
+-				var _emb = "";
+-				var _o = UFO.opt.concat(UFO.optAtt).concat(UFO.optExc);
+-				var _l = _o.length;
+-				for (var i = 0; i < _l; i++) {
+-					if (typeof _fo[_o[i]] != "undefined") _emb += ' ' + _o[i] + '="' + _fo[_o[i]] + '"';
+-				}
+-				_e.innerHTML = '<embed type="application/x-shockwave-flash" src="' + _fo.movie + '" width="' + _fo.width + '" height="' + _fo.height + '" pluginspage="http://www.macromedia.com/go/getflashplayer"' + _emb + '></embed>';
+-			}
+-		}
+-		else if (UFO.pluginType == "ax") {
+-			var _objAtt = "";
+-			var _l = UFO.optAtt.length;
+-			for (var i = 0; i < _l; i++) {
+-				if (typeof _fo[UFO.optAtt[i]] != "undefined") _objAtt += ' ' + UFO.optAtt[i] + '="' + _fo[UFO.optAtt[i]] + '"';
+-			}
+-			var _objPar = "";
+-			var _l = UFO.opt.length;
+-			for (var i = 0; i < _l; i++) {
+-				if (typeof _fo[UFO.opt[i]] != "undefined") _objPar += '<param name="' + UFO.opt[i] + '" value="' + _fo[UFO.opt[i]] + '" />';
+-			}
+-			var _p = window.location.protocol == "https:" ? "https:" : "http:";
+-			_e.innerHTML = '<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"' + _objAtt + ' width="' + _fo.width + '" height="' + _fo.height + '" codebase="' + _p + '//download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=' + _fo.majorversion + ',0,' + _fo.build + ',0"><param name="movie" value="' + _fo.movie + '" />' + _objPar + '</object>';
+-		}
+-	},
++    /**
++     * writeSWF
++     *
++     * @param xxx id
++     */
++    writeSWF: function(id) {
++        var _fo = UFO.foList[id];
++        var _e = document.getElementById(id);
++        if (UFO.pluginType == "npapi") {
++            if (UFO.uaHas("gecko") || UFO.uaHas("xml")) {
++                while(_e.hasChildNodes()) {
++                    _e.removeChild(_e.firstChild);
++                }
++                var _obj = UFO.createElement("object");
++                _obj.setAttribute("type", "application/x-shockwave-flash");
++                _obj.setAttribute("data", _fo.movie);
++                _obj.setAttribute("width", _fo.width);
++                _obj.setAttribute("height", _fo.height);
++                var _l = UFO.optAtt.length;
++                for (var i = 0; i < _l; i++) {
++                    if (typeof _fo[UFO.optAtt[i]] != "undefined") _obj.setAttribute(UFO.optAtt[i], _fo[UFO.optAtt[i]]);
++                }
++                var _o = UFO.opt.concat(UFO.optExc);
++                var _l = _o.length;
++                for (var i = 0; i < _l; i++) {
++                    if (typeof _fo[_o[i]] != "undefined") UFO.createObjParam(_obj, _o[i], _fo[_o[i]]);
++                }
++                _e.appendChild(_obj);
++            }
++            else {
++                var _emb = "";
++                var _o = UFO.opt.concat(UFO.optAtt).concat(UFO.optExc);
++                var _l = _o.length;
++                for (var i = 0; i < _l; i++) {
++                    if (typeof _fo[_o[i]] != "undefined") _emb += ' ' + _o[i] + '="' + _fo[_o[i]] + '"';
++                }
++                _e.innerHTML = '<embed type="application/x-shockwave-flash" src="' + _fo.movie + '" width="' + _fo.width + '" height="' + _fo.height + '" pluginspage="http://www.macromedia.com/go/getflashplayer"' + _emb + '></embed>';
++            }
++        }
++        else if (UFO.pluginType == "ax") {
++            var _objAtt = "";
++            var _l = UFO.optAtt.length;
++            for (var i = 0; i < _l; i++) {
++                if (typeof _fo[UFO.optAtt[i]] != "undefined") _objAtt += ' ' + UFO.optAtt[i] + '="' + _fo[UFO.optAtt[i]] + '"';
++            }
++            var _objPar = "";
++            var _l = UFO.opt.length;
++            for (var i = 0; i < _l; i++) {
++                if (typeof _fo[UFO.opt[i]] != "undefined") _objPar += '<param name="' + UFO.opt[i] + '" value="' + _fo[UFO.opt[i]] + '" />';
++            }
++            var _p = window.location.protocol == "https:" ? "https:" : "http:";
++            _e.innerHTML = '<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"' + _objAtt + ' width="' + _fo.width + '" height="' + _fo.height + '" codebase="' + _p + '//download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=' + _fo.majorversion + ',0,' + _fo.build + ',0"><param name="movie" value="' + _fo.movie + '" />' + _objPar + '</object>';
++        }
++    },
+ 
+-	/**
+-	 * createDialog
+-	 *
+-	 * @param xxx id
+-	 */
+-	createDialog: function(id) {
+-		var _fo = UFO.foList[id];
+-		UFO.createCSS("html", "height:100%; overflow:hidden;");
+-		UFO.createCSS("body", "height:100%; overflow:hidden;");
+-		UFO.createCSS("#xi-con", "position:absolute; left:0; top:0; z-index:1000; width:100%; height:100%; background-color:#fff; filter:alpha(opacity:75); opacity:0.75;");
+-		UFO.createCSS("#xi-dia", "position:absolute; left:50%; top:50%; margin-left: -" + Math.round(parseInt(_fo.xiwidth, 10) / 2) + "px; margin-top: -" + Math.round(parseInt(_fo.xiheight, 10) / 2) + "px; width:" + _fo.xiwidth + "px; height:" + _fo.xiheight + "px;");
+-		var _b = document.getElementsByTagName("body")[0];
+-		var _c = UFO.createElement("div");
+-		_c.setAttribute("id", "xi-con");
+-		var _d = UFO.createElement("div");
+-		_d.setAttribute("id", "xi-dia");
+-		_c.appendChild(_d);
+-		_b.appendChild(_c);
+-		var _mmu = window.location;
+-		if (UFO.uaHas("xml") && UFO.uaHas("safari")) {
+-			var _mmd = document.getElementsByTagName("title")[0].firstChild.nodeValue = document.getElementsByTagName("title")[0].firstChild.nodeValue.slice(0, 47) + " - Flash Player Installation";
+-		}
+-		else {
+-			var _mmd = document.title = document.title.slice(0, 47) + " - Flash Player Installation";
+-		}
+-		var _mmp = UFO.pluginType == "ax" ? "ActiveX" : "PlugIn";
+-		var _uc = typeof _fo.xiurlcancel != "undefined" ? "&xiUrlCancel=" + _fo.xiurlcancel : "";
+-		var _uf = typeof _fo.xiurlfailed != "undefined" ? "&xiUrlFailed=" + _fo.xiurlfailed : "";
+-		UFO.foList["xi-dia"] = { movie:_fo.ximovie, width:_fo.xiwidth, height:_fo.xiheight, majorversion:"6", build:"65", flashvars:"MMredirectURL=" + _mmu + "&MMplayerType=" + _mmp + "&MMdoctitle=" + _mmd + _uc + _uf };
+-		UFO.writeSWF("xi-dia");
+-	},
++    /**
++     * createDialog
++     *
++     * @param xxx id
++     */
++    createDialog: function(id) {
++        var _fo = UFO.foList[id];
++        UFO.createCSS("html", "height:100%; overflow:hidden;");
++        UFO.createCSS("body", "height:100%; overflow:hidden;");
++        UFO.createCSS("#xi-con", "position:absolute; left:0; top:0; z-index:1000; width:100%; height:100%; background-color:#fff; filter:alpha(opacity:75); opacity:0.75;");
++        UFO.createCSS("#xi-dia", "position:absolute; left:50%; top:50%; margin-left: -" + Math.round(parseInt(_fo.xiwidth, 10) / 2) + "px; margin-top: -" + Math.round(parseInt(_fo.xiheight, 10) / 2) + "px; width:" + _fo.xiwidth + "px; height:" + _fo.xiheight + "px;");
++        var _b = document.getElementsByTagName("body")[0];
++        var _c = UFO.createElement("div");
++        _c.setAttribute("id", "xi-con");
++        var _d = UFO.createElement("div");
++        _d.setAttribute("id", "xi-dia");
++        _c.appendChild(_d);
++        _b.appendChild(_c);
++        var _mmu = window.location;
++        if (UFO.uaHas("xml") && UFO.uaHas("safari")) {
++            var _mmd = document.getElementsByTagName("title")[0].firstChild.nodeValue = document.getElementsByTagName("title")[0].firstChild.nodeValue.slice(0, 47) + " - Flash Player Installation";
++        }
++        else {
++            var _mmd = document.title = document.title.slice(0, 47) + " - Flash Player Installation";
++        }
++        var _mmp = UFO.pluginType == "ax" ? "ActiveX" : "PlugIn";
++        var _uc = typeof _fo.xiurlcancel != "undefined" ? "&xiUrlCancel=" + _fo.xiurlcancel : "";
++        var _uf = typeof _fo.xiurlfailed != "undefined" ? "&xiUrlFailed=" + _fo.xiurlfailed : "";
++        UFO.foList["xi-dia"] = { movie:_fo.ximovie, width:_fo.xiwidth, height:_fo.xiheight, majorversion:"6", build:"65", flashvars:"MMredirectURL=" + _mmu + "&MMplayerType=" + _mmp + "&MMdoctitle=" + _mmd + _uc + _uf };
++        UFO.writeSWF("xi-dia");
++    },
+ 
+-	/**
+-	 * expressInstallCallback
+-	 */
+-	expressInstallCallback: function() {
+-		var _b = document.getElementsByTagName("body")[0];
+-		var _c = document.getElementById("xi-con");
+-		_b.removeChild(_c);
+-		UFO.createCSS("body", "height:auto; overflow:auto;");
+-		UFO.createCSS("html", "height:auto; overflow:auto;");
+-	},
++    /**
++     * expressInstallCallback
++     */
++    expressInstallCallback: function() {
++        var _b = document.getElementsByTagName("body")[0];
++        var _c = document.getElementById("xi-con");
++        _b.removeChild(_c);
++        UFO.createCSS("body", "height:auto; overflow:auto;");
++        UFO.createCSS("html", "height:auto; overflow:auto;");
++    },
+ 
+-	/**
+-	 * cleanupIELeaks
+-	 */
+-	cleanupIELeaks: function() {
+-		var _o = document.getElementsByTagName("object");
+-		var _l = _o.length
+-		for (var i = 0; i < _l; i++) {
+-			_o[i].style.display = "none";
++    /**
++     * cleanupIELeaks
++     */
++    cleanupIELeaks: function() {
++        var _o = document.getElementsByTagName("object");
++        var _l = _o.length
++        for (var i = 0; i < _l; i++) {
++            _o[i].style.display = "none";
+             var j = 0;
+-			for (var x in _o[i]) {
++            for (var x in _o[i]) {
+                 j++;
+-				if (typeof _o[i][x] == "function") {
+-					_o[i][x] = null;
+-				}
++                if (typeof _o[i][x] == "function") {
++                    _o[i][x] = null;
++                }
+                 if (j > 1000) {
+                     // something is wrong, probably infinite loop caused by embedded html file
+                     // see MDL-9825
+                     break;
+-				}
+-			}
+-		}
+-	}
++                }
++            }
++        }
++    }
+ 
+ };
+ 
+ if (typeof window.attachEvent != "undefined" && UFO.uaHas("ieWin")) {
+-	window.attachEvent("onunload", UFO.cleanupIELeaks);
++    window.attachEvent("onunload", UFO.cleanupIELeaks);
+ }
+diff --git a/mod_form.php b/mod_form.php
+index 1e1b5a9..ff3950b 100644
+--- a/mod_form.php
++++ b/mod_form.php
+@@ -797,4 +797,81 @@ class mod_hotpot_mod_form extends moodleform_mod {
+ 
+         return $errors;
+     }
++
++    /**
++     * Display module-specific activity completion rules.
++     * Part of the API defined by moodleform_mod
++     * @return array Array of string IDs of added items, empty array if none
++     */
++    public function add_completion_rules() {
++        $mform = $this->_form;
++
++        // array of elements names to be returned by this method
++        $names = array();
++
++        // these fields will be disabled if gradelimit x gradeweighting = 0
++        $disablednames = array('completionusegrade');
++
++        // add "minimum grade" completion condition
++        $name = 'completionmingrade';
++        $label = get_string($name, 'hotpot');
++        if (empty($this->current->$name)) {
++            $value = 0.0;
++        } else {
++            $value = floatval($this->current->$name);
++        }
++        $group = array();
++        $group[] = &$mform->createElement('checkbox', $name.'disabled', '', $label);
++        $group[] = &$mform->createElement('static', $name.'space', '', ' &nbsp; ');
++        $group[] = &$mform->createElement('text', $name, '', array('size' => 3));
++        $mform->addGroup($group, $name.'group', '', '', false);
++        $mform->setType($name, PARAM_FLOAT);
++        $mform->setDefault($name, 0.00);
++        $mform->setType($name.'disabled', PARAM_INT);
++        $mform->setDefault($name.'disabled', empty($value) ? 0 : 1);
++        $mform->disabledIf($name, $name.'disabled', 'notchecked');
++        $names[] = $name.'group';
++        $disablednames[] = $name.'group';
++
++        // add "grade passed" completion condition
++        $name = 'completionpass';
++        $label = get_string($name, 'hotpot');
++        $mform->addElement('checkbox', $name, '', $label);
++        $mform->setType($name, PARAM_INT);
++        $mform->setDefault($name, 0);
++        $names[] = $name;
++        $disablednames[] = $name;
++
++        // add "status completed" completion condition
++        $name = 'completioncompleted';
++        $label = get_string($name, 'hotpot');
++        $mform->addElement('checkbox', $name, '', $label);
++        $mform->setType($name, PARAM_INT);
++        $mform->setDefault($name, 0);
++        $names[] = $name;
++        // no need to disable this field :-)
++
++        // disable grade conditions, if necessary
++        foreach ($disablednames as $name) {
++            if ($mform->elementExists($name)) {
++                $mform->disabledIf($name, 'gradeweighting', 'eq', 0);
++            }
++        }
++
++        return $names;
++    }
++
++    /**
++     * Called during validation. Indicates whether a module-specific completion rule is selected.
++     *
++     * @param array $data Input data (not yet validated)
++     * @return bool True if one or more rules is enabled, false if none are.
++     */
++    public function completion_rule_enabled($data) {
++        if (empty($data['completiongradepassed']) && empty($data['completioncompletedcompleted']) && empty($data['completionmingrade'])) {
++            return false;
++        } else {
++            return true;
++        }
++    }
+ }
+diff --git a/settings.php b/settings.php
+index a1724b7..4785ff4 100644
+--- a/settings.php
++++ b/settings.php
+@@ -48,7 +48,15 @@ $settings->add(
+ );
+ 
+ // restrict cron job to certain hours of the day (default=never)
+-$timezone = get_user_timezone_offset();
++if (class_exists('core_date') && method_exists('core_date', 'get_user_timezone')) {
++    // Moodle >= 2.9
++    $timezone = core_date::get_user_timezone(99);
++    $datetime = new DateTime('now', new DateTimeZone($timezone));
++    $timezone = ($datetime->getOffset() - dst_offset_on(time(), $timezone)) / (3600.0);
++} else {
++    // Moodle <= 2.8
++    $timezone = get_user_timezone_offset();
++}
+ if (abs($timezone) > 13) {
+     $timezone = 0;
+ } else if ($timezone>0) {
+@@ -105,4 +113,4 @@ $setting = new admin_setting_configtext('hotpot_maxeventlength', get_string('max
+ $setting->set_updatedcallback('hotpot_refresh_events');
+ $settings->add($setting);
+ 
+-unset($i, $link, $options, $setting, $str, $timezone, $url);
++unset($i, $link, $options, $setting, $str, $timezone, $datetime, $url);
+diff --git a/source/class.php b/source/class.php
+index 33d15fa..11a07d7 100644
+--- a/source/class.php
++++ b/source/class.php
+@@ -789,14 +789,37 @@ class hotpot_source {
+ 
+     /**
+      * compact_filecontents
++     *
++     * @param array $tags (optional, default=null) specific tags to remove comments from
++     * @todo Finish documenting this function
+      */
+-    function compact_filecontents()  {
++    public function compact_filecontents($tags=null) {
+         if (isset($this->filecontents)) {
++            if ($tags) {
++                $callback = array($this, 'compact_filecontents_callback');
++                foreach ($tags as $tag) {
++                    $search = '/(?<=<'.$tag.'>).*(?=<\/'.$tag.'>)/is';
++                    $this->filecontents = preg_replace_callback($search, $callback, $this->filecontents);
++                }
++            }
+             $this->filecontents = preg_replace('/(?<=>)'.'\s+'.'(?=<)/s', '', $this->filecontents);
+         }
+     }
+ 
+     /**
++     * compact_filecontents_callback
++     *
++     * @todo Finish documenting this function
++     */
++    public function compact_filecontents_callback($match) {
++        $search = array(
++            '/\/\/[^\n\r]*/',  // single line js comments
++            '/\/\*.*?\*\//s',  // multiline comments (js and css)
++        );
++        return preg_replace($search, '', $match[0]);
++    }
++
++    /**
+      * get_sibling_filecontents
+      *
+      * @param xxx $filename
+diff --git a/source/hp/class.php b/source/hp/class.php
+index e8d13cb..b8eb02f 100644
+--- a/source/hp/class.php
++++ b/source/hp/class.php
+@@ -16,25 +16,29 @@
+ // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ /**
+- * Class to represent the source of a HotPot quiz
+- * Source type: hp
++ * mod/hotpot/source/hp/class.php
+  *
+- * @package   mod-hotpot
+- * @copyright 2010 Gordon Bateson <gordon.bateson@gmail.com>
+- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @package    mod
++ * @subpackage hotpot
++ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @since      Moodle 2.0
+  */
+ 
++/** Prevent direct access to this script */
+ defined('MOODLE_INTERNAL') || die();
+ 
+-// get parent class
++/** Include required files */
+ require_once($CFG->dirroot.'/mod/hotpot/source/class.php');
+ 
+ /**
+  * hotpot_source_hp
+  *
+- * @copyright 2010 Gordon Bateson
+- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+- * @since     Moodle 2.0
++ * @copyright  2010 Gordon Bateson (gordon.bateson@gmail.com)
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * @since      Moodle 2.0
++ * @package    mod
++ * @subpackage hotpot
+  */
+ class hotpot_source_hp extends hotpot_source {
+     public $xml; // an array containing the xml tree for hp xml files
+@@ -43,6 +47,44 @@ class hotpot_source_hp extends hotpot_source {
+     public $hbs_software; // hotpot or textoys
+     public $hbs_quiztype; //  jcloze, jcross, jmatch, jmix, jquiz, quandary, rhubarb, sequitur
+ 
++    // encode a string for javascript
++    public $javascript_replace_pairs = array(
++        // backslashes and quotes
++        '\\'=>'\\\\', "'"=>"\\'", '"'=>'\\"',
++        // newlines (win = "\r\n", mac="\r", linux/unix="\n")
++        "\r\n"=>'\\n', "\r"=>'\\n', "\n"=>'\\n',
++        // other (closing tag is for XHTML compliance)
++        "\0"=>'\\0', '</'=>'<\\/'
++    );
++
++    // unicode characters can be detected by checking the hex value of a character
++    //  00 - 7F : ascii char (roman alphabet + punctuation)
++    //  80 - BF : byte 2, 3 or 4 of a unicode char
++    //  C0 - DF : 1st byte of 2-byte char
++    //  E0 - EF : 1st byte of 3-byte char
++    //  F0 - FF : 1st byte of 4-byte char
++    // if the string doesn't match any of the above, it might be
++    //  80 - FF : single-byte, non-ascii char
++    public $search_unicode_chars = '/[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xff][\x80-\xbf]{3}|[\x00-\xff]/';
++
++    // array used to figure what number to decrement from character order value
++    // according to number of characters used to map unicode to ascii by utf-8
++    public $utf8_decrement = array(
++        1 => 0,
++        2 => 192,
++        3 => 224,
++        4 => 240
++    );
++
++    // the number of bits to shift each character by
++    public $utf8_shift = array(
++        1 => array(0=>0),
++        2 => array(0=>6,  1=>0),
++        3 => array(0=>12, 1=>6,  2=>0),
++        4 => array(0=>18, 1=>12, 2=>6, 3=>0)
++    );
++
++
+     /**
+      * is_html
+      *
+@@ -333,18 +375,20 @@ class hotpot_source_hp extends hotpot_source {
+             $this->compact_filecontents();
+             $this->pre_xmlize_filecontents();
+ 
++            // define root of XML tree
++            $this->xml_root = $this->hbs_software.'-'.$this->hbs_quiztype.'-file';
++
++            // convert to XML tree using xmlize()
+             if (! $this->xml = xmlize($this->filecontents, 0)) {
+                 debugging('Could not parse XML file: '.$this->filepath);
+-            }
+-
+-            $this->xml_root = $this->hbs_software.'-'.$this->hbs_quiztype.'-file';
+-            if (! array_key_exists($this->xml_root, $this->xml)) {
++            } else if (! array_key_exists($this->xml_root, $this->xml)) {
+                 debugging('Could not find XML root node: '.$this->xml_root);
+             }
+ 
+-            if (isset($this->config) && $this->config->get_filecontents()) {
++            // merge config settings, if necessary
++            if (isset($this->config) && $this->config && $this->config->get_filecontents()) {
+ 
+-                $this->config->compact_filecontents();
++                $this->config->compact_filecontents(array('header-code'));
+                 $xml = xmlize($this->config->filecontents, 0);
+ 
+                 $config_file = $this->hbs_software.'-config-file';
+@@ -390,12 +434,8 @@ class hotpot_source_hp extends hotpot_source {
+             $search = '/&(?!(?:[a-zA-Z]+|#[0-9]+|#x[0-9a-fA-F]+);)/';
+             $this->filecontents = preg_replace($search, '&amp;', $this->filecontents);
+ 
+-            //$this->filecontents = $hotpot_textlib('utf8_to_entities', $this->filecontents);
+-            // unfortunately textlib does not convert single-byte non-ascii chars
+-            // i.e. "Latin-1 Supplement" e.g. latin small letter with acute (&#237;)
+-
+             // unicode characters can be detected by checking the hex value of a character
+-            //  00 - 7F : ascii char (roman alphabet + punctuation)
++            //  00 - 7F : ascii char (control chars + roman alphabet + punctuation)
+             //  80 - BF : byte 2, 3 or 4 of a unicode char
+             //  C0 - DF : 1st byte of 2-byte char
+             //  E0 - EF : 1st byte of 3-byte char
+@@ -408,39 +448,27 @@ class hotpot_source_hp extends hotpot_source {
+                           '[\x80-\xff]'.'/';
+             $callback = array($this, 'utf8_char_to_html_entity');
+             $this->filecontents = preg_replace_callback($search, $callback, $this->filecontents);
++
++            // the following control characters are not allowed in XML
++            // and need to be removed because they will break xmlize()
++            // basically this is the range 00-1F and the delete key 7F
++            // but excluding tab 09, newline 0A and carriage return 0D
++            $search = '/[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/';
++            $this->filecontents = preg_replace($search, '', $this->filecontents);
+         }
+     }
+ 
+     function utf8_char_to_html_entity($char, $ampersand='&') {
+         // thanks to: http://www.zend.com/codex.php?id=835&single=1
+-
+         if (is_array($char)) {
+             $char = $char[0];
+         }
+-
+-        // array used to figure what number to decrement from character order value
+-        // according to number of characters used to map unicode to ascii by utf-8
+-        static $HOTPOT_UTF8_DECREMENT = array(
+-            1 => 0,
+-            2 => 192,
+-            3 => 224,
+-            4 => 240
+-        );
+-
+-        // the number of bits to shift each character by
+-        static $HOTPOT_UTF8_SHIFT = array(
+-            1 => array(0=>0),
+-            2 => array(0=>6,  1=>0),
+-            3 => array(0=>12, 1=>6,  2=>0),
+-            4 => array(0=>18, 1=>12, 2=>6, 3=>0)
+-        );
+-
+         $dec = 0;
+         $len = strlen($char);
+         for ($pos=0; $pos<$len; $pos++) {
+             $ord = ord ($char{$pos});
+-            $ord -= ($pos ? 128 : $HOTPOT_UTF8_DECREMENT[$len]);
+-            $dec += ($ord << $HOTPOT_UTF8_SHIFT[$len][$pos]);
++            $ord -= ($pos ? 128 : $this->utf8_decrement[$len]);
++            $dec += ($ord << $this->utf8_shift[$len][$pos]);
+         }
+ 
+         return $ampersand.'#x'.sprintf('%04X', $dec).';';
+@@ -449,9 +477,11 @@ class hotpot_source_hp extends hotpot_source {
+     /**
+      * xml_value
+      *
++     * @uses $CFG
+      * @param xxx $tags
+      * @param xxx $more_tags (optional, default=null)
+      * @param xxx $default (optional, default='')
++     * @param xxx $nl2br (optional, default=true)
+      * @return xxx
+      */
+     function xml_value($tags, $more_tags=null, $default='', $nl2br=true) {
+@@ -479,7 +509,7 @@ class hotpot_source_hp extends hotpot_source {
+             if (! is_array($value)) {
+                 return null;
+             }
+-            if(! array_key_exists($tag, $value)) {
++            if (! array_key_exists($tag, $value)) {
+                 return null;
+             }
+             $value = $value[$tag];
+@@ -527,6 +557,10 @@ class hotpot_source_hp extends hotpot_source {
+                 $callback = array($this, 'xml_value_nl2br');
+                 $value = preg_replace_callback($search, $callback, $value);
+             }
++
++            // encode unicode characters as HTML entities
++            // (in particular, accented charaters that have not been encoded by HP)
++            $value = hotpot_textlib('utf8_to_entities', $value);
+         }
+         return $value;
+     }
+@@ -585,7 +619,7 @@ class hotpot_source_hp extends hotpot_source {
+      *
+      * @param xxx $tags
+      * @param xxx $more_tags (optional, default=null)
+-     * @param xxx $default (optional, default='')
++     * @param xxx $default (optional, default=0)
+      * @return xxx
+      */
+     function xml_value_int($tags, $more_tags=null, $default=0) {
+@@ -603,7 +637,8 @@ class hotpot_source_hp extends hotpot_source {
+      * @param xxx $tags
+      * @param xxx $more_tags (optional, default=null)
+      * @param xxx $default (optional, default='')
+-     * @param xxx $convert_to_unicode (optional, default=false)
++     * @param xxx $nl2br (optional, default=true)
++     * @param xxx $convert_to_unicode (optional, default=true)
+      * @return xxx
+      */
+     function xml_value_js($tags, $more_tags=null, $default='', $nl2br=true, $convert_to_unicode=true) {
+@@ -619,31 +654,17 @@ class hotpot_source_hp extends hotpot_source {
+      * @return xxx
+      */
+     function js_value_safe($str, $convert_to_unicode=false) {
+-        // encode a string for javascript
+-        static $replace_pairs = array(
+-            // backslashes and quotes
+-            '\\'=>'\\\\', "'"=>"\\'", '"'=>'\\"',
+-            // newlines (win = "\r\n", mac="\r", linux/unix="\n")
+-            "\r\n"=>'\\n', "\r"=>'\\n', "\n"=>'\\n',
+-            // other (closing tag is for XHTML compliance)
+-            "\0"=>'\\0', '</'=>'<\\/'
+-        );
+-
+-        // convert unicode chars to html entities, if required
+-        // Note that this will also decode named entities such as &apos; and &quot;
+-        // so we have to put "strtr()" AFTER this call to textlib::utf8_to_entities()
+-        if ($convert_to_unicode) {
+-            $str = hotpot_textlib('utf8_to_entities', $str, false, true);
+-        }
+-
+-        $str = strtr($str, $replace_pairs);
++        global $CFG;
+ 
+-        // convert (hex and decimal) html entities to javascript unicode, if required
+-        if ($convert_to_unicode) {
+-            $search = '/&#x([0-9A-F]+);/i';
++        if ($convert_to_unicode && $CFG->hotpot_enableobfuscate) {
++            // convert ALL chars to Javascript unicode
+             $callback = array($this, 'js_unicode_char');
+-            $str = preg_replace_callback($search, $callback, $str);
++            $str = preg_replace_callback($this->search_unicode_chars, $callback, $str);
++        } else {
++            // escape backslashes, quotes, etc
++            $str = strtr($str, $this->javascript_replace_pairs);
+         }
++
+         return $str;
+     }
+ 
+@@ -654,7 +675,10 @@ class hotpot_source_hp extends hotpot_source {
+      * @return xxx
+      */
+     function js_unicode_char($match) {
+-        return sprintf('\\u%04s', $match[1]);
++        $num = $match[0]; // the UTF-8 char
++        $num = hotpot_textlib('utf8ord', $num);
++        $num = strtoupper(dechex($num));
++        return sprintf('\\u%04s', $num);
+     }
+ 
+     /**
+diff --git a/version.php b/version.php
+index 924fbd8..c52a598 100644
+--- a/version.php
++++ b/version.php
+@@ -29,7 +29,19 @@
+ // prevent direct access to this script
+ defined('MOODLE_INTERNAL') || die();
+ 
+-if (floatval($GLOBALS['CFG']->release) <= 2.6) {
++if (empty($CFG)) {
++    global $CFG;
++}
++
++if (isset($CFG->release)) {
++    $moodle_26 = version_compare($CFG->release, '2.6.99', '<=');
++} else if (isset($CFG->yui3version)) {
++    $moodle_26 = version_compare($CFG->yui3version, '3.13.99', '<=');
++} else {
++    $moodle_26 = false;
++}
++
++if ($moodle_26) {
+     $plugin = new stdClass();
+ }
+ 
+@@ -37,9 +49,9 @@ $plugin->cron      = 0;
+ $plugin->component = 'mod_hotpot';
+ $plugin->maturity  = MATURITY_STABLE; // ALPHA=50, BETA=100, RC=150, STABLE=200
+ $plugin->requires  = 2010112400;      // Moodle 2.0
+-$plugin->release   = '2015.02.11 (62)';
+-$plugin->version   = 2015021162;
++$plugin->release   = '2015-10-28 (79)';
++$plugin->version   = 2015102879;
+ 
+-if (floatval($GLOBALS['CFG']->release) <= 2.6) {
++if ($moodle_26) {
+     $module = clone($plugin);
+ }
+\ No newline at end of file

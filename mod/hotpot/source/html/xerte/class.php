@@ -49,19 +49,19 @@ class hotpot_source_html_xerte extends hotpot_source_html {
      *
      * @return xxx
      */
-    public static function is_quizfile($sourcefile) {
+    static public function is_quizfile($sourcefile) {
         if (! preg_match('/\.html?$/', $sourcefile->get_filename())) {
             // not an html file
             return false;
         }
-        if (! $content = $sourcefile->get_content()) {
+        if (! $content = self::get_content($sourcefile)) {
             // empty or non-existant file
             return false;
         }
         if (! preg_match('/<script[^>]*src\s*=\s*"[^"]*rloObject.js"[^>]*>/', $content)) {
             return false;
         }
-        if (! preg_match("/myRLO = new rloObject\('\d*','\d*','[^']*.rl[to]'\)/", $content)) {
+        if (! preg_match("/myRLO = new rloObject\('\d*','\d*','[^']*.rl[ot]'[^)]*\)/", $content)) {
             return false;
         }
         return true;

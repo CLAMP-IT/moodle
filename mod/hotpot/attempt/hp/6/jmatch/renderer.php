@@ -112,6 +112,20 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
             ."	var obj = document.getElementsByTagName('div');\n"
             ."	if (obj && obj.length) {\n"
             ."		myParentNode = obj[obj.length - 1].parentNode;\n"
+            ."		var css_prefix = new Array('webkit', 'khtml', 'moz', 'ms', 'o', '');\n"
+            ."		for (var i=0; i<css_prefix.length; i++) {\n"
+            ."			if (css_prefix[i]=='') {\n"
+            ."				var userSelect = 'userSelect';\n"
+            ."			} else {\n"
+            ."				var userSelect = css_prefix[i] + 'UserSelect';\n"
+            ."			}\n"
+            ."			if (typeof(myParentNode.style[userSelect]) != 'undefined') {\n"
+            ."				myParentNode.style[userSelect] = 'none';\n"
+            ."				break;\n"
+            ."			}\n"
+            ."		}\n"
+            ."		userSelect = null;\n"
+            ."		css_prefix = null;\n"
             ."	}\n"
             ."}\n"
             ."for (var i=0; i<F.length; i++){\n"
@@ -134,13 +148,13 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
             ."		var div = document.createElement('div');\n"
             ."		div.setAttribute('id', 'D' + i);\n"
             ."		div.setAttribute('class', 'CardStyle');\n"
-            ."		div.setAttribute('onmousedown', 'beginDrag(event, ' + i + ')');\n"
-            ."		myParentNode.appendChild(div);\n"
+            ."		div = myParentNode.appendChild(div);\n"
+            ."		HP_add_listener(div, 'mousedown', 'beginDrag(event, ' + i + ')');\n"
             ."	} else {\n"
             ."		document.write('".'<div id="'."D' + i + '".'" class="CardStyle" onmousedown="'."beginDrag(event, ' + i + ')".'"'."></div>');\n"
             ."	}\n"
             ."}\n"
-            ."// m = div = myParentNode = null;"
+            ."div = myParentNode = null;"
        ;
         $this->bodycontent = preg_replace($search, $replace, $this->bodycontent, 1);
     }
@@ -200,7 +214,7 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
     function get_js_functionnames()  {
         // start list of function names
         $names = parent::get_js_functionnames();
-        $names .= ($names ? ',' : '').'CheckAnswers,beginDrag';
+        $names .= ($names ? ',' : '').'CardSetHTML,beginDrag,doDrag,endDrag,CheckAnswers';
         return $names;
     }
 
@@ -214,23 +228,14 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
     }
 
     /**
-     * fix_js_beginDrag
+     * get_beginDrag_target
+     * for drag-and-drop JMatch and JMix
      *
-     * @param xxx $str (passed by reference)
-     * @param xxx $start
-     * @param xxx $length
+     * @return string
+     * @todo Finish documenting this function
      */
-    function fix_js_beginDrag(&$str, $start, $length)  {
-        $substr = substr($str, $start, $length);
-        if ($pos = strpos($substr, '{')) {
-            $insert = "\n"
-                ."	if (e && e.target && e.target.tagName && e.target.tagName.toUpperCase()=='OBJECT') {\n"
-                ."		return;\n"
-                ."	}\n"
-            ;
-            $substr = substr_replace($substr, $insert, $pos+1, 0);
-        }
-        $str = substr_replace($str, $substr, $start, $length);
+    public function get_beginDrag_target() {
+        return 'DC[CurrDrag]';
     }
 
     /**
@@ -287,6 +292,7 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
      * @param xxx $length
      */
     function fix_js_DeleteItem_Flashcard(&$str, $start, $length)  {
+        $event = $this->get_send_results_event();
         $substr = ''
             ."function DeleteItem(){\n"
             ."	var Qs = document.getElementById('Questions');\n"
@@ -303,7 +309,7 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
             ."		var count = 0;\n"
             ."	}\n"
             ."	if (count==0){\n"
-            ."		HP.onunload(4,0);\n"
+            ."		HP_send_results($event);\n"
             ."	}\n"
             ."}\n"
         ;
@@ -321,7 +327,10 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
 
         $substr = substr($str, $start, $length);
 
-        $substr = preg_replace('/(\s*)return;/', '$1'.'HP.onunload(4,0);$0', $substr);
+        $event = $this->get_send_results_event();
+        $search = '/(\s*)return;/';
+        $replace = '$1'."HP_send_results($event);".'$0';
+        $substr = preg_replace($search, $replace, $substr);
 
         if ($pos = strrpos($substr, '}')) {
             $append = "\n"
@@ -462,12 +471,8 @@ class mod_hotpot_attempt_hp_6_jmatch_renderer extends mod_hotpot_attempt_hp_6_re
     function fix_js_ShowSolution_JMemori(&$str, $start, $length)  {
         $substr = substr($str, $start, $length);
 
-        if ($this->hotpot->delay3==hotpot::TIME_AFTEROK) {
-            $flag = 1; // set form values only
-        } else {
-            $flag = 0; // set form values and send form
-        }
-        $substr = str_replace('Finish()', "HP.onunload(4,$flag)", $substr);
+        $event = $this->get_send_results_event();
+        $substr = str_replace('Finish()', "HP_send_results($event)", $substr);
 
         $str = substr_replace($str, $substr, $start, $length);
     }
