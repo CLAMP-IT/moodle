@@ -1,4 +1,4 @@
-# [Moodle Liberal Arts Edition v3.0.3-LAE10.0.1]
+# [Moodle Liberal Arts Edition v3.1.0-LAE11.0.0]
 
 Welcome to the Moodle Liberal Arts Edition. The goal of the LAE is to provide a coherent package for modules, patches, and code developed (or improved) by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
@@ -16,21 +16,16 @@ Questions about the LAE can be sent to Ken Newquist at <newquisk@lafayette.edu> 
 
 ## Contents
 
-Moodle 3.0.3+LAE10.0.1 consists of the core Moodle 3.0.3 release plus a number of CLAMP-developed features and bug fixes.
+Moodle 3.1.0+LAE11.0.0 consists of the core Moodle 3.1.0 release plus a number of CLAMP-developed features and bug fixes.
 
 The following core features are included:
 
 * Anonymous Forums
-* Improved metacouse UI
 * Per-course resource display options
 
 ### Anonymous Forums
 
 A completely new version of the Anonymous Forums option in Moodle. This version introduces a new "Anonymous User" who is attached to forum posts, allowing faculty to back up and restore a forum without losing anonymity. This feature is disabled by default.
-
-### Improved metacouse UI
-
-This is an implementation of <https://tracker.moodle.org/browse/MDL-27628>. There is a new interface for adding and removing multiple course meta link enrollment methods (metacourses), with an AJAX search interface.
 
 ### Per-course resource display options
 
@@ -71,15 +66,15 @@ You can get the LAE in two ways:
 * Download the tar and zip packages from the CLAMP web site: <http://www.clamp-it.org/code/>
 * Download the current release branch from the CLAMP code repository:
 
-    git clone https://github.com/CLAMP-IT/moodle v3.0.3-LAE10.0.1
-    git checkout -b v3.0.3-LAE10.0.1
+    git clone https://github.com/CLAMP-IT/moodle v3.1.0-LAE11.0.0
+    git checkout -b v3.1.0-LAE11.0.0
 
-By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v3.0.3-LAE10.0.1-base tag instead.
+By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v3.1.0-LAE11.0.0-base tag instead.
 
 CLAMP maintains two branches for each major version:
 
-* LAE_30_STABLE contains the core code only
-* LAE_30_PACKAGE includes the contributed modules
+* LAE_31_STABLE contains the core code only
+* LAE_31_PACKAGE includes the contributed modules
 
 ## Installing the LAE
 
