@@ -1,57 +1,68 @@
-<?php 
- 	require_once("about.php");
-    global $CFG;
-// NB block language settings broken in 1.9.
-// can update to use get_string and annotate/lang/en_utf8 etc for 2.0
-$intro = "Plugin version<b> $CFG->block_annotate_version_number</b>, $CFG->block_annotate_version_date: ";
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-$intro = $intro . '<a href="'.$CFG->wwwroot . '/blocks/annotate/selftest.php">Run configuration check.</a> ' .
-' If you make any changes below, save the changes and reload the page before running the test.';
-   
-$settings->add(new admin_setting_heading('block_annotate_heading_server', 'A.nnotate server settings' , $intro));
+/**
+ * This file defines the admin settings for this plugin
+ *
+ * @package   block_annotate
+ * @copyright Textensor Ltd.
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
-$srvmsg = 'Set this to your local A.nnotate server. '. 
-'For testing, if you have a default A.nnotate installation on the same server as Moodle try "http://localhost/annotate".'. 
-'If both servers are on the same local subnetwork you can use their local ip addresses here to, as long as each is '.
-'configured to know its own address.';
- 
-$settings->add(new admin_setting_configtext('block_annotate_server_url', 'Server URL', $srvmsg, 'http://localhost/annotate'));
+defined ( 'MOODLE_INTERNAL' ) || die ();
+global $CFG;
 
-$aumsg = 'The API user and API key are optional. They allow accounts to be automatically created on the A.nnotate server when '.
-		' a Moodle user follows an A.nnotate link. The apiuser field should contain the email id of an '.
-		'A.nnotate server administrator as set in the A.nnotate configuration file. The API key below should correspond '. 
-		'to this user.'; 
-$settings->add(new admin_setting_configtext('block_annotate_apiuser', 'API user email address', $aumsg, ''));
+if ($ADMIN->fulltree) {
+    $settings->add(new admin_setting_heading("block_annotate_heading_server",
+       get_string("annotate_header_config", "block_annotate"),
+       get_string("annotate_header_description", "block_annotate"))
+    );
 
-$akmsg = 'The API key can be found at the bottom of the account page when logged in to A.nnotate as the administrator';
-$settings->add(new admin_setting_configtext('block_annotate_apikey', 'API key', $akmsg, ''));
+    $settings->add(new admin_setting_configtext("block_annotate_server_url",
+       get_string("annotate_server_uri_lbl", "block_annotate"),
+       get_string("annotate_server_uri_msg", "block_annotate"),
+       get_string("annotate_server_uri_default", "block_annotate")),
+       PARAM_URL
+    );
 
-$akmsg = 'Moodle Identifier. (If you have multiple moodle installations or you reinstall the moodle plugin)';
-$code = sha1($CFG->wwwroot);
-$settings->add(new admin_setting_configtext('block_moodle_id', 'Moodle Id', $akmsg, $code));
-/*
+    $settings->add(new admin_setting_configtext('block_annotate_api_user',
+       get_string("annotate_api_user_lbl", "block_annotate"),
+       get_string("annotate_api_user_msg", "block_annotate"),
+       get_string("annotate_api_user_default", "block_annotate")),
+       PARAM_EMAIL
+    );
 
-// this to go in per-instance configuration
+    $settings->add(new admin_setting_configtext('block_annotate_api_key',
+       get_string("annotate_api_key_lbl", "block_annotate"),
+       get_string("annotate_api_key_msg", "block_annotate"),
+       get_string("annotate_api_key_default", "block_annotate")),
+       PARAM_ALPHANUMEXT
+    );
 
-$copyinfo = 'Deduplicate';
-$copymsg = 'Minimize server storage and processing by sharing cached documents and page images. If this is not set, then each student '.
-' has a completely independent copy. This requires the API user email address to be set above. If "Shared comments" above ' . 
-' is set, then this setting has no effect: there will only be one copy on the server in any case.';
-$settings->add(new admin_setting_configcheckbox('block_annotate_share', $copyinfo, $copymsg, 1));
+    $settings->add(new admin_setting_configtext('block_annotate_wsuser_token',
+       get_string("annotate_wsuser_token_lbl", "block_annotate"),
+       get_string("annotate_wsuser_token_msg", "block_annotate"),
+       get_string("annotate_wsuser_token_default", "block_annotate")),
+       PARAM_ALPHANUMEXT
+    );
 
-
-$settings->add(new admin_setting_heading('block_annotate_heading_types', 'File types to add links to for viewing in A.nnotate' , ''));
-
-
-$formats = array(
-'pdf'=>'PDF documents', 
-'doc'=>'Word documents',
-'xls'=>'Excel spreadsheets',
-'ppt'=>'PowerPoint presentations',
-'jpg'=> 'JPEG images');
-
-foreach ($formats as $fmt => $full) {
-   $settings->add(new admin_setting_configcheckbox('block_annotate_'.$fmt, $full, '', 1));
+    $settings->add(new admin_setting_configtext('block_annotate_moodleId',
+       get_string("annotate_moodleId_lbl", "block_annotate"),
+       get_string("annotate_moodleId_msg", "block_annotate"),
+       sha1($CFG->wwwroot)),
+       PARAM_ALPHANUMEXT
+    );
 }
-*/
-?>
