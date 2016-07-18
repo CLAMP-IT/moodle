@@ -289,6 +289,10 @@ class mod_workshop_renderer extends plugin_renderer_base {
         $row->attributes['class'] = 'phasetasks';
         foreach ($plan->phases as $phasecode => $phase) {
             $title = html_writer::tag('span', $phase->title);
+            if ($phase->active) {
+                $title .= ' ' . html_writer::tag('span', get_string('userplancurrentphase', 'workshop'),
+                    array('class' => 'accesshide'));
+            }
             $actions = '';
             foreach ($phase->actions as $action) {
                 switch ($action->type) {
@@ -877,7 +881,7 @@ class mod_workshop_renderer extends plugin_renderer_base {
             $type       = $file->get_mimetype();
             $image      = $this->output->pix_icon(file_file_icon($file), get_mimetype_description($file), 'moodle', array('class' => 'icon'));
 
-            $linkhtml   = html_writer::link($fileurl, $image) . substr($filepath, 1) . html_writer::link($fileurl, $filename);
+            $linkhtml   = html_writer::link($fileurl, $image . substr($filepath, 1) . $filename);
             $linktxt    = "$filename [$fileurl]";
 
             if ($format == 'html') {
