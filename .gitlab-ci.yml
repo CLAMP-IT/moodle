@@ -15,7 +15,9 @@ before_script:
     -e s/'password'/''/ 
     -e s/example.com/localhost/ 
     -e s%/home/example%$HOME% 
-    -e 's%// \(\$CFG.*behat\)%\1%' 
+    -e 's%// \(\$CFG.*behat_prefix\)%\1%' 
+    -e 's%// \(\$CFG.*behat_wwwroot\)%\1%' 
+    -e 's%// \(\$CFG.*behat_dataroot\)%\1%' 
     -e 's%// \(\$CFG.*phpunit\)%\1%' 
     -e s/'localhost'/'lafayette__mysql-moodle'/ 
     -e s/\'pgsql\'/\'mysqli\'/ 
@@ -34,6 +36,7 @@ before_script:
   - composer self-update
   - composer install
   - locale-gen en_AU.UTF-8
+  - cat config.php
   - php admin/tool/phpunit/cli/init.php
   - php admin/tool/behat/cli/init.php
   - (php -S localhost:8000 -t /var/www/moodle/htdocs &) 2> /dev/null > /dev/null
