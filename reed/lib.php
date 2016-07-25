@@ -18,13 +18,6 @@ function reed_resourcelib_embed_general($fullurl, $title, $clicktoopen, $mimetyp
 
     $param = '<param name="src" value="'.$fullurl.'" />';
 
-    // IE can not embed stuff properly, that is why we use iframe instead.
-    // Unfortunately this tag does not validate in xhtml strict mode,
-    // but in any case it is undeprecated in HTML 5 - we will use it everywhere soon!
-    if ($mimetype === 'text/html' and check_browser_version('MSIE', 5)) {
-        $iframe = true;
-    }
-
     if ($iframe) {
         $code = <<<EOT
 <div class="resourcecontent resourcegeneral">
