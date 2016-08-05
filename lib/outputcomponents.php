@@ -207,6 +207,11 @@ class user_picture implements renderable {
     public $includefullname = false;
 
     /**
+     * @var bool whether to include a pronount.
+     */
+    public $addpronoun = false;
+
+    /**
      * User picture constructor.
      *
      * @param stdClass $user user record with at least id, picture, imagealt, firstname and lastname set.

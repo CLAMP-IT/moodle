@@ -2508,6 +2508,10 @@ class core_renderer extends renderer_base {
         // Show fullname together with the picture when desired.
         if ($userpicture->includefullname) {
             $output .= fullname($userpicture->user);
+            if ($userpicture->addpronoun && isset($CFG->hampshire_display_pronouns) && $CFG->hampshire_display_pronouns) {
+                $pronoun = $userpicture->user->alternatename;
+                $output .= " ($pronoun)";
+            }
         }
 
         // then wrap it in link if needed
@@ -4182,6 +4186,14 @@ EOD;
             // If the user context is set, then use that for capability checks.
             if (isset($headerinfo['usercontext'])) {
                 $context = $headerinfo['usercontext'];
+            }
+            // Use the user's full name if the heading isn't set.
+            if (!isset($heading)) {
+                $heading = fullname($user);
+                if (isset($CFG->hampshire_display_pronouns) && $CFG->hampshire_display_pronouns) {
+                    $url = $CFG->wwwroot . "/pix/docs.svg";
+                    $heading = fullname($user) . " ($user->alternatename) <a title='Preferred name and pronoun FAQ' href='https://www.hampshire.edu/it/preferred-name-and-pronoun-faq' target='_blank'><img src='$url' alt='Preferred name and pronoun FAQ' /></a>";
+                }
             }
 
             // Only provide user information if the user is the current user, or a user which the current user can view.

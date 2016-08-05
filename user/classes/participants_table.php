@@ -280,7 +280,7 @@ class participants_table extends \table_sql {
     public function col_fullname($data) {
         global $OUTPUT;
 
-        return $OUTPUT->user_picture($data, array('size' => 35, 'courseid' => $this->course->id, 'includefullname' => true));
+        return $OUTPUT->user_picture($data, array('size' => 35, 'courseid' => $this->course->id, 'includefullname' => true, 'addpronoun' => true));
     }
 
     /**
