@@ -760,7 +760,8 @@ if ($mode === MODE_USERDETAILS) {    // Print simple listing.
             $usercontext = context_user::instance($user->id);
 
             if ($piclink = ($USER->id == $user->id || has_capability('moodle/user:viewdetails', $context) || has_capability('moodle/user:viewdetails', $usercontext))) {
-                $profilelink = '<strong><a href="'.$CFG->wwwroot.'/user/view.php?id='.$user->id.'&amp;course='.$course->id.'">'.fullname($user).'</a></strong>';
+                $pronounlink = "<a title='Preferred name and pronoun FAQ' href='https://www.hampshire.edu/it/preferred-name-and-pronoun-faq' target='_blank'><img src='{$CFG->wwwroot}/pix/docs.svg' alt='Preferred name and pronoun FAQ' /></a>";
+                $profilelink = '<strong><a href="'.$CFG->wwwroot.'/user/view.php?id='.$user->id.'&amp;course='.$course->id.'">'.fullname($user).' ('.$user->alternatename.')</a> '.$pronounlink.'</strong>';
             } else {
                 $profilelink = '<strong>'.fullname($user).'</strong>';
             }
