@@ -4140,6 +4140,10 @@ EOD;
             // Use the user's full name if the heading isn't set.
             if (!isset($heading)) {
                 $heading = fullname($user);
+                if (isset($CFG->hampshire_display_pronouns) && $CFG->hampshire_display_pronouns) {
+                    $url = $CFG->wwwroot . "/pix/docs.svg";
+                    $heading = fullname($user) . " ($user->alternatename) <a title='Preferred name and pronoun FAQ' href='https://www.hampshire.edu/it/preferred-name-and-pronoun-faq' target='_blank'><img src='$url' alt='Preferred name and pronoun FAQ' /></a>";
+                }
             }
 
             $imagedata = $this->user_picture($user, array('size' => 100));
