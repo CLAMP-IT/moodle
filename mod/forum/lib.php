@@ -1026,7 +1026,7 @@ function forum_cron() {
 
                 $headerdata = new stdClass();
                 $headerdata->sitename = format_string($site->fullname, true);
-                $headerdata->userprefs = $CFG->wwwroot.'/user/edit.php?id='.$userid.'&amp;course='.$site->id;
+                $headerdata->userprefs = $CFG->wwwroot.'/user/forum.php?id='.$userid.'&amp;course='.$site->id;
 
                 $posttext = get_string('digestmailheader', 'forum', $headerdata)."\n\n";
                 $headerdata->userprefs = '<a target="_blank" href="'.$headerdata->userprefs.'">'.get_string('digestmailprefs', 'forum').'</a>';
@@ -3082,6 +3082,12 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
 
     // String cache
     static $str;
+    // This is an extremely hacky way to ensure we only print the 'unread' anchor
+    // the first time we encounter an unread post on a page. Ideally this would
+    // be moved into the caller somehow, and be better testable. But at the time
+    // of dealing with this bug, this static workaround was the most surgical and
+    // it fits together with only printing th unread anchor id once on a given page.
+    static $firstunreadanchorprinted = false;
 
     // If anonymous is the poster check who the actual owner is
     if(!empty($post->hiddenuserid) && !empty($USER)) {
@@ -3302,7 +3308,11 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
             $forumpostclass = ' read';
         } else {
             $forumpostclass = ' unread';
-            $output .= html_writer::tag('a', '', array('name'=>'unread'));
+            // If this is the first unread post printed then give it an anchor and id of unread.
+            if (!$firstunreadanchorprinted) {
+                $output .= html_writer::tag('a', '', array('id' => 'unread'));
+                $firstunreadanchorprinted = true;
+            }
         }
     } else {
         // ignore trackign status if not tracked or tracked param missing

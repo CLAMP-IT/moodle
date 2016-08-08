@@ -33,4 +33,6 @@ function xmldb_local_lae_upgrade($oldversion) {
         context_user::instance($user->id);
         upgrade_plugin_savepoint(true, 2014041600, 'local', 'lae');
     }
+
+    return true;
 }

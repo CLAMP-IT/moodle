@@ -36,6 +36,13 @@ function tool_lp_extend_navigation_course($navigation, $course, $coursecontext) 
         return;
     }
 
+    // Check access to the course and competencies page.
+    $capabilities = array('moodle/competency:coursecompetencyview', 'moodle/competency:coursecompetencymanage');
+    $context = context_course::instance($course->id);
+    if (!has_any_capability($capabilities, $context) || !can_access_course($course)) {
+        return;
+    }
+
     // Just a link to course competency.
     $title = get_string('competencies', 'core_competency');
     $path = new moodle_url("/admin/tool/lp/coursecompetencies.php", array('courseid' => $course->id));
@@ -44,7 +51,7 @@ function tool_lp_extend_navigation_course($navigation, $course, $coursecontext) 
                                             navigation_node::TYPE_SETTING,
                                             null,
                                             null,
-                                            new pix_icon('competency', '', 'tool_lp'));
+                                            new pix_icon('i/competencies', ''));
     if (isset($settingsnode)) {
         $navigation->add_node($settingsnode);
     }
@@ -129,7 +136,7 @@ function tool_lp_extend_navigation_category_settings($navigation, $coursecategor
                                                 navigation_node::TYPE_SETTING,
                                                 null,
                                                 null,
-                                                new pix_icon('competency', '', 'tool_lp'));
+                                                new pix_icon('i/competencies', ''));
         if (isset($settingsnode)) {
             $navigation->add_node($settingsnode);
         }
@@ -144,7 +151,7 @@ function tool_lp_extend_navigation_category_settings($navigation, $coursecategor
                                                 navigation_node::TYPE_SETTING,
                                                 null,
                                                 null,
-                                                new pix_icon('competency', '', 'tool_lp'));
+                                                new pix_icon('i/competencies', ''));
         if (isset($settingsnode)) {
             $navigation->add_node($settingsnode);
         }

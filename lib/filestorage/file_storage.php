@@ -238,17 +238,24 @@ class file_storage {
      */
     public static function can_convert_documents() {
         global $CFG;
+        $currentversion = 0;
+        $supportedversion = 0.7;
         $unoconvbin = \escapeshellarg($CFG->pathtounoconv);
         $command = "$unoconvbin --version";
         exec($command, $output);
-        preg_match('/([0-9]+\.[0-9]+)/', $output[0], $matches);
-        $currentversion = (float)$matches[0];
-        $supportedversion = 0.7;
-        if ($currentversion < $supportedversion) {
-            return false;
+        // If the command execution returned some output, then get the unoconv version.
+        if ($output) {
+            foreach ($output as $response) {
+                if (preg_match('/unoconv (\\d+\\.\\d+)/', $response, $matches)) {
+                    $currentversion = (float)$matches[1];
+                }
+            }
+            if ($currentversion < $supportedversion) {
+                return false;
+            }
+            return true;
         }
-
-        return true;
+        return false;
     }
 
     /**

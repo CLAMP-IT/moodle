@@ -1149,10 +1149,12 @@ function lti_get_configured_types($courseid, $sectionreturn = 0) {
         $type           = new stdClass();
         $type->modclass = MOD_CLASS_ACTIVITY;
         $type->name     = 'lti_type_' . $ltitype->id;
-        $type->title    = $ltitype->name;
+        // Clean the name. We don't want tags here.
+        $type->title    = clean_param($ltitype->name, PARAM_NOTAGS);
         $trimmeddescription = trim($ltitype->description);
         if ($trimmeddescription != '') {
-            $type->help     = $trimmeddescription;
+            // Clean the description. We don't want tags here.
+            $type->help     = clean_param($trimmeddescription, PARAM_NOTAGS);
             $type->helplink = get_string('modulename_shortcut_link', 'lti');
         }
         if (empty($ltitype->icon)) {
@@ -1522,7 +1524,15 @@ function lti_update_type($type, $config) {
         }
         require_once($CFG->libdir.'/modinfolib.php');
         if ($clearcache) {
-            rebuild_course_cache();
+            $sql = "SELECT DISTINCT course
+                      FROM {lti}
+                     WHERE typeid = ?";
+
+            $courses = $DB->get_fieldset_sql($sql, array($type->id));
+
+            foreach ($courses as $courseid) {
+                rebuild_course_cache($courseid, true);
+            }
         }
     }
 }
@@ -2483,11 +2493,18 @@ function get_tool_type_instance_ids($type) {
 function serialise_tool_type(stdClass $type) {
     $capabilitygroups = get_tool_type_capability_groups($type);
     $instanceids = get_tool_type_instance_ids($type);
-
+    // Clean the name. We don't want tags here.
+    $name = clean_param($type->name, PARAM_NOTAGS);
+    if (!empty($type->description)) {
+        // Clean the description. We don't want tags here.
+        $description = clean_param($type->description, PARAM_NOTAGS);
+    } else {
+        $description = get_string('editdescription', 'mod_lti');
+    }
     return array(
         'id' => $type->id,
-        'name' => $type->name,
-        'description' => isset($type->description) ? $type->description : get_string('editdescription', 'mod_lti'),
+        'name' => $name,
+        'description' => $description,
         'urls' => get_tool_type_urls($type),
         'state' => get_tool_type_state_info($type),
         'hascapabilitygroups' => !empty($capabilitygroups),
@@ -2596,17 +2613,31 @@ function lti_load_type_from_cartridge($url, $type) {
         array(
             "title" => "lti_typename",
             "launch_url" => "lti_toolurl",
-            "description" => "lti_description"
+            "description" => "lti_description",
+            "icon" => "lti_icon",
+            "secure_icon" => "lti_secureicon"
         ),
         array(
-            "icon_url" => "lti_icon",
-            "secure_icon_url" => "lti_secureicon"
+            "icon_url" => "lti_extension_icon",
+            "secure_icon_url" => "lti_extension_secureicon"
         )
     );
     // If an activity name exists, unset the cartridge name so we don't override it.
     if (isset($type->lti_typename)) {
         unset($toolinfo['lti_typename']);
     }
+
+    // Always prefer cartridge core icons first, then, if none are found, look at the extension icons.
+    if (empty($toolinfo['lti_icon']) && !empty($toolinfo['lti_extension_icon'])) {
+        $toolinfo['lti_icon'] = $toolinfo['lti_extension_icon'];
+    }
+    unset($toolinfo['lti_extension_icon']);
+
+    if (empty($toolinfo['lti_secureicon']) && !empty($toolinfo['lti_extension_secureicon'])) {
+        $toolinfo['lti_secureicon'] = $toolinfo['lti_extension_secureicon'];
+    }
+    unset($toolinfo['lti_extension_secureicon']);
+
     foreach ($toolinfo as $property => $value) {
         $type->$property = $value;
     }
@@ -2626,17 +2657,31 @@ function lti_load_tool_from_cartridge($url, $lti) {
             "title" => "name",
             "launch_url" => "toolurl",
             "secure_launch_url" => "securetoolurl",
-            "description" => "intro"
+            "description" => "intro",
+            "icon" => "icon",
+            "secure_icon" => "secureicon"
         ),
         array(
-            "icon_url" => "icon",
-            "secure_icon_url" => "secureicon"
+            "icon_url" => "extension_icon",
+            "secure_icon_url" => "extension_secureicon"
         )
     );
     // If an activity name exists, unset the cartridge name so we don't override it.
     if (isset($lti->name)) {
         unset($toolinfo['name']);
     }
+
+    // Always prefer cartridge core icons first, then, if none are found, look at the extension icons.
+    if (empty($toolinfo['icon']) && !empty($toolinfo['extension_icon'])) {
+        $toolinfo['icon'] = $toolinfo['extension_icon'];
+    }
+    unset($toolinfo['extension_icon']);
+
+    if (empty($toolinfo['secureicon']) && !empty($toolinfo['extension_secureicon'])) {
+        $toolinfo['secureicon'] = $toolinfo['extension_secureicon'];
+    }
+    unset($toolinfo['extension_secureicon']);
+
     foreach ($toolinfo as $property => $value) {
         $lti->$property = $value;
     }

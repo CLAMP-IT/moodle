@@ -159,7 +159,7 @@ var COMMENT = function(editor, gradeid, pageno, x, y, width, colour, rawtext) {
     this.draw = function(focus) {
         var drawable = new M.assignfeedback_editpdf.drawable(this.editor),
             node,
-            drawingregion = this.editor.get_dialogue_element(SELECTOR.DRAWINGREGION),
+            drawingcanvas = this.editor.get_dialogue_element(SELECTOR.DRAWINGCANVAS),
             container,
             menu,
             position,
@@ -189,14 +189,14 @@ var COMMENT = function(editor, gradeid, pageno, x, y, width, colour, rawtext) {
             color: COMMENTTEXTCOLOUR
         });
 
-        drawingregion.append(container);
+        drawingcanvas.append(container);
         container.setStyle('position', 'absolute');
         container.setX(position.x);
         container.setY(position.y);
         drawable.store_position(container, position.x, position.y);
         drawable.nodes.push(container);
         node.set('value', this.rawtext);
-        scrollheight = node.get('scrollHeight'),
+        scrollheight = node.get('scrollHeight');
         node.setStyles({
             'height' : scrollheight + 'px',
             'overflow': 'hidden'
