@@ -7,3 +7,6 @@
 [submodule "blocks/remote_courses"]
 	path = blocks/remote_courses
 	url = https://github.com/LafColITS/moodle-block_remote_courses
+[submodule "blocks/mhaairs"]
+	path = blocks/mhaairs
+        url = git://github.com/itamart/moodle-block_mhaairs.git
