@@ -40,6 +40,11 @@ $string['categoryexists'] = 'Category names must be unique, this name already ex
 $string['categorynamex'] = 'Category name: {$a}';
 $string['changetheparameters'] = 'Change the parameters';
 $string['crontask'] = 'Ad-hoc database queries: run scheduled reports task';
+$string['customdir'] = 'Export csv report to path / directory';
+$string['customdir_help'] = 'Files are exported in the CSV format to the file path specified. If a directory is specified the filename format will be reportid-timecreated.csv.';
+$string['customdirmustexist'] = 'The directory "{$a}" does not exist.';
+$string['customdirnotadirectory'] = 'The path "{$a}" is not a directory.';
+$string['customdirnotwritable'] = 'The directory "{$a}" is not writable.';
 $string['customsql:definequeries'] = 'Define custom queries';
 $string['customsql:managecategories'] = 'Define custom categories';
 $string['customsql:view'] = 'View custom queries report';
@@ -115,7 +120,7 @@ $string['querynote'] = '<ul>
 <li>For scheduled reports, the tokens <tt>%%STARTTIME%%</tt> and <tt>%%ENDTIME%%</tt> are replaced by the Unix timestamp at the start and end of the reporting week/month in the query before it is executed.</li>
 <li>You can put parameters into the SQL using named placeholders, for example <tt>:parameter_name</tt>. Then, when the report is run, the user can enter values for the parameters to use when running the query.</li>
 <li>If the <tt>:parameter_name</tt> starts or ends with the characters <tt>date</tt> then a date-time selector will be used to input that value, otherwise a plain text-box will be used.</li>
-<li>You cannot use the characters <tt>:</tt> or <tt>?</tt> in strings in your query. If you need them, you can use <tt>CHR(58)</tt> and <tt>CHR(63)</tt> respectively, along with string concatenation. (It is <tt>CHR</tt> for Postgres or Oracle, <tt>CHAR</tt> for MySQL or SQL server.)</li>
+<li>You cannot use the characters <tt>:</tt> or <tt>?</tt> in strings in your query. If you need them, you can use the tokens <tt>%%C%%</tt> and <tt>%%Q%%</tt> respectively.</li>
 </ul>';
 $string['queryparameters'] = 'Query parameters';
 $string['queryparams'] = 'Please enter default values for the query parameters.';
