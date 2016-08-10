@@ -247,7 +247,8 @@ function filter_poodll_callback(array $link){
 				!empty($filterprops['cardheight']) ? $filterprops['cardheight'] : 150,
 				!empty($filterprops['randomize']) ? $filterprops['randomize'] : 'yes',
 				!empty($filterprops['width']) ? $filterprops['width'] : 400,
-				!empty($filterprops['height']) ? $filterprops['height'] : 300);
+				!empty($filterprops['height']) ? $filterprops['height'] : 300,
+				!empty($filterprops['flashcardstype']) ? $filterprops['flashcardstype'] : $CFG->filter_poodll_flashcards_type);
 			break;
 			
 		case 'miniplayer':
