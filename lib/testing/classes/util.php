@@ -1010,10 +1010,10 @@ abstract class testing_util {
         $env['phpversion'] = $phpversion;
 
         // Add database type and version.
-        $dbtype = $DB->get_dbvendor();
+        $dbtype = $CFG->dbtype;
         $dbinfo = $DB->get_server_info();
         $dbversion = $dbinfo['version'];
-        $env['dbtype'] = ucfirst($dbtype);
+        $env['dbtype'] = $dbtype;
         $env['dbversion'] = $dbversion;
 
         // OS details.
