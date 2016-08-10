@@ -29,6 +29,12 @@ $options = array('native' => 'Native', 'js' => 'Javascript');
 $items[] = new admin_setting_configselect('filter_poodll_html5controls', get_string('html5controls', 'filter_poodll'), '', 'native', $options);
 $items[] = new admin_setting_configcheckbox('filter_poodll_download_media_ok', get_string('showdownloadicon', 'filter_poodll'), '', 0);
 
+// PoodLL Flashcards
+    $items[] = new admin_setting_heading('filter_poodll_flashcards_settings', get_string('filter_poodll_flashcards_heading', 'filter_poodll'), '');
+    $options = array('poodll' => 'PoodLL', 'reveal' => 'Reveal.JS', 'owl'=>"Owl");
+$items[] = new admin_setting_configselect('filter_poodll_flashcards_type', get_string('flashcardstype', 'filter_poodll'), '', 'poodll', $options);
+
+
 	//PoodLL Filepicker intercept settings.
 $items[] = new admin_setting_heading('filter_poodll_intercept_settings', get_string('filter_poodll_intercept_heading', 'filter_poodll'), '');
 $items[] = new admin_setting_configcheckbox('filter_poodll_handleflv', get_string('handleflv', 'filter_poodll'), '', 1);

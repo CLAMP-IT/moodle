@@ -1,5 +1,9 @@
 Change List
 =========
+
+Version 2016061600
+Fixed a bug that caused HTML5 widgets to report a "not licensed" error
+
 Version 2015121106
 Fixed a bug that caused the whiteboard and recorders to fail to submit their media, when jquery was not present.
 

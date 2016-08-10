@@ -41,6 +41,30 @@ M.filter_poodll = {
 	
 	},
 
+	initowlflashcards: function(Y,opts) {
+		//Actually I realise that this could never work because owl-carousel is a jquery plugin
+
+		var owl = Y.one("#" + opts['FLASHCARDS_ID'] +"  .cards");
+		owl.owlCarousel({
+			navigation : true, // Show next and prev buttons
+			slideSpeed : 300,
+			paginationSpeed : 400,
+			singleItem:true
+		});
+
+        // Custom Navigation Events
+		var nextbutton = Y.one("#owlid .filter_poodll_flashcards_owl_next");
+		nextbutton.on('click', function(){
+			owl.trigger('owl.next');
+		});
+		var previousbutton = Y.one("#owlid .filter_poodll_flashcards_owl_next");
+		previousbutton.on('click',function(){
+			owl.trigger('owl.prev');
+		});
+
+
+	},
+
 	// Replace poodll_flowplayer divs with flowplayers
 	loadflowplayer: function(Y,opts) {
 
