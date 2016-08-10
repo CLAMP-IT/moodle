@@ -91,6 +91,17 @@ class scheduler_slot extends mvc_child_record_model {
     }
 
     /**
+     * Is this slot bookable in its bookable period for students.
+     * This checks for the availability time of the slot and for the "guard time" restriction,
+     * but not for the number of actualy booked appointments.
+     */
+    public function is_in_bookable_period() {
+        $available = $this->hideuntil <= time();
+        $beforeguardtime = $this->starttime > time() + $this->parent->guardtime;
+        return $available && $beforeguardtime;
+    }
+
+    /**
      * Is this a group slot (i.e., more than one student is permitted)
      */
     public function is_groupslot() {
@@ -164,8 +175,16 @@ class scheduler_slot extends mvc_child_record_model {
     /**
      *  Get an array of all appointments
      */
-    public function get_appointments() {
-        return array_values($this->appointments->get_children());
+    public function get_appointments($userfilter = null) {
+        $apps = $this->appointments->get_children();
+        if ($userfilter) {
+            foreach ($apps as $key => $app) {
+                if (!in_array($app->studentid, $userfilter)) {
+                    unset($apps[$key]);
+                }
+            }
+        }
+        return array_values($apps);
     }
 
     /**

@@ -17,6 +17,8 @@ if (!has_capability('mod/scheduler:manage', $context)) {
     require_capability('mod/scheduler:manageallappointments', $context);
 }
 
+echo $output->header();
+
 $appointmentid = required_param('appointmentid', PARAM_INT);
 list($slot, $appointment) = $scheduler->get_slot_appointment($appointmentid);
 $studentid = $appointment->studentid;
@@ -28,6 +30,7 @@ a.id as appid,
 a.studentid,
 a.attended,
 a.appointmentnote,
+a.appointmentnoteformat,
 a.grade,
 a.timemodified as apptimemodified
 FROM
@@ -83,6 +86,8 @@ if (count($pages) > 1) {
     print_tabs($tabrows, $subpage);
 }
 
+$totalgradeinfo = new scheduler_totalgrade_info($scheduler, $scheduler->get_gradebook_info($appointment->studentid));
+
 if ($subpage == 'thisappointment') {
     // Print editable appointment description.
     require_once($CFG->dirroot.'/mod/scheduler/appointmentforms.php');
@@ -91,7 +96,7 @@ if ($subpage == 'thisappointment') {
     $returnurl = new moodle_url($taburl, array('page' => 'thisappointment'));
 
     $distribute = ($slot->get_appointment_count() > 1);
-    $gradeedit = ($slot->teacherid == $USER->id) || $CFG->scheduler_allteachersgrading;
+    $gradeedit = ($slot->teacherid == $USER->id) || get_config('mod_scheduler', 'allteachersgrading');
     $mform = new scheduler_editappointment_form($appointment, $actionurl, $gradeedit, $distribute);
     $mform->set_data($mform->prepare_appointment_data($appointment));
 
@@ -113,6 +118,10 @@ if ($subpage == 'thisappointment') {
         $mform->display();
     }
 
+    if ($scheduler->uses_grades()) {
+        echo $output->render($totalgradeinfo);
+    }
+
 } else if ($subpage == 'otherappointments') {
     // Print table of other appointments of the same student.
 
@@ -131,13 +140,20 @@ if ($subpage == 'thisappointment') {
         $iconhelp = $otherslot->attended ? 'seen' : 'notseen';
         $attendedpix = $output->pix_icon($iconid, get_string($iconhelp, 'scheduler'), 'mod_scheduler');
 
-        $otherslot->appointmentnote .= "<br/><span class=\"timelabel\">[".userdate($otherslot->apptimemodified)."]</span>";
+        $appnote = format_text($otherslot->appointmentnote, $otherslot->appointmentnoteformat);
+        $appnote .= "<br/><span class=\"timelabel\">[".userdate($otherslot->apptimemodified)."]</span>";
         $grade = $output->format_grade($scheduler, $otherslot->grade);
         $teacher = $DB->get_record('user', array('id' => $otherslot->teacherid));
         $table->data[] = array ($datelink, $starttime, $endtime, $attendedpix,
-                                 $otherslot->appointmentnote, $grade, fullname($teacher));
+                                 $appnote, $grade, fullname($teacher));
     }
     echo html_writer::table($table);
+
+    if ($scheduler->uses_grades()) {
+        $totalgradeinfo->showtotalgrade = true;
+        $totalgradeinfo->totalgrade = $scheduler->get_user_grade($appointment->studentid);
+        echo $output->render($totalgradeinfo);
+    }
 
 } else if ($subpage == 'otherstudents') {
     // Print table of other students in the same slot.
@@ -155,7 +171,7 @@ if ($subpage == 'thisappointment') {
         $iconid = $otherappointment->attended ? 'ticked' : 'unticked';
         $iconhelp = $otherappointment->attended ? 'seen' : 'notseen';
         $icon = $OUTPUT->pix_icon($iconid, get_string($iconhelp, 'scheduler'), 'mod_scheduler');
-        $note = $otherappointment->appointmentnote;
+        $note = format_text($otherappointment->appointmentnote, $otherappointment->appointmentnoteformat);
         if ($note) {
             $note .= '<br/><span class="timelabel">['.userdate($otherappointment->timemodified).']</span>';
         }
@@ -164,6 +180,6 @@ if ($subpage == 'thisappointment') {
     echo html_writer::table($table);
 }
 
-echo $OUTPUT->continue_button(new moodle_url('/mod/scheduler/view.php', array('id' => $scheduler->cmid)));
-echo $OUTPUT->footer($course);
+echo $output->continue_button(new moodle_url('/mod/scheduler/view.php', array('id' => $scheduler->cmid)));
+echo $output->footer($course);
 exit;
