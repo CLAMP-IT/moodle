@@ -1,7 +1,7 @@
 moodle-assignsubmission_mahara
 ============================
 
-Mahara assignment submission plugin for Moodle 2.7 through 3.0.
+Mahara assignment submission plugin for Moodle 2.7 through 3.1 (or higher!).
 - https://github.com/MaharaProject/moodle-assignsubmission_mahara
 
 This plugin adds Mahara page submission functionality to assignments in
@@ -112,7 +112,9 @@ open an issue in our Github project:
 Credits
 -------
 
-The original Moodle 1.9 version of this plugin was funded through a grant from the New Hampshire Department of Education to a collaborative group of the following New Hampshire school districts:
+The original Moodle 1.9 version of this plugin was funded through a grant from
+the [New Hampshire Department of Education](http://education.nh.gov/) to a collaborative group of the
+following New Hampshire school districts:
 
  - Exeter Region Cooperative
  - Windham
@@ -121,23 +123,22 @@ The original Moodle 1.9 version of this plugin was funded through a grant from t
  - Newmarket
  - Timberlane School District
 
-The upgrade to Moodle 2.0 and 2.1 was written by Aaron Wells at Catalyst IT, and supported by:
-
- - NetSpot
- - Pukunui Technology
+The upgrade to Moodle 2.0 and 2.1 was written by Aaron Wells at [Catalyst](https://catalyst.net.nz) and
+supported by [NetSpot](http://netspot.com.au/) and [Pukunui Technology](http://pukunui.com/).
 
 The upgrade to the Moodle 2.3 mod/assign module was developed by:
 
- - University of Portland by Philip Cali and Tony Box (box@up.edu)
- - Lancaster University
+ - Philip Cali and Tony Box (box@up.edu) at [University of Portland](http://up.edu)
+ - Ruslan Kabalin at [Lancaster University](http://lancaster.ac.uk/)
 
-Subsequent updates to the plugin were implemented by Aaron Wells at Catalyst IT, with funding from:
+Subsequent updates to the plugin for Moodle 2.6 and 2.7 were implemented by
+Aaron Wells at Catalyst IT with funding from:
 
- - University of Brighton
- - Canberra University
+ - [University of Brighton](http://brighton.ac.uk)
+ - [Canberra University](http://canberra.edu.au)
 
-The upgrade to use events for unlocking behaviour and supporting grading
-workflow was developed by Lancaster University.
+The upgrade to use events for unlocking behaviour and supporting grading workflow
+was developed by Lancaster University.
 
 License
 -------
