@@ -6,7 +6,7 @@ require(dirname(dirname(__FILE__)).'/config.php');
 
 global $DB;
 $user = $DB->get_record('user',array('username' => 'admin'),'id,username,email');
-if ($user->id == 2 ) {
+if ($user->id == 3 ) {
   print "ok";
 } else {
   print "fail";
