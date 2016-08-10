@@ -36,7 +36,7 @@ Feature: Course rubrics are collapsible
         And I add the "filtered_course_list" block
         And the following config values are set as admin:
             | filtertype | categories | block_filtered_course_list |
-            | categories | Test       | block_filtered_course_list |
+            | categories | 0          | block_filtered_course_list |
         And I log out
         When I log in as "testuser"
         And I am on site homepage

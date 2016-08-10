@@ -16,21 +16,17 @@ env:
  global:
   - IGNORE_NAMES=package.json,gulpfile.js
  matrix:
-  - DB=pgsql MOODLE_BRANCH=MOODLE_28_STABLE
   - DB=pgsql MOODLE_BRANCH=MOODLE_29_STABLE
   - DB=pgsql MOODLE_BRANCH=MOODLE_30_STABLE
-  - DB=mysqli MOODLE_BRANCH=MOODLE_28_STABLE
+  - DB=pgsql MOODLE_BRANCH=MOODLE_31_STABLE
   - DB=mysqli MOODLE_BRANCH=MOODLE_29_STABLE
   - DB=mysqli MOODLE_BRANCH=MOODLE_30_STABLE
+  - DB=mysqli MOODLE_BRANCH=MOODLE_31_STABLE
 
 matrix:
   exclude:
     - php: 7.0
-      env: DB=pgsql MOODLE_BRANCH=MOODLE_28_STABLE
-    - php: 7.0
       env: DB=pgsql MOODLE_BRANCH=MOODLE_29_STABLE
-    - php: 7.0
-      env: DB=mysqli MOODLE_BRANCH=MOODLE_28_STABLE
     - php: 7.0
       env: DB=mysqli MOODLE_BRANCH=MOODLE_29_STABLE
 

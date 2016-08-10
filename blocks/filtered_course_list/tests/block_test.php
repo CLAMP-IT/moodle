@@ -598,7 +598,15 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
         // For users enrolled in courses the various rubrics are collapsible.
         $this->_courselistincludes ( array (
-            'user1' => array ( 'collapsible' ),
+            'user1' => array (
+                'collapsible',
+                'aria-multiselectable',
+                'aria-controls',
+                'aria-expanded',
+                'aria-selected',
+                'aria-labelledby',
+                'aria-hidden',
+            ),
         ));
 
         // Change the collapsibility setting.
@@ -606,7 +614,15 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
 
         // The rubrics are no longer collapsible.
         $this->_courselistexcludes ( array (
-            'user1' => array ( 'collapsible' ),
+            'user1' => array (
+                'collapsible',
+                'aria-multiselectable',
+                'aria-controls',
+                'aria-expanded',
+                'aria-selected',
+                'aria-labelledby',
+                'aria-hidden',
+            ),
         ));
     }
 

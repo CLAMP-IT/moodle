@@ -14,14 +14,15 @@
 }
 
 .block_filtered_course_list .course-section {
-    padding-left: 21px;
     padding-right: 1em;
+    padding-left: 1px;
     margin-top: 3px;
     font-weight: bold;
 }
 
-.jsenabled .block_filtered_course_list .course-section {
+.jsenabled .block_filtered_course_list.collapsibleon .course-section {
     cursor: pointer;
+    padding-left: 21px;
 }
 
 .jsenabled .block_filtered_course_list .course-section a {
