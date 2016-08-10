@@ -1380,7 +1380,58 @@ class poodlltools
 
 	}
 
-	public static function fetch_flashcards_revealjs($cardset, $cardsetname)
+	public static function fetch_flashcards($runtime, $cardset, $cardsetname, $frontcolor, $backcolor, $cardwidth, $cardheight, $randomize, $width, $height,$flashcardstype='poodll')
+	{
+		global $CFG;
+		switch($flashcardstype){
+			case 'reveal':
+				return self::fetch_flashcards_reveal($cardset,$cardsetname);
+				break;
+			case 'owl':
+				return self::fetch_flashcards_owl($cardset,$cardsetname, $cardwidth, $cardheight);
+				break;
+			case 'poodll':
+			default:
+			return self::fetch_flashcards_poodll($runtime, $cardset, $cardsetname, $frontcolor, $backcolor, $cardwidth, $cardheight, $randomize, $width, $height);
+			break;
+
+		}
+
+	}
+
+	public static function fetch_flashcards_owl($cardset, $cardsetname, $cardwidth, $cardheight)
+	{
+		global $CFG, $COURSE, $PAGE;
+
+
+		//JS
+		//$PAGE->requires->js(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/lib/js/head.min.js'));
+
+		//TO DO
+		// read AMD loader for reveal and rewrite for carousel
+		// add
+
+		//for AMD
+		$proparray = array();
+		$proparray['FLASHCARDS_ID'] = "owlcards_" . time() . rand(10000, 999999);
+		$proparray['CARDWIDTH'] = $cardwidth;
+		$proparray['CARDHEIGHT'] = $cardheight;
+		$proparray['SINGLEITEM'] = true;
+		$proparray['AUTOHEIGHT'] = false;
+		$proparray['CSS_INJECT'] = true;
+		$proparray['CSS_OWL'] = $CFG->wwwroot . '/filter/poodll/owl/owl-carousel/owl.carousel.css';
+		$proparray['CSS_THEME'] = $CFG->wwwroot . '/filter/poodll/owl/owl-carousel/owl.theme.css';
+
+		$PAGE->requires->js_call_amd('filter_poodll/owl_amd', 'loadowl', array($proparray));
+
+		$dm = new \filter_poodll\dataset_manager();
+		$renderer = $PAGE->get_renderer('filter_poodll');
+		$carddata = $dm->fetch_flashcard_data($cardset, $cardsetname);
+		return $renderer->fetch_owl_flashcards($carddata, $proparray);
+	}
+
+
+	public static function fetch_flashcards_reveal($cardset, $cardsetname)
 	{
 		global $CFG, $COURSE, $PAGE;
 		//this won't work in a quiz, and throws an error about trying to add to page head,
@@ -1388,7 +1439,7 @@ class poodlltools
 		//$PAGE->requires->css(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/css/reveal.min.css'));
 
 		//JS
-		$PAGE->requires->js(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/lib/js/head.min.js'));
+		//$PAGE->requires->js(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/lib/js/head.min.js'));
 		//$PAGE->requires->js(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/js/reveal.js'));
 		//$PAGE->requires->js_init_call('M.filter_poodll.init_revealjs');
 
@@ -1402,17 +1453,12 @@ class poodlltools
 
 		$dm = new \filter_poodll\dataset_manager();
 		$renderer = $PAGE->get_renderer('filter_poodll');
-		$carddata = $dm->fetch_revealjs_flashcards($cardset, $cardsetname);
-		echo $renderer->fetch_revealjs_flashcards($carddata);
+		$carddata = $dm->fetch_flashcard_data($cardset, $cardsetname);
+		return $renderer->fetch_revealjs_flashcards($carddata);
 	}
 
-
-	public static function fetch_flashcards($runtime, $cardset, $cardsetname, $frontcolor, $backcolor, $cardwidth, $cardheight, $randomize, $width, $height)
+	public static function fetch_flashcards_poodll($runtime, $cardset, $cardsetname, $frontcolor, $backcolor, $cardwidth, $cardheight, $randomize, $width, $height)
 	{
-
-//fetch_flashcards_revealjs($cardset,$cardsetname);
-//return;
-
 
 		global $CFG, $COURSE;
 
@@ -3655,7 +3701,7 @@ class poodlltools
 
 	public static function fetchJSWidgetiFrame($widget, $rawparams, $width, $height, $bgcolor = "#FFFFFF", $usemastersprite = "false")
 	{
-		global $PAGE;
+		global $PAGE, $CFG;
 
 		$lm = new \filter_poodll\licensemanager();
 		if(!$lm->validate_registrationkey($CFG->filter_poodll_registrationkey)) {

@@ -27,6 +27,37 @@ defined('MOODLE_INTERNAL') || die();
 class filter_poodll_renderer extends plugin_renderer_base {
 
 
+	public function fetch_owl_flashcards($dataset, $opts){
+		$card_div_array = array();
+		$cardwidth = $opts['CARDWIDTH'];
+		$cardheight = $opts['CARDHEIGHT'];
+		$containerid = $opts['FLASHCARDS_ID'];
+
+		foreach($dataset as $data){
+			$qsection = html_writer::tag('div',html_writer::tag('h2', $data->questiontext),
+				array('class'=>'filter_poodll_flashcards_owl_card front'));
+			$asection = html_writer::tag('div',html_writer::tag('h2', $data->answertext),
+				array('class'=>'filter_poodll_flashcards_owl_card back'));
+			$cardsection = html_writer::tag('div',$qsection  .  $asection,
+				array('class'=>'filter_poodll_flashcards_owl_onecard', 'style'=>'min-height: ' . $cardheight . 'px;'));
+			$card_div_array[] = $cardsection;
+		}
+		$carddivs = implode(' ', $card_div_array);
+		$slides = html_writer::div($carddivs,'filter_poodll_flashcards_owl owl-carousel owl-theme');
+		$previousbutton = html_writer::tag('a','previous',array('class'=>'filter_poodll_flashcards_owl_previous btn btn-primary'));
+		$nextbutton = html_writer::tag('a','next',array('class'=>'filter_poodll_flashcards_owl_next btn btn-primary'));
+
+		//buttons didn't work in AMD. TO DO .. fix em up
+		$buttons = html_writer::div($previousbutton . $nextbutton,'filter_poodll_flashcards_owl_buttons');
+		$buttons = '';
+
+		$container = html_writer::tag('div', $slides . $buttons,array('id'=>$containerid,'class'=>'filter_poodll_flashcards_owl_container'));
+
+		return $container;
+
+	}
+
+
 	public function fetch_revealjs_flashcards($dataset){
 		$card_div_array = array();
 		foreach($dataset as $data){

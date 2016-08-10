@@ -21,11 +21,14 @@ $string['filter_poodll_intercept_heading'] = 'Filetypes PoodLL Handles by Defaul
 $string['filter_poodll_flowplayer_heading'] = 'Flowplayer Settings'; 
 $string['filter_poodll_mp3recorder_heading'] = 'MP3 Recorder Settings';
 $string['filter_poodll_registration_heading'] ='Register your PoodLL';
+$string['filter_poodll_flashcards_heading'] ='Flashcards Settings';
 $string['filter_poodll_registration_explanation'] ="From PoodLL version 2.8.0 you are required to obtain and enter your PoodLL registration key. Registration is currently free, and you can obtain your key in a jiffy from <a href='http://poodll.com/registration'>http://poodll.com/registration</a>";
 
 $string['registrationkey'] = 'Registration Key';
 $string['registrationkey_explanation'] ="Enter your PoodLL registration key here. It is free, but PoodLL won't work without it. You can obtain a key from <a href='http://poodll.com/registration'>http://poodll.com/registration</a>";
 $string['unregistered'] = 'PoodLL not displayed because it has not been registered. Registration is free. Ask your teacher/administrator to visit the PoodLL filter settings page and complete the registration process.';
+
+$string['flashcardstype'] ='Flashcards Type';
 
 $string['defaultplayer'] = 'Default A/V Player';
 $string['html5controls'] = 'HTML5 Controls';
