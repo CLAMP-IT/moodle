@@ -506,7 +506,7 @@ class dataset_manager {
 	}
 
 	
-	function fetch_revealjs_flashcards($cardsetid=-1,$cardsetname=""){
+	function fetch_flashcard_data($cardsetid=-1,$cardsetname=""){
 	global $CFG, $DB;	
 
 		//Get question index from db if a question name was specified
