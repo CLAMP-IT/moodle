@@ -3,7 +3,7 @@
 require_once($CFG->libdir.'/authlib.php');
 
 class auth_plugin_wes extends auth_plugin_base {
-  private $attribs_to_sync = array('firstname','lastname','email');
+  private $attribs_to_sync = array('firstname','lastname');
 
   function auth_plugin_wes() {
     $this->authtype = 'wes'; 
