@@ -72,7 +72,7 @@ $mform = new mod_lightboxgallery_comment_form(null, $gallery);
 if ($mform->is_cancelled()) {
     redirect($galleryurl);
 } else if ($formadata = $mform->get_data()) {
-    $newcomment = new object;
+    $newcomment = new stdClass;
     $newcomment->gallery = $gallery->id;
     $newcomment->userid = $USER->id;
     $newcomment->commenttext = $formadata->comment['text'];

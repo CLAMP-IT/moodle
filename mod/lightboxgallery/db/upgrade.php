@@ -194,8 +194,8 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
 
                 // Add files to lightbox area, iterate over the legacy files.
                 $fs = get_file_storage();
-                if ($stored_files = $fs->get_area_files($coursecontext->id, 'course', 'legacy')) {
-                    foreach ($stored_files as $file) {
+                if ($storedfiles = $fs->get_area_files($coursecontext->id, 'course', 'legacy')) {
+                    foreach ($storedfiles as $file) {
                         $path = '/'.$gallery->folder;
                         if ($gallery->folder != '') {
                             $path .= '/';

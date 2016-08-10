@@ -114,8 +114,6 @@ function lightboxgallery_config_defaults() {
 }
 
 function lightboxgallery_edit_types($showall = false) {
-    global $CFG;
-
     $result = array();
 
     $disabledplugins = explode(',', get_config('lightboxgallery', 'disabledplugins'));
@@ -135,7 +133,7 @@ function lightboxgallery_edit_types($showall = false) {
 }
 
 function lightboxgallery_print_tags($heading, $tags, $courseid, $galleryid) {
-    global $CFG, $OUTPUT;
+    global $OUTPUT;
 
     echo $OUTPUT->box_start();
 
@@ -175,14 +173,14 @@ function lightboxgallery_index_thumbnail($courseid, $gallery, $newimage = null) 
     $imageid = 'Gallery Index Image';
 
     $fs = get_file_storage();
-    $stored_file = $fs->get_file($context->id, 'mod_lightboxgallery', 'gallery_index', '0', '/', 'index.png');
+    $storedfile = $fs->get_file($context->id, 'mod_lightboxgallery', 'gallery_index', '0', '/', 'index.png');
 
-    if (!is_null($newimage) && is_object($stored_file)) { // Delete any existing index.
-        $stored_file->delete();
+    if (!is_null($newimage) && is_object($storedfile)) { // Delete any existing index.
+        $storedfile->delete();
     }
-    if (is_object($stored_file) && is_null($newimage)) {
+    if (is_object($storedfile) && is_null($newimage)) {
         // Grab the index.
-        $index = $stored_file;
+        $index = $storedfile;
     } else {
         // Get first image and create an index for that.
         if (is_null($newimage)) {

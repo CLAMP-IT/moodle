@@ -54,7 +54,6 @@ class restore_lightboxgallery_activity_structure_step extends restore_activity_s
         global $DB;
 
         $data = (object)$data;
-        $oldid = $data->id;
         $data->course = $this->get_courseid();
         $data->timemodified = $this->apply_date_offset($data->timemodified);
         // Insert the lightboxgallery record.
@@ -67,7 +66,6 @@ class restore_lightboxgallery_activity_structure_step extends restore_activity_s
         global $DB;
 
         $data = (object)$data;
-        $oldid = $data->id;
 
         $data->gallery = $this->get_new_parentid('lightboxgallery');
         $data->userid = $this->get_mappingid('user', $data->userid);
@@ -75,18 +73,17 @@ class restore_lightboxgallery_activity_structure_step extends restore_activity_s
         if (isset($data->comment)) {
             $data->commenttext = $data->comment;
         }
-        $newitemid = $DB->insert_record('lightboxgallery_comments', $data);
+        $DB->insert_record('lightboxgallery_comments', $data);
     }
 
     protected function process_lightboxgallery_image_meta($data) {
         global $DB;
 
         $data = (object)$data;
-        $oldid = $data->id;
 
         $data->gallery = $this->get_new_parentid('lightboxgallery');
         // TODO: image var to match image.
-        $newitemid = $DB->insert_record('lightboxgallery_image_meta', $data);
+        $DB->insert_record('lightboxgallery_image_meta', $data);
     }
 
     protected function after_execute() {

@@ -67,12 +67,12 @@ function lightboxgallery_rss_get_feed($context, $args) {
     }
 
     $fs = get_file_storage();
-    $stored_files = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images');
+    $storedfiles = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images');
 
     $items = array();
     $counter = 1;
     $articles = '';
-    foreach ($stored_files as $file) {
+    foreach ($storedfiles as $file) {
         $filename = $file->get_filename();
         if ($filename == '.') {
             continue;
