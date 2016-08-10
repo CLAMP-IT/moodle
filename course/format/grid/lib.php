@@ -32,13 +32,16 @@ class format_grid extends format_base {
 
     // CONTRIB-4099:....
     // Width constants - 128, 192, 210, 256, 320, 384, 448, 512, 576, 640, 704 and 768:...
-    private static $imagecontainerwidths = array(128 => '128', 192 => '192', 210 => '210', 256 => '256', 320 => '320', 384 => '384',
-        448 => '448', 512 => '512', 576 => '576', 640 => '640', 704 => '704', 768 => '768');
+    private static $imagecontainerwidths = array(128 => '128', 192 => '192', 210 => '210', 256 => '256', 320 => '320',
+        384 => '384', 448 => '448', 512 => '512', 576 => '576', 640 => '640', 704 => '704', 768 => '768');
     // Ratio constants - 3-2, 3-1, 3-3, 2-3, 1-3, 4-3 and 3-4:...
-    private static $imagecontainerratios = array(1 => '3-2', 2 => '3-1', 3 => '3-3', 4 => '2-3', 5 => '1-3', 6 => '4-3', 7 => '3-4');
+    private static $imagecontainerratios = array(
+        1 => '3-2', 2 => '3-1', 3 => '3-3', 4 => '2-3', 5 => '1-3', 6 => '4-3', 7 => '3-4');
     // Border width constants - 1 to 10:....
-    private static $borderwidths = array(1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5', 6 => '6', 7 => '7', 8 => '8', 9 => '9', 10 => '10');
-    // Image holder height and new activity position for all on the basis that once calculated the majority of courses will be the same.
+    private static $borderwidths = array(1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5', 6 => '6', 7 => '7', 8 => '8',
+        9 => '9', 10 => '10');
+    /* Image holder height and new activity position for all on the basis that once calculated the majority of courses
+       will be the same. */
     private static $currentwidth = 210;
     private static $currentratio = 1; // 3-2.
     private static $currentborderwidth = 3;
@@ -62,6 +65,18 @@ class format_grid extends format_base {
             $courseid = $COURSE->id;  // Save lots of global $COURSE as we will never be the site course.
         }
         parent::__construct($format, $courseid);
+    }
+
+    /**
+     * Returns the default section name for the format.
+     *
+     * @param stdClass $section Section object from database or just field course_sections section
+     * @return string The default value for the section name.
+     */
+    public function get_default_section_name($section) {
+        /* Follow the same logic so that this method is supported.  The MDL-51610 enchancement refactored things,
+           but that is not appropriate for us. */
+        return $this->get_section_name($section);
     }
 
     /**
@@ -93,7 +108,7 @@ class format_grid extends format_base {
      * @return int Default image container ratio.
      */
     public static function get_default_image_container_ratio() {
-        return 1; // '3-2'.
+        return 1; // Ratio of '3-2'.
     }
 
     /**
@@ -101,7 +116,7 @@ class format_grid extends format_base {
      * @return int Default image resize method.
      */
     public static function get_default_image_resize_method() {
-        return 1; // 'Scale'.
+        return 1; // Scale.
     }
 
     /**
@@ -125,7 +140,7 @@ class format_grid extends format_base {
      * @return int Default border width.
      */
     public static function get_default_border_width() {
-        return 3; // '3'.
+        return 3; // Pixels.
     }
 
     /**
@@ -243,10 +258,14 @@ class format_grid extends format_base {
             } else {
                 $usercoursedisplay = $course->coursedisplay;
             }
+            $topic0attop = $this->get_summary_visibility($course->id)->showsummary == 1;
             if ($sectionno != 0 && $usercoursedisplay == COURSE_DISPLAY_MULTIPAGE) {
                 $url->param('section', $sectionno);
+            } else if ($sectionno == 0 && $usercoursedisplay == COURSE_DISPLAY_MULTIPAGE  && (!$topic0attop)) {
+                $url->param('section', $sectionno);
             } else {
-                if (!empty($options['navigation'])) {
+                global $CFG;
+                if (empty($CFG->linkcoursesections) && !empty($options['navigation'])) {
                     return null;
                 }
                 $url->set_anchor('section-' . $sectionno);
@@ -332,6 +351,7 @@ class format_grid extends format_base {
             if ($defaultcurrentselectedimagecontainercolour[0] == '#') {
                 $defaultcurrentselectedimagecontainercolour = substr($defaultcurrentselectedimagecontainercolour, 1);
             }
+            $defaultfitsectioncontainertowindow = get_config('format_grid', 'defaultfitsectioncontainertowindow');
 
             $courseconfig = get_config('moodlecourse');
             $courseformatoptions = array(
@@ -385,6 +405,14 @@ class format_grid extends format_base {
                 ),
                 'newactivity' => array(
                     'default' => get_config('format_grid', 'defaultnewactivity'),
+                    'type' => PARAM_INT
+                ),
+                'fitsectioncontainertowindow' => array(
+                    'default' => get_config('format_grid', 'defaultfitsectioncontainertowindow'),
+                    'type' => PARAM_INT
+                ),
+                'greyouthidden' => array(
+                    'default' => get_config('format_grid', 'defaultgreyouthidden'),
                     'type' => PARAM_INT
                 )
             );
@@ -463,10 +491,10 @@ class format_grid extends format_base {
                     'element_attributes' => array(self::$imagecontainerratios)
                 );
             } else {
-                $courseformatoptionsedit['imagecontainerwidth'] = array('label' => 
-                    get_config('format_grid', 'defaultimagecontainerwidth'), 'element_type' => 'hidden');
-                $courseformatoptionsedit['imagecontainerratio'] = array('label' => 
-                    get_config('format_grid', 'defaultimagecontainerratio'), 'element_type' => 'hidden');
+                $courseformatoptionsedit['imagecontainerwidth'] = array('label' => get_config(
+                    'format_grid', 'defaultimagecontainerwidth'), 'element_type' => 'hidden');
+                $courseformatoptionsedit['imagecontainerratio'] = array('label' => get_config(
+                    'format_grid', 'defaultimagecontainerratio'), 'element_type' => 'hidden');
             }
 
             if (has_capability('format/grid:changeimageresizemethod', $coursecontext)) {
@@ -483,8 +511,8 @@ class format_grid extends format_base {
                     )
                 );
             } else {
-                $courseformatoptionsedit['imageresizemethod'] = array('label' =>
-                    get_config('format_grid', 'defaultimageresizemethod'), 'element_type' => 'hidden');
+                $courseformatoptionsedit['imageresizemethod'] = array('label' => get_config(
+                    'format_grid', 'defaultimageresizemethod'), 'element_type' => 'hidden');
             }
 
             if (has_capability('format/grid:changeimagecontainerstyle', $coursecontext)) {
@@ -553,12 +581,12 @@ class format_grid extends format_base {
                     'element_type' => 'hidden');
                 $courseformatoptionsedit['borderradius'] = array('label' => get_config('format_grid', 'defaultborderradius'),
                     'element_type' => 'hidden');
-                $courseformatoptionsedit['imagecontainerbackgroundcolour'] =
-                        array('label' => $defaultimagecontainerbackgroundcolour, 'element_type' => 'hidden');
-                $courseformatoptionsedit['currentselectedsectioncolour'] =
-                        array('label' => $defaultcurrentselectedsectioncolour, 'element_type' => 'hidden');
-                $courseformatoptionsedit['currentselectedimagecontainercolour'] =
-                        array('label' => $defaultcurrentselectedimagecontainercolour, 'element_type' => 'hidden');
+                $courseformatoptionsedit['imagecontainerbackgroundcolour'] = array(
+                    'label' => $defaultimagecontainerbackgroundcolour, 'element_type' => 'hidden');
+                $courseformatoptionsedit['currentselectedsectioncolour'] = array(
+                    'label' => $defaultcurrentselectedsectioncolour, 'element_type' => 'hidden');
+                $courseformatoptionsedit['currentselectedimagecontainercolour'] = array(
+                    'label' => $defaultcurrentselectedimagecontainercolour, 'element_type' => 'hidden');
             }
             $courseformatoptionsedit['newactivity'] = array(
                 'label' => new lang_string('setnewactivity', 'format_grid'),
@@ -572,6 +600,33 @@ class format_grid extends format_base {
                 'help' => 'setnewactivity',
                 'help_component' => 'format_grid'
             );
+
+            $courseformatoptionsedit['fitsectioncontainertowindow'] = array(
+                'label' => new lang_string('setfitsectioncontainertowindow', 'format_grid'),
+                'help' => 'setfitsectioncontainertowindow',
+                'help_component' => 'format_grid',
+                'element_type' => 'select',
+                'element_attributes' => array(
+                    array(
+                        1 => new lang_string('no'),   // No.
+                        2 => new lang_string('yes')   // Yes.
+                    )
+                )
+            );
+
+            $courseformatoptionsedit['greyouthidden'] = array(
+                'label' => new lang_string('greyouthidden', 'format_grid'),
+                'help' => 'greyouthidden',
+                'help_component' => 'format_grid',
+                'element_type' => 'select',
+                'element_attributes' => array(
+                    array(
+                        1 => new lang_string('no'),   // No.
+                        2 => new lang_string('yes')   // Yes.
+                    )
+                )
+            );
+
             $courseformatoptions = array_merge_recursive($courseformatoptions, $courseformatoptionsedit);
         }
         return $courseformatoptions;
@@ -648,6 +703,10 @@ class format_grid extends format_base {
                 $OUTPUT->help_icon('resetnewactivity', 'format_grid');
             $resetelements[] = & $mform->createElement('checkbox', 'resetnewactivity', '', $checkboxname);
 
+            $checkboxname = get_string('resetfitpopup', 'format_grid') .
+                $OUTPUT->help_icon('resetfitpopup', 'format_grid');
+            $resetelements[] = & $mform->createElement('checkbox', 'resetfitpopup', '', $checkboxname);
+
             $elements[] = $mform->addGroup($resetelements, 'resetgroup', get_string('resetgrp', 'format_grid'), null,
                 false);
 
@@ -670,6 +729,10 @@ class format_grid extends format_base {
                     $OUTPUT->help_icon('resetallnewactivity', 'format_grid');
                 $resetallelements[] = & $mform->createElement('checkbox', 'resetallnewactivity', '', $checkboxname);
 
+                $checkboxname = get_string('resetallfitpopup', 'format_grid') .
+                    $OUTPUT->help_icon('resetallfitpopup', 'format_grid');
+                $resetallelements[] = & $mform->createElement('checkbox', 'resetallfitpopup', '', $checkboxname);
+
                 $elements[] = $mform->addGroup($resetallelements, 'resetallgroup', get_string('resetallgrp', 'format_grid'),
                     null, false);
             }
@@ -677,7 +740,7 @@ class format_grid extends format_base {
 
         return $elements;
     }
-    
+
     /**
      * Override if you need to perform some extra validation of the format options
      *
@@ -690,7 +753,7 @@ class format_grid extends format_base {
      */
     public function edit_form_validation($data, $files, $errors) {
         $retr = array();
-        
+
         if ($this->validate_colour($data['bordercolour']) === false) {
             $retr['bordercolour'] = get_string('colourrule', 'format_grid');
         }
@@ -703,26 +766,26 @@ class format_grid extends format_base {
         if ($this->validate_colour($data['currentselectedimagecontainercolour']) === false) {
             $retr['currentselectedimagecontainercolour'] = get_string('colourrule', 'format_grid');
         }
-        
+
         return $retr;
     }
 
     /**
      * Validates the colour that was entered by the user.
      * Borrowed from 'admin_setting_configcolourpicker' in '/lib/adminlib.php'.
-     * 
+     *
      * I'm not completely happy with this solution as would rather embed in the colour
      * picker code in the form, however I find this area rather fraut and I hear that
      * Dan Poltawski (via MDL-42270) will be re-writing the forms lib so hopefully more
      * developer friendly.
-     * 
+     *
      * Note: Colour names removed, but might consider putting them back in if asked, but
      *       at the moment that would require quite a few changes and coping with existing
      *       settings.  Either convert the names to hex or allow them as valid values and
      *       fix the colour picker code and the CSS code in 'format.php' for the setting.
-     * 
+     *
      * Colour name to hex on: http://www.w3schools.com/cssref/css_colornames.asp.
-     * 
+     *
      * @param string $data the colour string to validate.
      * @return true|false
      */
@@ -749,9 +812,6 @@ class format_grid extends format_base {
      */
     public function update_course_format_options($data, $oldcourse = null) {
         global $DB; // MDL-37976.
-        if (self::is_developer_debug()) {
-            error_log('update_course_format_options - called data: ' . print_r($data, true));
-        }
         /*
          * Notes: Using 'unset' to really ensure that the reset form elements never get into the database.
          *        This has to be done here so that the reset occurs after we have done updates such that the
@@ -761,10 +821,13 @@ class format_grid extends format_base {
         $resetimageresizemethod = false;
         $resetimagecontainerstyle = false;
         $resetnewactivity = false;
+        $resetfitpopup = false;
         $resetallimagecontainersize = false;
         $resetallimageresizemethod = false;
         $resetallimagecontainerstyle = false;
         $resetallnewactivity = false;
+        $resetallfitpopup = false;
+        $resetgreyouthidden = false;
         if (isset($data->resetimagecontainersize) == true) {
             $resetimagecontainersize = true;
             unset($data->resetimagecontainersize);
@@ -780,6 +843,10 @@ class format_grid extends format_base {
         if (isset($data->resetnewactivity) == true) {
             $resetnewactivity = true;
             unset($data->resetnewactivity);
+        }
+        if (isset($data->resetfitpopup) == true) {
+            $resetfitpopup = true;
+            unset($data->resetfitpopup);
         }
         if (isset($data->resetallimagecontainersize) == true) {
             $resetallimagecontainersize = true;
@@ -797,6 +864,14 @@ class format_grid extends format_base {
             $resetallnewactivity = true;
             unset($data->resetallnewactivity);
         }
+        if (isset($data->resetallfitpopup) == true) {
+            $resetfitpopup = true;
+            unset($data->resetallfitpopup);
+        }
+        if (isset($data->resetgreyouthidden) == true) {
+            $resetgreyouthidden = true;
+            unset($data->resetgreyouthidden);
+        }
 
         $settings = $this->get_settings();
         $changedisplayedimages = false;
@@ -810,15 +885,11 @@ class format_grid extends format_base {
                 /* Detect now and action later as 'setup_displayed_image' when called from 'update_displayed_images()' will need to
                    use the new values. */
                 $changedisplayedimages = true;
-                if (self::is_developer_debug()) {
-                    error_log('update_course_format_options: Settings before: ' . print_r($settings, true));
-                    error_log('update_course_format_options: Data : ' . print_r($data, true));
-                }
             }
         }
 
+        $data = (array) $data;
         if ($oldcourse !== null) {
-            $data = (array) $data;
             $oldcourse = (array) $oldcourse;
             $options = $this->course_format_options();
 
@@ -844,27 +915,83 @@ class format_grid extends format_base {
         }
         $changes = $this->update_format_options($data);
 
+        if ($changes && array_key_exists('numsections', $data)) {
+            // If the numsections was decreased, try to completely delete the orphaned sections (unless they are not empty).
+            $numsections = (int)$data['numsections'];
+            $maxsection = $DB->get_field_sql('SELECT max(section) from {course_sections}
+                        WHERE course = ?', array($this->courseid));
+            for ($sectionnum = $maxsection; $sectionnum > $numsections; $sectionnum--) {
+                if (!$this->delete_section($sectionnum, false)) {
+                    break;
+                }
+            }
+        }
+
         // Now we can change the displayed images if needed.
         if ($changedisplayedimages) {
             $this->settings = null; // Invalidate as changed.
             $settings = $this->get_settings();
-            if (self::is_developer_debug()) {
-                error_log('update_course_format_options: Settings after: ' . print_r($settings, true));
-            }
 
             $this->update_displayed_images($this->courseid, $this, $settings, true);
         }
 
         // Now we can do the reset.
-        if (($resetallimagecontainersize) || ($resetallimageresizemethod) || ($resetallimagecontainerstyle) || ($resetallnewactivity)) {
-            $this->reset_grid_setting(0, $resetallimagecontainersize, $resetallimageresizemethod, $resetallimagecontainerstyle, $resetallnewactivity);
+        if (($resetallimagecontainersize) ||
+            ($resetallimageresizemethod) ||
+            ($resetallimagecontainerstyle) ||
+            ($resetallnewactivity) ||
+            ($resetallfitpopup)) {
+            $this->reset_grid_setting(0, $resetallimagecontainersize, $resetallimageresizemethod, $resetallimagecontainerstyle,
+                $resetallnewactivity, $resetallfitpopup);
             $changes = true;
-        } else if (($resetimagecontainersize) || ($resetimageresizemethod) || ($resetimagecontainerstyle) || ($resetnewactivity)) {
-            $this->reset_grid_setting($this->courseid, $resetimagecontainersize, $resetimageresizemethod, $resetimagecontainerstyle, $resetnewactivity);
+        } else if (
+            ($resetimagecontainersize) ||
+            ($resetimageresizemethod) ||
+            ($resetimagecontainerstyle) ||
+            ($resetnewactivity) ||
+            ($resetfitpopup)) {
+            $this->reset_grid_setting($this->courseid, $resetimagecontainersize, $resetimageresizemethod, $resetimagecontainerstyle,
+                $resetnewactivity, $resetfitpopup);
             $changes = true;
         }
 
         return $changes;
+    }
+
+    /**
+     * Deletes a section
+     *
+     * Do not call this function directly, instead call {@link course_delete_section()}
+     *
+     * @param int|stdClass|section_info $section
+     * @param bool $forcedeleteifnotempty if set to false section will not be deleted if it has modules in it.
+     * @return bool whether section was deleted
+     */
+    public function delete_section($section, $forcedeleteifnotempty = false) {
+        global $DB;
+        if (!is_object($section)) {
+            $section = $DB->get_record('course_sections', array('course' => $this->get_courseid(), 'section' => $section),
+                'id,section,sequence');
+        }
+
+        if (parent::delete_section($section, $forcedeleteifnotempty)) {
+            $coursecontext = context_course::instance($this->courseid);
+            $this->delete_image($section->id, $coursecontext->id);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Whether this format allows to delete sections
+     *
+     * Do not call this function directly, instead use {@link course_can_delete_section()}
+     *
+     * @param int|stdClass|section_info $section
+     * @return bool
+     */
+    public function can_delete_section($section) {
+        return true;
     }
 
     /**
@@ -894,13 +1021,14 @@ class format_grid extends format_base {
      * @param int $imageresizemethodreset If true, reset the image resize method to the default in the settings for the format.
      * @param int $imagecontainerstylereset If true, reset the colour to the default in the settings for the format.
      * @param int $newactivity If true, reset the new activity to the default in the settings for the format.
+     * @param int $fitpopupreset If true, reset the fit popup to the default in the settings for the format.
      */
-    public function reset_grid_setting($courseid, $imagecontainersizereset, $imageresizemethodreset, $imagecontainerstylereset, $newactivityreset) {
+    public function reset_grid_setting($courseid, $imagecontainersizereset, $imageresizemethodreset, $imagecontainerstylereset,
+        $newactivityreset, $fitpopupreset) {
         global $DB, $USER;
 
         $coursecontext = context_course::instance($this->courseid);
 
-        $currentcourseid = 0;
         if ($courseid == 0) {
             $records = $DB->get_records('course', array('format' => $this->format), '', 'id');
         } else {
@@ -915,6 +1043,7 @@ class format_grid extends format_base {
         $updateimageresizemethod = false;
         $updateimagecontainerstyle = false;
         $updatenewactivity = false;
+        $updatefitpopup = false;
         if ($imagecontainersizereset && has_capability('format/grid:changeimagecontainersize', $coursecontext) && $resetallifall) {
             $updatedata['imagecontainerwidth'] = get_config('format_grid', 'defaultimagecontainerwidth');
             $updatedata['imagecontainerratio'] = get_config('format_grid', 'defaultimagecontainerratio');
@@ -924,7 +1053,8 @@ class format_grid extends format_base {
             $updatedata['imageresizemethod'] = get_config('format_grid', 'defaultimageresizemethod');
             $updateimageresizemethod = true;
         }
-        if ($imagecontainerstylereset && has_capability('format/grid:changeimagecontainerstyle', $coursecontext) && $resetallifall) {
+        if ($imagecontainerstylereset && has_capability('format/grid:changeimagecontainerstyle', $coursecontext)
+            && $resetallifall) {
             $updatedata['bordercolour'] = get_config('format_grid', 'defaultbordercolour');
             $updatedata['borderwidth'] = get_config('format_grid', 'defaultborderwidth');
             $updatedata['borderradius'] = get_config('format_grid', 'defaultborderradius');
@@ -938,9 +1068,17 @@ class format_grid extends format_base {
             $updatedata['newactivity'] = get_config('format_grid', 'defaultnewactivity');
             $updatenewactivity = true;
         }
+        if ($fitpopupreset && $resetallifall) {
+            $updatedata['fitsectioncontainertowindow'] = get_config('format_grid', 'defaultfitsectioncontainertowindow');
+            $updatefitpopup = true;
+        }
 
         foreach ($records as $record) {
-            if (($updateimagecontainersize) || ($updateimageresizemethod) || ($updateimagecontainerstyle) || ($updatenewactivity)) {
+            if (($updateimagecontainersize) ||
+                ($updateimageresizemethod) ||
+                ($updateimagecontainerstyle) ||
+                ($updatenewactivity) ||
+                ($updatefitpopup)) {
                 $ourcourseid = $this->courseid;
                 $this->courseid = $record->id;
                 if (($updateimagecontainersize) || ($updateimageresizemethod)) {
@@ -956,7 +1094,7 @@ class format_grid extends format_base {
                     if (($updateimagecontainersize) &&
                            (($currentsettings['imagecontainerwidth'] != $updatedata['imagecontainerwidth']) ||
                             ($currentsettings['imagecontainerratio'] != $updatedata['imagecontainerratio']))) {
-                        $performimagecontainersize = true; // $updatedata will be correct.
+                        $performimagecontainersize = true; // Variable $updatedata will be correct.
                     } else {
                         // If image resize method needs to operate so use current settings.
                         $updatedata['imagecontainerwidth'] = $currentsettings['imagecontainerwidth'];
@@ -966,7 +1104,7 @@ class format_grid extends format_base {
 
                     if (($updateimageresizemethod) &&
                         ($currentsettings['imageresizemethod'] != $updatedata['imageresizemethod'])) {
-                         $performimageresizemethod = true; // $updatedata will be correct.
+                         $performimageresizemethod = true; // Variable $updatedata will be correct.
                     } else {
                         // If image container size needs to operate so use current setting.
                         $updatedata['imageresizemethod'] = $currentsettings['imageresizemethod'];
@@ -977,11 +1115,6 @@ class format_grid extends format_base {
                         // No need to get the settings as parsing the updated ones, but do need to invalidate them.
                         $courseformat->settings = null;
                         $courseformat->update_displayed_images($record->id, $courseformat, $updatedata, false);
-                    }
-                    if (self::is_developer_debug()) {
-                        error_log('reset_grid_setting - $updateimagecontainersize or $updateimageresizemethod - course id: ' . $this->courseid . ' - request course id: '. $courseid);
-                        error_log('current settings: ' . print_r($currentsettings, true));
-                        error_log('update settings: ' . print_r($updatedata, true));
                     }
                 }
                 $this->update_format_options($updatedata);
@@ -1044,7 +1177,8 @@ class format_grid extends format_base {
 
             if (!$newimagecontainer->id = $DB->insert_record('format_grid_icon', $newimagecontainer, true)) {
                 throw new moodle_exception('invalidrecordid', 'format_grid', '',
-                'Could not create image container. Grid format database is not ready. An admin must visit the notifications section.');
+                'Could not create image container.  Grid format database is not ready.'.
+                '  An admin must visit the notifications section.');
             }
             $sectionimage = $newimagecontainer;
         } else if ($sectionimage->courseid == 1) { // 1 is the default and is the 'site' course so cannot be the Grid format.
@@ -1102,8 +1236,8 @@ class format_grid extends format_base {
         if (($imagecontainerwidth !== self::$currentwidth) || ($imagecontainerratio !== self::$currentratio) ||
                 ($borderwidth !== self::$currentborderwidth)) {
             $height = $this->calculate_height($imagecontainerwidth, $imagecontainerratio);
-            // margin-top = image holder height - ( image height - border width)).
-            // margin-left = (image holder width - image width) + border width.
+            // This is: margin-top = image holder height - ( image height - border width)).
+            // This is: margin-left = (image holder width - image width) + border width.
 
             $result = array(
                 'height' => $height,
@@ -1149,7 +1283,7 @@ class format_grid extends format_base {
         $basewidth = $width;
 
         switch ($ratio) {
-            // 1 => '3-2', 2 => '3-1', 3 => '3-3', 4 => '2-3', 5 => '1-3', 6 => '4-3', 7 => '3-4'.
+            // Ratios 1 => '3-2', 2 => '3-1', 3 => '3-3', 4 => '2-3', 5 => '1-3', 6 => '4-3', 7 => '3-4'.
             case 1: // 3-2.
             case 2: // 3-1.
             case 3: // 3-3.
@@ -1169,7 +1303,7 @@ class format_grid extends format_base {
 
         $height = $basewidth;
         switch ($ratio) {
-            // 1 => '3-2', 2 => '3-1', 3 => '3-3', 4 => '2-3', 5 => '1-3', 6 => '4-3', 7 => '3-4'.
+            // Ratios 1 => '3-2', 2 => '3-1', 3 => '3-3', 4 => '2-3', 5 => '1-3', 6 => '4-3', 7 => '3-4'.
             case 2: // 3-1.
                 $height = $basewidth;
                 break;
@@ -1187,7 +1321,7 @@ class format_grid extends format_base {
                 break;
         }
 
-        return $height;
+        return round($height);
     }
 
     public function create_original_image_record($contextid, $sectionid, $filename) {
@@ -1263,7 +1397,6 @@ class format_grid extends format_base {
             }
             print('Grid Format Image Exception:...');
             debugging($e->getMessage());
-            error_log($e->getMessage() . print_r($e, true));
         }
     }
 
@@ -1287,12 +1420,6 @@ class format_grid extends format_base {
             $convertsuccess = true;
             $mime = $imagecontainerpathfile->get_mimetype();
 
-            if (self::is_developer_debug()) {
-                $imagecontainerpathfileinfo = $imagecontainerpathfile->get_imageinfo();
-                error_log('format_grid::setup_displayed_image - original image size: ' . print_r($imagecontainerpathfileinfo,
-                                true));
-            }
-
             // Updated image.
             $sectionimage->displayedimageindex++;
             $created = time();
@@ -1308,11 +1435,6 @@ class format_grid extends format_base {
                 'mimetype' => $mime);
 
             $displayedimageinfo = $this->get_displayed_image_container_properties($settings);
-
-            if (self::is_developer_debug()) {
-                error_log('format_grid::setup_displayed_image - new image container size, width:' .
-                        $displayedimageinfo['width'] . ' height:' . $displayedimageinfo['height']);
-            }
 
             $tmproot = make_temp_directory('gridformatdisplayedimagecontainer');
             $tmpfilepath = $tmproot . '/' . $imagecontainerpathfile->get_contenthash();
@@ -1333,16 +1455,11 @@ class format_grid extends format_base {
                        baulk as the file already exists.   Unfortunately has to be here as the restore mechanism restores
                        the grid format data for the database and then the files.  And the Grid code is called at the 'data'
                        stage. */
-                    if (self::is_developer_debug()) {
-                        error_log('format_grid::setup_displayed_image - removed old file, name:' .
-                                $displayedimagefilerecord['filename'] . ' section id:' . $displayedimagefilerecord['itemid'] .
-                                ' context id:' . $displayedimagefilerecord['contextid'] . ' course id:' . $this->courseid);
-                    }
-                    // Delete old file.
                     if ($oldfile = $fs->get_file($displayedimagefilerecord['contextid'],
                             $displayedimagefilerecord['component'], $displayedimagefilerecord['filearea'],
                             $displayedimagefilerecord['itemid'], $displayedimagefilerecord['filepath'],
                             $displayedimagefilerecord['filename'])) {
+                        // Delete old file.
                         $oldfile->delete();
                     }
                 }
@@ -1361,12 +1478,11 @@ class format_grid extends format_base {
                 $DB->set_field('format_grid_icon', 'displayedimageindex', $sectionimage->displayedimageindex,
                         array('sectionid' => $sectionimage->sectionid));
             } else {
-                error_log(get_string('cannotconvertuploadedimagetodisplayedimage', 'format_grid').' ConxID: '.$contextid.' CID: '.$this->courseid.' SID: '.$sectionimage->sectionid.' DIX: '.$sectionimage->displayedimageindex.' IMG: '.$sectionimage->newimage.' - Please send this information along with a dump of the \'grid_icon\', \'course_section\' and \'files\' DB tables to the developer.  Also look in the moodledata \'filedir\' folder for the \'file\' with the \'contenthash\' from the \'files\' table where the \'itemid\' is the same as the \'SID\' and \'component\' is \'course\' and \'filearea\' is \'section\' and see if it exists.');
                 print_error('cannotconvertuploadedimagetodisplayedimage', 'format_grid',
                         $CFG->wwwroot . "/course/view.php?id=" . $this->courseid);
             }
         } else {
-            error_log(get_string('cannotfinduploadedimage', 'format_grid').' ConxID: '.$contextid.' CID: '.$this->courseid.' SID: '.$sectionimage->sectionid.' DIX: '.$sectionimage->displayedimageindex.' IMG: '.$sectionimage->newimage.' - Please send this information along with a dump of the \'grid_icon\', \'course_section\' and \'files\' DB tables to the developer.  Also look in the moodledata \'filedir\' folder for the \'file\' with the \'contenthash\' from the \'files\' table where the \'itemid\' is the same as the \'SID\' and \'component\' is \'course\' and \'filearea\' is \'section\' and see if it exists.');
+            $DB->set_field('format_grid_icon', 'image', null, array('sectionid' => $sectionimage->sectionid));
         }
 
         return $sectionimage;  // So that the caller can know the new value of displayedimageindex.
@@ -1388,7 +1504,8 @@ class format_grid extends format_base {
                         $sectionimage->displayedimageindex . '_' . $sectionimage->image)) {
                     $file->delete();
                 }
-                $DB->delete_records("format_grid_icon", array('courseid' => $this->courseid, 'sectionid' => $sectionimage->sectionid));
+                $DB->delete_records("format_grid_icon", array('courseid' => $this->courseid,
+                    'sectionid' => $sectionimage->sectionid));
             }
         }
     }
@@ -1398,17 +1515,17 @@ class format_grid extends format_base {
 
         if (is_array($sectionimages)) {
             global $DB;
-            $context = context_course::instance($this->courseid);
-            $contextid = $context->id;
+            $coursecontext = context_course::instance($this->courseid);
             $fs = get_file_storage();
             $gridimagepath = $this->get_image_path();
 
             foreach ($sectionimages as $sectionimage) {
                 // Delete the image.
-                if ($file = $fs->get_file($contextid, 'course', 'section', $sectionimage->sectionid, '/', $sectionimage->image)) {
+                if ($file = $fs->get_file($coursecontext->id, 'course', 'section', $sectionimage->sectionid,
+                    '/', $sectionimage->image)) {
                     $file->delete();
                     // Delete the displayed image.
-                    if ($file = $fs->get_file($contextid, 'course', 'section', $sectionimage->sectionid, $gridimagepath,
+                    if ($file = $fs->get_file($coursecontext->id, 'course', 'section', $sectionimage->sectionid, $gridimagepath,
                             $sectionimage->displayedimageindex . '_' . $sectionimage->image)) {
                         $file->delete();
                     }
@@ -1424,15 +1541,14 @@ class format_grid extends format_base {
         if (is_array($sectionimages)) {
             global $DB;
 
-            $context = context_course::instance($this->courseid);
-            $contextid = $context->id;
+            $coursecontext = context_course::instance($this->courseid);
             $fs = get_file_storage();
             $gridimagepath = $this->get_image_path();
             $t = $DB->start_delegated_transaction();
 
             foreach ($sectionimages as $sectionimage) {
                 // Delete the displayed image.
-                if ($file = $fs->get_file($contextid, 'course', 'section', $sectionimage->sectionid, $gridimagepath,
+                if ($file = $fs->get_file($coursecontext->id, 'course', 'section', $sectionimage->sectionid, $gridimagepath,
                         $sectionimage->displayedimageindex . '_' . $sectionimage->image)) {
                     $file->delete();
                     $DB->set_field('format_grid_icon', 'displayedimageindex', 0, array('sectionid' => $sectionimage->sectionid));
@@ -1455,26 +1571,16 @@ class format_grid extends format_base {
         $sectionimages = $us->get_images($courseid);
         if (is_array($sectionimages)) {
             $coursecontext = context_course::instance($courseid);
-            $contextid = $coursecontext->id;
 
             $t = $DB->start_delegated_transaction();
             foreach ($sectionimages as $sectionimage) {
                 if ($sectionimage->displayedimageindex > 0) {
                     $sectionimage->newimage = $sectionimage->image;
-                    $sectionimage = $us->setup_displayed_image($sectionimage, $contextid, $settings);
-
-                    if (self::is_developer_debug()) {
-                        error_log('update_displayed_images: Updated displayed image in course id: ' . $courseid . ' for section ' .
-                                $sectionimage->sectionid . ' to ' . $sectionimage->newimage . ' and index ' .
-                                $sectionimage->displayedimageindex);
-                    }
+                    $sectionimage = $us->setup_displayed_image($sectionimage, $coursecontext->id, $settings);
                 }
             }
             $t->allow_commit();
         } else if (!$ignorenorecords) { // Only report error if it's ok not to have records.
-            if (self::is_developer_debug()) {
-                error_log('update_displayed_images: Cannot get images for course id: ' . $courseid);
-            }
             print_error('cannotgetimagesforcourse', 'format_grid', '', null, "update_displayed_images - Course id: " . $courseid);
         }
     }
@@ -1521,7 +1627,8 @@ class format_grid extends format_base {
             $filters = null;
             $quality = 90;
         } else {
-            debugging('Neither JPEG nor PNG are supported at this server, please fix the system configuration to have the GD PHP extension installed.');
+            debugging('Neither JPEG nor PNG are supported at this server, please fix the system configuration'.
+                ' to have the GD PHP extension installed.');
             return false;
         }
 
@@ -1556,13 +1663,6 @@ class format_grid extends format_base {
             $tempimage = imagecreate($width, $height);
         }
 
-        if (self::is_developer_debug()) {
-            error_log('format_grid::generate_image - original image size, width:' . imagesx($original) . ' height:' .
-                    imagesy($original));
-            error_log('format_grid::generate_image - temp     image size, width:' . imagesx($tempimage) . ' height:' .
-                    imagesy($tempimage));
-        }
-
         if ($crop) {
             // First step, resize.
             imagecopybicubic($tempimage, $original, 0, 0, 0, 0, $width, $height, $originalwidth, $originalheight);
@@ -1573,13 +1673,13 @@ class format_grid extends format_base {
             if ($cropheight) {
                 // Reset after change for resizeToWidth.
                 $height = $requestedheight;
-                // 'cropCenterHeight'.
+                // This is 'cropCenterHeight'.
                 $width = imagesx($original);
                 $srcoffset = (imagesy($original) / 2) - ($height / 2);
             } else {
                 // Reset after change for resizeToHeight.
                 $width = $requestedwidth;
-                // 'cropCenterWidth'.
+                // This is 'cropCenterWidth'.
                 $height = imagesy($original);
                 $srcoffset = (imagesx($original) / 2) - ($width / 2);
             }
@@ -1596,18 +1696,11 @@ class format_grid extends format_base {
             }
 
             if ($cropheight) {
-                // 'cropCenterHeight'.
+                // This is 'cropCenterHeight'.
                 imagecopybicubic($finalimage, $original, 0, 0, 0, $srcoffset, $width, $height, $width, $height);
             } else {
-                // 'cropCenterWidth'.
+                // This is 'cropCenterWidth'.
                 imagecopybicubic($finalimage, $original, 0, 0, $srcoffset, 0, $width, $height, $width, $height);
-            }
-
-            if (self::is_developer_debug()) {
-                error_log('format_grid::generate_image(crop) - original image size, width:' . imagesx($original) . ' height:' .
-                        imagesy($original));
-                error_log('format_grid::generate_image(crop) - final    image size, width:' . imagesx($finalimage) . ' height:' .
-                        imagesy($tempimage) . ' $srcoffset:' . $srcoffset);
             }
         } else {
             $finalimage = $tempimage;
@@ -1617,7 +1710,7 @@ class format_grid extends format_base {
                 $targetwidth = floor($originalwidth * $ratio);
                 $targetheight = floor($originalheight * $ratio);
             } else {
-                // do not enlarge the original file if it is smaller than the requested thumbnail size
+                // Do not enlarge the original file if it is smaller than the requested thumbnail size.
                 $targetwidth = $originalwidth;
                 $targetheight = $originalheight;
             }
@@ -1636,36 +1729,10 @@ class format_grid extends format_base {
         }
         $data = ob_get_clean();
 
-        if (self::is_developer_debug()) {
-            error_log('format_grid::generate_image - new image size, width:' . imagesx($finalimage) . ' height:' .
-                    imagesy($finalimage));
-        }
-
         imagedestroy($original);
         imagedestroy($finalimage);
 
         return $data;
-    }
-
-    /**
-     * States if we are at the developer level of debugging.
-     * @return boolean
-     */
-    public static function is_developer_debug() {
-        global $CFG, $USER;
-
-        $retr = true;
-        $forcedebug = false;  // Code from: weblib.php::debugging().
-        if (!empty($CFG->debugusers) && $USER) {
-            $debugusers = explode(',', $CFG->debugusers);
-            $forcedebug = in_array($USER->id, $debugusers);
-        }
-
-        if (!$forcedebug and (empty($CFG->debug) || ($CFG->debug != -1 and $CFG->debug < DEBUG_DEVELOPER))) {
-            $retr = false;
-        }
-
-        return $retr;
     }
 
     /**
@@ -1721,7 +1788,7 @@ function format_grid_delete_course($courseid) {
        Done this way so will work if the course has
        been a grid format course in the past even if
        it is not now. */
-    $courseformat = format_grid::get_instance($courseid); // 
+    $courseformat = format_grid::get_instance($courseid);
     $courseformat->delete_images();
     unset($courseformat);  // Destruct.
 

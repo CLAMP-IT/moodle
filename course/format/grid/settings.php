@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die;
 require_once($CFG->dirroot . '/course/format/grid/lib.php'); // For format_grid static constants.
 
 if ($ADMIN->fulltree) {
+
     /* Default course display.
      * Course display default, can be either one of:
      * COURSE_DISPLAY_SINGLEPAGE or - All sections on one page.
@@ -65,7 +66,7 @@ if ($ADMIN->fulltree) {
     $name = 'format_grid/defaultimageresizemethod';
     $title = get_string('defaultimageresizemethod', 'format_grid');
     $description = get_string('defaultimageresizemethod_desc', 'format_grid');
-    $default = format_grid::get_default_image_resize_method();;
+    $default = format_grid::get_default_image_resize_method();
     $choices = array(
         1 => new lang_string('scale', 'format_grid'),   // Scale.
         2 => new lang_string('crop', 'format_grid')   // Crop.
@@ -128,6 +129,28 @@ if ($ADMIN->fulltree) {
     $title = get_string('defaultnewactivity', 'format_grid');
     $description = get_string('defaultnewactivity_desc', 'format_grid');
     $default = 2;
+    $choices = array(
+        1 => new lang_string('no'),   // No.
+        2 => new lang_string('yes')   // Yes.
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Fix the section container popup to the screen. 1 = no, 2 = yes */
+    $name = 'format_grid/defaultfitsectioncontainertowindow';
+    $title = get_string('defaultfitsectioncontainertowindow', 'format_grid');
+    $description = get_string('defaultfitsectioncontainertowindow_desc', 'format_grid');
+    $default = 1;
+    $choices = array(
+        1 => new lang_string('no'),   // No.
+        2 => new lang_string('yes')   // Yes.
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Grey out hidden sections. */
+    $name = 'format_grid/defaultgreyouthidden';
+    $title = get_string('greyouthidden', 'format_grid');
+    $description = get_string('greyouthidden_desc', 'format_grid');
+    $default = 1;
     $choices = array(
         1 => new lang_string('no'),   // No.
         2 => new lang_string('yes')   // Yes.

@@ -10,7 +10,8 @@ var keys = {
         left     : 37,
         up       : 38,
         right    : 39,
-        down     : 40
+        down     : 40,
+        space    : 32
     };
 
 Y.Object.each(keys, function (keyCode, name) {
@@ -92,7 +93,6 @@ M.format_grid.gridkeys = {
         return M.format_grid.gridkeys.currentGridBox;
     },
     init: function(params) {
-        //console.log(JSON.stringify(params));
         if (!params.editing) {
             Y.on('esc', function (e) {
                 e.preventDefault();
@@ -102,45 +102,23 @@ M.format_grid.gridkeys = {
             Y.on('enter', function (e) {
                 if (M.format_grid.gridkeys.currentGridBox) {
                     e.preventDefault();
-                    if (M.format_grid.shadebox.shadebox_open == false) {
+                    if (M.format_grid.shadebox.shadebox_open === false) {
                         M.format_grid.icon_toggle(e);
                     } else if (e.shiftKey) {
                         M.format_grid.icon_toggle(e);
                     }
                 }
             });
-            Y.on('tab', function (e) {
-                //e.preventDefault();
-                //window.dispatchEvent(e);
+            Y.on('tab', function (/*e*/) {
                 setTimeout(function() {
                     // Cope with the fact that the default event happens after us.
                     // Therefore we need to react after focus has moved.
                     if (M.format_grid.gridkeys.findfocused()) {
-                        //e.preventDefault();
                         M.format_grid.tab(M.format_grid.gridkeys.currentGridBoxIndex);
-                    /*
-                    if (e.shiftKey) {
-                        M.format_grid.arrow_left(e);
-                    } else {
-                        M.format_grid.arrow_right(e);
-                    }
-                    */
                     }
                 }, 250);
             });
             Y.on('space', function (e) {
-                /*
-                var focused = document.activeElement;
-                if (!focused || focused == document.body) {
-                    focused = null;
-                } else if (document.querySelector) {
-                    focused = document.querySelector(":focus");
-                }
-                if (focused.id) {
-                    if (focused.id.indexOf('gridsection-') > -1) {
-                    }
-                }
-                */
                 if (M.format_grid.gridkeys.currentGridBox) {
                     e.preventDefault();
                     M.format_grid.icon_toggle(e);

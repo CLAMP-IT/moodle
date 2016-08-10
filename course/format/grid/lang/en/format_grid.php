@@ -25,14 +25,14 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['display_summary'] = 'move out of grid';
+$string['display_summary'] = 'Move out of grid';
 $string['display_summary_alt'] = 'Move this section out of the grid';
 $string['editimage'] = 'Change image';
 $string['editimage_alt'] = 'Set or change image';
 $string['formatgrid'] = 'Grid format'; // Name to display for format.
 $string['general_information'] = 'General Information';  // No longer used kept for legacy versions.
 $string['hidden_topic'] = 'This section has been hidden';
-$string['hide_summary'] = 'move section into grid';
+$string['hide_summary'] = 'Move section into grid';
 $string['hide_summary_alt'] = 'Move this section into the grid';
 $string['namegrid'] = 'Grid view';
 $string['title'] = 'Section title';
@@ -62,6 +62,9 @@ $string['showfromothers'] = 'Show section'; // No longer used kept for legacy ve
 $string['currentsection'] = 'This section'; // No longer used kept for legacy versions.
 $string['markedthissection'] = 'This section is highlighted as the current section';
 $string['markthissection'] = 'Highlight this section as the current section';
+// Moodle 3.0 Enhancement.
+$string['editsection'] = 'Edit section';
+$string['deletesection'] = 'Delete section';
 
 // Moodle 2.4 Course format refactoring - MDL-35218.
 $string['numbersections'] = 'Number of sections';
@@ -105,6 +108,9 @@ $string['defaultcurrentselectedimagecontainercolour_desc'] = 'The default curren
 $string['defaultcoursedisplay'] = 'Course display default';
 $string['defaultcoursedisplay_desc'] = "Either show all the sections on a single page or section zero and the chosen section on page.";
 
+$string['defaultfitsectioncontainertowindow'] = 'Fit section container to window by default';
+$string['defaultfitsectioncontainertowindow_desc'] = 'The default setting for \'Fit section container to window\'.';
+
 $string['defaultnewactivity'] = 'Show new activity notification image default';
 $string['defaultnewactivity_desc'] = "Show the new activity notification image when a new activity or resource are added to a section default.";
 
@@ -130,6 +136,9 @@ $string['setcurrentselectedimagecontainercolour_help'] = 'Set the current select
 $string['setnewactivity'] = 'Show new activity notification image';
 $string['setnewactivity_help'] = "Show the new activity notification image when a new activity or resource are added to a section.";
 
+$string['setfitsectioncontainertowindow'] = 'Fit the section popup to the window';
+$string['setfitsectioncontainertowindow_help'] = 'If enabled, the popup box with the contents of the section will fit to the size of the window and will scroll inside if necessary.  If disabled, the entire page will scroll instead.';
+
 $string['colourrule'] = "Please enter a valid RGB colour, six hexadecimal digits.";
 
 // Reset.
@@ -151,8 +160,20 @@ $string['resetnewactivity'] = 'New activity';
 $string['resetnewactivity_help'] = 'Resets the new activity notification image to the default value so it will be the same as a course the first time it is in the Grid format.';
 $string['resetallnewactivity'] = 'New activities';
 $string['resetallnewactivity_help'] = 'Resets the new activity notification images to the default value for all courses so it will be the same as a course the first time it is in the Grid format.';
+$string['resetfitpopup'] = 'Fit section popup to the window';
+$string['resetfitpopup_help'] = 'Resets the \'Fit section popup to the window\' to the default value so it will be the same as a course the first time it is in the Grid format.';
+$string['resetallfitpopup'] = 'Fit section popups to the window';
+$string['resetallfitpopup_help'] = 'Resets the \'Fit section popup to the window\' to the default value for all courses so it will be the same as a course the first time it is in the Grid format.';
+$string['resetgreyouthidden'] = 'Grey out unavailable';
+$string['resetgreyouthidden_desc'] = 'Resets the property \'Grid display show unavailable section images in grey and unlinked.\'';
+$string['resetgreyouthidden_help'] = 'Resets the property \'In Grid display show unavailable section images in grey and unlinked.\'';
 
 // Capabilities.
 $string['grid:changeimagecontainersize'] = 'Change or reset the image container size';
 $string['grid:changeimageresizemethod'] = 'Change or reset the image resize method';
 $string['grid:changeimagecontainerstyle'] = 'Change or reset the image container style';
+
+// Other.
+$string['greyouthidden'] = 'Grey out unavailable';
+$string['greyouthidden_desc'] = 'In Grid display show unavailable section images in grey and unlinked.';
+$string['greyouthidden_help'] = 'In Grid display show unavailable section images in grey and unlinked.';
