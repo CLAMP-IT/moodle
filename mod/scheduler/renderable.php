@@ -18,9 +18,12 @@ class scheduler_slot_table implements renderable {
     public $slots = array();
     public $scheduler;
     public $showgrades;
+    public $showactions;
+    public $actionurl;
 
-    public function add_slot(scheduler_slot $slotmodel, scheduler_appointment $appointmentmodel, $otherstudents) {
+    public function add_slot(scheduler_slot $slotmodel, scheduler_appointment $appointmentmodel, $otherstudents, $cancancel = false) {
         $slot = new stdClass();
+        $slot->slotid = $slotmodel->id;
         $slot->starttime = $slotmodel->starttime;
         $slot->endtime = $slotmodel->endtime;
         $slot->attended = $appointmentmodel->attended;
@@ -28,19 +31,24 @@ class scheduler_slot_table implements renderable {
         $slot->slotnotes = $slotmodel->notes;
         $slot->slotnotesformat = $slotmodel->notesformat;
         $slot->teacher = $slotmodel->get_teacher();
+        $slot->appointmentid = $appointmentmodel->id;
         $slot->appointmentnotes = $appointmentmodel->appointmentnote;
         $slot->appointmentnotesformat = $appointmentmodel->appointmentnoteformat;
         $slot->otherstudents = $otherstudents;
+        $slot->cancancel = $cancancel;
         if ($this->showgrades) {
             $slot->grade = $appointmentmodel->grade;
         }
+        $this->showactions = $this->showactions || $cancancel;
 
         $this->slots[] = $slot;
     }
 
-    public function __construct(scheduler_instance $scheduler, $showgrades=true) {
+    public function __construct(scheduler_instance $scheduler, $showgrades=true, $actionurl = null) {
         $this->scheduler = $scheduler;
         $this->showgrades = $showgrades;
+        $this->actionurl = $actionurl;
+        $this->showactions = false;
     }
 
 }
@@ -61,11 +69,13 @@ class scheduler_student_list implements renderable {
     public $actionurl = null;
     public $linkappointment = false;
 
-    public function add_student(scheduler_appointment $appointmentmodel, $highlight, $checked = false) {
+    public function add_student(scheduler_appointment $appointmentmodel, $highlight, $checked = false, $showgrade = true) {
         $student = new stdClass();
         $student->user = $appointmentmodel->get_student();
-        if ($this->showgrades) {
+        if ($this->showgrades && $showgrade) {
             $student->grade = $appointmentmodel->grade;
+        } else {
+            $student->grade = null;
         }
         $student->highlight = $highlight;
         $student->checked = $checked;
@@ -73,7 +83,7 @@ class scheduler_student_list implements renderable {
         $this->students[] = $student;
     }
 
-    public function __construct(scheduler_instance $scheduler, $showgrades=true) {
+    public function __construct(scheduler_instance $scheduler, $showgrades = true) {
         $this->scheduler = $scheduler;
         $this->showgrades = $showgrades;
     }
@@ -88,20 +98,8 @@ class scheduler_slot_booker implements renderable {
     public $slots = array();
     public $scheduler;
     public $studentid;
-    public $style;
     public $actionurl;
     public $maxselect;
-
-    /**
-     *  can the student press the "disengage" button?
-     */
-    public $candisengage = false;
-
-    /**
-     * Can the student choose to appoint a group? If yes,
-     * this should be set to an array groupid => groupname.
-     */
-    public $groupchoice = array();
 
     public function add_slot(scheduler_slot $slotmodel, $canbook, $bookedbyme, $groupinfo, $otherstudents) {
         $slot = new stdClass();
@@ -126,13 +124,11 @@ class scheduler_slot_booker implements renderable {
      * @param scheduler_instance $scheduler the scheduler in which the booking takes place
      * @param int $studentid the student who books
      * @param moodle_url action_url
-     * @param string $style 'one' or 'many'
      * @param int $maxselect the maximum number of boxes a student can select (set 0 for unlimited)
      */
-    public function __construct(scheduler_instance $scheduler, $studentid, moodle_url $actionurl,  $style, $maxselect) {
+    public function __construct(scheduler_instance $scheduler, $studentid, moodle_url $actionurl, $maxselect) {
         $this->scheduler = $scheduler;
         $this->studentid = $studentid;
-        $this->style = $style;
         $this->actionurl = $actionurl;
         $this->maxselect = $maxselect;
     }
@@ -236,7 +232,7 @@ class scheduler_scheduling_list implements renderable {
     public $lines = array();
     public $scheduler;
     public $extraheaders;
-
+    public $id = 'schedulinglist';
 
     public function add_line($pix, $name, array $extrafields, $actions) {
         $line = new stdClass();
@@ -257,6 +253,35 @@ class scheduler_scheduling_list implements renderable {
     public function __construct(scheduler_instance $scheduler, array $extraheaders) {
         $this->scheduler = $scheduler;
         $this->extraheaders = $extraheaders;
+    }
+
+}
+
+
+/**
+ * Represents information about a student's total grade in the scheduler, plus gradebook information.
+ * To be used in teacher screens.
+ */
+class scheduler_totalgrade_info implements renderable {
+
+    public $gbgrade;
+    public $scheduler;
+    public $showtotalgrade;
+    public $totalgrade;
+
+    /**
+     * Constructs a grade info object
+     *
+     * @param scheduler_instance $scheduler the scheduler in question
+     * @param stdClass $gbgrade information about the grade in the gradebook (may be null)
+     * @param string $showtotalgrade whether the total grade in the scheduler should be shown
+     * @param int $totalgrade the total grade of the student in this scheduler
+     */
+    public function __construct(scheduler_instance $scheduler, $gbgrade, $showtotalgrade = false, $totalgrade = 0) {
+        $this->scheduler = $scheduler;
+        $this->gbgrade = $gbgrade;
+        $this->showtotalgrade = $showtotalgrade;
+        $this->totalgrade = $totalgrade;
     }
 
 }
