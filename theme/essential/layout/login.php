@@ -15,16 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This is built using the bootstrapbase template to allow for new theme's using
- * Moodle's new Bootstrap theme engine
+ * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2013 Julian Ridden
+ * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
+ * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once($OUTPUT->get_include_file('header'));
+require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
+require_once(\theme_essential\toolbox::get_tile_file('header'));
 ?>
 
 <div id="page" class="container-fluid">
@@ -43,6 +44,6 @@ require_once($OUTPUT->get_include_file('header'));
     </section>
 </div>
 
-<?php require_once($OUTPUT->get_include_file('footer')); ?>
+<?php require_once(\theme_essential\toolbox::get_tile_file('footer')); ?>
 </body>
 </html>

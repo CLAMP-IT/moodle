@@ -7,11 +7,12 @@ body {
   font-weight: 400;
   background-color: rgba(255, 255, 255, 0.6);
   background-size: cover;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
 }
 
 a {
+  font-family: inherit;
   text-decoration: none;
 }
 
@@ -29,8 +30,15 @@ a:focus {
   display: none;
 }
 
-.moodle-actionmenu[data-enhanced].show .menu {
-  box-shadow: none;
+.moodle-actionmenu[data-enhanced].show {
+  white-space: nowrap;
+  .menu {
+    box-shadow: none;
+      .iconsmall,
+      .smallicon {
+        margin: 4px;
+      }
+  }
 }
 
 .sitetopic .section .activity:hover, .course-content .section .activity:hover {
@@ -47,15 +55,13 @@ ins {
 
 #page, .pagelayout-redirect {
   padding-top: 10px;
-  background-color: rgba(255, 255, 255, 0.6);
-
   #page-content {
     margin-top: 10px;
     #region-main,
     div[role="main"] {
       border: 1px solid darken(@wellBackground, 7%);
       .border-radius(@borderRadiusLarge);
-      background-color: #FFF;
+      background-color: @white;
       padding: @paddingSmall;
       margin-bottom: 20px;
     }
@@ -74,12 +80,11 @@ ins {
 
 .bor {
   height: 20px;
-  margin: 0px;
-  margin-bottom: 10px;
+  margin: 0 0 4px;
 }
 
 #page-admin-upgradesettings #page, .maintenance#page {
-  padding-top: 0px;
+  padding-top: 0;
 }
 
 #page-admin-plugins #page-content #region-main {
@@ -117,8 +122,13 @@ body { // Inside a body tag so will be more specific and override core plugin st
     }
 }
 
-.dimmed_category a:visited {
+.dimmed_category a:visited, .dimmed {
     .muted;
+}
+.activity.label .dimmed_text {
+    .opacity(100);
+    color: @grayLight;
+    font-style: italic;
 }
 
 .resourcecontent .mediaplugin.mediaplugin_mp3 object {

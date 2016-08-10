@@ -1,4 +1,5 @@
 /* @group Blocks */
+@import "../fontawesome/variables";
 
 .block {
   background: white;
@@ -6,7 +7,7 @@
   border: 1px solid darken(@wellBackground, 7%);
   .border-radius(@borderRadiusLarge);
   .content {
-    padding: 4px 0px;
+    padding: 4px 0;
   }
   .icon {
     margin-right: 5px;
@@ -14,7 +15,7 @@
   .moodle-actionmenu[data-enhanced].show .menu a:hover {
     text-decoration: none;
     &:before {
-      color: #fff;
+      color: @white;
     }
   }
   .moodle-core-dragdrop-draghandle {
@@ -41,21 +42,64 @@
   }
 
   #page-footer {
-    .footerblocks > .span4,
-    .block-region.yui3-dd-drop-active-valid {
-      min-height: 300px;
+    .footerblocks {
+      margin-top: 10px;
+      > .footerblock,
+      .block-region.yui3-dd-drop-active-valid {
+        min-height: 300px;
+      }
     }
   }
 }
 
+.editing {
+    // Give space to 'empty' regions.
+    &.empty-region-side-pre #block-region-side-pre, &.used-region-side-pre #block-region-side-pre,
+    &.empty-region-side-post #block-region-side-post, &.used-region-side-post #block-region-side-post,
+    &.empty-region-home-left #block-region-home-left, &.used-region-home-left #block-region-home-left,
+    &.empty-region-home-middle #block-region-home-middle, &.used-region-home-middle #block-region-home-middle,
+    &.empty-region-home-right #block-region-home-right, &.used-region-home-right #block-region-home-right,
+    &.empty-region-footer-left #block-region-footer-left, &.used-region-footer-left #block-region-footer-left,
+    &.empty-region-footer-middle #block-region-footer-middle, &.used-region-footer-middle #block-region-footer-middle,
+    &.empty-region-footer-right #block-region-footer-right, &.used-region-footer-right #block-region-footer-right,
+    &.empty-region-hidden-dock #block-region-hidden-dock, &.used-region-hidden-dock #block-region-hidden-dock {
+        min-height: 200px;
+    }
+
+    // Using 'used' instead of 'empty' as body class will be 'used' as soon as D&D starts.
+    &.used-region-side-pre #block-region-side-pre,
+    &.used-region-side-post #block-region-side-post,
+    &.used-region-home-left #block-region-home-left,
+    &.used-region-home-middle #block-region-home-middle,
+    &.used-region-home-right #block-region-home-right,
+    &.used-region-footer-left #block-region-footer-left,
+    &.used-region-footer-middle #block-region-footer-middle,
+    &.used-region-footer-right #block-region-footer-right,
+    &.used-region-hidden-dock #block-region-hidden-dock {
+        border-width: 2px;
+        border-style: dashed;
+    }
+}
+
 #middle-blocks {
-  margin: 15px 0px;
+  margin: 15px 0;
+}
+
+p.tree_item.leaf a {
+  > .@{fa-css-prefix} {
+    width: 14px;
+  }
+  &.action-delete {
+    > .@{fa-css-prefix} {
+      color: red;
+    }
+  }
 }
 
 .tree_item.branch {
   background-image: none !important;
 
-  &.branch:before {
+  &:before {
     font-family: FontAwesome;
     content: "\f07c";
     margin-right: 5px;
@@ -80,10 +124,78 @@
   }
 }
 
+.block_navigation.block .block_tree .tree_item {
+    &.hasicon .item-content-wrap {
+        display: inline !important;
+    }
+    &.branch {
+        padding-left: 0 !important;
+    }
+}
+
 .collapsed .tree_item.branch:before {
   font-family: FontAwesome;
-  /*@replace: "\f053"*/content: "\f07b";
+  content: "\f07b";
   margin-right: 5px;
+}
+
+.jsenabled .block_settings .block_tree .tree_item {
+    padding-left: 0 !important;
+}
+
+.jsenabled .block_settings .block_tree .tree_item.branch.loadingbranch:before {
+    font-family: FontAwesome;
+    content: "\f110";
+    -moz-animation: essential-block-spin 0.8s infinite ease-in-out;
+    -webkit-animation: essential-block-spin 0.8s infinite ease-in-out;
+    -o-animation: essential-block-spin 0.8s infinite ease-in-out;
+    animation: essential-block-spin 0.8s infinite ease-in-out;
+}
+
+@-moz-keyframes essential-block-spin {
+    0% {
+        -moz-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -moz-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+@-webkit-keyframes essential-block-spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+@-o-keyframes essential-block-spin {
+    0% {
+        -o-transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -o-transform: rotate(359deg);
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+@keyframes essential-block-spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
 }
 
 .hidden-blocks {
@@ -91,14 +203,14 @@
   padding: 10px;
   border: 1px solid #EEE;
   border-radius: 5px;
-  margin: 10px 0px 10px 0px;
+  margin: 10px 0 10px 0;
 
   h4 {
     text-align: left;
     padding-bottom: 8px;
     margin-bottom: 8px;
     border-bottom: 1px solid #ccc;
-    margin-top: 0px;
+    margin-top: 0;
     color: #ff6666;
   }
 
@@ -116,27 +228,29 @@
   margin-bottom: 5px;
   text-transform: uppercase;
   font-weight: normal;
-  padding: 0px;
+  padding: 0;
 }
 
 .block .header .title {
   border-bottom: 1px solid #EEE;
-  padding-left: 0px;
+  padding-left: 0;
+  h2 {
+    display: inline;
+  }
 
-  h2:before {
-    font-family: FontAwesome;
+  .@{fa-css-prefix} {
     font-size: 1.65em;
     margin-right: .3em;
-    content: "\f0c9";
+    display: inline;
   }
 }
 
 .block_iconic_html .header .title h2:before {
-  padding-right: 0px;
+  padding-right: 0;
   content: none;
 }
-.block.block_iconic_html .header .title h2 span.fa {
-  padding-right: 0px !important;
+.block.block_iconic_html .header .title h2 .@{fa-css-prefix} {
+  padding-right: 0 !important;
   &:before {
     margin-right: .3em;
     font-size: 1.65em;
@@ -147,7 +261,7 @@
 .block.hidden h3.main,
 .block.hidden .header .title {
   border-bottom: none;
-  margin-bottom: 0px;
+  margin-bottom: 0;
 }
 
 .block_quiz_results {
@@ -157,11 +271,11 @@
 .block_rss_client {
   .description {
     height: auto;
-    padding-bottom: 0px;
-    margin-bottom: 0px;
+    padding-bottom: 0;
+    margin-bottom: 0;
   }
   .content {
-    padding: 0px;
+    padding: 0;
     a:hover {
       text-decoration: none;
     }
@@ -173,20 +287,17 @@
       }
     }
   }
-  .header .title h2:before {
-    content: "\f09e";
-  }
   .footer {
     text-align: right;
     padding-top: 5px;
     a {
-      color: #fff;
+      color: @white;
       width: 100px;
       padding: 4px 12px;
       font-size: 1em;
       border-radius: 5px;
       &:hover {
-        color: #fff;
+        color: inherit;
       }
     }
   }
@@ -221,19 +332,10 @@
 /* @group Login Block */
 
 .block_login {
-  .header .title h2:before {
-    content: "\f007";
-    font-family: FontAwesome;
-    float: left;
-  }
   .content {
     .footer {
-      height: 60px;
-      width: 100%;
-      padding: 0px;
+      padding: 0;
       div {
-        float: left;
-        clear: left;
         margin: 0;
         width: 90%;
         a {
@@ -244,9 +346,8 @@
         }
       }
       a {
-        color: #fff;
+        color: @white;
         padding: 0;
-        float: left;
         margin: 0;
         font-size: 1em;
         white-space: nowrap;
@@ -261,7 +362,7 @@
       border-style: solid;
       border-width: 1px;
       box-shadow: none;
-      color: #fff;
+      color: @white;
       cursor: pointer;
       display: inline-block;
       font-size: 13px;
@@ -333,13 +434,13 @@ aside.footer-edit .block {
 // Eliminates need for 'desktop-first-column' but does not work in IE8.
 // Info on: http://www.w3schools.com/cssref/sel_first-of-type.asp
 aside.footer-blocks div.row-fluid div.block:first-of-type {
-    margin-left: 0px;
+    margin-left: 0;
 }
 
 // Support multiple rows when editing otherwise above works, see: http://www.w3schools.com/cssref/sel_nth-of-type.asp
 .footer-nth(@index) {
     aside.footer-edit div.block:nth-of-type(@{index}) {
-        margin-left: 0px;
+        margin-left: 0;
     }
 }
 

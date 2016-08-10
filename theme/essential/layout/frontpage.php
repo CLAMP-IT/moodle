@@ -15,25 +15,26 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This is built using the bootstrapbase template to allow for new theme's using
- * Moodle's new Bootstrap theme engine
+ * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2013 Julian Ridden
+ * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
+ * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once($OUTPUT->get_include_file('header'));
+require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
+require_once(\theme_essential\toolbox::get_tile_file('header'));
 
-$enable1alert = $OUTPUT->get_setting('enable1alert');
-$enable2alert = $OUTPUT->get_setting('enable2alert');
-$enable3alert = $OUTPUT->get_setting('enable3alert');
+$enable1alert = \theme_essential\toolbox::get_setting('enable1alert');
+$enable2alert = \theme_essential\toolbox::get_setting('enable2alert');
+$enable3alert = \theme_essential\toolbox::get_setting('enable3alert');
 
 if ($enable1alert || $enable2alert || $enable3alert) {
-    $alertinfo = '<span class="fa-stack"><i class="fa fa-square fa-stack-2x"></i><i class="fa fa-info fa-stack-1x fa-inverse"></i></span>';
-    $alerterror = '<span class="fa-stack"><i class="fa fa-square fa-stack-2x"></i><i class="fa fa-warning fa-stack-1x fa-inverse"></i></span>';
-    $alertsuccess = '<span class="fa-stack"><i class="fa fa-square fa-stack-2x"></i><i class="fa fa-bullhorn fa-stack-1x fa-inverse"></i></span>';
+    $alertinfo = '<span class="fa-stack"><span aria-hidden="true" class="fa fa-info fa-stack-1x fa-inverse"></span></span>';
+    $alerterror = '<span class="fa-stack"><span aria-hidden="true" class="fa fa-warning fa-stack-1x fa-inverse"></span></span>';
+    $alertsuccess = '<span class="fa-stack"><span aria-hidden="true" class="fa fa-bullhorn fa-stack-1x fa-inverse"></span></span>';
 }
 ?>
 
@@ -41,15 +42,19 @@ if ($enable1alert || $enable2alert || $enable3alert) {
     <section class="slideshow">
         <!-- Start Slideshow -->
         <?php
-        $toggleslideshow = $OUTPUT->get_setting('toggleslideshow');
-        if ($toggleslideshow == 1) {
-            require_once($OUTPUT->get_include_file('slideshow'));
-        } else if ($toggleslideshow == 2 && !isloggedin()) {
-            require_once($OUTPUT->get_include_file('slideshow'));
-        } else if ($toggleslideshow == 3 && isloggedin()) {
-            require_once($OUTPUT->get_include_file('slideshow'));
+        $toggleslideshow = \theme_essential\toolbox::get_setting('toggleslideshow');
+        if ($PAGE->user_is_editing() && ($toggleslideshow)) {
+            require_once(\theme_essential\toolbox::get_tile_file('slideshow'));
+        } else {
+            if ($toggleslideshow == 1) {
+                require_once(\theme_essential\toolbox::get_tile_file('slideshow'));
+            } else if ($toggleslideshow == 2 && !isloggedin()) {
+                require_once(\theme_essential\toolbox::get_tile_file('slideshow'));
+            } else if ($toggleslideshow == 3 && isloggedin()) {
+                require_once(\theme_essential\toolbox::get_tile_file('slideshow'));
+            }
         }
-        ?>
+?>
         <!-- End Slideshow -->
     </section>
 
@@ -60,114 +65,134 @@ if ($enable1alert || $enable2alert || $enable3alert) {
 
         <!-- Alert #1 -->
         <?php if ($enable1alert) { ?>
-            <div class="useralerts alert alert-<?php echo $OUTPUT->get_setting('alert1type'); ?>">
-                <a class="close" data-dismiss="alert" href="#"><i class="fa fa-times-circle"></i></a>
+            <div class="useralerts alert alert-<?php echo \theme_essential\toolbox::get_setting('alert1type'); ?>">
+                <a class="close" data-dismiss="alert" href="#"><span aria-hidden="true" class="fa fa-times-circle"></span></a>
                 <?php
-                $alert1icon = 'alert' . $OUTPUT->get_setting('alert1type');
-                echo $$alert1icon . '<span class="title">' . $OUTPUT->get_setting('alert1title', true) . '</span>' . $OUTPUT->get_setting('alert1text', true); ?>
+                $alert1icon = 'alert' . \theme_essential\toolbox::get_setting('alert1type');
+                echo $$alert1icon.'<span class="title">'.\theme_essential\toolbox::get_setting('alert1title', true);
+                echo '</span>'.\theme_essential\toolbox::get_setting('alert1text', true); ?>
             </div>
-        <?php } ?>
+<?php
+}
+?>
 
         <!-- Alert #2 -->
         <?php if ($enable2alert) { ?>
-            <div class="useralerts alert alert-<?php echo $OUTPUT->get_setting('alert2type'); ?>">
-                <a class="close" data-dismiss="alert" href="#"><i class="fa fa-times-circle"></i></a>
+            <div class="useralerts alert alert-<?php echo \theme_essential\toolbox::get_setting('alert2type'); ?>">
+                <a class="close" data-dismiss="alert" href="#"><span aria-hidden="true" class="fa fa-times-circle"></span></a>
                 <?php
-                $alert2icon = 'alert' . $OUTPUT->get_setting('alert2type');
-                echo $$alert2icon . '<span class="title">' . $OUTPUT->get_setting('alert2title', true) . '</span>' . $OUTPUT->get_setting('alert2text', true); ?>
+                $alert2icon = 'alert' . \theme_essential\toolbox::get_setting('alert2type');
+                echo $$alert2icon.'<span class="title">'.\theme_essential\toolbox::get_setting('alert2title', true);
+                echo '</span>'.\theme_essential\toolbox::get_setting('alert2text', true); ?>
             </div>
-        <?php } ?>
+<?php
+}
+?>
 
         <!-- Alert #3 -->
         <?php if ($enable3alert) { ?>
-            <div class="useralerts alert alert-<?php echo $OUTPUT->get_setting('alert3type'); ?>">
-                <a class="close" data-dismiss="alert" href="#"><i class="fa fa-times-circle"></i></a>
+            <div class="useralerts alert alert-<?php echo \theme_essential\toolbox::get_setting('alert3type'); ?>">
+                <a class="close" data-dismiss="alert" href="#"><span aria-hidden="true" class="fa fa-times-circle"></span></a>
                 <?php
-                $alert3icon = 'alert' . $OUTPUT->get_setting('alert3type');
-                echo $$alert3icon . '<span class="title">' . $OUTPUT->get_setting('alert3title', true) . '</span>' . $OUTPUT->get_setting('alert3text', true); ?>
+                $alert3icon = 'alert' . \theme_essential\toolbox::get_setting('alert3type');
+                echo $$alert3icon.'<span class="title">'.\theme_essential\toolbox::get_setting('alert3title', true);
+                echo '</span>' . \theme_essential\toolbox::get_setting('alert3text', true); ?>
             </div>
-        <?php } ?>
+<?php
+}
+?>
         <!-- End Alerts -->
 
         <!-- Start Frontpage Content -->
         <?php
-        $showfrontcontent = false;
-        switch ($OUTPUT->get_setting('togglefrontcontent')) {
-            case 1:
-                $showfrontcontent = true;
-                break;
-            case 2:
-                if (!isloggedin()) {
+        $showfrontcontentsetting = \theme_essential\toolbox::get_setting('togglefrontcontent');
+        if ($PAGE->user_is_editing() && ($showfrontcontentsetting)) {
+            $showfrontcontent = true;
+        } else {
+            $showfrontcontent = false;
+            switch ($showfrontcontentsetting) {
+                case 1:
                     $showfrontcontent = true;
-                }
-                break;
-            case 3:
-                if (isloggedin()) {
-                    $showfrontcontent = true;
-                }
-                break;
+                    break;
+                case 2:
+                    if (!isloggedin()) {
+                        $showfrontcontent = true;
+                    }
+                    break;
+                case 3:
+                    if (isloggedin()) {
+                        $showfrontcontent = true;
+                    }
+                    break;
+            }
         }
         if ($showfrontcontent) { ?>
             <div class="frontpagecontent">
                 <div class="bor"></div>
                 <?php
-                echo $OUTPUT->get_setting('frontcontentarea', 'format_html');
+                echo \theme_essential\toolbox::get_setting('frontcontentarea', 'format_html');
                 echo $OUTPUT->essential_edit_button('theme_essential_frontpage');
                 ?>
                 <div class="bor"></div>
             </div>
-        <?php
+<?php
         }
-        ?>
+?>
         <!-- End Frontpage Content -->
 
         <!-- Start Marketing Spots -->
         <?php
-        $togglemarketing = $OUTPUT->get_setting('togglemarketing');
-        if ($togglemarketing == 1) {
-            require_once($OUTPUT->get_include_file('marketingspots'));
-        } else if ($togglemarketing == 2 && !isloggedin()) {
-            require_once($OUTPUT->get_include_file('marketingspots'));
-        } else if ($togglemarketing == 3 && isloggedin()) {
-            require_once($OUTPUT->get_include_file('marketingspots'));
+        $togglemarketing = \theme_essential\toolbox::get_setting('togglemarketing');
+        if ($PAGE->user_is_editing() && ($togglemarketing)) {
+            require_once(\theme_essential\toolbox::get_tile_file('marketingspots'));
+        } else {
+            if ($togglemarketing == 1) {
+                require_once(\theme_essential\toolbox::get_tile_file('marketingspots'));
+            } else if ($togglemarketing == 2 && !isloggedin()) {
+                require_once(\theme_essential\toolbox::get_tile_file('marketingspots'));
+            } else if ($togglemarketing == 3 && isloggedin()) {
+                require_once(\theme_essential\toolbox::get_tile_file('marketingspots'));
+            }
         }
-        ?>
-        <!-- End Marketing Spots -->
+?>
+<!-- End Marketing Spots -->
 
-        <!-- Start Middle Blocks -->
-        <?php
-        $frontpagemiddleblocks = $OUTPUT->get_setting('frontpagemiddleblocks');
-        if ($frontpagemiddleblocks == 1) {
-            require_once($OUTPUT->get_include_file('middleblocks'));
-        } else if ($frontpagemiddleblocks == 2 && !isloggedin()) {
-            require_once($OUTPUT->get_include_file('middleblocks'));
-        } else if ($frontpagemiddleblocks == 3 && isloggedin()) {
-            require_once($OUTPUT->get_include_file('middleblocks'));
-        }
-        ?>
-        <!-- End Middle Blocks -->
+<!-- Start Middle Blocks -->
+<?php
+$frontpagemiddleblocks = \theme_essential\toolbox::get_setting('frontpagemiddleblocks');
+if ($PAGE->user_is_editing() && ($frontpagemiddleblocks)) {
+    require_once(\theme_essential\toolbox::get_tile_file('middleblocks'));
+} else {
+    if ($frontpagemiddleblocks == 1) {
+        require_once(\theme_essential\toolbox::get_tile_file('middleblocks'));
+    } else if ($frontpagemiddleblocks == 2 && !isloggedin()) {
+        require_once(\theme_essential\toolbox::get_tile_file('middleblocks'));
+    } else if ($frontpagemiddleblocks == 3 && isloggedin()) {
+        require_once(\theme_essential\toolbox::get_tile_file('middleblocks'));
+    }
+}
+?>
+<!-- End Middle Blocks -->
 
         <div id="page-content" class="row-fluid">
             <section id="<?php echo $regionbsid; ?>">
-                <?php if ($OUTPUT->get_setting('frontpageblocks')) { ?>
-                <section id="region-main" class="span9 pull-right">
-                    <?php } else { ?>
-                    <section id="region-main" class="span9 desktop-first-column">
-                        <?php } ?>
-                        <?php
-                        echo $OUTPUT->course_content_header();
-                        echo $OUTPUT->main_content();
-                        echo $OUTPUT->course_content_footer();
-                        ?>
-                    </section>
-                    <?php
-                    if ($OUTPUT->get_setting('frontpageblocks')) {
-                        echo $OUTPUT->blocks('side-pre', 'span3 desktop-first-column');
-                    } else {
-                        echo $OUTPUT->blocks('side-pre', 'span3 pull-right');
-                    }
-                    ?>
-                </section>
+<?php
+if (\theme_essential\toolbox::get_setting('frontpageblocks')) {
+    echo '<section id="region-main" class="span9 pull-right">';
+} else {
+    echo '<section id="region-main" class="span9 desktop-first-column">';
+}
+echo $OUTPUT->course_content_header();
+echo $OUTPUT->main_content();
+echo $OUTPUT->course_content_footer();
+echo '</section>';
+if (\theme_essential\toolbox::get_setting('frontpageblocks')) {
+    echo $OUTPUT->blocks('side-pre', 'span3 desktop-first-column');
+} else {
+    echo $OUTPUT->blocks('side-pre', 'span3 pull-right');
+}
+?>
+            </section>
         </div>
 
         <!-- End Main Regions -->
@@ -179,18 +204,14 @@ if ($enable1alert || $enable2alert || $enable3alert) {
                     <?php echo $OUTPUT->blocks('hidden-dock'); ?>
                 </div>
             </div>
-        <?php } ?>
+<?php
+}
+?>
 
     </section>
 </div>
 
-<?php require_once($OUTPUT->get_include_file('footer')); ?>
+<?php require_once(\theme_essential\toolbox::get_tile_file('footer')); ?>
 
-<!-- Initialize slideshow -->
-<script type="text/javascript">
-    jQuery(document).ready(function () {
-        $('.carousel').carousel();
-    });
-</script>
 </body>
 </html>

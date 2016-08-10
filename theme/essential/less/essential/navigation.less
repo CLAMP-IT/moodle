@@ -1,15 +1,38 @@
 /* @group Navbar */
+@import "../fontawesome/variables";
 
-/* @group Custom Menu */
+#page-header {
+  margin-top: @navbarHeight;
+  &.oldnavbar {
+    margin-top: 0;
+    margin-bottom: @navbarHeight;
+  }
+}
+
+#essentialnavbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 200;
+}
+
+@media(min-width: @navbarCollapseDesktopWidth) {
+  .pagewidthnarrow {
+    #page-header {
+      margin-top: @navbarHeight * 2;
+      &.oldnavbar {
+        margin-top: 0;
+        margin-bottom: @navbarHeight * 2;
+      }
+    }
+  }
+}
 
 .navbar {
   margin-bottom: 0px;
-  position: fixed;
   width: 100%;
-  top: 0px;
-  right: 0px;
   background-image: none;
-  z-index: 200;
 
   .navbar-inner {
     .reset-filter();
@@ -72,7 +95,7 @@
       text-decoration: none;
     }
 
-    .dropdown .fa {
+    .dropdown .@{fa-css-prefix} {
       margin-right: 5px;
     }
 
@@ -84,7 +107,6 @@
     }
 
     .dropdown-menu {
-      z-index: 200;
       margin: 0px;
     }
 
@@ -93,39 +115,51 @@
       padding: 3px 25px 3px 15px;
     }
 
-    .dropdown-menu > li > a:hover .fa {
+    #custom_menu_courses {
+      .dropdown-menu > li > a,
+      .dropdown-submenu > a {
+        margin: 0;
+        padding: 0;
+        > span {
+          display: block;
+          padding: 3px 25px 3px 15px;
+        }
+      }
+    }
+
+    .dropdown-menu > li > a:hover .@{fa-css-prefix} {
       color: @dropdownLinkColorHover;
     }
 
     .nav > li.dropdown a,
     .nav > li > a {
       text-shadow: none;
-      .fa-caret-right:before {
+      .@{fa-css-prefix}-caret-right:before {
         margin-left: 5px;
         margin-right: 3px;
         /*@replace: "\f0d9"*/content: "\f0da";
       }
       &:hover {
         background-image: none;
-        .fa-caret-right:before {
+        .@{fa-css-prefix}-caret-right:before {
           content: "\f0d7";
           margin-right: 0px;
         }
       }
     }
     .nav > li.dropdown.open a {
-      .fa-caret-right:before {
+      .@{fa-css-prefix}-caret-right:before {
         content: "\f0d7";
         margin-right: 0px;
       }
     }
+    .nav > li > a .@{fa-css-prefix} {
+      color: inherit;
+    }
 
     .nav > li.dropdown ul.dropdown-menu > li > a {
       &:hover, &.open {
-        .fa {
-            color: @dropdownLinkColorHover;
-        }
-        > .dimmed_text .fa {
+        > .dimmed_text .@{fa-css-prefix} {
             color: @grayLighter;
         }
       }
@@ -137,7 +171,8 @@
 
     .messagemenu,
     .usermenu,
-    .gotobottommenu {
+    .gotobottommenu,
+    .editingmenu {
       float: right;
     }
 
@@ -151,6 +186,7 @@
           max-height: 20px;
           border-radius: 4px;
           margin-right: 2px;
+          background-color: @white;
         }
         a.dropdown-toggle {
           padding: 9px 15px;
@@ -162,7 +198,7 @@
         }
         ul.dropdown-menu {
           margin: 0px;
-          i {
+          .@{fa-css-prefix} {
             margin-right: 5px;
             width: 15px;
           }
@@ -177,7 +213,7 @@
 
     .messagemenu {
       ul.nav {
-        > li > a > .fa {
+        > li > a > .@{fa-css-prefix} {
           margin-left: 5px;
         }
         ul.dropdown-menu {
@@ -186,11 +222,11 @@
           margin: 0px;
           li > a {
             padding: 0px;
-            background: #fff;
+            background: @white;
             overflow: hidden;
             > .message {
               padding: 5px 10px;
-              i {
+              .@{fa-css-prefix} {
                 margin: 0px 5px;
               }
               .msg-picture {
@@ -208,6 +244,7 @@
               }
               &.unread {
                 background: @grayLighter;
+                margin: 0;
                 .msg-text {
                   font-weight: 700;
                 }
@@ -241,6 +278,7 @@
               }
               &.unread {
                 background: @grayLighter;
+                margin: 0;
                 .msg-text {
                   font-weight: 700;
                 }
@@ -266,27 +304,58 @@
       }
     }
   }
+  .@{fa-css-prefix} {
+    color: inherit;
+  }
+}
+
+@media (max-width: @navbarCollapseWidth) {
+  .navbar {
+    .navbar-inner {
+      #custom_menu_language,
+      #custom_menu_courses,
+      #custom_menu_themecolours,
+      #custom_menu_activitystream,
+      #custom_menu {
+        display: inline;
+      }
+    }
+  }
+}
+
+.pagelayout-secure .navbar,
+.pagelayout-popup .navbar {
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .loggedin #essentialnavbar.oldnavbar.affix-top .navbar .navbar-inner .custommenus .usermenu ul.nav .dropdown > .dropdown-toggle {
+    font-size: 12px;
+    margin: 0;
+    padding-top: 20px;
+    padding-bottom: 0;
+    text-align: center;
+    width: 100px;
+    max-width: 100px;
+    img.userpicture {
+      position: absolute;
+      top: -50px;
+      right: 32px;
+      width: 64px;
+      height: 64px;
+      max-width: 64px;
+      max-height: 64px;
+    }
+  }
 }
 
 /* @end */
 
 /* @group Theme Colours Menu */
 a {
-  .colours-default, .colours-alternative1, .colours-alternative2, .colours-alternative3 {
+  .colours-default, .colours-alternative1, .colours-alternative2, .colours-alternative3, .colours-alternative4 {
     box-shadow: rgba(255, 255, 255, 0.8) 0px 0px 2px 3px;
     border-radius: 2px;
   }
 }
-/* @end */
-
-.navbar.oldnavbar,
-.pagelayout-secure .navbar,
-.pagelayout-popup .navbar {
-  position: relative;
-}
-
-.navbar.oldnavbar.affix {
-  position: fixed;
-}
-
 /* @end */
