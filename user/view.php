@@ -179,8 +179,11 @@ if ($node = $PAGE->settingsnav->get('courseadmin')) {
 echo $OUTPUT->header();
 
 echo '<div class="userprofile">';
-$namewithpronoun = fullname($user) . " ($user->alternatename) <a title='Preferred name and pronoun FAQ' href='https://www.hampshire.edu/it/preferred-name-and-pronoun-faq' target='_blank'><img src='{$CFG->wwwroot}/pix/docs.svg' alt='Preferred name and pronoun FAQ' /></a>";
-$headerinfo = array('heading' => $namewithpronoun, 'user' => $user, 'usercontext' => $usercontext);
+$headerinfo = array('heading' => fullname($user), 'user' => $user, 'usercontext' => $usercontext);
+if (isset($CFG->hampshire_display_pronouns)) {
+    $namewithpronoun = fullname($user) . " ($user->alternatename) <a title='Preferred name and pronoun FAQ' href='https://www.hampshire.edu/it/preferred-name-and-pronoun-faq' target='_blank'><img src='{$CFG->wwwroot}/pix/docs.svg' alt='Preferred name and pronoun FAQ' /></a>";
+    $headerinfo = array('heading' => $namewithpronoun, 'user' => $user, 'usercontext' => $usercontext);
+}
 echo $OUTPUT->context_header($headerinfo, 2);
 
 if ($user->deleted) {
