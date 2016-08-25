@@ -31,12 +31,10 @@ before_script:
   - mkdir -m777 -p $HOME/bht_moodledata
   - if [ -d \"$HOME/phpu_moodledata\" ]; then rm -rf $HOME/phpu_moodledata; fi
   - mkdir -m777 -p $HOME/phpu_moodledata
-  - ps -Af | grep selenium
   - composer config preferred-install dist
   - composer self-update
   - composer install
   - locale-gen en_AU.UTF-8
-  - cat config.php
   - php admin/tool/phpunit/cli/init.php
   - php admin/tool/behat/cli/init.php
   - (php -S localhost:8000 -t /var/www/moodle/htdocs &) 2> /dev/null > /dev/null
@@ -45,7 +43,7 @@ before_script:
 job1:
   script:
     - vendor/bin/phpunit /var/www/moodle/htdocs/local/provisional_enrolments/tests/provisional_enrolments_test.php
-    - vendor/bin/behat --config /root/bht_moodledata/behat/behat.yml --ansi --format=pretty --tags "@blocks_course_description,@course_format_class,@blocks_library,@local_provisional_enrolments,@block_provisional_enrolments"
+    - vendor/bin/behat --config /root/bht_moodledata/behat/behat.yml --ansi --format=pretty --tags "@blocks_course_description,@course_format_class,@blocks_library,@local_provisional_enrolments,@block_provisional_enrolments,@local_cohort_sync"
 
 variables:
   DB_USER: 'moodle'
