@@ -61,3 +61,6 @@
 [submodule "blocks/provisional_enrolments"]
 	path = blocks/provisional_enrolments
 	url = https://gitlab.hampshire.edu/moodle/block_provisional_enrolments.git
+[submodule "local/hamp"]
+	path = local/hamp
+	url = https://gitlab.hampshire.edu/moodle/local_hamp.git
