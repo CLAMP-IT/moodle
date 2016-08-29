@@ -3230,22 +3230,10 @@ function user_not_fully_set_up($user, $strict = true) {
     if (isguestuser($user)) {
         return false;
     }
-
-    if (empty($user->firstname) or empty($user->lastname) or empty($user->email) or over_bounce_threshold($user)) {
-        return true;
+    if (isset($user->mononymous) && $user->mononymous == 1) {
+        return (empty($user->firstname) or empty($user->email) or over_bounce_threshold($user));
     }
-
-    if ($strict) {
-        if (empty($user->id)) {
-            // Strict mode can be used with existing accounts only.
-            return true;
-        }
-        if (!profile_has_required_custom_fields_set($user->id)) {
-            return true;
-        }
-    }
-
-    return false;
+    return (empty($user->firstname) or empty($user->lastname) or empty($user->email) or over_bounce_threshold($user));
 }
 
 /**
@@ -3361,10 +3349,32 @@ function ismoving($courseid) {
  * @return string
  */
 function fullname($user, $override=false) {
-    global $CFG, $SESSION;
+    global $CFG, $SESSION, $DB;
 
     if (!isset($user->firstname) and !isset($user->lastname)) {
         return '';
+    }
+
+    $mononymous = '';
+
+    if (property_exists($user, 'id')) {
+        $sql = 'SELECT uid.data FROM {user_info_data} uid
+                    JOIN {user_info_field} uif
+                    ON uid.fieldid = uif.id
+                    WHERE uid.userid = :userid
+                    AND uif.shortname = :shortname';
+
+        $mononymous = $DB->get_record_sql($sql, array(
+                                                    'userid'    => $user->id,
+                                                    'shortname' => 'mononymous',
+                                                ));
+    }
+
+    $user->mononymous = 0;
+
+    if (is_object($mononymous) && ($mononymous->data == 1)) {
+        $user->lastname = '';
+        $user->mononymous = 1;
     }
 
     // Get all of the name fields.
