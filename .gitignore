@@ -10,6 +10,8 @@
 # See gitignore(5) man page for more details
 #
 /config.php
+/auth/wes/cli/inc/
+/enrol/wessync/inc/
 /lib/editor/tinymce/extra/tools/temp/
 *~
 *.swp
