@@ -3263,16 +3263,21 @@ function fullname($user, $override=false) {
         return '';
     }
 
-    $sql = 'SELECT uid.data FROM {user_info_data} uid
-                JOIN {user_info_field} uif
-                ON uid.fieldid = uif.id
-                WHERE uid.userid = :userid
-                AND uif.shortname = :shortname';
+    $mononymous = '';
 
-    $mononymous = $DB->get_record_sql($sql, array(
-                                                'userid'    => $user->id,
-                                                'shortname' => 'mononymous',
-                                            ));
+    if (property_exists($user, 'id')) {
+        $sql = 'SELECT uid.data FROM {user_info_data} uid
+                    JOIN {user_info_field} uif
+                    ON uid.fieldid = uif.id
+                    WHERE uid.userid = :userid
+                    AND uif.shortname = :shortname';
+
+        $mononymous = $DB->get_record_sql($sql, array(
+                                                    'userid'    => $user->id,
+                                                    'shortname' => 'mononymous',
+                                                ));
+    }
+
     $user->mononymous = 0;
 
     if (is_object($mononymous) && ($mononymous->data == 1)) {
