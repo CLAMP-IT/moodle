@@ -10,14 +10,12 @@ define('CLI_SCRIPT', true);
 require(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
 
 // Ensure errors are well explained
-$CFG->debug = DEBUG_NORMAL;
+$CFG->debug = DEBUG_ALL;
 
 require_once($CFG->dirroot . '/lib/gradelib.php');
-
 if (!enrol_is_enabled('wessync')) {
     die;
 }
-
 // Update enrolments -- these handlers should autocreate courses if required
 $enrol = enrol_get_plugin('wessync');
 require(dirname(dirname(__FILE__)).'/helperlib.php');
@@ -208,6 +206,7 @@ function ldap_enrol ($enrol,$lock) {
   global $DB;
   $ldapauth = get_auth_plugin('cas');
   $ldapconnection = $ldapauth->ldap_connect();
+   
   #format is Moodle ShortName => array of AD groups
   $one_off_syncs = array( 'CBC-Disc' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
                           'Staff-Disc' => array('list_ben_astf'),
@@ -216,16 +215,21 @@ function ldap_enrol ($enrol,$lock) {
                           'Hughes2013' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
                      'ScienceResearch2014' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
                      'ScienceResearch2015' => array('PSYC-group','CHEM-group','BIOL-group','E&ES-group','MATH-group','PHYS-group','MB&B-group','NS&B-group','ASTR-group'),
-                          'Host-Training' => array('2015'),
+                        'Host-Training' => array('2017'),
                         'Inter' => array('department_chairs'),
                         'TeachEval' => array('list_all_faculty'),
+                        'EPC-Disc' => array('list_all_faculty'),
+
                         'TenureReps' => array('tenure_track'),
                         'Moodle Help' => array('all-facstaff'),
                         'Intensive Semester' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
                         'Telepresence Teaching' => array('list_all_faculty','list_librarians','list_admin_fac_priv'),
                         'GWR' => array('ad_moodle_gwr'),
+                        'FACDB2016' => array('list_all_faculty','list_admin_fac_priv'),
                         'FacultyDB' => array('list_all_faculty','list_admin_fac_priv'),
                         'Coursera' => array('list_all_faculty','all-emeriti'),
+                        'Classroom Technology Orientation' => array('all-facstaff'),
+
 	);
 
 
@@ -240,7 +244,7 @@ function ldap_enrol ($enrol,$lock) {
       $group_members = get_from_ad($ldap_group,$ldapconnection);
       $authoritative_members = array_merge($authoritative_members,$group_members);
     }
-    $results = $enrol->sync_course_membership_by_role($moodle_course,$authoritative_members,"5");
+    $results = $enrol->sync_course_membership_by_role($moodle_course,$authoritative_members,"9");
     $master_results[$results['courseinfo']]['student_sync'] = $results;
   }
   return $master_results;
