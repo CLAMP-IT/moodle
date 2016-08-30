@@ -3264,7 +3264,7 @@ function fullname($user, $override=false) {
     $allnames = get_all_user_name_fields();
     if ($CFG->debugdeveloper) {
         foreach ($allnames as $allname) {
-            if (!array_key_exists($allname, $user)) {
+            if (!property_exists($user, $allname)) {
                 // If all the user name fields are not set in the user object, then notify the programmer that it needs to be fixed.
                 debugging('You need to update your sql to include additional name fields in the user object.', DEBUG_DEVELOPER);
                 // Message has been sent, no point in sending the message multiple times.
@@ -4284,7 +4284,7 @@ function authenticate_user_login($username, $password, $ignorelockout=false, &$f
  * @return stdClass A {@link $USER} object - BC only, do not use
  */
 function complete_user_login($user) {
-    global $CFG, $USER;
+    global $CFG, $USER, $SESSION;
 
     \core\session\manager::login_user($user);
 
@@ -4327,6 +4327,7 @@ function complete_user_login($user) {
             if ($changeurl = $userauth->change_password_url()) {
                 redirect($changeurl);
             } else {
+                $SESSION->wantsurl = core_login_get_return_url();
                 redirect($CFG->httpswwwroot.'/login/change_password.php');
             }
         } else {
@@ -6097,9 +6098,10 @@ function valid_uploaded_file($newfile) {
  * @param int $sitebytes Set maximum size
  * @param int $coursebytes Current course $course->maxbytes (in bytes)
  * @param int $modulebytes Current module ->maxbytes (in bytes)
+ * @param bool $unused This parameter has been deprecated and is not used any more.
  * @return int The maximum size for uploading files.
  */
-function get_max_upload_file_size($sitebytes=0, $coursebytes=0, $modulebytes=0) {
+function get_max_upload_file_size($sitebytes=0, $coursebytes=0, $modulebytes=0, $unused = false) {
 
     if (! $filesize = ini_get('upload_max_filesize')) {
         $filesize = '5M';
@@ -6138,9 +6140,11 @@ function get_max_upload_file_size($sitebytes=0, $coursebytes=0, $modulebytes=0) 
  * @param int $coursebytes Current course $course->maxbytes (in bytes)
  * @param int $modulebytes Current module ->maxbytes (in bytes)
  * @param stdClass $user The user
+ * @param bool $unused This parameter has been deprecated and is not used any more.
  * @return int The maximum size for uploading files.
  */
-function get_user_max_upload_file_size($context, $sitebytes = 0, $coursebytes = 0, $modulebytes = 0, $user = null) {
+function get_user_max_upload_file_size($context, $sitebytes = 0, $coursebytes = 0, $modulebytes = 0, $user = null,
+        $unused = false) {
     global $USER;
 
     if (empty($user)) {
@@ -7532,7 +7536,7 @@ function count_words($string) {
     // Replace underscores (which are classed as word characters) with spaces.
     $string = preg_replace('/_/u', ' ', $string);
     // Remove any characters that shouldn't be treated as word boundaries.
-    $string = preg_replace('/[\'’-]/u', '', $string);
+    $string = preg_replace('/[\'"’-]/u', '', $string);
     // Remove dots and commas from within numbers only.
     $string = preg_replace('/([0-9])[.,]([0-9])/u', '$1$2', $string);
 
@@ -8404,7 +8408,7 @@ function address_in_subnet($addr, $subnetstr) {
  */
 function mtrace($string, $eol="\n", $sleep=0) {
 
-    if (defined('STDOUT') and !PHPUNIT_TEST) {
+    if (defined('STDOUT') && !PHPUNIT_TEST && !defined('BEHAT_TEST')) {
         fwrite(STDOUT, $string.$eol);
     } else {
         echo $string . $eol;

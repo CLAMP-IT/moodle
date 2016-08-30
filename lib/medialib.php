@@ -494,7 +494,8 @@ class core_media_player_vimeo extends core_media_player_external {
         $output = <<<OET
 <span class="mediaplugin mediaplugin_vimeo">
 <iframe title="$info" src="https://player.vimeo.com/video/$videoid"
-  width="$width" height="$height" frameborder="0"></iframe>
+  width="$width" height="$height" frameborder="0"
+  webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 </span>
 OET;
 
@@ -1122,8 +1123,8 @@ OET;
                 // is a simplified version, does not take into account old browser
                 // versions or manual plugins.
                 if ($ext === 'ogv' || $ext === 'webm') {
-                    // Formats .ogv and .webm are not supported in IE or Safari.
-                    if (core_useragent::is_ie() || core_useragent::is_safari()) {
+                    // Formats .ogv and .webm are not supported in IE, Edge or Safari.
+                    if (core_useragent::is_ie() || core_useragent::is_edge() || core_useragent::is_safari()) {
                         continue;
                     }
                 } else {
@@ -1176,7 +1177,7 @@ class core_media_player_html5audio extends core_media_player {
         $fallback = core_media_player::PLACEHOLDER;
 
         return <<<OET
-<audio controls="true" $size class="mediaplugin mediaplugin_html5audio" preload="no" title="$title">
+<audio controls="true" $size class="mediaplugin mediaplugin_html5audio" preload="none" title="$title">
 $sources
 $fallback
 </audio>
@@ -1194,8 +1195,8 @@ OET;
             $ext = core_media::get_extension($url);
             if (in_array($ext, $extensions)) {
                 if ($ext === 'ogg' || $ext === 'oga') {
-                    // Formats .ogg and .oga are not supported in IE or Safari.
-                    if (core_useragent::is_ie() || core_useragent::is_safari()) {
+                    // Formats .ogg and .oga are not supported in IE, Edge, or Safari.
+                    if (core_useragent::is_ie() || core_useragent::is_edge() || core_useragent::is_safari()) {
                         continue;
                     }
                 } else {

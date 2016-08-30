@@ -408,7 +408,7 @@ class mod_assign_external extends external_api {
                     if ($assign->show_intro()) {
 
                         list($assignment['intro'], $assignment['introformat']) = external_format_text($module->intro,
-                            $module->introformat, $context->id, 'mod_assign', ASSIGN_INTROATTACHMENT_FILEAREA, 0);
+                            $module->introformat, $context->id, 'mod_assign', 'intro', null);
 
                         $fs = get_file_storage();
                         if ($files = $fs->get_area_files($context->id, 'mod_assign', ASSIGN_INTROATTACHMENT_FILEAREA,
@@ -1679,9 +1679,12 @@ class mod_assign_external extends external_api {
 
         $notices = array();
 
-        $submissiondata = (object)$params['plugindata'];
-
-        $assignment->save_submission($submissiondata, $notices);
+        if (!$assignment->submissions_open($USER->id)) {
+            $notices[] = get_string('duedatereached', 'assign');
+        } else {
+            $submissiondata = (object)$params['plugindata'];
+            $assignment->save_submission($submissiondata, $notices);
+        }
 
         $warnings = array();
         foreach ($notices as $notice) {

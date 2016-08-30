@@ -227,6 +227,7 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
         populateDuration : function() {
             var select = this.get(UEP.BASE).one('.'+CSS.ENROLMENTOPTION+'.'+CSS.DURATION+' select');
             var defaultvalue = this.get(UEP.DEFAULTDURATION);
+            var prefix = Math.round(defaultvalue) != defaultvalue ? '≈' : '';
             var index = 0, count = 0;
             var durationdays = M.util.get_string('durationdays', 'enrol', '{a}');
             for (var i = 1; i <= 365; i++) {
@@ -236,6 +237,11 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
                     index = count;
                 }
                 select.append(option);
+            }
+            if (!index && defaultvalue > 0) {
+                select.append(create('<option value="'+defaultvalue+'">'+durationdays.replace('{a}',
+                    prefix + (Math.round(defaultvalue * 100) / 100))+'</option>'));
+                index = ++count;
             }
             select.set('selectedIndex', index);
         },
@@ -291,6 +297,13 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
                 y = parseInt(base.get('winHeight'))*0.1;
             }
             base.setXY([x,y]);
+            var zindex = 0;
+            Y.all('.moodle-has-zindex').each(function() {
+                if (parseInt(this.getComputedStyle('zIndex'), 10) > zindex) {
+                    zindex = parseInt(this.getComputedStyle('zIndex'), 10);
+                }
+            });
+            base.setStyle('zIndex', zindex + 1);
 
             if (this.get(UEP.USERS)===null) {
                 this.search(e, false);

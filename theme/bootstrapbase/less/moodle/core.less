@@ -858,8 +858,11 @@ tr.flagged-tag a {
     position: relative;
 }
 .tag-management-table tr td.tageditingon .edittagname .editinstructions {
-    margin-right: -300px;
+    margin-right: 0;
     margin-left: 0;
+    left: 0;
+    right: auto;
+    white-space: nowrap;
 }
 .tag-management-table tr td .tagnameedit img {
     opacity: 0.2;
@@ -1078,7 +1081,7 @@ body.tag .managelink {
     float: right;
     padding: 3px;
     margin: 3px;
-    > *:hover {
+    > a:hover {
         border-bottom:1px solid #666;
     }
 }
@@ -1196,6 +1199,21 @@ body.tag .managelink {
 /**
 * Overide for RTL layout
 **/
+.dir-rtl {
+    .tag-management-table {
+        tr {
+            td.tageditingon {
+                .edittagname {
+                    .editinstructions {
+                        right: 0;
+                        left: auto;
+                    }
+                }
+            }
+        }
+    }
+}
+
 .dir-rtl .headermain {
     float: right;
 }
@@ -1678,6 +1696,18 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
     overflow-y: auto;
     max-width: 20.3em;
     .box-shadow(inset 0 0 30px 0px #ccc);
+    .option {
+        input[type=radio] {
+            display: inline-block;
+        }
+        .modicon {
+            display: inline-block;
+        }
+        .typename {
+            display: inline-block;
+            width: 65%;
+        }
+    }
 }
 .dir-rtl.jschooser .choosercontainer #chooseform .alloptions {
     max-width: 18.3em;

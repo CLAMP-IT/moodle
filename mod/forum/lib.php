@@ -764,12 +764,6 @@ function forum_cron() {
                     'Auto-Submitted: auto-generated',
                 );
 
-                if ($post->parent) {
-                    // This post is a reply, so add headers for threading (see MDL-22551).
-                    $userfrom->customheaders[] = 'In-Reply-To: ' . forum_get_email_message_id($post->parent, $userto->id, $hostname);
-                    $userfrom->customheaders[] = 'References: '  . forum_get_email_message_id($post->parent, $userto->id, $hostname);
-                }
-
                 $shortname = format_string($course->shortname, true, array('context' => context_course::instance($course->id)));
 
                 // Generate a reply-to address from using the Inbound Message handler.
@@ -807,6 +801,30 @@ function forum_cron() {
                 $a->forumname = $cleanforumname;
                 $a->subject = $data->get_subject();
                 $postsubject = html_to_text(get_string('postmailsubject', 'forum', $a), 0);
+
+                $rootid = forum_get_email_message_id($discussion->firstpost, $userto->id, $hostname);
+
+                if ($post->parent) {
+                    // This post is a reply, so add reply header (RFC 2822).
+                    $parentid = forum_get_email_message_id($post->parent, $userto->id, $hostname);
+                    $userfrom->customheaders[] = "In-Reply-To: $parentid";
+
+                    // If the post is deeply nested we also reference the parent message id and
+                    // the root message id (if different) to aid threading when parts of the email
+                    // conversation have been deleted (RFC1036).
+                    if ($post->parent != $discussion->firstpost) {
+                        $userfrom->customheaders[] = "References: $rootid $parentid";
+                    } else {
+                        $userfrom->customheaders[] = "References: $parentid";
+                    }
+                }
+
+                // MS Outlook / Office uses poorly documented and non standard headers, including
+                // Thread-Topic which overrides the Subject and shouldn't contain Re: or Fwd: etc.
+                $a->subject = $discussion->name;
+                $threadtopic = html_to_text(get_string('postmailsubject', 'forum', $a), 0);
+                $userfrom->customheaders[] = "Thread-Topic: $threadtopic";
+                $userfrom->customheaders[] = "Thread-Index: " . substr($rootid, 1, 28);
 
                 // Send the post now!
                 mtrace('Sending ', '');
@@ -1000,7 +1018,7 @@ function forum_cron() {
 
                 $headerdata = new stdClass();
                 $headerdata->sitename = format_string($site->fullname, true);
-                $headerdata->userprefs = $CFG->wwwroot.'/user/edit.php?id='.$userid.'&amp;course='.$site->id;
+                $headerdata->userprefs = $CFG->wwwroot.'/user/forum.php?id='.$userid.'&amp;course='.$site->id;
 
                 $posttext = get_string('digestmailheader', 'forum', $headerdata)."\n\n";
                 $headerdata->userprefs = '<a target="_blank" href="'.$headerdata->userprefs.'">'.get_string('digestmailprefs', 'forum').'</a>';
@@ -1398,8 +1416,11 @@ function forum_print_overview($courses,&$htmlarray) {
                 .'JOIN {forum_posts} p ON p.discussion = d.id '
                 ."WHERE ($coursessql) "
                 .'AND p.userid != ? '
+                .'AND (d.timestart <= ? AND (d.timeend = 0 OR d.timeend > ?)) '
                 .'GROUP BY d.id, d.forum, d.course, d.groupid '
                 .'ORDER BY d.course, d.forum';
+    $params[] = time();
+    $params[] = time();
 
     // Avoid warnings.
     if (!$discussions = $DB->get_records_sql($sql, $params)) {
@@ -1444,8 +1465,12 @@ function forum_print_overview($courses,&$htmlarray) {
             $params[] = $groupid;
         }
         $sql = substr($sql,0,-3); // take off the last OR
-        $sql .= ') AND p.modified >= ? AND r.id is NULL GROUP BY d.forum,d.course';
+        $sql .= ') AND p.modified >= ? AND r.id is NULL ';
+        $sql .= 'AND (d.timestart < ? AND (d.timeend = 0 OR d.timeend > ?)) ';
+        $sql .= 'GROUP BY d.forum,d.course';
         $params[] = $cutoffdate;
+        $params[] = time();
+        $params[] = time();
 
         if (!$unread = $DB->get_records_sql($sql, $params)) {
             $unread = array();
@@ -2095,18 +2120,21 @@ function forum_get_unmailed_posts($starttime, $endtime, $now=null) {
         if (empty($now)) {
             $now = time();
         }
+        $selectsql = "AND (p.created >= :ptimestart OR d.timestart >= :pptimestart)";
+        $params['pptimestart'] = $starttime;
         $timedsql = "AND (d.timestart < :dtimestart AND (d.timeend = 0 OR d.timeend > :dtimeend))";
         $params['dtimestart'] = $now;
         $params['dtimeend'] = $now;
     } else {
         $timedsql = "";
+        $selectsql = "AND p.created >= :ptimestart";
     }
 
     return $DB->get_records_sql("SELECT p.*, d.course, d.forum
                                  FROM {forum_posts} p
                                  JOIN {forum_discussions} d ON d.id = p.discussion
                                  WHERE p.mailed = :mailed
-                                 AND p.created >= :ptimestart
+                                 $selectsql
                                  AND (p.created < :ptimeend OR p.mailnow = :mailnow)
                                  $timedsql
                                  ORDER BY p.modified ASC", $params);
@@ -3695,7 +3723,7 @@ function forum_print_discussion_header(&$post, $forum, $group = -1, $datestring 
                     echo $post->unread;
                     echo '</a>';
                     echo '<a title="'.$strmarkalldread.'" href="'.$CFG->wwwroot.'/mod/forum/markposts.php?f='.
-                         $forum->id.'&amp;d='.$post->discussion.'&amp;mark=read&amp;returnpage=view.php">' .
+                         $forum->id.'&amp;d='.$post->discussion.'&amp;mark=read&amp;returnpage=view.php&amp;sesskey=' . sesskey() . '">' .
                          '<img src="'.$OUTPUT->pix_url('t/markasread') . '" class="iconsmall" alt="'.$strmarkalldread.'" /></a>';
                     echo '</span>';
                 } else {
@@ -4769,22 +4797,28 @@ function forum_get_subscribe_link($forum, $context, $messages = array(), $cantac
 }
 
 /**
- * Returns true if user created new discussion already
+ * Returns true if user created new discussion already.
  *
- * @global object
- * @global object
- * @param int $forumid
- * @param int $userid
+ * @param int $forumid  The forum to check for postings
+ * @param int $userid   The user to check for postings
+ * @param int $groupid  The group to restrict the check to
  * @return bool
  */
-function forum_user_has_posted_discussion($forumid, $userid) {
+function forum_user_has_posted_discussion($forumid, $userid, $groupid = null) {
     global $CFG, $DB;
 
     $sql = "SELECT 'x'
               FROM {forum_discussions} d, {forum_posts} p
-             WHERE d.forum = ? AND p.discussion = d.id AND p.parent = 0 and p.userid = ?";
+             WHERE d.forum = ? AND p.discussion = d.id AND p.parent = 0 AND p.userid = ?";
 
-    return $DB->record_exists_sql($sql, array($forumid, $userid));
+    $params = [$forumid, $userid];
+
+    if ($groupid) {
+        $sql .= " AND d.groupid = ?";
+        $params[] = $groupid;
+    }
+
+    return $DB->record_exists_sql($sql, $params);
 }
 
 /**
@@ -4900,7 +4934,7 @@ function forum_user_can_post_discussion($forum, $currentgroup=null, $unused=-1, 
     }
 
     if ($forum->type == 'eachuser') {
-        if (forum_user_has_posted_discussion($forum->id, $USER->id)) {
+        if (forum_user_has_posted_discussion($forum->id, $USER->id, $currentgroup)) {
             return false;
         }
     }
@@ -5387,7 +5421,7 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions = -1, $
                 if ($forumtracked) {
                     echo '<a title="'.get_string('markallread', 'forum').
                          '" href="'.$CFG->wwwroot.'/mod/forum/markposts.php?f='.
-                         $forum->id.'&amp;mark=read&amp;returnpage=view.php">'.
+                         $forum->id.'&amp;mark=read&amp;returnpage=view.php&amp;sesskey=' . sesskey() . '">'.
                          '<img src="'.$OUTPUT->pix_url('t/markasread') . '" class="iconsmall" alt="'.get_string('markallread', 'forum').'" /></a>';
                 }
                 echo '</th>';

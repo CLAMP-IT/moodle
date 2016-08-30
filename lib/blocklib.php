@@ -1093,38 +1093,36 @@ class block_manager {
         }
 
         // Display either "Assign roles" or "Permissions" or "Change permissions" icon (whichever first is available).
-        if ($this->page->pagetype != 'my-index') {
-            $rolesurl = null;
+        $rolesurl = null;
 
-            if (get_assignable_roles($block->context, ROLENAME_SHORT)) {
-                $rolesurl = new moodle_url('/admin/roles/assign.php', array('contextid' => $block->context->id));
-                $str = new lang_string('assignrolesinblock', 'block', $blocktitle);
-                $icon = 'i/assignroles';
-            } else if (has_capability('moodle/role:review', $block->context) or get_overridable_roles($block->context)) {
-                $rolesurl = new moodle_url('/admin/roles/permissions.php', array('contextid' => $block->context->id));
-                $str = get_string('permissions', 'role');
-                $icon = 'i/permissions';
-            } else if (has_any_capability(array('moodle/role:assign', 'moodle/role:safeoverride', 'moodle/role:override', 'moodle/role:assign'), $block->context)) {
-                $rolesurl = new moodle_url('/admin/roles/check.php', array('contextid' => $block->context->id));
-                $str = get_string('checkpermissions', 'role');
-                $icon = 'i/checkpermissions';
-            }
+        if (get_assignable_roles($block->context, ROLENAME_SHORT)) {
+            $rolesurl = new moodle_url('/admin/roles/assign.php', array('contextid' => $block->context->id));
+            $str = new lang_string('assignrolesinblock', 'block', $blocktitle);
+            $icon = 'i/assignroles';
+        } else if (has_capability('moodle/role:review', $block->context) or get_overridable_roles($block->context)) {
+            $rolesurl = new moodle_url('/admin/roles/permissions.php', array('contextid' => $block->context->id));
+            $str = get_string('permissions', 'role');
+            $icon = 'i/permissions';
+        } else if (has_any_capability(array('moodle/role:safeoverride', 'moodle/role:override', 'moodle/role:assign'), $block->context)) {
+            $rolesurl = new moodle_url('/admin/roles/check.php', array('contextid' => $block->context->id));
+            $str = get_string('checkpermissions', 'role');
+            $icon = 'i/checkpermissions';
+        }
 
-            if ($rolesurl) {
-                //TODO: please note it is sloppy to pass urls through page parameters!!
-                //      it is shortened because some web servers (e.g. IIS by default) give
-                //      a 'security' error if you try to pass a full URL as a GET parameter in another URL.
-                $return = $this->page->url->out(false);
-                $return = str_replace($CFG->wwwroot . '/', '', $return);
-                $rolesurl->param('returnurl', $return);
+        if ($rolesurl) {
+            // TODO: please note it is sloppy to pass urls through page parameters!!
+            //      it is shortened because some web servers (e.g. IIS by default) give
+            //      a 'security' error if you try to pass a full URL as a GET parameter in another URL.
+            $return = $this->page->url->out(false);
+            $return = str_replace($CFG->wwwroot . '/', '', $return);
+            $rolesurl->param('returnurl', $return);
 
-                $controls[] = new action_menu_link_secondary(
-                    $rolesurl,
-                    new pix_icon($icon, $str, 'moodle', array('class' => 'iconsmall', 'title' => '')),
-                    $str,
-                    array('class' => 'editing_roles')
-                );
-            }
+            $controls[] = new action_menu_link_secondary(
+                $rolesurl,
+                new pix_icon($icon, $str, 'moodle', array('class' => 'iconsmall', 'title' => '')),
+                $str,
+                array('class' => 'editing_roles')
+            );
         }
 
         if ($this->user_can_delete_block($block)) {
@@ -2063,21 +2061,31 @@ function blocks_delete_instance($instance, $nolongerused = false, $skipblockstab
 function blocks_delete_instances($instanceids) {
     global $DB;
 
-    $instances = $DB->get_recordset_list('block_instances', 'id', $instanceids);
-    foreach ($instances as $instance) {
-        blocks_delete_instance($instance, false, true);
+    $limit = 1000;
+    $count = count($instanceids);
+    $chunks = [$instanceids];
+    if ($count > $limit) {
+        $chunks = array_chunk($instanceids, $limit);
     }
-    $instances->close();
 
-    $DB->delete_records_list('block_positions', 'blockinstanceid', $instanceids);
-    $DB->delete_records_list('block_instances', 'id', $instanceids);
+    // Perform deletion for each chunk.
+    foreach ($chunks as $chunk) {
+        $instances = $DB->get_recordset_list('block_instances', 'id', $chunk);
+        foreach ($instances as $instance) {
+            blocks_delete_instance($instance, false, true);
+        }
+        $instances->close();
 
-    $preferences = array();
-    foreach ($instanceids as $instanceid) {
-        $preferences[] = 'block' . $instanceid . 'hidden';
-        $preferences[] = 'docked_block_instance_' . $instanceid;
+        $DB->delete_records_list('block_positions', 'blockinstanceid', $chunk);
+        $DB->delete_records_list('block_instances', 'id', $chunk);
+
+        $preferences = array();
+        foreach ($chunk as $instanceid) {
+            $preferences[] = 'block' . $instanceid . 'hidden';
+            $preferences[] = 'docked_block_instance_' . $instanceid;
+        }
+        $DB->delete_records_list('user_preferences', 'name', $preferences);
     }
-    $DB->delete_records_list('user_preferences', 'name', $preferences);
 }
 
 /**

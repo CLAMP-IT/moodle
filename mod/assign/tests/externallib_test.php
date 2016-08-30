@@ -142,7 +142,7 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
      * Test get_assignments
      */
     public function test_get_assignments() {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
 
         $this->resetAfterTest(true);
 
@@ -168,14 +168,22 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
             'category' => $category->id
         ));
 
-        // Create the assignment module.
+        // Create the assignment module with links to a filerecord.
         $assign1 = self::getDataGenerator()->create_module('assign', array(
             'course' => $course1->id,
             'name' => 'lightwork assignment',
-            'intro' => 'the assignment intro text here',
+            'intro' => 'the assignment intro text here <a href="@@PLUGINFILE@@/intro.txt">link</a>',
+            'introformat' => FORMAT_HTML,
             'markingworkflow' => 1,
             'markingallocation' => 1
         ));
+
+        // Add a file as assignment attachment.
+        $context = context_module::instance($assign1->cmid);
+        $filerecord = array('component' => 'mod_assign', 'filearea' => 'intro', 'contextid' => $context->id, 'itemid' => 0,
+                'filename' => 'intro.txt', 'filepath' => '/');
+        $fs = get_file_storage();
+        $fs->create_file_from_string($filerecord, 'Test intro file');
 
         // Create manual enrolment record.
         $enrolid = $DB->insert_record('enrol', (object)array(
@@ -218,7 +226,9 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         $this->assertEquals($assign1->id, $assignment['id']);
         $this->assertEquals($course1->id, $assignment['course']);
         $this->assertEquals('lightwork assignment', $assignment['name']);
-        $this->assertEquals('the assignment intro text here', $assignment['intro']);
+        $this->assertContains('the assignment intro text here', $assignment['intro']);
+        // Check the url of the file attatched.
+        $this->assertRegExp('@"' . $CFG->wwwroot . '/webservice/pluginfile.php/\d+/mod_assign/intro/intro\.txt"@', $assignment['intro']);
         $this->assertEquals(1, $assignment['markingworkflow']);
         $this->assertEquals(1, $assignment['markingallocation']);
 
@@ -937,7 +947,7 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         // Now try a submission.
         $submissionpluginparams = array();
         $submissionpluginparams['files_filemanager'] = $draftidfile;
-        $onlinetexteditorparams = array('text'=>'Yeeha!',
+        $onlinetexteditorparams = array('text' => '<p>Yeeha!</p>',
                                         'format'=>1,
                                         'itemid'=>$draftidonlinetext);
         $submissionpluginparams['onlinetext_editor'] = $onlinetexteditorparams;
@@ -946,6 +956,16 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
 
         $this->assertEquals(0, count($result));
 
+        // Set up a due and cutoff passed date.
+        $instance->duedate = time() - WEEKSECS;
+        $instance->cutoffdate = time() - WEEKSECS;
+        $DB->update_record('assign', $instance);
+
+        $result = mod_assign_external::save_submission($instance->id, $submissionpluginparams);
+        $result = external_api::clean_returnvalue(mod_assign_external::save_submission_returns(), $result);
+
+        $this->assertCount(1, $result);
+        $this->assertEquals(get_string('duedatereached', 'assign'), $result[0]['item']);
     }
 
     /**
@@ -1544,13 +1564,15 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         // Test user with no capabilities.
         // We need a explicit prohibit since this capability is only defined in authenticated user and guest roles.
         assign_capability('mod/assign:view', CAP_PROHIBIT, $teacherrole->id, $context->id);
+        // Empty all the caches that may be affected by this change.
         accesslib_clear_all_caches_for_unit_testing();
+        course_modinfo::clear_instance_cache();
 
         try {
             mod_assign_external::view_grading_table($assign->id);
-            $this->fail('Exception expected due to missing capability.');
+            $this->fail('Exception expected due to missing view capability.');
         } catch (moodle_exception $e) {
-            $this->assertEquals('nopermissions', $e->errorcode);
+            $this->assertEquals('requireloginerror', $e->errorcode);
         }
 
     }

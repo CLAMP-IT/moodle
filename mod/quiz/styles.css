@@ -599,6 +599,14 @@ table.quizreviewsummary td.cell {
 #page-mod-quiz-edit .section-heading .sectioninstance {
     position: relative;
 }
+#page-mod-quiz-edit .section-heading .instancesection {
+    white-space: nowrap;
+    max-width: 72%;
+    display: inline-block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    vertical-align: bottom;
+}
 #page-mod-quiz-edit .section-heading form {
     display: inline;
     position: relative;
@@ -723,6 +731,9 @@ table.quizreviewsummary td.cell {
 #page-mod-quiz-edit ul.slots li.section.only-has-one-slot li.activity .editing_move,
 #page-mod-quiz-edit ul.slots li.section.only-has-one-slot li.activity .editing_delete {
     visibility: hidden;
+}
+#page-mod-quiz-edit ul.slots.only-one-section li.section.only-has-one-slot li.activity .editing_delete {
+    visibility: visible;
 }
 
 #page-mod-quiz-edit ul.slots li.section li.activity .question_dependency_wrapper {

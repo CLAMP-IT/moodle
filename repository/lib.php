@@ -1663,18 +1663,19 @@ abstract class repository implements cacheable_object {
     }
 
     /**
-     * Decide where to save the file, can be overwriten by subclass
+     * Get a unique file path in which to save the file.
+     *
+     * The filename returned will be removed at the end of the request and
+     * should not be relied upon to exist in subsequent requests.
      *
      * @param string $filename file name
      * @return file path
      */
     public function prepare_file($filename) {
-        global $CFG;
-        $dir = make_temp_directory('download/'.get_class($this).'/');
-        while (empty($filename) || file_exists($dir.$filename)) {
-            $filename = uniqid('', true).'_'.time().'.tmp';
+        if (empty($filename)) {
+            $filename = 'file';
         }
-        return $dir.$filename;
+        return sprintf('%s/%s', make_request_directory(), $filename);
     }
 
     /**
@@ -2826,6 +2827,17 @@ abstract class repository implements cacheable_object {
      * @return true|false
      */
     public function supports_relative_file() {
+        return false;
+    }
+
+    /**
+     * Helper function to indicate if this repository uses post requests for uploading files.
+     *
+     * @deprecated since Moodle 3.2, 3.1.1, 3.0.5
+     * @return bool
+     */
+    public function uses_post_requests() {
+        debugging('The method repository::uses_post_requests() is deprecated and must not be used anymore.', DEBUG_DEVELOPER);
         return false;
     }
 }

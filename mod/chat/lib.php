@@ -413,7 +413,7 @@ function chat_refresh_events($courseid = 0) {
     $moduleid = $DB->get_field('modules', 'id', array('name' => 'chat'));
 
     foreach ($chats as $chat) {
-        $cm = get_coursemodule_from_id('chat', $chat->id);
+        $cm = get_coursemodule_from_instance('chat', $chat->id, $chat->course);
         $event = new stdClass();
         $event->name        = $chat->name;
         $event->description = format_module_intro('chat', $chat, $cm->id);
@@ -749,6 +749,7 @@ function chat_format_message_manually($message, $courseid, $sender, $currentuser
     // Parse the text to clean and filter it.
     $options = new stdClass();
     $options->para = false;
+    $options->blanktarget = true;
     $text = format_text($text, FORMAT_MOODLE, $options, $courseid);
 
     // And now check for special cases.
@@ -922,6 +923,7 @@ function chat_format_message_theme ($message, $chatuser, $currentuser, $grouping
     // Parse the text to clean and filter it.
     $options = new stdClass();
     $options->para = false;
+    $options->blanktarget = true;
     $text = format_text($text, FORMAT_MOODLE, $options, $courseid);
 
     // And now check for special cases.

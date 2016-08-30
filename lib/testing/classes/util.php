@@ -638,7 +638,11 @@ abstract class testing_util {
 
         foreach ($data as $table => $records) {
             if ($borkedmysql) {
-                if (empty($records) and isset($empties[$table])) {
+                if (empty($records)) {
+                    if (!isset($empties[$table])) {
+                        // Table has been modified and is not empty.
+                        $DB->delete_records($table, null);
+                    }
                     continue;
                 }
 
@@ -660,9 +664,8 @@ abstract class testing_util {
             }
 
             if (empty($records)) {
-                if (isset($empties[$table])) {
-                    // table was not modified and is empty
-                } else {
+                if (!isset($empties[$table])) {
+                    // Table has been modified and is not empty.
                     $DB->delete_records($table, array());
                 }
                 continue;
@@ -780,15 +783,23 @@ abstract class testing_util {
         $output = '';
 
         // All developers have to understand English, do not localise!
+        $env = self::get_environment();
 
-        $release = null;
-        require("$CFG->dirroot/version.php");
-
-        $output .= "Moodle $release, $CFG->dbtype";
+        $output .= "Moodle ".$env['moodleversion'];
         if ($hash = self::get_git_hash()) {
             $output .= ", $hash";
         }
         $output .= "\n";
+
+        // Add php version.
+        require_once($CFG->libdir.'/environmentlib.php');
+        $output .= "Php: ". normalize_version($env['phpversion']);
+
+        // Add database type and version.
+        $output .= ", " . $env['dbtype'] . ": " . $env['dbversion'];
+
+        // OS details.
+        $output .= ", OS: " . $env['os'] . "\n";
 
         return $output;
     }
@@ -971,5 +982,44 @@ abstract class testing_util {
             fwrite($fp, json_encode(array_values($listfiles)));
             fclose($fp);
         }
+    }
+
+    /**
+     * Return list of environment versions on which tests will run.
+     * Environment includes:
+     * - moodleversion
+     * - phpversion
+     * - dbtype
+     * - dbversion
+     * - os
+     *
+     * @return array
+     */
+    public static function get_environment() {
+        global $CFG, $DB;
+
+        $env = array();
+
+        // Add moodle version.
+        $release = null;
+        require("$CFG->dirroot/version.php");
+        $env['moodleversion'] = $release;
+
+        // Add php version.
+        $phpversion = phpversion();
+        $env['phpversion'] = $phpversion;
+
+        // Add database type and version.
+        $dbtype = $CFG->dbtype;
+        $dbinfo = $DB->get_server_info();
+        $dbversion = $dbinfo['version'];
+        $env['dbtype'] = $dbtype;
+        $env['dbversion'] = $dbversion;
+
+        // OS details.
+        $osdetails = php_uname('s') . " " . php_uname('r') . " " . php_uname('m');
+        $env['os'] = $osdetails;
+
+        return $env;
     }
 }
