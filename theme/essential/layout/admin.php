@@ -27,28 +27,26 @@
 require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
 require_once(\theme_essential\toolbox::get_tile_file('header'));
 
-$footerregion = essential_has_footer_region(); // In pagesettings.php.
+$pagebottomregion = \theme_essential\toolbox::has_page_bottom_region();
 ?>
 
 <div id="page" class="container-fluid">
-    <?php require_once(\theme_essential\toolbox::get_tile_file('pagenavbar')); ?>
-    <section role="main-content">
-        <?php echo $OUTPUT->version_alert(); ?>
-        <!-- Start Main Regions -->
-        <div id="page-content" class="row-fluid">
-            <div id="<?php echo $regionbsid ?>" class="span12">
-                <div class="row-fluid">
-                    <?php require_once(\theme_essential\toolbox::get_tile_file('twocolumncontent')); ?>
-                </div>
-                <?php
-                if ($footerregion) {
-                    echo $OUTPUT->essential_blocks('side-pre', 'row-fluid', 'aside', 4);
-                }
-?>
+    <?php require_once(\theme_essential\toolbox::get_tile_file('pagetopheader')); ?>
+    <?php echo $OUTPUT->version_alert(); ?>
+    <!-- Start Main Regions -->
+    <div id="page-content" class="row-fluid">
+        <div id="<?php echo $regionbsid ?>" class="span12">
+            <div class="row-fluid">
+                <?php require_once(\theme_essential\toolbox::get_tile_file('twocolumncontent')); ?>
             </div>
+            <?php
+            if ($pagebottomregion) {
+                echo $OUTPUT->essential_blocks('side-pre', 'row-fluid', 'aside', 'pagebottomblocksperrow');
+            }
+?>
         </div>
-        <!-- End Main Regions -->
-    </section>
+    </div>
+    <!-- End Main Regions -->
 </div>
 
 <?php require_once(\theme_essential\toolbox::get_tile_file('footer')); ?>

@@ -38,8 +38,10 @@ if ($ADMIN->fulltree) {
     global $CFG;
     if (file_exists("{$CFG->dirroot}/theme/essential/essential_admin_setting_configselect.php")) {
         require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_configselect.php');
+        require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_configinteger.php');
     } else if (!empty($CFG->themedir) && file_exists("{$CFG->themedir}/essential/essential_admin_setting_configselect.php")) {
         require_once($CFG->themedir . '/essential/essential_admin_setting_configselect.php');
+        require_once($CFG->themedir . '/essential/essential_admin_setting_configinteger.php');
     }
 
     $sponsor = new moodle_url('http://moodle.org/user/profile.php?id=442195');
@@ -93,6 +95,28 @@ if ($ADMIN->fulltree) {
         100 => get_string('variablewidth', 'theme_essential'));
     $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
     $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsgeneric->add($setting);
+
+    // Page top blocks per row.
+    $name = 'theme_essential/pagetopblocksperrow';
+    $title = get_string('pagetopblocksperrow', 'theme_essential');
+    $default = 1;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('pagetopblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $essentialsettingsgeneric->add($setting);
+
+    // Page bottom blocks per row.
+    $name = 'theme_essential/pagebottomblocksperrow';
+    $title = get_string('pagebottomblocksperrow', 'theme_essential');
+    $default = 4;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('pagebottomblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
     $essentialsettingsgeneric->add($setting);
 
     // Custom favicon.
@@ -205,7 +229,51 @@ if ($ADMIN->fulltree) {
     $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
     $essentialsettingsfeature->add($setting);
 
-    $essentialsettingsfeature->add(new admin_setting_heading('theme_essential_featurereadme',
+    // Login background image.
+    $name = 'theme_essential/loginbackground';
+    $title = get_string('loginbackground', 'theme_essential');
+    $description = get_string('loginbackgrounddesc', 'theme_essential');
+    $setting = new admin_setting_configstoredfile($name, $title, $description, 'loginbackground');
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsfeature->add($setting);
+
+    // Login background style.
+    $name = 'theme_essential/loginbackgroundstyle';
+    $title = get_string('loginbackgroundstyle', 'theme_essential');
+    $description = get_string('loginbackgroundstyledesc', 'theme_essential');
+    $default = 'cover';
+    $setting = new essential_admin_setting_configselect($name, $title, $description, $default,
+        array(
+            'cover' => get_string('stylecover', 'theme_essential'),
+            'stretch' => get_string('stylestretch', 'theme_essential')
+        )
+    );
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsfeature->add($setting);
+
+        $opactitychoices = array(
+            '0.0' => '0.0',
+            '0.1' => '0.1',
+            '0.2' => '0.2',
+            '0.3' => '0.3',
+            '0.4' => '0.4',
+            '0.5' => '0.5',
+            '0.6' => '0.6',
+            '0.7' => '0.7',
+            '0.8' => '0.8',
+            '0.9' => '0.9',
+            '1.0' => '1.0'
+        );
+
+        // Overridden course title text background opacity setting.
+        $name = 'theme_essential/loginbackgroundopacity';
+        $title = get_string('loginbackgroundopacity', 'theme_essential');
+        $description = get_string('loginbackgroundopacitydesc', 'theme_essential');
+        $default = '0.8';
+        $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $opactitychoices);
+        $essentialsettingsfeature->add($setting);
+
+        $essentialsettingsfeature->add(new admin_setting_heading('theme_essential_featurereadme',
         get_string('readme_title', 'theme_essential'), get_string('readme_desc', 'theme_essential', array('url' => $readme))));
 }
 $ADMIN->add('theme_essential', $essentialsettingsfeature);
@@ -679,9 +747,11 @@ $essentialsettingsheader = new admin_settingpage('theme_essential_header', get_s
 if ($ADMIN->fulltree) {
     global $CFG;
     if (file_exists("{$CFG->dirroot}/theme/essential/essential_admin_setting_configtext.php")) {
+        require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_configinteger.php');
         require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_configtext.php');
         require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_configradio.php');
     } else if (!empty($CFG->themedir) && file_exists("{$CFG->themedir}/essential/essential_admin_setting_configtext.php")) {
+        require_once($CFG->themedir . '/essential/essential_admin_setting_configinteger.php');
         require_once($CFG->themedir . '/essential/essential_admin_setting_configtext.php');
         require_once($CFG->themedir . '/essential/essential_admin_setting_configradio.php');
     }
@@ -830,6 +900,24 @@ if ($ADMIN->fulltree) {
     );
     $setting = new essential_admin_setting_configradio($name, $title, $description, $default, $choices, false, $images);
     $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsheader->add($setting);
+
+    // Header block.
+    $name = 'theme_essential/haveheaderblock';
+    $title = get_string('haveheaderblock', 'theme_essential');
+    $description = get_string('haveheaderblockdesc', 'theme_essential');
+    $default = true;
+    $setting = new admin_setting_configcheckbox($name, $title, $description, $default);
+    $essentialsettingsheader->add($setting);
+
+    $name = 'theme_essential/headerblocksperrow';
+    $title = get_string('headerblocksperrow', 'theme_essential');
+    $default = 4;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('headerblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
     $essentialsettingsheader->add($setting);
 
     // Course menu settings.
@@ -1266,7 +1354,7 @@ if ($ADMIN->fulltree) {
         $name = 'theme_essential/fontfileeotheading';
         $title = get_string('fontfileeotheading', 'theme_essential');
         $description = '';
-        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileweotheading');
+        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileeotheading');
         $setting->set_updatedcallback('theme_reset_all_caches');
         $essentialsettingsfont->add($setting);
 
@@ -1315,7 +1403,7 @@ if ($ADMIN->fulltree) {
         $name = 'theme_essential/fontfileeotbody';
         $title = get_string('fontfileeotbody', 'theme_essential');
         $description = '';
-        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileweotbody');
+        $setting = new admin_setting_configstoredfile($name, $title, $description, 'fontfileeotbody');
         $setting->set_updatedcallback('theme_reset_all_caches');
         $essentialsettingsfont->add($setting);
 
@@ -1426,7 +1514,7 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsfrontpage->add($setting);
 
-    // Toggle frontpage middle blocks.
+    // Toggle frontpage home (was middle) blocks.
     $name = 'theme_essential/frontpagemiddleblocks';
     $title = get_string('frontpagemiddleblocks', 'theme_essential');
     $description = get_string('frontpagemiddleblocksdesc', 'theme_essential');
@@ -1440,10 +1528,34 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsfrontpage->add($setting);
 
+    // Home blocks per row.
+    $name = 'theme_essential/frontpagehomeblocksperrow';
+    $title = get_string('frontpagehomeblocksperrow', 'theme_essential');
+    $default = 3;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('frontpagehomeblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $essentialsettingsfrontpage->add($setting);
+
+    // Toggle frontpage page top blocks.
+    $name = 'theme_essential/fppagetopblocks';
+    $title = get_string('fppagetopblocks', 'theme_essential');
+    $description = get_string('fppagetopblocksdesc', 'theme_essential');
+    $alwaysdisplay = get_string('alwaysdisplay', 'theme_essential');
+    $displaybeforelogin = get_string('displaybeforelogin', 'theme_essential');
+    $displayafterlogin = get_string('displayafterlogin', 'theme_essential');
+    $dontdisplay = get_string('dontdisplay', 'theme_essential');
+    $default = 3;
+    $choices = array(1 => $alwaysdisplay, 2 => $displaybeforelogin, 3 => $displayafterlogin, 0 => $dontdisplay);
+    $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsfrontpage->add($setting);
 
     // Marketing spot settings.
     $essentialsettingsfrontpage->add(new admin_setting_heading('theme_essential_marketing',
-        get_string('marketingheadingsub', 'theme_essential'),
+        get_string('marketingheading', 'theme_essential'),
         format_text(get_string('marketingdesc', 'theme_essential'), FORMAT_MARKDOWN)));
 
     // Toggle marketing spots.

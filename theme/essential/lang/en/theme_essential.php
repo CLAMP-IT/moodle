@@ -129,6 +129,17 @@ $string['displaybeforelogin'] = 'Show before login only';
 $string['displayafterlogin'] = 'Show after login only';
 $string['dontdisplay'] = 'Never show';
 
+// Regions.
+$string['region-side-post'] = 'Right';
+$string['region-side-pre'] = 'Left';
+$string['region-header'] = 'Header';
+$string['region-home'] = 'Home';
+$string['region-page-top'] = 'Page top';
+$string['region-footer-left'] = 'Footer (Left)';
+$string['region-footer-middle'] = 'Footer (Middle)';
+$string['region-footer-right'] = 'Footer (Right)';
+$string['region-hidden-dock'] = 'Hidden from users';
+
 // Sponsor.
 $string['sponsor_title'] = 'Sponsor Essential';
 $string['sponsor_desc'] = 'Please sponsor via PayPal by contacting me via my \'';
@@ -152,9 +163,15 @@ $string['pagebackground'] = 'Page background image';
 $string['pagebackgrounddesc'] = 'Upload your own background image.  Select the style of the image below.';
 $string['pagebackgroundstyle'] = 'Page background style';
 $string['pagebackgroundstyledesc'] = 'Select the style for the uploaded image.';
+$string['stylecover'] = 'Cover';
 $string['stylefixed'] = 'Fixed';
-$string['styletiled'] = 'Tiled';
 $string['stylestretch'] = 'Stretch';
+$string['styletiled'] = 'Tiled';
+
+$string['pagetopblocksperrow'] = 'Page top blocks per row';
+$string['pagetopblocksperrowdesc'] = 'State up to how many blocks per row between {$a->lower} and {$a->upper} for pages with \'Page top blocks\'.  Current pages are: Admin, Course, Course Category, Dashboard, Frontpage, My Public.';
+$string['pagebottomblocksperrow'] = 'Page bottom blocks per row';
+$string['pagebottomblocksperrowdesc'] = 'State up to how many blocks per row between {$a->lower} and {$a->upper} for pages with \'Page bottom blocks\'.  Current pages are: Admin, Course management, Grading and Quiz edit.';
 
 $string['customcss'] = 'Custom CSS';
 $string['customcssdesc'] = 'Whatever CSS rules you add to this text area will be reflected in every page, making for easier customisation of this theme.';
@@ -247,17 +264,6 @@ $string['breadcrumbsimple'] = 'Simple';
 $string['breadcrumbthin'] = 'Thin';
 $string['nobreadcrumb'] = 'Hide';
 
-// Regions.
-$string['region-side-post'] = 'Right';
-$string['region-side-pre'] = 'Left';
-$string['region-home-left'] = 'Home (Left)';
-$string['region-home-middle'] = 'Home (Middle)';
-$string['region-home-right'] = 'Home (Right)';
-$string['region-footer-left'] = 'Footer (Left)';
-$string['region-footer-middle'] = 'Footer (Middle)';
-$string['region-footer-right'] = 'Footer (Right)';
-$string['region-hidden-dock'] = 'Hidden from users';
-
 // Features.
 $string['featureheading'] = 'Features';
 $string['featureheadingsub'] = 'Set the features used in your theme';
@@ -286,6 +292,13 @@ $string['returntosectionfeaturedesc'] = "Enable return to section feature within
 
 $string['returntosectiontextlimitfeature'] = 'Return to section name text limit';
 $string['returntosectiontextlimitfeaturedesc'] = 'Length limit for the \'name\' of the section on the button between {$a->lower} and {$a->upper} characters.';
+
+$string['loginbackground'] = 'Login background image';
+$string['loginbackgrounddesc'] = 'Upload your own login background image.  Select the style of the image below.';
+$string['loginbackgroundstyle'] = 'Login background style';
+$string['loginbackgroundstyledesc'] = 'Select the style for the uploaded image.';
+$string['loginbackgroundopacity'] = 'Login box background opacity when there is a background image';
+$string['loginbackgroundopacitydesc'] = 'Lofin background opacity for the login box when there is a background image.';
 
 // Colours.
 $string['colorheading'] = 'Colour';
@@ -422,8 +435,12 @@ $string['frontcontentareadesc'] = 'Whatever is typed into this box will display 
 $string['frontpageblocksheading'] = 'Front page blocks';
 $string['frontpageblocks'] = 'Front page blocks alignment';
 $string['frontpageblocksdesc'] = 'Here you can determine if the standard Moodle blocks on the frontpage align to the left or the right.';
-$string['frontpagemiddleblocks'] = 'Enable additional front page middle blocks';
-$string['frontpagemiddleblocksdesc'] = 'If enabled this will display three additional block locations just under the marketing spots.';
+$string['frontpagemiddleblocks'] = 'Enable additional front page \'Home\' (was \'Middle\') blocks';
+$string['frontpagemiddleblocksdesc'] = 'If enabled this will display an additional block location just under the marketing spots.';
+$string['frontpagehomeblocksperrow'] = 'Home (was \'Middle\') blocks per row';
+$string['frontpagehomeblocksperrowdesc'] = 'State up to how many blocks per row between {$a->lower} and {$a->upper} for the \'Home blocks\'.';
+$string['fppagetopblocks'] = 'Enable additional front page \'Page top\' blocks';
+$string['fppagetopblocksdesc'] = 'If enabled this will display an additional block location beside the side blocks and above the content area.  Note: The number of blocks per row depends on the setting \'pagetopblocksperrow\'.';
 
 // Slideshow.
 $string['slideshowheading'] = 'Slide show';
@@ -495,7 +512,7 @@ $string['slideurltargetparent'] = 'Parent frame';
 // Marketing Spots.
 $string['marketingheading'] = 'Marketing spots';
 $string['marketinginfodesc'] = 'Enter the settings for your marketing spot.';
-$string['marketingheadingsub'] = 'Three locations on the front page to add information and links';
+$string['marketingheadingsub'] = 'Three locations on the front page to add information and links.'; // Legacy only.
 
 $string['marketingheight'] = 'Height of marketing spot container (px)';
 $string['marketingheightdesc'] = 'Specify the height of the marketing spot container in pixels.  Adjust this to suit your content.  If any spot has an image or link, then that will be added to this for all spots.';
@@ -690,6 +707,11 @@ $string['displayeditingmenu'] = 'Display editing button';
 $string['displayeditingmenudesc'] = 'Displays a button with the same functionality as the default page editing button on the header.';
 $string['hidedefaulteditingbutton'] = 'Hide default page editing button';
 $string['hidedefaulteditingbuttondesc'] = 'Hides the default page editing button from any page.  This setting only takes effect if the "Display editing button" setting is enabled.';
+
+$string['haveheaderblock'] = 'Header block region';
+$string['haveheaderblockdesc'] = 'Have a header block region just below the breadcrumb.';
+$string['headerblocksperrow'] = 'Header blocks per row';
+$string['headerblocksperrowdesc'] = 'State up to how many blocks per row between {$a->lower} and {$a->upper} for pages with the \'Header block region\'.';
 
 // Font settings.
 $string['fontsettings'] = 'Font';

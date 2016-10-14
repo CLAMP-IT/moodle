@@ -223,6 +223,46 @@ class toolbox {
         return $catlist;
     }
 
+    // Report Page Title.
+    static public function report_page_has_title() {
+        global $PAGE;
+        $hastitle = true;
+
+        switch ($PAGE->pagetype) {
+            case 'grade-report-overview-index':
+                $hastitle = false;
+                break;
+            default:
+                break;
+        }
+
+        return $hastitle;
+    }
+
+    // Page Bottom Region.
+    static public function has_page_bottom_region() {
+        global $PAGE;
+        $hasregion = false;
+
+        switch ($PAGE->pagetype) {
+            case 'admin-plugins':
+            case 'course-management':
+            case 'mod-quiz-edit':
+                $hasregion = true;
+                break;
+            case 'mod-assign-view':
+                // Only apply to 'grading' page.
+                if (optional_param('action', '', PARAM_TEXT) == 'grading') {
+                    $hasregion = true;
+                }
+                break;
+            default:
+                break;
+        }
+
+        return $hasregion;
+    }
+
     static public function showslider() {
         global $CFG;
         $noslides = self::get_setting('numberofslides');
@@ -331,9 +371,11 @@ class toolbox {
             $faleft = $faright;
             $faright = $temp;
         }
-        $prev = '<a class="left carousel-control" href="#essentialCarousel" data-slide="prev">';
+        $strprev = get_string('prev');
+        $strnext = get_string('next');
+        $prev = '<a class="left carousel-control" href="#essentialCarousel" data-slide="prev" aria-label="'.$strprev.'">';
         $prev .= '<span aria-hidden="true" class="fa fa-chevron-circle-'.$faleft.'"></span></a>';
-        $next = '<a class="right carousel-control" href="#essentialCarousel" data-slide="next">';
+        $next = '<a class="right carousel-control" href="#essentialCarousel" data-slide="next" aria-label="'.$strnext.'">';
         $next .= '<span aria-hidden="true" class="fa fa-chevron-circle-'.$faright.'"></span></a>';
 
         return $prev . $next;
@@ -615,6 +657,30 @@ class toolbox {
 
         $css = str_replace($tagattach, $replacementattach, $css);
         $css = str_replace($tagrepeat, $replacementrepeat, $css);
+        $css = str_replace($tagsize, $replacementsize, $css);
+        return $css;
+    }
+
+    static public function set_loginbackground($css, $loginbackground) {
+        $tag = '[[setting:loginbackground]]';
+        if (!($loginbackground)) {
+            $replacement = 'none';
+        } else {
+            $replacement = 'url(\''.$loginbackground.'\')';
+        }
+        $css = str_replace($tag, $replacement, $css);
+        return $css;
+    }
+
+    static public function set_loginbackgroundstyle($css, $style, $opacity) {
+        $tagopacity = '[[setting:loginbackgroundopacity]]';
+        $tagsize = '[[setting:loginbackgroundstyle]]';
+        $replacementsize = 'cover';
+        if ($style === 'stretch') {
+            $replacementsize = '100% 100%';
+        }
+
+        $css = str_replace($tagopacity, $opacity, $css);
         $css = str_replace($tagsize, $replacementsize, $css);
         return $css;
     }

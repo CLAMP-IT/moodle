@@ -11,14 +11,19 @@ body {
   padding: 0;
 }
 
-a {
-  font-family: inherit;
-  text-decoration: none;
-}
-
+a,
 a:hover,
 a:focus {
   text-decoration: none;
+}
+
+// Accessibility: Skip block link, for keyboard-only users.
+.skiplinks .skip:focus {
+    position: absolute;
+    top: 0;
+    background-color: @white;
+    z-index: 201; // 1 more than for #essentialnavbar in navigation.less.
+    padding: 8px;
 }
 
 .text_to_html {
@@ -66,12 +71,26 @@ ins {
       margin-bottom: 20px;
     }
 
+        #region-main {
+            box-sizing: border-box;
+        }
+
     #region-main > div[role="main"] {
       border: none;
       .border-radius(0);
       padding: 0;
     }
   }
+}
+
+.used-region-header {
+    #block-region-header,
+    &.pagelayout-frontpage #page #page-content {
+        margin-top: 10px;
+    }
+    #page #page-content {
+        margin-top: 0;
+    }
 }
 
 .pagelayout-embedded #page #page-content div[role="main"] {
@@ -134,6 +153,47 @@ body { // Inside a body tag so will be more specific and override core plugin st
 .resourcecontent .mediaplugin.mediaplugin_mp3 object {
     width: 600px;
     height: 25px;
+}
+
+// Table icons.
+.userenrolment .unassignrolelink,
+.generaltable {
+    img {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: @baseBorderRadius;
+        padding: 2px;
+    }
+}
+.generaltable {
+    img[src$="spacer"] {
+        background-color: transparent;
+    }
+    .dimmed_text {
+        color: inherit;
+        font-style: italic;
+    }
+}
+
+// User enrolment page.
+.userenrolment {
+    img {
+        &.userpicture, &.profilepicture {
+            height: 44px;
+            width: 44px;
+        }
+    }
+    .unassignrolelink {
+        vertical-align: text-bottom;
+    }
+    .col_userdetails, .col_lastcourseaccess {
+        padding: 6px;
+    }
+}
+
+#page-enrol-users .enrol_user_buttons {
+    float: none;
+    margin-top: 4px;
+    text-align: right;
 }
 
 /* @end */

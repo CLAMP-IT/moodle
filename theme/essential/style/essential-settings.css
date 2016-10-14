@@ -26,25 +26,25 @@
 .alert .fa-bullhorn:focus {
   color: [[setting:themenavcolor]];
 }
-.alert.alert-info a.close .fa {
+.alert.alert-info .close .fa {
   color: #3a87ad;
 }
-.alert.alert-info a.close:hover .fa,
-.alert.alert-info a.close:focus .fa {
+.alert.alert-info .close:hover .fa,
+.alert.alert-info .close:focus .fa {
   color: #3a87ad;
 }
-.alert.alert-error a.close .fa {
+.alert.alert-error .close .fa {
   color: #b94a48;
 }
-.alert.alert-error a.close:hover .fa,
-.alert.alert-error a.close:focus .fa {
+.alert.alert-error .close:hover .fa,
+.alert.alert-error .close:focus .fa {
   color: #b94a48;
 }
-.alert.alert-success a.close .fa {
+.alert.alert-success .close .fa {
   color: #468847;
 }
-.alert.alert-success a.close:hover .fa,
-.alert.alert-success a.close:focus .fa {
+.alert.alert-success .close:hover .fa,
+.alert.alert-success .close:focus .fa {
   color: #468847;
 }
 /* @end */
@@ -130,16 +130,10 @@ p.tree_item.branch.emptybranch:focus:before {
 .collapsed .tree_item.branch:before {
   color: [[setting:themeiconcolor]];
 }
-.editing.used-region-side-pre #block-region-side-pre,
-.editing.used-region-side-post #block-region-side-post,
-.editing.used-region-home-left #block-region-home-left,
-.editing.used-region-home-middle #block-region-home-middle,
-.editing.used-region-home-right #block-region-home-right,
-.editing.used-region-hidden-dock #block-region-hidden-dock {
+.editing #page .block-region.yui3-dd-drop-active-valid {
   border-color: [[setting:themecolor]];
 }
-.editing.used-region-footer-left #block-region-footer-left .editing.used-region-footer-middle #block-region-footer-middle,
-.editing.used-region-footer-right #block-region-footer-right {
+.editing #page-footer .block-region.yui3-dd-drop-active-valid {
   border-color: [[setting:footertextcolor]];
 }
 /* @end */
@@ -818,13 +812,16 @@ body#page-grade-grading-pick #region-main form #fgroup_id_buttonar label {
   height: [[setting:logoheight]];
   width: [[setting:logowidth]];
 }
-#page-header div.titlearea {
+.dir-ltr #page-header div.titlearea {
   border-left: 1px dotted [[setting:themecolor]];
+}
+.dir-rtl #page-header div.titlearea {
+  border-right: 1px dotted [[setting:themecolor]];
 }
 @media (min-width: 980px) {
   #page-header.nologo {
-    height: 57px;
-    max-height: 57px;
+    height: 64px;
+    max-height: 64px;
   }
 }
 /* @end */
@@ -839,8 +836,33 @@ button.website:focus {
 .socials p {
   color: [[setting:headertextcolor]];
 }
-#mobileapps {
+#page-header.logo #socialnetworks,
+#page-header.logo #mobileapps {
+  height: [[setting:logoheight]];
+  max-height: [[setting:logoheight]];
+}
+#page-header.nologo #socialnetworks,
+#page-header.nologo #mobileapps {
+  height: 52px;
+  max-height: 52px;
+}
+@media (min-width: 980px) {
+  #page-header.logo #socialnetworks,
+  #page-header.logo #mobileapps {
+    height: [[setting:logoheight]];
+    max-height: [[setting:logoheight]];
+  }
+  #page-header.nologo #socialnetworks,
+  #page-header.nologo #mobileapps {
+    height: 64px;
+    max-height: 64px;
+  }
+}
+.dir-ltr #mobileapps {
   border-right: 1px dotted [[setting:themecolor]];
+}
+.dir-rtl #mobileapps {
+  border-left: 1px dotted [[setting:themecolor]];
 }
 /* @end */
 /* @group Navbar */
@@ -852,7 +874,7 @@ button.website:focus {
 }
 @media (min-width: 980px) {
   #essentialnavbar.oldnavbar.nologo {
-    top: 57px;
+    top: 64px;
   }
 }
 #essentialnavbar.affix.oldnavbar {
@@ -884,40 +906,40 @@ button.website:focus {
 .navbar .navbar-inner .nav .dropdown-menu .dropdown-submenu:hover .dropdown-toggle:after {
   border-left-color: [[setting:themenavcolor]];
 }
-.navbar .navbar-inner #custom_menu_courses .dropdown-menu > li > a > span.onlyenrolled {
+.navbar .navbar-inner #custom_menu_courses .dropdown-menu li > a > span.onlyenrolled {
   background-color: [[setting:mycoursesorderenrolbackcolour]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a {
   color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:hover {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:hover {
   color: #ffffff;
   background-color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:focus,
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a.open {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:focus,
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a.open {
   color: #ffffff;
   background-color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:focus .fa,
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a.open .fa {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:focus .fa,
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a.open .fa {
   color: #ffffff;
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:hover .dimmed_text {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:hover .dimmed_text {
   color: #eeeeee;
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li.dropdown-submenu:hover > a {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li.dropdown-submenu:hover > a {
   color: #ffffff;
   background-color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li.dropdown-submenu:hover > a .fa {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li.dropdown-submenu:hover > a .fa {
   color: inherit;
 }
-.navbar .navbar-inner #custom_menu_courses .nav > li.dropdown ul.dropdown-menu > li > a:hover > span {
+.navbar .navbar-inner #custom_menu_courses .nav > li.dropdown .dropdown-menu li > a:hover > span {
   background-color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner #custom_menu_courses .nav > li.dropdown ul.dropdown-menu > li > a:focus > span,
-.navbar .navbar-inner #custom_menu_courses .nav > li.dropdown ul.dropdown-menu > li > a.open > span {
+.navbar .navbar-inner #custom_menu_courses .nav > li.dropdown .dropdown-menu li > a:focus > span,
+.navbar .navbar-inner #custom_menu_courses .nav > li.dropdown .dropdown-menu li > a.open > span {
   background-color: [[setting:themeurlcolor]];
 }
 .navbar .navbar-inner .nav li.dropdown.open > .dropdown-toggle,
@@ -929,27 +951,27 @@ button.website:focus {
 .navbar .navbar-inner .usermenu .dropdown img.userpicture {
   border: 1px solid [[setting:themenavcolor]];
 }
-.navbar .navbar-inner .usermenu .dropdown ul.dropdown-menu {
+.navbar .navbar-inner .usermenu .dropdown .dropdown-menu {
   border: 1px solid [[setting:themecolor]];
 }
-.navbar .navbar-inner .usermenu .dropdown ul.dropdown-menu hr.sep {
+.navbar .navbar-inner .usermenu .dropdown .dropdown-menu hr.sep {
   border-bottom: 1px dotted [[setting:themecolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu {
   border: 1px solid [[setting:themecolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a {
   border-top: 1px dotted [[setting:themecolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .message,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .notification {
   color: #ffffff;
   background-color: [[setting:themehovercolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message img.userpicture,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification img.userpicture,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message img.profilepicture,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification img.profilepicture {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .message img.userpicture,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .notification img.userpicture,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .message img.profilepicture,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .notification img.profilepicture {
   box-shadow: 0 0 3px [[setting:themenavcolor]];
 }
 @media (max-width: 979px) {
@@ -986,19 +1008,19 @@ button.website:focus {
 /* @end */
 /* @group Responsive */
 @media (max-width: 979px) {
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a {
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a {
     color: [[setting:themecolor]];
   }
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a:hover,
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a.open {
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a:hover,
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a.open {
     color: [[setting:themenavcolor]];
     background-color: [[setting:themecolor]];
   }
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a:hover .fa,
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a.open .fa {
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a:hover .fa,
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a.open .fa {
     color: inherit;
   }
-  .navbar .navbar-inner .nav-collapse .nav li.dropdown ul.dropdown-menu {
+  .navbar .navbar-inner .nav-collapse .nav li.dropdown .dropdown-menu {
     background-color: [[setting:themenavcolor]];
     color: [[setting:themecolor]];
   }
@@ -1034,6 +1056,16 @@ body .dimmed .fa {
 body .dimmed .fa:focus,
 body .dimmed .fa:hover {
   color: inherit;
+}
+body.loginbackground {
+  background-image: [[setting:loginbackground]];
+  background-size: [[setting:loginbackgroundstyle]];
+}
+body.loginbackground #page-header {
+  background-image: none;
+}
+body.loginbackground #page-content {
+  opacity: [[setting:loginbackgroundopacity]];
 }
 .container-fluid {
   max-width: [[setting:pagewidth]];

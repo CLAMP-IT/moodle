@@ -189,6 +189,21 @@ class core_renderer extends \core_renderer {
     }
 
     /**
+     * Outputs the page top header.
+     *
+     * @return string the HTML to output or nothing.
+     */
+    public function page_top_header() {
+        $html = '';
+        // This is where we output the user information that would otherwise be missing on the page.
+        if (($this->page->pagelayout == 'mypublic') && ($this->page->context->contextlevel == CONTEXT_USER)) {
+            $html = $this->context_header();
+        }
+
+        return $html;
+    }
+
+    /**
      * Outputs the course title.
      *
      * @return string the HTML to output.
@@ -266,6 +281,29 @@ class core_renderer extends \core_renderer {
             }
 
             $content .= '<div class="bor"></div>';
+        }
+
+        return $content;
+    }
+
+    /**
+     * Returns course-specific information to be output immediately above content on any course page
+     * (for the current course)
+     *
+     * @param bool $onlyifnotcalledbefore output content only if it has not been output before
+     * @return string
+     */
+    public function course_content_header($onlyifnotcalledbefore = false) {
+        $content = parent::course_content_header($onlyifnotcalledbefore);
+
+        if ($this->page->pagelayout == 'mydashboard') {
+            if (\theme_essential\toolbox::course_content_search()) {
+                $content .= '<div class="courseitemsearch">';
+                $content .= '<div><p>'.get_string('findcoursecontent', 'theme_essential').'</p></div>';
+                $content .= '<div id="courseitemsearchresults">';
+                $content .= '<input type="text" name="courseitemsearch" id="courseitemsearch" disabled="disabled">';
+                $content .= '</div></div>';
+            }
         }
 
         return $content;
@@ -374,7 +412,7 @@ class core_renderer extends \core_renderer {
             $courseformatsettings = $courseformat->get_format_options();
 
             $sectionname = $courseformat->get_section_name($this->page->cm->sectionnum);
-            $sectionnamelen = mb_strlen($sectionname);
+            $sectionnamelen = \core_text::strlen($sectionname);
             if ($sectionnamelen !== false) {
                 $sectionnamelimit = \theme_essential\toolbox::get_setting('returntosectiontextlimitfeature');
                 if (($sectionnamelimit) && ($sectionnamelen > $sectionnamelimit)) {
@@ -464,11 +502,13 @@ class core_renderer extends \core_renderer {
                 $content .= $this->getfontawesomemarkup('caret-right');
             }
             $content .= '</a>';
-            $content .= '<ul class="dropdown-menu">';
+            $content .= '<div class="dropdown-menu">';
+            $content .= '<ul>';
             foreach ($menunode->get_children() as $menunode) {
                 $content .= $this->render_custom_menu_item($menunode, 0);
             }
             $content .= '</ul>';
+            $content .= '</div>';
         } else {
             // Also, if the node's text matches '####', add a class so we can treat it as a divider.
             $content = '';
@@ -1201,6 +1241,8 @@ class core_renderer extends \core_renderer {
     protected function render_user_picture(\user_picture $userpicture) {
         if ($this->page->pagetype == 'mod-forum-discuss') {
             $userpicture->size = 1;
+        } else if ((empty($userpicture->size)) || ($userpicture->size != 64)) {
+            $userpicture->size = 72;
         }
         return parent::render_user_picture($userpicture);
     }
@@ -1647,10 +1689,12 @@ class core_renderer extends \core_renderer {
                 $icon = 'windows';
             }
             $socialhtml = html_writer::start_tag('li');
+            $socialnetworklabel = get_string($socialnetwork, 'theme_essential');
             $socialhtml .= html_writer::start_tag('button', array('type' => "button",
                 'class' => 'socialicon ' . $socialnetwork,
                 'onclick' => "window.open('".\theme_essential\toolbox::get_setting($socialnetwork)."')",
-                'title' => get_string($socialnetwork, 'theme_essential'),
+                'title' => $socialnetworklabel,
+                'aria-label' => $socialnetworklabel,
             ));
             $socialhtml .= html_writer::start_tag('i', array('class' => 'fa fa-'.$icon));
             $socialhtml .= html_writer::end_tag('i');
@@ -1672,32 +1716,58 @@ class core_renderer extends \core_renderer {
      * @param string $region The region to get HTML for.
      * @param array $classes array of classes for the tag.
      * @param string $tag Tag to use.
-     * @param int $footer if > 0 then this is a footer block specifying the number of blocks per row, max of '4'.
+     * @param boolean/string/int $blocksperrowsetting If not false or an int for the blocks per row,
+     *                                                then use the setting name to get the blocks per row.
      * @return string HTML.
      */
-    public function essential_blocks($region, $classes = array(), $tag = 'aside', $footer = 0) {
-        $displayregion = $this->page->apply_theme_region_manipulations($region);
-        $classes = (array) $classes;
-        $classes[] = 'block-region';
-
-        $attributes = array(
-            'id' => 'block-region-' . preg_replace('#[^a-zA-Z0-9_\-]+#', '-', $displayregion),
-            'class' => join(' ', $classes),
-            'data-blockregion' => $displayregion,
-            'data-droptarget' => '1'
-        );
-
-        if ($this->page->blocks->region_has_content($displayregion, $this)) {
-            if ($footer > 0) {
-                $attributes['class'] .= ' footer-blocks';
-                $editing = $this->page->user_is_editing();
-                if ($editing) {
-                    $attributes['class'] .= ' footer-edit';
+    public function essential_blocks($region, $classes = array(), $tag = 'aside', $blocksperrowsetting = false) {
+        if ($this->page->blocks->is_known_region($region)) {
+            $classes = (array) $classes;
+            $classes[] = 'block-region';
+            if ($blocksperrowsetting !== false) {
+                if (is_int($blocksperrowsetting)) {
+                    $blocksperrow = $blocksperrowsetting;
+                } else {
+                    $blocksperrow = \theme_essential\toolbox::get_setting($blocksperrowsetting);
                 }
-                $output = html_writer::tag($tag,
-                    $this->essential_blocks_for_region($displayregion, $footer, $editing), $attributes);
             } else {
-                $output = html_writer::tag($tag, $this->blocks_for_region($displayregion), $attributes);
+                $blocksperrow = false;
+            }
+            $attributes = array(
+                'id' => 'block-region-' . preg_replace('#[^a-zA-Z0-9_\-]+#', '-', $region),
+                'class' => join(' ', $classes),
+                'data-blockregion' => $region,
+                'data-droptarget' => '1'
+            );
+
+            $regioncontent = '';
+            $editing = $this->page->user_is_editing();
+            if ($editing) {
+                $regioncontent .= html_writer::tag('span', html_writer::tag('span', get_string('region-'.$region, 'theme_essential')),
+                    array('class' => 'regionname'));
+            }
+
+            if ($this->page->blocks->region_has_content($region, $this)) {
+                if ($blocksperrow !== false) {
+                    $attributes['class'] .= ' rowblock-blocks';
+                    if ($editing) {
+                        $attributes['class'] .= ' rowblock-edit';
+                    }
+                    $regioncontent .= $this->essential_blocks_for_region($region, $blocksperrow, $editing);
+                    $output = html_writer::tag($tag, $regioncontent, $attributes);
+                } else {
+                    $regioncontent .= $this->blocks_for_region($region);
+                    $output = html_writer::tag($tag, $regioncontent, $attributes);
+                }
+            } else {
+                if ($editing) {
+                    if ($blocksperrow !== false) {
+                        $attributes['class'] .= ' rowblock-blocks rowblock-edit';
+                    }
+                    $output = html_writer::tag($tag, $regioncontent, $attributes);
+                } else {
+                    $output = '';
+                }
             }
         } else {
             $output = '';
@@ -1792,7 +1862,7 @@ class core_renderer extends \core_renderer {
                     $output .= $this->block($bc, $region);
                     $lastblock = $bc->title;
                 } else if ($bc instanceof block_move_target) {
-                    $output .= $this->block_move_target($bc, $zones, $lastblock);
+                    $output .= $this->block_move_target($bc, $zones, $lastblock, $region);
                 } else {
                     throw new coding_exception('Unexpected type of thing ('.get_class($bc).') found in list of block contents.');
                 }
@@ -1906,7 +1976,7 @@ class core_renderer extends \core_renderer {
             $url .= \theme_essential\toolbox::get_setting('marketing'.$spot.'buttontext', true);
             $url .= '</a>';
         }
-        $edit = $this->essential_edit_button('theme_essential_frontpage');
+        $edit = $this->essential_edit_button('frontpage');
         if ((!empty($url)) || (!empty($edit))) {
             $o = '<div class="marketing-buttons">'.$url.$edit.'</div>';
         }
@@ -1914,13 +1984,51 @@ class core_renderer extends \core_renderer {
         return $o;
     }
 
-    public function essential_edit_button($section) {
+    /**
+     * Generates the edit button markup.
+     *
+     * Ensure that the 'essential_edit_button_settingspage' method has the 'keys' and values for the sections
+     * in the settings.php file of the theme that the layout and tile files call this method for.
+     *
+     * @param string $sectionkey settings section key.
+     * @return string or null of not needed.
+     */
+    public function essential_edit_button($sectionkey) {
         global $CFG;
         if ($this->page->user_is_editing() && is_siteadmin()) {
+            $themesectionkey = $this->essential_edit_button_settingspage($sectionkey);
             $url = preg_replace("(https?:)", "", $CFG->wwwroot . '/admin/settings.php?section=');
-            return '<a class="btn btn-success" href="'.$url.$section.'">'.get_string('edit').'</a>';
+            return '<a class="btn btn-success" href="'.$url.$themesectionkey.'">'.get_string('edit').'</a>';
         }
         return null;
+    }
+
+
+    /**
+     * Finds the setting section for the given section key.
+     *
+     * This must match the ones in the settings.php file of the theme that the layout and tile files
+     * call the 'essential_edit_button' method for.
+     *
+     * @param string $sectionkey settings section key.
+     * @return string or false if not found.
+     */
+    protected function essential_edit_button_settingspage($sectionkey) {
+        $themesectionkey = false;
+
+        switch ($sectionkey) {
+            case 'frontpage':
+                $themesectionkey = 'theme_essential_frontpage';
+            break;
+            case 'footer':
+                $themesectionkey = 'theme_essential_footer';
+            break;
+            case 'slideshow':
+                $themesectionkey = 'theme_essential_slideshow';
+            break;
+        }
+
+        return $themesectionkey;
     }
 
     public function get_title($location) {
@@ -1961,12 +2069,12 @@ class core_renderer extends \core_renderer {
                 case 3:
                     $title = '<h1 id="smalltitle">'.format_string($SITE->fullname, true,
                                     array('context' => context_course::instance(SITEID))).'</h2>';
-                    $title .= '<h2 id="subtitle">'.strip_tags($SITE->summary).'</h3>';
+                    $title .= '<h2 id="subtitle">'.format_text($SITE->summary).'</h3>';
                     break;
                 case 4:
                     $title = '<h1 id="smalltitle">'.format_string($SITE->shortname, true,
                                     array('context' => context_course::instance(SITEID))).'</h2>';
-                    $title .= '<h2 id="subtitle">'.strip_tags($SITE->summary).'</h3>';
+                    $title .= '<h2 id="subtitle">'.format_text($SITE->summary).'</h3>';
                     break;
                 default:
                     break;
