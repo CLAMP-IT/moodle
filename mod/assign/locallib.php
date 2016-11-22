@@ -91,7 +91,7 @@ class assign {
     /** @var stdClass the assignment record that contains the global settings for this assign instance */
     private $instance;
 
-    /** @var stdClass the grade_item record for this assign instance's primary grade item. */
+    /** @var grade_item the grade_item record for this assign instance's primary grade item. */
     private $gradeitem;
 
     /** @var context the context of the course module for this assign instance
@@ -1245,7 +1245,7 @@ class assign {
     /**
      * Get the primary grade item for this assign instance.
      *
-     * @return stdClass The grade_item record
+     * @return grade_item The grade_item record
      */
     public function get_grade_item() {
         if ($this->gradeitem) {
@@ -1371,6 +1371,7 @@ class assign {
 
         static $scalegrades = array();
 
+        $decimals = $this->get_grade_item()->get_decimals();
         $o = '';
 
         if ($this->get_instance()->grade >= 0) {
@@ -1379,7 +1380,7 @@ class assign {
                 if ($grade < 0) {
                     $displaygrade = '';
                 } else {
-                    $displaygrade = format_float($grade, 2);
+                    $displaygrade = format_float($grade, $decimals);
                 }
                 $o .= '<label class="accesshide" for="quickgrade_' . $userid . '">' .
                        get_string('usergrade', 'assign') .
@@ -1391,7 +1392,7 @@ class assign {
                               size="6"
                               maxlength="10"
                               class="quickgrade"/>';
-                $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, 2);
+                $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, $decimals);
                 return $o;
             } else {
                 if ($grade == -1 || $grade === null) {
@@ -1401,7 +1402,7 @@ class assign {
                     $o .= grade_format_gradevalue($grade, $item);
                     if ($item->get_displaytype() == GRADE_DISPLAY_TYPE_REAL) {
                         // If displaying the raw grade, also display the total value.
-                        $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, 2);
+                        $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, $decimals);
                     }
                 }
                 return $o;
@@ -1470,7 +1471,8 @@ class assign {
         $params['assignmentid1'] = $assignid;
         $params['assignmentid2'] = $assignid;
 
-        $sql = 'SELECT u.id, s.status, s.timemodified AS stime, g.timemodified AS gtime, g.grade FROM {user} u
+        $fields = 'SELECT u.id, s.status, s.timemodified AS stime, g.timemodified AS gtime, g.grade';
+        $from = ' FROM {user} u
                          LEFT JOIN {assign_submission} s
                                 ON u.id = s.userid
                                AND s.assignment = :assignmentid1
@@ -1479,7 +1481,18 @@ class assign {
                                 ON u.id = g.userid
                                AND g.assignment = :assignmentid2
                                AND g.attemptnumber = s.attemptnumber
-                         WHERE u.id ' . $insql;
+            ';
+        $where = ' WHERE u.id ' . $insql;
+
+        if (!empty($this->get_instance()->blindmarking)) {
+            $from .= 'LEFT JOIN {assign_user_mapping} um
+                             ON u.id = um.userid
+                            AND um.assignment = :assignmentid3 ';
+            $params['assignmentid3'] = $assignid;
+            $fields .= ', um.id as recordid ';
+        }
+
+        $sql = "$fields $from $where";
 
         $records = $DB->get_records_sql($sql, $params);
 
@@ -1641,6 +1654,10 @@ class assign {
                         $count += 1;
                     }
                 }
+            } else if ($activitygroup != 0 && empty($groups)) {
+                // Set count to 1 if $groups returns empty.
+                // It means the group is not part of $this->get_instance()->teamsubmissiongroupingid.
+                $count = 1;
             }
         } else {
             // It is faster to loop around participants if no grouping was specified.
@@ -1812,6 +1829,12 @@ class assign {
                                                 array_keys($participants),
                                                 $this->get_instance()->teamsubmissiongroupingid,
                                                 'DISTINCT g.id, g.name');
+                if (empty($groups)) {
+                    // If $groups is empty it means it is not part of $this->get_instance()->teamsubmissiongroupingid.
+                    // All submissions from students that do not belong to any of teamsubmissiongroupingid groups
+                    // count towards groupid = 0. Setting to true as only '0' key matters.
+                    $groups = [true];
+                }
                 list($groupssql, $groupsparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
                 $groupsstr = 's.groupid ' . $groupssql . ' AND';
                 $params = $params + $groupsparams;
@@ -1899,13 +1922,14 @@ class assign {
         //   - If marking workflow is not enabled, the grade was updated in the past 24 hours, or
         //     if marking workflow is enabled, the workflow state is at 'released'.
         $sql = "SELECT g.id as gradeid, a.course, a.name, a.blindmarking, a.revealidentities,
-                       g.*, g.timemodified as lastmodified, cm.id as cmid
+                       g.*, g.timemodified as lastmodified, cm.id as cmid, um.id as recordid
                  FROM {assign} a
                  JOIN {assign_grades} g ON g.assignment = a.id
             LEFT JOIN {assign_user_flags} uf ON uf.assignment = a.id AND uf.userid = g.userid
                  JOIN {course_modules} cm ON cm.course = a.course AND cm.instance = a.id
                  JOIN {modules} md ON md.id = cm.module AND md.name = 'assign'
                  JOIN {grade_items} gri ON gri.iteminstance = a.id AND gri.courseid = a.course AND gri.itemmodule = md.name
+            LEFT JOIN {assign_user_mapping} um ON g.id = um.userid AND um.assignment = a.id
                  WHERE ((a.markingworkflow = 0 AND g.timemodified >= :yesterday AND g.timemodified <= :today) OR
                         (a.markingworkflow = 1 AND uf.workflowstate = :wfreleased)) AND
                        uf.mailed = 0 AND gri.hidden = 0
@@ -2005,7 +2029,11 @@ class assign {
 
                 $uniqueid = 0;
                 if ($submission->blindmarking && !$submission->revealidentities) {
-                    $uniqueid = self::get_uniqueid_for_user_static($submission->assignment, $user->id);
+                    if (empty($submission->recordid)) {
+                        $uniqueid = self::get_uniqueid_for_user_static($submission->assignment, $user->id);
+                    } else {
+                        $uniqueid = $submission->recordid;
+                    }
                 }
                 $showusers = $submission->blindmarking && !$submission->revealidentities;
                 self::send_assignment_notification($grader,
@@ -2179,7 +2207,7 @@ class assign {
      * @return string
      */
     protected function view_grant_extension($mform) {
-        global $DB, $CFG;
+        global $CFG;
         require_once($CFG->dirroot . '/mod/assign/extensionform.php');
 
         $o = '';
@@ -2188,64 +2216,24 @@ class assign {
         $data->id = $this->get_course_module()->id;
 
         $formparams = array(
-            'instance' => $this->get_instance()
+            'instance' => $this->get_instance(),
+            'assign' => $this
         );
 
-        $extrauserfields = get_extra_user_fields($this->get_context());
-
-        if ($mform) {
-            $submitteddata = $mform->get_data();
-            $users = $submitteddata->selectedusers;
-            $userlist = explode(',', $users);
-
-            $data->selectedusers = $users;
-            $data->userid = 0;
-
-            $usershtml = '';
-            $usercount = 0;
-            foreach ($userlist as $userid) {
-                if ($usercount >= 5) {
-                    $usershtml .= get_string('moreusers', 'assign', count($userlist) - 5);
-                    break;
-                }
-                $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
-
-                $usershtml .= $this->get_renderer()->render(new assign_user_summary($user,
-                                                                    $this->get_course()->id,
-                                                                    has_capability('moodle/site:viewfullnames',
-                                                                    $this->get_course_context()),
-                                                                    $this->is_blind_marking(),
-                                                                    $this->get_uniqueid_for_user($user->id),
-                                                                    $extrauserfields,
-                                                                    !$this->is_active_user($userid)));
-                $usercount += 1;
-            }
-
-            $formparams['userscount'] = count($userlist);
-            $formparams['usershtml'] = $usershtml;
-
-        } else {
-            $userid = required_param('userid', PARAM_INT);
-            $user = $DB->get_record('user', array('id'=>$userid), '*', MUST_EXIST);
-            $flags = $this->get_user_flags($userid, false);
-
-            $data->userid = $user->id;
-            if ($flags) {
-                $data->extensionduedate = $flags->extensionduedate;
-            }
-
-            $usershtml = $this->get_renderer()->render(new assign_user_summary($user,
-                                                                $this->get_course()->id,
-                                                                has_capability('moodle/site:viewfullnames',
-                                                                $this->get_course_context()),
-                                                                $this->is_blind_marking(),
-                                                                $this->get_uniqueid_for_user($user->id),
-                                                                $extrauserfields,
-                                                                !$this->is_active_user($userid)));
-            $formparams['usershtml'] = $usershtml;
+        $users = optional_param('userid', 0, PARAM_INT);
+        if (!$users) {
+            $users = required_param('selectedusers', PARAM_SEQUENCE);
         }
+        $userlist = explode(',', $users);
 
-        $mform = new mod_assign_extension_form(null, $formparams);
+        $formparams['userlist'] = $userlist;
+
+        $data->selectedusers = $users;
+        $data->userid = 0;
+
+        if (empty($mform)) {
+            $mform = new mod_assign_extension_form(null, $formparams);
+        }
         $mform->set_data($data);
         $header = new assign_header($this->get_instance(),
                                     $this->get_context(),
@@ -2468,7 +2456,7 @@ class assign {
                 $grade = '-';
             }
 
-            $courseindexsummary->add_assign_info($cm->id, $cm->name, $sectionname, $timedue, $submitted, $grade);
+            $courseindexsummary->add_assign_info($cm->id, $cm->get_formatted_name(), $sectionname, $timedue, $submitted, $grade);
 
         }
 
@@ -2895,28 +2883,51 @@ class assign {
                 }
 
                 if ($submission) {
+                    $downloadasfolders = get_user_preferences('assign_downloadasfolders', 1);
                     foreach ($this->submissionplugins as $plugin) {
                         if ($plugin->is_enabled() && $plugin->is_visible()) {
-                            $pluginfiles = $plugin->get_files($submission, $student);
-                            foreach ($pluginfiles as $zipfilepath => $file) {
-                                $subtype = $plugin->get_subtype();
-                                $type = $plugin->get_type();
-                                $zipfilename = basename($zipfilepath);
-                                $prefixedfilename = clean_filename($prefix .
-                                                                   '_' .
-                                                                   $subtype .
-                                                                   '_' .
-                                                                   $type .
-                                                                   '_');
-                                if ($type == 'file') {
-                                    $pathfilename = $prefixedfilename . $file->get_filepath() . $zipfilename;
-                                } else if ($type == 'onlinetext') {
-                                    $pathfilename = $prefixedfilename . '/' . $zipfilename;
-                                } else {
-                                    $pathfilename = $prefixedfilename . '/' . $zipfilename;
+                            if ($downloadasfolders) {
+                                // Create a folder for each user for each assignment plugin.
+                                // This is the default behavior for version of Moodle >= 3.1.
+                                $submission->exportfullpath = true;
+                                $pluginfiles = $plugin->get_files($submission, $student);
+                                foreach ($pluginfiles as $zipfilepath => $file) {
+                                    $subtype = $plugin->get_subtype();
+                                    $type = $plugin->get_type();
+                                    $zipfilename = basename($zipfilepath);
+                                    $prefixedfilename = clean_filename($prefix .
+                                                                       '_' .
+                                                                       $subtype .
+                                                                       '_' .
+                                                                       $type .
+                                                                       '_');
+                                    if ($type == 'file') {
+                                        $pathfilename = $prefixedfilename . $file->get_filepath() . $zipfilename;
+                                    } else if ($type == 'onlinetext') {
+                                        $pathfilename = $prefixedfilename . '/' . $zipfilename;
+                                    } else {
+                                        $pathfilename = $prefixedfilename . '/' . $zipfilename;
+                                    }
+                                    $pathfilename = clean_param($pathfilename, PARAM_PATH);
+                                    $filesforzipping[$pathfilename] = $file;
                                 }
-                                $pathfilename = clean_param($pathfilename, PARAM_PATH);
-                                $filesforzipping[$pathfilename] = $file;
+                            } else {
+                                // Create a single folder for all users of all assignment plugins.
+                                // This was the default behavior for version of Moodle < 3.1.
+                                $submission->exportfullpath = false;
+                                $pluginfiles = $plugin->get_files($submission, $student);
+                                foreach ($pluginfiles as $zipfilename => $file) {
+                                    $subtype = $plugin->get_subtype();
+                                    $type = $plugin->get_type();
+                                    $prefixedfilename = clean_filename($prefix .
+                                                                       '_' .
+                                                                       $subtype .
+                                                                       '_' .
+                                                                       $type .
+                                                                       '_' .
+                                                                       $zipfilename);
+                                    $filesforzipping[$prefixedfilename] = $file;
+                                }
                             }
                         }
                     }
@@ -3148,9 +3159,9 @@ class assign {
         if ($attemptnumber < 0 || $create) {
             // Make sure this grade matches the latest submission attempt.
             if ($this->get_instance()->teamsubmission) {
-                $submission = $this->get_group_submission($userid, 0, true);
+                $submission = $this->get_group_submission($userid, 0, true, $attemptnumber);
             } else {
-                $submission = $this->get_user_submission($userid, true);
+                $submission = $this->get_user_submission($userid, true, $attemptnumber);
             }
             if ($submission) {
                 $attemptnumber = $submission->attemptnumber;
@@ -3300,7 +3311,7 @@ class assign {
         if ($grade) {
             $data = new stdClass();
             if ($grade->grade !== null && $grade->grade >= 0) {
-                $data->grade = format_float($grade->grade, 2);
+                $data->grade = format_float($grade->grade, $this->get_grade_item()->get_decimals());
             }
         } else {
             $data = new stdClass();
@@ -3497,7 +3508,7 @@ class assign {
         if ($grade) {
             $data = new stdClass();
             if ($grade->grade !== null && $grade->grade >= 0) {
-                $data->grade = format_float($grade->grade, 2);
+                $data->grade = format_float($grade->grade, $this->get_grade_item()->get_decimals());
             }
         } else {
             $data = new stdClass();
@@ -3672,6 +3683,7 @@ class assign {
         $showquickgrading = empty($controller) && $this->can_grade();
         $quickgrading = get_user_preferences('assign_quickgrading', false);
         $showonlyactiveenrolopt = has_capability('moodle/course:viewsuspendedusers', $this->context);
+        $downloadasfolders = get_user_preferences('assign_downloadasfolders', 1);
 
         $markingallocation = $this->get_instance()->markingworkflow &&
             $this->get_instance()->markingallocation &&
@@ -3708,7 +3720,8 @@ class assign {
                                           'markingworkflowopt'=>$markingworkflowoptions,
                                           'markingallocationopt'=>$markingallocationoptions,
                                           'showonlyactiveenrolopt'=>$showonlyactiveenrolopt,
-                                          'showonlyactiveenrol'=>$this->show_only_active_users());
+                                          'showonlyactiveenrol' => $this->show_only_active_users(),
+                                          'downloadasfolders' => $downloadasfolders);
 
         $classoptions = array('class'=>'gradingoptionsform');
         $gradingoptionsform = new mod_assign_grading_options_form(null,
@@ -3921,7 +3934,11 @@ class assign {
     public function fullname($user) {
         if ($this->is_blind_marking()) {
             $hasviewblind = has_capability('mod/assign:viewblinddetails', $this->get_context());
-            $uniqueid = $this->get_uniqueid_for_user($user->id);
+            if (empty($user->recordid)) {
+                $uniqueid = $this->get_uniqueid_for_user($user->id);
+            } else {
+                $uniqueid = $user->recordid;
+            }
             if ($hasviewblind) {
                 return get_string('participant', 'assign') . ' ' . $uniqueid . ' (' . fullname($user) . ')';
             } else {
@@ -4125,6 +4142,7 @@ class assign {
 
             if ($data->operation == 'grantextension') {
                 // Reset the form so the grant extension page will create the extension form.
+                $mform = null;
                 return 'grantextension';
             } else if ($data->operation == 'setmarkingworkflowstate') {
                 return 'viewbatchsetmarkingworkflowstate';
@@ -5781,10 +5799,16 @@ class assign {
         require_once($CFG->dirroot . '/mod/assign/extensionform.php');
         require_sesskey();
 
+        $users = optional_param('userid', 0, PARAM_INT);
+        if (!$users) {
+            $users = required_param('selectedusers', PARAM_SEQUENCE);
+        }
+        $userlist = explode(',', $users);
+
         $formparams = array(
             'instance' => $this->get_instance(),
-            'userscount' => 0,
-            'usershtml' => '',
+            'assign' => $this,
+            'userlist' => $userlist
         );
 
         $mform = new mod_assign_extension_form(null, $formparams);
@@ -6160,8 +6184,8 @@ class assign {
                                       'markingworkflowopt' => $markingworkflowoptions,
                                       'markingallocationopt' => $markingallocationoptions,
                                       'showonlyactiveenrolopt'=>$showonlyactiveenrolopt,
-                                      'showonlyactiveenrol'=>$this->show_only_active_users());
-
+                                      'showonlyactiveenrol' => $this->show_only_active_users(),
+                                      'downloadasfolders' => get_user_preferences('assign_downloadasfolders', 1));
         $mform = new mod_assign_grading_options_form(null, $gradingoptionsparams);
         if ($formdata = $mform->get_data()) {
             set_user_preference('assign_perpage', $formdata->perpage);
@@ -6176,6 +6200,11 @@ class assign {
             }
             if ($showquickgrading) {
                 set_user_preference('assign_quickgrading', isset($formdata->quickgrading));
+            }
+            if (isset($formdata->downloadasfolders)) {
+                set_user_preference('assign_downloadasfolders', 1); // Enabled.
+            } else {
+                set_user_preference('assign_downloadasfolders', 0); // Disabled.
             }
             if (!empty($showonlyactiveenrolopt)) {
                 $showonlyactiveenrol = isset($formdata->showonlyactiveenrol);
@@ -6627,7 +6656,9 @@ class assign {
         }
 
         $userid = $useridlist[$rownum];
-        $grade = $this->get_user_grade($userid, false, $attemptnumber);
+        // We need to create a grade record matching this attempt number
+        // or the feedback plugin will have no way to know what is the correct attempt.
+        $grade = $this->get_user_grade($userid, true, $attemptnumber);
 
         $submission = null;
         if ($this->get_instance()->teamsubmission) {
@@ -7956,6 +7987,10 @@ class assign {
 
         // Check if default gradebook feedback is visible and enabled.
         $gradebookfeedbackplugin = $this->get_feedback_plugin_by_type($gradebookplugin);
+
+        if (empty($gradebookfeedbackplugin)) {
+            return false;
+        }
 
         if ($gradebookfeedbackplugin->is_visible() && $gradebookfeedbackplugin->is_enabled()) {
             return true;

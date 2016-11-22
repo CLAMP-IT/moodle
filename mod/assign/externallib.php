@@ -341,6 +341,7 @@ class mod_assign_external extends external_api {
                 if (!isset($courses[$cid])) {
                     $courses[$cid] = get_course($cid);
                 }
+                $courses[$cid]->contextid = $context->id;
             } catch (Exception $e) {
                 unset($courses[$cid]);
                 $warnings[] = array(
@@ -473,8 +474,8 @@ class mod_assign_external extends external_api {
             }
             $coursearray[]= array(
                 'id' => $courses[$id]->id,
-                'fullname' => $courses[$id]->fullname,
-                'shortname' => $courses[$id]->shortname,
+                'fullname' => external_format_string($courses[$id]->fullname, $course->contextid),
+                'shortname' => external_format_string($courses[$id]->shortname, $course->contextid),
                 'timemodified' => $courses[$id]->timemodified,
                 'assignments' => $assignmentarray
             );
@@ -650,6 +651,14 @@ class mod_assign_external extends external_api {
                     'text' => $assignplugin->get_editor_text($name, $item->id),
                     'format' => $assignplugin->get_editor_format($name, $item->id)
                 );
+
+                // Now format the text.
+                foreach ($fileareas as $filearea => $name) {
+                    list($editorfieldinfo['text'], $editorfieldinfo['format']) = external_format_text(
+                        $editorfieldinfo['text'], $editorfieldinfo['format'], $assign->get_context()->id,
+                        $component, $filearea, $item->id);
+                }
+
                 $plugin['editorfields'][] = $editorfieldinfo;
             }
             $plugins[] = $plugin;
@@ -2153,7 +2162,7 @@ class mod_assign_external extends external_api {
 
     /**
      * Describes the parameters for copy_previous_attempt
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since  Moodle 2.6
      */
     public static function copy_previous_attempt_parameters() {
@@ -2172,12 +2181,11 @@ class mod_assign_external extends external_api {
      * @since Moodle 2.6
      */
     public static function copy_previous_attempt($assignmentid) {
-        global $CFG, $USER;
 
         $params = self::validate_parameters(self::copy_previous_attempt_parameters(),
                                             array('assignmentid' => $assignmentid));
 
-        $cm = get_coursemodule_from_instance('assign', $assignmentid, 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_instance('assign', $params['assignmentid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
 
@@ -2185,7 +2193,7 @@ class mod_assign_external extends external_api {
 
         $notices = array();
 
-        $assignment->copy_previous_attempt($submissiondata, $notices);
+        $assignment->copy_previous_attempt($notices);
 
         $warnings = array();
         foreach ($notices as $notice) {
@@ -2591,6 +2599,8 @@ class mod_assign_external extends external_api {
                 'skip' => new external_value(PARAM_INT, 'number of records to skip', VALUE_DEFAULT, 0),
                 'limit' => new external_value(PARAM_INT, 'maximum number of records to return', VALUE_DEFAULT, 0),
                 'onlyids' => new external_value(PARAM_BOOL, 'Do not return all user fields', VALUE_DEFAULT, false),
+                'includeenrolments' => new external_value(PARAM_BOOL, 'Do return courses where the user is enrolled',
+                                                          VALUE_DEFAULT, true)
             )
         );
     }
@@ -2603,11 +2613,13 @@ class mod_assign_external extends external_api {
      * @param string $filter search string to filter the results.
      * @param int $skip Number of records to skip
      * @param int $limit Maximum number of records to return
+     * @param bool $onlyids Only return user ids.
+     * @param bool $includeenrolments Return courses where the user is enrolled.
      * @return array of warnings and status result
      * @since Moodle 3.1
      * @throws moodle_exception
      */
-    public static function list_participants($assignid, $groupid, $filter, $skip, $limit) {
+    public static function list_participants($assignid, $groupid, $filter, $skip, $limit, $onlyids, $includeenrolments) {
         global $DB, $CFG;
         require_once($CFG->dirroot . "/mod/assign/locallib.php");
         require_once($CFG->dirroot . "/user/lib.php");
@@ -2618,7 +2630,9 @@ class mod_assign_external extends external_api {
                                                 'groupid' => $groupid,
                                                 'filter' => $filter,
                                                 'skip' => $skip,
-                                                'limit' => $limit
+                                                'limit' => $limit,
+                                                'onlyids' => $onlyids,
+                                                'includeenrolments' => $includeenrolments
                                             ));
         $warnings = array();
 
@@ -2634,7 +2648,21 @@ class mod_assign_external extends external_api {
         $assign = new assign($context, null, null);
         $assign->require_view_grades();
 
-        $participants = $assign->list_participants_with_filter_status_and_group($params['groupid']);
+        $participants = array();
+        if (groups_group_visible($params['groupid'], $course, $cm)) {
+            $participants = $assign->list_participants_with_filter_status_and_group($params['groupid']);
+        }
+
+        $userfields = user_get_default_fields();
+        if (!$params['includeenrolments']) {
+            // Remove enrolled courses from users fields to be returned.
+            $key = array_search('enrolledcourses', $userfields);
+            if ($key !== false) {
+                unset($userfields[$key]);
+            } else {
+                throw new moodle_exception('invaliduserfield', 'error', '', 'enrolledcourses');
+            }
+        }
 
         $result = array();
         $index = 0;
@@ -2662,7 +2690,7 @@ class mod_assign_external extends external_api {
                 }
                 // Now we do the expensive lookup of user details because we completed the filtering.
                 if (!$assign->is_blind_marking() && !$params['onlyids']) {
-                    $userdetails = user_get_user_details($record, $course);
+                    $userdetails = user_get_user_details($record, $course, $userfields);
                 } else {
                     $userdetails = array('id' => $record->id);
                 }
@@ -2704,7 +2732,6 @@ class mod_assign_external extends external_api {
         $userdesc->keys['fullname']->type = PARAM_NOTAGS;
         $userdesc->keys['profileimageurlsmall']->required = VALUE_OPTIONAL;
         $userdesc->keys['profileimageurl']->required = VALUE_OPTIONAL;
-        $userdesc->keys['email']->desc = 'Email address';
         $userdesc->keys['email']->desc = 'Email address';
         $userdesc->keys['idnumber']->desc = 'The idnumber of the user';
 

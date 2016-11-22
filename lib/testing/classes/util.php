@@ -186,7 +186,7 @@ abstract class testing_util {
      * @return bool
      */
     public static function is_test_data_updated() {
-        global $CFG;
+        global $DB;
 
         $framework = self::get_framework();
 
@@ -206,7 +206,8 @@ abstract class testing_util {
             return false;
         }
 
-        $dbhash = get_config('core', $framework . 'test');
+        // A direct database request must be used to avoid any possible caching of an older value.
+        $dbhash = $DB->get_field('config', 'value', array('name' => $framework . 'test'));
         if ($hash !== $dbhash) {
             return false;
         }
@@ -798,7 +799,7 @@ abstract class testing_util {
         if (file_exists(self::get_dataroot() . '/filedir')) {
             $handle = opendir(self::get_dataroot() . '/filedir');
             while (false !== ($item = readdir($handle))) {
-                if (in_array('filedir/' . $item, $childclassname::$datarootskiponreset)) {
+                if (in_array('filedir' . DIRECTORY_SEPARATOR . $item, $childclassname::$datarootskiponreset)) {
                     continue;
                 }
                 if (is_dir(self::get_dataroot()."/filedir/$item")) {
@@ -940,11 +941,25 @@ abstract class testing_util {
     }
 
     /**
+     * Delete tablesupdatedbyscenario file. This should be called before suite,
+     * to ensure full db reset.
+     */
+    public static function clean_tables_updated_by_scenario_list() {
+        $tablesupdatedfile = self::get_tables_updated_by_scenario_list_path();
+        if (file_exists($tablesupdatedfile)) {
+            unlink($tablesupdatedfile);
+        }
+
+        // Reset static cache of cli process.
+        self::reset_updated_table_list();
+    }
+
+    /**
      * Returns the path to the file which holds list of tables updated in scenario.
      * @return string
      */
     protected final static function get_tables_updated_by_scenario_list_path() {
-        return self::get_dataroot() . '/tablesupdatedbyscenario.txt';
+        return self::get_dataroot() . '/tablesupdatedbyscenario.json';
     }
 
     /**
@@ -1054,8 +1069,10 @@ abstract class testing_util {
         if (!file_exists($jsonfilepath)) {
 
             $listfiles = array();
-            $listfiles['filedir/.'] = 'filedir/.';
-            $listfiles['filedir/..'] = 'filedir/..';
+            $currentdir = 'filedir' . DIRECTORY_SEPARATOR . '.';
+            $parentdir = 'filedir' . DIRECTORY_SEPARATOR . '..';
+            $listfiles[$currentdir] = $currentdir;
+            $listfiles[$parentdir] = $parentdir;
 
             $filedir = self::get_dataroot() . '/filedir';
             if (file_exists($filedir)) {

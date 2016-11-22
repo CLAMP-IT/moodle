@@ -153,7 +153,8 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         // Create a course.
         $course1 = self::getDataGenerator()->create_course(array(
             'idnumber' => 'idnumbercourse1',
-            'fullname' => 'Lightwork Course 1',
+            'fullname' => '<b>Lightwork Course 1</b>',      // Adding tags here to check that external_format_string works.
+            'shortname' => '<b>Lightwork Course 1</b>',     // Adding tags here to check that external_format_string works.
             'summary' => 'Lightwork Course 1 description',
             'summaryformat' => FORMAT_MOODLE,
             'category' => $category->id
@@ -221,6 +222,7 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         $this->assertEquals(1, count($result['courses']));
         $course = $result['courses'][0];
         $this->assertEquals('Lightwork Course 1', $course['fullname']);
+        $this->assertEquals('Lightwork Course 1', $course['shortname']);
         $this->assertEquals(1, count($course['assignments']));
         $assignment = $course['assignments'][0];
         $this->assertEquals($assign1->id, $assignment['id']);
@@ -1800,7 +1802,7 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
 
         $data = new stdClass();
         $data->onlinetext_editor = array('itemid' => file_get_unused_draft_itemid(),
-                                         'text' => 'Submission text',
+                                         'text' => 'Submission text with a <a href="@@PLUGINFILE@@/intro.txt">link</a>',
                                          'format' => FORMAT_MOODLE);
 
         $draftidfile = file_get_unused_draft_itemid();
@@ -1840,6 +1842,7 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         $this->resetAfterTest(true);
 
         list($assign, $instance, $student1, $student2, $teacher) = $this->create_submission_for_testing_status();
+        $studentsubmission = $assign->get_user_submission($student1->id, true);
 
         $result = mod_assign_external::get_submission_status($assign->get_instance()->id);
         // We expect debugging because of the $PAGE object, this won't happen in a normal WS request.
@@ -1876,7 +1879,14 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         foreach ($result['lastattempt']['submission']['plugins'] as $plugin) {
             $submissionplugins[$plugin['type']] = $plugin;
         }
-        $this->assertEquals('Submission text', $submissionplugins['onlinetext']['editorfields'][0]['text']);
+
+        // Format expected online text.
+        $onlinetext = 'Submission text with a <a href="@@PLUGINFILE@@/intro.txt">link</a>';
+        list($expectedtext, $expectedformat) = external_format_text($onlinetext, FORMAT_HTML, $assign->get_context()->id,
+                'assignsubmission_onlinetext', ASSIGNSUBMISSION_ONLINETEXT_FILEAREA, $studentsubmission->id);
+
+        $this->assertEquals($expectedtext, $submissionplugins['onlinetext']['editorfields'][0]['text']);
+        $this->assertEquals($expectedformat, $submissionplugins['onlinetext']['editorfields'][0]['format']);
         $this->assertEquals('/t.txt', $submissionplugins['file']['fileareas'][0]['files'][0]['filepath']);
     }
 
@@ -1947,6 +1957,7 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         $this->resetAfterTest(true);
 
         list($assign, $instance, $student1, $student2, $teacher) = $this->create_submission_for_testing_status(true);
+        $studentsubmission = $assign->get_user_submission($student1->id, true);
 
         $this->setUser($teacher);
         // Grade and reopen.
@@ -2018,7 +2029,14 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         foreach ($result['previousattempts'][0]['submission']['plugins'] as $plugin) {
             $submissionplugins[$plugin['type']] = $plugin;
         }
-        $this->assertEquals('Submission text', $submissionplugins['onlinetext']['editorfields'][0]['text']);
+
+        // Format expected online text.
+        $onlinetext = 'Submission text with a <a href="@@PLUGINFILE@@/intro.txt">link</a>';
+        list($expectedtext, $expectedformat) = external_format_text($onlinetext, FORMAT_HTML, $assign->get_context()->id,
+                'assignsubmission_onlinetext', ASSIGNSUBMISSION_ONLINETEXT_FILEAREA, $studentsubmission->id);
+
+        $this->assertEquals($expectedtext, $submissionplugins['onlinetext']['editorfields'][0]['text']);
+        $this->assertEquals($expectedformat, $submissionplugins['onlinetext']['editorfields'][0]['format']);
         $this->assertEquals('/t.txt', $submissionplugins['file']['fileareas'][0]['files'][0]['filepath']);
     }
 
@@ -2294,7 +2312,7 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         $DB->update_record('user', $student);
 
         $this->setUser($teacher);
-        $participants = mod_assign_external::list_participants($assignment->id, 0, '', 0, 0);
+        $participants = mod_assign_external::list_participants($assignment->id, 0, '', 0, 0, false, true);
         $this->assertCount(1, $participants);
 
         // Asser that we have a valid response data.
@@ -2309,6 +2327,12 @@ class mod_assign_external_testcase extends externallib_advanced_testcase {
         $this->assertEquals($student->phone2, $participant['phone2']);
         $this->assertEquals($student->department, $participant['department']);
         $this->assertEquals($student->institution, $participant['institution']);
+        $this->assertArrayHasKey('enrolledcourses', $participant);
+
+        $participants = mod_assign_external::list_participants($assignment->id, 0, '', 0, 0, false, false);
+        // Check that the list of courses the participant is enrolled is not returned.
+        $participant = $participants[0];
+        $this->assertArrayNotHasKey('enrolledcourses', $participant);
     }
 
     /**

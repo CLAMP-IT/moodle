@@ -21,6 +21,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 /** @global int $CHOICE_COLUMN_HEIGHT */
 global $CHOICE_COLUMN_HEIGHT;
 $CHOICE_COLUMN_HEIGHT = 300;
@@ -175,8 +177,11 @@ function choice_update_instance($choice) {
             $option->id=$choice->optionid[$key];
             if (isset($value) && $value <> '') {
                 $DB->update_record("choice_options", $option);
-            } else { //empty old option - needs to be deleted.
-                $DB->delete_records("choice_options", array("id"=>$option->id));
+            } else {
+                // Remove the empty (unused) option.
+                $DB->delete_records("choice_options", array("id" => $option->id));
+                // Delete any answers associated with this option.
+                $DB->delete_records("choice_answers", array("choiceid" => $choice->id, "optionid" => $option->id));
             }
         } else {
             if (isset($value) && $value <> '') {
@@ -288,7 +293,7 @@ function choice_user_submit_response($formanswer, $choice, $userid, $course, $cm
         $lockfactory = \core\lock\lock_config::get_lock_factory($locktype);
 
         // Opening the lock.
-        $choicelock = $lockfactory->get_lock($resouce, $timeout);
+        $choicelock = $lockfactory->get_lock($resouce, $timeout, MINSECS);
         if (!$choicelock) {
             print_error('cannotsubmit', 'choice', $continueurl);
         }

@@ -21,6 +21,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 // Some constants
 define ('DATA_MAX_ENTRIES', 50);
 define ('DATA_PERPAGE_SINGLE', 1);
@@ -1332,9 +1334,9 @@ function data_print_template($template, $records, $data, $search='', $page=0, $r
         if (!$data->approval) {
             $replacement[] = '';
         } else if ($record->approved) {
-            $replacement[] = 'approved';
+            $replacement[] = get_string('approved', 'data');
         } else {
-            $replacement[] = 'notapproved';
+            $replacement[] = get_string('notapproved', 'data');
         }
 
         $patterns[]='##comments##';

@@ -1621,6 +1621,7 @@ function purge_all_caches() {
     cache_helper::purge_all();
 
     // Purge all other caches: rss, simplepie, etc.
+    clearstatcache();
     remove_dir($CFG->cachedir.'', true);
 
     // Make sure cache dir is writable, throws exception if not.
@@ -2619,8 +2620,17 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
         }
     }
 
-    // Check that the user account is properly set up.
-    if (user_not_fully_set_up($USER)) {
+    // Check that the user account is properly set up. If we can't redirect to
+    // edit their profile, perform just the lax check. It will allow them to
+    // use filepicker on the profile edit page.
+
+    if ($preventredirect) {
+        $usernotfullysetup = user_not_fully_set_up($USER, false);
+    } else {
+        $usernotfullysetup = user_not_fully_set_up($USER, true);
+    }
+
+    if ($usernotfullysetup) {
         if ($preventredirect) {
             throw new require_login_exception('User not fully set-up');
         }
@@ -2682,7 +2692,7 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
         if ($preventredirect) {
             throw new require_login_exception('Maintenance in progress');
         }
-
+        $PAGE->set_context(null);
         print_maintenance_message();
     }
 
@@ -3135,14 +3145,39 @@ function update_user_login_times() {
 /**
  * Determines if a user has completed setting up their account.
  *
+ * The lax mode (with $strict = false) has been introduced for special cases
+ * only where we want to skip certain checks intentionally. This is valid in
+ * certain mnet or ajax scenarios when the user cannot / should not be
+ * redirected to edit their profile. In most cases, you should perform the
+ * strict check.
+ *
  * @param stdClass $user A {@link $USER} object to test for the existence of a valid name and email
+ * @param bool $strict Be more strict and assert id and custom profile fields set, too
  * @return bool
  */
-function user_not_fully_set_up($user) {
+function user_not_fully_set_up($user, $strict = true) {
+    global $CFG;
+    require_once($CFG->dirroot.'/user/profile/lib.php');
+
     if (isguestuser($user)) {
         return false;
     }
-    return (empty($user->firstname) or empty($user->lastname) or empty($user->email) or over_bounce_threshold($user));
+
+    if (empty($user->firstname) or empty($user->lastname) or empty($user->email) or over_bounce_threshold($user)) {
+        return true;
+    }
+
+    if ($strict) {
+        if (empty($user->id)) {
+            // Strict mode can be used with existing accounts only.
+            return true;
+        }
+        if (!profile_has_required_custom_fields_set($user->id)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -4456,6 +4491,7 @@ function hash_internal_user_password($password, $fasthash = false) {
  *
  * Updating the password will modify the $user object and the database
  * record to use the current hashing algorithm.
+ * It will remove Web Services user tokens too.
  *
  * @param stdClass $user User object (password property may be updated).
  * @param string $password Plain text password.
@@ -4505,6 +4541,10 @@ function update_internal_user_password($user, $password, $fasthash = false) {
         // Trigger event.
         $user = $DB->get_record('user', array('id' => $user->id));
         \core\event\user_password_updated::create_from_user($user)->trigger();
+
+        // Remove WS user tokens.
+        require_once($CFG->dirroot.'/webservice/lib.php');
+        webservice::delete_user_ws_tokens($user->id);
     }
 
     return true;
@@ -7794,12 +7834,12 @@ function random_bytes_emulate($length) {
     }
 
     // Bad luck, there is no reliable random generator, let's just hash some unique stuff that is hard to guess.
-    $hash = sha1(serialize($CFG) . serialize($_SERVER) . microtime(true) . uniqid('', true), true);
-    // NOTE: the last param in sha1() is true, this means we are getting 20 bytes, not 40 chars as usual.
-    if ($length <= 20) {
-        return substr($hash, 0, $length);
-    }
-    return $hash . random_bytes_emulate($length - 20);
+    $staticdata = serialize($CFG) . serialize($_SERVER);
+    $hash = '';
+    do {
+        $hash .= sha1($staticdata . microtime(true) . uniqid('', true), true);
+    } while (strlen($hash) < $length);
+    return substr($hash, 0, $length);
 }
 
 /**

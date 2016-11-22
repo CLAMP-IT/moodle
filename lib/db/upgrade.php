@@ -1149,15 +1149,6 @@ function xmldb_main_upgrade($oldversion) {
         // Launch add key tagcloudid.
         $dbman->add_key($table, $key);
 
-        // Define index tagcolltype (not unique) to be added to tag.
-        $table = new xmldb_table('tag');
-        $index = new xmldb_index('tagcolltype', XMLDB_INDEX_NOTUNIQUE, array('tagcollid', 'tagtype'));
-
-        // Conditionally launch add index tagcolltype.
-        if (!$dbman->index_exists($table, $index)) {
-            $dbman->add_index($table, $index);
-        }
-
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2016011300.02);
     }
@@ -1327,6 +1318,7 @@ function xmldb_main_upgrade($oldversion) {
         }
 
         // Define index tagcolltype (not unique) to be dropped form tag.
+        // This index is no longer created however it was present at some point and it's better to be safe and try to drop it.
         $index = new xmldb_index('tagcolltype', XMLDB_INDEX_NOTUNIQUE, array('tagcollid', 'tagtype'));
 
         // Conditionally launch drop index tagcolltype.
@@ -2071,6 +2063,62 @@ function xmldb_main_upgrade($oldversion) {
 
     // Moodle v3.1.0 release upgrade line.
     // Put any upgrade step following this.
+
+    if ($oldversion < 2016052301.08) {
+        // Default schedule values.
+        $hour = 0;
+        $minute = 0;
+
+        // Get the old settings.
+        if (isset($CFG->statsruntimestarthour)) {
+            $hour = $CFG->statsruntimestarthour;
+        }
+        if (isset($CFG->statsruntimestartminute)) {
+            $minute = $CFG->statsruntimestartminute;
+        }
+
+        // Retrieve the scheduled task record first.
+        $stattask = $DB->get_record('task_scheduled', array('component' => 'moodle', 'classname' => '\core\task\stats_cron_task'));
+
+        // Don't touch customised scheduling.
+        if ($stattask && !$stattask->customised) {
+
+            $nextruntime = mktime($hour, $minute, 0, date('m'), date('d'), date('Y'));
+            if ($nextruntime < $stattask->lastruntime) {
+                // Add 24 hours to the next run time.
+                $newtime = new DateTime();
+                $newtime->setTimestamp($nextruntime);
+                $newtime->add(new DateInterval('P1D'));
+                $nextruntime = $newtime->getTimestamp();
+            }
+            $stattask->nextruntime = $nextruntime;
+            $stattask->minute = $minute;
+            $stattask->hour = $hour;
+            $stattask->customised = 1;
+            $DB->update_record('task_scheduled', $stattask);
+        }
+        // These settings are no longer used.
+        unset_config('statsruntimestarthour');
+        unset_config('statsruntimestartminute');
+        unset_config('statslastexecution');
+
+        upgrade_main_savepoint(true, 2016052301.08);
+    }
+
+    if ($oldversion < 2016052302.02) {
+
+        // Define index attemptstepid-name (unique) to be dropped from question_attempt_step_data.
+        $table = new xmldb_table('question_attempt_step_data');
+        $index = new xmldb_index('attemptstepid-name', XMLDB_INDEX_UNIQUE, array('attemptstepid', 'name'));
+
+        // Conditionally launch drop index attemptstepid-name.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2016052302.02);
+    }
 
     return true;
 }

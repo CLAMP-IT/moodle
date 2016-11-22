@@ -54,6 +54,10 @@ class behat_forms extends behat_base {
 
         // Ensures the button is present.
         $buttonnode = $this->find_button($button);
+        // Focus on button to ensure it is in viewport, before pressing it.
+        if ($this->running_javascript()) {
+            $buttonnode->focus();
+        }
         $buttonnode->press();
     }
 
@@ -217,7 +221,7 @@ class behat_forms extends behat_base {
     /**
      * Sets the specified value to the field.
      *
-     * @Given /^I set the field "(?P<field_string>(?:[^"]|\\")*)" to multiline$/
+     * @Given /^I set the field "(?P<field_string>(?:[^"]|\\")*)" to multiline:?$/
      * @throws ElementNotFoundException Thrown by behat_base::find
      * @param string $field
      * @param PyStringNode $value

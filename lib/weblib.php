@@ -1425,13 +1425,15 @@ function format_string($string, $striplinks = true, $options = null) {
         $options['filter'] = true;
     }
 
+    $options['escape'] = !isset($options['escape']) || $options['escape'];
+
     if (!$options['context']) {
         // We did not find any context? weird.
         return $string = strip_tags($string);
     }
 
     // Calculate md5.
-    $md5 = md5($string.'<+>'.$striplinks.'<+>'.$options['context']->id.'<+>'.current_language());
+    $md5 = md5($string.'<+>'.$striplinks.'<+>'.$options['context']->id.'<+>'.$options['escape'].'<+>'.current_language());
 
     // Fetch from cache if possible.
     if (isset($strcache[$md5])) {
@@ -1440,7 +1442,7 @@ function format_string($string, $striplinks = true, $options = null) {
 
     // First replace all ampersands not followed by html entity code
     // Regular expression moved to its own method for easier unit testing.
-    $string = replace_ampersands_not_followed_by_entity($string);
+    $string = $options['escape'] ? replace_ampersands_not_followed_by_entity($string) : $string;
 
     if (!empty($CFG->filterall) && $options['filter']) {
         $filtermanager = filter_manager::instance();
@@ -1450,8 +1452,11 @@ function format_string($string, $striplinks = true, $options = null) {
 
     // If the site requires it, strip ALL tags from this string.
     if (!empty($CFG->formatstringstriptags)) {
-        $string = str_replace(array('<', '>'), array('&lt;', '&gt;'), strip_tags($string));
-
+        if ($options['escape']) {
+            $string = str_replace(array('<', '>'), array('&lt;', '&gt;'), strip_tags($string));
+        } else {
+            $string = strip_tags($string);
+        }
     } else {
         // Otherwise strip just links if that is required (default).
         if ($striplinks) {
@@ -1578,6 +1583,10 @@ function strip_pluginfile_content($source) {
  * @return string text without legacy TRUSTTEXT marker
  */
 function trusttext_strip($text) {
+    if (!is_string($text)) {
+        // This avoids the potential for an endless loop below.
+        throw new coding_exception('trusttext_strip parameter must be a string');
+    }
     while (true) { // Removing nested TRUSTTEXT.
         $orig = $text;
         $text = str_replace('#####TRUSTTEXT#####', '', $text);
@@ -1775,7 +1784,7 @@ function purify_html($text, $options = array()) {
         $config = HTMLPurifier_Config::createDefault();
 
         $config->set('HTML.DefinitionID', 'moodlehtml');
-        $config->set('HTML.DefinitionRev', 4);
+        $config->set('HTML.DefinitionRev', 5);
         $config->set('Cache.SerializerPath', $cachedir);
         $config->set('Cache.SerializerPermissions', $CFG->directorypermissions);
         $config->set('Core.NormalizeNewlines', false);
@@ -1814,6 +1823,45 @@ function purify_html($text, $options = array()) {
             $def->addElement('algebra', 'Inline', 'Inline', array());                   // Algebra syntax, equivalent to @@xx@@.
             $def->addElement('lang', 'Block', 'Flow', array(), array('lang'=>'CDATA')); // Original multilang style - only our hacked lang attribute.
             $def->addAttribute('span', 'xxxlang', 'CDATA');                             // Current very problematic multilang.
+
+            // Media elements.
+            // https://html.spec.whatwg.org/#the-video-element
+            $def->addElement('video', 'Block', 'Optional: #PCDATA | Flow | source | track', 'Common', [
+                'src' => 'URI',
+                'crossorigin' => 'Enum#anonymous,use-credentials',
+                'poster' => 'URI',
+                'preload' => 'Enum#auto,metadata,none',
+                'autoplay' => 'Bool',
+                'playsinline' => 'Bool',
+                'loop' => 'Bool',
+                'muted' => 'Bool',
+                'controls' => 'Bool',
+                'width' => 'Length',
+                'height' => 'Length',
+            ]);
+            // https://html.spec.whatwg.org/#the-audio-element
+            $def->addElement('audio', 'Block', 'Optional: #PCDATA | Flow | source | track', 'Common', [
+                'src' => 'URI',
+                'crossorigin' => 'Enum#anonymous,use-credentials',
+                'preload' => 'Enum#auto,metadata,none',
+                'autoplay' => 'Bool',
+                'loop' => 'Bool',
+                'muted' => 'Bool',
+                'controls' => 'Bool'
+            ]);
+            // https://html.spec.whatwg.org/#the-source-element
+            $def->addElement('source', false, 'Empty', null, [
+                'src' => 'URI',
+                'type' => 'Text'
+            ]);
+            // https://html.spec.whatwg.org/#the-track-element
+            $def->addElement('track', false, 'Empty', null, [
+                'src' => 'URI',
+                'kind' => 'Enum#subtitles,captions,descriptions,chapters,metadata',
+                'srclang' => 'Text',
+                'label' => 'Text',
+                'default' => 'Bool',
+            ]);
 
             // Use the built-in Ruby module to add annotation support.
             $def->manager->addModule(new HTMLPurifier_HTMLModule_Ruby());

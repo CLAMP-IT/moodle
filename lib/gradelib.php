@@ -382,7 +382,17 @@ function grade_regrade_final_grades_if_required($course, callable $callback = nu
         echo $OUTPUT->header();
         echo $OUTPUT->heading(get_string('recalculatinggrades', 'grades'));
         $progress = new \core\progress\display(true);
-        grade_regrade_final_grades($course->id, null, null, $progress);
+        $status = grade_regrade_final_grades($course->id, null, null, $progress);
+
+        // Show regrade errors and set the course to no longer needing regrade (stop endless loop).
+        if (is_array($status)) {
+            foreach ($status as $error) {
+                $errortext = new \core\output\notification($error, \core\output\notification::NOTIFY_ERROR);
+                echo $OUTPUT->render($errortext);
+            }
+            $courseitem = grade_item::fetch_course_item($course->id);
+            $courseitem->regrading_finished();
+        }
 
         if ($callback) {
             //
@@ -1105,8 +1115,9 @@ function grade_recover_history_grades($userid, $courseid) {
  * @return bool true if ok, array of errors if problems found. Grade item id => error message
  */
 function grade_regrade_final_grades($courseid, $userid=null, $updated_item=null, $progress=null) {
-    // This may take a very long time.
+    // This may take a very long time and extra memory.
     \core_php_time_limit::raise();
+    raise_memory_limit(MEMORY_EXTRA);
 
     $course_item = grade_item::fetch_course_item($courseid);
 

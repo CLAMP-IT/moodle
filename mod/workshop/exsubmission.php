@@ -154,11 +154,13 @@ if ($edit and $canmanage) {
                 throw new moodle_exception('err_examplesubmissionid', 'workshop');
             }
         }
-        // save and relink embedded images and save attachments
-        $formdata = file_postupdate_standard_editor($formdata, 'content', $contentopts, $workshop->context,
-                                                      'mod_workshop', 'submission_content', $example->id);
-        $formdata = file_postupdate_standard_filemanager($formdata, 'attachment', $attachmentopts, $workshop->context,
-                                                           'mod_workshop', 'submission_attachment', $example->id);
+
+        // Save and relink embedded images and save attachments.
+        $formdata = file_postupdate_standard_editor($formdata, 'content', $workshop->submission_content_options(),
+            $workshop->context, 'mod_workshop', 'submission_content', $example->id);
+        $formdata = file_postupdate_standard_filemanager($formdata, 'attachment', $workshop->submission_attachment_options(),
+            $workshop->context, 'mod_workshop', 'submission_attachment', $example->id);
+
         if (empty($formdata->attachment)) {
             // explicit cast to zero integer
             $formdata->attachment = 0;
@@ -177,7 +179,7 @@ echo $output->heading(format_string($workshop->name), 2);
 // while reading the submitted answer
 if (trim($workshop->instructauthors)) {
     $instructions = file_rewrite_pluginfile_urls($workshop->instructauthors, 'pluginfile.php', $PAGE->context->id,
-        'mod_workshop', 'instructauthors', 0, workshop::instruction_editors_options($PAGE->context));
+        'mod_workshop', 'instructauthors', null, workshop::instruction_editors_options($PAGE->context));
     print_collapsible_region_start('', 'workshop-viewlet-instructauthors', get_string('instructauthors', 'workshop'));
     echo $output->box(format_text($instructions, $workshop->instructauthorsformat, array('overflowdiv'=>true)), array('generalbox', 'instructions'));
     print_collapsible_region_end();
