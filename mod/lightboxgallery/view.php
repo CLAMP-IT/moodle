@@ -54,6 +54,8 @@ if ($id) {
 
 if ($gallery->ispublic) {
     $userid = (isloggedin() ? $USER->id : 0);
+    $PAGE->set_cm($cm, $course);
+    $PAGE->set_pagelayout('incourse');
 } else {
     require_login($course, true, $cm);
     $userid = $USER->id;
@@ -96,7 +98,6 @@ if (has_capability('mod/lightboxgallery:edit', $context)) {
     $strediting = get_string('turnediting'.($editing ? 'off' : 'on'));
     $button = $OUTPUT->single_button($url, $strediting, 'get').' ';
 }
-$button .= $OUTPUT->update_module_button($cm->id, 'lightboxgallery');
 $PAGE->set_button($button);
 $PAGE->requires->css('/mod/lightboxgallery/assets/skins/sam/gallery-lightbox-skin.css');
 $PAGE->requires->yui_module('moodle-mod_lightboxgallery-lightbox', 'M.mod_lightboxgallery.init');

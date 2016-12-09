@@ -29,7 +29,7 @@ Feature: Set a lightboxgallery as public
     Then I should not see "Test gallery"
     When I log in as "teacher1"
     And I view the lightboxgallery with idnumber "lbg1"
-    And I press "Update this Lightbox Gallery"
+    And I follow "Edit settings"
     And I set the field "Make public" to "Yes"
     And I press "Save and display"
     And I log out
