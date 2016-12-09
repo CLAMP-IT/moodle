@@ -31,7 +31,7 @@ $id = required_param('id', PARAM_INT);
 list($course, $cm) = get_course_and_cm_from_cmid($id, 'lightboxgallery');
 $gallery = $DB->get_record('lightboxgallery', array('id' => $cm->instance), '*', MUST_EXIST);
 
-require_login($course->id);
+require_login($course, true, $cm);
 
 $context = context_module::instance($cm->id);
 require_capability('mod/lightboxgallery:addimage', $context);
@@ -40,7 +40,6 @@ $PAGE->set_cm($cm);
 $PAGE->set_url('/mod/lightboxgallery/view.php', array('id' => $cm->id));
 $PAGE->set_title($gallery->name);
 $PAGE->set_heading($course->shortname);
-$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'lightboxgallery'));
 
 $mform = new mod_lightboxgallery_imageadd_form(null, array('id' => $cm->id));
 
