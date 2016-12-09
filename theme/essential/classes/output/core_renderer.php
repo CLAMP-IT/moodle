@@ -502,13 +502,19 @@ class core_renderer extends \core_renderer {
                 $content .= $this->getfontawesomemarkup('caret-right');
             }
             $content .= '</a>';
-            $content .= '<div class="dropdown-menu">';
-            $content .= '<ul>';
+            if ($level == 1) {
+                $content .= '<div class="dropdown-menu">';
+                $content .= '<ul>';
+            } else {
+                $content .= '<ul class="dropdown-menu">';
+            }
             foreach ($menunode->get_children() as $menunode) {
                 $content .= $this->render_custom_menu_item($menunode, 0);
             }
             $content .= '</ul>';
-            $content .= '</div>';
+            if ($level == 1) {
+                $content .= '</div>';
+            }
         } else {
             // Also, if the node's text matches '####', add a class so we can treat it as a divider.
             $content = '';
@@ -1135,8 +1141,10 @@ class core_renderer extends \core_renderer {
                 if (strpos($pagetype, 'admin-setting') !== false) {
                     $pagetype = 'admin-setting'; // Deal with all setting page types.
                 } else if ((strpos($pagetype, 'mod') !== false) &&
-                    ((strpos($pagetype, 'edit') !== false) || (strpos($pagetype, 'view') !== false))) {
-                    $pagetype = 'mod-edit-view'; // Deal with all mod edit / view page types.
+                    ((strpos($pagetype, 'edit') !== false) ||
+                    (strpos($pagetype, 'view') !== false) ||
+                    (strpos($pagetype, 'mod') !== false))) {
+                    $pagetype = 'mod-edit-view'; // Deal with all mod edit / view / mod page types.
                 } else if (strpos($pagetype, 'mod-data-field') !== false) {
                     $pagetype = 'mod-data-field'; // Deal with all mod data field page types.
                 } else if (strpos($pagetype, 'mod-lesson') !== false) {
@@ -1991,14 +1999,18 @@ class core_renderer extends \core_renderer {
      * in the settings.php file of the theme that the layout and tile files call this method for.
      *
      * @param string $sectionkey settings section key.
+     * @param string $buttontext optional button text.
      * @return string or null of not needed.
      */
-    public function essential_edit_button($sectionkey) {
+    public function essential_edit_button($sectionkey, $buttontext = null) {
         global $CFG;
         if ($this->page->user_is_editing() && is_siteadmin()) {
             $themesectionkey = $this->essential_edit_button_settingspage($sectionkey);
+            if (is_null($buttontext)) {
+                $buttontext = get_string('edit');
+            }
             $url = preg_replace("(https?:)", "", $CFG->wwwroot . '/admin/settings.php?section=');
-            return '<a class="btn btn-success" href="'.$url.$themesectionkey.'">'.get_string('edit').'</a>';
+            return '<a class="btn btn-success" href="'.$url.$themesectionkey.'">'.$buttontext.'</a>';
         }
         return null;
     }
