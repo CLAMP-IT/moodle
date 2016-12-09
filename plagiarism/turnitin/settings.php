@@ -42,6 +42,10 @@ if (isset($_SESSION["notice"])) {
 $plagiarismpluginturnitin = new plagiarism_plugin_turnitin();
 $supported_mods = array('assign', 'forum', 'workshop');
 
+if ($DB->record_exists('modules',array('name'=>'coursework','visible'=>1))) {
+    $supported_mods[]   =   'coursework';
+}
+
 // Get plugin config.
 $pluginconfig = array();
 $pluginconfig['turnitin_use'] = get_config('plagiarism', 'turnitin_use');
@@ -85,7 +89,7 @@ if (!empty($action)) {
             array_push($settingsfields, 'plagiarism_locked_message');
 
             foreach ($settingsfields as $field) {
-                $defaultfield = new object();
+                $defaultfield = new stdClass();
                 $defaultfield->cm = null;
                 $defaultfield->name = $field;
                 if ($field == 'plagiarism_locked_message'){
@@ -172,7 +176,7 @@ switch ($do) {
 
             $output .= "== ".$table." ==\r\n\r\n";
 
-            if ($data = $DB->get_recordset($table)) {
+            if ($data = $DB->get_records($table)) {
 
                 $headers = array_keys(get_object_vars(current($data)));
                 $columnwidth = 25;
