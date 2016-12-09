@@ -49,9 +49,9 @@ if ($week = optional_param('week', 0, PARAM_INT)) { // Weeks old section paramet
 }
 // End backwards-compatible aliasing..
 
-$context = context_course::instance($course->id);
+$coursecontext = context_course::instance($course->id);
 
-if (($marker >= 0) && has_capability('moodle/course:setcurrentsection', $context) && confirm_sesskey()) {
+if (($marker >= 0) && has_capability('moodle/course:setcurrentsection', $coursecontext) && confirm_sesskey()) {
     $course->marker = $marker;
     course_set_marker($course->id, $marker);
 }
@@ -76,76 +76,101 @@ $renderer->set_portable($portable);
 $gfsettings = $courseformat->get_settings();
 $imageproperties = $courseformat->calculate_image_container_properties(
 $gfsettings['imagecontainerwidth'], $gfsettings['imagecontainerratio'], $gfsettings['borderwidth']);
-?>
-<style type="text/css" media="screen">
-    /* <![CDATA[ */
-    .course-content ul.gridicons li p.icon_content {
-        width: <?php echo ($gfsettings['imagecontainerwidth'] + ($gfsettings['borderwidth'] * 2)); ?>px;
-    }
-    .course-content ul.gridicons li .image_holder {
-        width: <?php echo $gfsettings['imagecontainerwidth']; ?>px;
-        height: <?php echo $imageproperties['height']; ?>px;
-        border-color: <?php
-        if ($gfsettings['bordercolour'][0] != '#') {
-            echo '#';
-        }
-        echo $gfsettings['bordercolour'];
-        ?>;
-        background-color: <?php
-        if ($gfsettings['imagecontainerbackgroundcolour'][0] != '#') {
-            echo '#';
-        }
-        echo $gfsettings['imagecontainerbackgroundcolour'];
-        ?>;
-        border-width: <?php echo $gfsettings['borderwidth']; ?>px;
-        <?php
-        if ($gfsettings['borderradius'] == 2) { // On.
-            echo 'border-radius: ' . $gfsettings['borderwidth'] . 'px;';
-        }
-        ?>
 
-    }
+echo '<style type="text/css" media="screen">';
+echo '/* <![CDATA[ */';
+echo '.course-content ul.gridicons li .icon_content {';
+if ($gfsettings['sectiontitleboxposition'] == 1) {
+    echo 'width: '.(($gfsettings['imagecontainerwidth'] + ($gfsettings['borderwidth'] * 2)) - 20).'px;';
+} else {
+    echo 'width: '.($gfsettings['imagecontainerwidth'] + ($gfsettings['borderwidth'] * 2)).'px;';
+}
+echo '}';
+echo '.course-content ul.gridicons li .image_holder {';
+echo 'width: '.$gfsettings['imagecontainerwidth'].'px;';
+echo 'height: '.$imageproperties['height'].'px;';
+echo 'border-color: ';
+if ($gfsettings['bordercolour'][0] != '#') {
+    echo '#';
+}
+echo $gfsettings['bordercolour'].';';
+echo 'background-color: ';
+if ($gfsettings['imagecontainerbackgroundcolour'][0] != '#') {
+    echo '#';
+}
+echo $gfsettings['imagecontainerbackgroundcolour'].';';
+echo 'border-width: '.$gfsettings['borderwidth'].'px;';
+if ($gfsettings['borderradius'] == 2) { // On.
+    echo 'border-radius: ' . $gfsettings['borderwidth'] . 'px;';
+}
+echo '}';
 
-    <?php
-    $startindex = 0;
-    if ($gfsettings['bordercolour'][0] == '#') {
-        $startindex++;
-    }
-    $red = hexdec(substr($gfsettings['bordercolour'], $startindex, 2));
-    $green = hexdec(substr($gfsettings['bordercolour'], $startindex + 2, 2));
-    $blue = hexdec(substr($gfsettings['bordercolour'], $startindex + 4, 2));
-    ?>
-    .course-content ul.gridicons li:hover .image_holder {
-        box-shadow: 0px 0px 0px <?php echo $gfsettings['borderwidth']; ?>px rgba(<?php echo $red . ',' . $green . ',' . $blue ?>,0.3);
-    }
+$startindex = 0;
+if ($gfsettings['bordercolour'][0] == '#') {
+    $startindex++;
+}
+$red = hexdec(substr($gfsettings['bordercolour'], $startindex, 2));
+$green = hexdec(substr($gfsettings['bordercolour'], $startindex + 2, 2));
+$blue = hexdec(substr($gfsettings['bordercolour'], $startindex + 4, 2));
 
-    .course-content ul.gridicons li.currenticon .image_holder {
-        box-shadow: 0px 0px 2px 4px <?php
-        if ($gfsettings['currentselectedsectioncolour'][0] != '#') {
-            echo '#';
-        }
-        echo $gfsettings['currentselectedsectioncolour'];
-        ?>;
-    }
+echo '.course-content ul.gridicons li:hover .image_holder {';
+echo 'box-shadow: 0 0 0 '.$gfsettings['borderwidth'].'px rgba('.$red.','.$green.','.$blue.', 0.3);';
+echo '}';
 
-    .course-content ul.gridicons li.currentselected {
-        background-color: <?php
-        if ($gfsettings['currentselectedimagecontainercolour'][0] != '#') {
-            echo '#';
-        }
-        echo $gfsettings['currentselectedimagecontainercolour'];
-        ?>;
-    }
+echo '.course-content ul.gridicons li.currenticon .image_holder {';
+echo 'box-shadow: 0 0 2px 4px ';
+if ($gfsettings['currentselectedsectioncolour'][0] != '#') {
+    echo '#';
+}
+echo $gfsettings['currentselectedsectioncolour'].';';
+echo '}';
 
-    .course-content ul.gridicons img.new_activity {
-        margin-top: <?php echo $imageproperties['margin-top']; ?>px;
-        margin-left: <?php echo $imageproperties['margin-left']; ?>px;
-    }
+echo '.course-content ul.gridicons li.currentselected {';
+echo 'background-color: ';
+if ($gfsettings['currentselectedimagecontainercolour'][0] != '#') {
+    echo '#';
+}
+echo $gfsettings['currentselectedimagecontainercolour'].';';
+echo '}';
 
-    /* ]]> */
-</style>
-<?php
-if (!empty($displaysection)) {
+if ($gfsettings['sectiontitleboxposition'] == 1) {
+    echo '.course-content ul.gridicons li .icon_content.content_inside {';
+    echo 'background-color: ';
+    if ($gfsettings['sectiontitleinsidetitlebackgroundcolour'][0] != '#') {
+        echo '#';
+    }
+    echo $gfsettings['sectiontitleinsidetitlebackgroundcolour'].';';
+    echo 'color: ';
+    if ($gfsettings['sectiontitleinsidetitletextcolour'][0] != '#') {
+        echo '#';
+    }
+    echo $gfsettings['sectiontitleinsidetitletextcolour'].';';
+    echo 'height: '.round(($imageproperties['height'] * 0.25), 0, PHP_ROUND_HALF_UP).'px;';
+    echo '}';
+} else {
+    echo '.course-content ul.gridicons li.currentselected .icon_content {';
+    echo 'color: ';
+    if ($gfsettings['currentselectedimagecontainertextcolour'][0] != '#') {
+        echo '#';
+    }
+    echo $gfsettings['currentselectedimagecontainertextcolour'].';';
+    echo '}';
+}
+
+echo '.course-content ul.gridicons img.new_activity {';
+echo 'margin-top: '.$imageproperties['margin-top'].'px;';
+echo 'margin-left: '.$imageproperties['margin-left'].'px;';
+echo '}';
+
+echo '/* ]]> */';
+echo '</style>';
+
+$sectionparam = optional_param('section', -1, PARAM_INT);
+if ($sectionparam != -1) {
+    $displaysection = $sectionparam;
+}
+
+if ($sectionparam != -1) {
     $renderer->print_single_section_page($course, null, null, null, null, $displaysection);
 } else {
     $renderer->print_multiple_section_page($course, null, null, null, null);

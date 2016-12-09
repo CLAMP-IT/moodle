@@ -6,7 +6,7 @@ is a good thing to do.  However, it is complicated.  Additionally the existing
 tests are complicated too where they use PHPUnit.  I understand the principle
 being close to JUnit but is a learning curve.  Therefore at the current moment
 in time I'm going to concentrate on manual test plans and small semi-automated
-bespoke unit tests as already started with 'image_test.php'.
+bespoke unit tests as already started with 'test_image.php'.
 
 This file contains a series of 'test plans' that are performed manually to
 prove that the functionality operates correctly.  They are by no means complete.
@@ -41,7 +41,7 @@ then goes on to confirm that the image is converted for use and the displayed
 version is created.
 
 1. Whilst logged in, open a new tab / window and type:
-   your moodle installation/course/format/grid/test/image_test.php?=courseid=X
+   your moodle installation/course/format/grid/test/test_image.php?=courseid=X
 
    Where 'your moodle installation' is the start of the Moodle installation URL
    and 'X' is the course id from 'Test preparation'.

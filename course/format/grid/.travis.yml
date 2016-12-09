@@ -1,0 +1,46 @@
+language: php
+
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+php:
+ # Only run the lowest and highest supported versions to reduce the load on travis-ci.org.
+ - 5.4
+ # - 5.5
+ # - 5.6
+ - 7.0
+
+matrix:
+ allow_failures:
+  - php: 7.0
+ fast_finish: true
+
+env:
+ global:
+  - MOODLE_BRANCH=MOODLE_30_STABLE
+  - IGNORE_PATHS=amd/src/tooltip.js,test/test_image.php,upgrade/convert_legacy_image.php,yui/src/gridkeys/js/event-nav-keys-debug.js,yui/src/gridkeys/js/event-nav-keys.js,yui/src/gridkeys/scripts/backport.js,yui/gridkeys/gridkeys.js
+  - IGNORE_NAMES=gf_colourpopup.php,gf_colourpopup.js
+ matrix:
+  - DB=pgsql
+  - DB=mysqli
+
+before_install:
+  - cd ../..
+  - composer selfupdate
+  - composer create-project -n --no-dev moodlerooms/moodle-plugin-ci ci ^1
+  - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
+
+install:
+  - moodle-plugin-ci install
+
+script:
+  - moodle-plugin-ci phplint
+  - moodle-plugin-ci phpcpd
+  - moodle-plugin-ci phpmd
+  - moodle-plugin-ci codechecker
+  - moodle-plugin-ci csslint
+  - moodle-plugin-ci jshint
+  - moodle-plugin-ci phpunit
