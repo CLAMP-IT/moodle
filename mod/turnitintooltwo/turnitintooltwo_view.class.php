@@ -718,7 +718,9 @@ class turnitintooltwo_view {
         $cells[1] = new html_table_cell(get_string('dtstart', 'turnitintooltwo'));
         $cells[2] = new html_table_cell(get_string('dtdue', 'turnitintooltwo'));
         $cells[3] = new html_table_cell(get_string('dtpost', 'turnitintooltwo'));
-        $cells[4] = new html_table_cell(get_string('marksavailable', 'turnitintooltwo'));
+        if (!empty($config->usegrademark)) {
+            $cells[4] = new html_table_cell(get_string('marksavailable', 'turnitintooltwo'));
+        }
         if ($istutor) {
             $cells[5] = new html_table_cell(get_string('downloadexport', 'turnitintooltwo'));
             $cells[6] = new html_table_cell('');
@@ -796,30 +798,33 @@ class turnitintooltwo_view {
         $cells[3] = new html_table_cell($datefield);
         $cells[3]->attributes['class'] = 'data';
 
-        // Show Rubric view if applicable to students.
-        $rubricviewlink = '';
-        if (!$istutor && $config->usegrademark && !empty($turnitintooltwoassignment->turnitintooltwo->rubric)) {
-            $rubricviewlink .= $OUTPUT->box_start('row_rubric_manager', '');
-            $rubricviewlink .= html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
-                                                    '&part='.$partid.'&do=rubricview&view_context=box',
-                                                html_writer::tag('span', '', array('class' => 'tiiicon icon-rubric icon-lg', 'id' => 'rubric_view_form')),
-                                                array('class' => 'rubric_view_launch', 'id' => 'rubric_view_launch',
-                                                    'title' => get_string('launchrubricview', 'turnitintooltwo')));
-            $rubricviewlink .= $OUTPUT->box_end(true);
-        }
+        // Don't show Grade column if not using GradeMark.
+        if (!empty($config->usegrademark)) {
+            // Show Rubric view if applicable to students.
+            $rubricviewlink = '';
+            if (!$istutor && !empty($turnitintooltwoassignment->turnitintooltwo->rubric)) {
+                $rubricviewlink .= $OUTPUT->box_start('row_rubric_manager', '');
+                $rubricviewlink .= html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/view.php?id='.$cm->id.
+                                                        '&part='.$partid.'&do=rubricview&view_context=box',
+                                                    html_writer::tag('span', '', array('class' => 'tiiicon icon-rubric icon-lg', 'id' => 'rubric_view_form')),
+                                                    array('class' => 'rubric_view_launch', 'id' => 'rubric_view_launch',
+                                                        'title' => get_string('launchrubricview', 'turnitintooltwo')));
+                $rubricviewlink .= $OUTPUT->box_end(true);
+            }
 
-        // Allow marks to be editable if a tutor is logged in.
-        $textfield = $partdetails[$partid]->maxmarks.$rubricviewlink;
-        if ($istutor) {
-            $textfield = html_writer::link('#', $partdetails[$partid]->maxmarks,
-                                            array('class' => 'editable_text editable_text_'.$partid, 'id' => 'marks_'.$partid,
-                                                'data-type' => 'text', 'data-pk' => $partid, 'data-name' => 'maxmarks',
-                                                'data-params' => "{ 'assignment': ".
-                                                                    $turnitintooltwoassignment->turnitintooltwo->id.", ".
-                                                                    "'action': 'edit_field', 'sesskey': '".sesskey()."' }"));
+            // Allow marks to be editable if a tutor is logged in.
+            $textfield = $partdetails[$partid]->maxmarks.$rubricviewlink;
+            if ($istutor) {
+                $textfield = html_writer::link('#', $partdetails[$partid]->maxmarks,
+                                                array('class' => 'editable_text editable_text_'.$partid, 'id' => 'marks_'.$partid,
+                                                    'data-type' => 'text', 'data-pk' => $partid, 'data-name' => 'maxmarks',
+                                                    'data-params' => "{ 'assignment': ".
+                                                                        $turnitintooltwoassignment->turnitintooltwo->id.", ".
+                                                                        "'action': 'edit_field', 'sesskey': '".sesskey()."' }"));
+            }
+            $cells[4] = new html_table_cell($textfield);
+            $cells[4]->attributes['class'] = 'data';
         }
-        $cells[4] = new html_table_cell($textfield);
-        $cells[4]->attributes['class'] = 'data';
 
         if ($istutor) {
             // Output icon to download zip file of submissions in original format.
@@ -1086,7 +1091,7 @@ class turnitintooltwo_view {
             if ($parts[$v]->dtpost > time()) {
                 $display_overall_grade = 0;
             }
-            if ($parts[$v]->unanon != 1 && $all_parts_unanonymised) {
+            if ($turnitintooltwoassignment->turnitintooltwo->anon && $parts[$v]->unanon != 1 && $all_parts_unanonymised) {
                 $all_parts_unanonymised = 0;
             }
         }
@@ -1126,14 +1131,12 @@ class turnitintooltwo_view {
                     // Post date has passed or anonymous marking disabled for user and user is a moodle user.
                     $studentname = html_writer::link(
                                     $CFG->wwwroot."/user/view.php?id=".$submission->userid."&course="
-                                        .$turnitintooltwoassignment->turnitintooltwo->course,
-                                    format_string($submission->lastname).", ".format_string($submission->firstname));
+                                        .$turnitintooltwoassignment->turnitintooltwo->course, $submission->fullname);
                 } else if (($parts[$partid]->dtpost <= time() OR
                                 !empty($submission->submission_unanon)) AND !empty($submission->nmoodle)) {
                     // Post date has passed or anonymous marking disabled for user and user is a NON moodle user.
                     $studentname = html_writer::tag("span",
-                                        format_string($submission->lastname).", ".format_string($submission->firstname)." (".
-                                                get_string('nonmoodleuser', 'turnitintooltwo').")",
+                                        $submission->fullname." (".get_string('nonmoodleuser', 'turnitintooltwo').")",
                                         array("class" => "italic"));
                 } else {
                     // User has not made a submission.
@@ -1144,18 +1147,18 @@ class turnitintooltwo_view {
                     // Link to user profile.
                     $studentname = html_writer::link($CFG->wwwroot."/user/view.php?id=".$submission->userid."&course=".
                                                 $turnitintooltwoassignment->turnitintooltwo->course,
-                                                format_string($submission->lastname).", ".format_string($submission->firstname));
+                                                $submission->fullname);
                 } else if (!empty($submission->nmoodle) && substr($submission->userid, 0, 3) != 'nm-') {
                     // Moodle User not enrolled on this course as a student.
                     $studentname = html_writer::link($CFG->wwwroot."/user/view.php?id=".$submission->userid."&course=".
                                             $turnitintooltwoassignment->turnitintooltwo->course,
-                                            format_string($submission->lastname).", ".format_string($submission->firstname)." (".
-                                                get_string('nonenrolledstudent', 'turnitintooltwo').")", array("class" => "italic"));
+                                            $submission->fullname." (".get_string('nonenrolledstudent', 'turnitintooltwo').")",
+                                                array("class" => "italic"));
                 } else {
                     // Non Moodle user.
                     $studentname = html_writer::tag("span",
-                                                format_string($submission->lastname).", ".format_string($submission->firstname)." (".
-                                                    get_string('nonmoodleuser', 'turnitintooltwo').")", array("class" => "italic"));
+                                                $submission->fullname." (".get_string('nonmoodleuser', 'turnitintooltwo').")",
+                                                array("class" => "italic"));
                 }
             }
         }
@@ -1249,11 +1252,14 @@ class turnitintooltwo_view {
                 $class = $canresubmit && ($tutorbeforeduedate || $allowedlate) ? 'graded_warning' : '';
 
                 // Output grademark icon.
-                $grade = $OUTPUT->box(
-                    html_writer::tag('i', '', array('class' => 'fa fa-pencil fa-lg gm-blue')),
-                    'grademark_open ' . $class, 'grademark_' . $submission->submission_objectid . '_' . $partid . '_' . $moodleuserid,
-                    array('title' => $CFG->wwwroot . '/mod/turnitintooltwo/view.php?id=' . $cm->id)
-                );
+                $grade = '';
+                if (!is_null($submission->submission_grade) || $submission->submission_gmimaged != 0 || $istutor) {
+                    $grade = $OUTPUT->box(
+                        html_writer::tag('i', '', array('class' => 'fa fa-pencil fa-lg gm-blue')),
+                        'grademark_open ' . $class, 'grademark_' . $submission->submission_objectid . '_' . $partid . '_' . $moodleuserid,
+                        array('title' => $CFG->wwwroot . '/mod/turnitintooltwo/view.php?id=' . $cm->id)
+                    );
+                }
 
                 // Show grade.
                 if ($turnitintooltwoassignment->turnitintooltwo->gradedisplay == 2) { // 2 is fraction
@@ -1285,9 +1291,10 @@ class turnitintooltwo_view {
                 $grade = $OUTPUT->box('--', '');
             }
 
-            // Show average grade if more than 1 part.
+            // Show average grade if more than 1 part or using a scale.
             if (count($parts) > 1 || $turnitintooltwoassignment->turnitintooltwo->grade < 0) {
                 $overallgrade = '--';
+
                 if ($submission->nmoodle != 1 && $all_parts_unanonymised &&
                         ($istutor || (!$istutor && $parts[$partid]->dtpost < time()))) {
                     if (!isset($useroverallgrades[$submission->userid])) {
@@ -1473,11 +1480,9 @@ class turnitintooltwo_view {
 
         $submissiondata = array();
 
-        $i = -1;
         $j = 0;
 
         foreach ($_SESSION["submissions"][$partid] as $submission) {
-            $i++;
 
             $data = $this->get_submission_inbox_row($cm, $turnitintooltwoassignment, $parts, $partid, $submission,
                                                         $useroverallgrades, $istutor);
@@ -1872,7 +1877,7 @@ class turnitintooltwo_view {
                                                                                                         $attributes);
                 $userdetails = html_writer::link($CFG->wwwroot.'/user/view.php?id='.$membermoodleid.
                                                     '&course='.$turnitintooltwoassignment->turnitintooltwo->course,
-                                                    format_string($v['lastname']).', '.format_string($v['firstname'])).' ('.$user->username.')';
+                                                    fullname($user)).' ('.$user->email.')';
                 $memberdata[] = array($link, $userdetails);
             }
         }
@@ -1893,8 +1898,7 @@ class turnitintooltwo_view {
     public function show_add_tii_tutors_form($cm, $tutors) {
         global $CFG, $OUTPUT;
 
-        $moodletutors = get_users_by_capability(context_module::instance($cm->id), 'mod/turnitintooltwo:grade',
-                                                        'u.id, u.firstname, u.lastname, u.username');
+        $moodletutors = get_enrolled_users(context_module::instance($cm->id), 'mod/turnitintooltwo:grade', 0, 'u.id');
 
         // Populate elements array which will generate the form elements
         // Each element is in following format: (type, name, label, helptext (minus _help), options (if select).
@@ -1908,8 +1912,7 @@ class turnitintooltwo_view {
             if (array_key_exists($availabletutor->id, $tutors)) {
                 unset($moodletutors[$k]);
             } else {
-                $options[$availabletutor->id] = format_string($availabletutor->lastname).', '.
-                                                    format_string($availabletutor->firstname).' ('.$availabletutor->username.')';
+                $options[$availabletutor->id] = $availabletutor->fullname.' ('.$availabletutor->email.')';
             }
         }
 

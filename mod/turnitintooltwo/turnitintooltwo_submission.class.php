@@ -23,6 +23,7 @@ class turnitintooltwo_submission {
     public $userid;
     public $firstname;
     public $lastname;
+    public $fullname;
     private $turnitintooltwoid;
     public $submission_part;
     public $submission_title;
@@ -186,13 +187,21 @@ class turnitintooltwo_submission {
             }
 
             if ($submission->userid > 0) {
-                $user = $DB->get_record('user', array('id' => $submission->userid), 'firstname, lastname');
+                $allnamefields = get_all_user_name_fields();
+                $user = $DB->get_record('user', array('id' => $submission->userid), 'id, '.implode($allnamefields, ', '));
                 $this->firstname = $user->firstname;
                 $this->lastname = $user->lastname;
+                $this->fullname = fullname($user);
                 $this->nmoodle = 0;
             } else {
                 $this->firstname = $submission->submission_nmfirstname;
                 $this->lastname = $submission->submission_nmlastname;
+
+                $tmpuser = new stdClass();
+                $tmpuser->firstname = $submission->submission_nmfirstname;
+                $tmpuser->lastname = $submission->submission_nmlastname;
+                $this->fullname = fullname($tmpuser);
+
                 $this->nmoodle = 1;
             }
 
@@ -617,7 +626,7 @@ class turnitintooltwo_submission {
                 $this->receipt->send_message($this->userid, $message);
 
                 // Instructor digital receipt
-                $this->submission_instructors = get_users_by_capability($context,'mod/turnitintooltwo:grade', 'u.id');
+                $this->submission_instructors = get_enrolled_users($context, 'mod/turnitintooltwo:grade', 0, 'u.id');
                 if(!empty($this->submission_instructors)){
                     $message = $this->instructor_receipt->build_instructor_message($input);
                     $this->instructor_receipt->send_instructor_message($this->submission_instructors, $message);
@@ -729,7 +738,8 @@ class turnitintooltwo_submission {
         // If save not passed in then only update if certain items have changed to save on database load.
         if ($this->submission_grade != $sub->submission_grade || $this->submission_score != $sub->submission_score ||
             $this->submission_modified != $sub->submission_modified || $this->submission_attempts != $sub->submission_attempts ||
-            $this->submission_unanon != $sub->submission_unanon || $this->submission_part != $sub->submission_part) {
+            $this->submission_unanon != $sub->submission_unanon || $this->submission_part != $sub->submission_part ||
+            $this->submission_gmimaged != $sub->submission_gmimaged) {
             $save = true;
         }
 
