@@ -102,6 +102,8 @@ $string['defaultimagecontainerbackgroundcolour'] = 'Default image container back
 $string['defaultimagecontainerbackgroundcolour_desc'] = 'The default image container background colour.';
 $string['defaultcurrentselectedsectioncolour'] = 'Default current selected section colour';
 $string['defaultcurrentselectedsectioncolour_desc'] = 'The default current selected section colour.';
+$string['defaultcurrentselectedimagecontainertextcolour'] = 'Default current selected image container text colour';
+$string['defaultcurrentselectedimagecontainertextcolour_desc'] = 'The default current selected image container text colour.';
 $string['defaultcurrentselectedimagecontainercolour'] = 'Default current selected image container colour';
 $string['defaultcurrentselectedimagecontainercolour_desc'] = 'The default current selected image container colour.';
 
@@ -130,6 +132,8 @@ $string['setimagecontainerbackgroundcolour'] = 'Set the image container backgrou
 $string['setimagecontainerbackgroundcolour_help'] = 'Set the image container background colour in hexidecimal RGB.';
 $string['setcurrentselectedsectioncolour'] = 'Set the current selected section colour';
 $string['setcurrentselectedsectioncolour_help'] = 'Set the current selected section colour in hexidecimal RGB.';
+$string['setcurrentselectedimagecontainertextcolour'] = 'Set the current selected image container text colour';
+$string['setcurrentselectedimagecontainertextcolour_help'] = 'Set the current selected image container text colour in hexidecimal RGB.';
 $string['setcurrentselectedimagecontainercolour'] = 'Set the current selected image container colour';
 $string['setcurrentselectedimagecontainercolour_help'] = 'Set the current selected image container colour in hexidecimal RGB.';
 
@@ -140,6 +144,50 @@ $string['setfitsectioncontainertowindow'] = 'Fit the section popup to the window
 $string['setfitsectioncontainertowindow_help'] = 'If enabled, the popup box with the contents of the section will fit to the size of the window and will scroll inside if necessary.  If disabled, the entire page will scroll instead.';
 
 $string['colourrule'] = "Please enter a valid RGB colour, six hexadecimal digits.";
+
+// Section title text format options.
+$string['hidesectiontitle'] = 'Hide section title option';
+$string['hidesectiontitle_help'] = 'Hide the section title.';
+$string['defaulthidesectiontitle'] = 'Hide section title option';
+$string['defaulthidesectiontitle_desc'] = 'Hide the section title.';
+$string['sectiontitlegridlengthmaxoption'] = 'Section title grid length option';
+$string['sectiontitlegridlengthmaxoption_help'] = 'Set the maximum length of the section title in the grid box.  Enter \'0\' for no truncation';
+$string['defaultsectiontitlegridlengthmaxoption'] = 'Section title grid length option';
+$string['defaultsectiontitlegridlengthmaxoption_desc'] = 'Set the default maximum length of the section title in the grid box.  Enter \'0\' for no truncation.';
+$string['sectiontitlegridlengthmaxoptionrule'] = 'The maximum length of the section title in the grid box must not be zero.  Enter \'0\' for no truncation.';
+$string['sectiontitleboxposition'] = 'Section title box position option';
+$string['sectiontitleboxposition_help'] = 'Set the position of the section title within the grid box to one of: \'Inside\' or \'Outside\'.';
+$string['defaultsectiontitleboxposition'] = 'Section title box position option';
+$string['defaultsectiontitleboxposition_desc'] = 'Set the position of the section title within the grid box to one of: \'Inside\' or \'Outside\'.';
+$string['sectiontitleboxpositioninside'] = 'Inside';
+$string['sectiontitleboxpositionoutside'] = 'Outside';
+$string['sectiontitleboxinsideposition'] = 'Section title box position when \'Inside\' option';
+$string['sectiontitleboxinsideposition_help'] = 'Set the position of the section title when \'Inside\' the grid box to one of: \'Top\', \'Middle\' or \'Bottom\'.';
+$string['defaultsectiontitleboxinsideposition'] = 'Section title box position when \'Inside\' option';
+$string['defaultsectiontitleboxinsideposition_desc'] = 'Set the position of the section title when \'Inside\' the grid box to one of: \'Top\', \'Middle\' or \'Bottom\'.';
+$string['sectiontitleboxinsidepositiontop'] = 'Top';
+$string['sectiontitleboxinsidepositionmiddle'] = 'Middle';
+$string['sectiontitleboxinsidepositionbottom'] = 'Bottom';
+$string['showsectiontitlesummary'] = 'Show section title summary on hover option';
+$string['showsectiontitlesummary_help'] = 'Show the section title summary when hovering over the grid box.';
+$string['defaultshowsectiontitlesummary'] = 'Show section title summary on hover option';
+$string['defaultshowsectiontitlesummary_desc'] = 'Show the section title summary when hovering over the grid box.';
+$string['setshowsectiontitlesummaryposition'] = 'Set the show section title summary on hover position option';
+$string['setshowsectiontitlesummaryposition_help'] = 'Set the show the section title summary position when hovering over the grid box to one of: \'top\', \'bottom\', \'left\' or \'right\'.';
+$string['defaultsetshowsectiontitlesummaryposition'] = 'Set the show section title summary on hover position option';
+$string['defaultsetshowsectiontitlesummaryposition_desc'] = 'Set the show the section title summary position when hovering over the grid box to one of: \'top\', \'bottom\', \'left\' or \'right\'.';
+$string['sectiontitleinsidetitletextcolour'] = 'Section title text colour when \'Inside\' option';
+$string['sectiontitleinsidetitletextcolour_help'] = 'Set title text colour when it is \'Inside\' the grid box.';
+$string['defaultsectiontitleinsidetitletextcolour'] = 'Section title text colour when \'Inside\' option';
+$string['defaultsectiontitleinsidetitletextcolour_desc'] = 'Set title text colour when it is \'Inside\' the grid box.';
+$string['sectiontitleinsidetitlebackgroundcolour'] = 'Section title background colour when \'Inside\' option';
+$string['sectiontitleinsidetitlebackgroundcolour_help'] = 'Set title background colour when it is \'Inside\' the grid box.';
+$string['defaultsectiontitleinsidetitlebackgroundcolour'] = 'Section title background colour when \'Inside\' option';
+$string['defaultsectiontitleinsidetitlebackgroundcolour_desc'] = 'Set title background colour when it is \'Inside\' the grid box.';
+$string['top'] = 'Top';
+$string['bottom'] = 'Bottom';
+$string['left'] = 'Left';
+$string['right'] = 'Right';
 
 // Reset.
 $string['resetgrp'] = 'Reset:';
@@ -156,6 +204,10 @@ $string['resetimagecontainerstyle'] = 'Image container style';
 $string['resetimagecontainerstyle_help'] = 'Resets the image container style to the default value so it will be the same as a course the first time it is in the Grid format.';
 $string['resetallimagecontainerstyle'] = 'Image container styles';
 $string['resetallimagecontainerstyle_help'] = 'Resets the image container styles to the default value for all courses so it will be the same as a course the first time it is in the Grid format.';
+$string['resetsectiontitleoptions'] = 'Section title options';
+$string['resetsectiontitleoptions_help'] = 'Resets the section title options to the default value so it will be the same as a course the first time it is in the Grid format.';
+$string['resetallsectiontitleoptions'] = 'Section title options';
+$string['resetallsectiontitleoptions_help'] = 'Resets the section title options to the default value for all courses so it will be the same as a course the first time it is in the Grid format.';
 $string['resetnewactivity'] = 'New activity';
 $string['resetnewactivity_help'] = 'Resets the new activity notification image to the default value so it will be the same as a course the first time it is in the Grid format.';
 $string['resetallnewactivity'] = 'New activities';
@@ -172,6 +224,7 @@ $string['resetgreyouthidden_help'] = 'Resets the property \'In Grid display show
 $string['grid:changeimagecontainersize'] = 'Change or reset the image container size';
 $string['grid:changeimageresizemethod'] = 'Change or reset the image resize method';
 $string['grid:changeimagecontainerstyle'] = 'Change or reset the image container style';
+$string['grid:changesectiontitleoptions'] = 'Change or reset the section title options';
 
 // Other.
 $string['greyouthidden'] = 'Grey out unavailable';

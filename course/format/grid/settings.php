@@ -103,7 +103,7 @@ if ($ADMIN->fulltree) {
     // Default imagecontainer background colour in hexadecimal RGB with preceding '#'.
     $name = 'format_grid/defaultimagecontainerbackgroundcolour';
     $title = get_string('defaultimagecontainerbackgroundcolour', 'format_grid');
-    $description = get_string('defaultimagecontainerbackgroundcolour', 'format_grid');
+    $description = get_string('defaultimagecontainerbackgroundcolour_desc', 'format_grid');
     $default = format_grid::get_default_image_container_background_colour();
     $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
     $settings->add($setting);
@@ -111,16 +111,105 @@ if ($ADMIN->fulltree) {
     // Default current selected section colour in hexadecimal RGB with preceding '#'.
     $name = 'format_grid/defaultcurrentselectedsectioncolour';
     $title = get_string('defaultcurrentselectedsectioncolour', 'format_grid');
-    $description = get_string('defaultcurrentselectedsectioncolour', 'format_grid');
+    $description = get_string('defaultcurrentselectedsectioncolour_desc', 'format_grid');
     $default = format_grid::get_default_current_selected_section_colour();
     $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
     $settings->add($setting);
 
-    // Default current selected imagecontainer colour in hexadecimal RGB with preceding '#'.
+    // Default current selected image container text colour in hexadecimal RGB with preceding '#'.
+    $name = 'format_grid/defaultcurrentselectedimagecontainertextcolour';
+    $title = get_string('defaultcurrentselectedimagecontainertextcolour', 'format_grid');
+    $description = get_string('defaultcurrentselectedimagecontainertextcolour_desc', 'format_grid');
+    $default = format_grid::get_default_current_selected_image_container_text_colour();
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
+    $settings->add($setting);
+
+    // Default current selected image container colour in hexadecimal RGB with preceding '#'.
     $name = 'format_grid/defaultcurrentselectedimagecontainercolour';
     $title = get_string('defaultcurrentselectedimagecontainercolour', 'format_grid');
-    $description = get_string('defaultcurrentselectedimagecontainercolour', 'format_grid');
+    $description = get_string('defaultcurrentselectedimagecontainercolour_desc', 'format_grid');
     $default = format_grid::get_default_current_selected_image_container_colour();
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
+    $settings->add($setting);
+
+    /* Hide section title - 1 = no, 2 = yes. */
+    $name = 'format_grid/defaulthidesectiontitle';
+    $title = get_string('defaulthidesectiontitle', 'format_grid');
+    $description = get_string('defaulthidesectiontitle_desc', 'format_grid');
+    $default = format_grid::get_default_hide_section_title();
+    $choices = array(
+        1 => new lang_string('no'),   // No.
+        2 => new lang_string('yes')   // Yes.
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Section title in grid box maximum length with 0 for no truncation. */
+    $name = 'format_grid/defaultsectiontitlegridlengthmaxoption';
+    $title = get_string('defaultsectiontitlegridlengthmaxoption', 'format_grid');
+    $description = get_string('defaultsectiontitlegridlengthmaxoption_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_grid_length_max_option();
+    $settings->add(new admin_setting_configtext($name, $title, $description, $default, PARAM_INT));
+
+    /* Section title box position - 1 = Inside, 2 = Outside. */
+    $name = 'format_grid/defaultsectiontitleboxposition';
+    $title = get_string('defaultsectiontitleboxposition', 'format_grid');
+    $description = get_string('defaultsectiontitleboxposition_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_box_position();
+    $choices = array(
+        1 => new lang_string('sectiontitleboxpositioninside', 'format_grid'),
+        2 => new lang_string('sectiontitleboxpositionoutside', 'format_grid')
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Section title box inside position - 1 = Top, 2 = Middle, 3 = Bottom. */
+    $name = 'format_grid/defaultsectiontitleboxinsideposition';
+    $title = get_string('defaultsectiontitleboxinsideposition', 'format_grid');
+    $description = get_string('defaultsectiontitleboxinsideposition_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_box_inside_position();
+    $choices = array(
+        1 => new lang_string('sectiontitleboxinsidepositiontop', 'format_grid'),
+        2 => new lang_string('sectiontitleboxinsidepositionmiddle', 'format_grid'),
+        3 => new lang_string('sectiontitleboxinsidepositionmiddle', 'format_grid')
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Show section title summary on hover - 1 = no, 2 = yes. */
+    $name = 'format_grid/defaultshowsectiontitlesummary';
+    $title = get_string('defaultshowsectiontitlesummary', 'format_grid');
+    $description = get_string('defaultshowsectiontitlesummary_desc', 'format_grid');
+    $default = format_grid::get_default_show_section_title_summary();
+    $choices = array(
+        1 => new lang_string('no'),   // No.
+        2 => new lang_string('yes')   // Yes.
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Show section title summary on hover position - 1 = top, 2 = bottom, 3 = left and 4 = right. */
+    $name = 'format_grid/defaultsetshowsectiontitlesummaryposition';
+    $title = get_string('defaultsetshowsectiontitlesummaryposition', 'format_grid');
+    $description = get_string('defaultsetshowsectiontitlesummaryposition_desc', 'format_grid');
+    $default = format_grid::get_default_set_show_section_title_summary_position();
+    $choices = array(
+        1 => new lang_string('top', 'format_grid'),
+        2 => new lang_string('bottom', 'format_grid'),
+        3 => new lang_string('left', 'format_grid'),
+        4 => new lang_string('right', 'format_grid')
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    // Default section title text colour in hexadecimal RGB with preceding '#'.
+    $name = 'format_grid/defaultsectiontitleinsidetitletextcolour';
+    $title = get_string('defaultsectiontitleinsidetitletextcolour', 'format_grid');
+    $description = get_string('defaultsectiontitleinsidetitletextcolour_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_inside_title_text_colour();
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
+    $settings->add($setting);
+
+    // Default section title background colour in hexadecimal RGB with preceding '#'.
+    $name = 'format_grid/defaultsectiontitleinsidetitlebackgroundcolour';
+    $title = get_string('defaultsectiontitleinsidetitlebackgroundcolour', 'format_grid');
+    $description = get_string('defaultsectiontitleinsidetitlebackgroundcolour_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_inside_title_background_colour();
     $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
     $settings->add($setting);
 

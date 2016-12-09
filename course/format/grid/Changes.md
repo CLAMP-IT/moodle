@@ -1,5 +1,10 @@
 History
 =============
+Version 3.0.1.2
+  1. Changes for MDL-54557.
+  2. Improve deletion.  Ref: https://moodle.org/mod/forum/discuss.php?d=334353#p1384895.
+  3. Section title text format options.  Thanks to Murdoch University, Perth, WA for supporting this enhancement.
+
 Version 3.0.1.1
   1. Updated php4 constructor - #27 - thanks to Mark Sharp.
   2. Added the ability to grey out and unlink grid icons for unavailable sections - #30 - thanks to Justin Hunt.
