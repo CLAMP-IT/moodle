@@ -576,10 +576,10 @@ class turnitintooltwo_assignment {
         $course = $this->get_course_data($this->turnitintooltwo->course);
 
         // Get local course members.
-        $moodleclassmembers = $this->get_moodle_course_users($cm);
+        $students = get_enrolled_users(context_module::instance($cm->id),
+                                'mod/turnitintooltwo:submit', groups_get_activity_group($cm), 'u.id');
 
-        // Get the user ids of who is already enrolled and remove them
-        // from the local course members array.
+        // Get the user ids of who is already enrolled and remove them from the students array.
         $tiiclassmemberships = $this->get_class_memberships($course->turnitin_cid);
         $turnitincomms = new turnitintooltwo_comms();
         $turnitincall = $turnitincomms->initialise_api();
@@ -593,7 +593,7 @@ class turnitintooltwo_assignment {
             foreach ($readmemberships as $readmembership) {
                 if ($readmembership->getRole() == "Learner") {
                     $moodleuserid = turnitintooltwo_user::get_moodle_user_id($readmembership->getUserId());
-                    unset($moodleclassmembers[$moodleuserid]);
+                    unset($students[$moodleuserid]);
                 }
             }
         } catch (Exception $e) {
@@ -601,7 +601,7 @@ class turnitintooltwo_assignment {
         }
 
         // Enrol remaining unenrolled users to the course.
-        $members = array_keys($moodleclassmembers);
+        $members = array_keys($students);
         foreach ($members as $member) {
             $user = new turnitintooltwo_user($member, "Learner");
             $user->join_user_to_class($course->turnitin_cid);
@@ -675,6 +675,7 @@ class turnitintooltwo_assignment {
         $this->turnitintooltwo->commentedittime = 1800;
         $this->turnitintooltwo->commentmaxsize = 800;
         $this->turnitintooltwo->autosubmission = 1;
+        $this->turnitintooltwo->gradedisplay = 2;
         $this->turnitintooltwo->shownonsubmission = 1;
         $this->turnitintooltwo->timemodified = time();
         $this->turnitintooltwo->courseid = $course->id;
@@ -718,7 +719,8 @@ class turnitintooltwo_assignment {
             }
 
             $attribute = "maxmarks".$i;
-            $assignment->setMaxGrade($this->turnitintooltwo->$attribute);
+            $assignment->setMaxGrade((isset($this->turnitintooltwo->$attribute)) ?
+                                                        $this->turnitintooltwo->$attribute : 0);
             $assignment->setSubmittedDocumentsCheck($this->turnitintooltwo->spapercheck);
             $assignment->setInternetCheck($this->turnitintooltwo->internetcheck);
             $assignment->setPublicationsCheck($this->turnitintooltwo->journalcheck);
@@ -756,7 +758,7 @@ class turnitintooltwo_assignment {
             $attribute = "dtpost".$i;
             $part->dtpost = $this->turnitintooltwo->$attribute;
             $attribute = "maxmarks".$i;
-            $part->maxmarks = $this->turnitintooltwo->$attribute;
+            $part->maxmarks = (empty($this->turnitintooltwo->$attribute)) ? 0 : $this->turnitintooltwo->$attribute;
             $part->deleted = 0;
 
             if (!$insert = $DB->insert_record('turnitintooltwo_parts', $part)) {
@@ -1108,7 +1110,7 @@ class turnitintooltwo_assignment {
         switch ($fieldname) {
             case "partname":
                 $fieldvalue = trim($fieldvalue);
-                $partnames = $DB->get_records_select('turnitintooltwo_parts', 
+                $partnames = $DB->get_records_select('turnitintooltwo_parts',
                                                     ' turnitintooltwoid = ? AND id != ? ',
                                                     array($partdetails->turnitintooltwoid, $partid), '', 'partname');
 
@@ -1249,7 +1251,7 @@ class turnitintooltwo_assignment {
      * @param boolean $createevent - setting to determine whether to create a calendar event.
      * @return boolean
      */
-    public function edit_moodle_assignment($createevent = true) {
+    public function edit_moodle_assignment($createevent = true, $restore = false) {
         global $USER, $DB, $CFG;
 
         $config = turnitintooltwo_admin_config();
@@ -1324,7 +1326,7 @@ class turnitintooltwo_assignment {
             }
 
             $attribute = "maxmarks".$i;
-            $assignment->setMaxGrade($this->turnitintooltwo->$attribute);
+            $assignment->setMaxGrade((isset($this->turnitintooltwo->$attribute)) ? $this->turnitintooltwo->$attribute : 0);
             $assignment->setSubmittedDocumentsCheck($this->turnitintooltwo->spapercheck);
             $assignment->setInternetCheck($this->turnitintooltwo->internetcheck);
             $assignment->setPublicationsCheck($this->turnitintooltwo->journalcheck);
@@ -1344,11 +1346,17 @@ class turnitintooltwo_assignment {
                                                         $this->turnitintooltwo->erater_handbook : 0);
 
             $attribute = "dtstart".$i;
-            $assignment->setStartDate(gmdate("Y-m-d\TH:i:s\Z", $this->turnitintooltwo->$attribute));
-            $attribute = "dtdue".$i;
-            $assignment->setDueDate(gmdate("Y-m-d\TH:i:s\Z", $this->turnitintooltwo->$attribute));
-            $attribute = "dtpost".$i;
-            $assignment->setFeedbackReleaseDate(gmdate("Y-m-d\TH:i:s\Z", $this->turnitintooltwo->$attribute));
+            if (($restore) && ($this->turnitintooltwo->$attribute < strtotime("-1 year"))) {
+                $assignment->setStartDate(gmdate("Y-m-d\TH:i:s\Z", time()));
+                $assignment->setDueDate(gmdate("Y-m-d\TH:i:s\Z", strtotime("+1 week")));
+                $assignment->setFeedbackReleaseDate(gmdate("Y-m-d\TH:i:s\Z", strtotime("+1 week")));
+            } else {
+                $assignment->setStartDate(gmdate("Y-m-d\TH:i:s\Z", $this->turnitintooltwo->$attribute));
+                $attribute = "dtdue".$i;
+                $assignment->setDueDate(gmdate("Y-m-d\TH:i:s\Z", $this->turnitintooltwo->$attribute));
+                $attribute = "dtpost".$i;
+                $assignment->setFeedbackReleaseDate(gmdate("Y-m-d\TH:i:s\Z", $this->turnitintooltwo->$attribute));
+            }
 
             $attribute = "partname".$i;
             $assignment->setTitle($this->turnitintooltwo->name." ".$this->turnitintooltwo->$attribute." (Moodle TT)");
@@ -1358,7 +1366,7 @@ class turnitintooltwo_assignment {
             $part->turnitintooltwoid = $this->id;
             $part->partname = $this->turnitintooltwo->$attribute;
             $part->deleted = 0;
-            $part->maxmarks = $assignment->getMaxGrade();
+            $part->maxmarks = (int)$assignment->getMaxGrade();
             $part->dtstart = strtotime($assignment->getStartDate());
             $part->dtdue = strtotime($assignment->getDueDate());
             $part->dtpost = strtotime($assignment->getFeedbackReleaseDate());
@@ -1454,19 +1462,6 @@ class turnitintooltwo_assignment {
             turnitintooltwo_grade_item_update($this->turnitintooltwo);
         }
         return $update;
-    }
-
-    /**
-     * Get the Moodle users who are students
-     *
-     * @param object $cm the course module
-     * @return array of course users or empty array if none
-     */
-    public function get_moodle_course_users($cm) {
-        $courseusers = get_users_by_capability(context_module::instance($cm->id),
-                                'mod/turnitintooltwo:submit', '', 'u.lastname, u.firstname');
-
-        return (!is_array($courseusers)) ? array() : $courseusers;
     }
 
     /**
@@ -1575,9 +1570,9 @@ class turnitintooltwo_assignment {
             $submission = new TiiSubmission();
             $submission->setAssignmentId($part->tiiassignid);
 
-            // Only update submissions that have been modified since last update.
-            if (!empty($_SESSION["TiiSubmissionsRefreshed"][$part->id])) {
-                $submission->setDateFrom(gmdate("Y-m-d\TH:i:s\Z", $_SESSION["TiiSubmissionsRefreshed"][$part->id]));
+            // Only update submissions that have been modified since an hour before last update.
+            if (!empty($part->gradesupdated)) {
+                $submission->setDateFrom(gmdate("Y-m-d\TH:i:s\Z", $part->gradesupdated-(60*60)));
             }
 
             $response = $turnitincall->findSubmissions($submission);
@@ -1867,12 +1862,13 @@ class turnitintooltwo_assignment {
         $istutor = has_capability('mod/turnitintooltwo:grade', $context);
 
         // If logged in as instructor then get for all users.
+        $allnamefields = get_all_user_name_fields();
         if ($istutor && $userid == 0) {
-            $users = get_users_by_capability($context, 'mod/turnitintooltwo:submit', 'u.id, u.firstname, u.lastname',
-                                                '', '', '', groups_get_activity_group($cm), '');
+            $users = get_enrolled_users($context, 'mod/turnitintooltwo:submit', groups_get_activity_group($cm),
+                                        'u.id, ' . implode($allnamefields, ', '));
             $users = (!$users) ? array() : $users;
         } else if ($istutor) {
-            $user = $DB->get_record('user', array('id' => $userid));
+            $user = $DB->get_record('user', array('id' => $userid), 'id, ' . implode($allnamefields, ', '));
             $users = array($userid => $user);
             $sql .= " AND userid = ? ";
             $sqlparams[] = $userid;
@@ -1891,6 +1887,7 @@ class turnitintooltwo_assignment {
                 $emptysubmission->userid = $user->id;
                 $emptysubmission->firstname = $user->firstname;
                 $emptysubmission->lastname = $user->lastname;
+                $emptysubmission->fullname = fullname($user);
                 $emptysubmission->submission_unanon = 0;
                 $emptysubmission->nmoodle = 0;
                 if ($submissionsonly == 0) {
@@ -1907,6 +1904,7 @@ class turnitintooltwo_assignment {
                 $user = new turnitintooltwo_user($submission->userid, 'Learner', false);
                 $submission->firstname = $user->firstname;
                 $submission->lastname = $user->lastname;
+                $submission->fullname = $user->fullname;
                 $submission->tii_user_id = $user->tii_user_id;
                 $submission->nmoodle = 0;
 
