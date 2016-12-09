@@ -46,7 +46,7 @@ M.course.format.get_config = function() {
         section_node : 'li',
         section_class : 'section'
     };
-}
+};
 
 /**
  * Swap section
@@ -65,7 +65,7 @@ M.course.format.swap_sections = function(Y, node1, node2) {
     var sectionlist = Y.Node.all('.' + CSS.COURSECONTENT + ' ' + M.course.format.get_section_selector(Y));
     // Swap menus.
     sectionlist.item(node1).one('.' + CSS.SECTIONADDMENUS).swap(sectionlist.item(node2).one('.' + CSS.SECTIONADDMENUS));
-}
+};
 
 /**
  * Process sections after ajax response
@@ -98,7 +98,8 @@ M.course.format.process_sections = function(Y, sectionlist, response, sectionfro
         // Update titles and move icons in all affected sections.
         for (var i = sectionfrom; i <= sectionto; i++) {
             // Update section title.
-            sectionlist.item(i).one('.' + CSS.SECTIONNAME).setContent(response.sectiontitles[i]);
+            var content = Y.Node.create('<span>' + response.sectiontitles[i] + '</span>');
+            sectionlist.item(i).all('.' + CSS.SECTIONNAME).setHTML(content);
             // Update move icon.
             ele = sectionlist.item(i).one('.' + CSS.SECTIONLEFTSIDE);
             str = ele.getAttribute('alt');
@@ -108,4 +109,4 @@ M.course.format.process_sections = function(Y, sectionlist, response, sectionfro
             ele.setAttribute('title', newstr); // For FireFox as 'alt' is not refreshed.
         }
     }
-}
+};
