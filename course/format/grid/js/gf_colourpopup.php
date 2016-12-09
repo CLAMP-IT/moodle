@@ -41,8 +41,16 @@ class MoodleQuickForm_gfcolourpopup extends HTML_QuickForm_text {
     public $_helpbutton = '';
     public $_hiddenLabel = false;
 
+    public function __construct($elementName = null, $elementLabel = null, $attributes = null, $options = null) {
+        parent::__construct($elementName, $elementLabel, $attributes);
+        $this->setType('colourtext');
+    }
+
+    /*
+     * PHP4 constructor method, kept for compatibility
+     */
     public function MoodleQuickForm_gfcolourpopup($elementName = null, $elementLabel = null, $attributes = null, $options = null) {
-        parent::HTML_QuickForm_text($elementName, $elementLabel, $attributes);
+        self::__construct($elementName, $elementLabel, $attributes, $options);
     }
 
     public function setHiddenLabel($hiddenLabel) {

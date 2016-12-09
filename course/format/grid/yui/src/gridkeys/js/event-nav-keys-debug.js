@@ -10,7 +10,8 @@ var keys = {
         left     : 37,
         up       : 38,
         right    : 39,
-        down     : 40
+        down     : 40,
+        space    : 32
     };
 
 Y.Object.each(keys, function (keyCode, name) {

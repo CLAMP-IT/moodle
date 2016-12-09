@@ -31,8 +31,8 @@ $string['formatgrid'] = 'Vue en image'; // Name to display for format.
 $string['sectionname'] = 'Section';
 $string['pluginname'] = 'Vue en image';
 
-$string['hide_summary'] = 'mettre la section en mode image';
-$string['display_summary'] = 'sortir du mode image';
+$string['hide_summary'] = 'Mettre la section en mode image';
+$string['display_summary'] = 'Sortir du mode image';
 $string['hide_summary_alt'] = 'Mettre cette section en mode image';
 $string['display_summary_alt'] = 'Sortir cette section du mode image';
 

@@ -111,7 +111,7 @@ class restore_format_grid_plugin extends restore_format_plugin {
      * 'http://localhost/moodle23/pluginfile.php/94/course/section/162/mc_fs.png' where I had an image called 'mc_fs.png' in
      * section 1 which was id 129 but now 162 as the debug code told me.  '94' is just the context id.  The url was originally
      * created in '_make_block_icon_topics' of lib.php of the format.
-     * Still need courseid in the 'format_grid_icon' table as it is used in discovering what records to remove when deleting a 
+     * Still need courseid in the 'format_grid_icon' table as it is used in discovering what records to remove when deleting a
      * course, see lib.php 'format_grid_delete_course'.
      */
     public function process_gridsection($data) {
@@ -120,7 +120,7 @@ class restore_format_grid_plugin extends restore_format_plugin {
         $data = (object) $data;
 
         /* We only process this information if the course we are restoring to
-          has 'grid' format (target format can change depending of restore options). */
+           has 'grid' format (target format can change depending of restore options). */
         $format = $DB->get_field('course', 'format', array('id' => $this->task->get_courseid()));
         if ($format != 'grid') {
             return;
@@ -129,33 +129,30 @@ class restore_format_grid_plugin extends restore_format_plugin {
         $data->courseid = $this->task->get_courseid();
         $data->sectionid = $this->task->get_sectionid();
 
-        if (format_grid::is_developer_debug()) {
-            error_log('restore_format_grid_plugin::process_gridsection() before:' . print_r($data, true));
-        }
         if (!empty($data->imagepath)) {
             $data->image = $data->imagepath;
             unset($data->imagepath);
         } else if (empty($data->image)) {
             $data->image = null;
         }
-        if (format_grid::is_developer_debug()) {
-            error_log('restore_format_grid_plugin::process_gridsection() after:' . print_r($data, true));
-        }
 
         if (!$DB->record_exists('format_grid_icon', array('courseid' => $data->courseid, 'sectionid' => $data->sectionid))) {
             if (!$DB->insert_record('format_grid_icon', $data, true)) {
                 throw new moodle_exception('invalidrecordid', 'format_grid', '',
-                'Could not insert icon. Grid format table format_grid_icon is not ready. An administrator must visit the notifications section.');
+                'Could not insert icon. Grid format table format_grid_icon is not ready.'.
+                '  An administrator must visit the notifications section.');
             }
         } else {
             $old = $DB->get_record('format_grid_icon', array('courseid' => $data->courseid, 'sectionid' => $data->sectionid));
-            // Always update missing icons during restore / import, noting merge into existing course currently doesn't restore the grid icons.
+            /* Always update missing icons during restore / import, noting merge into existing course currently doesn't restore
+               the grid icons. */
             if (is_null($old->image)) {
                 // Update the record to use this icon as we are restoring or importing and no icon exists already.
                 $data->id = $old->id;
                 if (!$DB->update_record('format_grid_icon', $data)) {
                     throw new moodle_exception('invalidrecordid', 'format_grid', '',
-                    'Could not update icon. Grid format table format_grid_icon is not ready. An administrator must visit the notifications section.');
+                    'Could not update icon. Grid format table format_grid_icon is not ready.'.
+                    '  An administrator must visit the notifications section.');
                 }
             }
         }

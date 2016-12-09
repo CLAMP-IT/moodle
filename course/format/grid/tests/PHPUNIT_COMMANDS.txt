@@ -1,0 +1,9 @@
+Ref: https://docs.moodle.org/dev/PHPUnit
+
+composer install --dev
+
+php admin/tool/phpunit/cli/init.php
+
+vendor/bin/phpunit format_grid_courseformatlib_testcase course/format/grid/tests/courseformatlib_test.php
+
+vendor/bin/phpunit --group format_grid

@@ -75,10 +75,6 @@ class backup_format_grid_plugin extends backup_format_plugin {
         require_once($CFG->dirroot . '/course/format/lib.php'); // For format_base.
         require_once($CFG->dirroot . '/course/format/grid/lib.php'); // For format_grid.
 
-        if (format_grid::is_developer_debug()) {
-            error_log('backup_format_grid_plugin::delete_displayed_images() courseid: ' . $courseid);
-        }
-
         $courseformat = course_get_format($courseid);
         $courseformat->delete_displayed_images();
     }

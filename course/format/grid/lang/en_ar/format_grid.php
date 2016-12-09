@@ -25,14 +25,14 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['display_summary'] = 'sail out of thy grid';
+$string['display_summary'] = 'Sail out of thy grid';
 $string['display_summary_alt'] = 'Sail thee section out of thy grid';
 $string['editimage'] = 'Change thy flag';
 $string['editimage_alt'] = 'Hoist or change thy flag';
 $string['formatgrid'] = 'Grid format'; // Name to display for format.
 $string['general_information'] = 'General Information';
 $string['hidden_topic'] = 'Thy section has been buried';
-$string['hide_summary'] = 'sail thy section into thee grid';
+$string['hide_summary'] = 'Sail thy section into thee grid';
 $string['hide_summary_alt'] = 'Sail thy section into thee grid';
 $string['namegrid'] = 'Grid view';
 $string['pluginname'] = 'Grid format';

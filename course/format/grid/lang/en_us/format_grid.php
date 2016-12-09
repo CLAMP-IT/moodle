@@ -33,6 +33,8 @@ $string['defaultimagecontainerbackgroundcolour'] = 'Default image container back
 $string['defaultimagecontainerbackgroundcolour_desc'] = 'The default image container background color.';
 $string['defaultcurrentselectedsectioncolour'] = 'Default current selected section color';
 $string['defaultcurrentselectedsectioncolour_desc'] = 'The default current selected section color.';
+$string['defaultcurrentselectedimagecontainertextcolour'] = 'Default current selected image container text color';
+$string['defaultcurrentselectedimagecontainertextcolour_desc'] = 'The default current selected image container text color.';
 $string['defaultcurrentselectedimagecontainercolour'] = 'Default current selected image container color';
 $string['defaultcurrentselectedimagecontainercolour_desc'] = 'The default current selected image container color.';
 
@@ -42,7 +44,19 @@ $string['setimagecontainerbackgroundcolour'] = 'Set the image container backgrou
 $string['setimagecontainerbackgroundcolour_help'] = 'Set the image container background color in hexidecimal RGB.';
 $string['setcurrentselectedsectioncolour'] = 'Set the current selected section color';
 $string['setcurrentselectedsectioncolour_help'] = 'Set the current selected section color in hexidecimal RGB.';
+$string['setcurrentselectedimagecontainertextcolour'] = 'Set the current selected image container text color';
+$string['setcurrentselectedimagecontainertextcolour_help'] = 'Set the current selected image container text color in hexidecimal RGB.';
 $string['setcurrentselectedimagecontainercolour'] = 'Set the current selected image container color';
 $string['setcurrentselectedimagecontainercolour_help'] = 'Set the current selected image container color in hexidecimal RGB.';
+
+// Section title text format options.
+$string['sectiontitleinsidetitletextcolour'] = 'Section title text color when \'Inside\' option';
+$string['sectiontitleinsidetitletextcolour_help'] = 'Set title text color when it is \'Inside\' the grid box.';
+$string['defaultsectiontitleinsidetitletextcolour'] = 'Section title text color when \'Inside\' option';
+$string['defaultsectiontitleinsidetitletextcolour_help'] = 'Set title text color when it is \'Inside\' the grid box.';
+$string['sectiontitleinsidetitlebackgroundcolour'] = 'Section title background color when \'Inside\' option';
+$string['sectiontitleinsidetitlebackgroundcolour_help'] = 'Set title background color when it is \'Inside\' the grid box.';
+$string['defaultsectiontitleinsidetitlebackgroundcolour'] = 'Section title background color when \'Inside\' option';
+$string['defaultsectiontitleinsidetitlebackgroundcolour_help'] = 'Set title background color when it is \'Inside\' the grid box.';
 
 $string['colourrule'] = "Please enter a valid RGB color, six hexadecimal digits.";
