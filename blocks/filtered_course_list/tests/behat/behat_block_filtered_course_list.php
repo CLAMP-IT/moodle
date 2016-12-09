@@ -15,39 +15,37 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file defines the form for editing block instances.
+ * This file creates a behat step definition
  *
  * @package    block_filtered_course_list
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
+
+use Behat\Behat\Context\Step\Given as Given;
+use Behat\Behat\Context\Step\When as When;
+use Behat\Gherkin\Node\PyStringNode as PyStringNode;
 
 /**
- * Form for editing Filtered course list block instances
+ * Custom step definitions
  *
  * @package    block_filtered_course_list
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class block_filtered_course_list_edit_form extends block_edit_form {
+class behat_block_filtered_course_list extends behat_base {
 
     /**
-     * Builds the form to edit instance settings
+     * Sets a multiline config value as admin
      *
-     * @param MoodleQuickForm $mform
+     * @Given /^I set the multiline "(?P<plugin_string>(?:[^"]|\\")*)" "(?P<name_string>(?:[^"]|\\")*)" setting as admin to:$/
+     * @param string $plugin The plugins Frankenstyle name
+     * @param string $name The name of the setting to be set_config
+     * @param PyStringNode $value A triple-quote delimited text block to be set as the value of the setting
      */
-    protected function specific_definition($mform) {
-
-        // Section header title according to language file.
-        $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
-
-        // Set the title for the block.
-        $mform->addElement('text', 'config_title', get_string('configtitle', 'block_filtered_course_list'));
-        $mform->setDefault('config_title', get_string('blockname', 'block_filtered_course_list'));
-        $mform->setType('config_title', PARAM_TEXT);
-
+    public function i_set_the_multiline_setting_as_admin_to($plugin, $name, PyStringNode $value) {
+        set_config($name, $value->getRaw(), $plugin);
     }
-
 }
