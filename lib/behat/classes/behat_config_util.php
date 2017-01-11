@@ -533,6 +533,9 @@ class behat_config_util {
                     'Moodle\BehatExtension' => array(
                         'moodledirroot' => $CFG->dirroot,
                         'steps_definitions' => $allcontexts,
+                    ),
+                    'Bex\Behat\ScreenshotExtension' => array(
+                        'active_image_drivers' => 'upload_pie'
                     )
                 )
             )
