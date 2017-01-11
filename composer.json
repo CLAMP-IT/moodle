@@ -9,6 +9,6 @@
         "phpunit/dbUnit": "1.4.*",
         "moodlehq/behat-extension": "3.32.4",
         "bex/behat-screenshot": "^1.2",
-        "bex/behat-screenshot-image-driver-uploadpie": "^1.0"
+        "bex/behat-screenshot-image-driver-img42": "^1.0"
     }
 }

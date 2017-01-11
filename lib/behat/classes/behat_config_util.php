@@ -535,7 +535,7 @@ class behat_config_util {
                         'steps_definitions' => $allcontexts,
                     ),
                     'Bex\Behat\ScreenshotExtension' => array(
-                        'active_image_drivers' => 'upload_pie'
+                        'active_image_drivers' => 'img42'
                     )
                 )
             )
