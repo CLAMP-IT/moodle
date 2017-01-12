@@ -232,8 +232,8 @@ class course_edit_form extends moodleform {
         // Prepare the file display default selector.
         $resource_config = get_config('resource');
         $choices = resourcelib_get_displayoptions(explode(',', $resource_config->displayoptions));
-        $mform->addElement('select', 'filedisplaydefault', get_string('course:filedisplaydefault'), $choices);
-        $mform->addHelpButton('filedisplaydefault', 'course:filedisplaydefault');
+        $mform->addElement('select', 'filedisplaydefault', get_string('filedisplaydefault'), $choices);
+        $mform->addHelpButton('filedisplaydefault', 'filedisplaydefault');
         $mform->setDefault('filedisplaydefault', !isset($course->filedisplaydefault) ? $resource_config->display : $course->filedisplaydefault);
 
         if (!empty($course->legacyfiles) or !empty($CFG->legacyfilesinnewcourses)) {
