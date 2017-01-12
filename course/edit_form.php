@@ -5,6 +5,7 @@ defined('MOODLE_INTERNAL') || die;
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->libdir.'/completionlib.php');
 require_once($CFG->libdir. '/coursecatlib.php');
+require_once($CFG->libdir.'/resourcelib.php');
 
 /**
  * The form for handling editing a course.
@@ -227,6 +228,13 @@ class course_edit_form extends moodleform {
 
         // Files and uploads.
         $mform->addElement('header', 'filehdr', get_string('filesanduploads'));
+
+        // Prepare the file display default selector.
+        $resource_config = get_config('resource');
+        $choices = resourcelib_get_displayoptions(explode(',', $resource_config->displayoptions));
+        $mform->addElement('select', 'filedisplaydefault', get_string('course:filedisplay_default', 'local_lae'), $choices);
+        $mform->addHelpButton('filedisplaydefault', 'course:filedisplay_default', 'local_lae');
+        $mform->setDefault('filedisplaydefault', !isset($course->filedisplaydefault) ? $resource_config->display : $course->filedisplaydefault);
 
         if (!empty($course->legacyfiles) or !empty($CFG->legacyfilesinnewcourses)) {
             if (empty($course->legacyfiles)) {
