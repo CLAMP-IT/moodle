@@ -7,19 +7,25 @@
  */
 
 /* @group Category Icons */
+@import "../fontawesome/variables";
 
 .categoryicons {
+  .course_category_tree .subcategories {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
   .course_category_tree .collapsible-actions {
     display: none;
   }
 
-  /* Set the position on the frontpage */
+  // Set the position on the frontpage.
   .frontpage-category-names .collapsible-actions,
   #frontpage-category-combo .collapsible-actions {
     display: none;
   }
 
-  /* adjust line height for tiles that include course count */
+  // Adjust line height for tiles that include course count.
   .frontpage-category-names.course_category_tree .category > .info > .categoryname,
   .frontpage-category-names.course_category_tree .category.with_children > .info > .categoryname {
     line-height: 15px;
@@ -30,7 +36,7 @@
     width: 100%;
   }
 
-  /* Hide icon 'collapsed' because it makes no sense here */
+  // Hide icon 'collapsed' because it makes no sense here.
   .course_category_tree {
     .category.with_children.collapsed > .info > .categoryname,
     .category.with_children > .info > .categoryname,
@@ -40,25 +46,37 @@
       margin: 0;
     }
     .category.dimmed_category {
-      border-color: #AAAAAA;
+      border-color: @grayLight;
+      .@{fa-css-prefix} {
+        color: inherit;
+      }
+    }
+    .category[data-categoryid].dimmed_category:hover {
+      background-color: @grayLight;
+      > .info > .categoryname a {
+        background-color: @grayLight;
+      }
     }
     .category {
       float: left;
       margin: 0 5px 10px 5px;
       .numberofcourse {
-        background: #666;
-        color: #fff;
-        padding: 7px;
-        border-radius: 50%;
+        background: @gray;
+        color: @white;
+        padding: 5px;
+        border-radius: 12px;
         position: relative;
         top: 8px;
-        left: 80%;
+        right: 8px;
+        float: right;
+        text-align: center;
+        min-width: 24px;
         font-weight: 600;
         font-size: 1em;
         -moz-box-shadow: 1px 1px 5px 0px #ccc;
         -webkit-box-shadow: 1px 1px 5px 0px #ccc;
         box-shadow: 1px 1px 5px 0px #ccc;
-        border: 2px solid #fff;
+        border: 2px solid @white;
       }
       .content {
         display: none;
@@ -82,20 +100,18 @@
         overflow: hidden;
         text-overflow: ellipsis;
         width: 176px;
-        > i {
+        > .@{fa-css-prefix} {
+          font-size: 140px;
           padding-top: 6px;
+          width: 100%;
         }
         > span {
           font-size: 18px;
         }
       }
     }
-    .fa {
-      font-size: 140px;
-      width: 100%;
-    }
     .category[data-categoryid] {
-      border: 1px solid #e7e7e7;
+      border: 1px solid @grayLightish;
       border-radius: 5px;
       border-bottom-width: 3px;
     }
@@ -114,19 +130,19 @@
       }
     }
     .content {
-        .teachers .fa {
+        .teachers .@{fa-css-prefix} {
             display: inline;
             font-size: inherit;
         }
     }
   }
 
-  /* Hide buttons to expand and collapse */
+  // Hide buttons to expand and collapse.
   .jsenabled .course_category_tree .controls {
     display: none;
   }
 
-  /* clear course list with subcategory icons above */
+  // Clear course list with subcategory icons above.
   .subcategories + .category-browse {
     clear: both;
   }

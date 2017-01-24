@@ -83,10 +83,10 @@ sub {
 // and
 // https://github.com/moodle/moodle/commit/2471088111f4fc6e85fcd9a61e5d4c935e2d83fd
 img {
-  /* Responsive images (ensure images don't scale beyond their parents) */
-  max-width: 100%; /* Part 1: Set a maxium relative to the parent */
-  width: auto\9; /* IE7-8 need help adjusting responsive images */
-  height: auto; /* Part 2: Scale the height according to the width, otherwise you get stretching */
+  // Responsive images (ensure images don't scale beyond their parents).
+  max-width: 100%; // Part 1: Set a maxium relative to the parent.
+  width: auto\9; // IE7-8 need help adjusting responsive images.
+  height: auto; // Part 2: Scale the height according to the width, otherwise you get stretching.
 
   vertical-align: middle;
   border: 0;
@@ -96,6 +96,13 @@ img {
 // Because responsive images are on, this can muck up the tables, see #376 where the icons are iffy.
 table img {
   max-width: none;
+}
+
+// But this makes the theme selector image iffy!
+// This is a 'generaltable' unlike 'gradereport-grader-table', so see if this is fine for all.
+// TODO: See if need to be specific to 'gradereport-grader-table' only.
+table.generaltable img {
+  max-width: 100%;
 }
 
 // Prevent max-width from affecting Google Maps

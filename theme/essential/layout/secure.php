@@ -15,16 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This is built using the bootstrapbase template to allow for new theme's using
- * Moodle's new Bootstrap theme engine
+ * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2013 Julian Ridden
+ * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
+ * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once($OUTPUT->get_include_file('pagesettings'));
+require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
+require_once(\theme_essential\toolbox::get_tile_file('pagesettings'));
 
 echo $OUTPUT->doctype();
 ?>
@@ -32,11 +33,16 @@ echo $OUTPUT->doctype();
 <head>
     <title><?php echo $OUTPUT->page_title(); ?></title>
     <link rel="shortcut icon" href="<?php echo $OUTPUT->favicon(); ?>"/>
-    <?php 
-    echo $OUTPUT->get_csswww();
+    <?php
+    echo \theme_essential\toolbox::get_csswww();
     echo $OUTPUT->standard_head_html();
     ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Google web fonts -->
+    <?php require_once(\theme_essential\toolbox::get_tile_file('fonts')); ?>
+    <!-- Start Analytics -->
+    <?php require_once(\theme_essential\toolbox::get_tile_file('analytics')); ?>
+    <!-- End Analytics -->
 </head>
 
 <body <?php echo $OUTPUT->body_attributes($bodyclasses); ?>>
@@ -52,42 +58,23 @@ echo $OUTPUT->doctype();
 </header>
 
 <div id="page" class="container-fluid">
-    <section role="main-content">
-        <div id="page-content" class="row-fluid">
-            <div id="region-bs-main-and-pre" class="span9">
-                <div class="row-fluid">
-                    <section id="region-main" class="span8 pull-right">
+    <div id="page-content" class="row-fluid">
+        <div id="region-bs-main-and-pre" class="span9">
+            <div class="row-fluid">
+                <div id="content" class="span8 pull-right">
+                    <section id="region-main">
                         <?php echo $OUTPUT->main_content(); ?>
                     </section>
-                    <?php echo $OUTPUT->blocks('side-pre', 'span4 desktop-first-column'); ?>
                 </div>
+                <?php echo $OUTPUT->essential_blocks('side-pre', 'span4 desktop-first-column'); ?>
             </div>
-            <?php echo $OUTPUT->blocks('side-post', 'span3'); ?>
         </div>
-    </section>
+        <?php echo $OUTPUT->essential_blocks('side-post', 'span3'); ?>
+    </div>
 </div>
 
 <footer>
-    <a href="#top" class="back-to-top" ><i class="fa fa-angle-up "></i></a>
-    <script type="text/javascript">
-        jQuery(document).ready(function () {
-            <?php
-            if ($OUTPUT->theme_essential_not_lte_ie9()) {
-              echo "jQuery('#essentialnavbar').affix({";
-              echo "offset: {";
-              echo "top: $('#page-header').height()";
-              echo "}";
-              echo "});";
-              if ($breadcrumbstyle == '1') {
-                  echo "$('.breadcrumb').jBreadCrumb();";
-              }
-            }
-            if ($OUTPUT->get_setting('fitvids')) {
-                echo "$('#page').fitVids();";
-            }
-            ?>
-        });
-    </script>
+    <a href="#top" class="back-to-top" ><span aria-hidden="true" class="fa fa-angle-up "></span></a>
 </footer>
 
 <?php echo $OUTPUT->standard_end_of_body_html(); ?>

@@ -19,15 +19,24 @@ input[type="color"],
 .uneditable-input,
 .form-item .form-description,
 .form-defaultinfo,
-.form-label .form-shortname {
+.form-label .form-shortname,
+.mform legend,
+.mform legend a {
   color: ~"[[setting:themetextcolor]]";
+
+  // Focus state.
+  &:focus {
+    border-color: ~"[[setting:inputfocusbordercolor]]";
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px ~"[[setting:inputfocusshadowcolor]]";
+    -moz-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px ~"[[setting:inputfocusshadowcolor]]";
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px ~"[[setting:inputfocusshadowcolor]]";
+  }
 }
 
 #page {
   form {
     .form-buttons,
     table#form td.submit,
-    .form-buttons,
     .path-admin .buttons,
     #fitem_id_submitbutton,
     .fp-content-center
@@ -52,6 +61,20 @@ input[type="color"],
       border-top: 1px solid ~"[[setting:themeiconcolor]]";
     }
   }
+}
+
+body {
+    &#page-grade-grading-pick {
+        #region-main {
+            form {
+                #fgroup_id_buttonar {
+                    label {
+                        color: ~"[[setting:themenavcolor]]";
+                    }
+                }
+            }
+        }
+    }
 }
 
 /* @end */

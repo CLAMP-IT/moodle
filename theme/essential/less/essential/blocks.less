@@ -1,4 +1,5 @@
 /* @group Blocks */
+@import "../fontawesome/variables";
 
 .block {
   background: white;
@@ -6,7 +7,7 @@
   border: 1px solid darken(@wellBackground, 7%);
   .border-radius(@borderRadiusLarge);
   .content {
-    padding: 4px 0px;
+    padding: 4px 0;
   }
   .icon {
     margin-right: 5px;
@@ -14,7 +15,7 @@
   .moodle-actionmenu[data-enhanced].show .menu a:hover {
     text-decoration: none;
     &:before {
-      color: #fff;
+      color: @white;
     }
   }
   .moodle-core-dragdrop-draghandle {
@@ -34,28 +35,119 @@
   }
 }
 
-.editing {
-  .block-region.yui3-dd-drop-active-valid {
-    border: 1px dashed darken(@wellBackground, 7%);
-    .border-radius(@borderRadiusLarge);
-  }
-
-  #page-footer {
-    .footerblocks > .span4,
-    .block-region.yui3-dd-drop-active-valid {
-      min-height: 300px;
+body:not(.tabletdevice) {
+    // Correctly span the main element when no blocks are present.
+    &.empty-region-side-pre #main-and-pre #content, &.empty-region-side-post #main-and-pre {
+        width: 100%;
     }
-  }
+
+    &.empty-region-side-post.used-region-side-pre {
+        #main-and-pre {
+            #content {
+                .fluid-span(9);
+            }
+            #block-region-side-pre {
+                .fluid-span(3);
+            }
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .fluid-span (@columns) {
+            .fluid-span-full(@columns, @fluidGridColumnWidth1200, @fluidGridGutterWidth1200);
+        }
+        &.empty-region-side-post.used-region-side-pre {
+            #main-and-pre {
+                #content {
+                    .fluid-span(9);
+                }
+                #block-region-side-pre {
+                    .fluid-span(3);
+                }
+            }
+        }
+    }
+
+    @media (min-width: 768px) and (max-width: 979px) {
+        .fluid-span (@columns) {
+            .fluid-span-full(@columns, @fluidGridColumnWidth768, @fluidGridGutterWidth768);
+        }
+        &.empty-region-side-post.used-region-side-pre {
+            #main-and-pre {
+                #content {
+                    .fluid-span(9);
+                }
+                #block-region-side-pre {
+                    .fluid-span(3);
+                }
+            }
+        }
+    }
+
+    @media (max-width: 767px) {
+        &.empty-region-side-post.used-region-side-pre {
+            #main-and-pre {
+                #content, #block-region-side-pre {
+                    width: 100%;
+                }
+            }
+        }
+    }
 }
 
-#middle-blocks {
-  margin: 15px 0px;
+.editing {
+    // Show the regions when drag and drop.
+    .block-region.yui3-dd-drop-active-valid {
+        min-height: 200px;
+        border-width: 2px;
+        border-style: dashed;
+    }
+}
+
+.pagewidthnarrow .block .moodle-actionmenu[data-enhanced].show {
+    white-space: normal;
+}
+
+.editing .block-region {
+    padding-top: 24px;
+    position: relative;
+    .regionname {
+        display: block;
+        left: 0;
+        margin: 2px 0;
+        position: absolute;
+        text-align: center;
+        top: 0;
+        width: 100%;
+        span {
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: @baseBorderRadius;
+            padding: 2px;
+        }
+    }
+}
+
+.pagelayout-frontpage {
+    .frontpagecontent, #marketing-spots {
+        margin-bottom: 20px;
+    }
+}
+
+p.tree_item.leaf a {
+  > .@{fa-css-prefix} {
+    width: 14px;
+  }
+  &.action-delete {
+    > .@{fa-css-prefix} {
+      color: red;
+    }
+  }
 }
 
 .tree_item.branch {
   background-image: none !important;
 
-  &.branch:before {
+  &:before {
     font-family: FontAwesome;
     content: "\f07c";
     margin-right: 5px;
@@ -80,10 +172,78 @@
   }
 }
 
+.block_navigation.block .block_tree .tree_item {
+    &.hasicon .item-content-wrap {
+        display: inline !important;
+    }
+    &.branch {
+        padding-left: 0 !important;
+    }
+}
+
 .collapsed .tree_item.branch:before {
   font-family: FontAwesome;
-  /*@replace: "\f053"*/content: "\f07b";
+  content: "\f07b";
   margin-right: 5px;
+}
+
+.jsenabled .block_settings .block_tree .tree_item {
+    padding-left: 0 !important;
+}
+
+.jsenabled .block_settings .block_tree .tree_item.branch.loadingbranch:before {
+    font-family: FontAwesome;
+    content: "\f110";
+    -moz-animation: essential-block-spin 0.8s infinite ease-in-out;
+    -webkit-animation: essential-block-spin 0.8s infinite ease-in-out;
+    -o-animation: essential-block-spin 0.8s infinite ease-in-out;
+    animation: essential-block-spin 0.8s infinite ease-in-out;
+}
+
+@-moz-keyframes essential-block-spin {
+    0% {
+        -moz-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -moz-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+@-webkit-keyframes essential-block-spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+@-o-keyframes essential-block-spin {
+    0% {
+        -o-transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -o-transform: rotate(359deg);
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+@keyframes essential-block-spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
 }
 
 .hidden-blocks {
@@ -91,14 +251,14 @@
   padding: 10px;
   border: 1px solid #EEE;
   border-radius: 5px;
-  margin: 10px 0px 10px 0px;
+  margin: 10px 0 10px 0;
 
   h4 {
     text-align: left;
     padding-bottom: 8px;
     margin-bottom: 8px;
     border-bottom: 1px solid #ccc;
-    margin-top: 0px;
+    margin-top: 0;
     color: #ff6666;
   }
 
@@ -116,27 +276,30 @@
   margin-bottom: 5px;
   text-transform: uppercase;
   font-weight: normal;
-  padding: 0px;
+  padding: 0;
 }
 
 .block .header .title {
   border-bottom: 1px solid #EEE;
-  padding-left: 0px;
+  padding-left: 0;
+  h2 {
+    display: inline;
+  }
 
-  h2:before {
-    font-family: FontAwesome;
+  > .@{fa-css-prefix} {
+    display: inline;
+    float: left;
     font-size: 1.65em;
     margin-right: .3em;
-    content: "\f0c9";
   }
 }
 
 .block_iconic_html .header .title h2:before {
-  padding-right: 0px;
+  padding-right: 0;
   content: none;
 }
-.block.block_iconic_html .header .title h2 span.fa {
-  padding-right: 0px !important;
+.block.block_iconic_html .header .title h2 .@{fa-css-prefix} {
+  padding-right: 0 !important;
   &:before {
     margin-right: .3em;
     font-size: 1.65em;
@@ -147,7 +310,7 @@
 .block.hidden h3.main,
 .block.hidden .header .title {
   border-bottom: none;
-  margin-bottom: 0px;
+  margin-bottom: 0;
 }
 
 .block_quiz_results {
@@ -157,11 +320,11 @@
 .block_rss_client {
   .description {
     height: auto;
-    padding-bottom: 0px;
-    margin-bottom: 0px;
+    padding-bottom: 0;
+    margin-bottom: 0;
   }
   .content {
-    padding: 0px;
+    padding: 0;
     a:hover {
       text-decoration: none;
     }
@@ -173,20 +336,17 @@
       }
     }
   }
-  .header .title h2:before {
-    content: "\f09e";
-  }
   .footer {
     text-align: right;
     padding-top: 5px;
     a {
-      color: #fff;
+      color: @white;
       width: 100px;
       padding: 4px 12px;
       font-size: 1em;
       border-radius: 5px;
       &:hover {
-        color: #fff;
+        color: inherit;
       }
     }
   }
@@ -221,19 +381,10 @@
 /* @group Login Block */
 
 .block_login {
-  .header .title h2:before {
-    content: "\f007";
-    font-family: FontAwesome;
-    float: left;
-  }
   .content {
     .footer {
-      height: 60px;
-      width: 100%;
-      padding: 0px;
+      padding: 0;
       div {
-        float: left;
-        clear: left;
         margin: 0;
         width: 90%;
         a {
@@ -244,9 +395,8 @@
         }
       }
       a {
-        color: #fff;
+        color: @white;
         padding: 0;
-        float: left;
         margin: 0;
         font-size: 1em;
         white-space: nowrap;
@@ -261,7 +411,7 @@
       border-style: solid;
       border-width: 1px;
       box-shadow: none;
-      color: #fff;
+      color: @white;
       cursor: pointer;
       display: inline-block;
       font-size: 13px;
@@ -297,15 +447,15 @@
 
 /* @end */
 
-/* @group Footer blocks - copied from Shoelace */
+/* @group Row blocks - copied and improved from Shoelace - using two instead of four blocks per row when editing. */
 
-.footer-fluid-span (@columns, @fluidGridColumnWidth, @fluidGridGutterWidth) {
+.rowblock-fluid-span (@columns, @fluidGridColumnWidth, @fluidGridGutterWidth) {
     width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1));
     *width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%);
 }
 
-aside.footer-edit .block {
-    .footer-fluid-span(3, @fluidGridColumnWidth, @fluidGridGutterWidth);
+aside.rowblock-edit .block {
+    .rowblock-fluid-span(6, @fluidGridColumnWidth, @fluidGridGutterWidth);
     display: block;
     float: left;
     min-height: 240px;
@@ -317,38 +467,43 @@ aside.footer-edit .block {
 
 // MDL-44074.
 @media (min-width: 768px) and (max-width: 979px) {
-    aside.footer-edit .block {
-        .footer-fluid-span(3, @fluidGridColumnWidth768, @fluidGridGutterWidth768);
+    aside.rowblock-edit .block {
+        .rowblock-fluid-span(6, @fluidGridColumnWidth768, @fluidGridGutterWidth768);
         margin-left: @fluidGridGutterWidth768;
     }
 }
 
 @media (min-width: 1200px) {
-    aside.footer-edit .block {
-        .footer-fluid-span(3, @fluidGridColumnWidth1200, @fluidGridGutterWidth1200);
+    aside.rowblock-edit .block {
+        .rowblock-fluid-span(6, @fluidGridColumnWidth1200, @fluidGridGutterWidth1200);
         margin-left: @fluidGridGutterWidth1200;
     }
 }
 
-// Eliminates need for 'desktop-first-column' but does not work in IE8.
-// Info on: http://www.w3schools.com/cssref/sel_first-of-type.asp
-aside.footer-blocks div.row-fluid div.block:first-of-type {
-    margin-left: 0px;
-}
-
-// Support multiple rows when editing otherwise above works, see: http://www.w3schools.com/cssref/sel_nth-of-type.asp
-.footer-nth(@index) {
-    aside.footer-edit div.block:nth-of-type(@{index}) {
-        margin-left: 0px;
+@media (min-width: 768px) {
+    aside.rowblock-blocks div.row-fluid {
+        display: flex;
+        // Eliminates need for 'desktop-first-column' but does not work in IE8.
+        // Info on: http://www.w3schools.com/cssref/sel_first-of-type.asp
+        div.block:first-of-type {
+            margin-left: 0;
+        }
     }
 }
 
-.footer-nthX (@index) when (@index > 0) {
-    .footer-nth(@index);
-    .footer-nthX(@index - 4);
+// Support multiple rows when editing otherwise above works, see: http://www.w3schools.com/cssref/sel_nth-of-type.asp
+.rowblock-nth(@index) {
+    aside.rowblock-edit div.block:nth-of-type(@{index}) {
+        margin-left: 0;
+    }
 }
 
-.footer-nthX(37); // Ten rows.
+.rowblock-nthX (@index) when (@index > 0) {
+    .rowblock-nth(@index);
+    .rowblock-nthX(@index - 2);
+}
+
+.rowblock-nthX(37); // Ten rows.
 
 /* @end */
 

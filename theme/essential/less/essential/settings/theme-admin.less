@@ -6,6 +6,7 @@
   font-family: ~"[[setting:bodyfont]]"
 }
 
+@import "../../fontawesome/variables";
 body {
   color: ~"[[setting:themetextcolor]]";
   font-family: ~"[[setting:bodyfont]]";
@@ -13,6 +14,32 @@ body {
   background-attachment: ~"[[setting:backgroundattach]]";
   background-repeat: ~"[[setting:backgroundrepeat]]";
   background-size: ~"[[setting:backgroundsize]]";
+  .@{fa-css-prefix} {
+    color: ~"[[setting:themeiconcolor]]";
+    &:focus, &:hover {
+      color: ~"[[setting:themehovercolor]]";
+    }
+  }
+  .@{fa-css-prefix}-inverse {
+    color: @fa-inverse;
+  }
+  .dimmed .@{fa-css-prefix} {
+    color: inherit;
+    &:focus, &:hover {
+      color: inherit;
+    }
+  }
+}
+
+body.loginbackground {
+    background-image: ~"[[setting:loginbackground]]";
+    background-size: ~"[[setting:loginbackgroundstyle]]";
+    #page-header {
+        background-image: none;
+    }
+    #page-content {
+        opacity: ~"[[setting:loginbackgroundopacity]]";
+    }
 }
 
 .container-fluid {
@@ -23,21 +50,29 @@ h1, h2, h3, h4, h5, h6, #adminsettings h3 {
   color: ~"[[setting:themetextcolor]]";
 }
 
-a, a:visited {
+a, a:visited, .btn-link, .btn-link:visited {
   color: ~"[[setting:themeurlcolor]]";
 }
 
-a:hover {
+a:hover, a:focus, .btn-link:hover, .btn-link:focus {
   color: ~"[[setting:themehovercolor]]";
   &:before {
     color: ~"[[setting:themehovercolor]]";
   }
 }
 
-a:before {
-  color: @icon-colour;
-  display: inline-block;
-  text-decoration: none;
+a {
+  &:before {
+    color: ~"[[setting:themeiconcolor]]";
+    display: inline-block;
+    text-decoration: none;
+    &:hover {
+      color: ~"[[setting:themehovercolor]]";
+    }
+  }
+  &.dimmed:before {
+    color: inherit;
+  }
 }
 
 .color {
@@ -59,34 +94,6 @@ img.profilepicture {
 
 /* @end */
 
-/* @group Header */
-
-#page-header {
-  background: url(~"'[[setting:headerbackground]]'") repeat;
-}
-
-a.logo {
-  background-image: ~"[[setting:logo]]";
-}
-
-h1#title {
-  color: ~"[[setting:themetextcolor]]";
-}
-
-#headerlogo {
-  border-right: 1px dotted ~"[[setting:themecolor]]";
-}
-
-/* @group Social Buttons */
-
-button.website:hover, button.website:focus {
-  background-color: ~"[[setting:themecolor]]";
-}
-
-/* @end */
-
-/* @end */
-
 /* @group Theme Colours Menu */
 a {
   .colours-default {
@@ -100,6 +107,9 @@ a {
   }
   .colours-alternative3 {
     color: ~"[[setting:alternativethemecolor3]]" !important;
+  }
+  .colours-alternative4 {
+    color: ~"[[setting:alternativethemecolor4]]" !important;
   }
 }
 /* @end */
@@ -118,9 +128,10 @@ a {
 
 .course-content ul li.section.main {
   background: url(~"[[pix:theme|bg/dot]]") bottom repeat-x;
-  &.clearfix.current .content {
-    box-shadow: 0px 0px 6px 2px ~"[[setting:themecolor]]";
-    border-radius: 10px;
+  &.current {
+    box-shadow: 4px 4px 8px 2px ~"[[setting:themecolor]]";
+    border-style: solid;
+    border-width: 1px;
   }
 }
 
@@ -144,25 +155,6 @@ h2.pagetitle {
 
 /* @end */
 
-/* @group Buttons */
-
-.button {
-  a, a:visited {
-    background-color: ~"[[setting:themecolor]]";
-  }
-}
-
-a.marketing-button,
-a.marketing-button:visited, {
-  background-color: ~"[[setting:themecolor]]";
-}
-
-a.marketing-button:hover {
-  background-color: ~"[[setting:themehovercolor]]";
-}
-
-/* @end */
-
 /* @group Blocks */
 
 .block {
@@ -172,9 +164,13 @@ a.marketing-button:hover {
   a:hover {
     color: ~"[[setting:themehovercolor]]";
   }
-  .header .title h2:before, &.block_iconic_html .header .title h2 span.fa:before {
+  .header .title h2:before, &.block_iconic_html .header .title h2 .@{fa-css-prefix}:before {
     color: ~"[[setting:themeiconcolor]]";
   }
+}
+
+.jsenabled .block_settings .block_tree .tree_item.branch.loadingbranch:before {
+    color: ~"[[setting:themeiconcolor]]";
 }
 
 .block_rss_client .footer a {
@@ -218,7 +214,7 @@ a.marketing-button:hover {
 
 /* @group Home News Boxes */
 
-.service i {
+.service .@{fa-css-prefix} {
   color: ~"[[setting:themecolor]]";
 }
 
@@ -231,19 +227,19 @@ a.marketing-button:hover {
   color: ~"[[setting:footertextcolor]]";
   border-top: 2px solid ~"[[setting:themecolor]]";
   border-bottom: 3px solid ~"[[setting:themecolor]]";
-  a, a > i {
+  a, a > .@{fa-css-prefix} {
     color: ~"[[setting:footerurlcolor]]";
   }
-  a:hover, a:hover > i {
+  a:hover, a:hover > .@{fa-css-prefix} {
     color: ~"[[setting:footerhovercolor]]";
   }
   .footnote {
     color: ~"[[setting:footertextcolor]]";
     a, a:visited {
-      color: ~"[[setting:footerurlcolor]]" !important;
+      color: ~"[[setting:footerurlcolor]]";
     }
     a:hover {
-      color: ~"[[setting:footerhovercolor]]" !important;
+      color: ~"[[setting:footerhovercolor]]";
     }
   }
   hr {
@@ -254,28 +250,43 @@ a.marketing-button:hover {
     color: ~"[[setting:footerheadingcolor]]";
   }
   .tree_item.branch:before {
-    color: @icon-colour;
+    color: ~"[[setting:themeiconcolor]]";
   }
-}
-
-#page-footer .block_html ul li:before,
-#greyboxright ul li:before {
-  background-color: ~"[[setting:themecolor]]";
 }
 
 /* @group Footer Block Formatting */
 
 #page-footer {
-  .block .header {
-    border-bottom: 1px solid ~"[[setting:footersepcolor]]";
-    .title {
-      h2 {
-        color: ~"[[setting:footerheadingcolor]]";
-        &:before {
-          color: ~"[[setting:themecolor]]";
-        }
+  .block {
+    background-color: ~"[[setting:footerblockbackgroundcolour]]";
+    color: ~"[[setting:footerblocktextcolour]]";
+    a, a > .@{fa-css-prefix} {
+      color: ~"[[setting:footerblockurlcolour]]";
+    }
+    a:hover, a:hover > .@{fa-css-prefix} {
+      color: ~"[[setting:footerblockhovercolour]]";
+    }
+    .icon {
+      color: ~"[[setting:footerblockurlcolour]]";
+    }
+    .moodle-core-dragdrop-draghandle {
+      &:before {
+        color: ~"[[setting:footerblockurlcolour]]";
       }
     }
+  }
+  .block .header {
+    border-bottom: 1px solid ~"[[setting:footersepcolor]]";
+    h2 {
+      color: inherit;
+    }
+  }
+  .header .title h2:before, &.block_iconic_html .header .title h2 span.@{fa-css-prefix}:before {
+    color: inherit;
+  }
+  .block_html ul li:before,
+  #greyboxright ul li:before {
+    background-color: ~"[[setting:themecolor]]";
   }
   .block_login input[type="submit"] {
     background-color: ~"[[setting:themecolor]]";
@@ -292,29 +303,6 @@ a.marketing-button:hover {
 
 /* @end */
 
-/* @group Marketing Spots */
-
-#marketing-image1 {
-  background-image: ~"[[setting:marketing1image]]";
-  background-repeat: no-repeat;
-}
-
-#marketing-image2 {
-  background-image: ~"[[setting:marketing2image]]";
-  background-repeat: no-repeat;
-}
-
-#marketing-image3 {
-  background-image: ~"[[setting:marketing3image]]";
-  background-repeat: no-repeat;
-}
-
-.marketing-image {
-  height: ~"[[setting:marketingheight]]";
-}
-
-/* @end */
-
 /* @group Profile Image */
 
 .socials img:hover {
@@ -325,12 +313,22 @@ a.marketing-button:hover {
 
 /* @group Tabs */
 
-.nav-tabs > li > a {
-  color: ~"[[setting:themenavcolor]]";
-  background-color: ~"[[setting:themecolor]]";
-  &:hover, &:focus {
-    color: ~"[[setting:themecolor]]";
-    background-color: ~"[[setting:themenavcolor]]";
+.nav-tabs > li {
+  > a {
+    color: ~"[[setting:themenavcolor]]";
+    background-color: ~"[[setting:themecolor]]";
+    &:hover, &:focus {
+      color: ~"[[setting:themecolor]]";
+      background-color: ~"[[setting:themenavcolor]]";
+    }
+  }
+  &.active > a {
+    color: ~"[[setting:themetextcolor]]";
+    background-color: @white;  // TODO: Pagecolour.
+    &:hover, &:focus {
+      color: inherit;
+      background-color: inherit;
+    }
   }
 }
 
@@ -354,20 +352,25 @@ a.marketing-button:hover {
 /* @group Performance Information */
 
 .performanceinfo {
-  border-color: ~"[[setting:themeiconcolor]]";
+  background-color: ~"[[setting:footerblockbackgroundcolour]]";
+  color: ~"[[setting:footerblocktextcolour]]";
+  border: 1px solid darken(@wellBackground, 7%);
   var {
     background-color: ~"[[setting:themecolor]]";
     color: ~"[[setting:themenavcolor]]";
   }
+  .span12 {
+      border-bottom-color: ~"[[setting:footersepcolor]]";
+  }
   h2 {
-    color: ~"[[setting:themetextcolor]]";
-    border-bottom-color: ~"[[setting:themeiconcolor]]";
+    color: ~"[[setting:footerblocktextcolour]]";
+    border-bottom-color: #EEE;
     &:before {
       color: ~"[[setting:themeiconcolor]]";
     }
   }
   span {
-    color: ~"[[setting:themetextcolor]]";
+    color: ~"[[setting:footerblocktextcolour]]";
   }
   #cache:before, #load:before, #memory:before, #peakmemory:before, #session:before, #included:before, #dbqueries:before, #dbtime:before {
     color: ~"[[setting:themenavcolor]]";
@@ -414,7 +417,7 @@ table#user-grades {
     border-right-color: ~"[[setting:themecolor]]";
   }
   .grade_icons img {
-    background-color: #fff;
+    background-color: @white;
     padding: 3px;
     border-radius: 3px;
   }
@@ -468,7 +471,7 @@ h1, h2, h3, h4, h5, h6 {
   .moodle-actionmenu[data-enhanced].show .menu a:hover {
     color: ~"[[setting:themenavcolor]]";
     background-color: ~"[[setting:themecolor]]";
-    .fa:before {
+    .@{fa-css-prefix}:before {
       color: ~"[[setting:themenavcolor]]";
     }
   }

@@ -1,29 +1,30 @@
 /* @group Responsive */
 
 @media (min-width: 1200px) {
-    .maintenance #region-main,
-    #page-login-index #region-main {
-        width: 100% !important;
-    }
     #page-mod-quiz-edit ul.slots {
         li.section li.activity .activityinstance {
             width: 90%;
         }
         .activityinstance span.instancename {
-            width: 94%;
+            width: 90%;
         }
     }
 }
 
 @media (max-width: @navbarCollapseWidth) {
-    font-size: 13px !important;
-    h1#title {
-        font-size: 2.5em;
-        line-height: 35px;
-    }
-    h1#smalltitle {
-        font-size: 1.8em;
-        line-height: 30px;
+    #page-header {
+        h1#smalltitle {
+            font-size: 1.8em;
+            line-height: 16px;
+            padding-top: 10px;
+        }
+        h2#subtitle {
+            line-height: 16px;
+            padding-top: 4px;
+        }
+        #headerlogo {
+            margin-left: 10px;
+        }
     }
     .navbar-inner {
         .brand {
@@ -34,7 +35,7 @@
             float: left;
             display: block;
             width: 100%;
-            z-index: 10; /* Get on top of slider. */
+            z-index: 10; // Get on top of slider.
             margin-left: -10px;
             margin-right: -10px;
             border-bottom-left-radius: 4px;
@@ -52,12 +53,12 @@
             #custom_menu_activitystream,
             #custom_menu {
                 vertical-align: top;
-                float: left;
                 clear: both;
                 width: 100%;
             }
-            &.collapse.in[style*="height: auto;"] {
-                overflow: visible;
+            &.collapse.in[style*="height: auto"] {
+                min-height: 40px;
+                overflow: visible;  // Update: Very odd, seems to be ok when combined with 'min-height'.  Was killing the complete() function (line: 157 in bootstrap.js) being fired at the end of the transition.
             }
             &.in .nav {
                 .divider {
@@ -97,7 +98,7 @@
                 position: absolute;
                 top: 100%;
                 left: 0;
-                z-index: 1000;
+                z-index: @zindexDropdown;
                 display: none;
                 float: left;
                 border: 1px solid rgba(0, 0, 0, .2);
@@ -133,13 +134,11 @@
         font-size: 13px !important;
         line-height: 18px;
     }
-    h1#title {
-        font-size: 2em;
-        line-height: 30px;
-    }
-    h1#smalltitle {
-        font-size: 1.5em;
-        line-height: 30px;
+    #page-header {
+        h1#smalltitle {
+            font-size: 1.5em;
+            line-height: 14px;
+        }
     }
     .row-fluid .desktop-first-column {
         margin-left: 0;
@@ -155,17 +154,10 @@
 }
 
 @media (max-width: 767px) {
-    body{
+    body {
         font-size: 12px !important;
         font-weight: 500;
         line-height: 16px;
-    }
-    h1#title {
-        font-size: 1.8em;
-        line-height: 30px;
-    }
-    h1#smalltitle {
-        font-size: 1.2em;
     }
     .row-fluid .desktop-first-column {
         clear: right;
@@ -177,21 +169,27 @@
 
     #page-header {
         height: auto;
-        h2#subtitle {
-            top: 0px;
-            line-height: 10px;
+        .ecol7 {
+            width: 90%;
         }
-        .icon-collapse {
+        h1#smalltitle {
+            font-size: 1.2em;
+            line-height: 14px;
+            padding-top: 8px;
+        }
+        h2#subtitle {
+            line-height: 14px;
+            padding-top: 2px;
+        }
+        #essentialicons {
             overflow: hidden;
-            margin-top: 40px;
-            margin-right: 10px;
             float: right;
+            position: relative;
+            top: 0;
+            right: 50px;
         }
         .btn-icon {
             display: block;
-        }
-        #headerlogo {
-            top: 0px;
         }
     }
 
@@ -206,10 +204,6 @@
                 }
             }
         }
-    }
-
-    #marketing-buttons {
-        display: none;
     }
 
     // quiz.less in Essential and mod version.
@@ -229,6 +223,14 @@
 }
 
 @media (max-width: 480px) {
+    #page-header {
+        .ecol7 {
+            width: 80%;
+        }
+        h1#title {
+            font-size: 2em;
+        }
+    }
     // quiz.less in Essential and mod version.
     #page-mod-quiz-edit ul.slots {
         li.section li.activity .activityinstance {
@@ -236,14 +238,6 @@
         }
         .activityinstance span.instancename {
             width: 40%;
-        }
-    }
-}
-
-@media (max-width: 455px) {
-    #page-header {
-        .icon-collapse {
-            margin-top: -30px;
         }
     }
 }

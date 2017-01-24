@@ -1,6 +1,28 @@
 /* @group Navbar */
+@import "../../fontawesome/variables";
 
-/* @group Custom Menu */
+#essentialnavbar {
+  &.oldnavbar {
+    &.logo {
+      top: ~"[[setting:logoheight]]";
+    }
+    &.nologo {
+      top: 52px;
+    }
+  }
+}
+
+@media (min-width: @navbarCollapseDesktopWidth) {
+  #essentialnavbar.oldnavbar.nologo {
+    top: 64px;
+  }
+}
+
+#essentialnavbar {
+  &.affix.oldnavbar {
+    top: 0;
+  }
+}
 
 .navbar {
   .navbar-inner {
@@ -21,19 +43,32 @@
     .nav > li.dropdown a,
     .nav > li > a {
       color: ~"[[setting:themenavcolor]]";
-      i {
-        color: inherit;
-      }
-      &:hover {
+      &:hover, &:focus {
         color: ~"[[setting:themecolor]]";
         background-color: ~"[[setting:themenavcolor]]";
-        i {
-          color: inherit;
+      }
+    }
+
+    .nav .dropdown-menu {
+      .dropdown-submenu  {
+        .dropdown-toggle:after {
+          border-left-color: inherit;
+        }
+        &:focus, &:hover {
+          .dropdown-toggle:after {
+            border-left-color: ~"[[setting:themenavcolor]]";
+          }
         }
       }
     }
 
-    .nav > li.dropdown ul.dropdown-menu > li {
+    #custom_menu_courses {
+      .dropdown-menu li > a > span.onlyenrolled {
+        background-color: ~"[[setting:mycoursesorderenrolbackcolour]]";
+      }
+    }
+
+    .nav > li.dropdown .dropdown-menu li {
       > a {
         color: ~"[[setting:themeurlcolor]]";
         &:hover {
@@ -43,21 +78,18 @@
         &:focus, &.open {
           color: @white; // TODO: Page background colour needs to be a setting.
           background-color: ~"[[setting:themeurlcolor]]";
-          i {
+          .@{fa-css-prefix} {
             color: @white; // TODO: Page background colour needs to be a setting.
           }
         }
         &:hover .dimmed_text {
           color: @grayLighter;
         }
-        i {
-          color: ~"[[setting:themeiconcolor]]";
-        }
       }
       &.dropdown-submenu:hover > a {
         color: @white; // TODO: Page background colour needs to be a setting.
         background-color: ~"[[setting:themeurlcolor]]";
-        i {
+        .@{fa-css-prefix} {
           color: inherit;
         }
       }
@@ -68,9 +100,6 @@
         &.open > .dropdown-toggle, &.active > .dropdown-toggle, &.open.active > .dropdown-toggle {
           color: @white; // TODO: Page background colour needs to be a setting.
           background-color: ~"[[setting:themehovercolor]]";
-          i {
-            color: inherit;
-          }
         }
       }
     }
@@ -80,7 +109,7 @@
         img.userpicture {
           border: 1px solid ~"[[setting:themenavcolor]]";
         }
-        ul.dropdown-menu {
+        .dropdown-menu {
           border: 1px solid ~"[[setting:themecolor]]";
           hr.sep {
             border-bottom: 1px dotted ~"[[setting:themecolor]]";
@@ -91,7 +120,7 @@
 
     .messagemenu {
       ul.nav {
-        ul.dropdown-menu {
+        .dropdown-menu {
           border: 1px solid ~"[[setting:themecolor]]";
           li > a {
             border-top: 1px dotted ~"[[setting:themecolor]]";
@@ -113,6 +142,35 @@
   }
 }
 
-/* @end */
+@media (max-width: 979px) {
+  .navbar {
+    .nav-collapse.in {
+      .nav, .nav .dropdown-menu {
+        .dropdown-submenu  {
+          .dropdown-toggle:after {
+            border-left-color: transparent;
+            border-top-color: ~"[[setting:themeiconcolor]]";
+          }
+          &:focus, &:hover {
+            .dropdown-toggle:after {
+              border-top-color: ~"[[setting:themenavcolor]]";
+            }
+          }
+        }
+        .dropdown-submenu, .dropdown-submenu:hover {
+          &.open {
+            > a {
+              color: ~"[[setting:themenavcolor]]";
+              background-color: ~"[[setting:themecolor]]";
+              &.dropdown-toggle:after {
+                border-top-color: ~"[[setting:themenavcolor]]";
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 /* @end */

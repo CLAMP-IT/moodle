@@ -1,4 +1,5 @@
 /* @group Frontpage */
+@import "../fontawesome/variables";
 
 #site-news-forum,
 #frontpage-course-list,
@@ -38,11 +39,11 @@
 
 .coursebox .content .courseimage img {
   border-radius: 5px;
-  border: 3px solid #fff;
+  border: 3px solid @white;
 }
 
 .courses .coursebox {
-  background: #fff;
+  background: @white;
   border-radius: 10px;
   border: 1px solid #E1E1E1 !important;
   padding: 10px;
@@ -51,19 +52,23 @@
 
 .courses .coursebox.even,
 .courses .coursebox.odd {
-  background: #fff;
+  background: @white;
   margin-bottom: 5px;
 }
 
 .frontpagecontent {
   border: 1px solid darken(@wellBackground, 7%);
   .border-radius(@borderRadiusLarge);
-  background-color: #FFF;
+  background-color: @white;
   padding: @paddingSmall;
   margin-bottom: 10px;
 }
 
 /* @group Alerts */
+.useralerts .close {
+    margin-top: 4px;
+    margin-bottom: 0;
+}
 
 .useralerts [class^="fa-stack"] {
   margin-right: 5px;
@@ -96,11 +101,11 @@
   -o-transition: all .3s ease 0s;
   background-color: #000;
   background-color: rgba(0, 0, 0, 0.5);
-  -webkit-box-shadow: 0 0 1px #fff;
-  -moz-box-shadow: 0 0 1px #fff;
-  box-shadow: 0 0 1px #fff;
+  -webkit-box-shadow: 0 0 1px @white;
+  -moz-box-shadow: 0 0 1px @white;
+  box-shadow: 0 0 1px @white;
   padding: 5px 12px;
-  color: #fff;
+  color: @white;
 
 }
 
@@ -110,7 +115,7 @@
 
 .back-to-top a,
 .back-to-top a:visited {
-  color: #fff !important;
+  color: @white !important;
 }
 
 /* @end */
@@ -120,65 +125,60 @@
 #marketing-spots {
   overflow: hidden;
   .marketing-spot {
-    background: #fff;
-    padding: 3px 10px;
-    border: 1px solid #e7e7e7;
+    padding: 0px 0px;
     border-radius: 5px;
-    margin-bottom: -99999px;
-    padding-bottom: 99999px;
-    h5 {
-      padding: 3px 0px 8px 0px;
-      margin: 3px 0px 4px 0px;
-      border-bottom: 1px solid #f1f1f1;
+    border: 1px solid @grayBright;
+    background: @white;
+    .title {
+      padding: 3px 0 8px;
+      margin: 3px 8px 4px;
+      border-bottom: 1px solid @grayBright;
       text-transform: uppercase;
     }
-    i {
+    .@{fa-css-prefix} {
       font-size: 1.2em;
       margin-top: 3px;
       margin-right: 8px;
     }
-    .marketing-image {
-      background-size: contain !important;
-      background-position: center top !important;
-      width: 100%;
-      margin-bottom: 5px;
+    .marketing-image-container {
+      padding-top: 2px;
+      padding-bottom: 2px;
+      .marketing-image {
+        background-size: contain !important;
+        background-position: center top !important;
+        width: 100%;
+        //margin-bottom: 5px;
+      }
     }
-    .marketing-button.responsive {
-      display: none;
+    .content {
+      padding: 2px;
+      position: relative;
+      &.withbutton {
+        padding-bottom: 32px;
+      }
+    }
+    .marketing-buttons {
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      a.marketing-button {
+        display: inline-block;
+        padding: 4px 12px;
+        margin-left: 2px;
+        margin-right: 2px;
+        font-size: 14px;
+        line-height: 20px;
+        vertical-align: middle;
+        cursor: pointer;
+        border-radius: 3px;
+        border: 1px solid #d3d3d3;
+        &.responsive {
+          display: none;
+        }
+      }
     }
   }
 }
-
-a.marketing-button {
-  color: #fff !important;
-  display: inline-block;
-  padding: 4px 12px;
-  margin-bottom: 0;
-  font-size: 14px;
-  line-height: 20px;
-  text-align: right;
-  vertical-align: middle;
-  cursor: pointer;
-  border-radius: 3px;
-  border: 1px solid #d3d3d3;
-  &:hover {
-    color: #fff !important;
-  }
-}
-
-#marketing-buttons {
-  text-align: right;
-  .span4 {
-    background: #fff;
-    padding: 10px;
-    border-left: 1px solid #e7e7e7;
-    border-right: 1px solid #e7e7e7;
-    border-bottom: 1px solid #e7e7e7;
-    border-bottom-right-radius: 5px;
-    border-bottom-left-radius: 5px;
-  }
-}
-
 /* @end */
 
 /* @end */
