@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<libraries>
+    <library>
+        <location>lib/HMAC2.php</location>
+        <name>HMAC2</name>
+        <version>295302 2010-02-21</version>
+        <license>BSD 3-Clause</license>
+    </library>
+</libraries>
