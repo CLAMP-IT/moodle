@@ -114,6 +114,9 @@ class behat_util extends testing_util {
         // Enable web cron.
         set_config('cronclionly', 0);
 
+        // Set noreplyaddress to an example domain, as it should be valid email address and test site can be a localhost.
+        set_config('noreplyaddress', 'noreply@example.com');
+
         // Keeps the current version of database and dataroot.
         self::store_versions_hash();
 
@@ -151,9 +154,10 @@ class behat_util extends testing_util {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($ch);
+        $statuscode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        if (empty($result)) {
+        if ($statuscode !== 200 || empty($result) || (!$result = json_decode($result, true))) {
 
             behat_error (BEHAT_EXITCODE_REQUIREMENT, $CFG->behat_wwwroot . ' is not available, ensure you specified ' .
                 'correct url and that the server is set up and started.' . PHP_EOL . ' More info in ' .
@@ -161,7 +165,6 @@ class behat_util extends testing_util {
         }
 
         // Check if cli version is same as web version.
-        $result = json_decode($result, true);
         $clienv = self::get_environment();
         if ($result != $clienv) {
             $output = 'Differences detected between cli and webserver...'.PHP_EOL;
@@ -341,5 +344,9 @@ class behat_util extends testing_util {
 
         // Inform data generator.
         self::get_data_generator()->reset();
+
+        // Initialise $CFG with default values. This is needed for behat cli process, so we don't have modified
+        // $CFG values from the old run. @see set_config.
+        initialise_cfg();
     }
 }

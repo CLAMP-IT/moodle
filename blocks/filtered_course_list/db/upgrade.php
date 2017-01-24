@@ -19,9 +19,11 @@
  *
  * @since 2.5
  * @package block_filtered_course_list
- * @copyright 2014 Kevin Wiliarty
+ * @copyright  2016 CLAMP
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Upgrade code for the section links block.
@@ -112,6 +114,43 @@ function xmldb_block_filtered_course_list_upgrade($oldversion) {
         // Main savepoint reached.
         upgrade_block_savepoint(true, 2015102002, 'filtered_course_list');
 
+    }
+
+    if ($oldversion < 2016080801) {
+
+        $fclcnf = get_config('block_filtered_course_list');
+        $newcnf = '';
+
+        $disabled = ($fclcnf->filtertype == 'categories') ? '' : 'DISABLED ';
+        $expanded = ($fclcnf->collapsible == 0) ? 'expanded' : 'collapsed';
+        $newcnf = "${disabled}category | $expanded | $fclcnf->categories (catID) | 0 (depth) \n";
+
+        $type = ($fclcnf->useregex) ? 'regex' : 'shortname';
+        $disabled = ($fclcnf->filtertype == 'shortname') ? '' : 'DISABLED ';
+        if ($fclcnf->currentshortname != '') {
+            $expanded = ($fclcnf->currentexpanded || $fclcnf->collapsible == 0) ? 'expanded' : 'collapsed';
+            $newcnf .= "${disabled}$type | $expanded | Current courses | $fclcnf->currentshortname \n";
+        }
+        if ($fclcnf->futureshortname != '') {
+            $expanded = ($fclcnf->futureexpanded || $fclcnf->collapsible == 0) ? 'expanded' : 'collapsed';
+            $newcnf .= "${disabled}$type | $expanded | Future courses | $fclcnf->futureshortname \n";
+        }
+
+        for ($i = 1; $i <= 10; $i++) {
+            $settings = array("customlabel$i", "customshortname$i", "labelexpanded$i");
+            if (property_exists($fclcnf, $settings[0]) && $fclcnf->$settings[0] != '') {
+                $label = $fclcnf->$settings[0];
+                $label = str_replace('|', '-', $label);
+                $shortname = $fclcnf->$settings[1];
+                $expanded = ($fclcnf->$settings[2] || $fclcnf->collapsible == 0) ? 'expanded' : 'collapsed';
+                $disabled = ($i > $fclcnf->labelscount) ? 'DISABLED ' : $disabled;
+                $newcnf .= "${disabled}$type | $expanded | $label | $shortname \n";
+            }
+        }
+
+        set_config('filters', $newcnf, 'block_filtered_course_list');
+        set_config('managerview', $fclcnf->adminview, 'block_filtered_course_list');
+        upgrade_block_savepoint(true, 2016080801, 'filtered_course_list');
     }
 
     return true;

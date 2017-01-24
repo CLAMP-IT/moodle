@@ -36,22 +36,22 @@ Feature: Send email
     And I follow "Test Course"
     And I turn editing mode on
     When I add the "Quickmail" block
-    Then I should see "Compose New Email"
+    Then I should see "Compose new email"
 
   @javascript
   Scenario: Internal navigation
-    Given I follow "Compose New Email"
-    And I follow "View Drafts"
+    Given I follow "Compose new email"
+    And I follow "View drafts"
     Then I should see "You have no email drafts"
     When I press "Continue"
-    And I follow "View History"
+    And I follow "View history"
     Then I should see "You have no email history yet"
     When I press "Continue"
-    Then I should see "Selected Recipients"
+    Then I should see "Selected recipients"
 
   @javascript
   Scenario: Compose
-    Given I follow "Compose New Email"
+    Given I follow "Compose new email"
     And I set the following fields to these values:
       | groups | Group B |
     And I press "Add"
@@ -59,9 +59,9 @@ Feature: Send email
       | Subject | Doom At 11 |
       | Message | Salvation At Noon |
     And I upload "blocks/clampmail/tests/fixtures/uploadtext.txt" file to "Attachment(s)" filemanager
-    When I press "Send Email"
-    Then I should see "View History"
+    When I press "Send email"
+    Then I should see "View history"
     And I should see "uploadtext.txt"
-    And I follow "Open Email"
+    And I follow "Open email"
     Then I should see "Student 3" in the "#mail_users" "css_element"
     And I should see "Student 4" in the "#mail_users" "css_element"

@@ -26,7 +26,7 @@ Feature: Block configuration
 
   Scenario: Reset system defaults
     Given I follow "Configuration"
-    And I follow "Restore System Defaults"
+    And I follow "Restore system defaults"
     Then I should see "Changes saved"
 
   Scenario: Filter roles
@@ -36,18 +36,18 @@ Feature: Block configuration
     And I press "Save changes"
     Then I should see "Changes saved"
     When I follow "Test Course"
-    And I follow "Compose New Email"
+    And I follow "Compose new email"
     Then the "roles" select box should contain "Student"
     And the "roles" select box should not contain "Teacher"
     When I press "Cancel"
     And I follow "Configuration"
-    And I follow "Restore System Defaults"
+    And I follow "Restore system defaults"
     Then I should see "Changes saved"
 
-  Scenario: Prepend Course name
+  Scenario: Prepend course name
     Given I follow "Configuration"
     And I set the following fields to these values:
-      | Prepend Course name | Short name |
+      | Prepend course name | Short name |
     And I press "Save changes"
     Then I should see "Short name"
 
@@ -58,5 +58,5 @@ Feature: Block configuration
     And I press "Save changes"
     Then I should see "Yes"
     When I follow "Test Course"
-    And I follow "Compose New Email"
+    And I follow "Compose new email"
     Then the field "receipt" matches value "1"

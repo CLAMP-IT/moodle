@@ -20,11 +20,11 @@ Feature: Alternate email addresses
     And I follow "Test Course"
     And I turn editing mode on
     When I add the "Quickmail" block
-    Then I should see "Alternate Emails"
+    Then I should see "Alternate emails"
 
   @javascript
   Scenario: Add alternate email
-    Given I follow "Alternate Emails"
+    Given I follow "Alternate emails"
     Then I should see "No alternate emails found for Test Course"
     When I press "Continue"
     Then I should see "Email address"
@@ -37,7 +37,7 @@ Feature: Alternate email addresses
     And I log out
     And I log in as "teacher2"
     And I follow "Test Course"
-    And I follow "Alternate Emails"
+    And I follow "Alternate emails"
     And I should see "teacher1_alt@example.com"
     And I follow "Delete"
     And I should see "Are you sure you want to delete teacher1_alt@example.com?"

@@ -22,11 +22,11 @@ Feature: Email signatures
     And I follow "Test Course"
     And I turn editing mode on
     When I add the "Quickmail" block
-    Then I should see "Signatures"
+    Then I should see "Manage signatures"
 
   @javascript
   Scenario: Add and remove signatures
-    Given I follow "Signatures"
+    Given I follow "Manage signatures"
     And I set the following fields to these values:
       | Signature | Doom At 11 |
       | default_flag | 1 |
@@ -36,8 +36,8 @@ Feature: Email signatures
     When I press "Save changes"
     Then I should see "Changes saved"
     When I set the following fields to these values:
-      | id | New Signature |
-    Then I should see "New Signature"
+      | id | New signature |
+    Then I should see "New signature"
     When I set the following fields to these values:
       | title | Secondary signature |
       | Signature | Doom At 12 |
@@ -56,7 +56,6 @@ Feature: Email signatures
     When I set the following fields to these values:
       | id | Secondary signature (Default) |
     Then I should see "Doom At 12"
-
     When I press "Delete"
     Then I should see "Are you sure you want to delete Secondary signature?"
     When I press "Cancel"

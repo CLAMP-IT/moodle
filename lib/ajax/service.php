@@ -36,11 +36,22 @@ $rawjson = file_get_contents('php://input');
 
 $requests = json_decode($rawjson, true);
 if ($requests === null) {
-    $lasterror = json_last_error_msg();
+    if (function_exists('json_last_error_msg')) {
+        $lasterror = json_last_error_msg();
+    } else {
+        // Fall back to numeric error for older PHP version.
+        $lasterror = json_last_error();
+    }
     throw new coding_exception('Invalid json in request: ' . $lasterror);
 }
 $responses = array();
 
+// Defines the external settings required for Ajax processing.
+$settings = external_settings::get_instance();
+$settings->set_file('pluginfile.php');
+$settings->set_fileurl(true);
+$settings->set_filter(true);
+$settings->set_raw(false);
 
 foreach ($requests as $request) {
     $response = array();
@@ -88,6 +99,7 @@ foreach ($requests as $request) {
     } catch (Exception $e) {
         $jsonexception = get_exception_info($e);
         unset($jsonexception->a);
+        $jsonexception->backtrace = format_backtrace($jsonexception->backtrace, true);
         if (!debugging('', DEBUG_DEVELOPER)) {
             unset($jsonexception->debuginfo);
             unset($jsonexception->backtrace);

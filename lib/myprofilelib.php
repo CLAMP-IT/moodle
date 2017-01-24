@@ -91,9 +91,9 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
                 $url = $userauthplugin->edit_profile_url();
                 if (empty($url)) {
                     if (empty($course)) {
-                        $url = new moodle_url('/user/edit.php', array('userid' => $user->id, 'returnto' => 'profile'));
+                        $url = new moodle_url('/user/edit.php', array('id' => $user->id, 'returnto' => 'profile'));
                     } else {
-                        $url = new moodle_url('/user/edit.php', array('userid' => $user->id, 'course' => $course->id,
+                        $url = new moodle_url('/user/edit.php', array('id' => $user->id, 'course' => $course->id,
                             'returnto' => 'profile'));
                     }
                 }
@@ -250,7 +250,7 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
                         $courselisting .= html_writer::tag('li', html_writer::link($url, $ccontext->get_context_name(false),
                                 $linkattributes));
                     } else {
-                        $courselisting .= html_writer::tag('li', $course->fullname);
+                        $courselisting .= html_writer::tag('li', $ccontext->get_context_name(false));
                     }
                 }
                 $shown++;
@@ -424,7 +424,7 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
     // Last ip.
     if (has_capability('moodle/user:viewlastip', $usercontext) && !isset($hiddenfields['lastip'])) {
         if ($user->lastip) {
-            $iplookupurl = new moodle_url('/iplookup/index.php', array('ip' => $user->lastip, 'user' => $USER->id));
+            $iplookupurl = new moodle_url('/iplookup/index.php', array('ip' => $user->lastip, 'user' => $user->id));
             $ipstring = html_writer::link($iplookupurl, $user->lastip);
         } else {
             $ipstring = get_string("none");

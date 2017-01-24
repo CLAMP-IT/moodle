@@ -27,16 +27,16 @@ env:
     # Postgres is significantly is pretty reasonable in its run-time.
 
     # Run unit tests on MySQL
-    - DB=mysqli   PHPUNIT=true     BEHAT=false   INSTALL=false    CITEST=false
+    - DB=mysqli   TASK=PHPUNIT
 
     # Run CI Tests without running PHPUnit.
-    - DB=none     PHPUNIT=false    BEHAT=false   INSTALL=false    CITEST=true
+    - DB=none     TASK=CITEST
 
     # Run unit tests on Postgres
-    - DB=pgsql    PHPUNIT=true     BEHAT=false   INSTALL=false    CITEST=false
+    - DB=pgsql    TASK=PHPUNIT
 
     # Run acceptance tests on Postgres
-    - DB=pgsql    PHPUNIT=false    BEHAT=true    INSTALL=false    CITEST=false 
+    - DB=pgsql    TASK=BEHAT
 
 matrix:
     # Enable fast finish.
@@ -44,37 +44,62 @@ matrix:
     # It will not stop the jobs from running.
     fast_finish: true
 
+    include:
+          # Run grunt/npm install on lowest supported npm version
+        - php: 7
+          env: DB=none     TASK=GRUNT   NVM_VERSION='0.10'
+          # Run grunt/npm install on highest version ('node' is an alias for the latest node.js version.)
+        - php: 7
+          env: DB=none     TASK=GRUNT   NVM_VERSION='node'
+
     exclude:
         # MySQL - it's just too slow.
         # Exclude it on all versions except for 7.0
-        # - env: DB=mysqli   PHPUNIT=true    INSTALL=false   CITEST=false
+        # - env: DB=mysqli   TASK=PHPUNIT
         #   php: 5.6
         #
-        # - env: DB=mysqli   PHPUNIT=true    INSTALL=false   CITEST=false
+        # - env: DB=mysqli   TASK=PHPUNIT
         #   php: 5.5
 
-        - env: DB=mysqli   PHPUNIT=true    INSTALL=false   CITEST=false
+        - env: DB=mysqli   TASK=PHPUNIT
+          php: 5.4
+
+        - env: DB=none     TASK=GRUNT
           php: 5.4
 
 cache:
     directories:
       - $HOME/.composer/cache
+      - $HOME/.npm
 
 install:
     # Disable xdebug. We aren't generating code coverage, and it has a huge impact upon test performance.
     - rm /home/travis/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini
 
-    # Set the encrypted GITHUB_TOKEN if it's available to raise the API limit.
-    - if [ -n "$GITHUB_APITOKEN" ]; then composer config github-oauth.github.com $GITHUB_APITOKEN; fi
+    - >
+        if [ "$TASK" = 'PHPUNIT' ];
+        then
+            if [ -n "$GITHUB_APITOKEN" ]; then
+                composer config github-oauth.github.com $GITHUB_APITOKEN;
+                echo 'auth.json' >> .git/info/exclude
+            fi
 
-    # Install composer dependencies.
-    # We need --no-interaction in case we hit API limits for composer. This causes it to fall back to a standard clone.
-    # Typically it should be able to use the Composer cache if any other job has already completed before we started here.
-    - travis_retry composer install --prefer-dist --no-interaction
+            # Install composer dependencies.
+            # We need --no-interaction in case we hit API limits for composer. This causes it to fall back to a standard clone.
+            # Typically it should be able to use the Composer cache if any other job has already completed before we started here.
+            travis_retry composer install --prefer-dist --no-interaction;
+        fi
+
+    - >
+        if [ "$TASK" = 'GRUNT' ];
+        then
+            nvm install $NVM_VERSION ;
+            nvm use $NVM_VERSION ;
+        fi
 
 before_script:
     - >
-      if [ "$INSTALL" = 'true' -o "$PHPUNIT" = 'true' -o "$BEHAT" = 'true' ];
+      if [ "$TASK" = 'PHPUNIT' -o "$TASK" = 'BEHAT' ];
       then
         # Copy generic configuration in place.
         cp config-dist.php config.php ;
@@ -116,73 +141,62 @@ before_script:
           mysql -u root -e 'SET GLOBAL innodb_file_per_table=ON;' ;
           mysql -e 'CREATE DATABASE travis_ci_test DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;' ;
         fi
-
-        if [ "$PHPUNIT" = 'true' ];
-        then
-          # Create a directory for the phpunit dataroot.
-          mkdir -p "$HOME"/roots/phpunit
-
-          # The phpunit dataroot and prefix..
-          sed -i \
-            -e "/require_once/i \\\$CFG->phpunit_dataroot = '\/home\/travis\/roots\/phpunit';" \
-            -e "/require_once/i \\\$CFG->phpunit_prefix = 'p_';" \
-            config.php ;
-
-          # Initialise PHPUnit for Moodle.
-          php admin/tool/phpunit/cli/init.php
-        fi
-
-        if [ "$BEHAT" = 'true' ]
-        then
-          # start xvfb
-          export DISPLAY=:99.0
-          sh -e /etc/init.d/xvfb start
-          sleep 3
-
-          # Create a directory for the behat database
-          mkdir -p "$HOME"/roots/behat
-
-          # The behat dataroot, prefix and wwwroot
-          sed -i \
-            -e "/require_once/i \\\$CFG->behat_dataroot = '\/home\/travis\/roots\/behat';" \
-            -e "/require_once/i \\\$CFG->behat_prefix = 'b_';" \
-            -e "/require_once/i \\\$CFG->behat_wwwroot = 'http://localhost:8000';" \
-            config.php ;
-
-          # Get and launch selenium
-          wget http://selenium-release.storage.googleapis.com/2.45/selenium-server-standalone-2.45.0.jar;
-          (java -jar selenium-server-standalone-2.45.0.jar &) 2> /dev/null > /dev/null;
-
-          # Initialise Behat for Moodle.
-          php admin/tool/behat/cli/init.php
-        fi
       fi
 
-script:
-    ########################################################################
-    # PHPUnit
-    ########################################################################
     - >
-      if [ "$PHPUNIT" = 'true' ];
+      if [ "$TASK" = 'PHPUNIT' ];
       then
-        vendor/bin/phpunit;
+        # Create a directory for the phpunit dataroot.
+        mkdir -p "$HOME"/roots/phpunit
+
+        # The phpunit dataroot and prefix..
+        sed -i \
+          -e "/require_once/i \\\$CFG->phpunit_dataroot = '\/home\/travis\/roots\/phpunit';" \
+          -e "/require_once/i \\\$CFG->phpunit_prefix = 'p_';" \
+          config.php ;
+
+        # Initialise PHPUnit for Moodle.
+        php admin/tool/phpunit/cli/init.php
       fi
 
-    ########################################################################
-    # Behat
-    ########################################################################
     - >
-      if [ "$BEHAT" = 'true' ];
+      if [ "$TASK" = 'BEHAT' ];
       then
-        (php -S localhost:8000 &) 2> /dev/null > /dev/null;
-        vendor/bin/behat --config /home/travis/roots/behat/behat/behat.yml --tags @local_lae;
+        # start xvfb
+        export DISPLAY=:99.0
+        sh -e /etc/init.d/xvfb start
+        sleep 3
+
+        # Create a directory for the behat database
+        mkdir -p "$HOME"/roots/behat
+
+        # The behat dataroot, prefix and wwwroot
+        sed -i \
+          -e "/require_once/i \\\$CFG->behat_dataroot = '\/home\/travis\/roots\/behat';" \
+          -e "/require_once/i \\\$CFG->behat_prefix = 'b_';" \
+          -e "/require_once/i \\\$CFG->behat_wwwroot = 'http://localhost:8000';" \
+          config.php ;
+
+        # Get and launch selenium
+        wget http://selenium-release.storage.googleapis.com/2.45/selenium-server-standalone-2.45.0.jar;
+        (java -jar selenium-server-standalone-2.45.0.jar &) 2> /dev/null > /dev/null;
+
+        # Initialise Behat for Moodle.
+        php admin/tool/behat/cli/init.php
+      fi
+
+    - >
+      if [ "$TASK" = 'GRUNT' ];
+      then
+        npm install --no-spin;
+        npm install --no-spin -g grunt ;
       fi
 
     ########################################################################
     # CI Tests
     ########################################################################
     - >
-      if [ "$CITEST" = 'true' ];
+      if [ "$TASK" = 'CITEST' ];
       then
         # Note - this is deliberately placed in the script section as we
         # should not add any code until after phpunit has run.
@@ -207,7 +221,7 @@ script:
 
     # Actually run the CI Tests - do this outside of the main test to make output clearer.
     - >
-      if [ "$CITEST" = 'true' ];
+      if [ "$TASK" = 'CITEST' ];
       then
         bash local/ci/php_lint/php_lint.sh;
       fi
@@ -215,3 +229,33 @@ script:
 branches:
   except:
     - /.*PACKAGE.*/
+
+script:
+    - >
+      if [ "$TASK" = 'PHPUNIT' ];
+      then
+        vendor/bin/phpunit;
+      fi
+
+    - >
+      if [ "$TASK" = 'CITEST' ];
+      then
+        bash local/ci/php_lint/php_lint.sh;
+      fi
+
+    - >
+      if [ "$TASK" = 'GRUNT' ];
+      then
+        grunt ;
+        # Add all files to the git index and then run diff --cached to see all changes.
+        # This ensures that we get the status of all files, including new files.
+        git add . ;
+        git diff --cached --exit-code ;
+      fi
+
+    - >
+      if [ "$TASK" = 'BEHAT' ];
+      then
+        (php -S localhost:8000 &) 2> /dev/null > /dev/null;
+        vendor/bin/behat --config /home/travis/roots/behat/behat/behat.yml --tags @local_lae;
+      fi

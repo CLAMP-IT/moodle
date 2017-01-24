@@ -33,6 +33,9 @@ define(['jquery', 'core/ajax', 'core/log', 'core/notification', 'core/templates'
      */
     var findDocsSection = function(templateSource, templateName) {
 
+        if (!templateSource) {
+            return false;
+        }
         // Find the comment section marked with @template component/template.
         var marker = "@template " + templateName,
             i = 0,
@@ -141,8 +144,9 @@ define(['jquery', 'core/ajax', 'core/log', 'core/notification', 'core/templates'
     };
 
     // Add the event listeners.
-    $('[data-region="list-templates"]').on('click', '[data-templatename]', function() {
+    $('[data-region="list-templates"]').on('click', '[data-templatename]', function(e) {
         var templatename = $(this).data('templatename');
+        e.preventDefault();
         loadTemplate(templatename);
     });
 

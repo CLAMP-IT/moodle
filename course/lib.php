@@ -1714,6 +1714,7 @@ function course_delete_module($cmid) {
     // very quick on an empty table).
     $DB->delete_records('course_modules_completion', array('coursemoduleid' => $cm->id));
     $DB->delete_records('course_completion_criteria', array('moduleinstance' => $cm->id,
+                                                            'course' => $cm->course,
                                                             'criteriatype' => COMPLETION_CRITERIA_TYPE_ACTIVITY));
 
     // Delete all tag instances associated with the instance of this module.
@@ -2659,6 +2660,11 @@ function update_course($data, $editoroptions = NULL) {
 
     $data->timemodified = time();
 
+    // Prevent changes on front page course.
+    if ($data->id == SITEID) {
+        throw new moodle_exception('invalidcourse', 'error');
+    }
+
     $oldcourse = course_get_format($data->id)->get_course();
     $context   = context_course::instance($oldcourse->id);
 
@@ -3597,6 +3603,12 @@ function duplicate_module($course, $cm) {
         $section = $DB->get_record('course_sections', array('id' => $cm->section, 'course' => $cm->course));
         moveto_module($newcm, $section, $cm);
         moveto_module($cm, $section, $newcm);
+
+        // Update calendar events with the duplicated module.
+        $refresheventsfunction = $newcm->modname . '_refresh_events';
+        if (function_exists($refresheventsfunction)) {
+            call_user_func($refresheventsfunction, $newcm->course);
+        }
 
         // Trigger course module created event. We can trigger the event only if we know the newcmid.
         $event = \core\event\course_module_created::create_from_cm($newcm);

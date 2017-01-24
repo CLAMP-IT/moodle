@@ -115,7 +115,11 @@ $everyone = get_enrolled_users($context, '', 0, user_picture::fields('u', array(
 foreach ($everyone as $userid => $user) {
     $usergroups = groups_get_user_groups($courseid, $userid);
 
-    $gids = ($globalaccess or $mastercap) ? array_values($usergroups['0']) : array_intersect(array_values($mygroups['0']), array_values($usergroups['0']));
+    if ($globalaccess || $mastercap) {
+        $gids = array_values($usergroups['0']);
+    } else {
+        $gids = array_intersect(array_values($mygroups['0']), array_values($usergroups['0']));
+    }
 
     $userroles = get_user_roles($context, $userid);
     $filterd = clampmail::filter_roles($userroles, $roles);
@@ -140,14 +144,15 @@ if (empty($users)) {
 
 if (!empty($type)) {
     $email = $DB->get_record('block_clampmail_'.$type, array('id' => $typeid));
+    $email->messageformat = $email->format;
 } else {
-    $email = new stdClass;
-    $email->id = null;
-    $email->subject = optional_param('subject', '', PARAM_TEXT);
-    $email->message = optional_param('message_editor[text]', '', PARAM_RAW);
-    $email->mailto = optional_param('mailto', '', PARAM_TEXT);
+    $email                = new stdClass;
+    $email->id            = null;
+    $email->subject       = optional_param('subject', '', PARAM_TEXT);
+    $email->message       = optional_param('message_editor[text]', '', PARAM_RAW);
+    $email->mailto        = optional_param('mailto', '', PARAM_TEXT);
+    $email->messageformat = editors_get_preferred_format();
 }
-$email->messageformat = editors_get_preferred_format();
 $email->messagetext = $email->message;
 
 $defaultsigid = $DB->get_field('block_clampmail_signatures', 'id', array(
@@ -163,7 +168,8 @@ $editoroptions = array(
     'trusttext' => true,
     'subdirs' => true,
     'maxfiles' => EDITOR_UNLIMITED_FILES,
-    'context' => $context
+    'context' => $context,
+    'format' => $email->messageformat
 );
 
 $email = file_prepare_standard_editor($email, 'message', $editoroptions,
@@ -244,7 +250,7 @@ if ($form->is_cancelled()) {
         file_save_draft_area_files($data->attachments, $context->id,
             'block_clampmail', 'attachment_' . $table, $data->id);
 
-        // Send emails
+        // Send emails.
         if (isset($data->send)) {
             if ($type == 'drafts') {
                 clampmail::draft_cleanup($context->id, $typeid);
@@ -277,9 +283,14 @@ if ($form->is_cancelled()) {
                 $user = $USER;
             }
 
+            // Prepare both plaintext and HTML messages.
+            $data->messagetext = format_text_email($data->message, $data->format);
+            $data->messagehtml = format_text($data->message, $data->format);
+
+            // Send emails.
             foreach (explode(',', $data->mailto) as $userid) {
                 $success = email_to_user($everyone[$userid], $user, $subject,
-                    strip_tags($data->message), $data->message, $file, $filename);
+                    $data->messagetext, $data->messagehtml, $file, $filename);
 
                 if (!$success) {
                     $warnings[] = get_string("no_email", 'block_clampmail', $everyone[$userid]);
@@ -288,7 +299,7 @@ if ($form->is_cancelled()) {
 
             if ($data->receipt) {
                 email_to_user($USER, $user, $subject,
-                    strip_tags($data->message), $data->message, $file, $filename);
+                    $data->messagetext, $data->messagehtml, $file, $filename);
             }
 
             if (!empty($actualfile)) {

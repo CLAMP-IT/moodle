@@ -22,41 +22,41 @@ Feature: Email drafts
     And I follow "Test Course"
     And I turn editing mode on
     When I add the "Quickmail" block
-    Then I should see "View Drafts"
+    Then I should see "View drafts"
 
   @javascript
   Scenario: View and delete drafts
-    Given I follow "View Drafts"
+    Given I follow "View drafts"
     Then I should see "You have no email drafts"
     When I press "Continue"
-    Then I should see "Selected Recipients"
+    Then I should see "Selected recipients"
     And I set the following fields to these values:
       | from_users | Student 1, Student 2 |
     And I press "Add"
     And I set the following fields to these values:
       | Subject | Hello World |
       | Message | Salvation at noon |
-    When I press "Save Draft"
+    When I press "Save draft"
     Then I should see "Changes saved"
-    When I follow "View Drafts"
+    When I follow "View drafts"
     Then I should see "Hello World"
-    When I follow "Open Email"
-    Then I should see "Selected Recipients"
+    When I follow "Open email"
+    Then I should see "Selected recipients"
     And I should see "Salvation at noon"
     When I set the following fields to these values:
       | Subject | Goodbye World |
-    And I press "Save Draft"
+    And I press "Save draft"
     Then I should see "Changes saved"
     And the field "subject" matches value "Goodbye World"
-    When I follow "View Drafts"
+    When I follow "View drafts"
     Then I should see "Goodbye World"
-    When I follow "Delete Email"
+    When I follow "Delete email"
     Then I should see "Goodbye World"
     When I press "Cancel"
     Then I should see "Goodbye World"
-    When I follow "Delete Email"
+    When I follow "Delete email"
     And I press "Continue"
     Then I should see "You have no email drafts"
     When I press "Continue"
-    Then I should see "Selected Recipients"
+    Then I should see "Selected recipients"
     And the field "subject" matches value ""

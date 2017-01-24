@@ -21,6 +21,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 abstract class clampmail {
     public static function format_time($time) {
         return userdate($time, '%A, %d %B %Y, %I:%M %P');
@@ -99,8 +101,14 @@ abstract class clampmail {
             if (count($storedfiles) == 1) {
                 $obj = current($storedfiles);
                 $filename = $obj->get_filename();
+
+                // Ensure that bad periods and ellipses are removed.
+                while (preg_match( "~\\.\\.~" , $filename)) {
+                    $filename = str_replace('..', '.', $filename);
+                }
                 $file = $basefilepath . '/' . $filename;
                 $actualfile = $moodlebase . '/' . $filename;
+
                 $obj->copy_content_to($actualfile);
             } else {
                 $filename = 'attachment.zip';
@@ -248,7 +256,7 @@ abstract class clampmail {
             // Open link.
             $actions[] = html_writer::link(
                 new moodle_url('/blocks/clampmail/email.php', $params),
-                $OUTPUT->pix_icon('i/search', 'Open Email')
+                $OUTPUT->pix_icon('i/search', get_string('open_email', 'block_clampmail'))
             );
 
             if ($candelete) {
@@ -257,7 +265,7 @@ abstract class clampmail {
                     new moodle_url('/blocks/clampmail/emaillog.php',
                         $params + array('action' => 'delete')
                     ),
-                    $OUTPUT->pix_icon("t/delete", "Delete Email")
+                    $OUTPUT->pix_icon("t/delete", get_string('delete_email', 'block_clampmail'))
                 );
             }
 

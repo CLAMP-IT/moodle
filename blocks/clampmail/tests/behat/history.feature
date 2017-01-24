@@ -22,34 +22,35 @@ Feature: Email history
     And I follow "Test Course"
     And I turn editing mode on
     When I add the "Quickmail" block
-    Then I should see "View History"
+    Then I should see "View history"
 
   @javascript
   Scenario: View and delete history
-    Given I follow "View History"
+    Given I follow "View history"
     Then I should see "You have no email history yet"
     And I press "Continue"
-    And I should see "Selected Recipients"
+    And I should see "Selected recipients"
     And I set the following fields to these values:
       | from_users | Student 1, Student 2 |
       | Subject | Hello World |
       | Message | Doom at 11 |
     And I press "Add"
-    When I press "Send Email"
-    Then I should see "View History"
+    When I press "Send email"
+    Then I should see "View history"
     And I should see "Hello World"
-    When I follow "Open Email"
-    Then I should see "Selected Recipients"
+    When I follow "Open email"
+    Then I should see "Selected recipients"
     And I should see "Doom at 11"
     When I set the following fields to these values:
       | Subject | Hello World Redux |
-    And I press "Send Email"
-    Then I should see "View History"
+    And I press "Send email"
+    Then I should see "View history"
     And I should see "Hello World Redux"
     And I log out
     And I log in as "admin"
-    And I follow "Courses"
+    And I navigate to "Manage courses and categories" node in "Site administration > Courses"
     And I follow "Test Course"
-    And I follow "View History"
+    And I follow "View"
+    And I follow "View history"
     And I set the field "userid" to "Teacher 1"
     Then I should see "Hello World Redux"

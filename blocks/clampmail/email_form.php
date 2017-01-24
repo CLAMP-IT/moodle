@@ -21,6 +21,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 require_once($CFG->libdir . '/formslib.php');
 
 class email_form extends moodleform {
@@ -33,7 +35,7 @@ class email_form extends moodleform {
         $userstogroups = $this->_customdata['users_to_groups'];
 
         if (empty($userstogroups[$user->id])) {
-            $groups = get_string('no_section', 'block_clampmail');
+            $groups = get_string('no_group', 'block_clampmail');
         } else {
             $onlynames = function($group) { return $group->name;
             };
@@ -89,12 +91,12 @@ class email_form extends moodleform {
         }
 
         $groupoptions = empty($this->_customdata['groups']) ? array() : array(
-            'all' => get_string('all_sections', 'block_clampmail')
+            'all' => get_string('all_groups', 'block_clampmail')
         );
         foreach ($this->_customdata['groups'] as $group) {
             $groupoptions[$group->id] = $group->name;
         }
-        $groupoptions[0] = get_string('no_section', 'block_clampmail');
+        $groupoptions[0] = get_string('no_group', 'block_clampmail');
 
         $useroptions = array();
         foreach ($this->_customdata['users'] as $user) {
@@ -120,7 +122,7 @@ class email_form extends moodleform {
         );
 
         if ($cansend) {
-            $historylink = html_writer::link($genurl('log'), get_string('history', 'block_clampmail'));
+            $historylink = html_writer::link($genurl('log'), get_string('log', 'block_clampmail'));
             $links[] =& $mform->createElement('static', 'history_link', '', $historylink);
         }
 
@@ -169,7 +171,7 @@ class email_form extends moodleform {
         $filters->text = html_writer::tag('div',
             html_writer::select($roleoptions, '', 'none', null, array('id' => 'roles'))
         ) . html_writer::tag('div',
-            get_string('potential_sections', 'block_clampmail'),
+            get_string('potential_groups', 'block_clampmail'),
             array('class' => 'object_labels')
         ) . html_writer::tag('div',
             html_writer::select($groupoptions, '', 'all', null,
@@ -212,7 +214,7 @@ class email_form extends moodleform {
         $mform->addRule('subject', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         $mform->addElement('editor', 'message_editor', get_string('message', 'block_clampmail'),
-            null, $this->_customdata['editor_options']);
+            $this->_customdata['editor_options']);
 
         $options = $this->_customdata['sigs'] + array(-1 => 'No '. get_string('sig', 'block_clampmail'));
         $mform->addElement('select', 'sigid', get_string('signature', 'block_clampmail'), $options);
