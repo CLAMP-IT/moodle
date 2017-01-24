@@ -15,15 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This is built using the bootstrapbase template to allow for new theme's using
- * Moodle's new Bootstrap theme engine
+ * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2013 Julian Ridden
+ * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
+ * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+require_once(\theme_essential\toolbox::get_tile_file('pagesettings'));
 echo $OUTPUT->doctype();
 ?>
 <html <?php echo $OUTPUT->htmlattributes(); ?>>
@@ -31,11 +32,16 @@ echo $OUTPUT->doctype();
 <head>
     <title><?php echo $OUTPUT->page_title(); ?></title>
     <link rel="shortcut icon" href="<?php echo $OUTPUT->favicon(); ?>"/>
-    <?php 
-    echo $OUTPUT->get_csswww();
+    <?php
+    echo \theme_essential\toolbox::get_csswww();
     echo $OUTPUT->standard_head_html();
     ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Google web fonts -->
+    <?php require_once(\theme_essential\toolbox::get_tile_file('fonts')); ?>
+    <!-- Start Analytics -->
+    <?php require_once(\theme_essential\toolbox::get_tile_file('analytics')); ?>
+    <!-- End Analytics -->
 </head>
 
 <body <?php echo $OUTPUT->body_attributes(); ?>>

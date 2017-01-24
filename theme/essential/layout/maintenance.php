@@ -15,12 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This is built using the bootstrapbase template to allow for new theme's using
- * Moodle's new Bootstrap theme engine
+ * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2013 Julian Ridden
+ * @copyright   2016 Gareth J Barnard
+ * @copyright   2015 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
+ * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -40,8 +41,8 @@ echo $OUTPUT->doctype();
 <head>
     <title><?php echo $OUTPUT->page_title(); ?></title>
     <link rel="shortcut icon" href="<?php echo $OUTPUT->favicon(); ?>"/>
-    <?php 
-    echo $OUTPUT->get_csswww();
+    <?php
+    echo \theme_essential\toolbox::get_csswww();
     echo $OUTPUT->standard_head_html();
     ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,17 +60,13 @@ echo $OUTPUT->doctype();
     </div>
 </header>
 
-<section role="main-content">
-    <div id="page" class="container-fluid maintenance">
-
-        <div id="page-content" class="row-fluid">
-            <section id="region-main" class="span12">
-                <?php echo $OUTPUT->main_content(); ?>
-            </section>
-        </div>
-
+<div id="page" class="container-fluid maintenance">
+    <div id="page-content" class="row-fluid">
+        <section id="region-main" class="span12">
+            <?php echo $OUTPUT->main_content(); ?>
+        </section>
     </div>
-</section>
+</div>
 
 <footer id="page-footer">
     <div class="container-fluid maintenance">

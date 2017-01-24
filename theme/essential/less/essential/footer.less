@@ -10,13 +10,15 @@
   padding-top: 10px;
 
   .copy {
-    padding: 10px;
+    padding-bottom: 5px;
     float: left;
+    width: 100%;
+    text-align: center;
   }
   .footerlinks {
     .footnote {
       float: left;
-      color: #fff;
+      color: @white;
       margin-left: 0px;
       a:hover {
         text-decoration: none;
@@ -31,12 +33,6 @@
     }
   }
 
-  .span4 {
-    padding: 30px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-  }
-
   hr {
     padding: 0px;
     border-bottom: 0px none;
@@ -49,9 +45,12 @@
     margin-bottom: 4px;
   }
 
-  .ecredit {
-    font-size: 8pt;
+  .themecredit {
+    font-size: 7pt;
     text-align: center;
+    a, a:hover {
+      color: inherit;
+    }
   }
 }
 
@@ -79,11 +78,6 @@ body.path-admin-setting #page-footer {
 
 #page-footer {
   .block {
-    border: 0px none;
-    background-color: transparent;
-    width: 100%;
-    padding: 0px;
-
     .header {
       .title h2:before {
         background-color: transparent;
@@ -126,7 +120,7 @@ body.path-admin-setting #page-footer {
 #page-footer .block_login {
   .footer a,
   .footer a:visited {
-    color: #fff;
+    color: @white;
   }
 }
 
@@ -148,7 +142,6 @@ body.path-admin-setting #page-footer {
 
 /* @group Performance Information */
 .performanceinfo {
-  background-color: white;
   padding: 8px;
   border-radius: 6px;
   border-width: 1px;
@@ -157,6 +150,7 @@ body.path-admin-setting #page-footer {
 
   .span3 {
     text-align: center;
+    margin-top: 10px;
   }
 
   var {
@@ -166,16 +160,23 @@ body.path-admin-setting #page-footer {
     white-space: nowrap;
   }
 
+  .span12 {
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+  }
+
   h2 {
     font-size: 1.4em;
     line-height: 1.4em;
     text-transform: uppercase;
     font-weight: normal;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
     border-bottom-width: 1px;
     border-bottom-style: solid;
     margin-top: 5px;
+    margin-bottom: 0;
     &:before {
+      vertical-align: bottom;
       font-family: FontAwesome;
       font-size: 1.65em;
       margin-right: .3em;
@@ -188,46 +189,16 @@ body.path-admin-setting #page-footer {
     margin-top: 5px;
   }
 
-  #load:before {
-    font-family: FontAwesome;
-    font-size: 1em;
+  span.@{fa-css-prefix} {
+    color: inherit;
+    display: inline;
+    margin-top: 0;
     margin-right: .3em;
-    font-style: normal;
+    font-size: 1em;
     font-weight: 100;
-    content: "\f017";
-  }
-
-  #cache:before {
-    font-family: FontAwesome;
-    font-size: 1em;
-    margin-right: .3em;
-    font-style: normal;
-    font-weight: 100;
-    content: "\f1b0";
-  }
-
-  #memory:before, #peakmemory:before, #session:before {
-    font-family: FontAwesome;
-    font-size: 1em;
-    margin-right: .3em;
-    font-style: normal;
-    content: "\f0e4";
-  }
-
-  #included:before {
-    font-family: FontAwesome;
-    font-size: 1em;
-    margin-right: .3em;
-    font-style: normal;
-    content: "\f16c";
-  }
-
-  #dbqueries:before, #dbtime:before {
-    font-family: FontAwesome;
-    font-size: 1em;
-    margin-right: .3em;
-    font-style: normal;
-    content: "\f181";
+    &:hover, &:focus {
+      color: inherit;
+    }
   }
 }
 

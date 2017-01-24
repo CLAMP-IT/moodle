@@ -1,27 +1,49 @@
 /* @group Breadcrumb Button */
+@import "../fontawesome/variables";
 
 .breadcrumb-button {
   margin-top: 0px;
+  .@{fa-css-prefix} {
+    vertical-align: middle;
+    color: inherit;
+    &:hover {
+      color: inherit;
+    }
+  }
   input[type="submit"] {
     text-shadow: none;
-    border: 0px none;
+    border-width: 1px;
+    border-style: solid;
     margin: 0;
 
     > .singlebutton > form > div {
       margin: 0;
     }
   }
-  i {
-    color: inherit;
+  .singlebutton {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .singlebutton, a {
+    float: right;
   }
 }
 
+
+.dir-rtl .breadcrumb-button .singlebutton {
+  /*@noflip*/margin-left: 0;
+  /*@noflip*/margin-right: 0;
+  /*@noflip*/float: left;
+}
+
+/*
 .breadcrumb-button {
   a:not(.btn), a:visited:not(.btn) {
     .btn;
     .btn-primary;
   }
 }
+*/
 
 /* @end */
 
@@ -32,7 +54,7 @@
 }
 
 .breadcrumb-nav {
-  width: 65%;
+  //width: 65%;
   margin: 0px;
 
   /* @group Breadcrumb Style None */
@@ -48,33 +70,31 @@
     display: block;
     padding: 0;
     float: left;
-    height: 28px;
     width: 100%;
     overflow: hidden;
     word-wrap: break-word;
     text-overflow: clip;
-    margin-top: 0px;
-    background-color: none;
+    margin-right: -@baseBorderRadius;
+    background-color: transparent;
     li {
-      padding: 0 0 0 45px;
+      padding: 0 0 0 20px;
       position: relative;
       display: block;
       float: left;
       line-height: 28px;
       height: 28px;
-      border-radius: 0px;
       text-shadow: none;
+      margin-bottom: 4px;
       a {
         text-decoration: none;
         padding-right: 3px;
         overflow: hidden;
       }
-      a:hover {
-        text-decoration: underline;
-      }
       .dimmed_text {
         font-style: italic;
-        color: #999;
+      }
+      span {
+        margin-right: 4px;
       }
     }
     li:after {
@@ -82,14 +102,14 @@
       display: block;
       width: 0;
       height: 0;
-      border-top: 50px solid transparent; /* Go big on the size, and let overflow hide */
-      border-bottom: 50px solid transparent;
+      border-top: 14px solid transparent;
+      border-bottom: 14px solid transparent;
       position: absolute;
       top: 50%;
-      margin-top: -50px;
+      margin-top: -14px;
       left: 100%;
-      z-index: 100;
-      border-left-width: 30px;
+      z-index: 1;
+      border-left-width: 14px;
       border-left-style: solid;
     }
     li:before {
@@ -97,26 +117,28 @@
       display: block;
       width: 0;
       height: 0;
-      border-top: 50px solid transparent;
-      border-bottom: 50px solid transparent;
+      border-top: 14px solid transparent;
+      border-bottom: 14px solid transparent;
       position: absolute;
       top: 50%;
-      margin-top: -50px;
+      margin-top: -14px;
       left: 100%;
-      z-index: 100;
-      border-left: 30px solid white;
+      z-index: 1;
+      border-left-width: 14px;
+      border-left-style: solid;
       margin-left: 1px;
     }
     li:first-of-type {
-      border-top-left-radius: 4px;
-      border-bottom-left-radius: 4px;
+      padding-left: 34px;
+      border-top-left-radius: @baseBorderRadius;
+      border-bottom-left-radius: @baseBorderRadius;
       a {
         margin-left: -25px;
       }
       a:before {
         display: inline-block;
         font-family: FontAwesome;
-        content: "\f015 ";
+        content: "\f015";
         margin-right: 5px;
         text-decoration: none;
       }
@@ -131,13 +153,12 @@
     .last,
     li:last-of-type {
       padding-right: 10px;
-      border-top-right-radius: 4px;
-      border-bottom-right-radius: 4px;
+      border-top-right-radius: @baseBorderRadius;
+      border-bottom-right-radius: @baseBorderRadius;
     }
     li:hover {
       .dimmed_text {
         text-decoration: none;
-        color: #999;
       }
     }
   }
@@ -201,7 +222,6 @@
     overflow: hidden;
     word-wrap: break-word;
     text-overflow: clip;
-    height: 12px;
     li {
       line-height: 12px;
       display: block;

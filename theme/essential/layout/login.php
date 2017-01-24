@@ -15,34 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This is built using the bootstrapbase template to allow for new theme's using
- * Moodle's new Bootstrap theme engine
+ * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2013 Julian Ridden
+ * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
+ * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once($OUTPUT->get_include_file('header'));
+require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
+require_once(\theme_essential\toolbox::get_tile_file('header'));
 ?>
 
 <div id="page" class="container-fluid">
-    <section role="main-content">
-        <!-- Start Main Regions -->
-        <div id="page-content" class="row-fluid">
-            <section id="region-main" class="span12">
-                <?php
-                echo $OUTPUT->course_content_header();
-                echo $OUTPUT->main_content();
-                echo $OUTPUT->course_content_footer();
-                ?>
-            </section>
-        </div>
-        <!-- End Main Regions -->
-    </section>
+    <!-- Start Main Regions -->
+    <div id="page-content" class="row-fluid">
+        <section id="region-main" class="span12">
+            <?php
+            echo $OUTPUT->course_content_header();
+            echo $OUTPUT->main_content();
+            echo $OUTPUT->course_content_footer();
+            ?>
+        </section>
+    </div>
+    <!-- End Main Regions -->
 </div>
 
-<?php require_once($OUTPUT->get_include_file('footer')); ?>
+<?php require_once(\theme_essential\toolbox::get_tile_file('footer')); ?>
 </body>
 </html>
