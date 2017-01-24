@@ -3,6 +3,77 @@
  * @copyright   2014 Gareth J Barnard, David Bezemer
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+/* @group Alerts */
+.alert .fa-info {
+  background-color: #3a87ad;
+}
+.alert .fa-warning {
+  background-color: #b94a48;
+}
+.alert .fa-bullhorn {
+  background-color: #468847;
+}
+.alert .fa-info,
+.alert .fa-warning,
+.alert .fa-bullhorn {
+  color: [[setting:themenavcolor]];
+}
+.alert .fa-info:hover,
+.alert .fa-warning:hover,
+.alert .fa-bullhorn:hover,
+.alert .fa-info:focus,
+.alert .fa-warning:focus,
+.alert .fa-bullhorn:focus {
+  color: [[setting:themenavcolor]];
+}
+.alert.alert-info .close .fa {
+  color: #3a87ad;
+}
+.alert.alert-info .close:hover .fa,
+.alert.alert-info .close:focus .fa {
+  color: #3a87ad;
+}
+.alert.alert-error .close .fa {
+  color: #b94a48;
+}
+.alert.alert-error .close:hover .fa,
+.alert.alert-error .close:focus .fa {
+  color: #b94a48;
+}
+.alert.alert-success .close .fa {
+  color: #468847;
+}
+.alert.alert-success .close:hover .fa,
+.alert.alert-success .close:focus .fa {
+  color: #468847;
+}
+/* @end */
+/* @group Autocomplete */
+.ui-autocomplete {
+  background-color: #ffffff;
+  border-color: [[setting:themecolor]];
+  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+.ui-autocomplete-loading {
+  background: #ffffff url('[[pix:i/loading_small]]') right center no-repeat;
+}
+.ui-autocomplete .ui-menu-item {
+  color: [[setting:themetextcolor]];
+}
+.ui-autocomplete .ui-menu-item:hover,
+.ui-autocomplete .ui-menu-item:focus {
+  color: [[setting:themenavcolor]];
+  background-color: [[setting:themecolor]];
+}
+/* @end */
+/* @group Backup-Restore */
+.backup-restore .backup-section > h2.header,
+.backup-restore .backup-section .backup-sub-section h3 {
+  color: [[setting:themetextcolor]];
+}
+/* @end */
 /* @group Blocks */
 .block .icon {
   color: [[setting:themeiconcolor]];
@@ -20,155 +91,68 @@
 .block h3.main {
   color: [[setting:themetextcolor]];
 }
-.tree_item.branch.branch:before {
+p.tree_item.leaf a > .fa {
   color: [[setting:themeiconcolor]];
 }
-.tree_item.branch.emptybranch:before {
+p.tree_item.leaf a:hover,
+p.tree_item.leaf a:focus {
+  color: [[setting:themehovercolor]];
+}
+p.tree_item.leaf a:hover > .fa,
+p.tree_item.leaf a:focus > .fa {
+  color: inherit;
+}
+p.tree_item.branch {
+  color: [[setting:themeurlcolor]];
+}
+p.tree_item.branch:before {
   color: [[setting:themeiconcolor]];
+}
+p.tree_item.branch:hover,
+p.tree_item.branch:focus {
+  color: [[setting:themehovercolor]];
+}
+p.tree_item.branch:hover:before,
+p.tree_item.branch:focus:before {
+  color: inherit;
+}
+p.tree_item.branch:hover a,
+p.tree_item.branch:focus a {
+  color: inherit;
+}
+p.tree_item.branch.emptybranch:before {
+  color: [[setting:themeiconcolor]];
+}
+p.tree_item.branch.emptybranch:hover:before,
+p.tree_item.branch.emptybranch:focus:before {
+  color: [[setting:themehovercolor]];
 }
 .collapsed .tree_item.branch:before {
   color: [[setting:themeiconcolor]];
 }
-/* @group Block Icons */
-.block_news_items .header .title h2:before {
-  content: "\f0a1";
-  font-family: FontAwesome;
+.editing #page .block-region.yui3-dd-drop-active-valid {
+  border-color: [[setting:themecolor]];
 }
-.block_navigation .header .title h2:before {
-  content: "\f0e8";
-  font-family: FontAwesome;
+.editing #page-footer .block-region.yui3-dd-drop-active-valid {
+  border-color: [[setting:footertextcolor]];
 }
-.block_calendar_upcoming .header .title h2:before,
-.block_calendar_month .header .title h2:before {
-  content: "\f073";
-  font-family: FontAwesome;
-}
-.block_course_list .header .title h2:before {
-  content: "\f108";
-  font-family: FontAwesome;
-}
-.block_completionstatus .header .title h2:before,
-.block_selfcompletion .header .title h2:before {
-  content: "\f0e4";
-  font-family: FontAwesome;
-}
-.block_blog_menu .header .title h2:before {
-  content: "\f02d";
-  font-family: FontAwesome;
-}
-.block_quiz_results .header .title h2:before {
-  content: "\f080";
-  font-family: FontAwesome;
-}
-.block_quiz_navblock .header .title h2:before {
-  content: "\f126";
-  font-family: FontAwesome;
-}
-.block_glossary_random .header .title h2:before {
-  content: "\f0eb";
-  font-family: FontAwesome;
-}
-.block_book_toc .header .title h2:before {
-  content: "\f02d";
-  font-family: FontAwesome;
-}
-.block_participants .header .title h2:before,
-.block_online_users .header .title h2:before {
-  content: "\f0c0";
-  font-family: FontAwesome;
-}
-.block_html .header .title h2:before {
-  content: "\f022";
-  font-family: FontAwesome;
-}
-.block_section_links .header .title h2:before {
-  content: "\f02e";
-  font-family: FontAwesome;
-}
-.block_activity_modules .header .title h2:before {
-  content: "\f12e";
-  font-family: FontAwesome;
-}
-.block_comments .header .title h2:before {
-  content: "\f075";
-  font-family: FontAwesome;
-}
-.block_settings .header .title h2:before {
-  content: "\f085";
-  font-family: FontAwesome;
-}
-.block_admin_bookmarks .header .title h2:before {
-  content: "\f02e";
-  font-family: FontAwesome;
-}
-.block_blog_tags .header .title h2:before,
-.block_tags .header .title h2:before {
-  content: "\f02c";
-  font-family: FontAwesome;
-}
-.block_private_files .header .title h2:before {
-  content: "\f114";
-  font-family: FontAwesome;
-}
-.block_block_mentees .header .title h2:before {
-  content: "\f0c0";
-  font-family: FontAwesome;
-}
-.block_messages .header .title h2:before {
-  content: "\f0e0";
-  font-family: FontAwesome;
-}
-.block_community .header .title h2:before {
-  content: "\f0ac";
-  font-family: FontAwesome;
-}
-.block_recent_activity .header .title h2:before {
-  content: "\f017";
-  font-family: FontAwesome;
-}
-.block_search_forums .header .title h2:before {
-  content: "\f0e6";
-  font-family: FontAwesome;
-}
-.block_myprofile .header .title h2:before {
-  content: "\f007";
-  font-family: FontAwesome;
-}
-.block_adminblock .header .title h2:before {
-  content: "\f009";
-  font-family: FontAwesome;
-}
-.block_feedback .header .title h2:before {
-  content: "\f087";
-  font-family: FontAwesome;
-}
-.block_flickr .header .title h2:before {
-  content: "\f03e";
-  font-family: FontAwesome;
-}
-.block_youtube .header .title h2:before {
-  content: "\f145";
-  font-family: FontAwesome;
-}
-.block_course_badges .header .title h2:before {
-  content: "\f091";
-  font-family: FontAwesome;
-}
-.block_twitter_search .header .title h2:before {
-  content: "\f099";
-  font-family: FontAwesome;
-}
-/* @end */
 /* @end */
 /* @group Breadcrumb Button */
 .breadcrumb-button input[type="submit"] {
   color: [[setting:themenavcolor]];
   background-color: [[setting:themecolor]];
   background-image: none;
+  border-color: [[setting:themecolor]];
 }
-.breadcrumb-button input[type="submit"]:hover {
+.breadcrumb-button input[type="submit"]:focus,
+.breadcrumb-button input[type="submit"]:hover,
+.breadcrumb-button input[type="submit"]:active {
   color: [[setting:themecolor]];
   background-color: [[setting:themenavcolor]];
+  background-image: none;
+}
+.breadcrumb-button .fa {
+  color: inherit;
 }
 /* @end */
 /* @group Breadcrumb */
@@ -178,12 +162,15 @@
 .breadcrumb-nav ul.breadcrumb.style1 li {
   color: [[setting:themenavcolor]];
   background-color: [[setting:themecolor]];
+  border-color: [[setting:themecolor]];
+  border-width: 1px;
+  border-style: solid;
+}
+.breadcrumb-nav ul.breadcrumb.style1 li:before {
+  border-left-color: [[setting:themenavcolor]];
 }
 .breadcrumb-nav ul.breadcrumb.style1 li a {
-  color: [[setting:themenavcolor]];
-}
-.breadcrumb-nav ul.breadcrumb.style1 li a:hover {
-  color: [[setting:themecolor]];
+  color: inherit;
 }
 .breadcrumb-nav ul.breadcrumb.style1 li:after {
   border-left-color: [[setting:themecolor]];
@@ -191,14 +178,20 @@
 .breadcrumb-nav ul.breadcrumb.style1 li:first-of-type a:before {
   color: [[setting:themenavcolor]];
 }
-.breadcrumb-nav ul.breadcrumb.style1 li:first-of-type:hover a:before {
-  color: [[setting:themecolor]];
-}
-.breadcrumb-nav ul.breadcrumb.style1 li:hover {
-  color: [[setting:themecolor]];
+.breadcrumb-nav ul.breadcrumb.style1 li:hover,
+.breadcrumb-nav ul.breadcrumb.style1 li:focus {
   background-color: [[setting:themenavcolor]];
 }
-.breadcrumb-nav ul.breadcrumb.style1 li:hover a {
+.breadcrumb-nav ul.breadcrumb.style1 li:hover:before,
+.breadcrumb-nav ul.breadcrumb.style1 li:focus:before {
+  border-left-color: [[setting:themecolor]];
+}
+.breadcrumb-nav ul.breadcrumb.style1 li:hover span,
+.breadcrumb-nav ul.breadcrumb.style1 li:focus span,
+.breadcrumb-nav ul.breadcrumb.style1 li:hover a,
+.breadcrumb-nav ul.breadcrumb.style1 li:focus a,
+.breadcrumb-nav ul.breadcrumb.style1 li:hover a:before,
+.breadcrumb-nav ul.breadcrumb.style1 li:focus a:before {
   color: [[setting:themecolor]];
 }
 .breadcrumb-nav ul.breadcrumb.style1 li:hover:after {
@@ -223,32 +216,219 @@ ul.breadcrumb.style2 li a:hover {
 }
 /* @end */
 /* @end */
+/* @group Buttons */
+body button,
+body .btn-default,
+body a.btn-default,
+body button.btn-cancel,
+body input.form-submit,
+body input[type="button"],
+body input[type="submit"],
+body input[type="reset"],
+body #notice .singlebutton + .singlebutton input,
+body .submit.buttons input[name=cancel] {
+  color: [[setting:themedefaultbuttontextcolour]];
+  text-shadow: none;
+  background-color: [[setting:themedefaultbuttonbackgroundcolour]];
+  background-image: -moz-linear-gradient(bottom, [[setting:themedefaultbuttonbackgroundcolourimage]], [[setting:themedefaultbuttonbackgroundcolourrgba]]);
+  background-image: -webkit-gradient(linear, 0 100%, 0 0, from([[setting:themedefaultbuttonbackgroundcolourimage]]), to([[setting:themedefaultbuttonbackgroundcolourrgba]]));
+  background-image: -webkit-linear-gradient(bottom, [[setting:themedefaultbuttonbackgroundcolourimage]], [[setting:themedefaultbuttonbackgroundcolourrgba]]);
+  background-image: -o-linear-gradient(bottom, [[setting:themedefaultbuttonbackgroundcolourimage]], [[setting:themedefaultbuttonbackgroundcolourrgba]]);
+  background-image: linear-gradient(to top, [[setting:themedefaultbuttonbackgroundcolourimage]], [[setting:themedefaultbuttonbackgroundcolourrgba]]);
+}
+body button .fa,
+body .btn-default .fa,
+body a.btn-default .fa,
+body button.btn-cancel .fa,
+body input.form-submit .fa,
+body input[type="button"] .fa,
+body input[type="submit"] .fa,
+body input[type="reset"] .fa,
+body #notice .singlebutton + .singlebutton input .fa,
+body .submit.buttons input[name=cancel] .fa {
+  color: [[setting:themedefaultbuttontextcolour]];
+}
+body button:hover,
+body .btn-default:hover,
+body a.btn-default:hover,
+body button.btn-cancel:hover,
+body input.form-submit:hover,
+body input[type="button"]:hover,
+body input[type="submit"]:hover,
+body input[type="reset"]:hover,
+body #notice .singlebutton + .singlebutton input:hover,
+body .submit.buttons input[name=cancel]:hover,
+body button:focus,
+body .btn-default:focus,
+body a.btn-default:focus,
+body button.btn-cancel:focus,
+body input.form-submit:focus,
+body input[type="button"]:focus,
+body input[type="submit"]:focus,
+body input[type="reset"]:focus,
+body #notice .singlebutton + .singlebutton input:focus,
+body .submit.buttons input[name=cancel]:focus,
+body button:active,
+body .btn-default:active,
+body a.btn-default:active,
+body button.btn-cancel:active,
+body input.form-submit:active,
+body input[type="button"]:active,
+body input[type="submit"]:active,
+body input[type="reset"]:active,
+body #notice .singlebutton + .singlebutton input:active,
+body .submit.buttons input[name=cancel]:active,
+body button.active,
+body .btn-default.active,
+body a.btn-default.active,
+body button.btn-cancel.active,
+body input.form-submit.active,
+body input[type="button"].active,
+body input[type="submit"].active,
+body input[type="reset"].active,
+body #notice .singlebutton + .singlebutton input.active,
+body .submit.buttons input[name=cancel].active,
+body button.disabled,
+body .btn-default.disabled,
+body a.btn-default.disabled,
+body button.btn-cancel.disabled,
+body input.form-submit.disabled,
+body input[type="button"].disabled,
+body input[type="submit"].disabled,
+body input[type="reset"].disabled,
+body #notice .singlebutton + .singlebutton input.disabled,
+body .submit.buttons input[name=cancel].disabled,
+body button[disabled],
+body .btn-default[disabled],
+body a.btn-default[disabled],
+body button.btn-cancel[disabled],
+body input.form-submit[disabled],
+body input[type="button"][disabled],
+body input[type="submit"][disabled],
+body input[type="reset"][disabled],
+body #notice .singlebutton + .singlebutton input[disabled],
+body .submit.buttons input[name=cancel][disabled] {
+  color: [[setting:themedefaultbuttontexthovercolour]];
+  text-shadow: 0 1px 1px rgba(64, 64, 64, 0.75);
+  background-color: [[setting:themedefaultbuttonbackgroundhovercolour]];
+  background-image: -moz-linear-gradient(bottom, [[setting:themedefaultbuttonbackgroundhovercolourimage]], [[setting:themedefaultbuttonbackgroundhovercolourrgba]]);
+  background-image: -webkit-gradient(linear, 0 100%, 0 0, from([[setting:themedefaultbuttonbackgroundhovercolourimage]]), to([[setting:themedefaultbuttonbackgroundhovercolourrgba]]));
+  background-image: -webkit-linear-gradient(bottom, [[setting:themedefaultbuttonbackgroundhovercolourimage]], [[setting:themedefaultbuttonbackgroundhovercolourrgba]]);
+  background-image: -o-linear-gradient(bottom, [[setting:themedefaultbuttonbackgroundhovercolourimage]], [[setting:themedefaultbuttonbackgroundhovercolourrgba]]);
+  background-image: linear-gradient(to top, [[setting:themedefaultbuttonbackgroundhovercolourimage]], [[setting:themedefaultbuttonbackgroundhovercolourrgba]]);
+}
+body button:hover .fa,
+body .btn-default:hover .fa,
+body a.btn-default:hover .fa,
+body button.btn-cancel:hover .fa,
+body input.form-submit:hover .fa,
+body input[type="button"]:hover .fa,
+body input[type="submit"]:hover .fa,
+body input[type="reset"]:hover .fa,
+body #notice .singlebutton + .singlebutton input:hover .fa,
+body .submit.buttons input[name=cancel]:hover .fa,
+body button:focus .fa,
+body .btn-default:focus .fa,
+body a.btn-default:focus .fa,
+body button.btn-cancel:focus .fa,
+body input.form-submit:focus .fa,
+body input[type="button"]:focus .fa,
+body input[type="submit"]:focus .fa,
+body input[type="reset"]:focus .fa,
+body #notice .singlebutton + .singlebutton input:focus .fa,
+body .submit.buttons input[name=cancel]:focus .fa,
+body button:active .fa,
+body .btn-default:active .fa,
+body a.btn-default:active .fa,
+body button.btn-cancel:active .fa,
+body input.form-submit:active .fa,
+body input[type="button"]:active .fa,
+body input[type="submit"]:active .fa,
+body input[type="reset"]:active .fa,
+body #notice .singlebutton + .singlebutton input:active .fa,
+body .submit.buttons input[name=cancel]:active .fa,
+body button.active .fa,
+body .btn-default.active .fa,
+body a.btn-default.active .fa,
+body button.btn-cancel.active .fa,
+body input.form-submit.active .fa,
+body input[type="button"].active .fa,
+body input[type="submit"].active .fa,
+body input[type="reset"].active .fa,
+body #notice .singlebutton + .singlebutton input.active .fa,
+body .submit.buttons input[name=cancel].active .fa,
+body button.disabled .fa,
+body .btn-default.disabled .fa,
+body a.btn-default.disabled .fa,
+body button.btn-cancel.disabled .fa,
+body input.form-submit.disabled .fa,
+body input[type="button"].disabled .fa,
+body input[type="submit"].disabled .fa,
+body input[type="reset"].disabled .fa,
+body #notice .singlebutton + .singlebutton input.disabled .fa,
+body .submit.buttons input[name=cancel].disabled .fa,
+body button[disabled] .fa,
+body .btn-default[disabled] .fa,
+body a.btn-default[disabled] .fa,
+body button.btn-cancel[disabled] .fa,
+body input.form-submit[disabled] .fa,
+body input[type="button"][disabled] .fa,
+body input[type="submit"][disabled] .fa,
+body input[type="reset"][disabled] .fa,
+body #notice .singlebutton + .singlebutton input[disabled] .fa,
+body .submit.buttons input[name=cancel][disabled] .fa {
+  color: [[setting:themedefaultbuttontexthovercolour]];
+}
+a.marketing-button,
+a.marketing-button:visited {
+  color: [[setting:themenavcolor]];
+  background-color: [[setting:themecolor]];
+}
+a.marketing-button:hover {
+  color: [[setting:themenavcolor]];
+  background-color: [[setting:themehovercolor]];
+}
+/* @end */
 /* @group Carousel */
 #essentialCarousel.carousel .carousel-inner .carousel-caption {
-  background-color: [[setting:carouselcolor]];
+  background-color: [[setting:slidecaptionbackgroundcolor]];
 }
 #essentialCarousel.carousel .carousel-inner .carousel-caption .carousel-caption-inner {
   max-width: [[setting:pagewidth]];
 }
 #essentialCarousel.carousel .carousel-inner .carousel-caption h4,
-#essentialCarousel.carousel .carousel-inner .carousel-caption p {
-  color: [[setting:slidecolor]];
+#essentialCarousel.carousel .carousel-inner .carousel-caption div {
+  color: [[setting:slidecaptiontextcolor]];
+}
+#essentialCarousel.carousel .carousel-inner.pagebackground .the-side-caption-content {
+  background-color: [[setting:slidecaptionbackgroundcolor]];
+}
+#essentialCarousel.carousel .carousel-inner.pagebackground .the-side-caption-content h4,
+#essentialCarousel.carousel .carousel-inner.pagebackground .the-side-caption-content div {
+  color: [[setting:slidecaptiontextcolor]];
 }
 #essentialCarousel.carousel .carousel-control {
   color: [[setting:slidebuttoncolor]];
+}
+#essentialCarousel.carousel .carousel-control .fa {
+  color: inherit;
 }
 #essentialCarousel.carousel .carousel-control:hover,
 #essentialCarousel.carousel .carousel-control:focus {
   color: [[setting:slidebuttonhovercolor]];
 }
+#essentialCarousel.carousel .carousel-control:hover .fa,
+#essentialCarousel.carousel .carousel-control:focus .fa {
+  color: inherit;
+}
 #essentialCarousel.carousel .carousel-indicators {
-  box-shadow: 0px 0px 8px [[setting:carouselcolor]];
+  box-shadow: 0px 0px 8px [[setting:slidebuttoncolor]];
 }
 #essentialCarousel.carousel .carousel-indicators li {
-  background-color: [[setting:carouselcolor]];
+  background-color: [[setting:slidebuttoncolor]];
 }
 #essentialCarousel.carousel .carousel-indicators .active {
-  background-color: [[setting:carouselactivecolor]];
+  background-color: [[setting:slidebuttonhovercolor]];
 }
 /* @end */
 /*
@@ -259,14 +439,14 @@ ul.breadcrumb.style2 li a:hover {
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 /* @group Category Icons */
-.categoryicons {
-  /* Hide icon 'collapsed' because it makes no sense here */
-}
 .categoryicons .course_category_tree .category[data-categoryid]:hover {
   background-color: [[setting:themecolor]];
 }
-.categoryicons .course_category_tree .category[data-categoryid] > .info > .categoryname a:hover {
+.categoryicons .course_category_tree .category[data-categoryid]:hover > .info > .categoryname a {
   color: [[setting:themenavcolor]];
+}
+.categoryicons .course_category_tree .category[data-categoryid]:hover > .info > .categoryname a .fa {
+  color: inherit;
 }
 /* @end */
 /* @group Core */
@@ -375,22 +555,118 @@ body.has_dock.essential-colours-alternative3 #dock .dockedtitle.disabled,
 body.has_dock.essential-colours-alternative3 #dock .dockedtitle[disabled] {
   background-color: [[setting:alternativethemehovercolor3]];
 }
+body.has_dock.essential-colours-alternative4 #dock {
+  background-color: [[setting:alternativethemecolor4]];
+}
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle h2,
+body.has_dock.essential-colours-alternative4 #dock .dockeditempanel_hd h2 {
+  color: [[setting:alternativethemetextcolor4]];
+}
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle h2:before,
+body.has_dock.essential-colours-alternative4 #dock .dockeditempanel_hd h2:before {
+  color: [[setting:alternativethemecolor4]];
+}
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle:hover,
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle:focus,
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle:active,
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle.active,
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle.disabled,
+body.has_dock.essential-colours-alternative4 #dock .dockedtitle[disabled] {
+  background-color: [[setting:alternativethemehovercolor4]];
+}
 /* @end */
 /* @group Edit Buttons */
-.menu a.menu-action > i,
-p.tree_item.leaf a > i,
-.course-item-actions a > i,
-.actions a > i {
+.menu a.menu-action > .fa,
+.course-item-actions a > .fa,
+.actions a > .fa {
   color: [[setting:themeiconcolor]];
 }
-.menu a.menu-action:hover > i,
-p.tree_item.leaf a:hover > i,
-.course-item-actions a:hover > i,
-.actions a:hover > i {
+.menu a.menu-action:hover > .fa,
+.course-item-actions a:hover > .fa,
+.actions a:hover > .fa {
   color: [[setting:themehovercolor]];
 }
 .section-modchooser-link > a:before {
   color: [[setting:themeiconcolor]];
+}
+/* @end */
+/* @Group Editor */
+#tinymce {
+  color: [[setting:themetextcolor]];
+  font-family: [[setting:bodyfont]];
+}
+#tinymce .container-fluid {
+  max-width: [[setting:pagewidth]];
+}
+#tinymce h1,
+#tinymce h2 {
+  font-family: [[setting:headingfont]];
+}
+#tinymce h1,
+#tinymce h2,
+#tinymce h3,
+#tinymce h4,
+#tinymce h5,
+#tinymce h6,
+#tinymce #adminsettings h3 {
+  color: [[setting:themetextcolor]];
+}
+#tinymce a,
+#tinymce a:visited,
+#tinymce .btn-link,
+#tinymce .btn-link:visited {
+  color: [[setting:themeurlcolor]];
+}
+#tinymce a:hover,
+#tinymce a:focus,
+#tinymce .btn-link:hover,
+#tinymce .btn-link:focus {
+  color: [[setting:themehovercolor]];
+}
+#tinymce a:hover:before,
+#tinymce a:focus:before,
+#tinymce .btn-link:hover:before,
+#tinymce .btn-link:focus:before {
+  color: [[setting:themehovercolor]];
+}
+#tinymce a:before {
+  color: [[setting:themeiconcolor]];
+  display: inline-block;
+  text-decoration: none;
+}
+#tinymce .color {
+  color: [[setting:themecolor]];
+}
+body .editor_atto_content_wrap {
+  color: [[setting:themetextcolor]];
+}
+/* @end */
+/* @group Filemanger */
+.filemanager a,
+.file-picker a,
+.filemanager a:visited,
+.file-picker a:visited {
+  color: [[setting:themeurlcolor]];
+}
+.filemanager a:hover,
+.file-picker a:hover,
+.filemanager a:visited:hover,
+.file-picker a:visited:hover,
+.filemanager a:focus,
+.file-picker a:focus,
+.filemanager a:visited:focus,
+.file-picker a:visited:focus {
+  color: [[setting:themehovercolor]];
+}
+.filemanager a:hover:before,
+.file-picker a:hover:before,
+.filemanager a:visited:hover:before,
+.file-picker a:visited:hover:before,
+.filemanager a:focus:before,
+.file-picker a:focus:before,
+.filemanager a:visited:focus:before,
+.file-picker a:visited:focus:before {
+  color: [[setting:themehovercolor]];
 }
 /* @end */
 /* @group Forms */
@@ -413,12 +689,40 @@ input[type="color"],
 .uneditable-input,
 .form-item .form-description,
 .form-defaultinfo,
-.form-label .form-shortname {
+.form-label .form-shortname,
+.mform legend,
+.mform legend a {
   color: [[setting:themetextcolor]];
+}
+select:focus,
+textarea:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="datetime"]:focus,
+input[type="datetime-local"]:focus,
+input[type="date"]:focus,
+input[type="month"]:focus,
+input[type="time"]:focus,
+input[type="week"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="color"]:focus,
+.uneditable-input:focus,
+.form-item .form-description:focus,
+.form-defaultinfo:focus,
+.form-label .form-shortname:focus,
+.mform legend:focus,
+.mform legend a:focus {
+  border-color: [[setting:inputfocusbordercolor]];
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px [[setting:inputfocusshadowcolor]];
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px [[setting:inputfocusshadowcolor]];
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px [[setting:inputfocusshadowcolor]];
 }
 #page form .form-buttons #fgroup_id_buttonar,
 #page form table#form td.submit #fgroup_id_buttonar,
-#page form .form-buttons #fgroup_id_buttonar,
 #page form .path-admin .buttons #fgroup_id_buttonar,
 #page form #fitem_id_submitbutton #fgroup_id_buttonar,
 #page form .fp-content-center form + div #fgroup_id_buttonar,
@@ -437,6 +741,9 @@ input[type="color"],
   background-color: [[setting:themecolor]];
   border-top: 1px solid [[setting:themeiconcolor]];
 }
+body#page-grade-grading-pick #region-main form #fgroup_id_buttonar label {
+  color: [[setting:themenavcolor]];
+}
 /* @end */
 /* @group Frontpage */
 /* @group Marketing Spots */
@@ -446,11 +753,64 @@ input[type="color"],
 #marketing-spots .marketing-spot h5 {
   color: [[setting:themecolor]];
 }
+#marketing-spots .marketing-spot #marketing-image1 {
+  background-image: [[setting:marketing1image]];
+}
+#marketing-spots .marketing-spot #marketing-image2 {
+  background-image: [[setting:marketing2image]];
+}
+#marketing-spots .marketing-spot #marketing-image3 {
+  background-image: [[setting:marketing3image]];
+}
+#marketing-spots .marketing-spot .marketing-image {
+  height: [[setting:marketingimageheight]];
+  background-repeat: no-repeat;
+}
+#marketing-spots.withimage .marketing-spot {
+  min-height: [[setting:marketingheightwithimage]];
+}
+#marketing-spots.withimage.withbutton .marketing-spot {
+  min-height: [[setting:marketingheightwithimagewithbutton]];
+}
+#marketing-spots.noimages .marketing-spot {
+  min-height: [[setting:marketingheight]];
+}
+#marketing-spots.noimages.withbutton .marketing-spot {
+  min-height: [[setting:marketingheightwithbutton]];
+}
 /* @end */
+/* @end */
+/* @group Grade */
+.path-grade-report-user .user-grade.generaltable .leveleven,
+.path-grade-report-user .user-grade.generaltable .levelodd {
+  color: [[setting:themetextcolor]];
+}
+.path-grade-report-user .user-grade.generaltable .leveleven a,
+.path-grade-report-user .user-grade.generaltable .levelodd a,
+.path-grade-report-user .user-grade.generaltable .leveleven a:visited,
+.path-grade-report-user .user-grade.generaltable .levelodd a:visited {
+  color: [[setting:themeurlcolor]];
+}
+.path-grade-report-user .user-grade.generaltable .leveleven a:hover,
+.path-grade-report-user .user-grade.generaltable .levelodd a:hover,
+.path-grade-report-user .user-grade.generaltable .leveleven a:focus,
+.path-grade-report-user .user-grade.generaltable .levelodd a:focus,
+.path-grade-report-user .user-grade.generaltable .leveleven a:active,
+.path-grade-report-user .user-grade.generaltable .levelodd a:active {
+  color: [[setting:themehovercolor]];
+}
 /* @end */
 /* @group Header */
 #page-header {
   color: [[setting:headertextcolor]];
+}
+#page-header.logo {
+  height: [[setting:logoheight]];
+  max-height: [[setting:logoheight]];
+}
+#page-header.nologo {
+  height: 52px;
+  max-height: 52px;
 }
 #page-header h1#title {
   color: [[setting:headertextcolor]];
@@ -467,15 +827,79 @@ input[type="color"],
 #page-header .btn-icon .icon-bar {
   background-color: [[setting:themecolor]];
 }
+#page-header a.logo {
+  background-image: [[setting:logo]];
+  height: [[setting:logoheight]];
+  width: [[setting:logowidth]];
+}
+.dir-ltr #page-header div.titlearea {
+  border-left: 1px dotted [[setting:themecolor]];
+}
+.dir-rtl #page-header div.titlearea {
+  border-right: 1px dotted [[setting:themecolor]];
+}
+@media (min-width: 980px) {
+  #page-header.nologo {
+    height: 64px;
+    max-height: 64px;
+  }
+}
+/* @end */
+/* @group Social Buttons */
+button.website:hover,
+button.website:focus {
+  background-color: [[setting:themecolor]];
+}
 .socials {
   margin: 0px;
 }
 .socials p {
   color: [[setting:headertextcolor]];
 }
+#page-header.logo #socialnetworks,
+#page-header.logo #mobileapps {
+  height: [[setting:logoheight]];
+  max-height: [[setting:logoheight]];
+}
+#page-header.nologo #socialnetworks,
+#page-header.nologo #mobileapps {
+  height: 52px;
+  max-height: 52px;
+}
+@media (min-width: 980px) {
+  #page-header.logo #socialnetworks,
+  #page-header.logo #mobileapps {
+    height: [[setting:logoheight]];
+    max-height: [[setting:logoheight]];
+  }
+  #page-header.nologo #socialnetworks,
+  #page-header.nologo #mobileapps {
+    height: 64px;
+    max-height: 64px;
+  }
+}
+.dir-ltr #mobileapps {
+  border-right: 1px dotted [[setting:themecolor]];
+}
+.dir-rtl #mobileapps {
+  border-left: 1px dotted [[setting:themecolor]];
+}
 /* @end */
 /* @group Navbar */
-/* @group Custom Menu */
+#essentialnavbar.oldnavbar.logo {
+  top: [[setting:logoheight]];
+}
+#essentialnavbar.oldnavbar.nologo {
+  top: 52px;
+}
+@media (min-width: 980px) {
+  #essentialnavbar.oldnavbar.nologo {
+    top: 64px;
+  }
+}
+#essentialnavbar.affix.oldnavbar {
+  top: 0;
+}
 .navbar .navbar-inner .brand {
   color: [[setting:themenavcolor]];
 }
@@ -489,46 +913,47 @@ input[type="color"],
 .navbar .navbar-inner .nav > li > a {
   color: [[setting:themenavcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown a i,
-.navbar .navbar-inner .nav > li > a i {
-  color: inherit;
-}
 .navbar .navbar-inner .nav > li.dropdown a:hover,
-.navbar .navbar-inner .nav > li > a:hover {
+.navbar .navbar-inner .nav > li > a:hover,
+.navbar .navbar-inner .nav > li.dropdown a:focus,
+.navbar .navbar-inner .nav > li > a:focus {
   color: [[setting:themecolor]];
   background-color: [[setting:themenavcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown a:hover i,
-.navbar .navbar-inner .nav > li > a:hover i {
-  color: inherit;
+.navbar .navbar-inner .nav .dropdown-menu .dropdown-submenu .dropdown-toggle:after {
+  border-left-color: inherit;
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a {
+.navbar .navbar-inner .nav .dropdown-menu .dropdown-submenu:focus .dropdown-toggle:after,
+.navbar .navbar-inner .nav .dropdown-menu .dropdown-submenu:hover .dropdown-toggle:after {
+  border-left-color: [[setting:themenavcolor]];
+}
+.navbar .navbar-inner #custom_menu_courses .dropdown-menu li > a > span.onlyenrolled {
+  background-color: [[setting:mycoursesorderenrolbackcolour]];
+}
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a {
   color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:hover {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:hover {
   color: #ffffff;
   background-color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:focus,
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a.open {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:focus,
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a.open {
   color: #ffffff;
   background-color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:focus i,
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a.open i {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:focus .fa,
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a.open .fa {
   color: #ffffff;
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a:hover .dimmed_text {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li > a:hover .dimmed_text {
   color: #eeeeee;
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li > a i {
-  color: [[setting:themeiconcolor]];
-}
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li.dropdown-submenu:hover > a {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li.dropdown-submenu:hover > a {
   color: #ffffff;
   background-color: [[setting:themeurlcolor]];
 }
-.navbar .navbar-inner .nav > li.dropdown ul.dropdown-menu > li.dropdown-submenu:hover > a i {
+.navbar .navbar-inner .nav > li.dropdown .dropdown-menu li.dropdown-submenu:hover > a .fa {
   color: inherit;
 }
 .navbar .navbar-inner .nav li.dropdown.open > .dropdown-toggle,
@@ -537,38 +962,58 @@ input[type="color"],
   color: #ffffff;
   background-color: [[setting:themehovercolor]];
 }
-.navbar .navbar-inner .nav li.dropdown.open > .dropdown-toggle i,
-.navbar .navbar-inner .nav li.dropdown.active > .dropdown-toggle i,
-.navbar .navbar-inner .nav li.dropdown.open.active > .dropdown-toggle i {
-  color: inherit;
-}
 .navbar .navbar-inner .usermenu .dropdown img.userpicture {
   border: 1px solid [[setting:themenavcolor]];
 }
-.navbar .navbar-inner .usermenu .dropdown ul.dropdown-menu {
+.navbar .navbar-inner .usermenu .dropdown .dropdown-menu {
   border: 1px solid [[setting:themecolor]];
 }
-.navbar .navbar-inner .usermenu .dropdown ul.dropdown-menu hr.sep {
+.navbar .navbar-inner .usermenu .dropdown .dropdown-menu hr.sep {
   border-bottom: 1px dotted [[setting:themecolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu {
   border: 1px solid [[setting:themecolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a {
   border-top: 1px dotted [[setting:themecolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .message,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .notification {
   color: #ffffff;
   background-color: [[setting:themehovercolor]];
 }
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message img.userpicture,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification img.userpicture,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .message img.profilepicture,
-.navbar .navbar-inner .messagemenu ul.nav ul.dropdown-menu li > a:hover .notification img.profilepicture {
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .message img.userpicture,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .notification img.userpicture,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .message img.profilepicture,
+.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .notification img.profilepicture {
   box-shadow: 0 0 3px [[setting:themenavcolor]];
 }
-/* @end */
+@media (max-width: 979px) {
+  .navbar .nav-collapse.in .nav .dropdown-submenu .dropdown-toggle:after,
+  .navbar .nav-collapse.in .nav .dropdown-menu .dropdown-submenu .dropdown-toggle:after {
+    border-left-color: transparent;
+    border-top-color: [[setting:themeiconcolor]];
+  }
+  .navbar .nav-collapse.in .nav .dropdown-submenu:focus .dropdown-toggle:after,
+  .navbar .nav-collapse.in .nav .dropdown-menu .dropdown-submenu:focus .dropdown-toggle:after,
+  .navbar .nav-collapse.in .nav .dropdown-submenu:hover .dropdown-toggle:after,
+  .navbar .nav-collapse.in .nav .dropdown-menu .dropdown-submenu:hover .dropdown-toggle:after {
+    border-top-color: [[setting:themenavcolor]];
+  }
+  .navbar .nav-collapse.in .nav .dropdown-submenu.open > a,
+  .navbar .nav-collapse.in .nav .dropdown-menu .dropdown-submenu.open > a,
+  .navbar .nav-collapse.in .nav .dropdown-submenu:hover.open > a,
+  .navbar .nav-collapse.in .nav .dropdown-menu .dropdown-submenu:hover.open > a {
+    color: [[setting:themenavcolor]];
+    background-color: [[setting:themecolor]];
+  }
+  .navbar .nav-collapse.in .nav .dropdown-submenu.open > a.dropdown-toggle:after,
+  .navbar .nav-collapse.in .nav .dropdown-menu .dropdown-submenu.open > a.dropdown-toggle:after,
+  .navbar .nav-collapse.in .nav .dropdown-submenu:hover.open > a.dropdown-toggle:after,
+  .navbar .nav-collapse.in .nav .dropdown-menu .dropdown-submenu:hover.open > a.dropdown-toggle:after {
+    border-top-color: [[setting:themenavcolor]];
+  }
+}
 /* @end */
 /* @group Print Styling */
 @media print {
@@ -579,19 +1024,19 @@ input[type="color"],
 /* @end */
 /* @group Responsive */
 @media (max-width: 979px) {
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a {
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a {
     color: [[setting:themecolor]];
   }
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a:hover,
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a.open {
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a:hover,
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a.open {
     color: [[setting:themenavcolor]];
     background-color: [[setting:themecolor]];
   }
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a:hover .fa,
-  .navbar .navbar-inner .nav-collapse .nav > li.dropdown ul.dropdown-menu > li > a.open .fa {
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a:hover .fa,
+  .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a.open .fa {
     color: inherit;
   }
-  .navbar .navbar-inner .nav-collapse .nav li.dropdown ul.dropdown-menu {
+  .navbar .navbar-inner .nav-collapse .nav li.dropdown .dropdown-menu {
     background-color: [[setting:themenavcolor]];
     color: [[setting:themecolor]];
   }
@@ -611,6 +1056,33 @@ body {
   background-repeat: [[setting:backgroundrepeat]];
   background-size: [[setting:backgroundsize]];
 }
+body .fa {
+  color: [[setting:themeiconcolor]];
+}
+body .fa:focus,
+body .fa:hover {
+  color: [[setting:themehovercolor]];
+}
+body .fa-inverse {
+  color: #ffffff;
+}
+body .dimmed .fa {
+  color: inherit;
+}
+body .dimmed .fa:focus,
+body .dimmed .fa:hover {
+  color: inherit;
+}
+body.loginbackground {
+  background-image: [[setting:loginbackground]];
+  background-size: [[setting:loginbackgroundstyle]];
+}
+body.loginbackground #page-header {
+  background-image: none;
+}
+body.loginbackground #page-content {
+  opacity: [[setting:loginbackgroundopacity]];
+}
 .container-fluid {
   max-width: [[setting:pagewidth]];
 }
@@ -624,19 +1096,33 @@ h6,
   color: [[setting:themetextcolor]];
 }
 a,
-a:visited {
+a:visited,
+.btn-link,
+.btn-link:visited {
   color: [[setting:themeurlcolor]];
 }
-a:hover {
+a:hover,
+a:focus,
+.btn-link:hover,
+.btn-link:focus {
   color: [[setting:themehovercolor]];
 }
-a:hover:before {
+a:hover:before,
+a:focus:before,
+.btn-link:hover:before,
+.btn-link:focus:before {
   color: [[setting:themehovercolor]];
 }
 a:before {
   color: [[setting:themeiconcolor]];
   display: inline-block;
   text-decoration: none;
+}
+a:before:hover {
+  color: [[setting:themehovercolor]];
+}
+a.dimmed:before {
+  color: inherit;
 }
 .color {
   color: [[setting:themecolor]];
@@ -648,26 +1134,6 @@ a:before {
 img.userpicture,
 img.profilepicture {
   box-shadow: 0px 0px 3px [[setting:themecolor]];
-}
-/* @end */
-/* @end */
-/* @group Header */
-#page-header {
-  background: url('[[setting:headerbackground]]') repeat;
-}
-a.logo {
-  background-image: [[setting:logo]];
-}
-h1#title {
-  color: [[setting:themetextcolor]];
-}
-#headerlogo {
-  border-right: 1px dotted [[setting:themecolor]];
-}
-/* @group Social Buttons */
-button.website:hover,
-button.website:focus {
-  background-color: [[setting:themecolor]];
 }
 /* @end */
 /* @end */
@@ -684,6 +1150,9 @@ a .colours-alternative2 {
 a .colours-alternative3 {
   color: [[setting:alternativethemecolor3]] !important;
 }
+a .colours-alternative4 {
+  color: [[setting:alternativethemecolor4]] !important;
+}
 /* @end */
 /* @group Navbar
  */
@@ -697,9 +1166,10 @@ a .colours-alternative3 {
 .course-content ul li.section.main {
   background: url([[pix:theme|bg/dot]]) bottom repeat-x;
 }
-.course-content ul li.section.main.clearfix.current .content {
-  box-shadow: 0px 0px 6px 2px [[setting:themecolor]];
-  border-radius: 10px;
+.course-content ul li.section.main.current {
+  box-shadow: 4px 4px 8px 2px [[setting:themecolor]];
+  border-style: solid;
+  border-width: 1px;
 }
 h2.pagetitle {
   background: url([[pix:theme|bg/dot]]) left center repeat-x;
@@ -713,19 +1183,6 @@ h2.pagetitle {
   color: [[setting:themetextcolor]];
 }
 /* @end */
-/* @group Buttons */
-.button a,
-.button a:visited {
-  background-color: [[setting:themecolor]];
-}
-a.marketing-button,
-a.marketing-button:visited {
-  background-color: [[setting:themecolor]];
-}
-a.marketing-button:hover {
-  background-color: [[setting:themehovercolor]];
-}
-/* @end */
 /* @group Blocks */
 .block a {
   color: [[setting:themeurlcolor]];
@@ -734,7 +1191,10 @@ a.marketing-button:hover {
   color: [[setting:themehovercolor]];
 }
 .block .header .title h2:before,
-.block.block_iconic_html .header .title h2 span.fa:before {
+.block.block_iconic_html .header .title h2 .fa:before {
+  color: [[setting:themeiconcolor]];
+}
+.jsenabled .block_settings .block_tree .tree_item.branch.loadingbranch:before {
   color: [[setting:themeiconcolor]];
 }
 .block_rss_client .footer a {
@@ -767,7 +1227,7 @@ a.marketing-button:hover {
 }
 /* @end */
 /* @group Home News Boxes */
-.service i {
+.service .fa {
   color: [[setting:themecolor]];
 }
 /* @end */
@@ -779,11 +1239,11 @@ a.marketing-button:hover {
   border-bottom: 3px solid [[setting:themecolor]];
 }
 #page-footer a,
-#page-footer a > i {
+#page-footer a > .fa {
   color: [[setting:footerurlcolor]];
 }
 #page-footer a:hover,
-#page-footer a:hover > i {
+#page-footer a:hover > .fa {
   color: [[setting:footerhovercolor]];
 }
 #page-footer .footnote {
@@ -791,10 +1251,10 @@ a.marketing-button:hover {
 }
 #page-footer .footnote a,
 #page-footer .footnote a:visited {
-  color: [[setting:footerurlcolor]] !important;
+  color: [[setting:footerurlcolor]];
 }
 #page-footer .footnote a:hover {
-  color: [[setting:footerhovercolor]] !important;
+  color: [[setting:footerhovercolor]];
 }
 #page-footer hr {
   border-top: 1px solid [[setting:footersepcolor]];
@@ -806,19 +1266,38 @@ a.marketing-button:hover {
 #page-footer .tree_item.branch:before {
   color: [[setting:themeiconcolor]];
 }
-#page-footer .block_html ul li:before,
-#greyboxright ul li:before {
-  background-color: [[setting:themecolor]];
-}
 /* @group Footer Block Formatting */
+#page-footer .block {
+  background-color: [[setting:footerblockbackgroundcolour]];
+  color: [[setting:footerblocktextcolour]];
+}
+#page-footer .block a,
+#page-footer .block a > .fa {
+  color: [[setting:footerblockurlcolour]];
+}
+#page-footer .block a:hover,
+#page-footer .block a:hover > .fa {
+  color: [[setting:footerblockhovercolour]];
+}
+#page-footer .block .icon {
+  color: [[setting:footerblockurlcolour]];
+}
+#page-footer .block .moodle-core-dragdrop-draghandle:before {
+  color: [[setting:footerblockurlcolour]];
+}
 #page-footer .block .header {
   border-bottom: 1px solid [[setting:footersepcolor]];
 }
-#page-footer .block .header .title h2 {
-  color: [[setting:footerheadingcolor]];
+#page-footer .block .header h2 {
+  color: inherit;
 }
-#page-footer .block .header .title h2:before {
-  color: [[setting:themecolor]];
+#page-footer .header .title h2:before,
+#page-footer.block_iconic_html .header .title h2 span.fa:before {
+  color: inherit;
+}
+#page-footer .block_html ul li:before,
+#page-footer #greyboxright ul li:before {
+  background-color: [[setting:themecolor]];
 }
 #page-footer .block_login input[type="submit"] {
   background-color: [[setting:themecolor]];
@@ -830,23 +1309,6 @@ a.marketing-button:hover {
   color: [[setting:themeurlcolor]];
 }
 /* @end */
-/* @end */
-/* @group Marketing Spots */
-#marketing-image1 {
-  background-image: [[setting:marketing1image]];
-  background-repeat: no-repeat;
-}
-#marketing-image2 {
-  background-image: [[setting:marketing2image]];
-  background-repeat: no-repeat;
-}
-#marketing-image3 {
-  background-image: [[setting:marketing3image]];
-  background-repeat: no-repeat;
-}
-.marketing-image {
-  height: [[setting:marketingheight]];
-}
 /* @end */
 /* @group Profile Image */
 .socials img:hover {
@@ -862,6 +1324,15 @@ a.marketing-button:hover {
 .nav-tabs > li > a:focus {
   color: [[setting:themecolor]];
   background-color: [[setting:themenavcolor]];
+}
+.nav-tabs > li.active > a {
+  color: [[setting:themetextcolor]];
+  background-color: #ffffff;
+}
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  color: inherit;
+  background-color: inherit;
 }
 @media (max-width: 979px) {
   .nav-collapse {
@@ -879,21 +1350,26 @@ a.marketing-button:hover {
 /* @end */
 /* @group Performance Information */
 .performanceinfo {
-  border-color: [[setting:themeiconcolor]];
+  background-color: [[setting:footerblockbackgroundcolour]];
+  color: [[setting:footerblocktextcolour]];
+  border: 1px solid #e3e3e3;
 }
 .performanceinfo var {
   background-color: [[setting:themecolor]];
   color: [[setting:themenavcolor]];
 }
+.performanceinfo .span12 {
+  border-bottom-color: [[setting:footersepcolor]];
+}
 .performanceinfo h2 {
-  color: [[setting:themetextcolor]];
-  border-bottom-color: [[setting:themeiconcolor]];
+  color: [[setting:footerblocktextcolour]];
+  border-bottom-color: #EEE;
 }
 .performanceinfo h2:before {
   color: [[setting:themeiconcolor]];
 }
 .performanceinfo span {
-  color: [[setting:themetextcolor]];
+  color: [[setting:footerblocktextcolour]];
 }
 .performanceinfo #cache:before,
 .performanceinfo #load:before,
@@ -936,7 +1412,7 @@ table#user-grades th.courseitem {
   border-right-color: [[setting:themecolor]];
 }
 .path-grade-report-grader .grade_icons img {
-  background-color: #fff;
+  background-color: #ffffff;
   padding: 3px;
   border-radius: 3px;
 }
@@ -1004,31 +1480,3 @@ h6 span {
 }
 /* @end */
 /* @end */
-/* @group Custom */
-/* @Group Scrollbar */
-body {
-  scrollbar-face-color: [[setting:themecolor]];
-  scrollbar-highlight-color: [[setting:themenavcolor]];
-  scrollbar-3dlight-color: [[setting:themenavcolor]];
-  scrollbar-darkshadow-color: [[setting:themecolor]];
-  scrollbar-track-color: [[setting:themenavcolor]];
-  scrollbar-arrow-color: [[setting:themetextcolor]];
-}
-::-webkit-scrollbar {
-  background-color: [[setting:themenavcolor]];
-}
-::-webkit-scrollbar-track {
-  background-color: [[setting:themenavcolor]];
-}
-::-webkit-scrollbar-track-piece {
-  background-color: [[setting:themenavcolor]];
-}
-::-webkit-scrollbar-thumb {
-  background-color: [[setting:themecolor]];
-  border: 0px;
-}
-::-webkit-scrollbar-corner {
-  background-color: [[setting:themecolor]];
-}
-/* @end Scrollbar */
-/* @end Custom */

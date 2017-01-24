@@ -102,7 +102,7 @@ body.has_dock {
   }
 
   #dock .controls img {
-    background: #fff;
+    background: @white;
     padding: 3px;
     border-radius: 5px;
   }
@@ -123,7 +123,7 @@ body.has_dock {
     text-align: center;
     vertical-align: middle;
     cursor: pointer;
-    border-bottom: 1px dashed #fff;
+    border-bottom: 1px dashed @white;
   }
 
   #dock .dockedtitle h2 {
@@ -242,7 +242,7 @@ body.has_dock {
   #dockeditempanel .dockeditempanel_content {
     z-index: 12050;
     width: 384px;
-    background-color: #fff;
+    background-color: @white;
   }
 
   #dockeditempanel .dockeditempanel_bd {
@@ -301,24 +301,95 @@ body.has_dock {
     width: 300px;
   }
   &.empty-region-side-pre:not(.has-region-side-post) {
-    #region-bs-main-and-pre {
+        #main-and-pre {
       width: 100%;
     }
   }
   &.empty-region-side-pre.empty-region-side-post {
-    #region-bs-main-and-pre {
+        #main-and-pre, #main-and-pre #content {
       width: 100%;
+    }
+  }
+  &.docked-region-side-pre {
+    #main-and-pre #content {
+      width: 100%;
+      #region-main {
+        width: auto;
+      }
+    }
+  }
+  &.used-region-side-pre.docked-region-side-post {
+    #main-and-pre {
+      width: 100%;
+      #content {
+        .fluid-span(9);
+      }
+      #block-region-side-pre {
+        .fluid-span(3);
+      }
+    }
+  }
+  &.jsenabled {
+    &.docked-region-side-pre {
+      &.empty-region-side-pre {
+        &.used-region-side-post {
+          #region-main {
+            width: auto;
+          }
+        }
+      }
     }
   }
 }
 
+@media (min-width: 1200px) {
+  .fluid-span (@columns) {
+    .fluid-span-full(@columns, @fluidGridColumnWidth1200, @fluidGridGutterWidth1200);
+  }
+  body.has_dock.used-region-side-pre.docked-region-side-post {
+    #main-and-pre {
+      #content {
+        .fluid-span(9);
+      }
+      #block-region-side-pre {
+        .fluid-span(3);
+      }
+    }
+  }
+}
+
+@media (min-width: 768px) and (max-width: 979px) {
+  .fluid-span (@columns) {
+    .fluid-span-full(@columns, @fluidGridColumnWidth768, @fluidGridGutterWidth768);
+  }
+  body.has_dock.used-region-side-pre.docked-region-side-post {
+    #main-and-pre {
+      #content {
+        .fluid-span(9);
+      }
+      #block-region-side-pre {
+        .fluid-span(3);
+      }
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  body.has_dock.used-region-side-pre.docked-region-side-post {
+    #main-and-pre {
+      #content, #block-region-side-pre {
+        width: 100%;
+      }
+    }
+  }
+}
 /* @group Dock & Navbar */
 
 .has_dock {
   .navbar .navbar-inner {
     padding-left: 62px;
   }
-  .navbar.oldnavbar.affix-top .navbar-inner {
+  .navbar.affix-top .navbar-inner {
     padding-left: 20px;
   }
 }

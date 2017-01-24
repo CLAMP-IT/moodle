@@ -15,24 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This is built using the bootstrapbase template to allow for new theme's using
- * Moodle's new Bootstrap theme engine
+ * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2013 Julian Ridden
+ * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
+ * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$fontselect = $OUTPUT->get_setting('fontselect');
-if ($fontselect === '2') {
-    $fontcharacterset = '&subset=latin';
-    if ($OUTPUT->get_setting('fontcharacterset')) {
-        $fontcharacterset = '&subset=latin,'.$OUTPUT->get_setting('fontcharacterset');
-    }
-    $headingfont = urlencode($OUTPUT->get_setting('fontnameheading'));
-    $bodyfont = urlencode($OUTPUT->get_setting('fontnamebody'));
-}
+require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
+require_once(\theme_essential\toolbox::get_tile_file('pagesettings'));
 
 echo $OUTPUT->doctype();
 ?>
@@ -40,30 +33,30 @@ echo $OUTPUT->doctype();
 <head>
     <title><?php echo $OUTPUT->page_title(); ?></title>
     <link rel="shortcut icon" href="<?php echo $OUTPUT->favicon(); ?>" />
-    <?php 
-    echo $OUTPUT->get_csswww();
+    <?php
+    echo \theme_essential\toolbox::get_csswww();
     echo $OUTPUT->standard_head_html();
     ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Google web fonts -->
-    <?php require_once(dirname(__FILE__) . '/includes/fonts.php'); ?>
+    <?php require_once(\theme_essential\toolbox::get_tile_file('fonts')); ?>
     <!-- Start Analytics -->
-    <?php require_once(dirname(__FILE__) . '/includes/analytics.php'); ?>
+    <?php require_once(\theme_essential\toolbox::get_tile_file('analytics')); ?>
     <!-- End Analytics -->
 </head>
 
-<body <?php echo $OUTPUT->body_attributes(); ?>>
+<body <?php echo $OUTPUT->body_attributes($bodyclasses); ?>>
 
 <?php echo $OUTPUT->standard_top_of_body_html(); ?>
 
 <?php
-    // If on desktop, then hide the header/footer.
-    $hideclass = '';
-    $devicetype = core_useragent::get_device_type();
-    if($devicetype !== 'mobile' and $devicetype !== 'tablet') {
-        // We can not use the Bootstrap responsive css classes because popups are phone sized on desktop.
-        $hideclass = 'hide';
-    }
+// If on desktop, then hide the header/footer.
+$hideclass = '';
+$devicetype = core_useragent::get_device_type();
+if ($devicetype !== 'mobile' and $devicetype !== 'tablet') {
+    // We can not use the Bootstrap responsive css classes because popups are phone sized on desktop.
+    $hideclass = 'hide';
+}
 ?>
 
 <header role="banner" class="navbar navbar-fixed-top moodle-has-zindex <?php echo $hideclass; ?>">
@@ -91,11 +84,8 @@ echo $OUTPUT->doctype();
 <div id="page" class="container-fluid">
 
     <header id="page-header" class="clearfix">
-        <div id="page-navbar" class="clearfix">
-            <nav class="breadcrumb-nav"><?php echo $OUTPUT->navbar(); ?></nav>
-            <div class="breadcrumb-button"><?php echo $OUTPUT->page_heading_button(); ?></div>
-        </div>
-        <?php echo $OUTPUT->page_heading(); ?>
+        <?php require_once(\theme_essential\toolbox::get_tile_file('pagetopheader'));
+        echo $OUTPUT->page_heading(); ?>
         <div id="course-header">
             <?php echo $OUTPUT->course_header(); ?>
         </div>

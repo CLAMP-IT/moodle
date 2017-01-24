@@ -1,8 +1,7 @@
 /* @group Header */
+@import "../fontawesome/variables";
 
 #page-header {
-  height: 75px;
-  margin-top: 40px;
   border-bottom: 1px solid #DDD;
   .row-fluid [class*="span"] {
     padding-right: 5px;
@@ -12,7 +11,7 @@
     float: right;
     padding: 7px 10px;
     position: absolute;
-    top: 45px;
+    top: 56px;
     right: 10px;
     background-image: none;
     background-color: #ededed;
@@ -31,9 +30,9 @@
     }
   }
   &.oldnavbar .btn-icon {
-    top: 4px;
+    top: 10px;
   }
-  .icon-collapse {
+  #essentialicons {
     overflow: visible;
   }
 
@@ -48,32 +47,36 @@
   a.logo {
     display: block;
     float: left;
-    height: 65px;
-    margin: 5px;
-    width: 100%;
     background-size: contain;
     background-position: left center;
     background-repeat: no-repeat;
   }
 
+  div.titlearea {
+    margin-left: 80px;
+    padding-left: 10px;
+    height: 52px;
+    width: 100%;
+  }
+  
+  h1, h2 {
+    margin: 0;
+  }
+
   h1#title {
-    white-space: nowrap;
     font-size: 3em;
-    top: 10px;
-    position: relative;
+    padding-top: 4px;
+    line-height: 40px;
   }
   h1#smalltitle {
-    white-space: nowrap;
     font-size: 2em;
-    top: 10px;
     line-height: 20px;
-    position: relative;
+    padding-top: 12px;
   }
   h2#subtitle {
-    white-space: nowrap;
     font-size: 1em;
-    position: relative;
-    line-height: 25px;
+    line-height: 20px;
+    padding-top: 6px;
   }
 
   a.textlogo {
@@ -84,9 +87,25 @@
     float: left;
     font-size: 4.5em;
     padding-right: 10px;
-    position: relative;
-    top: 10px;
     margin-right: 10px;
+  }
+
+  #essentialicons {
+    button {
+      margin: 0 0 0 5px;
+    }
+  }
+}
+
+@media(min-width: 768px) {
+  #page-header div.titlearea {
+    display: block !important;
+  }
+}
+
+@media (min-width: @navbarCollapseDesktopWidth) {
+  #page-header div.titlearea {
+    height: 64px;
   }
 }
 
@@ -98,15 +117,11 @@
 }
 
 // Narrow page width with custom menu items can make the navigation bar big.
-.pagewidthnarrow.custommenuitems {
-  header .navbar-inner {
-    height: 80px;
-    max-height: 80px;
-  }
-  #page-header {
-    margin-top: 80px;
-    &.oldnavbar {
-      margin-top: 0px;
+@media(min-width: @navbarCollapseDesktopWidth) {
+  .pagewidthnarrow.custommenuitems {
+    header .navbar-inner {
+      height: @navbarHeight * 2;
+      max-height: @navbarHeight * 2;
     }
   }
 }
@@ -117,7 +132,8 @@
 
 #socialnetworks,
 #mobileapps {
-  margin-right: 10px;
+  margin-right: 5px;
+  padding-right: 5px;
 }
 
 .socials {
@@ -128,7 +144,7 @@
   }
 }
 
-button {
+body button {
   &.socialicon {
     background-color: #bbbbbb;
     border-radius: 5px;
@@ -138,6 +154,12 @@ button {
     text-align: center;
     background-image: none;
     min-width: 29px;
+    .@{fa-css-prefix} {
+      color: @white;
+    }
+    &:hover, &:focus {
+      background-image: none;
+    }
   }
   &.facebook:hover, &.facebook:focus {
     background-color: #4a6ea9;
@@ -197,11 +219,14 @@ ul.socials {
 #socialheading {
   text-align: right;
   letter-spacing: .2em;
-  padding: 0px;
-  margin: 0px;
-  margin-top: 8px;
+  padding: 0;
+  margin: 2px 0 0;
 }
 
-/* @end */
+@media (min-width: 768px) {
+  .loggedin #page-header.oldnavbar #essentialicons {
+    right: 132px;
+  }
+}
 
 /* @end */

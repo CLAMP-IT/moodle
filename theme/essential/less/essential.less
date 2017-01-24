@@ -11,7 +11,9 @@
 @import "moodle/plugins/mod/quiz";
 
 // Import the bootstrap variables.
-@import "bootstrap-override/variables.less";
+@import "bootstrap/variables";
+// Upstream Bootstrap.
+@import "bootstrap-override/bootstrap";
 // Old Moodle stuff from base theme.
 // Massive, needs broken up.
 @import "moodle/core";
@@ -22,8 +24,6 @@
 @import "moodle/message";
 @import "moodle/question";
 @import "moodle/user";
-// Upstream Bootstrap.
-@import "bootstrap-override/bootstrap";
 // Override Bootstrap defaults.
 @import "moodle/bootstrapoverride";
 
@@ -59,6 +59,9 @@
 @import "moodle/grade";
 @import "moodle/dock";
 
+// Styles for mustache templates.
+@import "moodle/templates";
+
 // The following responsive imports are copied in
 // from "bootstrap/responsive".
 @import "bootstrap-override/responsive";  // Get the correct variables.less file.
@@ -71,11 +74,16 @@
 // responsive section, cutting off the last 400 selectors.
 @import "moodle/expendable";
 
-// Essential styles
-// Start with core
+// Essential styles.
+@import "essential/variables";
+// Start with core.
 @import "essential/core";
-// Import the essential styles
+// Import the essential styles.
+@import "essential/accessibility";
+@import "essential/admin";
 @import "essential/alert";
+@import "essential/assign";
+@import "essential/autocomplete";
 @import "essential/blocks";
 @import "essential/breadcrumb";
 @import "essential/button";
@@ -90,18 +98,22 @@
 @import "essential/form";
 @import "essential/forum";
 @import "essential/frontpage";
-@import "essential/gradebook";
+@import "essential/grade";
 @import "essential/greybox";
 @import "essential/header";
 @import "essential/message";
 @import "essential/navigation";
 @import "essential/plugins";
-@import "essential/quiz";
+@import "essential/question";
 @import "essential/scaffolding";
 @import "essential/tabs";
-// Load as last for potential overwrites
+// Load as last for potential overwrites.
 @import "essential/print";
 @import "essential/responsive";
 @import "essential/fixes";
+
+// Selected Bootstrap3 styles.
+@import "bootstrap3/variables";
+@import "bootstrap3/list-group";
 
 /* Essential placeholder */
