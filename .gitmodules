@@ -1,0 +1,60 @@
+[submodule "mod/attendance"]
+	path = mod/attendance
+	url = https://github.com/danmarsden/moodle-mod_attendance.git
+[submodule "blocks/attendance"]
+	path = blocks/attendance
+	url = https://github.com/danmarsden/moodle-block_attendance.git
+[submodule "blocks/clampmail"]
+	path = blocks/clampmail
+	url = https://github.com/CLAMP-IT/clampmail.git
+[submodule "blocks/course_description"]
+	path = blocks/course_description
+	url = https://gitlab.hampshire.edu/moodle/block_course_description.git
+[submodule "blocks/federated_login"]
+	path = blocks/federated_login
+	url = https://github.com/kwiliarty/moodle-block_federated_login.git
+[submodule "blocks/filtered_course_list"]
+	path = blocks/filtered_course_list
+	url = https://github.com/kwiliarty/moodle-blocks_filtered_course_list.git
+[submodule "blocks/library"]
+	path = blocks/library
+	url = https://gitlab.hampshire.edu/moodle/block_library.git
+[submodule "local/provisional_enrolments"]
+	path = local/provisional_enrolments
+	url = https://gitlab.hampshire.edu/moodle/local_provisional_enrolments.git
+[submodule "blocks/provisional_enrolments"]
+	path = blocks/provisional_enrolments
+	url = https://gitlab.hampshire.edu/moodle/block_provisional_enrolments.git
+[submodule "course/format/class"]
+	path = course/format/class
+	url = https://gitlab.hampshire.edu/moodle/course_format_class.git
+[submodule "filter/ipa"]
+	path = filter/ipa
+	url = https://github.com/kwiliarty/moodle-filter_ipa.git
+[submodule "local/cohort_sync"]
+	path = local/cohort_sync
+	url = https://gitlab.hampshire.edu/moodle/local_cohort_sync.git
+[submodule "local/hamp"]
+	path = local/hamp
+	url = https://gitlab.hampshire.edu/moodle/local_hamp.git
+[submodule "mod/lightboxgallery"]
+	path = mod/lightboxgallery
+	url = https://github.com/netspotau/moodle-mod_lightboxgallery.git
+[submodule "mod/questionnaire"]
+	path = mod/questionnaire
+	url = https://github.com/remotelearner/moodle-mod_questionnaire.git
+[submodule "mod/scheduler"]
+	path = mod/scheduler
+	url = https://github.com/bostelm/moodle-mod_scheduler.git
+[submodule "report/customsql"]
+	path = report/customsql
+	url = https://github.com/moodleou/moodle-report_customsql.git
+[submodule "report/editdates"]
+	path = report/editdates
+	url = https://github.com/moodleou/moodle-report_editdates.git
+[submodule "report/roster"]
+	path = report/roster
+	url = https://github.com/LafColITS/moodle-report_roster.git
+[submodule "theme/hampshire"]
+	path = theme/hampshire
+	url = https://gitlab.hampshire.edu/moodle/theme_hampshire.git
