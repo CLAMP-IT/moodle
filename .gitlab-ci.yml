@@ -43,7 +43,7 @@ before_script:
 job1:
   script:
     - vendor/bin/phpunit /var/www/moodle/htdocs/local/provisional_enrolments/tests/provisional_enrolments_test.php
-    - vendor/bin/behat --config /root/bht_moodledata/behat/behat.yml --ansi --format=pretty --tags "@blocks_course_description,@course_format_class,@blocks_library,@local_provisional_enrolments,@block_provisional_enrolments,@local_cohort_sync,@local_hamp,@theme_hampshire"
+    - vendor/bin/behat --config /root/bht_moodledata/behat/behat.yml --format=progress --tags "@blocks_course_description,@course_format_class,@blocks_library,@local_provisional_enrolments,@block_provisional_enrolments,@local_cohort_sync,@local_hamp,@theme_hampshire"
 
 variables:
   DB_USER: 'moodle'
