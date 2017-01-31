@@ -48,8 +48,9 @@ Feature: Email history
     And I should see "Hello World Redux"
     And I log out
     And I log in as "admin"
-    And I follow "Courses"
+    And I navigate to "Manage courses and categories" node in "Site administration > Courses"
     And I follow "Test Course"
+    And I follow "View"
     And I follow "View history"
     And I set the field "userid" to "Teacher 1"
     Then I should see "Hello World Redux"

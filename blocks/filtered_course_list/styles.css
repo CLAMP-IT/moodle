@@ -3,7 +3,7 @@
 }
 
 .block_filtered_course_list.block .list li {
-    background: url([[pix:moodle|i/course]]) no-repeat 0px 1px transparent;
+    background: url([[pix:moodle|i/course]]) no-repeat 0 1px transparent;
     margin-left: 0;
     padding: 0 0 10px 20px;
 }
@@ -14,14 +14,15 @@
 }
 
 .block_filtered_course_list .course-section {
-    padding-left: 21px;
-    padding-right: 1em;
-    margin-top: 3px;
     font-weight: bold;
+    margin-top: 3px;
+    padding-left: 1px;
+    padding-right: 1em;
 }
 
 .jsenabled .block_filtered_course_list .course-section {
     cursor: pointer;
+    padding-left: 21px;
 }
 
 .jsenabled .block_filtered_course_list .course-section a {
@@ -33,7 +34,7 @@
 }
 
 .block_filtered_course_list .course-section.collapsed {
-    background: url([[pix:t/collapsed]]) no-repeat 0px 2px transparent;
+    background: url([[pix:t/collapsed]]) no-repeat 0 2px transparent;
 }
 
 .block_filtered_course_list .course-section.expanded + .collapsible.list {
@@ -41,5 +42,9 @@
 }
 
 .block_filtered_course_list .course-section.expanded {
-    background: url([[pix:t/expanded]]) no-repeat 0px 2px transparent;
+    background: url([[pix:t/expanded]]) no-repeat 0 2px transparent;
+}
+
+#page-admin-setting-blocksettingfiltered_course_list #id_s_block_filtered_course_list_filters {
+    font-family: monospace;
 }

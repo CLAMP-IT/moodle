@@ -1,3 +1,8 @@
+## 1.3.2 (January 11, 2017)
+
+- Set the alternate address page to use the report layout
+- Updated Behat tests for Moodle 3.2
+
 ## 1.3.1 (February 1, 2016)
 
 - Fixed a misspelled string

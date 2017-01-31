@@ -21,6 +21,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 interface clampmail_alternate_actions {
     const VIEW = 'view';
     const DELETE = 'delete';

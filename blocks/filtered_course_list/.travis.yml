@@ -1,6 +1,6 @@
 language: php
 
-sudo: false
+sudo: required
 
 cache:
   directories:
@@ -15,31 +15,32 @@ php:
 env:
  global:
   - IGNORE_NAMES=package.json,gulpfile.js
+  - IGNORE_PATHS=amd/build/accordion.min.js
  matrix:
-  - DB=pgsql MOODLE_BRANCH=MOODLE_28_STABLE
-  - DB=pgsql MOODLE_BRANCH=MOODLE_29_STABLE
   - DB=pgsql MOODLE_BRANCH=MOODLE_30_STABLE
   - DB=pgsql MOODLE_BRANCH=MOODLE_31_STABLE
-  - DB=mysqli MOODLE_BRANCH=MOODLE_28_STABLE
-  - DB=mysqli MOODLE_BRANCH=MOODLE_29_STABLE
+  - DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
   - DB=mysqli MOODLE_BRANCH=MOODLE_30_STABLE
   - DB=mysqli MOODLE_BRANCH=MOODLE_31_STABLE
+  - DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
 
 matrix:
   exclude:
-    - php: 7.0
-      env: DB=pgsql MOODLE_BRANCH=MOODLE_28_STABLE
-    - php: 7.0
-      env: DB=pgsql MOODLE_BRANCH=MOODLE_29_STABLE
-    - php: 7.0
-      env: DB=mysqli MOODLE_BRANCH=MOODLE_28_STABLE
-    - php: 7.0
-      env: DB=mysqli MOODLE_BRANCH=MOODLE_29_STABLE
+    - php: 5.4
+      env: DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
+    - php: 5.4
+      env: DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
+    - php: 5.5
+      env: DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
+    - php: 5.5
+      env: DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
 
 before_install:
+  - echo "always_populate_raw_post_data = -1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - phpenv config-rm xdebug.ini
   - cd ../..
   - composer selfupdate
-  - composer create-project -n --no-dev moodlerooms/moodle-plugin-ci ci ^1
+  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^1
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
 
 install:
@@ -51,7 +52,6 @@ script:
   - moodle-plugin-ci phpmd
   - moodle-plugin-ci codechecker
   - moodle-plugin-ci csslint
-  - moodle-plugin-ci shifter
   - moodle-plugin-ci jshint
   - moodle-plugin-ci phpunit
   - moodle-plugin-ci behat

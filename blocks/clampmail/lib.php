@@ -21,6 +21,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 abstract class clampmail {
     public static function format_time($time) {
         return userdate($time, '%A, %d %B %Y, %I:%M %P');

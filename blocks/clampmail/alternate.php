@@ -48,6 +48,7 @@ $url = new moodle_url('/blocks/clampmail/alternate.php', array('courseid' => $co
 $PAGE->set_url($url);
 $PAGE->set_context($context);
 $PAGE->set_course($course);
+$PAGE->set_pagelayout('report');
 
 $PAGE->navbar->add($blockname);
 $PAGE->navbar->add($heading);
