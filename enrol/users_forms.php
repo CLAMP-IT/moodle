@@ -176,10 +176,11 @@ class enrol_users_filter_form extends moodleform {
         }
 
         // Status active/inactive.
-        $mform->addElement('select', 'status', get_string('status'),
+        $statusselect = $mform->addElement('select', 'status', get_string('status'),
                 array(-1 => get_string('all'),
                     ENROL_USER_ACTIVE => get_string('active'),
                     ENROL_USER_SUSPENDED => get_string('inactive')));
+        $statusselect->setSelected(ENROL_USER_ACTIVE);
 
         // Submit button does not use add_action_buttons because that adds
         // another fieldset which causes the CSS style to break in an unfixable
