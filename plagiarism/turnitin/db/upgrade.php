@@ -14,8 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file keeps track of upgrades to
-// the plagiarism Turnitin module
+/**
+ * @package   turnitintooltwo
+ * @copyright 2012 iParadigms LLC
+ */
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * @global moodle_database $DB
@@ -74,8 +78,8 @@ function xmldb_plagiarism_turnitin_upgrade($oldversion) {
     if ($oldversion < 2014012405) {
         if ($turnitinsetting = $DB->get_record('config_plugins', array('name' => 'turnitin_use', 'plugin' => 'plagiarism'))) {
             if ($turnitinsetting->value == 1) {
-                $supported_mods = array('assign', 'forum', 'workshop');
-                foreach ($supported_mods as $mod) {
+                $supportedmods = array('assign', 'forum', 'workshop');
+                foreach ($supportedmods as $mod) {
                     $configfield = new stdClass();
                     $configfield->value = 1;
                     $configfield->plugin = 'plagiarism';
@@ -104,7 +108,7 @@ function xmldb_plagiarism_turnitin_upgrade($oldversion) {
     }
 
     if ($oldversion < 2014012413) {
-        // Add new indexes to tables
+        // Add new indexes to tables.
         $table = new xmldb_table('plagiarism_turnitin_files');
         $index = new xmldb_index('externalid', XMLDB_INDEX_NOTUNIQUE, array('externalid'));
         if (!$dbman->index_exists($table, $index)) {
@@ -211,6 +215,74 @@ function xmldb_plagiarism_turnitin_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2016011105, 'plagiarism', 'turnitin');
     }
 
+    if ($oldversion < 2016091402) {
+        $table = new xmldb_table('plagiarism_turnitin_files');
+        // Remove fields no longer needed.
+        $field1 = new xmldb_field('externalstatus');
+        $field2 = new xmldb_field('apimd5');
+        $field3 = new xmldb_field('legacyteacher');
+        if ($dbman->field_exists($table, $field1)) {
+            $dbman->drop_field($table, $field1);
+        }
+        if ($dbman->field_exists($table, $field2)) {
+            $dbman->drop_field($table, $field2);
+        }
+        if ($dbman->field_exists($table, $field3)) {
+            $dbman->drop_field($table, $field3);
+        }
+
+        // Add new itemid field.
+        $field = new xmldb_field('itemid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null, 'externalid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+    }
+
+    if ($oldversion < 2017013101) {
+        $table = new xmldb_table('plagiarism_turnitin_files');
+
+        // Due to an inconsistency with install and upgrade scripts, some users will
+        // have submitter and student_read defaulting to 0 and not allowing null.
+        // Alter submitter to allow null values.
+        $field = new xmldb_field('submitter', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null, 'userid');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_notnull($table, $field);
+        } else {
+            $dbman->add_field($table, $field);
+        }
+
+        // Alter student_read to allow null values.
+        $field = new xmldb_field('student_read', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, null, null, null, 'errormsg');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_notnull($table, $field);
+        } else {
+            $dbman->add_field($table, $field);
+        }
+
+        // Update fields to NULL as per default if necessary.
+        $DB->set_field('plagiarism_turnitin_files', 'submitter', null, array('submitter' => 0));
+        $DB->set_field('plagiarism_turnitin_files', 'student_read', null, array('student_read' => 0));
+
+        // Remove old PP event from the database if it exists.
+        $DB->delete_records('task_scheduled', array('component' => 'plagiarism_turnitin', 'classname' => '\plagiarism_turnitin\task\plagiarism_turnitin_task'));
+    }
+
+    if ($oldversion < 2017012601) {
+        // Add new column that has to be unique.
+        $table = new xmldb_table('plagiarism_turnitin_config');
+        $field = new xmldb_field('config_hash', XMLDB_TYPE_CHAR, '100', null, null, null, null, 'value');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Retrospectively update the new column to be id for previous configs.
+        $DB->execute("UPDATE ".$CFG->prefix."plagiarism_turnitin_config SET config_hash = id WHERE config_hash IS NULL");
+
+        // Add hash as key after update.
+        $key = new xmldb_key('config_hash', XMLDB_KEY_UNIQUE, array('config_hash'));
+        $dbman->add_key($table, $key);
+    }
+
     return $result;
 }
 
@@ -218,11 +290,14 @@ function upgrade_dm_successful_uploads() {
     global $DB, $CFG;
 
     // Update successful submissions from Dan Marsden's plugin with incorrect statuscode.
-    $DB->execute("UPDATE ".$CFG->prefix."plagiarism_turnitin_files SET statuscode = 'success', lastmodified = ".time()." WHERE statuscode = '51'");
+    $DB->execute("UPDATE ".$CFG->prefix."plagiarism_turnitin_files SET statuscode = 'success',
+        lastmodified = ".time()." WHERE statuscode = '51'");
 
     // Update the lastmodified timestamp from all successful submissions from Dan Marsden's plugin.
-    $DB->execute("UPDATE ".$CFG->prefix."plagiarism_turnitin_files SET lastmodified = ".time()." WHERE statuscode = 'success' AND lastmodified = 0");
+    $DB->execute("UPDATE ".$CFG->prefix."plagiarism_turnitin_files SET lastmodified = ".time()."
+        WHERE statuscode = 'success' AND lastmodified = 0");
 
     // Update error codes with submissions from Dan Marsden's plugin.
-    $DB->execute("UPDATE ".$CFG->prefix."plagiarism_turnitin_files SET statuscode = 'error' WHERE statuscode != 'success' AND statuscode != 'pending'");
+    $DB->execute("UPDATE ".$CFG->prefix."plagiarism_turnitin_files SET statuscode = 'error'
+        WHERE statuscode != 'success' AND statuscode != 'pending'");
 }
