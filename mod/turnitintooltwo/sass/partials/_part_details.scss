@@ -128,6 +128,20 @@
     }
 }
 
+#turnitin_sync_all_grades {
+    float: right;
+    font-size: 16px;
+}
+
+.turnitin_sync_grades, .turnitin_syncing_grades {
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.turnitin_syncing_grades {
+    display: none;
+}
+
 .peermarkDetails {
     width: 100%;
     border-top: 1px solid $border-color;
@@ -172,11 +186,6 @@
 .tii_peermark_reviews_launch {
     padding: 4px 0 4px 46px;
     height: 22px;
-}
-
- .mod_turnitintooltwo .editable_hide_span, .mod_turnitintooltwo .peermark_loading_span {
-    position: relative;
-    top:4px;
 }
 
 .mod_turnitintooltwo .peermark_loading_row {
