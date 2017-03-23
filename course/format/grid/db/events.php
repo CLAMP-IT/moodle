@@ -19,26 +19,19 @@
  *
  * @package    course/format
  * @subpackage grid
- * @copyright  &copy; 2012 G J Barnard in respect to modifications of standard topics format.
- * @author     G J Barnard - gjbarnard at gmail dot com, {@link http://about.me/gjbarnard} and
- *                           {@link http://moodle.org/user/profile.php?id=442195}
+ * @category   event
+ * @copyright  &copy; 2017-onwards G J Barnard based upon work done by Marina Glancy.
+ * @author     G J Barnard - gjbarnard at gmail dot com, about.me/gjbarnard and {@link http://moodle.org/user/profile.php?id=442195}
  * @author     Based on code originally written by Paul Krix and Julian Ridden.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+// List of observers.
+$observers = array(
 
-// Plugin version.
-$plugin->version = 2016111503;
+    array(
+        'eventname'   => '\core\event\course_content_deleted',
+        'callback'    => 'format_grid_observer::course_content_deleted',
+    ),
 
-// Required Moodle version.
-$plugin->requires  = 2016120500.00; // 3.2 (Build: 20161205).
-
-// Full name of the plugin.
-$plugin->component = 'format_grid';
-
-// Software maturity level.
-$plugin->maturity = MATURITY_STABLE;
-
-// User-friendly version number.
-$plugin->release = '3.2.1.1';
+);

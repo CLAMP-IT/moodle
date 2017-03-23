@@ -8,9 +8,7 @@ cache:
 
 php:
  # Only run the lowest and highest supported versions to reduce the load on travis-ci.org.
- - 5.4
- # - 5.5
- # - 5.6
+ - 5.6
  - 7.0
 
 matrix:
@@ -20,7 +18,7 @@ matrix:
 
 env:
  global:
-  - MOODLE_BRANCH=MOODLE_30_STABLE
+  - MOODLE_BRANCH=master
   - IGNORE_PATHS=amd/src/tooltip.js,test/test_image.php,upgrade/convert_legacy_image.php,yui/src/gridkeys/js/event-nav-keys-debug.js,yui/src/gridkeys/js/event-nav-keys.js,yui/src/gridkeys/scripts/backport.js,yui/gridkeys/gridkeys.js
   - IGNORE_NAMES=gf_colourpopup.php,gf_colourpopup.js
  matrix:

@@ -2,24 +2,24 @@ Grid Course Format
 ============================
 A topics based format that uses a grid of user selectable images to pop up a light box of the section.
 
-[![Build Status](https://travis-ci.org/gjb2048/moodle-format_grid.svg?branch=MOODLE_30)](https://travis-ci.org/gjb2048/moodle-format_grid)
+[![Build Status](https://travis-ci.org/gjb2048/moodle-format_grid.svg?branch=master)](https://travis-ci.org/gjb2048/moodle-format_grid)
 
 Required version of Moodle
 ==========================
-This version works with Moodle version 2015111600.00 3.0 (Build: 20151116) and above within the 3.0 branch until the
+This version works with Moodle 3.2 version 2016120500.00 (Build: 20161205) and above within the 3.2 branch until the
 next release.
 
 Please ensure that your hardware and software complies with 'Requirements' in 'Installing Moodle' on
-'docs.moodle.org/30/en/Installing_Moodle'.
+'docs.moodle.org/32/en/Installing_Moodle'.
 
 Free Software
 =============
 The Grid format is 'free' software under the terms of the GNU GPLv3 License, please see 'COPYING.txt'.
 
 The primary source for downloading this branch of the format is https://moodle.org/plugins/view.php?plugin=format_grid
-with 'Select Moodle version:' set at 'Moodle 3.0'.
+with 'Select Moodle version:' set at 'Moodle 3.2'.
 
-The secondary source is a tagged version with the v3.0 prefix on https://github.com/gjb2048/moodle-courseformat_grid/tags
+The secondary source is a tagged version with the v3.2 prefix on https://github.com/gjb2048/moodle-courseformat_grid/tags
 
 If you download from the development area - https://github.com/gjb2048/moodle-courseformat_grid/ - consider that
 the code is unstable and not for use in production environments.  This is because I develop the next version in stages
@@ -33,6 +33,12 @@ If you reuse any of the code then I kindly ask that you make reference to the fo
 If you make improvements or bug fixes then I would appreciate if you would send them back to me by forking from
 https://github.com/gjb2048/moodle-courseformat_grid and doing a 'Pull Request' so that the rest of the
 Moodle community benefits.
+
+Support
+=======
+The Grid format comes with NO support.  If you would like support from me (Gareth) then I'm happy to provide it
+for a fee (please see my contact details below).  Otherwise, the 'Courses and course formats' forum:
+moodle.org/mod/forum/view.php?id=47 is an excellent place to ask questions.
 
 Supporting Grid development
 ===========================
@@ -253,10 +259,8 @@ Roadmap
 =============
 1. Improved instructions including Moodle docs.
 2. User definable grid row icon numbers - https://moodle.org/mod/forum/discuss.php?d=196716
-3. CONTRIB-3240 - Gridview course format more accessible.
-4. Use of crowd funding facility to support development.
-5. Continued maintenance of issues: https://tracker.moodle.org/browse/CONTRIB/component/11231.
-6. Ongoing structured walk through and refactoring.
+3. Continued maintenance of issues.
+4. Ongoing structured walk through and refactoring.
 
 Known Issues
 =============

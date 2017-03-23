@@ -56,12 +56,12 @@ div#gridmiddle-column > ul {
 }
 
 .course-content ul.gtopics {
-    margin:0;
+    margin: 0;
 }
 
 .course-content ul.gtopics li.section {
     list-style: none;
-    margin:5px 0 0 0;
+    margin: 5px 0 0 0;
     padding:0;
 }
 
@@ -71,16 +71,16 @@ div#gridmiddle-column > ul {
 
 .course-content ul.gtopics li.section .side {
     text-align: center;
-    width:40px;
+    width: 40px;
 }
 
 .course-content ul.gtopics li.section .left {
-    float:left;
+    float: left;
     padding: 0;
 }
 
 .course-content ul.gtopics li.section .right {
-    float:right;
+    float: right;
 }
 
 /* @group Topic Icons */
@@ -103,7 +103,7 @@ div#gridmiddle-column > ul {
     text-align: left;
 }
 .dir-rtl #gridiconcontainer ul.gridicons li {
-   text-align: right;
+    text-align: right;
 }
 #gridiconcontainer ul.gridicons.content_inside li {
     position: relative;
@@ -114,15 +114,17 @@ div#gridmiddle-column > ul {
 }
 
 .course-content .gridicon_link {
+    /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-hand-o-up-f]]'), auto;
 }
 .course-content ul.gridicons li .icon_content {
     font-weight: bold;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
     height: 20px;
+    margin: 0;
+    overflow: hidden;
     text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .course-content ul.gridicons li .icon_content.content_inside {
@@ -145,7 +147,7 @@ div#gridmiddle-column > ul {
     top: 0;
 }
 .course-content ul.gridicons li .icon_content.content_inside.bottom {
-    bottom: 0;
+    bottom: 10px;
     left: 0;
     margin: auto;
     right: 0;
@@ -153,11 +155,13 @@ div#gridmiddle-column > ul {
 
 .course-content ul.gridicons li .gridicon_link .tooltip {
     font-size: 14px;
+	width: 100%;
 }
 
 .course-content ul.gridicons li .gridicon_link .tooltip-inner {
     background-color: #ffc540;
     color: #3b53ad;
+	max-width: none;
 }
 
 .course-content ul.gridicons li .gridicon_link .tooltip.top .tooltip-arrow {
@@ -205,6 +209,7 @@ div#gridmiddle-column > ul {
 
 div#gridshadebox_overlay {
     background: black;
+    /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-times-circle-o-f]]'), auto;
     /* for IE */
     filter: alpha(opacity=70);
@@ -215,7 +220,7 @@ div#gridshadebox_overlay {
     position: fixed;
     top: 0;
     width: 100%;
-    z-index: 1;
+    z-index: 2;
 }
 #gridshadebox_content {
     background: #fff;
@@ -227,10 +232,10 @@ body.jsenabled #gridshadebox_content.hide_content {
 }
 
 #gridshadebox_content.absolute {
-    left: 5%;
+    left: 60px;
     position: absolute;
-    width: 90%;
-    z-index: 1;
+    right: 60px;
+    z-index: 2;
 }
 
 #gridshadebox_content.fit_to_window {
@@ -239,7 +244,7 @@ body.jsenabled #gridshadebox_content.hide_content {
     position: fixed;
     right: 10%;
     top: 10%;
-    z-index: 1;
+    z-index: 2;
 }
 
 #gridshadebox_content.fit_to_window ul.gtopics {
@@ -282,6 +287,7 @@ body.jsenabled #gridshadebox_content.hide_content {
 } 
  
 #gridshadebox_close {
+    /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-hand-o-up-f]]'), auto;
     position: absolute;
     right: -10px;
@@ -311,14 +317,24 @@ body.jsenabled #gridshadebox_content.hide_content {
     width: 55px;
 }
 
-.gridshadebox_left_area {
-    cursor: url('[[pix:format_grid|fa-hand-o-left-f]]'), auto;
+.gridshadebox_previous_area {
     left: -55px;
 }
 
-.gridshadebox_right_area {
-    cursor: url('[[pix:format_grid|fa-hand-o-right-f]]'), auto;
+.gridshadebox_next_area {
     right: -55px;
+}
+
+.gridshadebox_previous_area.ltr,
+.gridshadebox_next_area.rtl {
+    /*rtl:ignore*/
+    cursor: url('[[pix:format_grid|fa-hand-o-left-f]]'), auto;
+}
+
+.gridshadebox_next_area.ltr,
+.gridshadebox_previous_area.rtl {
+    /*rtl:ignore*/
+    cursor: url('[[pix:format_grid|fa-hand-o-right-f]]'), auto;
 }
 
 @media (max-width: 1199px) {
@@ -329,19 +345,21 @@ body.jsenabled #gridshadebox_content.hide_content {
     .gridshadebox_area {
         width: 40px;
     }
-    .gridshadebox_left_area {
+    .gridshadebox_previous_area {
         left: -40px;
     }
-    .gridshadebox_right_area {
+    .gridshadebox_next_area {
         right: -40px;
     }
 }
 
 @media (max-width: 767px) {
     div#gridshadebox_overlay {
+        /*rtl:ignore*/
         cursor: url('[[pix:format_grid|fa-times-circle-o-fsm]]'), auto;
     }
     #gridshadebox_close {
+        /*rtl:ignore*/
         cursor: url('[[pix:format_grid|fa-hand-o-up-fsm]]'), auto;
         height: 28px;
         width: 28px;
@@ -353,13 +371,21 @@ body.jsenabled #gridshadebox_content.hide_content {
     .gridshadebox_area {
         width: 30px;
     }
-    .gridshadebox_left_area {
-        cursor: url('[[pix:format_grid|fa-hand-o-left-fsm]]'), auto;
+    .gridshadebox_previous_area {
         left: -30px;
     }
-    .gridshadebox_right_area {
-        cursor: url('[[pix:format_grid|fa-hand-o-right-fsm]]'), auto;
+    .gridshadebox_next_area {
         right: -30px;
+    }
+    .gridshadebox_previous_area.ltr,
+    .gridshadebox_next_area.rtl {
+        /*rtl:ignore*/
+        cursor: url('[[pix:format_grid|fa-hand-o-left-fsm]]'), auto;
+    }
+    .gridshadebox_next_area.ltr,
+    .gridshadebox_previous_area.rtl {
+        /*rtl:ignore*/
+        cursor: url('[[pix:format_grid|fa-hand-o-right-fsm]]'), auto;
     }
 }
 
@@ -377,10 +403,10 @@ body.jsenabled #gridshadebox_content.hide_content {
     .gridshadebox_area {
         width: 20px;
     }
-    .gridshadebox_left_area {
+    .gridshadebox_previous_area {
         left: -20px;
     }
-    .gridshadebox_right_area {
+    .gridshadebox_next_area {
         right: -20px;
     }
 }
@@ -394,11 +420,11 @@ body.jsenabled #gridshadebox_content.hide_content {
     width: 18px;
 }
 
-.gridshadebox_arrow.gridshadebox_mobile.gridshadebox_left_area {
+.gridshadebox_arrow.gridshadebox_mobile.gridshadebox_previous_area {
     left: -18px;
 }
 
-.gridshadebox_arrow.gridshadebox_mobile.gridshadebox_right_area {
+.gridshadebox_arrow.gridshadebox_mobile.gridshadebox_next_area {
     right: -18px;
 }
 
@@ -422,11 +448,11 @@ body.jsenabled #gridshadebox_content.hide_content {
     width: 31px;
 }
 
-.gridshadebox_arrow.gridshadebox_tablet.gridshadebox_left_area {
+.gridshadebox_arrow.gridshadebox_tablet.gridshadebox_previous_area {
     left: -31px;
 }
 
-.gridshadebox_arrow.gridshadebox_tablet.gridshadebox_right_area {
+.gridshadebox_arrow.gridshadebox_tablet.gridshadebox_next_area {
     right: -31px;
 }
 

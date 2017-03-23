@@ -1,9 +1,39 @@
 History
 =============
-Version 3.0.1.2
+Version 3.2.1.1
+  1. Fix '"bordercolour" is set to 0 when creating courses using the "Upload courses" tool' - CONTRIB-6655.
+  2. Fix 'Arrows and cursors in M3.2 with RTL' - #41.
+     Notes: Clean up CSS after MDL-57869 is fixed.
+            Rebuilt YUI JS with Shifter - https://docs.moodle.org/dev/YUI/Shifter.
+  3. Fix 'Managers assigned at Course Category levels cannot create a course with grid format selected' - #42.
+  4. Fix position of shadebox with Essential / Boost theme - #45.
+  5. Fix missing closing 'div'.
+  6. Fix position of section title when inside the grid box and section title tooltip width.
+  7. Incorrect word in 'defaultsectiontitleboxinsideposition' setting option - #46.
+  8. Changed overlay and shadebox z-index to 2 for the Essential theme.  If proven issues then will need to be somehow dynamic.
+
+Version 3.2.1.0
+  1. Fix 'Embedded videos still load in one section per page mode' - #39.
+  2. Remove old 'format_grid_delete_course' function and replace with '\core\event\course_content_deleted' event.
+  3. Cope with the Boost theme in relation to the shadebox.
+  4. Cope with the Boost theme in relation to the grid area.
+
+Version 3.2.0.2
+  1. Improve deletion.
+  2. Section title text format options.  Thanks to Murdoch University, Perth, WA for supporting this enhancement.
+
+Version 3.2.0.1
+  1. First beta for M3.2.
+
+Version 3.1.1.0
   1. Changes for MDL-54557.
-  2. Improve deletion.  Ref: https://moodle.org/mod/forum/discuss.php?d=334353#p1384895.
-  3. Section title text format options.  Thanks to Murdoch University, Perth, WA for supporting this enhancement.
+  2. Fix layout rendering issues when section name is empty by using the single space trick - #36.
+  3. Fix truncate long section names in the grid - #33.
+  4. Improve deletion.  Ref: https://moodle.org/mod/forum/discuss.php?d=334353#p1384895.
+
+Version 3.1.0.1
+  1. First 'beta' version for M3.1.
+  2. Changes for MDL-51802.
 
 Version 3.0.1.1
   1. Updated php4 constructor - #27 - thanks to Mark Sharp.

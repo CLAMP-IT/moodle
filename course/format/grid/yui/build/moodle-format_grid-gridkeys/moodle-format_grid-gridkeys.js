@@ -87,7 +87,7 @@ M.format_grid.gridkeys = {
         if (focused && focused.id) {
             if (focused.id.indexOf('gridsection-') > -1) {
                 M.format_grid.gridkeys.currentGridBox = true;
-                M.format_grid.gridkeys.currentGridBoxIndex = parseInt(focused.id.replace("gridsection-", ""));
+                M.format_grid.gridkeys.currentGridBoxIndex = parseInt(focused.id.replace("gridsection-", ""), 10);
             }
         }
         return M.format_grid.gridkeys.currentGridBox;
@@ -102,9 +102,9 @@ M.format_grid.gridkeys = {
             Y.on('enter', function (e) {
                 if (M.format_grid.gridkeys.currentGridBox) {
                     e.preventDefault();
-                    if (M.format_grid.shadebox.shadebox_open === false) {
+                    if (e.shiftKey) {
                         M.format_grid.icon_toggle(e);
-                    } else if (e.shiftKey) {
+                    } else {
                         M.format_grid.icon_toggle(e);
                     }
                 }
@@ -127,11 +127,19 @@ M.format_grid.gridkeys = {
         }
         Y.on('left', function (e) {
             e.preventDefault();
-            M.format_grid.arrow_left(e);
+            if (params.rtl) {
+                M.format_grid.next_section(e);
+            } else {
+                M.format_grid.previous_section(e);
+            }
         });
         Y.on('right', function (e) {
             e.preventDefault();
-            M.format_grid.arrow_right(e);
+            if (params.rtl) {
+                M.format_grid.previous_section(e);
+            } else {
+                M.format_grid.next_section(e);
+            }
         });
     }
 };
