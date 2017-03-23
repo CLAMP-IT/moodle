@@ -24,6 +24,8 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 /**
  * Serves any files associated with the theme settings.
  *
@@ -221,6 +223,17 @@ function theme_essential_process_css($css, $theme) {
     $themenavcolor = \theme_essential\toolbox::get_setting('themenavcolor');
     $css = \theme_essential\toolbox::set_color($css, $themenavcolor, '[[setting:themenavcolor]]', '#ffffff');
 
+    // Set the theme stripe text colour.
+    $themestripetextcolour = \theme_essential\toolbox::get_setting('themestripetextcolour');
+    $css = \theme_essential\toolbox::set_color($css, $themestripetextcolour, '[[setting:themestripetextcolour]]', '#ffffff');
+
+    // Set the theme stripe background colour.
+    $themestripebackgroundcolour = \theme_essential\toolbox::get_setting('themestripebackgroundcolour');
+    $css = \theme_essential\toolbox::set_color($css, $themestripebackgroundcolour, '[[setting:themestripebackgroundcolour]]', '#ff9a34');
+
+    $themestripeurlcolour = \theme_essential\toolbox::get_setting('themestripeurlcolour');
+    $css = \theme_essential\toolbox::set_color($css, $themestripeurlcolour, '[[setting:themestripeurlcolour]]', '#25849F');
+
     // Enrolled and not accessed course background colour.
     $mycoursesorderenrolbackcolour = \theme_essential\toolbox::get_setting('mycoursesorderenrolbackcolour');
     $css = \theme_essential\toolbox::set_color($css, $mycoursesorderenrolbackcolour,
@@ -301,10 +314,16 @@ function theme_essential_process_css($css, $theme) {
         // Set theme alternative colours.
         $defaultcolors = array('#a430d1', '#d15430', '#5dd130', '#006b94');
         $defaulthovercolors = array('#9929c4', '#c44c29', '#53c429', '#4090af');
+        $defaultstripetextcolors = array('#bdfdb7', '#c3fdd0', '#9f5bfb', '#ff1ebd');
+        $defaultstripebackgroundcolors = array('#c1009f', '#bc2800', '#b4b2fd', '#0336b4');
+        $defaultstripeurlcolors = array('#bef500', '#30af67', '#ffe9a6', '#ffab00');
 
         foreach (range(1, 4) as $alternative) {
             $default = $defaultcolors[$alternative - 1];
             $defaulthover = $defaulthovercolors[$alternative - 1];
+            $defaultstripetext = $defaultstripetextcolors[$alternative - 1];
+            $defaultstripebackground = $defaultstripebackgroundcolors[$alternative - 1];
+            $defaultstripeurl = $defaultstripeurlcolors[$alternative - 1];
             $alternativethemecolour = \theme_essential\toolbox::get_setting('alternativethemecolor'.$alternative);
             $css = \theme_essential\toolbox::set_alternativecolor($css, 'color'.$alternative,
                 $alternativethemecolour, $default);
@@ -352,14 +371,23 @@ function theme_essential_process_css($css, $theme) {
                 \theme_essential\toolbox::hexadjust($alternativethemedefaultbuttonbackgroundhovercolour, 10),
                 '#3ad4ff', '0.25');
 
-            $css = \theme_essential\toolbox::set_alternativecolor($css, 'iconcolor' . $alternative,
-                \theme_essential\toolbox::get_setting('alternativethemeiconcolor' . $alternative), $default);
+            $css = \theme_essential\toolbox::set_alternativecolor($css, 'iconcolor'.$alternative,
+                \theme_essential\toolbox::get_setting('alternativethemeiconcolor'.$alternative), $default);
 
-            $css = \theme_essential\toolbox::set_alternativecolor($css, 'navcolor' . $alternative,
-                \theme_essential\toolbox::get_setting('alternativethemenavcolor' . $alternative), $default);
+            $css = \theme_essential\toolbox::set_alternativecolor($css, 'navcolor'.$alternative,
+                \theme_essential\toolbox::get_setting('alternativethemenavcolor'.$alternative), $default);
 
-            $css = \theme_essential\toolbox::set_alternativecolor($css, 'hovercolor' . $alternative,
-                \theme_essential\toolbox::get_setting('alternativethemehovercolor' . $alternative), $defaulthover);
+            $css = \theme_essential\toolbox::set_alternativecolor($css, 'hovercolor'.$alternative,
+                \theme_essential\toolbox::get_setting('alternativethemehovercolor'.$alternative), $defaulthover);
+
+            $css = \theme_essential\toolbox::set_alternativecolor($css, 'stripetextcolour'.$alternative,
+                \theme_essential\toolbox::get_setting('alternativethemestripetextcolour'.$alternative), $defaultstripetext);
+
+            $css = \theme_essential\toolbox::set_alternativecolor($css, 'stripebackgroundcolour'.$alternative,
+                \theme_essential\toolbox::get_setting('alternativethemestripebackgroundcolour'.$alternative), $defaultstripebackground);
+
+            $css = \theme_essential\toolbox::set_alternativecolor($css, 'stripeurlcolour'.$alternative,
+                \theme_essential\toolbox::get_setting('alternativethemestripeurlcolour'.$alternative), $defaultstripeurl);
 
             $alternativethememycoursesorderenrolbackcolour = \theme_essential\toolbox::get_setting(
                 'alternativethememycoursesorderenrolbackcolour'.$alternative);
@@ -410,14 +438,15 @@ function theme_essential_process_css($css, $theme) {
         }
     }
 
-    // Set the background image for the logo.
-    $logo = \theme_essential\toolbox::setting_file_url('logo', 'logo');
-    $css = \theme_essential\toolbox::set_logo($css, $logo);
+    // Set the logo desktop and mobile width.
+    $logodesktopwidth = \theme_essential\toolbox::get_setting('logodesktopwidth');
+    $logomobilewidth = \theme_essential\toolbox::get_setting('logomobilewidth');
+    $css = \theme_essential\toolbox::set_integer($css, 'logodesktopwidth', $logodesktopwidth, 25);
+    $css = \theme_essential\toolbox::set_integer($css, 'logomobilewidth', $logomobilewidth, 10);
 
-    // Set the logo width and height.
-    $logowidth = \theme_essential\toolbox::get_setting('logowidth');
-    $logoheight = \theme_essential\toolbox::get_setting('logoheight');
-    $css = \theme_essential\toolbox::set_logodimensions($css, $logowidth, $logoheight);
+    // Set the dropdown menu maximum height.
+    $dropdownmenumaxheight = \theme_essential\toolbox::get_setting('dropdownmenumaxheight');
+    $css = \theme_essential\toolbox::set_integer($css, 'dropdownmenumaxheight', $dropdownmenumaxheight, 384);
 
     // Set the background image for the header.
     $headerbackground = \theme_essential\toolbox::setting_file_url('headerbackground', 'headerbackground');
@@ -439,6 +468,14 @@ function theme_essential_process_css($css, $theme) {
     $loginbgstyle = \theme_essential\toolbox::get_setting('loginbackgroundstyle');
     $loginbgopacity = \theme_essential\toolbox::get_setting('loginbackgroundopacity');
     $css = \theme_essential\toolbox::set_loginbackgroundstyle($css, $loginbgstyle, $loginbgopacity);
+
+    // Set the user image border radius.
+    $userimageborderradius = \theme_essential\toolbox::get_setting('userimageborderradius');
+    $css = \theme_essential\toolbox::set_integer($css, 'userimageborderradius', $userimageborderradius, 90);
+
+    // Set the user menu user image border radius.
+    $usermenuuserimageborderradius = \theme_essential\toolbox::get_setting('usermenuuserimageborderradius');
+    $css = \theme_essential\toolbox::set_integer($css, 'usermenuuserimageborderradius', $usermenuuserimageborderradius, 4);
 
     // Set marketing height.
     $marketingheight = \theme_essential\toolbox::get_setting('marketingheight');

@@ -20,7 +20,7 @@
  * @package    theme
  * @subpackage essential
  * @copyright  &copy; 2016-onwards G J Barnard.
- * @author     G J Barnard - gjbarnard at gmail dot com and {@link http://moodle.org/user/profile.php?id=442195}
+ * @author     G J Barnard - {@link http://moodle.org/user/profile.php?id=442195}
  * @license    PHP Code: http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later.
  * @license    Source HTML Code: http://www.apache.org/licenses/LICENSE-2.0 Apache License v2.0:
  *
@@ -42,6 +42,9 @@
  *
  * Content source reference: http://getbootstrap.com/2.3.2/base-css.html.
  */
+
+defined('MOODLE_INTERNAL') || die;
+
 class essential_admin_setting_styleguide extends admin_setting {
 
     /**

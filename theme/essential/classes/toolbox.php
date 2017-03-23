@@ -25,6 +25,8 @@
 
 namespace theme_essential;
 
+defined('MOODLE_INTERNAL') || die;
+
 class toolbox {
 
     protected $corerenderer = null;
@@ -96,7 +98,6 @@ class toolbox {
      * Finds the given setting in the theme from the themes' configuration object.
      * @param string $setting Setting name.
      * @param string $format false|'format_text'|'format_html'.
-     * @param theme_config $theme null|theme_config object.
      * @return any false|value of setting.
      */
     static public function get_setting($setting, $format = false) {
@@ -292,7 +293,7 @@ class toolbox {
     static public function render_slide($slideno, $captionoptions) {
         $slideurl = self::get_setting('slide'.$slideno.'url');
         $slideurltarget = self::get_setting('slide'.$slideno.'target');
-        $slidetitle = self::get_setting('slide'.$slideno);
+        $slidetitle = format_string(self::get_setting('slide'.$slideno));
         $slidecaption = self::get_setting('slide'.$slideno.'caption', 'format_html');
         if ($slideurl) {
             // Strip links from the caption to prevent link in a link.
@@ -364,19 +365,19 @@ class toolbox {
     }
 
     static public function render_slide_controls($left) {
-        $faleft = 'left';
-        $faright = 'right';
-        if (!$left) {
-            $temp = $faleft;
-            $faleft = $faright;
-            $faright = $temp;
-        }
         $strprev = get_string('prev');
         $strnext = get_string('next');
+        if ($left) {
+            $arrowprev = 'left';
+            $arrownext = 'right';
+        } else {
+            $arrowprev = 'right';
+            $arrownext = 'left';
+        }
         $prev = '<a class="left carousel-control" href="#essentialCarousel" data-slide="prev" aria-label="'.$strprev.'">';
-        $prev .= '<span aria-hidden="true" class="fa fa-chevron-circle-'.$faleft.'"></span></a>';
+        $prev .= '<span aria-hidden="true" class="fa fa-chevron-circle-'.$arrowprev.'"></span></a>';
         $next = '<a class="right carousel-control" href="#essentialCarousel" data-slide="next" aria-label="'.$strnext.'">';
-        $next .= '<span aria-hidden="true" class="fa fa-chevron-circle-'.$faright.'"></span></a>';
+        $next .= '<span aria-hidden="true" class="fa fa-chevron-circle-'.$arrownext.'"></span></a>';
 
         return $prev . $next;
     }
@@ -734,31 +735,12 @@ class toolbox {
         return $css;
     }
 
-    static public function set_logo($css, $logo) {
-        $tag = '[[setting:logo]]';
-        if (!($logo)) {
-            $replacement = 'none';
+    static public function set_integer($css, $setting, $integer, $default) {
+        $tag = '[[setting:'.$setting.']]';
+        if (!($integer)) {
+            $replacement = $default;
         } else {
-            $replacement = 'url(\''.$logo.'\')';
-        }
-        $css = str_replace($tag, $replacement, $css);
-        return $css;
-    }
-
-    static public function set_logodimensions($css, $logowidth, $logoheight) {
-        $tag = '[[setting:logowidth]]';
-        if (!($logowidth)) {
-            $replacement = '65px';
-        } else {
-            $replacement = $logowidth;
-        }
-        $css = str_replace($tag, $replacement, $css);
-
-        $tag = '[[setting:logoheight]]';
-        if (!($logoheight)) {
-            $replacement = '65px';
-        } else {
-            $replacement = $logoheight;
+            $replacement = $integer;
         }
         $css = str_replace($tag, $replacement, $css);
 
@@ -816,5 +798,180 @@ class toolbox {
         } else {
             return $properties;
         }
+    }
+
+    static public function compile_properties($themename, $array = true) {
+        global $CFG, $DB;
+
+        $props = array();
+        $themeprops = $DB->get_records('config_plugins', array('plugin' => 'theme_'.$themename));
+
+        if ($array) {
+            $props['moodle_version'] = $CFG->version;
+            // Put the theme version next so that it will be at the top of the table.
+            foreach ($themeprops as $themeprop) {
+                if ($themeprop->name == 'version') {
+                    $props['theme_version'] = $themeprop->value;
+                    unset($themeprops[$themeprop->id]);
+                    break;
+                }
+            }
+
+            foreach ($themeprops as $themeprop) {
+                $props[$themeprop->name] = $themeprop->value;
+            }
+        } else {
+            $data = new \stdClass();
+            $data->id = 0;
+            $data->value = $CFG->version;
+            $props['moodle_version'] = $data;
+            // Convert 'version' to 'theme_version'.
+            foreach ($themeprops as $themeprop) {
+                if ($themeprop->name == 'version') {
+                    $data = new \stdClass();
+                    $data->id = $themeprop->id;
+                    $data->name = 'theme_version';
+                    $data->value = $themeprop->value;
+                    $props['theme_version'] = $data;
+                    unset($themeprops[$themeprop->id]);
+                    break;
+                }
+            }
+            foreach ($themeprops as $themeprop) {
+                $data = new \stdClass();
+                $data->id = $themeprop->id;
+                $data->value = $themeprop->value;
+                $props[$themeprop->name] = $data;
+            }
+        }
+
+        return $props;
+    }
+
+    static public function put_properties($themename, $props) {
+        global $DB;
+
+        // Get the current properties as a reference and for theme version information.
+        $currentprops = self::compile_properties($themename, false);
+
+        // Build the report.
+        $report = get_string('putpropertyreport', 'theme_essential').PHP_EOL;
+        $report .= get_string('putpropertyproperties', 'theme_essential').' \'Moodle\' '.
+            get_string('putpropertyversion', 'theme_essential').' '.$props['moodle_version'].'.'.PHP_EOL;
+        unset($props['moodle_version']);
+        $report .= get_string('putpropertyour', 'theme_essential').' \'Moodle\' '.
+            get_string('putpropertyversion', 'theme_essential').' '.$currentprops['moodle_version']->value.'.'.PHP_EOL;
+        unset($currentprops['moodle_version']);
+        $report .= get_string('putpropertyproperties', 'theme_essential').' \''.ucfirst($themename).'\' '.
+            get_string('putpropertyversion', 'theme_essential').' '.$props['theme_version'].'.'.PHP_EOL;
+        unset($props['theme_version']);
+        $report .= get_string('putpropertyour', 'theme_essential').' \''.ucfirst($themename).'\' '.
+            get_string('putpropertyversion', 'theme_essential').' '.$currentprops['theme_version']->value.'.'.PHP_EOL.PHP_EOL;
+        unset($currentprops['theme_version']);
+
+        // Pre-process files - using 'theme_essential_pluginfile' in lib.php as a reference.
+        // TODO: refactor into one method for both this and that.
+        $filestoreport = '';
+        $preprocessfilesettings = array('logo', 'headerbackground', 'pagebackground', 'favicon', 'iphoneicon',
+            'iphoneretinaicon', 'ipadicon', 'ipadretinaicon', 'loginbackground');
+        $fonttypes = array('eot', 'otf', 'svg', 'ttf', 'woff', 'woff2');
+        foreach ($fonttypes as $fonttype) {
+            $preprocessfilesettings[] = 'fontfile'.$fonttype.'heading';
+            $preprocessfilesettings[] = 'fontfile'.$fonttype.'body';
+        }
+        // Only 3 marketing spots and no setting for the number.
+        $preprocessfilesettings = array_merge($preprocessfilesettings, array('marketing1image', 'marketing2image', 'marketing3image'));
+
+        // Slide show.
+        for ($propslide = 1; $propslide <= $props['numberofslides']; $propslide++) {
+            $preprocessfilesettings[] = 'slide'.$propslide.'image';
+        }
+
+        // Process the file properties.
+        foreach ($preprocessfilesettings as $preprocessfilesetting) {
+            self::put_prop_file_preprocess($preprocessfilesetting, $props, $filestoreport);
+            unset($currentprops[$preprocessfilesetting]);
+        }
+
+        // Course title images are complex and related to the category id of the installation, so ignore!
+        if ((!empty($props['enablecategorycti'])) || (!empty($props['enablecategoryctics']))) {
+            $report .= get_string('putpropertiesignorecti', 'theme_essential').PHP_EOL.PHP_EOL;
+        }
+        $ctikeys = array(
+            'enablecategorycti',
+            'enablecategoryctics',
+            'ctioverrideheight',
+            'ctioverridetextcolour',
+            'ctioverridetextbackgroundcolour',
+            'ctioverridetextbackgroundopacity');
+        foreach ($ctikeys as $ctikey) {
+            unset($props[$ctikey]);
+            unset($currentprops[$ctikey]);
+        }
+        $propskeys = array_keys($props);
+        foreach ($propskeys as $propkey) {
+            if (preg_match('#^categoryct#', $propkey) === 1) {
+                unset($props[$propkey]);
+            }
+        }
+        $currentpropkeys = array_keys($currentprops);
+        foreach ($currentpropkeys as $currentpropkey) {
+            if (preg_match('#^categoryct#', $currentpropkey) === 1) {
+                unset($currentprops[$currentpropkey]);
+            }
+        }
+
+        if ($filestoreport) {
+            $report .= get_string('putpropertiesreportfiles', 'theme_essential').PHP_EOL.$filestoreport.PHP_EOL;
+        }
+
+        // Need to ignore and report on any unknown settings.
+        $report .= get_string('putpropertiessettingsreport', 'theme_essential').PHP_EOL;
+        $changed = '';
+        $unchanged = '';
+        $added = '';
+        $ignored = '';
+        $settinglog = '';
+        foreach ($props as $propkey => $propvalue) {
+            $settinglog = '\''.$propkey.'\' '.get_string('putpropertiesvalue', 'theme_essential').' \''.$propvalue.'\'';
+            if (array_key_exists($propkey, $currentprops)) {
+                if ($propvalue != $currentprops[$propkey]->value) {
+                    $settinglog .= ' '.get_string('putpropertiesfrom', 'theme_essential').' \''.$currentprops[$propkey]->value.'\'';
+                    $changed .= $settinglog.'.'.PHP_EOL;
+                    $DB->update_record('config_plugins', array('id' => $currentprops[$propkey]->id, 'value' => $propvalue), true);
+                } else {
+                    $unchanged .= $settinglog.'.'.PHP_EOL;
+                }
+            } else if (preg_match('#^slide#', $propkey) === 1) {
+                $DB->insert_record('config_plugins', array(
+                    'plugin' => 'theme_'.$themename, 'name' => $propkey, 'value' => $propvalue), true);
+                $added .= $settinglog.'.'.PHP_EOL;
+            } else {
+                $ignored .= $settinglog.'.'.PHP_EOL;
+            }
+        }
+
+        if (!empty($changed)) {
+            $report .= get_string('putpropertieschanged', 'theme_essential').PHP_EOL.$changed.PHP_EOL;
+        }
+        if (!empty($added)) {
+            $report .= get_string('putpropertiesadded', 'theme_essential').PHP_EOL.$added.PHP_EOL;
+        }
+        if (!empty($unchanged)) {
+            $report .= get_string('putpropertiesunchanged', 'theme_essential').PHP_EOL.$unchanged.PHP_EOL;
+        }
+        if (!empty($ignored)) {
+            $report .= get_string('putpropertiesignored', 'theme_essential').PHP_EOL.$ignored.PHP_EOL;
+        }
+
+        return $report;
+    }
+
+    static private function put_prop_file_preprocess($key, &$props, &$filestoreport) {
+        if (!empty($props[$key])) {
+            $filestoreport .= '\''.$key.'\' '.get_string('putpropertiesvalue', 'theme_essential').' \''.
+                \core_text::substr($props[$key], 1).'\'.'.PHP_EOL;
+        }
+        unset($props[$key]);
     }
 }

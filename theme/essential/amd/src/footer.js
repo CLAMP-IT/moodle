@@ -18,11 +18,11 @@ define(['jquery', 'core/log'], function($, log) {
         init: function() {
             log.debug('Essential Footer AMD init.');
             $(document).ready(function($) {
-                if ($('#page-footer').length) { // Might not have a footer.
+                if ($("#page-footer").length) { // Might not have a footer.
                     var documentHeight = $(document).height();
                     if ($('html').height() < documentHeight) {
                         log.debug('Essential Footer AMD adjusting footer position.');
-                        var pagefooter = $('#page-footer');
+                        var pagefooter = $("#page-footer");
                         var footerOffset = pagefooter.offset().top;
                         var theOffset = pagefooter.outerHeight();
                         log.debug('Calculated page footer offset: ' + theOffset + '.');
@@ -30,7 +30,7 @@ define(['jquery', 'core/log'], function($, log) {
                         log.debug('Old footer offset: ' + footerOffset + '.');
                         log.debug('Calculated footer offset: ' + theOffset + '.');
                         log.debug('Old document height: ' + documentHeight + '.');
-                        pagefooter.offset({ top: theOffset, left: 0});
+                        pagefooter.offset({top: theOffset, left: 0});
                         pagefooter.css('left', 0); // Negate the effect of the dock.
                         var newOffset = pagefooter.offset().top;
                         log.debug('New footer offset: ' + newOffset + '.');
@@ -39,6 +39,6 @@ define(['jquery', 'core/log'], function($, log) {
                 }
             });
         }
-    }
+    };
 });
 /* jshint ignore:end */

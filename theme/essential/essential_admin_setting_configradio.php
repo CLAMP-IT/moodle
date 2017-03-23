@@ -20,9 +20,11 @@
  * @package    theme
  * @subpackage essential
  * @copyright  &copy; 2016-onwards G J Barnard.
- * @author     G J Barnard - gjbarnard at gmail dot com and {@link http://moodle.org/user/profile.php?id=442195}
+ * @author     G J Barnard - {@link http://moodle.org/user/profile.php?id=442195}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die;
 
 class essential_admin_setting_configradio extends admin_setting {
     /** @var array Array of choices value => label */

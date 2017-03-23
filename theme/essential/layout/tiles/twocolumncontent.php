@@ -23,14 +23,18 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 if ($pagebottomregion) {
     echo '<div id="content" class="span12">';
-} else if ($hasboringlayout) {
+} else if ((($hasboringlayout) && ($left)) || ((!$hasboringlayout) && (!$left))) {
     echo '<div id="content" class="span9 pull-right">';
 } else {
     echo '<div id="content" class="span9">';
 }
-echo $OUTPUT->essential_blocks('page-top', 'row-fluid', 'aside', 'pagetopblocksperrow');
+if (\theme_essential\toolbox::get_setting('pagetopblocks')) {
+    echo $OUTPUT->essential_blocks('page-top', 'row-fluid', 'aside', 'pagetopblocksperrow');
+}
 echo '<section id="region-main">';
 echo $OUTPUT->course_title();
 echo $OUTPUT->course_content_header();
@@ -41,7 +45,7 @@ if (empty($PAGE->layout_options['nocoursefooter'])) {
 echo '</section>';
 echo '</div>';
 if (!$pagebottomregion) {
-    if ($hasboringlayout) {
+    if ((($hasboringlayout) && ($left)) || ((!$hasboringlayout) && (!$left))) {
         echo $OUTPUT->essential_blocks('side-pre', 'span3 desktop-first-column');
     } else {
         echo $OUTPUT->essential_blocks('side-pre', 'span3');

@@ -24,6 +24,8 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
 require_once(\theme_essential\toolbox::get_tile_file('header'));
 
@@ -165,7 +167,7 @@ if ($PAGE->user_is_editing()) {
 ?>
 <!-- End Marketing Spots -->
 
-<!-- Start Page Top was Middle Blocks -->
+<!-- Start Header blocks was Middle blocks -->
 <?php
 $frontpagehomeblocks = \theme_essential\toolbox::get_setting('frontpagemiddleblocks');
 if ($PAGE->user_is_editing() && ($frontpagehomeblocks)) {
@@ -180,12 +182,16 @@ if ($PAGE->user_is_editing() && ($frontpagehomeblocks)) {
     }
 }
 ?>
-<!-- End Page Top was Middle Blocks -->
+<!-- End Header blocks was Middle blocks -->
 
         <div id="page-content" class="row-fluid">
             <section id="<?php echo $regionbsid; ?>">
 <?php
-if (\theme_essential\toolbox::get_setting('frontpageblocks')) {
+$frontpageblocks = \theme_essential\toolbox::get_setting('frontpageblocks');
+if (!$left) {
+    $frontpageblocks = !$frontpageblocks;
+}
+if ($frontpageblocks) {
     echo '<div id="content" class="span9 pull-right">';
 } else {
     echo '<div id="content" class="span9 desktop-first-column">';
@@ -208,7 +214,7 @@ echo $OUTPUT->main_content();
 echo $OUTPUT->course_content_footer();
 echo '</section>';
 echo '</div>';
-if (\theme_essential\toolbox::get_setting('frontpageblocks')) {
+if ($frontpageblocks) {
     echo $OUTPUT->essential_blocks('side-pre', 'span3 desktop-first-column');
 } else {
     echo $OUTPUT->essential_blocks('side-pre', 'span3 pull-right');

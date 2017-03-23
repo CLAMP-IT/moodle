@@ -24,6 +24,8 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
 require_once(\theme_essential\toolbox::get_tile_file('header'));
 ?>
@@ -33,12 +35,16 @@ require_once(\theme_essential\toolbox::get_tile_file('header'));
     <!-- Start Main Regions -->
     <div id="page-content" class="row-fluid">
         <section id="region-main" class="span12">
-            <?php echo $OUTPUT->course_title(); ?>
-            <?php echo $OUTPUT->course_content_header(); ?>
-            <?php echo $OUTPUT->main_content(); ?>
-            <?php if (empty($PAGE->layout_options['nocoursefooter'])) {
+            <?php
+            if (\theme_essential\toolbox::get_setting('pagetopblocks')) {
+                echo $OUTPUT->essential_blocks('page-top', 'row-fluid', 'aside', 'pagetopblocksperrow');
+            }
+            echo $OUTPUT->course_title();
+            echo $OUTPUT->course_content_header();
+            echo $OUTPUT->main_content();
+            if (empty($PAGE->layout_options['nocoursefooter'])) {
                 echo $OUTPUT->course_content_footer();
-}
+            }
             ?>
         </section>
     </div>

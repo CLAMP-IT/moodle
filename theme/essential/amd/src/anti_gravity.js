@@ -18,7 +18,7 @@ define(['jquery', 'core/log'], function(jQuery, log) {
         var offset = 220;
         var duration = 500;
         jQuery(window).scroll(function () {
-            if (jQuery(this).scrollTop() > offset) {
+            if (jQuery(window).scrollTop() > offset) {
                 jQuery('.back-to-top').fadeIn(duration);
             } else {
                 jQuery('.back-to-top').fadeOut(duration);
@@ -31,10 +31,10 @@ define(['jquery', 'core/log'], function(jQuery, log) {
             return false;
         });
 
-        jQuery("a[href='#region-main']").click(function(e) {
+        jQuery('a[href="\\#region-main"]').click(function(e) {
             e.preventDefault();
-            var target = jQuery('#region-main');
-            jQuery('html, body').animate({scrollTop : target.height()}, duration);
+            var target = jQuery("#region-main");
+            jQuery('html, body').animate({scrollTop: target.height()}, duration);
             return false;
         });
     });
