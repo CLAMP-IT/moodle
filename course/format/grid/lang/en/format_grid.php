@@ -62,9 +62,14 @@ $string['showfromothers'] = 'Show section'; // No longer used kept for legacy ve
 $string['currentsection'] = 'This section'; // No longer used kept for legacy versions.
 $string['markedthissection'] = 'This section is highlighted as the current section';
 $string['markthissection'] = 'Highlight this section as the current section';
+
 // Moodle 3.0 Enhancement.
 $string['editsection'] = 'Edit section';
 $string['deletesection'] = 'Delete section';
+
+// MDL-51802.
+$string['editsectionname'] = 'Edit section name';
+$string['newsectionname'] = 'New name for section {$a}';
 
 // Moodle 2.4 Course format refactoring - MDL-35218.
 $string['numbersections'] = 'Number of sections';

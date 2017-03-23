@@ -28,7 +28,8 @@ var targetfile = path.resolve(targetdir, modname + '.js');
 var inputfile   = fs.createReadStream(sourcefile),
     outputfile  = fs.createWriteStream(targetfile);
 
-util.pump(inputfile, outputfile, function() {
+inputfile.pipe(outputfile);
+inputfile.on("end", function() {
   console.log("Copied " + sourcefile + " to " + targetfile);
   process.exit(0);
 });

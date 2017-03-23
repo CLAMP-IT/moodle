@@ -44,9 +44,7 @@ M.format_grid = M.format_grid || {
        helps to work out the next / previous section in 'find_next_shown_section'. */
     shadebox_shown_array: null,
     // DOM reference to the #gridshadebox_content element.
-    shadebox_content: null,
-    // Right to left languages.
-    rtl: false
+    shadebox_content: null
 };
 
 /**
@@ -58,9 +56,8 @@ M.format_grid = M.format_grid || {
  * @param {Integer} the_num_sections the number of sections in the course.
  * @param {Array}   the_shadebox_shown_array States what sections are not shown (value of 1) and which are (value of 2)
  *                  index is the section no.
- * @param {Boolean} the_rtl True if a right to left language.
  */
-M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_sections, the_shadebox_shown_array, the_rtl) {
+M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_sections, the_shadebox_shown_array) {
     "use strict";
     this.ourYUI = Y;
     this.editing_on = the_editing_on;
@@ -68,7 +65,6 @@ M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_s
     this.selected_section = null;
     this.num_sections = parseInt(the_num_sections);
     this.shadebox_shown_array = the_shadebox_shown_array;
-    this.rtl = the_rtl;
     Y.use('json-parse', function (Y) {
         M.format_grid.shadebox_shown_array = Y.JSON.parse(M.format_grid.shadebox_shown_array);
     });
@@ -95,15 +91,15 @@ M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_s
             shadeboxtoggletwo.on('click', this.icon_toggle, this);
             document.getElementById("gridshadebox_close").style.display = "";
         }
-        var shadeboxarrowleft = Y.one("#gridshadebox_left");
-        if (shadeboxarrowleft) {
-            shadeboxarrowleft.on('click', this.arrow_left, this);
-            document.getElementById("gridshadebox_left").style.display = "";
+        var shadeboxprevious = Y.one("#gridshadebox_previous");
+        if (shadeboxprevious) {
+            shadeboxprevious.on('click', this.previous_section, this);
+            document.getElementById("gridshadebox_previous").style.display = "";
         }
-        var shadeboxarrowright = Y.one("#gridshadebox_right");
-        if (shadeboxarrowright) {
-            shadeboxarrowright.on('click', this.arrow_right, this);
-            document.getElementById("gridshadebox_right").style.display = "";
+        var shadeboxnext = Y.one("#gridshadebox_next");
+        if (shadeboxnext) {
+            shadeboxnext.on('click', this.next_section, this);
+            document.getElementById("gridshadebox_next").style.display = "";
         }
         // Remove href link from icon anchors so they don't compete with JavaScript onlick calls.
         var gridiconcontainer = Y.one("#gridiconcontainer");
@@ -112,14 +108,19 @@ M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_s
             node.setAttribute("href", "#");
         });
 
-        M.format_grid.shadebox.initialize_shadebox();
-        M.format_grid.shadebox.update_shadebox();
-        window.onresize = function() {
+        M.format_grid.shadebox_overlay = document.getElementById('gridshadebox_overlay');
+        if (M.format_grid.shadebox_overlay) {
+            M.format_grid.shadebox.initialize_shadebox();
             M.format_grid.shadebox.update_shadebox();
-        };
+            window.onresize = function() {
+                M.format_grid.shadebox.update_shadebox();
+            };
+        }
     }
     this.shadebox_content = Y.one("#gridshadebox_content");
-    this.shadebox_content.removeClass('hide_content'); // Content 'flash' prevention.
+    if (this.shadebox_content) {
+        this.shadebox_content.removeClass('hide_content'); // Content 'flash' prevention.
+    }
     // Show the shadebox of a named anchor in the URL where it is expected to be of the form:
     // #section-X.
     if ((window.location.hash) && (!the_editing_on)) {
@@ -173,7 +174,6 @@ M.format_grid.icon_toggle = function(e) {
     this.grid_toggle();
 };
 
-
 M.format_grid.grid_toggle = function() {
     if (this.selected_section_no != -1) { // Then a valid shown section has been selected.
         if ((this.editing_on === true) && (this.update_capability === true)) {
@@ -197,13 +197,9 @@ M.format_grid.grid_toggle = function() {
  * Moves to the previous visible section - looping to the last if the current is the first.
  * @param {Object} e Event object.
  */
-M.format_grid.arrow_left = function() {
+M.format_grid.previous_section = function() {
     "use strict";
-    if (this.rtl) {
-        this.change_selected_section(true);
-    } else {
-        this.change_selected_section(false);
-    }
+    this.change_selected_section(false);
 };
 
 /**
@@ -212,13 +208,8 @@ M.format_grid.arrow_left = function() {
  * Moves to the next visible section - looping to the first if the current is the last.
  * @param {Object} e Event object.
  */
-M.format_grid.arrow_right = function() {
-    "use strict";
-    if (this.rtl) {
-        this.change_selected_section(false);
-    } else {
-        this.change_selected_section(true);
-    }
+M.format_grid.next_section = function() {
+    this.change_selected_section(true);
 };
 
 /**
@@ -347,15 +338,36 @@ M.format_grid.shadebox.initialize_shadebox = function() {
 
     this.hide_shadebox();
 
-    var top = 50;
-    var mainregion = M.format_grid.ourYUI.one('#region-main');
-    if (mainregion) {
-        var mainregionDOM = mainregion.getDOMNode();
-        top = mainregionDOM.offsetTop + mainregionDOM.clientTop + 15;
-    }
-
     var gridshadebox_content = M.format_grid.ourYUI.one('#gridshadebox_content');
     if (gridshadebox_content.hasClass('absolute')) {
+        var top = 50;
+        var pageelement = M.format_grid.ourYUI.one('#page'); // Boost theme.
+        if (!pageelement) {
+            pageelement = M.format_grid.ourYUI.one('#region-main');
+        }
+        if (pageelement) {
+            var pageelementDOM = pageelement.getDOMNode();
+            top = pageelementDOM.offsetTop + pageelementDOM.clientTop;
+            if (top === 0) {
+                // Use the parent.  This can happen with the Boost theme where region-main is floated.
+                top = pageelementDOM.offsetParent.offsetTop + pageelementDOM.offsetParent.clientTop;
+            }
+            top = top + 15;
+        }
+
+        var navdrawer = M.format_grid.ourYUI.one('#nav-drawer'); // Boost theme.
+        if (navdrawer) {
+            var navdrawerDOM = navdrawer.getDOMNode();
+            var navdrawerStyle = window.getComputedStyle(navdrawerDOM);
+            var zindex = parseInt(navdrawerStyle.getPropertyValue("z-index"));
+            if (zindex) {
+                zindex = zindex + 1;
+                this.shadebox_overlay.style.zIndex = '' + zindex;
+                zindex = zindex + 1;
+                gridshadebox_content.setStyle('zIndex', '' + zindex);
+            }
+        }
+
         gridshadebox_content.setStyle('top', '' + top + 'px');
     }
 };

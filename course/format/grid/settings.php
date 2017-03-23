@@ -169,7 +169,7 @@ if ($ADMIN->fulltree) {
     $choices = array(
         1 => new lang_string('sectiontitleboxinsidepositiontop', 'format_grid'),
         2 => new lang_string('sectiontitleboxinsidepositionmiddle', 'format_grid'),
-        3 => new lang_string('sectiontitleboxinsidepositionmiddle', 'format_grid')
+        3 => new lang_string('sectiontitleboxinsidepositionbottom', 'format_grid')
     );
     $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
 
