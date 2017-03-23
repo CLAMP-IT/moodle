@@ -1,5 +1,12 @@
 Change List
 =========
+Version 2016081402
+Added new HTML5 snapshot taker
+
+Version 2016081401
+Added support for callbackjs in new amd uploader system
+Made drawingboard the default whiteboard
+
 Version 2015121102
 Added jquery so that the drawingboard.js doesn't fail
 

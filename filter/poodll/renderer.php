@@ -82,13 +82,64 @@ class filter_poodll_renderer extends plugin_renderer_base {
 
 	public function fetchLiterallyCanvas($html)
 	{
+	global $PAGE;
+		//The strings we need for js
+		
+    $PAGE->requires->strings_for_js(array('insert',
+                                          'cancel',
+                                          'recui_record',
+                                          'recui_recordorchoose',
+                                          'recui_pause',
+                                          'recui_play',
+                                          'recui_stop',
+                                          'recui_save',
+                                          'recui_continue',
+                                          'recui_uploading',
+                                          'recui_converting',
+                                          'recui_uploading',
+                                          'recui_uploadafile',
+                                          'recui_uploadsuccess',
+                                          'recui_openrecorderapp',
+                                          'recui_awaitingconfirmation',
+                                          'recui_uploaderror',
+                                          'recui_takesnapshot',
+                                          'recui_cancelsnapshot',
+                                          'recui_nothingtosaveerror',
+                                          ),
+                                    'filter_poodll');
 		return $html;
 
 	}
 
 	public function fetchDrawingBoard($html)
 	{
+		global $PAGE;
+		//The strings we need for js
+		
+   		 $PAGE->requires->strings_for_js(array('insert',
+                                          'cancel',
+                                          'recui_record',
+                                          'recui_recordorchoose',
+                                          'recui_pause',
+                                          'recui_play',
+                                          'recui_stop',
+                                          'recui_save',
+                                          'recui_continue',
+                                          'recui_uploading',
+                                          'recui_converting',
+                                          'recui_uploading',
+                                          'recui_uploadafile',
+                                          'recui_uploadsuccess',
+                                          'recui_openrecorderapp',
+                                          'recui_awaitingconfirmation',
+                                          'recui_uploaderror',
+                                          'recui_takesnapshot',
+                                          'recui_cancelsnapshot',
+                                          'recui_nothingtosaveerror',
+                                          ),
+                                    'filter_poodll');
 		return $html;
+
 
 	}
 
@@ -125,11 +176,8 @@ class filter_poodll_renderer extends plugin_renderer_base {
 		//path to our js idgets folder
 		$pathtoSWF= $CFG->wwwroot . '/filter/poodll/flash/';
 
-
 		$retframe="<iframe scrolling=\"no\" class=\"fitvidsignore\" frameBorder=\"0\" src=\"{$pathtoSWF}poodlliframe.php?widget={$widget}&paramstring=" . urlencode($params) . "&width={$width}&height={$height}&bgcolor={$bgcolor}\" width=\"{$fwidth}\" height=\"{$fheight}\"></iframe>";
 		return $retframe;
-
-
 	}
 
 	public function fetchJSWidgetiFrame($widget,$rawparams,$width,$height, $bgcolor="#FFFFFF", $usemastersprite="false")
@@ -153,15 +201,72 @@ class filter_poodll_renderer extends plugin_renderer_base {
 		$retframe = "<iframe scrolling=\"no\" frameBorder=\"0\" src=\"{$pathtoJS}poodlliframe.php?widget={$widget}&paramstring=" . urlencode($params) . "&width={$width}&height={$height}&bgcolor={$bgcolor}&usemastersprite={$usemastersprite}\" width=\"{$width}\" height=\"{$height}\"></iframe>";
 		return $retframe;
 	}
+	
+	/* TO DO: make this more generic. ie not just poodllrecorder */
+	public function fetchAMDRecorderEmbedCode($widgetopts,$widgetid)
+	{
+		global $CFG, $PAGE;
+		
+		//this init the M.mod_readaloud thingy, after the page has loaded.
+		//we replaced this with a shim to the same js file to avoid load order badness
+		//Justin 20160805
+		//$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flash/embed-compressed.js'));
+		
+		$widgetopts->widgetid=$widgetid;
+		
+		//recorder order of preference
+		$rec_order = explode(',',$CFG->filter_poodll_recorderorder); // array('mobile','media','flashaudio','red5','upload','flash');
+		$widgetopts->rec_order=$rec_order;
+		
+		//The CSS selector string
+		$container = $widgetid .'Container';
+		$selector = '#' . $container ;
+		$widgetopts->selector = $selector;
+		
+		//The strings we need for js
+		
+    $PAGE->requires->strings_for_js(array('insert',
+                                          'cancel',
+                                          'recui_record',
+                                          'recui_recordorchoose',
+                                          'recui_pause',
+                                          'recui_play',
+                                          'recui_stop',
+                                          'recui_save',
+                                          'recui_continue',
+                                          'recui_uploading',
+                                          'recui_converting',
+                                          'recui_uploading',
+                                          'recui_uploadafile',
+                                          'recui_uploadsuccess',
+                                          'recui_openrecorderapp',
+                                          'recui_awaitingconfirmation',
+                                          'recui_uploaderror',
+                                          'recui_nothingtosaveerror',
+                                           'recui_takesnapshot',
+                                          'recui_cancelsnapshot'
+                                          ),
+                                    'filter_poodll');
+		
+		//convert opts to json
+		$jsonstring = json_encode($widgetopts);
+		//we put the opts in html on the page because moodle/AMD doesn't like lots of opts in js
+		$opts_html = html_writer::tag('input', '', array('id' => 'amdopts_' . $widgetopts->widgetid, 'type' => 'hidden', 'value' => $jsonstring));
+		$PAGE->requires->js_call_amd("filter_poodll/poodllrecorder", 'init', array(array('widgetid' => $widgetid)));
+		$returnhtml = $opts_html . html_writer::div('', 'filter_poodll_recorder_placeholder', array('id' => $container));
+		return $returnhtml;
+	}
 
 
 //This is used for all the flash widgets
 	public function fetchLazloEmbedCode($widgetopts,$widgetid,$jsmodule)
 	{
 		global $CFG, $PAGE;
-
+		echo "what !";
+		die;
 		//this init the M.mod_readaloud thingy, after the page has loaded.
 		$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flash/embed-compressed.js'));
+		
 		$PAGE->requires->js_init_call('M.filter_poodll.laszlohelper.init', array($widgetopts), false, $jsmodule);
 		$returnhtml = html_writer::div('', '', array('id' => $widgetid . 'Container'));
 		return $returnhtml;

@@ -64,7 +64,7 @@ class data_field_poodll extends data_field_base {
         return $options;
     }
 
-    function display_add_field($recordid=0) {
+    function display_add_field($recordid=0, $formdata=null) {
         global $CFG, $DB, $OUTPUT, $PAGE, $USER;
 
         $text   = '';
@@ -129,7 +129,7 @@ class data_field_poodll extends data_field_base {
         		
         	case DBP_SNAPSHOT:
 
-        		$str .= \filter_poodll\poodlltools::fetchSnapshotCameraforSubmission($updatecontrol,'apic.jpg',350,400,$usercontextid,"user","draft",$draftitemid);
+        		$str .= \filter_poodll\poodlltools::fetchHTML5SnapshotCamera($updatecontrol,350,400,$usercontextid,'user','draft',$draftitemid,'');
         		break;
 
 		}
@@ -247,26 +247,22 @@ class data_field_poodll extends data_field_base {
          switch ($this->field->param4){
         	case DBP_AUDIOMP3:
         	case DBP_AUDIO:
-        	 	$str = format_text('{POODLL:type=audio,path='.	urlencode($mediapath) 
-						.',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
-        		//this lower string though more efficient didn't load flowplayer embed js on time, so better to defer to the filter
-        		//$str= fetchSimpleAudioPlayer('auto', $mediapath, "http",  $CFG->filter_poodll_audiowidth, 					           $CFG->filter_poodll_audioheight,$embed, $embedstring,false);
+            	$medialink = "<a href= \"$mediapath\" class=\"data_field_poodll_submittedaudio\"> an audio </a>";
+        	 	$str = format_text($medialink, FORMAT_HTML);
         		break;
         	
         	case DBP_VIDEO:
-        		$str = format_text('{POODLL:type=video,path='.	urlencode($mediapath) 
-						.',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
-				//this lower string though more efficient didn't load flowplayer embed js on time, so better to defer to the filter
-				//$str .= fetchSimpleVideoPlayer('auto',$mediapath,$CFG->filter_poodll_videowidth,$CFG->filter_poodll_videoheight,'http',false,true,'Play');
+        		 $medialink = "<a href= \"$mediapath\" class=\"data_field_poodll_submittedvideo\"> a video </a>";
+        	 	 $str = format_text($medialink, FORMAT_HTML);
 				break;
 				
         	case DBP_WHITEBOARDSIMPLE:
         	case DBP_WHITEBOARDFULL:
-        		$str = "<img alt=\"submittedimage\" width=\"" . $CFG->filter_poodll_videowidth . "\"  src=\"" . $mediapath . "\" />";
+        		$str = "<img alt=\"submittedimage\" class=\"data_field_poodll_whiteboardimage\"  src=\"" . $mediapath . "\" />";
         		break;
         		
         	case DBP_SNAPSHOT:
-        		$str = "<img alt=\"submittedimage\" width=\"" . $CFG->filter_poodll_videowidth . "\" src=\"" . $mediapath . "\" />";
+        		$str = "<img alt=\"submittedimage\" class=\"data_field_poodll_snapshotimage\" src=\"" . $mediapath . "\" />";
         		break;
 			
 			}

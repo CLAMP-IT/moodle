@@ -19,16 +19,16 @@
  *
  * @package    repository
  * @subpackage poodll
- * @copyright  2012 Justin hunt
+ * @copyright  2016 Justin hunt
  * @author     Justin Hunt <bitwalkerjapan@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2015121102;
-$plugin->requires  = 2015051100;
+$plugin->version   = 2016112701;
+$plugin->requires  = 2016052300;//moodle 3.1.0
 $plugin->component = 'repository_poodll'; 
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '2.5.5 (Build 2015121102)';
-$plugin->dependencies = array('filter_poodll' => 2015121101);
+$plugin->release   = '3.0.1 (Build 2016112701)';
+$plugin->dependencies = array('filter_poodll' => 2016081401);

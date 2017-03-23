@@ -35,249 +35,6 @@ M.filter_poodll = {
 			}
 	},
 	
-	init_revealjs: function(args){
-		// Required, even if empty.
-		Reveal.initialize({});
-	
-	},
-
-	initowlflashcards: function(Y,opts) {
-		//Actually I realise that this could never work because owl-carousel is a jquery plugin
-
-		var owl = Y.one("#" + opts['FLASHCARDS_ID'] +"  .cards");
-		owl.owlCarousel({
-			navigation : true, // Show next and prev buttons
-			slideSpeed : 300,
-			paginationSpeed : 400,
-			singleItem:true
-		});
-
-        // Custom Navigation Events
-		var nextbutton = Y.one("#owlid .filter_poodll_flashcards_owl_next");
-		nextbutton.on('click', function(){
-			owl.trigger('owl.next');
-		});
-		var previousbutton = Y.one("#owlid .filter_poodll_flashcards_owl_next");
-		previousbutton.on('click',function(){
-			owl.trigger('owl.prev');
-		});
-
-
-	},
-
-	// Replace poodll_flowplayer divs with flowplayers
-	loadflowplayer: function(Y,opts) {
-
-			//the standard config. change backgroundcolor to go from blue to something else	
-			theconfig = { plugins:
-                                { controls:
-                                        { fullscreen: true,
-                                                height: 40,
-                                                autoHide: false,
-                                                buttonColor: '#ffffff',
-                                                backgroundColor: opts['bgcolor'],
-                                                disabledWidgetColor: '#555555',
-                                                bufferGradient: 'none',
-                                                timeSeparator: ' ',
-                                                volumeSliderColor: '#ffffff',
-                                                sliderGradient: 'none',
-                                                volumeBorder: '1px solid rgba(128, 128, 128, 0.7)',
-                                                volumeColor: '#ffffff',
-                                                tooltipTextColor: '#ffffff',
-                                                timeBorder: '0px solid rgba(0, 0, 0, 0.3)',
-                                                buttonOverColor: '#ffffff',
-                                                buttonOffColor: 'rgba(130,130,130,1)',
-                                                timeColor: '#ffffff',
-                                                progressGradient: 'none',
-                                                sliderBorder: '1px solid rgba(128, 128, 128, 0.7)',
-                                                volumeSliderGradient: 'none',
-                                                durationColor: '#a3a3a3',
-                                                backgroundGradient: [0.5,0,0.3],
-                                                sliderColor: '#000000',
-                                                progressColor: '#5aed38',
-                                                bufferColor: '#445566',
-                                                tooltipColor: '#000000',
-                                                borderRadius: '0px',
-                                                timeBgColor: 'rgb(0, 0, 0, 0)',
-                                                opacity: 1.0 },
-                                       
-									audio:
-											{ url: opts['audiocontrolsurl'] }
-									},
-					playlist: opts['playlisturl'] ,
-					clip:
-							{ autoPlay: true }
-			} ;
-		
-		var splash=false;
-		
-		//stash our Y for later use
-		this.gyui = Y;
-
-		//the params are different depending on the playertype
-		//we need to specify provider for audio if the clips are not MP3 or mp3
-		//jqueryseems unavoidable even if not using it for playlists
-		switch(opts['playertype']){
-			case "audio":
-				if (opts['jscontrols']){
-						theconfig.plugins.controls = null;
-						//we don't need to see the flowplayer video/audio at all if we are using js 
-						opts["height"]=1;
-				}else{
-
-					theconfig.plugins.controls.fullscreen =false;
-					theconfig.plugins.controls.height = opts['height'];
-					theconfig.plugins.controls.autoHide= false;
-				}
-			
-				//We need to tell flowplayer if we have mp3 to play.
-				//if it is FLV, we should not pass in a provider flag
-				var ext = opts['path'].substr(opts['path'].lastIndexOf('.') + 1);
-				if(ext==".mp3" || ext==".MP3"){
-					theconfig.clip.provider='audio';			
-				}
-	
-						
-				//If we have a splash screen show it and enable autoplay(user only clicks once)
-				//best to have a splash screen to prevent browser hangs on many flashplayers in a forum etc
-				if(opts['poodll_audiosplash']){
-					theconfig.clip.autoPlay=true;
-					splash=true;
-				}else{
-					theconfig.clip.autoPlay=false;
-				}
-				break;
-		
-			case "audiolist":
-				if (opts['jscontrols']){
-						theconfig.plugins.controls = null;
-						//we don't need to see the flowplayer video/audio at all if we are using js 
-						opts["height"]=1;
-				}else{
-					theconfig.plugins.controls.fullscreen = false;
-					theconfig.plugins.controls.height = opts['defaultcontrolsheight'];
-					theconfig.plugins.controls.autoHide= false;
-					theconfig.plugins.controls.playlist = true;
-				}
-			
-				//without looking inside the playlist we don't know if the audios are flv or mp3.
-				//here we assume that audio playlists are mp3. If not we need to remove the provider element
-				if (opts['loop']=='true'){
-					theconfig.clip.autoPlay=true;
-				}else{
-					theconfig.clip.autoPlay=false;
-				}
-				theconfig.clip.provider='audio';
-				break;
-		
-			case "video":
-				//theconfig.plugins.audio= null;
-			
-				if (opts['jscontrols']){
-					theconfig.plugins.controls =null;
-				}else{
-					theconfig.plugins.controls.fullscreen = true;
-					theconfig.plugins.controls.height = opts['defaultcontrolsheight'];
-					theconfig.plugins.controls.autoHide= true;
-				}
-				//set the color to black on video screens
-				theconfig.plugins.controls.backgroundColor = '#0';
-
-			
-				//If we have a splash screen show it and enable autoplay(user only clicks once)
-				//best to have a splash screen to prevent browser hangs on many flashplayers in a forum etc
-				if(opts['poodll_videosplash']){
-					theconfig.clip.autoPlay=true;
-					splash=true;
-				}else{
-					theconfig.clip.autoPlay=false;
-				}
-				break; 
-		
-			case "videolist":
-				theconfig.plugins.controls.fullscreen = false;
-				theconfig.plugins.controls.height = opts['defaultcontrolsheight'];
-				theconfig.plugins.controls.autoHide= true;
-				theconfig.plugins.controls.playlist = true;
-				theconfig.clip.autoPlay=false;
-				//set the color to black on video screens
-				theconfig.plugins.controls.backgroundColor = '#0';
-				break;
-		
-		}
-	
-	
-		//Get our element to replace
-		var playerel= document.getElementById(opts['playerid']);
-		if(!playerel){return;}
-	
-		//should there be a problem with standard embedding, we can try this simpler
-		//way
-		if(opts['embedtype']=='flashembed'){
-		   theconfig.clip.url= opts['path'];
-			//we should not have to specify this, but we do ...?
-			var uniqconfig = theconfig;
-			if(splash){
-				playerel.onclick = function() {
-					flashembed(opts['playerid'], opts['playerpath'], {config: uniqconfig});
-				}
-			}else{
-				flashembed(opts['playerid'], opts['playerpath'], {config: uniqconfig});
-			}
-			//console.log("flashembed embedded");
-	
-		//embed via swf object
-		}else if(opts['embedtype']=='swfobject'){
-
-		   //we should not have to specify this, but we do ...?
-		   theconfig.clip.url= opts['path'];
-		   //we declare this here so that when called from click it refers to this config, and not a later one (object referecnes ...)
-		   var configstring=Y.JSON.stringify(theconfig);
-		   //we need to convert double to single quotes, for IE's benefit
-		   configstring= configstring.replace(/"/g,"'");
-		   var params = {allowfullscreen: "true"};  
-		   if(splash){
-				//console.log("playerid:" + opts['playerid']);
-				// get flash container and assign click handler for it
-				playerel.onclick = function() {
-					swfobject.embedSWF(opts['playerpath'],
-							opts['playerid'], opts['width'], 
-							opts['height'] , 
-							"9.0.0", 
-							null, 
-							{config: configstring},
-							params
-						);
-				}
-			
-			}else{
-				swfobject.embedSWF(opts['playerpath'],
-						opts['playerid'], opts['width'], 
-						opts['height'] , 
-						"9.0.0", 
-						null, 
-						{config: configstring},
-						params
-					);
-			}
-
-	
-		//we default to flowplayer embed method
-		}else{
-	
-			/* output the flowplayer */
-			var playerid= opts['playerid'];		
-			var playerpath = opts['playerpath'];
-			$fp = flowplayer(playerid,playerpath,theconfig);
-			//output any other bits and pieces required
-			if(opts['controls']!="0"){$fp = $fp.controls(opts['controls']);}
-			if(opts['ipad']){$fp=$fp.ipad();}
-			if(opts['playlist']){$fp=$fp.playlist("div.poodllplaylist", {loop: opts["loop"]});}
-		}
-
-		//for debugging
-	//	console.log(theconfig);
-	},
 
 	// load drawingboard whiteboard for Moodle
 	loaddrawingboard: function(Y,opts) {
@@ -549,50 +306,6 @@ M.filter_poodll = {
 		this.UploadFile(file, filedata,recid);
 	},
 
-	// handle audio/video/image file uploads for Mobile
-	loadmobileupload: function(Y,opts) {
-	
-		//stash our Y for later use
-		this.gyui = Y;
-	
-		//stash our opts array
-		this.whiteboardopts[opts['recorderid']] = opts;
-
-		var fileselect = this.getbyid(opts['recorderid'] + '_poodllfileselect');
-		if(fileselect){
-			fileselect.addEventListener("change", function(theopts) {
-					return function(e) {M.filter_poodll.FileSelectHandler(e, theopts); };
-					} (opts) , false);
-		}
-	},
-
-	// file selection
-	FileSelectHandler: function(e,opts) {
-
-		// fetch FileList object
-		var files = e.target.files || e.dataTransfer.files;
-
-		// process all File objects
-		for (var i = 0, f; f = files[i]; i++) {
-			this.ParseFile(f,opts);
-		}
-	},
-	
-	// output file information
-	ParseFile: function(file,opts) {
-			
-			// start upload
-			var filedata ="";
-			var reader = new FileReader();
-			reader.onloadend = function(e) {
-						filedata = e.target.result;
-						M.filter_poodll.UploadFile(file, filedata, opts['recorderid']);
-			}
-			reader.readAsDataURL(file);
-
-	},
-
-
 	// output information
 	Output: function(recid,msg) {
 		var m = this.getbyid(recid + '_messages');
@@ -662,10 +375,10 @@ M.filter_poodll = {
 					}
 					if(xhr.status==200){
 						var resp = xhr.responseText;
-						var start= resp.indexOf("success<error>");
+						var start= resp.indexOf("success<filename>");
 						if (start<1){return;}
-						var end = resp.indexOf("</error>");
-						var filename= resp.substring(start+14,end);
+						var end = resp.indexOf("</filename>");
+						var filename= resp.substring(start+17,end);
 						
 						//invoke callbackjs if we have one, otherwise just update the control(default behav.)
 						if(opts['callbackjs'] && opts['callbackjs']!=''){ 
@@ -814,4 +527,63 @@ M.filter_poodll.laszlohelper = {
 		lz.embed.swf(Y.JSON.parse(opts['widgetjson']));
 	}
 };
+
+//PoodLL Templates
+M.filter_poodll_templates = {
+	
+	csslinks: Array(),
+	
+	gyui: null,
+	
+	injectcss: function(csslink){
+		var link = document.createElement("link");
+		link.href = csslink;
+		if(csslink.toLowerCase().lastIndexOf('.html')==csslink.length-5){
+			link.rel = 'import';
+		}else{
+			link.type = "text/css";
+			link.rel = "stylesheet";	
+		}
+		document.getElementsByTagName("head")[0].appendChild(link);	
+	},
+	
+	// load templates CSS for poodll filter templates, if AMD not ok
+	loadtemplate: function(Y,opts) {
+		//stash our Y and opts for later use
+		this.gyui = Y;
+		//console.log(opts);
+		//load our css in head if required
+		//only do it once per extension though
+		if(opts['CSSLINK']){
+			if (this.csslinks.indexOf(opts['CSSLINK'])<0){
+				this.csslinks.push(opts['CSSLINK']);
+				this.injectcss(opts['CSSLINK']);
+			}
+		}
+		//load our css in head if required
+		//only do it once per extension though
+		if(opts['CSSUPLOAD']){
+			if (this.csslinks.indexOf(opts['CSSUPLOAD'])<0){
+				this.csslinks.push(opts['CSSUPLOAD']);
+				this.injectcss(opts['CSSUPLOAD']);
+			}
+		}
+		
+		//load our css in head if required
+		//only do it once per extension though
+		if(opts['CSSCUSTOM']){
+			if (this.csslinks.indexOf(opts['CSSCUSTOM'])<0){
+				this.csslinks.push(opts['CSSCUSTOM']);
+				this.injectcss(opts['CSSCUSTOM']);
+			}
+		}
+		
+		if(typeof filter_poodll_extfunctions != 'undefined'){ 
+			if(typeof filter_poodll_extfunctions[opts['TEMPLATEID']] == 'function'){ 
+				filter_poodll_extfunctions[opts['TEMPLATEID']](opts);
+			}
+		}
+		
+	}//end of function
+}//end of class
  

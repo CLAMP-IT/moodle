@@ -1,5 +1,13 @@
 Change List
 =========
+Version 2016112701
+Fixed an issue where widths were pulled from a  missing poodll property
+
+Version 2016081402
+Fixed problem with Feedback where files didn't save
+
+Version 2016081401
+Version bump(big), Support for PoodLL 3
 
 Version 2015121101
 Support for refactored PoodLL filter and support for Moodle 3.0

@@ -5,6 +5,7 @@ $string['recui_pause'] ='Pause';
 $string['recui_play'] ='Wiedergabe';
 $string['recui_continue'] ='Weiter';
 $string['recui_stop'] ='Stop';
+$string['recui_save'] ='Save';
 $string['recui_time'] ='Dauer:';
 $string['recui_audiogain'] ='Lautstärke';
 $string['recui_silencelevel'] ='Geräuschpegel';

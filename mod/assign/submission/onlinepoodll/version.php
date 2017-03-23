@@ -22,10 +22,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-$plugin->version   = 2015121101;
-$plugin->requires  = 2015051100;
-$plugin->component = 'assignsubmission_onlinepoodll'; 
+
+$plugin->version   = 2017020501;
+$plugin->requires  = 2016052300;//moodle 3.1.0
+$plugin->component =  'assignsubmission_onlinepoodll';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.5.9 (Build 2015121101)';
-$plugin->dependencies = array('filter_poodll' => 2015121101);
+$plugin->release   = '3.0.4 (Build 2017020501)';
+$plugin->dependencies = array('filter_poodll' => 2016081401);

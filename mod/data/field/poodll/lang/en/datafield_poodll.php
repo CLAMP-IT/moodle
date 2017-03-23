@@ -27,7 +27,7 @@
 $string['maxbytes'] = 'Maximum embedded file size (bytes)';
 $string['maxbytes_desc'] = 'If set to zero will be unlimited by default';
 $string['pluginname'] = 'PoodLL';
-
+$string['fieldtypelabel'] = 'PoodLL';
 $string['clicktoplay'] = 'Click to Play';
 $string['responsetype'] = 'PoodLL Widget (Response type)';
 $string['backimageurl']='Whiteboard background image URL';

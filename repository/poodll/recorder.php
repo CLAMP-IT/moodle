@@ -8,6 +8,7 @@ global $PAGE, $USER, $OUTPUT;
 
 // we get the request parameters:
 // the repository ID controls where the file will be added
+$iframe_id = required_param('iframe_id', PARAM_TEXT); // repository ID
 $repo_id = required_param('repo_id', PARAM_INT); // repository ID
 $filename = optional_param('filename', '', PARAM_TEXT); // filename
 
@@ -16,6 +17,9 @@ $repo = repository::get_instance($repo_id);
 if(empty($repo)) {
     die;
 }
+
+//load our resize script
+$PAGE->requires->js_call_amd("filter_poodll/responsiveiframe", 'init', array(array('iframeid' => $iframe_id)));
 
 // we output a simple HTML page with the poodll recorder code in it
 //$PAGE->set_generaltype('popup');

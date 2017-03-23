@@ -31,25 +31,25 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * File area/component/table name for online text submission assignment
  */
-define('ASSIGNSUBMISSION_ONLINEPOODLL_FILEAREA', 'submissions_onlinepoodll');
-define('ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT', 'assignsubmission_onlinepoodll');
-define('ASSIGNSUBMISSION_ONLINEPOODLL_CONFIG_COMPONENT', 'assignsubmission_onlinepoodll');
-define('ASSIGNSUBMISSION_ONLINEPOODLL_TABLE', 'assignsubmission_onlinepoodl');
-define('ASSIGNSUBMISSION_ONLINEPOODLL_WB_FILEAREA', 'onlinepoodll_backimage');
-
+ if(!defined('ASSIGNSUBMISSION_ONLINEPOODLL_TABLE')){
+   define('ASSIGNSUBMISSION_ONLINEPOODLL_FILEAREA', 'submissions_onlinepoodll');
+   define('ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT', 'assignsubmission_onlinepoodll');
+   define('ASSIGNSUBMISSION_ONLINEPOODLL_CONFIG_COMPONENT', 'assignsubmission_onlinepoodll');
+   define('ASSIGNSUBMISSION_ONLINEPOODLL_TABLE', 'assignsubmission_onlinepoodl');
+   define('ASSIGNSUBMISSION_ONLINEPOODLL_WB_FILEAREA', 'onlinepoodll_backimage');
+}
 
 //some constants for the type of online poodll assignment
-define('OP_REPLYMP3VOICE',0);
-define('OP_REPLYVOICE',1);
-define('OP_REPLYVIDEO',2);
-define('OP_REPLYWHITEBOARD',3);
-define('OP_REPLYSNAPSHOT',4);
-define('OP_REPLYTALKBACK',5);
-
-
-define('OP_FILENAMECONTROL','onlinepoodll');
-define('OP_VECTORCONTROL','onlinepoodll_vector');
-
+if(!defined('OP_REPLYMP3VOICE')){
+	define('OP_REPLYMP3VOICE',0);
+	define('OP_REPLYVOICE',1);
+	define('OP_REPLYVIDEO',2);
+	define('OP_REPLYWHITEBOARD',3);
+	define('OP_REPLYSNAPSHOT',4);
+	define('OP_REPLYTALKBACK',5);
+	define('OP_FILENAMECONTROL','onlinepoodll');
+	define('OP_VECTORCONTROL','onlinepoodll_vector');
+}
 
 
 /**
@@ -166,7 +166,9 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 				'500x500' => '500x500',
 				'600x400' => '600x400',
 				'600x800' => '600x800',
-				'800x600' => '800x600'
+				'800x600' => '800x600',
+				'1000x800' => '1000x800',
+				'1024x768' => '1024x768'
 				);
 			$mform->addElement('select', 'assignsubmission_onlinepoodll_boardsize',
 				get_string('boardsize', 'assignsubmission_onlinepoodll'), $boardsizes);
@@ -266,13 +268,14 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 			//show the previous submission in a player or whatever
 			$mform->addElement('static', 'currentsubmission', 
 				get_string('currentsubmission', 'assignsubmission_onlinepoodll') ,
-				$this->fetchResponses($submission->id,false,false));
+				$this->fetchResponses($submission->id,false));
 			
         }
         
          if (!isset($data->vectordata)) {
             $data->vectordata = '';
         }
+
         if ($submission) {
             $onlinepoodllsubmission = $this->get_onlinepoodll_submission($submission->id);
             if ($onlinepoodllsubmission) {
@@ -281,10 +284,18 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 
         }
 
-		//We prepare our form here and fetch/save data in SAVE method
-		$usercontextid=context_user::instance($USER->id)->id;
-		$draftitemid = file_get_submitted_draft_itemid(OP_FILENAMECONTROL);
-		$contextid=$this->assignment->get_context()->id;
+		//we need to get a draft item id, but if the form was cancelled or invalid
+        //the old draftitemid will get set to the form, and the newly fetched one passed to oru recorders
+        //this makes the form submit fail, because the uploaded files can't be found
+        //hence we check for a previous submission first. Justin 2017/02/05
+        $draftitemid = optional_param('draftitemid',0,PARAM_INT);
+        if($draftitemid==0) {
+            $draftitemid = file_get_submitted_draft_itemid(OP_FILENAMECONTROL);
+        }
+
+        //We prepare our form here and fetch/save data in SAVE method
+        $usercontextid=context_user::instance($USER->id)->id;
+        $contextid=$this->assignment->get_context()->id;
 		file_prepare_draft_area($draftitemid, $contextid, ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT, ASSIGNSUBMISSION_ONLINEPOODLL_FILEAREA, $submissionid, null,null);
 		$mform->addElement('hidden', 'draftitemid', $draftitemid);
 		$mform->addElement('hidden', 'usercontextid', $usercontextid);	
@@ -293,7 +304,9 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		$mform->setType('draftitemid', PARAM_INT);
 		$mform->setType('usercontextid', PARAM_INT); 
 		$mform->setType(OP_FILENAMECONTROL, PARAM_TEXT); 
-		$mform->setType(OP_VECTORCONTROL, PARAM_TEXT); 
+		$mform->setType(OP_VECTORCONTROL, PARAM_TEXT);
+
+
 	
 		//get timelimit for recorders if set
 		$timelimit = $this->get_config('timelimit');
@@ -321,6 +334,8 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 					case "600x400": $width=600;$height=400;break;
 					case "600x800": $width=600;$height=800;break;
 					case "800x600": $width=800;$height=600;break;
+					case "1000x800": $width=1000;$height=800;break;
+					case "1024x768": $width=1024;$height=768;break;
 				}
 
 
@@ -350,7 +365,8 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 				break;
 			
 			case OP_REPLYSNAPSHOT:
-				$mediadata= \filter_poodll\poodlltools::fetchSnapshotCameraforSubmission(OP_FILENAMECONTROL,"snap.jpg" ,350,400,$usercontextid ,'user','draft',$draftitemid);
+				//$mediadata= \filter_poodll\poodlltools::fetchSnapshotCameraforSubmission(OP_FILENAMECONTROL,"snap.jpg" ,350,400,$usercontextid ,'user','draft',$draftitemid);
+				$mediadata= \filter_poodll\poodlltools::fetchHTML5SnapshotCamera(OP_FILENAMECONTROL,350,400,$usercontextid,'user','draft',$draftitemid);
 				$mform->addElement('static', 'description', '',$mediadata);
 				break;
 
@@ -377,15 +393,12 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 	*
 	*
 	*/
-	function fetchResponses($submissionid, $checkfordata=false, $embed=false, $size=320){
+	function fetchResponses($submissionid, $checkfordata=false){
 		global $CFG;
 		
+
 		$responsestring = "";
-		
-		 //This is old code for poodll players(obselete) 
-		 //needs to be checked but probably safe to delete
-        $embedstring = 'clicktoplay';
-        $embed='false';
+
 		
 		
 		//get filename, from the filearea for this submission. 
@@ -412,7 +425,10 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 				}
 			}
 		}
-	
+
+        //size params for our response players/images
+        $size = $this->fetch_response_size($this->get_config('recordertype'));
+
 		
 		//if this is a playback area, for teacher, show a string if no file
 		if ($checkfordata  && empty($filename)){ 
@@ -426,57 +442,47 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 			//The path to any media file we should play
 			$rawmediapath = $CFG->wwwroot.'/pluginfile.php/'.$this->assignment->get_context()->id.'/'. ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT .'/' . ASSIGNSUBMISSION_ONLINEPOODLL_FILEAREA  . '/'.$submissionid.'/'.$filename;
 			$mediapath = urlencode($rawmediapath);
-		
+
 			//prepare our response string, which will parsed and replaced with the necessary player
 			switch($this->get_config('recordertype')){
 							
 				case OP_REPLYVOICE:
 				case OP_REPLYTALKBACK:
-					//if we are using red5 recorder, flv files need to be shown in audio player, so we force poodll type audio
-					if(stripos($filename,'.mp3')){
-						$responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
-					}else{
-						$responsestring .= format_text('{POODLL:type=audio,path='.	$mediapath .',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
-					}
+					//not supported yet
 					break;
 					
 				case OP_REPLYMP3VOICE:
-						//originally tried to force poodll, but best to default to whatever
-						//$responsestring .= format_text('{POODLL:type=audio,path='.	$mediapath .',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
-						$responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
+						$responsestring .= format_text("<a href='$rawmediapath'>$filename</a>", FORMAT_HTML);
 						break;						
 					
 				case OP_REPLYVIDEO:
-						if($size==0){
+						if($size->width==0){
 							$responsestring=get_string('videoplaceholder','assignsubmission_onlinepoodll');
 							break;
 						}
-						
-						//get our size profile
-						switch($size){
-							case "0": $width=320;$height=240;break;
-							case "160": $width=160;$height=120;break;
-							case "320": $width=320;$height=240;break;
-							case "480": $width=480;$height=360;break;
-							case "640": $width=640;$height=480;break;
-							case "800": $width=800;$height=600;break;
-							case "1024": $width=1024;$height=768;break;
-							default:$width=320;$height=240;
-						}
-						$responsestring .= format_text("<a href=\"$rawmediapath?d=" . $width . "x" . $height . "\">$filename</a>", FORMAT_HTML);
-						//$responsestring .= format_text('{POODLL:type=video,path='.	$mediapath .',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
+						$responsestring .= format_text("<a href='$rawmediapath?d=$size->width" . 'x' . "$size->height'>$filename</a>", FORMAT_HTML);
 						break;
 
 				case OP_REPLYWHITEBOARD:
-					$responsestring .= "<img alt=\"submittedimage\" width=\"" . $CFG->filter_poodll_videowidth . "\" src=\"" . urldecode($mediapath) . "\" />";
+                    if($size->width==0){
+                        $responsestring=get_string('imageplaceholder','assignsubmission_onlinepoodll');
+                        break;
+                    }
+					$responsestring .= "<img alt='submittedimage' class='assignsubmission_onlinepoodll_whiteboard'" .
+                        "src='" . urldecode($mediapath) . "' style='max-width: $size->width" . "px;' />";
 					break;
 					
 				case OP_REPLYSNAPSHOT:
-					$responsestring .= "<img alt=\"submittedimage\" width=\"" . $CFG->filter_poodll_videowidth . "\" src=\"" . urldecode($mediapath) . "\" />";
+                    if($size->width==0){
+                        $responsestring=get_string('imageplaceholder','assignsubmission_onlinepoodll');
+                        break;
+                    }
+					$responsestring .= "<img alt='submittedimage' class='assignsubmission_onlinepoodll_snapshot'" .
+                            "src='" . urldecode($mediapath) . "' style='max-width: $size->width" . "px;' />";
 					break;
 					
 				default:
-					$responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
+					$responsestring .= format_text("<a href='$rawmediapath'>$filename</a>", FORMAT_HTML);
 					break;	
 				
 			}//end of switch
@@ -488,7 +494,45 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		
 	}//end of fetchResponses
 	
-	
+    public function	fetch_response_size($recordertype){
+
+	        //is this a list view
+            $islist = optional_param('action','',PARAM_TEXT)=='grading';
+
+            //build our sizes array
+            $sizes=array();
+            $sizes['0']=new stdClass();$sizes['0']->width=0;$sizes['0']->height=0;
+            $sizes['160']=new stdClass();$sizes['160']->width=160;$sizes['160']->height=120;
+            $sizes['320']=new stdClass();$sizes['320']->width=320;$sizes['320']->height=240;
+            $sizes['480']=new stdClass();$sizes['480']->width=480;$sizes['480']->height=360;
+            $sizes['640']=new stdClass();$sizes['640']->width=640;$sizes['640']->height=480;
+            $sizes['800']=new stdClass();$sizes['800']->width=800;$sizes['800']->height=600;
+            $sizes['1024']=new stdClass();$sizes['1024']->width=1024;$sizes['1024']->height=768;
+
+            $size=$sizes[0];
+            $config=get_config('assignsubmission_onlinepoodll');
+
+        //prepare our response string, which will parsed and replaced with the necessary player
+        switch($recordertype){
+            case OP_REPLYVIDEO:
+                $size=$islist ? $sizes[$config->displaysize_list] : $sizes[$config->displaysize_single] ;
+                break;
+            case OP_REPLYWHITEBOARD:
+                $size=$islist ? $sizes[$config->whiteboard_displaysize_list] : $sizes[$config->whiteboard_displaysize_single] ;
+                break;
+            case OP_REPLYSNAPSHOT:
+                $size=$islist ? $sizes[$config->snapshot_displaysize_list] : $sizes[$config->snapshot_displaysize_single] ;
+                break;
+            case OP_REPLYVOICE:
+            case OP_REPLYTALKBACK:
+            case OP_REPLYMP3VOICE:
+            default:
+                break;
+
+        }//end of switch
+        return $size;
+
+    }
 	
      /**
       * Save data to the database
@@ -590,17 +634,12 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
      */
     public function view_summary(stdClass $submission, & $showviewlink) {
     	$showviewlink = false;
-    	
-    	//fetch video size for video list display pages
-        $size = get_config('assignsubmission_onlinepoodll', 'displaysize_list');
+
 
 		//our response, this will output a player/image, and optionally a portfolio export link
-		return $this->fetchResponses($submission->id,false,false,$size) . $this->get_p_links($submission->id) ;
+		return $this->fetchResponses($submission->id,false) . $this->get_p_links($submission->id) ;
 		//rely on get_files from now on to generate portfolio links Justin 19/06/2014
-		//return $this->fetchResponses($submission->id,false,false,$size) ;
 
-		//the default return method, this just produces a link.
-      // return $this->assignment->render_area_files(ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT, ASSIGNSUBMISSION_ONLINEPOODLL_FILEAREA, $submission->id);
     }
 
       /**
@@ -641,15 +680,11 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
         $result = '';
 
         $onlinepoodllsubmission = $this->get_onlinepoodll_submission($submission->id);
-        //fetch video size for single video display pages
-        $size = get_config('assignsubmission_onlinepoodll', 'displaysize_single');
-
 
         if ($onlinepoodllsubmission) {
 
-
             // show our responses in a player
-			$result = $this->fetchResponses($submission->id,false,false,$size);
+			$result = $this->fetchResponses($submission->id,false);
 		
 			//the default render method. Only shows a link
 			// return $this->assignment->render_area_files(ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT, ASSIGN_FILEAREA_SUBMISSION_ONLINEPOODLL, $submission->id);

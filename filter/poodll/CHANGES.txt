@@ -1,8 +1,172 @@
 Change List
 =========
+Version 3.0.31(Build 2017031901)
+-Fixed erroneous error message from error log on s3 move complete
+-Added support for MS Edge audio recording via HTML5
 
-Version 2016061600
-Fixed a bug that caused HTML5 widgets to report a "not licensed" error
+
+Version 3.0.30(Build 2017030401)
+-Fixed erroneous error message from adhoc convert task
+-Fixed problem saving whiteboard vector data inside quiz question answers
+-Fixed issue with large base64 audio data being attached to form submissions needlesly
+-Fixed issue with mobile ios app on TinyMCE Poodll anywhere (insert button not enabling)
+
+Version 3.0.28(2017020401)
+-fixed iOS and Android version detection bug
+-fixed snapshot recorder default to upload on iOS
+
+Version 3.0.27(2017013001)
+-added browser agent to debug logs
+
+Version 3.0.26(2017013000)
+-added better checking for failed uploads and failed transcode calls
+-added debug logging and related setting
+-added log for registering adhoc tasks and completion of adhoc task
+-add diagnostic messages for red5 server settings
+
+Version 3.0.25(Build 2017010702)
+-added a few more diagnostic messages
+
+
+Version 3.0.24(Build 2017010702)
+-added a log output to show error message when retrying an S3 copy back
+
+Version 3.0.23(Build 2017010701)
+-fixed bug where proxy requests to elastic transcoder did not go through proxy
+
+Version 3.0.22(Build 2017010401)
+-added support for proxy servers (Red5)
+
+Version 3.0.21(Build 2016112803)
+-added support for proxy servers(amazon S3)
+-added Video JS Subtitle player template
+-added Native Video Subtitle player template
+-added Video JS audio player template
+-added Video JS audio transcript player template
+
+Version 3.0.20(Build 2016112802)
+-fixed problem with audiojs template which would error if id not found
+-fixed problem with undefined template being added when html and js not synced
+
+Version 3.0.19(Build 2016112801)
+-added a warning message if the recorder has not captured data
+-fixed a style problem if using burntrose theme
+
+Version 3.0.18(Build 2016111901)
+-fixed a bug on webservice detection for mobile/alternate content
+-tweaks to CSS so it dosplays ok on Moodle 3.2 with standard theme
+-improved the once player js tmplate
+-added source of amd libraries so that can debug with cachejs off
+-removed duplicates in presets directory
+
+
+Version 3.0.17(Build 2016111203)
+-added tinyvideojsplayer
+
+Version 3.0.16(Build 2016111202)
+-fixed alternate field bug, media files wouldn't play
+
+Version 3.0.15(Build 2016111201)
+-added alternate content fields for falling back to on non css/js env. (ala mobile app)
+-convert datavars to integers if they are numeric before passing to SQL
+
+Version 3.0.14(Build 2016110601)
+-added a once player js
+-added HTML5 recorder skin (burntrose)
+-added filter active and sort order fields to support info
+
+Version 3.0.13(Build  2016081414)
+-added ability to convert on Amazon even when using Red5
+-added a special pre signed url for the iOS app
+
+
+Version 3.0.12(Build 2016081413)
+-fixed a bug in the presigned url we pass to mobile
+-fixed a bug in the once player template that caused strange page jumps to oneplayer only pages
+-fixed a bug that caused a form submit in the elton player template
+-fixed a bug that broke FFMPEG conversions from red5/tokyo.poodll.com recordings
+-numerous tweaks to template presets
+-added audioquality setting to mobile settings
+
+Version 3.0.11(Build 2016081412)
+- updated youtube lightbox
+- added diagnostics page to settings
+- fixed broken drawingboard.js
+- tweaked some presets
+- fixed bug in mp3recorder(flash)  which killed recording on IE with latest flash
+
+Version 3.0.10(Build 2016081411)
+- Added the correct CSS to fetch progress image
+- Fixed problem affecting mp4/mp3 checkbox on red5 recorders
+- Fixed problem where Youtube parsing was broken
+- Fixed problem where no-cloud on m3 recorder could break html5 audio recorder
+- Added support for multiple html5 recorders on one page
+- Added support for multiple flashmp3 recorders on one page
+- Added support for multiple upload  recorders on one page
+- Added support for multiple snapshot recorders on one page
+- Added support for multiple mobile recorders on one page
+- Added VideoJS Player template
+
+Version 3.0.9(Build 2016081410)
+- Added a no cloud checkbox to the MP3 recorder settings on PoodLL General Settings page. If checked, mp3 files will get uploaded direct to moodle and bypass cloud
+- Added licence information (expire time etc) beneath registration code
+- Added a settings page for upcoming iOS app
+- Added a few new templates from default
+
+Version 3.0.8(Build 2016081409)
+- improved handling of uploads which led to failed uploads occasionally
+-fixed bug that occurred on new installs from version 3.0.7
+
+
+Version 3.0.7(Build 2016081408)
+-tweaks to how presets and templates display on settings pages
+-removed ability to save more than once during a recording. User needs to reload page. Not ideal but currently the second recording will likely not be saved properly after fetching from cloud
+-removed unused adhoc_s3_transcode task 
+-altered size of Flash audio recorders a little
+
+Version 3.0.6(Build 2016081407)
+-Fixed bug that could prevent files from finishing the conversion/copyback sequence
+
+Version 3.0.5(Build 2016081406)
+-Fixed bug stopping whiteboards upload
+
+Version 3.0.4(Build 2016081405)
+-fixed a bad bug which stopped non video filter strings being parsed
+
+Version 3.0.3(Build 2016081404)
+-removed a problem where non text links were filtered and replaced with players
+this would almost never be the desired situation
+-fix for failed uploads when not using cloud recording
+-added snapshot recorder (HTML5)
+-fixed html5 audio and video to show recording time
+
+Version 3.0.2(Build 2016081403)
+-added option to specify player to use in url of media file &player=xxx type appendages to media url
+-removed option to use AWS SDK v3 to reduce download size
+-removed libraries from js and 3rdparty mediaelement folders
+-fixed a bug in submitting audio/video  in assignment submission and quizzes. The save button was sometimes submitting the form.
+-fixed bug where literally canvas height was not set properly
+
+Version 3.0.1(Build 2016081402)
+-fixed issue with browsers caching placeholder audio/video and not using transcoded media
+
+Version 3.0.0(Build 2016081401)
+-tweaks to support callbackjs for recorders
+-preset improvements
+-support for ad hoc shimming in templates
+-support auto iframe resizing
+
+Version 2.8.7(Build 2016071605)
+-Added AWS SDK for PHP version 2.3 (for older php versions)
+-Tweaked ad-hoc task for moving from s3
+-fixed installation zip file which would not pass verification on install
+-added support for @@URLPARAM:xx@@ variables in PoodLL filter templates
+-altered default templates for audiojs and others
+
+Version 2.8.6(Build 2016071604)
+First release of PoodLL 3
+-html5 recorders
+-template based filter system
 
 Version 2015121106
 Fixed a bug that caused the whiteboard and recorders to fail to submit their media, when jquery was not present.

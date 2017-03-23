@@ -1,5 +1,10 @@
 Change List
 =========
+Version 2016112701
+Added a CSS style to control submitted image widths
+
+Version 2016081401
+Support for PoodLL 3
 
 Version 2015121101
 Support for refactored PoodLL filter and support for Moodle 3.0

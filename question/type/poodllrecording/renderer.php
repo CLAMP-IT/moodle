@@ -343,7 +343,7 @@ class qtype_poodllrecording_format_picture_renderer extends qtype_poodllrecordin
 			//if we do, we return the img link. If not, we return an empty string 
 			if($submittedfile){
 				$pathtofile= $qa->get_response_file_url($submittedfile);
-				$returndata.= "<img src=\"" . $pathtofile . "\" />";
+				$returndata.= "<img src=\"" . $pathtofile . "\" src=\"qtype_poodllrecording_whiteboardwidth\" />";
 			}else{
 				$returndata.= "";
 			}
