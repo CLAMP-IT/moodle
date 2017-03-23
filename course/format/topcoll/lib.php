@@ -159,7 +159,7 @@ class format_topcoll extends format_base {
                 case 3:
                 case 4:
                     // The word 'Toggle'.
-                    $o .= '<span class="cttoggle"> - ' . get_string('topcolltoggle', 'format_topcoll') . '</span>';
+                    $o .= '<div class="cttoggle"> - ' .get_string('topcolltoggle', 'format_topcoll') . '</div>';
                     break;
             }
         }
@@ -1217,7 +1217,7 @@ class format_topcoll extends format_base {
     }
 
     /**
-     * Whether this format allows to delete sections
+     * Whether this format allows to delete sections.
      *
      * Do not call this function directly, instead use {@link course_can_delete_section()}
      *
@@ -1239,6 +1239,49 @@ class format_topcoll extends format_base {
             return context_course::instance($this->courseid);
         }
     }
+
+    /**
+     * Prepares the templateable object to display section name.
+     *
+     * @param \section_info|\stdClass $section
+     * @param bool $linkifneeded
+     * @param bool $editable
+     * @param null|lang_string|string $edithint
+     * @param null|lang_string|string $editlabel
+     * @return \core\output\inplace_editable
+     */
+    public function inplace_editable_render_section_name($section, $linkifneeded = true,
+                                                         $editable = null, $edithint = null, $editlabel = null) {
+        if (empty($edithint)) {
+            $edithint = new lang_string('editsectionname', 'format_topcoll');
+        }
+        if (empty($editlabel)) {
+            $course = $this->get_course();
+            $title = $this->get_topcoll_section_name($course, $section, false);
+            $editlabel = new lang_string('newsectionname', 'format_topcoll', $title);
+        }
+        return parent::inplace_editable_render_section_name($section, $linkifneeded, $editable, $edithint, $editlabel);
+    }
+}
+
+/**
+ * Implements callback inplace_editable() allowing to edit values in-place.
+ *
+ * @param string $itemtype
+ * @param int $itemid
+ * @param mixed $newvalue
+ * @return \core\output\inplace_editable
+ */
+function format_topcoll_inplace_editable($itemtype, $itemid, $newvalue) {
+    global $CFG;
+    require_once($CFG->dirroot . '/course/lib.php');
+    if ($itemtype === 'sectionname' || $itemtype === 'sectionnamenl') {
+        global $DB;
+        $section = $DB->get_record_sql(
+            'SELECT s.* FROM {course_sections} s JOIN {course} c ON s.course = c.id WHERE s.id = ? AND c.format = ?',
+            array($itemid, 'topcoll'), MUST_EXIST);
+        return course_get_format($section->course)->inplace_editable_update_section_name($section, $itemtype, $newvalue);
+    }
 }
 
 /**
@@ -1248,13 +1291,4 @@ class format_topcoll extends format_base {
  */
 function callback_topcoll_definition() {
     return get_string('sectionname', 'format_topcoll');
-}
-
-/**
- * Deletes the user preference entries for the given course upon course deletion.
- * CONTRIB-3520.
- */
-function format_topcoll_delete_course($courseid) {
-    global $DB;
-    $DB->delete_records("user_preferences", array("name" => 'topcoll_toggle_' . $courseid));
 }

@@ -4,28 +4,28 @@ Topic based course format with an individual 'toggle' for each topic except 0.
 
 If you find an issue with the format, please see the 'Reporting Issues' section below.
 
-[![Build Status](https://travis-ci.org/gjb2048/moodle-format_topcoll.svg?branch=MOODLE_30)](https://travis-ci.org/gjb2048/moodle-format_topcoll)
+[![Build Status](https://travis-ci.org/gjb2048/moodle-format_topcoll.svg?branch=master)](https://travis-ci.org/gjb2048/moodle-format_topcoll)
 
 Required version of Moodle
 ==========================
-This version works with Moodle version 2015111600.00 3.0 (Build: 20151116) and above within the 3.0 branch until the
+This version works with Moodle 3.2 version 2016120500.00 (Build: 20161205) and above within the 3.2 branch until the
 next release.
 
 Please ensure that your hardware and software complies with 'Requirements' in 'Installing Moodle' on
-'docs.moodle.org/30/en/Installing_Moodle'.
+'docs.moodle.org/32/en/Installing_Moodle'.
 
 Downloads and documentation
 ===========================
 The primary source for downloading this branch of the format is https://moodle.org/plugins/view.php?plugin=format_topcoll
-with 'Select Moodle version:' set at 'Moodle 3.0'.
+with 'Select Moodle version:' set at 'Moodle 3.2'.
 
-The secondary source is a tagged version with the v3.0 prefix on https://github.com/gjb2048/moodle-format_topcoll/tags
+The secondary source is a tagged version with the v3.2 prefix on https://github.com/gjb2048/moodle-format_topcoll/tags
 
 If you download from the development area - https://github.com/gjb2048/moodle-format_topcoll/ - consider that
 the code is unstable and not for use in production environments.  This is because I develop the next version in stages
 and use GitHub as a means of backup.  Therefore the code is not finished, subject to alteration and requires testing.
 
-Documented on http://docs.moodle.org/30/en/Collapsed_Topics_course_format
+Documented on http://docs.moodle.org/32/en/Collapsed_Topics_course_format
 
 Bespoke changes
 ===============
@@ -46,6 +46,12 @@ If you make improvements or bug fixes then I would appreciate if you would send 
 https://github.com/gjb2048/moodle-format_topcoll and doing a 'Pull Request' so that the rest of the
 Moodle community benefits.
 
+Support
+=======
+Collapsed Topics comes with NO support.  If you would like support from me (Gareth) then I'm happy to provide it
+for a fee (please see my contact details below).  Otherwise, the 'Courses and course formats' forum:
+moodle.org/mod/forum/view.php?id=47 is an excellent place to ask questions.
+
 Sponsorships
 ============
 Collapsed Topics is provided to you for free, and if you want to express your gratitude for using this format, please consider
@@ -58,9 +64,14 @@ Flattr - https://flattr.com/profile/gjb2048
 
 Sponsorships may allow me to provide you with more or better features in less time.
 
-New features for this Moodle 3.0 version
+Sponsors
+========
+Sponsorships gratefully received with thanks from:
+Emerogork: Central Connecticut State University, USA
+
+New features for this Moodle 3.2 version
 ========================================
- 1. Same features as version 2.9.1.5 in Moodle 2.9.
+ 1. Features as version 3.1.1.3 in Moodle 3.1.
 
 Installation
 ============
@@ -193,11 +204,11 @@ If you want to change what icon represents which state / action, then edit 'styl
 the 'background' attribute with a 'toggle-...' type class within them.  There are selectors for both the 'toggles' and
 the 'toggle all' functionality.  For example:
 
-    body.jsenabled .course-content ul.ctopics li.section .content .toggle-arrow a.toggle_closed {
+    body.jsenabled .course-content ul.ctopics li.section .content .toggle-arrow span.toggle_closed {
         background-image: url([[pix:format_topcoll|arrow_right]]);
     }
 
-    #toggle-all .content .toggle-arrow h4 a.off {
+    #toggle-all .content .toggle-arrow h4 span.off {
         background-image: url([[pix:format_topcoll|arrow_down]]); 
     }
 
