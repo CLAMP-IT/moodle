@@ -3,8 +3,7 @@
 /**
  * This file contains the definition for the renderable classes for the assignment
  *
- * @package    mod
- * @subpackage scheduler
+ * @package    mod_scheduler
  * @copyright  2014 Henning Bostelmann and others (see README.txt)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -15,25 +14,42 @@ defined('MOODLE_INTERNAL') || die();
  * This class represents a table of slots associated with one student
  */
 class scheduler_slot_table implements renderable {
+
     public $slots = array();
     public $scheduler;
     public $showgrades;
-    public $showactions;
+    public $showslot = true;
+    public $showattended = false;
+    public $showactions = false;
+    public $showteachernotes = false;
+    public $showeditlink = false;
+    public $showlocation = true;
+    public $showstudent = false;
     public $actionurl;
 
-    public function add_slot(scheduler_slot $slotmodel, scheduler_appointment $appointmentmodel, $otherstudents, $cancancel = false) {
+    public function add_slot(scheduler_slot $slotmodel, scheduler_appointment $appointmentmodel,
+                             $otherstudents, $cancancel = false) {
         $slot = new stdClass();
         $slot->slotid = $slotmodel->id;
+        if ($this->showstudent) {
+            $slot->student = $appointmentmodel->student;
+        }
         $slot->starttime = $slotmodel->starttime;
         $slot->endtime = $slotmodel->endtime;
         $slot->attended = $appointmentmodel->attended;
         $slot->location = $slotmodel->appointmentlocation;
-        $slot->slotnotes = $slotmodel->notes;
-        $slot->slotnotesformat = $slotmodel->notesformat;
+        $slot->slotnote = $slotmodel->notes;
+        $slot->slotnoteformat = $slotmodel->notesformat;
         $slot->teacher = $slotmodel->get_teacher();
         $slot->appointmentid = $appointmentmodel->id;
-        $slot->appointmentnotes = $appointmentmodel->appointmentnote;
-        $slot->appointmentnotesformat = $appointmentmodel->appointmentnoteformat;
+        if ($this->scheduler->uses_appointmentnotes()) {
+            $slot->appointmentnote = $appointmentmodel->appointmentnote;
+            $slot->appointmentnoteformat = $appointmentmodel->appointmentnoteformat;
+        }
+        if ($this->scheduler->uses_teachernotes() && $this->showteachernotes) {
+            $slot->teachernote = $appointmentmodel->teachernote;
+            $slot->teachernoteformat = $appointmentmodel->teachernoteformat;
+        }
         $slot->otherstudents = $otherstudents;
         $slot->cancancel = $cancancel;
         if ($this->showgrades) {
@@ -46,9 +62,8 @@ class scheduler_slot_table implements renderable {
 
     public function __construct(scheduler_instance $scheduler, $showgrades=true, $actionurl = null) {
         $this->scheduler = $scheduler;
-        $this->showgrades = $showgrades;
+        $this->showgrades = $showgrades && $scheduler->uses_grades();
         $this->actionurl = $actionurl;
-        $this->showactions = false;
     }
 
 }
@@ -160,14 +175,12 @@ class scheduler_command_bar implements renderable {
         if ($id) {
             $attributes['id'] = $id;
         }
+        $confirmaction = null;
         if ($confirmkey) {
-            if (!$id) {
-                $id = html_writer::random_id('command_link');
-            }
-            $attributes['id'] = $id;
-            $this->linkactions[$id] = new confirm_action(get_string($confirmkey, 'scheduler'));
+            $confirmaction = new confirm_action(get_string($confirmkey, 'scheduler'));
         }
-        $act = new action_menu_link_secondary($url, $pix, $title, $attributes);
+        $act = new action_link($url, $title, $confirmaction, $attributes, $pix);
+        $act->primary = false;
         return $act;
     }
 
@@ -282,6 +295,31 @@ class scheduler_totalgrade_info implements renderable {
         $this->gbgrade = $gbgrade;
         $this->showtotalgrade = $showtotalgrade;
         $this->totalgrade = $totalgrade;
+    }
+
+}
+
+/**
+ * This class represents a list of scheduling conflicts
+ */
+class scheduler_conflict_list implements renderable {
+
+    public $conflicts = array();
+
+    public function add_conflict(stdClass $conflict, $user = null) {
+        $c = clone($conflict);
+        if ($user) {
+            $c->userfullname = fullname($user);
+        } else {
+            $c->userfullname = '';
+        }
+        $this->conflicts[] = $c;
+    }
+
+    public function add_conflicts(array $conflicts) {
+        foreach ($conflicts as $c) {
+            $this->add_conflict($c);
+        }
     }
 
 }
