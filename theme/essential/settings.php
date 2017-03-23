@@ -97,6 +97,15 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsgeneric->add($setting);
 
+    // Toggle page top blocks.
+    $name = 'theme_essential/pagetopblocks';
+    $title = get_string('pagetopblocks', 'theme_essential');
+    $description = get_string('pagetopblocksdesc', 'theme_essential');
+    $default = true;
+    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsgeneric->add($setting);
+
     // Page top blocks per row.
     $name = 'theme_essential/pagetopblocksperrow';
     $title = get_string('pagetopblocksperrow', 'theme_essential');
@@ -117,6 +126,18 @@ if ($ADMIN->fulltree) {
     $description = get_string('pagebottomblocksperrowdesc', 'theme_essential',
         array('lower' => $lower, 'upper' => $upper));
     $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $essentialsettingsgeneric->add($setting);
+
+    // User image border radius.
+    $name = 'theme_essential/userimageborderradius';
+    $title = get_string('userimageborderradius', 'theme_essential');
+    $default = 90;
+    $lower = 0;
+    $upper = 90;
+    $description = get_string('userimageborderradiusdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsgeneric->add($setting);
 
     // Custom favicon.
@@ -385,6 +406,36 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingscolour->add($setting);
 
+    // Theme stripe text colour setting.
+    $name = 'theme_essential/themestripetextcolour';
+    $title = get_string('themestripetextcolour', 'theme_essential');
+    $description = get_string('themestripetextcolourdesc', 'theme_essential');
+    $default = '#ffffff';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
+    // Theme stripe background colour setting.
+    $name = 'theme_essential/themestripebackgroundcolour';
+    $title = get_string('themestripebackgroundcolour', 'theme_essential');
+    $description = get_string('themestripebackgroundcolourdesc', 'theme_essential');
+    $default = '#ff9a34';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
+    // Theme stripe url colour setting.
+    $name = 'theme_essential/themestripeurlcolour';
+    $title = get_string('themestripeurlcolour', 'theme_essential');
+    $description = get_string('themestripeurlcolourdesc', 'theme_essential');
+    $default = '#25849f';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
     // This is the descriptor for the footer.
     $name = 'theme_essential/footercolorinfo';
     $heading = get_string('footercolors', 'theme_essential');
@@ -501,6 +552,9 @@ if ($ADMIN->fulltree) {
 
     $defaultalternativethemecolors = array('#a430d1', '#d15430', '#5dd130', '#006b94');
     $defaultalternativethemehovercolors = array('#9929c4', '#c44c29', '#53c429', '#4090af');
+    $defaultalternativethemestripetextcolors = array('#bdfdb7', '#c3fdd0', '#9f5bfb', '#ff1ebd');
+    $defaultalternativethemestripebackgroundcolors = array('#c1009f', '#bc2800', '#b4b2fd', '#0336b4');
+    $defaultalternativethemestripeurlcolors = array('#bef500', '#30af67', '#ffe9a6', '#ffab00');
 
     foreach (range(1, 4) as $alternativethemenumber) {
         // Enables the user to select an alternative colours choice.
@@ -618,6 +672,36 @@ if ($ADMIN->fulltree) {
         $title = get_string('alternativethemenavcolor', 'theme_essential', $alternativethemenumber);
         $description = get_string('alternativethemenavcolordesc', 'theme_essential', $alternativethemenumber);
         $default = '#ffffff';
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Alternative theme stripe text colour setting.
+        $name = 'theme_essential/alternativethemestripetextcolour' . $alternativethemenumber;
+        $title = get_string('alternativethemestripetextcolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemestripetextcolourdesc', 'theme_essential', $alternativethemenumber);
+        $default = $defaultalternativethemestripetextcolors[$alternativethemenumber - 1];
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Alternative theme stripe background colour setting.
+        $name = 'theme_essential/alternativethemestripebackgroundcolour' . $alternativethemenumber;
+        $title = get_string('alternativethemestripebackgroundcolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemestripebackgroundcolourdesc', 'theme_essential', $alternativethemenumber);
+        $default = $defaultalternativethemestripebackgroundcolors[$alternativethemenumber - 1];
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Theme stripe url colour setting.
+        $name = 'theme_essential/alternativethemestripeurlcolour' . $alternativethemenumber;
+        $title = get_string('alternativethemestripeurlcolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemestripeurlcolourdesc', 'theme_essential', $alternativethemenumber);
+        $default = $defaultalternativethemestripeurlcolors[$alternativethemenumber - 1];
         $previewconfig = null;
         $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
         $setting->set_updatedcallback('theme_reset_all_caches');
@@ -773,6 +857,38 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsheader->add($setting);
 
+    // User menu user image border radius.
+    $name = 'theme_essential/usermenuuserimageborderradius';
+    $title = get_string('usermenuuserimageborderradius', 'theme_essential');
+    $default = 4;
+    $lower = 0;
+    $upper = 90;
+    $description = get_string('usermenuuserimageborderradiusdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsheader->add($setting);
+
+    // Scrollbars on the dropdown menus.
+    $name = 'theme_essential/dropdownmenuscroll';
+    $title = get_string('dropdownmenuscroll', 'theme_essential');
+    $description = get_string('dropdownmenuscrolldesc', 'theme_essential');
+    $default = false;
+    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+    $essentialsettingsheader->add($setting);
+
+    // Dropdown menu maximum height.
+    $name = 'theme_essential/dropdownmenumaxheight';
+    $title = get_string('dropdownmenumaxheight', 'theme_essential');
+    $default = 384;
+    $lower = 100;
+    $upper = 800;
+    $description = get_string('dropdownmenumaxheightdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsheader->add($setting);
+
     // Use the site icon if there is no logo.
     $name = 'theme_essential/usesiteicon';
     $title = get_string('usesiteicon', 'theme_essential');
@@ -814,23 +930,27 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsheader->add($setting);
 
-    // Logo width setting.
-    $name = 'theme_essential/logowidth';
-    $title = get_string('logowidth', 'theme_essential');
-    $description = get_string('logowidthdesc', 'theme_essential');
-    $default = '65px';
-    $regex = '/\b(\d)(\d*)(px|em)\b/';
-    $logodimerror = get_string('logodimerror', 'theme_essential');
-    $setting = new essential_admin_setting_configtext($name, $title, $description, $default, $regex, $logodimerror);
+    // Logo desktop width setting.
+    $name = 'theme_essential/logodesktopwidth';
+    $title = get_string('logodesktopwidth', 'theme_essential');
+    $default = 25;
+    $lower = 1;
+    $upper = 100;
+    $description = get_string('logodesktopwidthdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsheader->add($setting);
 
-    // Logo height setting.
-    $name = 'theme_essential/logoheight';
-    $title = get_string('logoheight', 'theme_essential');
-    $description = get_string('logoheightdesc', 'theme_essential');
-    $default = '65px';
-    $setting = new essential_admin_setting_configtext($name, $title, $description, $default, $regex, $logodimerror);
+    // Logo mobile width setting.
+    $name = 'theme_essential/logomobilewidth';
+    $title = get_string('logomobilewidth', 'theme_essential');
+    $default = 10;
+    $lower = 1;
+    $upper = 100;
+    $description = get_string('logomobilewidthdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsheader->add($setting);
 
@@ -1268,7 +1388,8 @@ if ($ADMIN->fulltree) {
     $essentialsettingsfont->add($setting);
 
     // Font selector.
-    $gws = html_writer::link('//www.google.com/fonts', get_string('fonttypegoogle', 'theme_essential'), array('target' => '_blank'));
+    $gws = html_writer::link('//www.google.com/fonts',
+        get_string('fonttypegoogle', 'theme_essential'), array('target' => '_blank'));
     $name = 'theme_essential/fontselect';
     $title = get_string('fontselect', 'theme_essential');
     $description = get_string('fontselectdesc', 'theme_essential', array('googlewebfonts' => $gws));
@@ -1515,10 +1636,10 @@ if ($ADMIN->fulltree) {
     $name = 'theme_essential/frontpageblocks';
     $title = get_string('frontpageblocks', 'theme_essential');
     $description = get_string('frontpageblocksdesc', 'theme_essential');
-    $left = get_string('left', 'theme_essential');
-    $right = get_string('right', 'theme_essential');
+    $before = get_string('beforecontent', 'theme_essential');
+    $after = get_string('aftercontent', 'theme_essential');
     $default = 1;
-    $choices = array(1 => $left, 0 => $right);
+    $choices = array(1 => $before, 0 => $after);
     $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsfrontpage->add($setting);
@@ -1560,6 +1681,17 @@ if ($ADMIN->fulltree) {
     $choices = array(1 => $alwaysdisplay, 2 => $displaybeforelogin, 3 => $displayafterlogin, 0 => $dontdisplay);
     $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
     $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsfrontpage->add($setting);
+
+    // Page top blocks per row.
+    $name = 'theme_essential/fppagetopblocksperrow';
+    $title = get_string('fppagetopblocksperrow', 'theme_essential');
+    $default = 3;
+    $lower = 1;
+    $upper = 4;
+    $description = get_string('fppagetopblocksperrowdesc', 'theme_essential',
+        array('lower' => $lower, 'upper' => $upper));
+    $setting = new essential_admin_setting_configinteger($name, $title, $description, $default, $lower, $upper);
     $essentialsettingsfrontpage->add($setting);
 
     // Marketing spot settings.
@@ -2188,7 +2320,8 @@ if (get_config('theme_essential', 'enablecategorycti')) {
     foreach ($coursecats as $key => $value) {
         if (($value->depth == 1) && ($enablecategoryctics)) {
             $essentialsettingscategoryctimenu = new admin_settingpage('theme_essential_categorycti_'.$value->id,
-                get_string('categoryctiheadingcategory', 'theme_essential', array('category' => $value->namechunks[0])));
+                get_string('categoryctiheadingcategory', 'theme_essential',
+                    array('category' => format_string($value->namechunks[0]))));
         }
 
         if ($ADMIN->fulltree) {
@@ -2422,6 +2555,45 @@ if ($ADMIN->fulltree) {
         get_string('readme_title', 'theme_essential'), get_string('readme_desc', 'theme_essential', array('url' => $readme))));
 }
 $ADMIN->add('theme_essential', $essentialsettingsanalytics);
+
+// Properties.
+$essentialsettingsprops = new admin_settingpage('theme_essential_props', get_string('properties', 'theme_essential'));
+if ($ADMIN->fulltree) {
+    if (file_exists("{$CFG->dirroot}/theme/essential/essential_admin_setting_getprops.php")) {
+        require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_getprops.php');
+        require_once($CFG->dirroot . '/theme/essential/essential_admin_setting_putprops.php');
+    } else if (!empty($CFG->themedir) && file_exists("{$CFG->themedir}/essential/essential_admin_setting_getprops.php")) {
+        require_once($CFG->themedir . '/essential/essential_admin_setting_getprops.php');
+        require_once($CFG->themedir . '/essential/essential_admin_setting_putprops.php');
+    }
+
+    $essentialsettingsprops->add(new admin_setting_heading('theme_essential_props',
+        get_string('propertiessub', 'theme_essential'),
+        format_text(get_string('propertiesdesc', 'theme_essential'), FORMAT_MARKDOWN)));
+
+    $essentialexportprops = optional_param('theme_essential_getprops_saveprops', 0, PARAM_INT);
+    $essentialprops = \theme_essential\toolbox::compile_properties('essential');
+    $essentialsettingsprops->add(new essential_admin_setting_getprops('theme_essential_getprops',
+        get_string('propertiesproperty', 'theme_essential'),
+        get_string('propertiesvalue', 'theme_essential'),
+        $essentialprops,
+        'theme_essential_props',
+        get_string('propertiesreturn', 'theme_essential'),
+        get_string('propertiesexport', 'theme_essential'),
+        $essentialexportprops
+    ));
+
+    $setting = new essential_admin_setting_putprops('theme_essential_putprops',
+        get_string('putpropertiesname', 'theme_essential'),
+        get_string('putpropertiesdesc', 'theme_essential'),
+        'essential',
+        '\theme_essential\toolbox::put_properties'
+    );
+    $setting->set_updatedcallback('purge_all_caches');
+    $essentialsettingsprops->add($setting);
+
+}
+$ADMIN->add('theme_essential', $essentialsettingsprops);
 
 // Style guide.
 $essentialsettingsstyleguide = new admin_settingpage('theme_essential_styleguide', get_string('styleguide', 'theme_essential'));

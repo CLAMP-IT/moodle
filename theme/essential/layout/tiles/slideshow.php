@@ -18,17 +18,23 @@
  * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
+ * @copyright   2017 Gareth J Barnard
  * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
  * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 $numberofslides = \theme_essential\toolbox::showslider();
 
 if ($numberofslides) {
     $slideinterval  = \theme_essential\toolbox::get_setting('slideinterval');
-    $data = array('data' => array('slideinterval' => $slideinterval));
+    $data = array('data' => array('slideright' => !$left));
+    if ($slideinterval) {
+        $data['data']['slideinterval'] = $slideinterval;
+    }
     $PAGE->requires->js_call_amd('theme_essential/carousel', 'init', $data);
 
     $captionscenter = (\theme_essential\toolbox::get_setting('slidecaptioncentred')) ? ' centred' : '';
@@ -60,10 +66,11 @@ if ($numberofslides) {
                     <?php echo \theme_essential\toolbox::render_indicators($numberofslides); ?>
                 </ol>
                 <div class="carousel-inner<?php echo $captionscenter.$captionsclass;?>">
-                    <?php for ($slideindex = 1; $slideindex <= $numberofslides; $slideindex++) {
+                    <?php
+                    for ($slideindex = 1; $slideindex <= $numberofslides; $slideindex++) {
                         echo \theme_essential\toolbox::render_slide($slideindex, $captionoptions);
-}
-?>
+                    }
+                    ?>
                 </div>
                 <?php echo \theme_essential\toolbox::render_slide_controls($left); ?>
             </div>

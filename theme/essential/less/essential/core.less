@@ -1,20 +1,27 @@
 /* @group Core */
 
 body {
-  line-height: 20px;
-  text-shadow: none;
-  font-size: 14px;
-  font-weight: 400;
-  background-color: rgba(255, 255, 255, 0.6);
-  background-size: cover;
-  margin: 0;
-  padding: 0;
+    line-height: 20px;
+    text-shadow: none;
+    font-size: 14px;
+    font-weight: 400;
+    background-color: rgba(255, 255, 255, 0.6);
+    background-size: cover;
+    margin: 0;
+    padding: 0;
 }
 
 a,
 a:hover,
 a:focus {
-  text-decoration: none;
+    text-decoration: none;
+}
+
+.usersuspended,
+.usersuspended a,
+.usersuspended a:link,
+.usersuspended a:visited {
+    text-decoration: line-through;
 }
 
 // Accessibility: Skip block link, for keyboard-only users.
@@ -27,60 +34,61 @@ a:focus {
 }
 
 .text_to_html {
-  display: inline;
-  clear: none;
+    display: inline;
+    clear: none;
 }
 
 #dndupload-status {
-  display: none;
+    display: none;
 }
 
 .moodle-actionmenu[data-enhanced].show {
-  white-space: nowrap;
-  .menu {
-    box-shadow: none;
-      .iconsmall,
-      .smallicon {
-        margin: 4px;
-      }
-  }
+    white-space: nowrap;
+    .menu {
+        box-shadow: none;
+        .iconsmall,
+        .smallicon {
+            margin: 4px;
+        }
+    }
 }
 
-.sitetopic .section .activity:hover, .course-content .section .activity:hover {
-  background-color: none;
+.sitetopic .section .activity:hover,
+.course-content .section .activity:hover {
+    background-color: none;
 }
 
 del {
-  color: red !important;
+    color: red !important;
 }
 
 ins {
-  color: green !important;
+    color: green !important;
 }
 
 #page, .pagelayout-redirect {
-  padding-top: 10px;
-  #page-content {
-    margin-top: 10px;
-    #region-main,
-    div[role="main"] {
-      border: 1px solid darken(@wellBackground, 7%);
-      .border-radius(@borderRadiusLarge);
-      background-color: @white;
-      padding: @paddingSmall;
-      margin-bottom: 20px;
-    }
+    padding-top: 10px;
+    #page-content {
+        margin-top: 10px;
+        #region-main,
+        div[role="main"] {
+            border: 1px solid darken(@wellBackground, 7%);
+            .border-radius(@borderRadiusLarge);
+            background-color: @white;
+            padding: @paddingSmall;
+            margin-bottom: 20px;
+        }
 
         #region-main {
             box-sizing: border-box;
         }
 
-    #region-main > div[role="main"] {
-      border: none;
-      .border-radius(0);
-      padding: 0;
+        #region-main > div[role="main"] {
+            border: none;
+            .border-radius(0);
+            padding: 0;
+        }
     }
-  }
 }
 
 .used-region-header {
@@ -98,50 +106,54 @@ ins {
 }
 
 .bor {
-  height: 20px;
-  margin: 0 0 4px;
+    height: 20px;
+    margin: 0 0 4px;
 }
 
-#page-admin-upgradesettings #page, .maintenance#page {
-  padding-top: 0;
+#page-admin-upgradesettings #page,
+.maintenance#page {
+    padding-top: 0;
 }
 
 #page-admin-plugins #page-content #region-main {
-  overflow-x: auto;
+    overflow-x: auto;
 }
 
 .path-grade-report-grader table {
-  background-color: transparent;
-  &#fixed_column {
     background-color: transparent;
-  }
+    &#fixed_column {
+        background-color: transparent;
+    }
 }
 
 .side-pre {
-  border: 1px solid #333;
+    border: 1px solid #333;
 }
 
 .span12#move {
-  margin-top: -30px;
+    margin-top: -30px;
 }
 
 .course-content ul.weeks li.section {
-  padding-bottom: 20px !important; // Override weeks course format styles.css.
+    padding-bottom: 20px !important; // Override weeks course format styles.css.
 }
 
 img.userpicture,
 img.profilepicture {
-  border-radius: 250px;
-  margin-right: 5px;
+    border-style: solid;
+    border-width: 1px;
+    margin-right: 5px;
 }
 
-body { // Inside a body tag so will be more specific and override core plugin styles that come afterwards without the use of 'important' and can then override again in pre-processed theme setting style if needed.
+// Inside a body tag so will be more specific and override core plugin styles that come afterwards without the use of 'important' and can then override again in pre-processed theme setting style if needed.
+body {
     .chooserdialogue .moodle-dialogue-wrap .moodle-dialogue-bd {
         padding: 0;
     }
 }
 
-.dimmed_category a:visited, .dimmed {
+.dimmed_category a:visited,
+.dimmed {
     .muted;
 }
 .activity.label .dimmed_text {
@@ -177,7 +189,8 @@ body { // Inside a body tag so will be more specific and override core plugin st
 // User enrolment page.
 .userenrolment {
     img {
-        &.userpicture, &.profilepicture {
+        &.userpicture,
+        &.profilepicture {
             height: 44px;
             width: 44px;
         }
@@ -185,7 +198,8 @@ body { // Inside a body tag so will be more specific and override core plugin st
     .unassignrolelink {
         vertical-align: text-bottom;
     }
-    .col_userdetails, .col_lastcourseaccess {
+    .col_userdetails,
+    .col_lastcourseaccess {
         padding: 6px;
     }
 }

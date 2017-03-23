@@ -1,25 +1,73 @@
-New in 3.0.1.14
-===============
+New in 3.2.1.0 - First stable version.
+==============
+- FIX: Issue #812: Add icon replacements for t/message and t/addcontact.  Thanks to Jan Dageförde (https://github.com/Dagefoerde) for this fix.
+- FIX: Stray end tag in grading_navigation.mustache - MDL-58155.
+- FIX: Navbar z-index for the Grid format in M3.2.
+- FIX: Minimum height for the containing area when there is a logo.  This is so that when a calculated height is less than the value then the container is not so small for the social icons etc.
+
+New in 3.2.0.1 - Beta version.
+==============
+- UPD: Core and plugin pix.
+- UPD: TravisCI.
+- UPD: Unread messages language string.
+- UPD: For jQuery 3 needed to escape all '#'s and '"'s in the JS - ref: https://api.jquery.com/category/selectors/.
+- UPD: RTL LESS / CSS and see what can be removed as there is now a 'autoflipping' tool built in to Moodle.
+- UPD: Removed 'essential.css' from production minification so that PHP-RTLCSS comments are preserved and can be processed.
+- UPD: Improved logo to be responsive with different percentage widths for desktops and mobiles.
+- FIX: Social and app icon position in RTL.
+- FIX: Edit action menu icon hover background colour.
+- NEW: Issue #810: Switch role to.
+
+New in 3.1.1.8
+==============
+- FIX: Issue #794: Hidden grade items in user report not clear as such.
+- FIX: Issue #804: 'Hide default page editing button' hides anything that could be in that place.
+- FIX: Issue #805: Suspended user odd rows.
+- FIX: Alternative colour table odd row colour.
+- FIX: RTL header dotted separator appearing twice.
+- FIX: User image table even row background.
+- FIX: Forum table user image link height.
+- FIX: Environment table help icon spacing.
+- NEW: User image border radius settings.
+
+New in 3.1.1.7
+==============
+- FIX: Issue #799: Message avatar overlap.
+- FIX: Issue #802: My courses scroll not working.
+- FIX: Issue #803: Embedded pdf files not displaying in IE 11.
+- NEW: Properties.
+
+New in 3.1.1.6
+==============
+- FIX: Issue #798: Slider title needs to support multi-lang filter.
+- FIX: Course category multi-lang, ref: https://moodle.org/mod/forum/discuss.php?d=344426#p1389008.
+- NEW: Issue #734: Unable to disable the new "page top" block region.
+
+New in 3.1.1.5
+==============
 - FIX: Alternative colour scheme primary button text colour.
 - NEW: Update to FontAwesome 4.7.0.
 - NEW: Add 'Category and course sub-menu' functionality - 'mycoursescatsubmenu' 'Header' setting under 'Courses menu'.  Sponsored by Petra Aartsen, Ontwikkelversneller.
 
-New in 3.0.1.13
-===============
+New in 3.1.1.4
+==============
+- REFIX: Issue #780: Certain grades not appearing in gradebook.
+
+New in 3.1.1.3
+==============
 - FIX: Issue #780: Certain grades not appearing in gradebook.
-- FIX: Issue #783: MDL-51633 and MDL-56368.
 - FIX: Issue #788: Apply MDL-48350.
 - FIX: Issue #789: Editing button in header not working in "modedit" pages.
 - FIX: Blocks on tablets when one region is empty.
 - NEW: Issue #778: Add a button to the front page to add alert settings.  Sponsored by Chipping Campden School.
 
-New in 3.0.1.12
-===============
+New in 3.1.1.2
+==============
 - FIX: Issue #777: Re: Scroll in the drop down menus #773 - Custom menu sub-menus no longer accessible.
-- FIX: Tidy up Bootstrap override LESS.
+- FIX: Bootstrap override LESS not working.
 
-New in 3.0.1.11
-===============
+New in 3.1.1.1
+==============
 - REFIX: Issue #747: Profile picture in user profile missing.
 - FIX: Issue #751: 3 block regions displaying in Edit mode for a 2-column layout.
 - FIX: Issue #771: "Skip to main content" link is hidden by main fixed navbar.
@@ -28,40 +76,54 @@ New in 3.0.1.11
 - FIX: Issue #776: Block editing labels can move.
 - FIX: Row block and course category flex issues.
 - FIX: Disabled elements in tables.
+- FIX: MDL-56198 - Improve grading info responsiveness.
 - REFIX: Action menu items for blocks when narrow page width.
 - NEW: Issue #770: Create 'top-block' region with optionality setting.
 - NEW: Issue #775: Only show dotted lines on regions when Drag and Drop.
 - FIX/NEW: Improve footer.js and by doing so fix issue with popup layout.
 
-New in 3.0.1.10
-===============
-- FIX: Issue #739: FontAwesome icons on incorrect side for RTL in Firefox.
+New in 3.1.1.0
+==============
+- NEW: First stable release for Moodle 3.1.
+
+New in 3.1.0.9
+==============
+- FIX: Issue #737: Rubric pop-out on assignment grading page doesn't use full height.
+- FIX: Issue #740: Rubric in assignment view styling.
 - FIX: Issue #746: Category icon tiles sometimes don't line up.
 - FIX: Issue #747: Profile picture in user profile missing.
+- FIX: Issue #748: "Page Top" blocks area, in edit mode, display blocks one under the other, in RTL mode.
+- FIX: Issue #749: Course item action edit menu has redundant padding, in RTL mode.
 - FIX: Issue #753: Accessibility: missing aria-label attribute in "back-to-top" element.  Thanks to Nadav Kavalerchik.
 - FIX: Issue #754: Accessibility: missing aria-label attribute in "prev"/"next" elements.  Thanks to Nadav Kavalerchik.
 - FIX: Issue #755: Accessibility: missing aria-label attribute in "socialicon" elements.  Thanks to Nadav Kavalerchik.
-- FIX: Issue #761: Activity item padding when editing in RTL.
+- FIX: Issue #757: Custom icon colour doesn't seem to apply correctly to icons in drop-downs.
 - FIX: Issue #762: Course fullname repeated above and below breadcrumbs.
 - FIX: Issue #763: Custom EOT files don't work.
 - FIX: Issue #765: Link font family is wrong.
+- FIX: Issue #768: Display right arrow in dropdown-submenu.
+- FIX: Breadcrumb style two fixes.
 - FIX: Row block empty space.
+- FIX: Frontpage RTL.
 - FIX: Temporary patch until MDL-55185 is rectified in core.
 - FIX: Action menu items.
+- NEW: Issue #738: Fixes #736 add extra urlcolor for stripes.
 - NEW: Issue #766: Login page background image.  Gratefully funded by Gemma Lesterhuis.
 - NEW: Improvements to 'essential_edit_button' for child themes.
 
-New in 3.0.1.9
+New in 3.1.0.8
 ==============
 - FIX: Issue #320: Group editing icons do not update on click to reflect new group status.
-- FIX: Issue #700: Header height.
 - FIX: Issue #722: Assignment grading page lacking styling.
 - FIX: Issue #724: Main content does not expand.
 - FIX: Issue #726: New "page top" block region is not properly margined in RTL mode.
+- FIX: Issue #727: MyDashboard layout not flipping in RTL.
 - FIX: Issue #729: New "page top" block region looks weird, when adding a new module.
+- FIX: Issue #731: Assignment overview options.
 - FIX: Remove MyDashboard layout to avoid duplicated code.
+- NEW: Issue #713: Grading page has no navigation.
 
-New in 3.0.1.8
+New in 3.1.0.7
 ==============
 - FIX: Issue #710: Wrong profile image used.
 - FIX: Issue #711: Space when blocks are docked.
@@ -72,34 +134,77 @@ New in 3.0.1.8
 - FIX: Issue #717: Notifications hover.
 - FIX: Issue #718: Affix top offset height when reload down page.
 - FIX: Issue #720: Block titles when editing and a page background are difficult to see.
+- FIX: Issue #721: Notification template close inconsistent with alerts on frontpage.
 - FIX: Table tidy up.
 
-New in 3.0.1.7
+New in 3.1.0.6
 ==============
 - FIX: Issue #697: Floating gradebook headers do not account for navbar height.
 - FIX: Issue #698: Accessibility: role=main-content ("Role must be one of the valid ARIA roles").
+- FIX: Issue #699: Assignment grading toolbar missing.
+- FIX: Issue #700: Header height - M3.1.
 - FIX: Issue #702: Header title - Fullname and summary option - language span tags.
 - FIX: Issue #703: Group images are not well displayed.
 - FIX: Issue #704: Vertical space between the header title and header subtitle is to small.
 - FIX: Issue #707: Marketing setting header.
+- FIX: Two column layout in RTL - M3.1.
 - FIX: Theme selector images not responsive.
 - FIX: Fixed height header when no logo for header background image now that the navbar calculates height in the old position.
+- FIX: Theme selector table odd rows text colour - M3.1.
 - FIX: Hover on dialog close button when using an alternative colour scheme.
+- FIX: Notification templates location and tidy up.
+- FIX: Missing forum icons.
+- FIX: Revert to default grey SVG icons.
+- FIX: Navbar and menus LTR / RTL icons - M3.1.
 - NEW: Issue #606: Allowing blocks placed at the top of the content column.  Gratefully funded by: Servei de Recursos Educatius <http://www.sre.urv.cat>, Universitat Rovira i Virgili.
 - NEW: Display block region names when editing.
 
-New in 3.0.1.6
+New in 3.1.0.5
 ==============
-- FIX: Issue #679: Guest user menu show missing support email error.
-- FIX: Issue #686: Two enrolments in a course with latest courses.
+- FIX: Issue #684: Navigation block: English tree item icons should be right aligned in RTL mode.
+- FIX: Issue #685: Blocks should be right aligned under content in admin page layout, on RTL mode.
+- FIX: Issue #687: Dropdown menus don't stay open.
+- FIX: Issue #688: FA block icons are not right aligned using Firefox, in RTL mode.
 - FIX: Issue #690: Google fonts not working in quiz with Javascript Security.
 - FIX: Issue #691: Cyrillic support for truncated return to section names.  Fixed by Evgeny Logunow.
 - FIX: Issue #692: Page background and 'beside' carousel text clash.
 - FIX: Issue #693: Pixelated user picture.
+- FIX: Issue #694: Folder state in blocks and icons.
 - FIX: Issue #695: Large logo, old navbar position and affix.
 - FIX: Issue #696: Double height navbar blocks content.
+- FIX: Mod assign styles very tricky to override so exluding and including own changed copy despite potential maintenance issues.
+- FIX: Button font.
+- FIX: Content first three column layout in RTL.
+
+New in 3.1.0.4
+==============
+- FIX: Issue #681: Breadcrumbs should be right aligned in RTL mode.
+- FIX: Issue #682: Category icons in M3.1.
+
+New in 3.1.0.3
+==============
+- FIX: SVG version of 'Cogs' for 'Settings' cog.
+- FIX: Plugins check table text colour.
+- FIX: Noticeboard format user picture.
+- NEW: Competancies icon.
+
+New in 3.1.0.2
+==============
+- FIX: Issue #674: M31 beta: Breadcrumbs should be right aligned and flipped in RTL mode.
+- FIX: Issue #675: M31 beta: Left align "return to course" button, in RTL mode.
+- FIX: Issue #676: M31 beta: Tree nodes in Navigation block have no right margin, in RTL mode.
+- FIX: Issue #677: M31b: Tree nodes on Navigation block have redundant 21px right padding, in RTL mode.
+- FIX: Issue #678: Gradebook sticky headers broken, in RTL mode.
+- FIX: Issue #679: Guest user menu show missing support email error.
+- FIX: Issue #686: Two enrolments in a course with latest courses.
 - FIX: User menu setting header.
 - NEW: My courses options.  Thanks to "Linnaeus University" for funding this enhancement.
+
+New in 3.1.0.1
+==============
+- FIX: Carousel slides in correct direction for RTL.
+- NEW: Theme table stripe text and background colour settings.
+- NEW: FontAwesome 4.6.3.
 
 New in 3.0.1.5
 ==============

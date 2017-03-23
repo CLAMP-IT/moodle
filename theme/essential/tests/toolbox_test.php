@@ -20,10 +20,12 @@
  * @package    theme
  * @subpackage essential
  * @copyright  &copy; 2015-onwards G J Barnard in respect to modifications of the Bootstrap theme.
- * @author     G J Barnard - gjbarnard at gmail dot com and {@link http://moodle.org/user/profile.php?id=442195}
+ * @author     G J Barnard - {@link http://moodle.org/user/profile.php?id=442195}
  * @author     Based on code originally written by Bas Brands, David Scotson and many other contributors.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die;
 
 /**
  * Toolbox unit tests for the Essential theme.
@@ -81,7 +83,8 @@ class theme_essential_toolbox_testcase extends advanced_testcase {
             $resultarray[$cat] = $resultcat;
 
             $subcat = $cat + $numcats;
-            $categories[$subcat] = $this->getDataGenerator()->create_category(array('name' => 'Subcategory '.$subcat, 'parent' => $categories[$cat]->id));
+            $categories[$subcat] = $this->getDataGenerator()->create_category(
+                array('name' => 'Subcategory '.$subcat, 'parent' => $categories[$cat]->id));
             $resultsubcat = new stdClass();
             $resultsubcat->id = $categories[$subcat]->id;
             $resultsubcat->name = 'Subcategory '.$subcat;
@@ -186,6 +189,6 @@ class theme_essential_toolbox_testcase extends advanced_testcase {
 
         $this->assertEquals('essential', $PAGE->theme->name);
         $this->assertEquals('/theme/essential', $themedir);
-        $this->assertEmpty($PAGE->theme->parents);
+        $this->assertEquals('bootstrapbase', $PAGE->theme->parents[0]);
     }
 }

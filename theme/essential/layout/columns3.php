@@ -24,25 +24,29 @@
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die;
+
 require_once(\theme_essential\toolbox::get_tile_file('additionaljs'));
 require_once(\theme_essential\toolbox::get_tile_file('header'));
 ?>
 
 <div id="page" class="container-fluid">
     <?php require_once(\theme_essential\toolbox::get_tile_file('pagetopheader')); ?>
-        <!-- Start Main Regions -->
-        <div id="page-content" class="row-fluid">
-            <div id="<?php echo $regionbsid ?>" class="span9">
-                <div class="row-fluid">
+    <!-- Start Main Regions -->
+    <div id="page-content" class="row-fluid">
+        <div id="<?php echo $regionbsid ?>" class="span9<?php echo (!$left) ? ' pull-right' : ''; ?>">
+            <div class="row-fluid">
 <?php
 if ($tablet) {
     echo '<div id="content" class="span12">';
-} else if ($hasboringlayout) {
+} else if ((($hasboringlayout) && ($left)) || ((!$hasboringlayout) && (!$left))) {
     echo '<div id="content" class="span8 pull-right">';
 } else {
     echo '<div id="content" class="span8 desktop-first-column">';
 }
-echo $OUTPUT->essential_blocks('page-top', 'row-fluid', 'aside', 'pagetopblocksperrow');
+if (\theme_essential\toolbox::get_setting('pagetopblocks')) {
+    echo $OUTPUT->essential_blocks('page-top', 'row-fluid', 'aside', 'pagetopblocksperrow');
+}
 echo '<section id="region-main">';
 echo $OUTPUT->course_title();
 echo $OUTPUT->course_content_header();
@@ -53,27 +57,31 @@ if (empty($PAGE->layout_options['nocoursefooter'])) {
 echo '</section>';
 echo '</div>';
 if (!$tablet) {
-    if ($hasboringlayout) {
+    if ((($hasboringlayout) && ($left)) || ((!$hasboringlayout) && (!$left))) {
         echo $OUTPUT->essential_blocks('side-pre', 'span4 desktop-first-column');
     } else {
         echo $OUTPUT->essential_blocks('side-pre', 'span4 pull-right');
     }
 }
 ?>
-                </div>
             </div>
-            <?php
-            if ($tablet) {
-                ?> <div class="span3"><div class="row-fluid"> <?php
+        </div>
+        <?php
+        if ($tablet) {
+            ?> <div class="span3<?php echo (!$left) ? ' desktop-first-column' : ''; ?>"><div class="row-fluid"> <?php
     echo $OUTPUT->essential_blocks('side-pre', '');
     echo $OUTPUT->essential_blocks('side-post', '');
 ?> </div></div> <?php
-            } else {
-                echo $OUTPUT->blocks('side-post', 'span3');
+        } else {
+            $postclass = 'span3';
+            if (!$left) {
+                $postclass .= ' desktop-first-column';
             }
+            echo $OUTPUT->essential_blocks('side-post', $postclass);
+        }
 ?>
-        </div>
-        <!-- End Main Regions -->
+    </div>
+    <!-- End Main Regions -->
 </div>
 
 <?php require_once(\theme_essential\toolbox::get_tile_file('footer')); ?>
