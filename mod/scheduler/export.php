@@ -1,17 +1,16 @@
 <?php
 
-require_once(dirname(__FILE__).'/exportform.php');
-
 /**
  * Export scheduler data to a file.
  *
- * @package    mod
- * @subpackage scheduler
- * @copyright  2011 Henning Bostelmann and others (see README.txt)
+ * @package    mod_scheduler
+ * @copyright  2016 Henning Bostelmann and others (see README.txt)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
+
+require_once(dirname(__FILE__).'/exportform.php');
 
 $PAGE->set_docs_path('mod/scheduler/export');
 
@@ -24,6 +23,7 @@ if ($groupmode) {
 
 $actionurl = new moodle_url('/mod/scheduler/view.php', array('what' => 'export', 'id' => $scheduler->cmid));
 $returnurl = new moodle_url('/mod/scheduler/view.php', array('what' => 'view', 'id' => $scheduler->cmid));
+$PAGE->set_url($actionurl);
 $mform = new scheduler_export_form($actionurl, $scheduler);
 
 if ($mform->is_cancelled()) {
@@ -91,15 +91,20 @@ if (!$data || $preview) {
 
 switch ($data->outputformat) {
     case 'csv':
-        $canvas = new scheduler_csv_canvas($data->csvseparator); break;
+        $canvas = new scheduler_csv_canvas($data->csvseparator);
+        break;
     case 'xls':
-        $canvas = new scheduler_excel_canvas(); break;
+        $canvas = new scheduler_excel_canvas();
+        break;
     case 'ods':
-        $canvas = new scheduler_ods_canvas(); break;
+        $canvas = new scheduler_ods_canvas();
+        break;
     case 'html':
-        $canvas = new scheduler_html_canvas($returnurl); break;
+        $canvas = new scheduler_html_canvas($returnurl);
+        break;
     case 'pdf':
-        $canvas = new scheduler_pdf_canvas($data->pdforientation); break;
+        $canvas = new scheduler_pdf_canvas($data->pdforientation);
+        break;
 }
 
 $export = new scheduler_export($canvas);

@@ -1,9 +1,9 @@
 <?php
+
 /**
  * Scheduler module capability definition
  *
- * @package    mod
- * @subpackage scheduler
+ * @package    mod_scheduler
  */
 
 $capabilities = array(
@@ -98,6 +98,22 @@ $capabilities = array(
             'editingteacher' => CAP_ALLOW,
             'coursecreator' => CAP_ALLOW,
             'manager' => CAP_ALLOW
+        )
+    ),
+
+    'mod/scheduler:viewslots' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'student' => CAP_ALLOW,
+        ),
+        'clonepermissionsfrom' => 'mod/scheduler:appoint'
+    ),
+
+    'mod/scheduler:viewfullslots' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
         )
     ),
 
