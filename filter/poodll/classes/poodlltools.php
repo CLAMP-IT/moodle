@@ -30,9 +30,22 @@ require_once($CFG->libdir . '/filelib.php');
  * @copyright  2014 Justin Hunt
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+ 
 class poodlltools
 {
+    const LOG_SAVE_PLACEHOLDER_FAIL = 1;
 
+	//this is just a temporary function, until the PoodLL filter client plugins are upgraded to not use simpleaudioplayer
+    public static function fetchSimpleAudioPlayer($param1='auto',$url,$param3='http',$param4='width', $param5='height'){ 
+        $html_snippet = \html_writer::tag('a','audiofile.mp3',array('href'=>$url));
+       return format_text($html_snippet);
+    }
+    
+    //this is just a temporary function, until the PoodLL filter client plugins are upgraded to not use simpleaudioplayer
+    public static function fetchSimpleVideoPlayer($param1='auto',$url,$param3='http',$param4='width', $param5='height'){ 
+        $html_snippet = \html_writer::tag('a','videofile.mp4',array('href'=>$url));
+       return format_text($html_snippet);
+    }
 
 	public static function fetch_mediaserver_url()
 	{
@@ -49,232 +62,13 @@ class poodlltools
 
 	}
 
-//Trying to get the Flowplayer JS loaded nicely has been very tricky
-//and we are not intercepting mp3 or flv or mp4 links, we don't load it. If we do
-//this function checks if we should load it or not. If it is not the default player
-//it messes up the multimedia plugin. Justin 20120924
-	public static function shouldLoadFlowPlayerJS()
-	{
-		global $CFG;
-
-		//If the PoodLL filter is using the flowplayer by default and handling media file extensions,
-		//return true
-		if ($CFG->filter_poodll_defaultplayer == 'fp'
-			&& ($CFG->filter_poodll_handleflv
-				|| $CFG->filter_poodll_handlemp4
-				|| $CFG->filter_poodll_handlemp3)
-		) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-//This fetches the admin console for pairwork and screencasting
-	public static function fetch_poodllconsole($runtime)
-	{
-		global $CFG, $USER, $COURSE;
-
-		$broadcastkey = "1234567";
-		$mename = "";
-
-		//Set the camera prefs
-		$capturewidth = $CFG->filter_poodll_capturewidth;
-		$captureheight = (string)(0.75 * intval($CFG->filter_poodll_capturewidth));
-		$capturefps = $CFG->filter_poodll_capturefps;
-		$prefcam = $CFG->filter_poodll_screencapturedevice;
-		$prefmic = $CFG->filter_poodll_studentmic;
-		$bandwidth = $CFG->filter_poodll_bandwidth;
-		$picqual = $CFG->filter_poodll_picqual;
-		$cameraprefs = '&capturefps=' . $capturefps . '&captureheight=' . $captureheight . '&picqual=' . $picqual . '&bandwidth=' . $bandwidth . '&capturewidth=' . $capturewidth . '&prefmic=' . $prefmic . '&prefcam=' . $prefcam;
-		$flvserver = self::fetch_mediaserver_url();
-		$teacherpairstreamname = "voiceofauthority";
-
-		//auto try ports
-		$autotryports = $CFG->filter_poodll_autotryports == 1 ? "true" : "false";
-
-
-		if ($mename == "" && !empty($USER->username)) {
-			$mename = $USER->username;
-			$mefullname = fullname($USER);
-			$mepictureurl = self::fetch_user_picture($USER, 35);
-		}
-
-		//if courseid not passed in, try to get it from global
-		$courseid = $COURSE->id;
-
-
-		//We need a moodle serverid
-		$moodleid = self::fetch_moodleid();
-
-		//put in a coursedataurl
-		$coursedataurl = $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php%3F';
-
-
-		//Show the buttons window if we are admin
-		//Also won't receive messages intended for students if we are admin. Be aware.
-		if (has_capability('mod/quiz:preview', \context_course::instance($courseid))) {
-			$am = "admin";
-		} else {
-			$am = "0";
-		}
-
-
-		//here we setup the url and params for the admin console
-		$baseUrl = $CFG->wwwroot . '/filter/poodll/flash/poodllconsole.lzx.swf9.swf';
-		$params = '?red5url=' . urlencode($flvserver) .
-			'&mename=' . $mename . '&courseid=' . $courseid .
-			'&moodleid=' . $moodleid .
-			'&autotryports=' . $autotryports .
-			'&teacherpairstreamname=' . $teacherpairstreamname .
-			$cameraprefs .
-			'&coursedataurl=' . $coursedataurl . '&broadcastkey=' . $broadcastkey .
-			'&lzr=swf9&runtime=swf9';
-
-		//create our embed tags
-		$partone = '<script type="text/javascript">lzOptions = { ServerRoot: \'\'};</script>';
-		$parttwo = '<script type="text/javascript" src="' . $CFG->wwwroot . '/filter/poodll/flash/embed-compressed.js"></script>';
-		$partthree = '<script type="text/javascript">lz.embed.swf({url: \'' . $baseUrl . $params .
-			'\' , width: \'1000\', height: \'750\', id: \'lzapp_admin_console\', accessible: \'false\'});
-					</script>
-				<noscript>
-					Please enable JavaScript in order to use this application.
-				</noscript>';
-		return $partone . $parttwo . $partthree;
-
-
-	}
-
-
-//Because the moodleid is appended to URLs in some PoodLL requests we need to urlencode.
-//But some encoded characters mess up shared objects if decode is not called properly.
-//Since we are just creating an id, it does not need to be reconstructed, so we just
-//play it safe and call this function instead of simply urlencode($CFG->wwwroot)
-	public static function fetch_moodleid()
-	{
-		global $CFG;
-		$moodleid = $CFG->wwwroot;
-		$splitindex = strpos($moodleid, ":");
-		$moodleid = substr($moodleid, $splitindex + 1);
-		$moodleid = str_replace("/", "_", $moodleid);
-		return $moodleid;
-	}
-
-//this is the code to get the embed code for the poodllpairwork client
-//We separate the embed and non embed into two functions
-//unlike with clientconsole and adminconsole, because of the need for width and height params.
-	public static function fetch_embeddablepairclient($runtime, $width, $height, $chat, $whiteboard, $showvideo, $whiteboardback, $useroles = false)
-	{
-		global $CFG;
-//laszlo client expects "true" or "false"  so this line is defunct. Thoug we need to standardise how we do this.
-//$showvideo = ($showvideo=="true");
-		return ('
-        <script type="text/javascript">
-            lzOptions = { ServerRoot: \'\'};
-        </script>
-        <script type="text/javascript" src="' . $CFG->wwwroot . '/filter/poodll/flash/embed-compressed.js"></script>
-        <script type="text/javascript">
-              lz.embed.swf({url: \'' . self::fetch_pairclient($runtime, $chat, $whiteboard, $showvideo, $whiteboardback, $useroles) . '\', bgcolor: \'#cccccc\', width: \'' . $width . '\', height: \'' . $height . '\', id: \'lzapp_' . rand(100000, 999999) . '\', accessible: \'false\'});
-        </script>
-        <noscript>
-            Please enable JavaScript in order to use this application.
-        </noscript>
-        ');
-
-	}
-
-//this is the code to get a poodllpairwork client for display without embedding
-//in the poodll header section of a moodle page as an inline page, or in a popup
-	public static function fetch_pairclient($runtime, $chat = true, $whiteboard = true, $showvideo = false, $whiteboardback = "", $useroles = false)
-	{
-		global $CFG, $USER, $COURSE;
-
-		if (!empty($USER->username)) {
-			$mename = $USER->username;
-			$mefullname = fullname($USER);
-			$mepictureurl = self::fetch_user_picture($USER, 120);
-		} else {
-			//this is meaningless currently, there is no current way to do pairs
-			//with guest. Lets call it "casual poodllpairwork." Butin future it is possible
-			$mename = "guest_" + rand(100000, 999999);
-			$mefullname = "guest";
-			$mepictureurl = "";
-		}
-
-		//Set the servername
-		$flvserver = self::fetch_mediaserver_url();
-
-		//auto try ports
-		$autotryports = $CFG->filter_poodll_autotryports == 1 ? "true" : "false";
-
-		//in order that this works effectively on tokyo.poodll.com which services multiple Moodles
-		//we should change courseid (which creates a kind of virtual "room") to use the domainname of Moodle server
-		$courseid = $COURSE->id;
-		$moodleid = self::fetch_moodleid();
-
-		$baseUrl = $CFG->wwwroot . '/filter/poodll/flash/newpairclient.lzx.swf9.swf';
-		$params = '?red5url=' . urlencode($flvserver) . '&mename=' . $mename . '&mefullname=' . $mefullname . '&mepictureurl=' . urlencode($mepictureurl)
-			. '&chat=' . $chat . '&autotryports=' . $autotryports . '&courseid=' . $courseid . '&moodleid=' . $moodleid . '&useroles=' . $useroles . '&whiteboard=' . $whiteboard . '&whiteboardback=' . $whiteboardback . '&showvideo=' . $showvideo . '&teacherallstreamname=voiceofauthority&lzproxied=false';
-		return $baseUrl . $params;
-	}
-
-
-	public static function fetch_poodllpalette($runtime, $width = 800, $height = 300)
-	{
-		global $CFG, $USER, $COURSE;
-//Set the servername
-		$flvserver = self::fetch_mediaserver_url();
-		$width = 800;
-
-//$coursefilesurl = $CFG->wwwroot . '/lib/editor/htmlarea/poodll-coursefiles.php?id=' . $COURSE->id;
-// The ID of the current module (eg moodleurl/view.php?id=X ) or in edit mode update=X
-		$moduleid = optional_param('update', "-1", PARAM_INT);
-		if ($moduleid == -1) {
-			$moduleid = optional_param('id', "-1", PARAM_INT);
-		}
-		$coursefilesurl = $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php?courseid=' . $COURSE->id . '&datatype=instancedirlist&paramone=ignore&paramtwo=content&moduleid=' . $moduleid;
-
-		$componentlist = $CFG->wwwroot . '/filter/poodll/flash/componentlist.xml';
-		$poodlllogicurl = $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php';
-
-//Set the camera prefs
-		$capturewidth = $CFG->filter_poodll_capturewidth;
-		$captureheight = (string)(0.75 * intval($CFG->filter_poodll_capturewidth));
-		$capturefps = $CFG->filter_poodll_capturefps;
-		$prefcam = $CFG->filter_poodll_studentcam;
-		$prefmic = $CFG->filter_poodll_studentmic;
-		$bandwidth = $CFG->filter_poodll_bandwidth;
-		$picqual = $CFG->filter_poodll_picqual;
-		$cameraprefs = '&capturefps=' . $capturefps . '&captureheight=' . $captureheight . '&picqual=' . $picqual . '&bandwidth=' . $bandwidth . '&capturewidth=' . $capturewidth . '&prefmic=' . $prefmic . '&prefcam=' . $prefcam;
-
-
-		//merge config data with javascript embed code
-		$params = array();
-		$params['red5url'] = urlencode($flvserver);
-		$params['poodlllogicurl'] = $poodlllogicurl . $cameraprefs;
-		$params['courseid'] = $COURSE->id;
-		$params['filename'] = 'amediafile';
-		$params['coursefiles'] = urlencode($coursefilesurl);
-		$params['componentlist'] = urlencode($componentlist);
-
-
-		$returnString = self::fetchSWFWidgetCode('poodllpalette.lzx.swf10.swf',
-			$params, $width, $height, '#FFFFFF');
-
-
-		return $returnString;
-
-
-	}
-
-
 	public static function fetch_whiteboard($runtime, $boardname, $imageurl = "", $slave = false, $rooms = "", $width = 0, $height = 0, $mode = 'normal', $standalone = 'false')
 	{
 		global $CFG, $USER, $COURSE;
-
 		$lm = new \filter_poodll\licensemanager();
-		if(!$lm->validate_registrationkey($CFG->filter_poodll_registrationkey)) {
-			return $lm->fetch_unregistered_content();
+        $registration_status = $lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
+		if($registration_status != \filter_poodll\licensemanager::FILTER_POODLL_IS_REGISTERED){
+			return $lm->fetch_unregistered_content($registration_status);
 		}
 
 
@@ -375,9 +169,13 @@ class poodlltools
 
 		return $widgetstring;
 
-
 	}
 
+
+    /*
+    * The red5 based audio recorder
+   *
+   */
 	public static function fetchSimpleAudioRecorder($runtime, $assigname, $userid = "", $updatecontrol = "saveflvvoice", $filename = "", $width = "350", $height = "200", $timelimit = "0")
 	{
 		global $CFG, $USER, $COURSE, $PAGE;
@@ -459,6 +257,10 @@ class poodlltools
 	}
 
 
+   /*
+    * The MP3 Recorder based on skins
+   *
+   */
 	public static function fetchMP3SkinnedRecorderForSubmission($params, $skin)
 	{
 		global $CFG;
@@ -474,129 +276,14 @@ class poodlltools
 
 	}
 
+	/*
+    * The old fetch MP3 Recorder fetch call now delegates to the AMD based universal recorder
+   *
+   */
 	public static function fetchMP3RecorderForSubmission($updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
 	{
-		global $CFG, $USER, $COURSE;
-
-//get our HTML5 Uploader if we have a mobile device
-		if (self::isMobile($CFG->filter_poodll_html5rec)) {
-			if (!self::canDoUpload()) {
-				$ret = "<div class='mobile_os_version_warning'>" . get_string('mobile_os_version_warning', 'filter_poodll') . "</div>";
-			} else {
-				$ret = self::fetch_HTML5RecorderForSubmission($updatecontrol, $contextid, $component, $filearea, $itemid, "audio", false, $callbackjs);
-			}
-			return $ret;
-
-		}
-
-//Set the microphone config params
-		$micrate = $CFG->filter_poodll_micrate;
-		$micgain = $CFG->filter_poodll_micgain;
-		$micsilence = $CFG->filter_poodll_micsilencelevel;
-		$micecho = $CFG->filter_poodll_micecho;
-		$micloopback = $CFG->filter_poodll_micloopback;
-		$micdevice = $CFG->filter_poodll_studentmic;
-
-//get the recorder skin
-		$skin = $CFG->filter_poodll_mp3skin;
-
-		$size = $CFG->filter_poodll_mp3recorder_size;
-//$size='tiny';
-//$size='normal';
-
-//removed from params to make way for moodle 2 filesystem params Justin 20120213
-		if ($size == 'normal') {
-			$width = "350";
-			$height = "200";
-		} else {
-			$width = "240";
-			$height = "170";
-		}
-		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
-
-//we can add or remove this, but right now, testing how good it works
-		$autosubmit = "true";
-
-
-//If we are using course ids then lets do that
-//else send -1 to widget (ignore flag)
-		if ($CFG->filter_poodll_usecourseid) {
-			$courseid = $COURSE->id;
-		} else {
-			$courseid = -1;
-		}
-
-//can we pause or not
-		if ($CFG->filter_poodll_miccanpause == 1) {
-			$canpause = 'true';
-		} else {
-			$canpause = 'false';
-		}
-
-		if ($updatecontrol == "saveflvvoice") {
-			$savecontrol = "<input name='saveflvvoice' type='hidden' value='' id='saveflvvoice' />";
-		} else {
-			$savecontrol = "";
-		}
-		//setup config for recirder
-		$params = array();
-		$params['rate'] = $micrate;
-		$params['gain'] = $micgain;
-		$params['prefdevice'] = $micdevice;
-		$params['loopback'] = $micloopback;
-		$params['echosupression'] = $micecho;
-		$params['silencelevel'] = $micsilence;
-		$params['course'] = $courseid;
-		$params['updatecontrol'] = $updatecontrol;
-		$params['uid'] = $USER->id;
-		//for file system in moodle 2
-		/*
-    $params['poodllfilelib'] = $poodllfilelib;
-    $params['contextid'] = $contextid;
-    $params['component'] = $component;
-    $params['filearea'] = $filearea;
-    $params['itemid'] = $itemid;
-    */
-		//using generic mp3 recorder these dats
-		$params['posturl'] = $poodllfilelib;
-		$params['p1'] = $updatecontrol;
-		$params['p2'] = $contextid;
-		$params['p3'] = $component;
-		$params['p4'] = $filearea;
-		$params['p5'] = $itemid;
-		//$params['chipmunk'] = 'yes';
-
-
-		$params['autosubmit'] = $autosubmit;
-		$params['timelimit'] = $timelimit;
-		$params['canpause'] = $canpause;
-		$params['size'] = $size;
-
-		//fetch and merge lang params
-		$langparams = self::filter_poodll_fetch_recorder_strings();
-		$params = array_merge($params, $langparams);
-
-		//callbackjs
-		if ($callbackjs) {
-			$params['callbackjs'] = $callbackjs;
-		}
-
-		//this is the old recorder. (if it has MP3Recorder ie er, its old)
-		/*
-    	$returnString=  self::fetchSWFWidgetCode('PoodLLMP3Recorder.lzx.swf10.swf',
-    						$params,$width,$height,'#CFCFCF');
-    */
-
-		if ($skin && $skin != 'none') {
-			$returnString = self::fetchMP3SkinnedRecorderForSubmission($params, $skin);
-		} else {
-
-			$returnString = self::fetchSWFWidgetCode('PoodllMP3Record.lzx.swf10.swf',
-				$params, $width, $height, '#CFCFCF');
-		}
-
-		$returnString .= $savecontrol;
-		return $returnString;
+		return self::fetchAMDRecorderCode('audio', $updatecontrol, $contextid, 
+					$component, $filearea, $itemid, $timelimit, $callbackjs);
 
 	}
 
@@ -625,43 +312,36 @@ class poodlltools
 		if ($CFG->filter_poodll_autosavewhiteboard && $forsubmission) {
 			$opts['autosave'] = $CFG->filter_poodll_autosavewhiteboard;
 		}
+		
+		//set media type
+		$mediatype = "image";
+		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		
 		//imageurlprefix, that LC requires
 		$opts['imageurlprefix'] = $CFG->httpswwwroot . '/filter/poodll/js/literallycanvas.js/img';
 		$opts['recorderid'] = 'literallycanvas_' . time() . rand(10000, 999999);
+		$opts['widgetid'] = $opts['recorderid'];
 		$opts['callbackjs'] = $callbackjs;
+		$opts['using_s3'] = false;
 		$opts['updatecontrol'] = $updatecontrol;
 		$opts['vectorcontrol'] = $vectorcontrol;
 		$opts['base64control'] = '';//do this later
 		$opts['vectordata'] = $vectordata;
-		//amd requires opts be passed via html if they are too much.
-		$opts_html = "";
+		$opts['p1'] = '';
+		$opts['p2'] = $contextid;
+		$opts['p3'] = $component;
+		$opts['p4'] = $filearea;
+		$opts['p5'] = $itemid;
+		$opts['mediatype'] = $mediatype;
+		$opts['posturl'] = $poodllfilelib;
+		
 
-		//do what we have to do for moodle 2.9 and lower
-		if ($CFG->version < 2013051400) {
-			//We need this so that we can require the JSON , for json stringify
-			$jsmodule = array(
-				'name' => 'filter_poodll',
-				'fullpath' => '/filter/poodll/module.js',
-				'requires' => array('json')
-			);
-			//setup our JS call
-			$PAGE->requires->js_init_call('M.filter_poodll.loadliterallycanvas', array($opts), false, $jsmodule);
+		//we encode the options and send them to html. Moodle doesn't like them cluttering the JS up
+		//when using AMD
+		$jsonstring = json_encode($opts);
+		$opts_html = \html_writer::tag('input', '', array('id' => 'amdopts_' . $opts['recorderid'], 'type' => 'hidden', 'value' => $jsonstring));
+		$PAGE->requires->js_call_amd("filter_poodll/literallycanvas_amd", 'loadliterallycanvas', array(array('recorderid' => $opts['recorderid'])));
 
-			//load dependencies
-			$PAGE->requires->js("/filter/poodll/js/literallycanvas.js/js/jquery-1.8.2.js");
-			$PAGE->requires->js("/filter/poodll/js/literallycanvas.js/js/react-0.10.0.js");
-			$PAGE->requires->js("/filter/poodll/js/literallycanvas.js/js/fastclick.js");
-			$PAGE->requires->js("/filter/poodll/js/literallycanvas.js/js/ie_customevent.js");
-			$PAGE->requires->js("/filter/poodll/js/literallycanvas.js/js/literallycanvas.min.js");
-		} else {
-
-			//we encode the options and send them to html. Moodle doesn't like them cluttering the JS up
-			//when using AMD
-			$jsonstring = json_encode($opts);
-			$opts_html = \html_writer::tag('input', '', array('id' => 'amdopts_' . $opts['recorderid'], 'type' => 'hidden', 'value' => $jsonstring));
-			//$PAGE->requires->js_call_amd("filter_poodll/literallycanvas_amd", 'loadliterallycanvas', array($opts));
-			$PAGE->requires->js_call_amd("filter_poodll/literallycanvas_amd", 'loadliterallycanvas', array(array('recorderid' => $opts['recorderid'])));
-		}
 
 
 		//removed from params to make way for moodle 2 filesystem params Justin 20120213
@@ -671,7 +351,7 @@ class poodlltools
 		if ($height == 0) {
 			$height = $CFG->filter_poodll_whiteboardheight;
 		}
-		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		
 
 		//add the height of the control area, so that the user spec dimensions are the canvas size
 		$canvasheight = $height;
@@ -687,49 +367,26 @@ class poodlltools
 			$savecontrol = "";
 		}
 
-		//set media type
-		$mediatype = "image";
-
-
-		//this won't work in a quiz, and throws an error about trying to add to page head,
-		//when page head has already been output. So copy contents of this file to styles.css in poodllfilter
-		//$PAGE->requires->css(new \moodle_url($CFG->wwwroot . '/filter/poodll/js/literallycanvas.js/css/literallycanvas.css'));
-
-
-		//save button
-		$savebutton = "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_updatecontrol\" value=\"$updatecontrol\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_contextid\" value=\"$contextid\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_component\" value=\"$component\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_mediatype\" value=\"$mediatype\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_filearea\" value=\"$filearea\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_itemid\" value=\"$itemid\" />";
-
-		//justin 20140521 vectordata
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_vectorcontrol\" value=\"$vectorcontrol\" />";
-
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_fileliburl\" value=\"$poodllfilelib\" />";
-		//amd opts
-		$savebutton .= $opts_html;
-
 		if (array_key_exists('autosave', $opts)) {
 			$buttonclass = "w_btn";
 		} else {
 			$buttonclass = "p_btn";
 		}
-		$savebutton .= "<button type=\"button\" id=\"" . $opts['recorderid'] . "_btn_upload_whiteboard\" class=\"$buttonclass\">"
+		
+		$savebutton = "<button type=\"button\" id=\"" . $opts['recorderid'] . "_btn_upload_whiteboard\" class=\"$buttonclass\">"
 			. get_string('whiteboardsave', 'filter_poodll') .
 			"</button>";
 
 
 		//message container
-		$progresscontrols = "<div id=\"" . $opts['recorderid'] . "_messages\"></div>";
+		$progresscontrols ="<div id=\"" . $opts['recorderid'] . "_messages\"></div>";
 
 
 		//container of whiteboard, bgimage and other bits and pieces.
 		//add a buffer background image if necessary
 		$lcOpen = "<div class='whiteboard-wrapper' style='width:" . $width . "px; height:" . $height . "px;'>
 			<div class='fs-container' style='width:" . $width . "px; height:" . $height . "px;'>
-			<div id='" . $opts['recorderid'] . "_literally' class='literally'><canvas></canvas></div></div>";
+			<div id='" . $opts['recorderid'] . "_literally' class='literallycanvas' style='width:" . $width . "px; height:" . $height . "px;'></div></div>";
 		if ($opts['backgroundimage']) {
 			$lcOpen .= " <img id='" . $opts['recorderid'] . "_separate-background-image' style='display: none;' src='" . $opts['backgroundimage'] . "'/>";
 		}
@@ -741,6 +398,7 @@ class poodlltools
 			$returnString .= $savebutton;
 			$returnString .= $savecontrol;
 			$returnString .= $progresscontrols;
+			$returnString .= $opts_html;
 		}
 		$returnString .= $lcClose;
 
@@ -756,6 +414,11 @@ class poodlltools
 	public static function fetchDrawingBoard($forsubmission = true, $width = 0, $height = 0, $backimage = "", $updatecontrol = "", $contextid = 0, $component = "", $filearea = "", $itemid = 0, $callbackjs = false, $vectorcontrol = '', $vectordata = '')
 	{
 		global $CFG, $USER, $COURSE, $PAGE;
+		
+		//set url of poodllfilelib
+		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		//set media type
+		$mediatype = "image";
 
 		//javascript upload handler
 		$opts = Array();
@@ -763,7 +426,19 @@ class poodlltools
 		$opts['callbackjs'] = $callbackjs;
 		$opts['updatecontrol'] = $updatecontrol;
 		$opts['vectorcontrol'] = $vectorcontrol;
-		$opts['vectordata'] = $vectordata;
+		$opts['vectordata'] = $vectordata;	
+		$opts['widgetid'] = $opts['recorderid'];
+		$opts['callbackjs'] = $callbackjs;
+		$opts['using_s3'] = false;
+		$opts['base64control'] = '';//do this later
+		$opts['p1'] = '';
+		$opts['p2'] = $contextid;
+		$opts['p3'] = $component;
+		$opts['p4'] = $filearea;
+		$opts['p5'] = $itemid;
+		$opts['mediatype'] = $mediatype;
+		$opts['posturl'] = $poodllfilelib;
+		
 
 		//be careful here, only set the background IF
 		//(a) we have an image and (b) we have no vectordata
@@ -774,24 +449,13 @@ class poodlltools
 		if ($CFG->filter_poodll_autosavewhiteboard && $forsubmission) {
 			$opts['autosave'] = $CFG->filter_poodll_autosavewhiteboard;
 		}
-
-
-		//do what we have to do for moodle 2.9 and lower
-		if (true || $CFG->version < 2013051400) {
-
-			//We need this so that we can require the JSON , for json stringify
-			$jsmodule = array(
-				'name' => 'filter_poodll',
-				'fullpath' => '/filter/poodll/module.js',
-				'requires' => array('json')
-			);
-
-			//setup our JS call
-			$PAGE->requires->js_init_call('M.filter_poodll.loaddrawingboard', array($opts), false, $jsmodule);
-		} else {
-			$PAGE->requires->js_call_amd("filter_poodll/drawingboard_amd", 'loaddrawingboard', array($opts));
-
-		}
+	
+		//we encode the options and send them to html. Moodle doesn't like them cluttering the JS up
+		//when using AMD
+		$jsonstring = json_encode($opts);
+		$opts_html = \html_writer::tag('input', '', array('id' => 'amdopts_' . $opts['recorderid'], 'type' => 'hidden', 'value' => $jsonstring));
+		$PAGE->requires->js_call_amd("filter_poodll/drawingboard_amd", 'loaddrawingboard', array(array('recorderid' => $opts['recorderid'])));
+	
 		//removed from params to make way for moodle 2 filesystem params Justin 20120213
 		if ($width == 0) {
 			$width = $CFG->filter_poodll_whiteboardwidth;
@@ -799,8 +463,6 @@ class poodlltools
 		if ($height == 0) {
 			$height = $CFG->filter_poodll_whiteboardheight;
 		}
-		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
-
 
 		//the control to put the filename of our picture
 		if ($updatecontrol == "saveflvvoice") {
@@ -808,33 +470,15 @@ class poodlltools
 		} else {
 			$savecontrol = "";
 		}
-
-		//set media type
-		$mediatype = "image";
-
-
-		//include other needed libraries
-		$PAGE->requires->js("/filter/poodll/js/drawingboard.js/dist/drawingboard.min.js");
-
-
-		//save button
-		$savebutton = "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_updatecontrol\" value=\"$updatecontrol\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_contextid\" value=\"$contextid\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_component\" value=\"$component\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_mediatype\" value=\"$mediatype\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_filearea\" value=\"$filearea\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_itemid\" value=\"$itemid\" />";
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_fileliburl\" value=\"$poodllfilelib\" />";
-
-		//justin 20151210 vectordata
-		$savebutton .= "<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_vectorcontrol\" value=\"$vectorcontrol\" />";
-
+		
+		//if autosaving
 		if (array_key_exists('autosave', $opts)) {
 			$buttonclass = "w_btn";
 		} else {
 			$buttonclass = "p_btn";
 		}
-		$savebutton .= "<button type=\"button\" id=\"" . $opts['recorderid'] . "_btn_upload_whiteboard\" class=\"$buttonclass\">"
+		//save button
+		$savebutton = "<button type=\"button\" id=\"" . $opts['recorderid'] . "_btn_upload_whiteboard\" class=\"$buttonclass\">"
 			. get_string('whiteboardsave', 'filter_poodll') .
 			"</button>";
 
@@ -852,8 +496,10 @@ class poodlltools
 			$returnString .= $savecontrol;
 			$returnString .= $savebutton;
 			$returnString .= $progresscontrols;
+			
 		}
 		$returnString .= $dbClose;
+		$returnString .= $opts_html;
 
 		$renderer = $PAGE->get_renderer('filter_poodll');
 		return $renderer->fetchDrawingBoard($returnString);
@@ -865,8 +511,9 @@ class poodlltools
 		global $CFG, $USER, $COURSE;
 
 		$lm = new \filter_poodll\licensemanager();
-		if(!$lm->validate_registrationkey($CFG->filter_poodll_registrationkey)) {
-			return $lm->fetch_unregistered_content();
+                $registration_status = $lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
+		if($registration_status != \filter_poodll\licensemanager::FILTER_POODLL_IS_REGISTERED){
+			return $lm->fetch_unregistered_content($registration_status);
 		}
 
 
@@ -887,496 +534,12 @@ class poodlltools
 				return self::fetchLiterallyCanvas($forsubmission, $width, $height, $backimage, $updatecontrol, $contextid, $component, $filearea, $itemid, $callbackjs, $vectorcontrol, $vectordata);
 				break;
 			case 'drawingboard':
+			default:
 				$forsubmission = true;
 				return self::fetchDrawingBoard($forsubmission, $width, $height, $backimage, $updatecontrol, $contextid, $component, $filearea, $itemid, $callbackjs, $vectorcontrol, $vectordata);
 				break;
-			default:
-		}
-
-
-//head off to HTML5 logic if mobile
-		if (self::isMobile($CFG->filter_poodll_html5widgets)) {
-
-			$forsubmission = true;
-			return self::fetchDrawingBoard($forsubmission, $width, $height, $backimage, $updatecontrol, $contextid, $component, $filearea, $itemid, $callbackjs, $vectorcontrol, $vectordata);
-
 
 		}
-
-
-//If standalone submission will always be standalone ... or will it ...
-//pair submissions could be interesting ..
-		$boardname = "solo";
-		$mode = "normal";
-
-
-		//removed from params to make way for moodle 2 filesystem params Justin 20120213
-		if ($width == 0) {
-			$width = $CFG->filter_poodll_whiteboardwidth;
-		}
-		if ($height == 0) {
-			$height = $CFG->filter_poodll_whiteboardheight;
-		}
-		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
-
-//adjust size for borders and control panel
-//the board size is the size of the drawing canvas, not the widget
-		$width = $width + 205;
-		$height = $height + 20;
-
-
-		//the control to put the filename of our picture
-		if ($updatecontrol == "saveflvvoice") {
-			$savecontrol = "<input name='saveflvvoice' type='hidden' value='' id='saveflvvoice' />";
-		} else {
-			$savecontrol = "";
-		}
-
-		$params = array();
-
-
-		$params['updatecontrol'] = $updatecontrol;
-		$params['boardname'] = $boardname;
-		$params['imageurl'] = $backimage;
-		$params['courseid'] = $COURSE->id;
-		//for file system in moodle 2
-		$params['poodllfilelib'] = $poodllfilelib;
-		$params['contextid'] = $contextid;
-		$params['component'] = $component;
-		$params['filearea'] = $filearea;
-		$params['itemid'] = $itemid;
-		$params['vectordata'] = $vectordata;
-		$params['vectorcontrol'] = $vectorcontrol;
-		$params['recorderid'] = 'pwboard_' . time() . rand(10000, 999999);
-
-		if ($callbackjs) {
-			$params['callbackjs'] = $callbackjs;
-		}
-		if ($CFG->filter_poodll_autosavewhiteboard) {
-			$params['autosave'] = $CFG->filter_poodll_autosavewhiteboard;
-		}
-
-		//normal mode is a standard scribble with a cpanel
-		//simple mode has a simple double click popup menu, but not submit feature
-		//all submit is via normal mode, for now.
-		if ($mode == 'normal') {
-			$returnString = self::fetchSWFWidgetCode('scribblesubmit.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} else {
-
-			$returnString = self::fetchSWFWidgetCode('scribblesubmit.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		}
-
-
-		$returnString .= $savecontrol;
-
-		return $returnString;
-
-	}
-
-	public static function fetchAudioRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
-	{
-		global $CFG, $USER, $COURSE;
-
-//get our HTML5 Uploader if we have a mobile device
-		if (self::isMobile($CFG->filter_poodll_html5rec)) {
-			if (!self::canDoUpload()) {
-				$ret = "<div class='mobile_os_version_warning'>" . get_string('mobile_os_version_warning', 'filter_poodll') . "</div>";
-			} else {
-				$ret = fetch_HTML5RecorderForSubmission($updatecontrol, $contextid, $component, $filearea, $itemid, "audio", false, $callbackjs);
-			}
-			return $ret;
-
-		}
-
-
-//Set the servername
-		$flvserver = self::fetch_mediaserver_url();
-//Set the microphone config params
-		$micrate = $CFG->filter_poodll_micrate;
-		$micgain = $CFG->filter_poodll_micgain;
-		$micsilence = $CFG->filter_poodll_micsilencelevel;
-		$micecho = $CFG->filter_poodll_micecho;
-		$micloopback = $CFG->filter_poodll_micloopback;
-		$micdevice = $CFG->filter_poodll_studentmic;
-
-//removed from params to make way for moodle 2 filesystem params Justin 20120213
-		$userid = "dummy";
-		$width = "350";
-		$height = "200";
-		$filename = "12345";
-		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
-
-//If we are using course ids then lets do that
-//else send -1 to widget (ignore flag)
-		if ($CFG->filter_poodll_usecourseid) {
-			$courseid = $COURSE->id;
-		} else {
-			$courseid = -1;
-		}
-
-//set up auto transcoding (mp3) or not
-		if ($CFG->filter_poodll_audiotranscode) {
-			$saveformat = "mp3";
-		} else {
-			$saveformat = "flv";
-		}
-
-//If no user id is passed in, try to get it automatically
-//Not sure if  this can be trusted, but this is only likely to be the case
-//when this is called from the filter. ie not from an assignment.
-		if ($userid == "") $userid = $USER->username;
-
-//Stopped using this
-//$filename = $CFG->filter_poodll_filename;
-		$overwritemediafile = $CFG->filter_poodll_overwrite == 1 ? "true" : "false";
-		if ($updatecontrol == "saveflvvoice") {
-			$savecontrol = "<input name='saveflvvoice' type='hidden' value='' id='saveflvvoice' />";
-		} else {
-			$savecontrol = "";
-		}
-
-//auto try ports, try 2 x on standard port, then 80, then 1935,then 80,1935 ad nauseum
-		$autotryports = $CFG->filter_poodll_autotryports == 1 ? "yes" : "no";
-
-		//set up our params for recorder
-		$params = array();
-		$params['red5url'] = urlencode($flvserver);
-		$params['overwritefile'] = $overwritemediafile;
-		$params['rate'] = $micrate;
-		$params['gain'] = $micgain;
-		$params['prefdevice'] = $micdevice;
-		$params['loopback'] = $micloopback;
-		$params['echosupression'] = $micecho;
-		$params['silencelevel'] = $micsilence;
-		$params['filename'] = "123456.flv";
-		$params['assigName'] = $assigname;
-		$params['course'] = $courseid;
-		$params['updatecontrol'] = $updatecontrol;
-		$params['saveformat'] = $saveformat;
-		$params['uid'] = $userid;
-		//for file system in moodle 2
-		$params['poodllfilelib'] = $poodllfilelib;
-		$params['contextid'] = $contextid;
-		$params['component'] = $component;
-		$params['filearea'] = $filearea;
-		$params['itemid'] = $itemid;
-		$params['timelimit'] = $timelimit;
-		$params['autotryports'] = $autotryports;
-
-		//fetch and merge lang params
-		$langparams = self::filter_poodll_fetch_recorder_strings();
-		$params = array_merge($params, $langparams);
-
-
-		if ($callbackjs) {
-			$params['callbackjs'] = $callbackjs;
-		}
-
-		$returnString = self::fetchSWFWidgetCode('PoodLLAudioRecorder.lzx.swf9.swf',
-			$params, $width, $height, '#CFCFCF');
-
-		$returnString .= $savecontrol;
-
-		return $returnString;
-	}
-
-
-	public static function fetch_stopwatch($runtime, $width, $height, $fontheight, $mode = 'normal', $permitfullscreen = false, $uniquename = 'uniquename')
-	{
-		global $CFG, $USER, $COURSE;
-
-//Set the servername
-		$flvserver = self::fetch_mediaserver_url();
-
-//If we are using course ids then lets do that
-//else send -1 to widget (ignore flag)
-		if ($CFG->filter_poodll_usecourseid) {
-			$courseid = $COURSE->id;
-		} else {
-			$courseid = -1;
-		}
-
-//get username automatically
-		$userid = $USER->username;
-
-
-		//Determine if we are admin, if necessary , for slave/master mode
-		if (has_capability('mod/quiz:preview', \context_course::instance($COURSE->id))) {
-			$isadmin = true;
-		} else {
-			$isadmin = false;
-		}
-		//merge config data with javascript embed code
-		$params = array();
-		$params['permitfullscreen'] = $permitfullscreen;
-		$params['fontheight'] = $fontheight;
-		$params['uniquename'] = $uniquename;
-		$params['courseid'] = $courseid;
-		$params['red5url'] = urlencode($flvserver);
-		$params['mode'] = $mode;
-
-		//LZ string if master/save  mode and not admin => show slave mode
-		//otherwise show stopwatch
-		if ($mode == 'master' && !$isadmin) {
-			$returnString = self::fetchSWFWidgetCode('slaveview.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} elseif ($runtime == 'swf') {
-			$returnString = self::fetchSWFWidgetCode('stopwatch.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-
-		} elseif ($runtime == 'js') {
-			$returnString = self::fetchJSWidgetiFrame('stopwatch.lzx.js',
-				$params, $width, $height, '#FFFFFF');
-
-		} elseif ($runtime == 'auto') {
-			$returnString = self::fetchAutoWidgetCode('stopwatch.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} else {
-			$returnString = self::fetchAutoWidgetCode('stopwatch.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		}
-
-		return $returnString;
-
-
-	}
-
-	public static function fetch_poodllcalc($runtime, $width, $height, $size = 'normal')
-	{
-		global $CFG;
-
-		//merge config data with javascript embed code
-		$params = array();
-		$params['size'] = $size;
-
-		//fix up width and height which should not really be accepted as params
-		switch ($size) {
-			case 'normal' :
-				$width = 242;
-				$height = 362;
-				break;
-			case 'small' :
-				$width = 202;
-				$height = 302;
-				break;
-			case 'tiny' :
-				$width = 172;
-				$height = 262;
-				break;
-
-		}
-
-		if ($runtime == 'js') {
-			$returnString = self::fetchJSWidgetiFrame('poodllcalc.lzx.js',
-				$params, $width, $height, '#FFFFFF');
-		} elseif ($runtime == 'auto') {
-			$returnString = self::fetchAutoWidgetCode('poodllcalc.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} else {
-			$returnString = self::fetchSWFWidgetCode('poodllcalc.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		}
-
-		return $returnString;
-
-	}
-
-	public static function fetch_poodllscroller($start = true, $width = "300", $height = "150", $speed = 10, $repeat = 'yes', $axis = "y", $pixelshift = "2")
-	{
-		global $CFG, $PAGE;
-
-//start up the scroller
-		if ($start) {
-
-			$uniqueid = rand(10000, 999999);
-			//configure our options array
-			//scrollspeed(1(slow) - 50(fast)) and pixelshift(1 - 5 probably) are the determinants of speed
-			//every (50 - scrollspeed)ms the scroller moves (pixelshift)pixels
-
-			$opts = array(
-				"scrollerid" => $uniqueid,
-				"pixelshift" => $pixelshift,
-				"scrollspeed" => 51 - $speed,
-				"repeat" => $repeat,
-				"topspace" => "2px",
-				"leftspace" => "2px",
-				"framesize" => "2px",
-				"axis" => $axis
-			);
-
-			//The JS array for passing in options
-			$jsmodule = array(
-				'name' => 'filter_poodll',
-				'fullpath' => '/filter/poodll/module.js',
-				'requires' => array('json')
-			);
-
-
-			//setup our JS call
-			$PAGE->requires->js_init_call('M.filter_poodll.loadscroller', array($opts), false, $jsmodule);
-
-			//Set the width/height of the scrollcontainer
-			$dimensions = "width:" . $width . "px; height:" . $height . "px";
-
-			//set the display class of scroll box per axis
-			//x scroll shouldn't wrap words
-			if ($axis == "y") {
-				$axisclass = "yaxis";
-			} else {
-				$axisclass = "xaxis";
-			}
-
-			//The scrollbox container
-			$returnString = "<div id='p_scrollboxcontainer" . $uniqueid . "' class='p_scrollboxcontainer' style='$dimensions'>";
-
-			//the clickable "start" button
-			$returnString .= "<div class='p_scroll_btn_wrapper'>";
-			$returnString .= "<button type='button' onclick='M.filter_poodll.ScrollBoxStart($uniqueid)' id='p_scrollstartbutton" . $uniqueid . "' class='p_btn'>Start</button>";
-			$returnString .= "</div>";
-
-
-			//The scrollbox that gets scrolled
-			$returnString .= "<div id='p_scrollbox" . $uniqueid . "' class='p_scrollbox $axisclass'>";
-
-			return $returnString;
-		} else {
-			//close off the scroller
-			$returnString = "</div>";
-
-			$returnString .= "</div>";
-			return $returnString;
-		}
-
-	}
-
-	public static function fetch_countdowntimer($runtime, $initseconds, $usepresets, $width, $height, $fontheight, $mode = 'normal', $permitfullscreen = false, $uniquename = 'uniquename')
-	{
-		global $CFG, $USER, $COURSE;
-
-//Set the servername
-		$flvserver = self::fetch_mediaserver_url();
-
-//If we are using course ids then lets do that
-//else send -1 to widget (ignore flag)
-		if ($CFG->filter_poodll_usecourseid) {
-			$courseid = $COURSE->id;
-		} else {
-			$courseid = -1;
-		}
-
-//get username automatically
-		$userid = $USER->username;
-
-
-		//Determine if we are admin, if necessary , for slave/master mode
-		if (has_capability('mod/quiz:preview', \context_course::instance($COURSE->id))) {
-			$isadmin = true;
-		} else {
-			$isadmin = false;
-		}
-
-
-		//merge config data with javascript embed code
-		$params = array();
-		$params['initseconds'] = $initseconds;
-		$params['permitfullscreen'] = $permitfullscreen;
-		$params['usepresets'] = $usepresets;
-		$params['fontheight'] = $fontheight;
-		$params['mename'] = $userid; //this might be wrong, but do we need this?
-		$params['uniquename'] = $uniquename;
-		$params['courseid'] = $courseid;
-		$params['red5url'] = urlencode($flvserver);
-		$params['mode'] = $mode;
-
-		//LZ string if master/save  mode and not admin => show slave mode
-		//otherwise show countdown timer
-		if ($mode == 'master' && !$isadmin) {
-			$returnString = self::fetchSWFWidgetCode('slaveview.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} elseif ($runtime == 'swf') {
-			$returnString = self::fetchSWFWidgetCode('countdowntimer.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} elseif ($runtime == 'js') {
-			$returnString = self::fetchJSWidgetiFrame('countdowntimer.lzx.js',
-				$params, $width, $height, '#FFFFFF');
-
-		} elseif ($runtime == 'auto') {
-			$returnString = self::fetchAutoWidgetCode('countdowntimer.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} else {
-			$returnString = self::fetchAutoWidgetCode('countdowntimer.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-
-
-		}
-
-		return $returnString;
-
-	}
-
-	public static function fetch_counter($runtime, $initcount, $usepresets, $width, $height, $fontheight, $permitfullscreen = false)
-	{
-		global $CFG;
-
-		//merge config data with javascript embed code
-		$params = array();
-		$params['initcount'] = $initcount;
-		$params['permitfullscreen'] = $permitfullscreen;
-		$params['usepresets'] = $usepresets;
-		$params['fontheight'] = $fontheight;
-
-
-		if ($runtime == "swf") {
-			$returnString = self::fetchSWFWidgetCode('counter.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-
-		} elseif ($runtime == "js") {
-			$returnString = self::fetchJSWidgetiFrame('counter.lzx.js',
-				$params, $width, $height, '#FFFFFF');
-
-		} elseif ($runtime == "auto") {
-			$returnString = self::fetchAutoWidgetCode('counter.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-
-		} else {
-			$returnString = self::fetchAutoWidgetCode('counter.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		}
-
-		return $returnString;
-
-
-	}
-
-	public static function fetch_dice($runtime, $dicecount, $dicesize, $width, $height)
-	{
-		global $CFG;
-
-		//merge config data with javascript embed code
-		$params = array();
-		$params['dicecount'] = $dicecount;
-		$params['dicesize'] = $dicesize;
-
-		if ($runtime == "swf") {
-			$returnString = self::fetchSWFWidgetCode('dice.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-
-		} elseif ($runtime == "js") {
-			$returnString = self::fetchJSWidgetiFrame('dice.lzx.js',
-				$params, $width, $height, '#FFFFFF');
-
-		} elseif ($runtime == "auto") {
-			$returnString = self::fetchAutoWidgetCode('dice.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} else {
-			$returnString = self::fetchAutoWidgetCode('dice.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		}
-
-
-		return $returnString;
 
 	}
 
@@ -1384,9 +547,7 @@ class poodlltools
 	{
 		global $CFG;
 		switch($flashcardstype){
-			case 'reveal':
-				return self::fetch_flashcards_reveal($cardset,$cardsetname);
-				break;
+	
 			case 'owl':
 				return self::fetch_flashcards_owl($cardset,$cardsetname, $cardwidth, $cardheight);
 				break;
@@ -1419,8 +580,8 @@ class poodlltools
 		$proparray['SINGLEITEM'] = true;
 		$proparray['AUTOHEIGHT'] = false;
 		$proparray['CSS_INJECT'] = true;
-		$proparray['CSS_OWL'] = $CFG->wwwroot . '/filter/poodll/owl/owl-carousel/owl.carousel.css';
-		$proparray['CSS_THEME'] = $CFG->wwwroot . '/filter/poodll/owl/owl-carousel/owl.theme.css';
+		$proparray['CSS_OWL'] = $CFG->wwwroot . '/filter/poodll/3rdparty/owl/owl-carousel/owl.carousel.css';
+		$proparray['CSS_THEME'] = $CFG->wwwroot . '/filter/poodll/3rdparty/owl/owl-carousel/owl.theme.css';
 
 		$PAGE->requires->js_call_amd('filter_poodll/owl_amd', 'loadowl', array($proparray));
 
@@ -1430,32 +591,6 @@ class poodlltools
 		return $renderer->fetch_owl_flashcards($carddata, $proparray);
 	}
 
-
-	public static function fetch_flashcards_reveal($cardset, $cardsetname)
-	{
-		global $CFG, $COURSE, $PAGE;
-		//this won't work in a quiz, and throws an error about trying to add to page head,
-		//when page head has already been output. So copy contents of this file to styles.css in poodllfilter
-		//$PAGE->requires->css(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/css/reveal.min.css'));
-
-		//JS
-		//$PAGE->requires->js(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/lib/js/head.min.js'));
-		//$PAGE->requires->js(new \moodle_url($CFG->wwwroot . '/filter/poodll/reveal.js/js/reveal.js'));
-		//$PAGE->requires->js_init_call('M.filter_poodll.init_revealjs');
-
-		//for AMD
-		$proparray = array();
-		$proparray['CSS_INJECT'] = true;
-		$proparray['CSS_REVEAL'] = $CFG->wwwroot . '/filter/poodll/reveal.js/css/reveal.css';
-		$proparray['CSS_THEME'] = '';//$CFG->wwwroot . '/filter/poodll/reveal.js/css/theme/sky.css';
-
-		$PAGE->requires->js_call_amd('filter_poodll/reveal_amd', 'loadrevealjs', array($proparray));
-
-		$dm = new \filter_poodll\dataset_manager();
-		$renderer = $PAGE->get_renderer('filter_poodll');
-		$carddata = $dm->fetch_flashcard_data($cardset, $cardsetname);
-		return $renderer->fetch_revealjs_flashcards($carddata);
-	}
 
 	public static function fetch_flashcards_poodll($runtime, $cardset, $cardsetname, $frontcolor, $backcolor, $cardwidth, $cardheight, $randomize, $width, $height)
 	{
@@ -1705,271 +840,9 @@ class poodlltools
 
 		return $returnString;
 
-
 	}
+	
 
-	public static function fetchVideoRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
-	{
-		global $CFG, $USER, $COURSE;
-
-//head off to HTML5 logic if mobile
-		if (self::isMobile($CFG->filter_poodll_html5rec)) {
-			if (!self::canDoUpload()) {
-				$ret = "<div class='mobile_os_version_warning'>" . get_string('mobile_os_version_warning', 'filter_poodll') . "</div>";
-			} else {
-				$ret = self::fetch_HTML5RecorderForSubmission($updatecontrol, $contextid, $component, $filearea, $itemid, "video", false, $callbackjs);
-			}
-			return $ret;
-		}
-
-//Set the servername and a capture settings from config file
-		$flvserver = self::fetch_mediaserver_url();
-		$capturewidth = $CFG->filter_poodll_capturewidth;
-		$captureheight = (string)(0.75 * intval($CFG->filter_poodll_capturewidth));
-		$capturefps = $CFG->filter_poodll_capturefps;
-		$prefcam = $CFG->filter_poodll_studentcam;
-		$prefmic = $CFG->filter_poodll_studentmic;
-		$bandwidth = $CFG->filter_poodll_bandwidth;
-		$picqual = $CFG->filter_poodll_picqual;
-
-//set up auto transcoding (mp4) or not
-		if ($CFG->filter_poodll_videotranscode) {
-			$saveformat = "mp4";
-		} else {
-			$saveformat = "flv";
-		}
-
-//Set the microphone config params
-		$micrate = $CFG->filter_poodll_micrate;
-		$micgain = $CFG->filter_poodll_micgain;
-		$micsilence = $CFG->filter_poodll_micsilencelevel;
-		$micecho = $CFG->filter_poodll_micecho;
-		$micloopback = $CFG->filter_poodll_micloopback;
-
-//removed from params to make way for moodle 2 filesystem params Justin 20120213
-		$userid = "dummy";
-		$filename = "12345";
-		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
-		switch ($assigname) {
-			case 'poodllrepository':
-				$width = "298";
-				$height = "340";
-				break;
-			default:
-				$width = "350";
-				$height = "400";
-		}
-
-//If we are using course ids then lets do that
-//else send -1 to widget (ignore flag)
-		if ($CFG->filter_poodll_usecourseid) {
-			$courseid = $COURSE->id;
-		} else {
-			$courseid = -1;
-		}
-
-//If no user id is passed in, try to get it automatically
-//Not sure if  this can be trusted, but this is only likely to be the case
-//when this is called from the filter. ie not from an assignment.
-		if ($userid == "") $userid = $USER->username;
-
-//Stopped using this
-//$filename = $CFG->filter_poodll_filename;
-		$overwritemediafile = $CFG->filter_poodll_overwrite == 1 ? "true" : "false";
-		if ($updatecontrol == "saveflvvoice") {
-			$savecontrol = "<input name='saveflvvoice' type='hidden' value='' id='saveflvvoice' />";
-		} else {
-			$savecontrol = "";
-		}
-
-//auto try ports, try 2 x on standard port, then 80, then 1935,then 80,1935 ad nauseum
-		$autotryports = $CFG->filter_poodll_autotryports == 1 ? "yes" : "no";
-
-		//set up config for recorders
-		$params = array();
-		$params['red5url'] = urlencode($flvserver);
-		$params['overwritefile'] = $overwritemediafile;
-		$params['rate'] = $micrate;
-		$params['gain'] = $micgain;
-		$params['loopback'] = $micloopback;
-		$params['echosupression'] = $micecho;
-		$params['silencelevel'] = $micsilence;
-		$params['capturefps'] = $capturefps;
-		$params['filename'] = $filename;
-		$params['assigName'] = $assigname;
-		$params['captureheight'] = $captureheight;
-		$params['picqual'] = $picqual;
-		$params['bandwidth'] = $bandwidth;
-		$params['capturewidth'] = $capturewidth;
-		$params['prefmic'] = $prefmic;
-		$params['prefcam'] = $prefcam;
-		$params['course'] = $courseid;
-		$params['updatecontrol'] = $updatecontrol;
-		$params['saveformat'] = $saveformat;
-		$params['uid'] = $userid;
-		//for file system in moodle 2
-		$params['poodllfilelib'] = $poodllfilelib;
-		$params['contextid'] = $contextid;
-		$params['component'] = $component;
-		$params['filearea'] = $filearea;
-		$params['itemid'] = $itemid;
-		$params['timelimit'] = $timelimit;
-		$params['autotryports'] = $autotryports;
-
-		//fetch and merge lang params
-		$langparams = self::filter_poodll_fetch_recorder_strings();
-		$params = array_merge($params, $langparams);
-
-		//callbackjs
-		if ($callbackjs) {
-			$params['callbackjs'] = $callbackjs;
-		}
-
-		$returnString = self::fetchSWFWidgetCode('PoodLLVideoRecorder.lzx.swf9.swf',
-			$params, $width, $height, '#FFFFFF');
-
-		$returnString .= $savecontrol;
-
-		return $returnString;
-
-
-	}
-
-	public static function fetch_HTML5RecorderForSubmission($updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $mediatype = "image", $fromrepo = false, $callbackjs = false)
-	{
-		global $CFG, $PAGE;
-
-		//Get our browser object for determining HTML5 options
-		$browser = new Browser();
-
-		//configure our options array for the JS Call
-		$fileliburl = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
-		$opts = array();
-		$opts['recorderid'] = $mediatype . 'recorder_' . time() . rand(10000, 999999);
-		$opts['callbackjs'] = $callbackjs;
-		$opts['updatecontrol'] = $updatecontrol;
-
-		//setup our JS call
-		if (!$fromrepo) {
-			$PAGE->requires->js_init_call('M.filter_poodll.loadmobileupload', array($opts), false);
-		}
-
-		//the control to put the filename of our data. The saveflvvoice is a legacy, needs to be changed
-		//check at least poodllrecordingquestion and poodll online assignment and poodll database field for it
-		if ($updatecontrol == "saveflvvoice") {
-			$savecontrol = "<input name='saveflvvoice' type='hidden' value='' id='saveflvvoice' />";
-		} else {
-			$savecontrol = "";
-		}
-
-		//depending on our media type, tell the mobile device what kind of file we want
-		//we need to check for audio, because iOS still needs video (can't direct rec audio)
-		switch ($mediatype) {
-			case "image":
-				$acceptmedia = "accept=\"image/*\"";
-				break;
-			case "audio":
-				if (self::canSpecAudio($browser)) {
-					$acceptmedia = "accept=\"audio/*\"";
-				} else {
-					$acceptmedia = "accept=\"video/*\"";
-				}
-				break;
-			case "video":
-				$acceptmedia = "accept=\"video/*\"";
-				break;
-			default:
-				$acceptmedia = "";
-		}
-
-		//Output our HTML
-		$fancybutton = self::showFancyButton($browser);
-		$returnString = "";
-
-		if ($fancybutton) {
-			$returnString .= "<div class=\"p_btn_wrapper\">";
-		}
-		$returnString .= "
-			$savecontrol
-			<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_updatecontrol\" value=\"$updatecontrol\" />
-			<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_contextid\" value=\"$contextid\" />
-			<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_component\" value=\"$component\" />
-			<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_filearea\" value=\"$filearea\" />
-			<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_itemid\" value=\"$itemid\" />
-			<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_mediatype\" value=\"$mediatype\" />
-			<input type=\"hidden\" id=\"" . $opts['recorderid'] . "_fileliburl\" value=\"$fileliburl\" />
-			<input type=\"file\" id=\"" . $opts['recorderid'] . "_poodllfileselect\" name=\"poodllfileselect[]\" $acceptmedia />
-			";
-		if ($fancybutton) {
-			$returnString .=
-				"<button type=\"button\" class=\"p_btn\">".get_string('recui_btnupload', 'filter_poodll')."</button>
-		</div>";
-		}
-		$returnString .=
-			"<div id=\"" . $opts['recorderid'] . "_progress\" class=\"p_progress\"><p></p></div>
-		<div id=\"" . $opts['recorderid'] . "_messages\" class=\"p_messages\"></div>";
-
-		return $returnString;
-	}
-
-//Audio playltest player with defaults, for use with directories of audio files
-	public static function fetch_miniplayer($runtime, $src, $protocol = "http", $imageurl = "", $width = 0, $height = 0, $iframe = false)
-	{
-		global $CFG, $COURSE;
-
-		//support legacy files, just in case we have an old timer ...
-		if ($protocol == 'rtmp' || $protocol == 'legacy') {
-			$src = $CFG->wwwroot . "/file.php/" . $COURSE->id . "/" . $src;
-			$type = 'http';
-		}
-
-		if ($width == 0) {
-			$width = $CFG->filter_poodll_miniplayerwidth;
-		}
-		if ($height == 0) {
-			$height = $CFG->filter_poodll_miniplayerwidth;
-		}
-
-		$params = array();
-
-		$params['src'] = $src;//urlencode($src);
-
-
-		//for html5 players we can make a picture link to play the audio
-		//the default is in the poodll filter directory
-		if ($imageurl == "") {
-			$imageurl = $CFG->wwwroot . "/filter/poodll/pix/MiniPlayIcon32.png";
-		}
-
-
-		//depending on runtime, we show a SWF or html5 player
-		if ($runtime == "js" || ($runtime == "auto" && self::isMobile($CFG->filter_poodll_html5play))) {
-
-			//the $src url as it comes from assignment and questions, is urlencoded,
-			//unlikely to arrive here encoded, but lets just be safe
-			//or html 5 playback will fail Justin 20121016
-			$src = urldecode($src);
-
-			$returnString = "<a onclick=\"this.firstChild.play()\"><audio src=\"$src\"></audio><img height=\"$height\" width=\"$width\" src=\"" .
-				$imageurl .
-				"\"/></a>";
-
-		} else {
-			//in the autolinked glossary popup, JS is not run and embed fails. In that case we use an iframe justin 20120814
-			if ($iframe) {
-				$returnString = self::fetchIFrameSWFWidgetCode('poodllminiplayer.lzx.swf9.swf',
-					$params, $width, $height, '#FFFFFF');
-			} else {
-				$returnString = self::fetchSWFWidgetCode('poodllminiplayer.lzx.swf9.swf',
-					$params, $width, $height, '#FFFFFF');
-			}
-		}
-
-
-		return $returnString;
-
-
-	}
 
 //Audio playltest player with defaults, for use with directories of audio files
 	public static function fetch_wordplayer($runtime, $src, $word, $fontsize, $protocol = "http", $width = "0", $height = "0", $iframe = false)
@@ -2026,686 +899,6 @@ class poodlltools
 
 	}
 
-//Plays audio file only once
-	public static function fetch_onceplayer($runtime, $src, $protocol = "http", $width = 0, $height = 0, $iframe = false)
-	{
-		global $CFG, $COURSE;
-
-		//support legacy files, just in case we have an old timer ...
-		if ($protocol == 'rtmp' || $protocol == 'legacy') {
-			$src = $CFG->wwwroot . "/file.php/" . $COURSE->id . "/" . $src;
-			$type = 'http';
-		}
-
-		if ($width == 0) {
-			$width = 250;
-		}
-		if ($height == 0) {
-			$height = 100;
-		}
-
-		$params = array();
-
-		$params['src'] = $src;//urlencode($src);
-
-
-		//depending on runtime, we would show a SWF or html5 player
-		//but not html5 player yet
-		//use iframe or not
-		if ($iframe) {
-			$returnString = self::fetchIFrameSWFWidgetCode('onceplayer.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		} else {
-			$returnString = self::fetchSWFWidgetCode('onceplayer.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-		}
-
-
-		return $returnString;
-
-
-	}
-
-//Audio playlisttest player with defaults, for use with directories of audio files
-	public static function fetchAudioTestPlayer($runtime, $playlist, $protocol = "", $width = "400", $height = "150", $filearea = "content", $usepoodlldata = true)
-	{
-		global $CFG, $USER, $COURSE;
-
-		$moduleid = optional_param('id', 0, PARAM_INT);    // The ID of the current module (eg moodleurl/view.php?id=X )
-
-//Set our servername .
-		$flvserver = self::fetch_mediaserver_url();
-
-////if usepoodlldata, then set that to filearea
-		if ($usepoodlldata) {
-			$filearea = "poodlldata";
-		}
-
-
-//determine which of, automated or manual playlists to use
-		if (strlen($playlist) > 4 && substr($playlist, -4) == ".xml") {
-			//get a manually made playlist
-			$fetchdataurl = $CFG->wwwroot . "/" . $CFG->filter_poodll_datadir . "/" . $playlist;
-		} else {
-			//get the url to the automated medialist maker
-			$fetchdataurl = $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php?datatype=poodllaudiolist'
-				. '&courseid=' . $COURSE->id
-				. '&moduleid=' . $moduleid
-				. '&paramone=' . $playlist
-				. '&paramtwo=' . $protocol
-				. '&paramthree=' . $filearea
-				. '&cachekiller=' . rand(10000, 999999);
-		}
-
-
-		$params = array();
-		$params['red5url'] = urlencode($flvserver);
-		$params['playertype'] = $protocol;
-		$params['playlist'] = urlencode($fetchdataurl);
-
-		$returnString = self::fetchSWFWidgetCode('poodllaudiotestplayer.lzx.swf9.swf',
-			$params, $width, $height, '#FFFFFF');
-
-		return $returnString;
-
-	}
-
-//Audio playlist player with defaults, for use with directories of audio files
-	public static function fetchAudioListPlayer($runtime, $playlist, $filearea = "content", $protocol = "", $width = "400", $height = "350", $sequentialplay = "true", $useplayer, $showplaylist, $usepoodlldata = false)
-	{
-		global $CFG, $USER, $COURSE;
-
-		$moduleid = optional_param('id', 0, PARAM_INT);    // The ID of the current module (eg moodleurl/view.php?id=X )
-
-
-//determine if we are on a mobile device or not
-		$ismobile = self::isMobile($CFG->filter_poodll_html5play);
-
-		//if its a poodll player we want an xml feed
-		//if its jw or fp we want an rss feed
-		//if we are ipads or html playlists + fp, we wont use a data feed, we will use a list of links
-		//so in that case we pass a "" and just spit out the links.
-		switch ($useplayer) {
-			case "pd":
-				$datatype = "poodllaudiolist";
-				break;
-			case "jw":
-				$datatype = "poodllrsslist";
-				break;
-			case "fp":
-				if ($showplaylist) {
-					$datatype = "";
-				} else {
-					$datatype = "poodllrsslist";
-				}
-				break;
-		}
-
-		//if we are using poodll data, flag that in the filearea param
-		if ($usepoodlldata) {
-			$filearea = "poodlldata";
-		}
-
-
-		//determine playlist url if necessary, if we are using fp player and a visible list we don't need this
-		$fetchdataurl = "";
-		if ($datatype != "") {
-			//get the url to the automated medialist maker
-			//$fetchdataurl= $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php?datatype=poodllaudiolist'
-			$fetchdataurl = $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php?datatype=' . $datatype
-				. '&courseid=' . $COURSE->id
-				. '&moduleid=' . $moduleid
-				. '&paramone=' . $playlist
-				. '&paramtwo=' . $protocol
-				. '&paramthree=' . $filearea
-				. '&cachekiller=' . rand(10000, 999999);
-		}
-
-
-		//If poodll player is not default, use flowplayer it will handle mobile and flash
-		if ($useplayer != "pd") {
-			$returnString = "";
-			//if html playlist use links as list
-			if ($showplaylist) {
-				$returnString = self::fetch_poodllaudiolist($moduleid, $COURSE->id, $playlist, "http", $filearea, "alist");
-				$returnString .= "<br clear='all'/>";
-				//get a flowplayer without a datafeed
-				//size is hardcoded to match images pulled from styles.css in pooodll filter
-				$returnString .= self::fetchFlowPlayerCode($width, 40, "/", "audiolist", $ismobile, "", $sequentialplay);
-
-				//if rss playlist use url of datafeed and pass to flowplayer
-			} else {
-				//get a flowplayer using the data feed
-				//size is hardcoded to match images pulled from styles.css in pooodll filter
-				$returnString .= self::fetchFlowPlayerCode($width, 40, "/", "audiolist", $ismobile, $fetchdataurl, $sequentialplay);
-			}
-
-			return $returnString;
-
-			//If this is a poodll player playlist
-		} else {
-			//Set our servername .
-			$flvserver = self::fetch_mediaserver_url();
-
-
-			$params = array();
-			$params['red5url'] = urlencode($flvserver);
-			$params['playertype'] = $protocol;
-			$params['sequentialplay'] = $sequentialplay;
-			$params['playlist'] = urlencode($fetchdataurl);
-
-			$returnString = self::fetchSWFWidgetCode('poodllaudiolistplayer.lzx.swf9.swf',
-				$params, $width, $height, '#FFFFFF');
-
-			return $returnString;
-		}
-	}
-
-//Audio player with defaults, for use with PoodLL filter
-	public static function fetchSimpleAudioPlayer($runtime, $rtmp_file, $protocol = "", $width = "450", $height = "25",
-												  $embed = false, $embedstring = "Play", $permitfullscreen = false,
-												  $usepoodlldata = false, $splashurl = '')
-	{
-		global $CFG, $COURSE, $PAGE;
-
-//Set our servername .
-		$flvserver = self::fetch_mediaserver_url();
-		$courseid = $COURSE->id;
-		$useplayer = $CFG->filter_poodll_defaultplayer;
-
-//determine if we are on a mobile device or not
-		$ismobile = self::isMobile($CFG->filter_poodll_html5play);
-
-		//Set our use protocol type
-		//if one was not passed, then it may have been tagged to the url
-		//this was the old way.
-		if ($protocol == "") {
-			$type = "rtmp";
-			if (strlen($rtmp_file) > 5) {
-				$protocol = substr($rtmp_file, 0, 5);
-				switch ($protocol) {
-					case "yutu:":
-						$rtmp_file = substr($rtmp_file, 5);
-						$rtmp_file = getYoutubeLink($rtmp_file);
-						$type = "http";
-						break;
-					case "http:":
-						$rtmp_file = substr($rtmp_file, 5);
-						$type = "http";
-						break;
-					case "rtmp:":
-						$rtmp_file = substr($rtmp_file, 5);
-					default:
-						$type = "rtmp";
-
-				}
-
-			}//end of if strlen(rtmpfile) > 4
-
-			//If we have one passed in, lets set it to our type
-		} else {
-			switch ($protocol) {
-				case "yutu":
-					$rtmp_file = getYoutubeLink($rtmp_file);
-					$type = "http";
-					break;
-				case "http":
-				case "rtmp":
-				case "legacy":
-				default:
-					$type = $protocol;
-
-			}
-		}
-
-		//If we are using the legacy coursefiles, we want to fall into this code
-		//this is just a temporary fix to achieve this. Justin 20111213
-		if ($protocol == 'rtmp' || $protocol == 'legacy') {
-			$rtmp_file = $CFG->wwwroot . "/file.php/" . $courseid . "/" . $rtmp_file;
-			$type = 'http';
-			//if using poodlldata, take stub from base dir + poodlldatadir then add file name/path
-		} else if ($usepoodlldata) {
-			$baseURL = $CFG->{'wwwroot'} . "/" . $CFG->{'filter_poodll_datadir'} . "/";
-			$rtmp_file = $baseURL . $rtmp_file;
-		}
-
-
-		//if we are using javascript to detect and insert (probably best..?)
-		$params = array();
-		$params['red5url'] = urlencode($flvserver);
-		$params['playertype'] = $type;
-		$params['mediapath'] = $rtmp_file;
-		$params['permitfullscreen'] = $permitfullscreen;
-
-
-		//establish the fileextension
-		$ext = substr($rtmp_file, -3);
-
-		//if we are on mobile we want to play mp3 using html5 tags
-		//if we have a file type that flash wont play, default to runtime = js
-		if ($runtime == 'auto') {
-			if ($ismobile) {
-				$runtime = 'js';
-			} else if ($ext == '3gp' || $ext == 'ebm' || $ext == '3g2') {
-				$runtime = 'js';
-			} else {
-				$runtime = 'swf';
-			}
-		}//end of if runtime=auto
-
-
-		if ($runtime == 'js' && ($CFG->filter_poodll_html5controls == 'native')) {
-			$returnString = "";
-
-
-			//the $rtmp_file as it comes from assignment and questions, is urlencoded, we need to decode
-			//or html 5 playback will fail Justin 20121016
-			$rtmp_file = urldecode($rtmp_file);
-
-			//figure out the mime type by the extension
-			$mime = "";
-			switch ($ext) {
-				case "mov":
-				case "mp4":
-					$mime = "video/mp4";
-					break;
-				case "3gp":
-					$mime = "video/3gpp";
-					break;
-				case "3g2":
-					$mime = "video/3gpp2";
-					break;
-				case "ebm":
-					$mime = "video/webm";
-					break;
-				default:
-					$mime = "video/mp4";
-			}
-
-			//The HTML5 Code (can be used on its own OR with the mediaelement code below it
-			$returnString .= "<audio controls width='" . $width . "' height='" . $height . "'>
-								<source type='" . $mime . "' src='" . $rtmp_file . "'/>
-								</audio>";
-
-
-			//if we are using SWF
-		} else {
-
-
-			//Flowplayer
-			if ($useplayer == "fp" || $CFG->filter_poodll_html5controls == "js") {
-
-				$returnString = self::fetchFlowPlayerCode($width, $height, $rtmp_file, "audio", $ismobile, "", false, $splashurl);
-
-				//JW player
-			} else if ($useplayer == "jw") {
-				$flashvars = array();
-				$flashvars['file'] = $rtmp_file;
-				$flashvars['autostart'] = 'false';
-				$returnString = self::fetchSWFObjectWidgetCode('jwplayer.swf',
-					$flashvars, $width, $height, '#FFFFFF');
-
-				//if the file is an mp3, and we are using poodll player, don't handle it
-				//either pass it to multi media plugin filter or pass it flowplayer
-				// PoodLL player can't mp3 without RTMP
-			} else if (substr($rtmp_file, -4) == '.mp3') {
-				$returnString = self::fetchFlowPlayerCode($width, $height, $rtmp_file, "audio", $ismobile);
-				//$returnString= "<a href=\"$rtmp_file\">$rtmp_file</a>";
-
-				//PoodLL Player
-			} else {
-
-				$returnString = self::fetchSWFWidgetCode('poodllaudioplayer.lzx.swf9.swf',
-					$params, $width, $height, '#FFFFFF');
-			}
-
-			//regardless of swf player, add a download icon if appropriate
-			$context = \context_course::instance($COURSE->id);
-			$has_permission = has_capability('filter/poodll:candownloadmedia', $context);
-			if ($CFG->filter_poodll_download_media_ok && $has_permission) {
-				$returnString .= "<a href='" . urldecode($rtmp_file) . "'>"
-					. "&nbsp;<img src='" . $CFG->{'wwwroot'} . "/filter/poodll/pix/download.gif' alt='download' />"
-					. "</a>";
-			}
-
-		}
-
-		$renderer = $PAGE->get_renderer('filter_poodll');
-		return $renderer->fetchAudioPlayer($returnString);
-
-	}
-
-
-//Video player with defaults, for use with PoodLL filter
-	public static function fetchSimpleVideoPlayer($runtime, $rtmp_file, $width = "400", $height = "380", $protocol = "", $embed = false, $permitfullscreen = false, $embedstring = "Play", $splashurl = "", $useplayer = "")
-	{
-		global $CFG, $USER, $COURSE, $PAGE;
-
-//Set our servername .
-		$flvserver = self::fetch_mediaserver_url();
-		$courseid = $COURSE->id;
-
-//Set the playertype to use
-		if ($protocol == "yutu") {
-			$useplayer = "pd";
-		} else if ($useplayer == "") {
-			$useplayer = $CFG->filter_poodll_defaultplayer;
-		}
-
-//determine if we are on a mobile device or not
-		$ismobile = self::isMobile($CFG->filter_poodll_html5play);
-//$ismobile=true;
-
-
-		//Massage the media file name if we have a username variable passed in.
-		//This allows us to show different video to each student
-		if (isset($USER->username)) {
-			$rtmp_file = str_replace("@@username@@", $USER->username, $rtmp_file);
-		}
-
-		//Determine if we are admin, admins can always fullscreen
-		if (has_capability('mod/quiz:preview', \context_course::instance($COURSE->id))) {
-			$permitfullscreen = 'true';
-		}
-
-
-		//Set our use protocol type
-		//if one was not passed, then it may have been tagged to the url
-		//this was the old way.
-		if ($protocol == "") {
-			$type = "rtmp";
-			if (strlen($rtmp_file) > 5) {
-				$protocol = substr($rtmp_file, 0, 5);
-				switch ($protocol) {
-					case "yutu:":
-						$rtmp_file = substr($rtmp_file, 5);
-						$type = "yutu";
-						break;
-					case "http:":
-						$rtmp_file = substr($rtmp_file, 5);
-						$type = "http";
-						break;
-					case "rtmp:":
-						$rtmp_file = substr($rtmp_file, 5);
-					default:
-						$type = "rtmp";
-
-				}
-
-			}//end of if strlen(rtmpfile) > 4
-
-			//If we have one passed in, lets set it to our type
-		} else {
-			switch ($protocol) {
-				case "yutu":
-				case "http":
-				case "rtmp":
-				case "legacy":
-				default:
-					$type = $protocol;
-
-			}
-		}
-
-		//If we are using the legacy coursefiles, we want to fall into this code
-		//this is just a temporary fix to achieve this. Justin 20111213
-		if ($protocol == 'rtmp' || $protocol == 'legacy') {
-			$rtmp_file = $CFG->wwwroot . "/file.php/" . $courseid . "/" . $rtmp_file;
-			$type = 'http';
-		}
-
-		//If we want to avoid loading multiple players on the screen, we use this script
-		//to load players ondemand
-		//this does screw up updating the entry on the page,
-		//which is seen after marking a single audio/vide assignment and returning to the list
-		//poodllonline assignment
-		//if ($embed){
-		if (false) {
-			$lzid = "lzapp_videoplayer_" . rand(100000, 999999);
-			$returnString = "
-	  <div id='$lzid' class='player'>
-        <a href='#' onclick=\"javascript:loadVideoPlayer('$rtmp_file', '$lzid', 'sample_$lzid', '$width', '$height'); return false;\">$embedstring </a>
-      </div>
-		";
-
-
-			return $returnString;
-
-		} else {
-
-			$params = array();
-			$params['red5url'] = urlencode($flvserver);
-			$params['playertype'] = $type;
-			$params['mediapath'] = $rtmp_file;
-			$params['permitfullscreen'] = $permitfullscreen;
-
-			//establish the fileextension
-			$ext = substr($rtmp_file, -3);
-
-			//if we are on mobile we want to play mp3 using html5 tags
-			if ($runtime == 'auto') {
-				if ($ismobile) {
-					$runtime = 'js';
-				} else if ($ext == '3gp' || $ext == 'ebm' || $ext == '3g2') {
-					$runtime = 'js';
-				} else {
-					$runtime = 'swf';
-				}
-			}//end of if runtime=auto
-
-
-			if ($runtime == 'js' && ($CFG->filter_poodll_html5controls == 'native')) {
-				$returnString = "";
-
-				//get a poster image if it is appropriate
-				$poster = "";
-				if ($splashurl != "") {
-					$poster = $splashurl;
-				} else if ($CFG->filter_poodll_videosplash) {
-					if ($CFG->filter_poodll_thumbnailsplash) {
-						$splashurl = self::fetchVideoSplash($rtmp_file);
-					} else {
-						$splashurl = false;
-					}
-					if (!$splashurl) {
-						$splashurl = $CFG->wwwroot . "/filter/poodll/flowplayer/videosplash.jpg";
-					}
-					$poster = $splashurl;
-				}
-
-				//the $rtmp_file as it comes from assignment and questions, is urlencoded, we need to decode
-				//or html 5 playback will fail Justin 20121016
-				$rtmp_file = urldecode($rtmp_file);
-
-				//figure out the mime type by the extension
-				$mime = "";
-				switch ($ext) {
-					case "mov":
-					case "mp4":
-						$mime = "video/mp4";
-						break;
-					case "3gp":
-						$mime = "video/3gpp";
-						break;
-					case "3g2":
-						$mime = "video/3gpp2";
-						break;
-					case "ebm":
-						$mime = "video/webm";
-						break;
-					default:
-						$mime = "video/mp4";
-				}
-
-				//return the html5 video code
-				$returnString .= "<video controls poster='" . $poster . "' width='" . $width . "' height='" . $height . "'>
-								<source type='" . $mime . "' src='" . $rtmp_file . "'/>
-							</video>";
-
-
-				//if we are using SWF
-			} else {
-
-
-				//Flowplayer
-				if ($useplayer == "fp" || $CFG->filter_poodll_html5controls == "js") {
-
-					$returnString = self::fetchFlowPlayerCode($width, $height, $rtmp_file, "video", $ismobile, "", false, $splashurl);
-
-					//JW player
-				} else if ($useplayer == "jw") {
-					$flashvars = array();
-					$flashvars['file'] = $rtmp_file;
-					$flashvars['autostart'] = 'false';
-					$returnString = self::fetchSWFObjectWidgetCode('jwplayer.swf',
-						$flashvars, $width, $height, '#FFFFFF');
-
-
-					//PoodLL Player
-				} else {
-					$params['playerbackcolor'] = $CFG->filter_poodll_fp_bgcolor;
-					$returnString = self::fetchSWFWidgetCode('poodllvideoplayer.lzx.swf9.swf',
-						$params, $width, $height, '#FFFFFF');
-				}
-
-				$context = \context_course::instance($COURSE->id);
-				$has_permission = has_capability('filter/poodll:candownloadmedia', $context);
-				if ($CFG->filter_poodll_download_media_ok && $has_permission) {
-					$returnString .= "<a href='" . urldecode($rtmp_file) . "'>"
-						. "&nbsp;<img src='" . $CFG->{'wwwroot'} . "/filter/poodll/pix/download.gif' alt='download' />"
-						. "</a>";
-				}
-
-			}
-
-			$renderer = $PAGE->get_renderer('filter_poodll');
-			return $renderer->fetchVideoPlayer($returnString);
-		}
-
-	}
-
-
-	public static function fetchSmallVideoGallery($runtime, $playlist, $filearea = "content", $protocol = "", $width, $height, $permitfullscreen = false, $usepoodlldata = false)
-	{
-		global $CFG, $USER, $COURSE;
-
-//Set the servername
-		$courseid = $COURSE->id;
-		$flvserver = self::fetch_mediaserver_url();
-
-		$moduleid = optional_param('id', 0, PARAM_INT);    // The ID of the current module (eg moodleurl/view.php?id=X )
-
-//If we are using poodll data we fetch from data dir
-//So we just flag that in the filearea parameter
-		if ($usepoodlldata) {
-			$filearea = "poodlldata";
-		}
-
-
-//set size params
-		if ($width == '') {
-			$width = $CFG->filter_poodll_smallgallwidth;
-		}
-		if ($height == '') {
-			$height = $CFG->filter_poodll_smallgallheight;
-		}
-
-//Determine if we are admin, admins can always fullscreen
-		if (has_capability('mod/quiz:preview', \context_course::instance($COURSE->id))) {
-			$permitfullscreen = 'true';
-		}
-
-
-//determine which of, automated or manual playlists to use
-		if (strlen($playlist) > 4 && substr($playlist, -4) == ".xml") {
-			//get a manually made playlist
-			$fetchdataurl = $CFG->wwwroot . "/file.php/" . $courseid . "/" . $playlist;
-		} else {
-
-			//get the url to the automated medialist maker
-			$fetchdataurl = $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php?datatype=poodllmedialist'
-				. '&courseid=' . $COURSE->id
-				. '&moduleid=' . $moduleid
-				. '&paramone=' . $playlist
-				. '&paramtwo=' . $protocol
-				. '&paramthree=' . $filearea
-				. '&cachekiller=' . rand(10000, 999999);
-		}
-
-		$params = array();
-		$params['red5url'] = urlencode($flvserver);
-		$params['playlist'] = urlencode($fetchdataurl);
-		$params['protocol'] = urlencode($protocol);
-		$params['permitfullscreen'] = urlencode($permitfullscreen);
-
-		$returnString = self::fetchSWFWidgetCode('smallvideogallery.lzx.swf9.swf',
-			$params, $width, $height, '#D5FFFA');
-
-		return $returnString;
-
-
-	}
-
-	public static function fetchBigVideoGallery($runtime, $playlist, $filearea = "content", $protocol, $width, $height, $usepoodlldata = false)
-	{
-		global $CFG, $USER, $COURSE;
-
-//Set the servername
-		$courseid = $COURSE->id;
-		$flvserver = self::fetch_mediaserver_url();
-
-		$moduleid = optional_param('id', 0, PARAM_INT);    // The ID of the current module (eg moodleurl/view.php?id=X )
-
-//If we are using poodll data we fetch from data dir
-//So we just flag that in the filearea parameter
-		if ($usepoodlldata) {
-			$filearea = "poodlldata";
-		}
-
-
-//set size params
-		if ($width == '') {
-			$width = $CFG->filter_poodll_biggallwidth;
-		}
-		if ($height == '') {
-			$height = $CFG->filter_poodll_biggallheight;
-		}
-
-//determine which of, automated or manual playlists to use
-		if (strlen($playlist) > 4 && substr($playlist, -4) == ".xml") {
-			//get a manually made playlist
-			$fetchdataurl = $CFG->wwwroot . "/file.php/" . $courseid . "/" . $playlist;
-		} else {
-			//get the url to the automated medialist maker
-			//get the url to the automated medialist maker
-			$fetchdataurl = $CFG->wwwroot . '/filter/poodll/poodlllogiclib.php?datatype=poodllmedialist'
-				. '&courseid=' . $COURSE->id
-				. '&moduleid=' . $moduleid
-				. '&paramone=' . $playlist
-				. '&paramtwo=' . $protocol
-				. '&paramthree=' . $filearea
-				. '&cachekiller=' . rand(10000, 999999);
-		}
-
-		$params = array();
-		$params['red5url'] = urlencode($flvserver);
-		$params['playlist'] = urlencode($fetchdataurl);
-
-		//if($runtime=='swf'){
-		if (true) {
-			//set the flash widget suffix
-			$widget = "bigvideogallery.lzx.swf9.swf";
-			$returnString = self::fetchSWFWidgetCode($widget, $params, $width, $height, '#D5FFFA');
-		} else {
-			//set the JS widget suffix
-			$widget = "bigvideogallery.lzx.js";
-			$returnString = self::fetchJSWidgetiFrame($widget, $params, $width, $height, '#D5FFFA');
-		}
-
-		return $returnString;
-
-	}
-
 
 	public static function filter_poodll_fetch_recorder_strings()
 	{
@@ -2741,300 +934,6 @@ class poodlltools
 	public static function srtFilenames($a, $b)
 	{
 		return strcasecmp($a->get_filename(), $b->get_filename());
-	}
-
-//this function returns an rss/xml/ or link list of files for a list player
-//originally it existed in poodlllogiclib.php bu t was moved here so we did not have
-//to include poodlllogiclib here
-	function fetch_poodllaudiolist($moduleid, $courseid, $path = "/", $playertype, $filearea, $listtype = "xml")
-	{
-		global $CFG, $DB, $COURSE;
-
-
-		//if a single file was passed in, just play that alone.
-		//for PoodlL 2 this is all we can do in a question right now
-		if (strlen($path) > 4 && substr($path, -4) == ".flv") {
-			switch ($listtype) {
-				case "xml":
-					$ret_output = "<audios>\n";
-					$ret_output .= "\t<audio audioname='" . basename($path) . "' playertype='" . $playertype . "' url='" . trim($path) . "'/>\n";
-					$ret_output .= "</audios>\n";
-					break;
-
-				case "rss":
-					$ret_output = "<channel><title></title>";
-					break;
-
-				case "alinks":
-					$ret_output = "<div class=\"poodllplaylist\">";
-					$ret_output .= "<a href=\"" . trim($path) . "\"><span>" . basename($path) . "</span></a>";
-					$ret_output .= "</div>";
-					break;
-			}
-
-			return $ret_output;
-		}
-
-
-		//FIlter could submit submission/draft/content/intro as options here
-		if ($filearea == "") {
-			$filearea = "content";
-		}
-
-
-		//make sure we have a trailing slash
-		if (strlen($path) > 0) {
-			if (substr($path, -1) != '/') {
-				$path .= "/";
-			}
-			if (substr($path, 0, 1) != '/') {
-				$path = "/" . $path;
-			}
-		} else {
-			$path = "/";
-		}
-
-
-		//set up xml/div to return
-		switch ($listtype) {
-			case "xml":
-				$ret_output = "<audios>\n";
-				break;
-			case "rss":
-				$ret_output = "<channel><title></title>";
-				break;
-			case "alist":
-				$ret_output = "<div class=\"poodllplaylist\">";
-				break;
-		}
-
-		if ($filearea == "poodlldata") {
-			//if(strlen($path)>6 && true){
-			//If we are using PoodLL Data Dir file handling, we build a list of files here:
-			//=============================================
-			//filter file types
-			$filterstring = "/*.{flv,mp3,mp4}";
-			//set up the search dir
-			$baseDir = $CFG->{'dirroot'} . "/" . $CFG->{'filter_poodll_datadir'} . $path;
-			$baseURL = $CFG->{'wwwroot'} . "/" . $CFG->{'filter_poodll_datadir'} . $path;
-			//for debugging
-			//$ret_output .= $baseDir . " " . $baseURL;
-			foreach (glob($baseDir . $filterstring, GLOB_BRACE) as $filename) {
-				$urltofile = $baseURL . basename($filename);
-				switch ($listtype) {
-					case "xml":
-						$ret_output .= "\t<audio audioname='" . basename($filename) . "' playertype='" . $playertype . "' url='" . $urltofile . "'/>\n";
-						break;
-
-					//"type" was necessary for flowplayer ??? but it breaks JWPlayer
-					// justin 20141220
-					case "xrss":
-						$ext = substr($filename, -4);
-						switch ($ext) {
-							case ".mp3":
-								$mimetype = "audio/mpeg3";
-								break;
-							case ".flv":
-								$mimetype = "audio/mp4";
-								break;
-							case ".mp4":
-								$mimetype = "video/x-flv";
-								break;
-						}
-						$ret_output .= "\t<item><title>" .
-							basename($filename) . "</title><media:content url=\"" .
-							trim($urltofile) . "\" type=\"" . $mimetype .
-							"\"/></item>";
-						break;
-
-					case "rss":
-						$ret_output .= "\t<item><title>" .
-							basename($filename) . "</title><media:content url=\"" .
-							trim($urltofile) . "\" /></item>";
-						break;
-
-					case "alist":
-						$ret_output .= "<a href=\"" . trim($urltofile) . "\"><span>" . basename($filename) . "</span></a>";
-						break;
-				}
-
-				//$xml_output .=  "\t<audio audioname='" . basename($filename) ."' playertype='" . $playertype . "' url='" . $baseURL . basename($filename). "'/>\n";
-			}
-
-			//=============================================
-			//end of PoodLL Data Dir
-		} else {
-
-			//fetch info and ids about the module calling this data
-			$course = $DB->get_record('course', array('id' => $courseid));
-			$modinfo = get_fast_modinfo($course);
-			$cm = $modinfo->get_cm($moduleid);
-
-			//If we are using Moodle 2 file handling, we build a list of files here:
-			//=============================================
-			//get filehandling objects
-			$browser = get_file_browser();
-			$fs = get_file_storage();
-
-			//get a handle on the module context
-			$thiscontext = \context_module::instance($moduleid);
-			$contextid = $thiscontext->id;
-
-			//fetch a list of files in this area, and sort them alphabetically
-			$files = $fs->get_area_files($contextid, "mod_" . $cm->modname, $filearea);
-			usort($files, '\filter_poodll\poodlltools\srtFilenames');
-
-			//loop through all the media files and load'em up
-			foreach ($files as $f) {
-				$filename = trim($f->get_filename());
-				//if we are not a directory and filename is long enough and extension is mp3 or flv or mp4, we proceed
-				if ($filename != ".") {
-					if (strlen($filename) > 4) {
-						$ext = substr($filename, -4);
-						if ($ext == ".mp3" || $ext == ".mp4" || $ext == ".flv") {
-							switch ($ext) {
-								case ".mp3":
-									$mimetype = "audio/mpeg3";
-									break;
-								case ".flv":
-									$mimetype = "audio/mp4";
-									break;
-								case ".mp4":
-									$mimetype = "video/x-flv";
-									break;
-							}
-
-							//fetch our info object
-							$fileinfo = $browser->get_file_info($thiscontext, $f->get_component(), $f->get_filearea(), $f->get_itemid(), $f->get_filepath(), $f->get_filename());
-
-							//if we are at the dir level
-							if ($f->get_filepath() == $path) {
-								//get the url to the file and add it to the XML
-								$urltofile = $fileinfo->get_url();
-								switch ($listtype) {
-									case "xml":
-										$ret_output .= "\t<audio audioname='" . basename($filename) . "' playertype='" . $playertype . "' url='" . trim($urltofile) . "'/>\n";
-										break;
-									case "rss":
-										$ret_output .= "\t<item><title>" .
-											basename($filename) . "</title><media:content url=\"" .
-											trim($urltofile) . "\" type=\"" . $mimetype .
-											"\"/></item>";
-										break;
-									case "alist":
-										$ret_output .= "<a href=\"" . trim($urltofile) . "\"><span>" . basename($filename) . "</span></a>";
-										break;
-								}
-
-							}
-						}
-					}
-				}
-			}
-
-			//=============================================
-			//end of Moodle 2 file
-		}
-
-
-		//for debugging
-		//$ret_output .=  "\t<audio audioname='" . $cm->modname  . " " . $filearea . " " . $urltofile ."' playertype='" . $playertype . "' url='" . $mediapath . basename($contextid). "'/>\n";
-
-		//close xml/alist tags to return
-		switch ($listtype) {
-			case "xml":
-				$ret_output .= "</audios>";
-				break;
-			case "rss":
-				$ret_output .= "</channel>";
-				break;
-			case "alist":
-				$ret_output .= "</div>";
-				break;
-		}
-
-
-		//Return the data
-		return $ret_output;
-
-
-	}
-
-
-//Given a user object, return the url to a picture for that user.
-//Given a user object, return the url to a picture for that user.
-	public static function fetch_user_picture($user, $size = 35)
-	{
-		global $CFG, $PAGE;
-		//we ignore size these days Justin 20120705
-		$upic = new \user_picture($user);
-		if ($upic) {
-			return $upic->get_url($PAGE);
-		} else {
-			return "";
-		}
-
-	}
-
-
-//embed a quizlet iframe
-	public static function fetch_quizlet($quizletid, $quizlettitle = "", $mode = "flashcards", $width = "100%", $height = "")
-	{
-
-		//massage mode, other options are as is "learn" or "scatter"
-		if ($mode == "") $mode = "flashcards";
-
-		//set default heights
-		$dh = "410";
-		if ($height == '') {
-			$height = $dh;
-		}
-
-		//only do scrolling for test
-		if ($mode == "test") {
-			$scroll = "yes";
-		} else {
-			$scroll = "no";
-		}
-
-		//return iframe
-		$ret = "<div style=\"background:#fff;padding:3px\">
-			<iframe src=\"//quizlet.com/$quizletid/$mode/embedv2/?hideLinks\" height=\"$height\" width=\"$width\" style=\"border:0;\" scrolling=\"$scroll\"></iframe>
-			</div>";
-		return $ret;
-
-	}
-
-
-	public static function fetch_filter_properties($filterstring)
-	{
-		//this just removes the {POODLL: .. } to leave us with the good stuff.
-		//there MUST be a better way than this.
-		$rawproperties = explode("{POODLL:", $filterstring);
-		$rawproperties = $rawproperties[1];
-		$rawproperties = explode("}", $rawproperties);
-		$rawproperties = $rawproperties[0];
-
-		//Now we just have our properties string
-		//Lets run our regular expression over them
-		//string should be property=value,property=value
-		//got this regexp from http://stackoverflow.com/questions/168171/regular-expression-for-parsing-name-value-pairs
-		$regexpression = '/([^=,]*)=("[^"]*"|[^,"]*)/';
-		$matches = array();
-
-		//here we match the filter string and split into name array (matches[1]) and value array (matches[2])
-		//we then add those to a name value array.
-		$itemprops = array();
-		if (preg_match_all($regexpression, $rawproperties, $matches, PREG_PATTERN_ORDER)) {
-			$propscount = count($matches[1]);
-			for ($cnt = 0; $cnt < $propscount; $cnt++) {
-				// echo $matches[1][$cnt] . "=" . $matches[2][$cnt] . " ";
-				$itemprops[$matches[1][$cnt]] = $matches[2][$cnt];
-			}
-		}
-
-		return $itemprops;
-
 	}
 
 
@@ -3127,38 +1026,6 @@ class poodlltools
 
 	}
 
-//this is only used for JW player, ie not really used
-	public static function fetchSWFObjectWidgetCode($widget, $flashvarsArray, $width, $height, $bgcolor)
-	{
-		global $CFG, $PAGE;
-		//this doesn't work here or at top of file!!
-		//$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flash/swfobject_22.js'));
-
-		$containerid = 'swfobject_' . rand(100000, 999999);
-		$widgetid = $containerid . '_widget';
-
-		$flashvars = "";
-		foreach ($flashvarsArray as $key => $value) {
-			if ($flashvars != "") {
-				$flashvars .= ",";
-			}
-			$flashvars .= $key . ":'" . $value . "'";
-		}
-
-		$retcode = "<p id='" . $containerid . "'>Please install the Flash Plugin</p>
-		<script type='text/javascript' src='/filter/poodll/flash/swfobject_22.js'></script>
-		<script type='text/javascript'>
-		  var flashvars = { " . $flashvars . " };
-		  var params = { allowfullscreen:'true', allowscriptaccess:'always' };
-		  var attributes = { id:'" . $widgetid . "', name:'" . $widgetid . "' };
-		  swfobject.embedSWF('" . $CFG->wwwroot . '/filter/poodll/flash/' . $widget . "','" . $containerid . "','" . $width . "','" . $height . "','9.0.115','false',
-			flashvars, params, attributes);
-		</script>
-		";
-		return $retcode;
-
-
-	}
 
 //If we wish to show a styled upload button, here we return true
 //on Firefox on Android doesn't support it currently, so we hard code that to false
@@ -3175,7 +1042,7 @@ class poodlltools
 		} else if ($browser->getPlatform() == Browser::PLATFORM_MICROSOFT_SURFACE) {
 			return false;
 		} else {
-			return $CFG->filter_poodll_html5fancybutton;
+			return true;
 		}
 	}
 
@@ -3325,236 +1192,41 @@ class poodlltools
 	}
 
 
-	public static function fetchFlowPlayerCode($width, $height, $path, $playertype = "audio", $ismobile = false, $playlisturlstring = "", $loop = 'false', $splashurl = '')
-	{
 
-		global $CFG, $PAGE, $FPLAYERJSLOADED;
-
-		$playerid = "flowplayer_" . $path;
-		$playerpath = $CFG->wwwroot . "/filter/poodll/flowplayer/flowplayer-3.2.10.swf";
-		$playerclass = "flowplayer_poodll";
-
-
-		//this is the embed style for flowplayer.
-		//it got a bit nasty with js conflicts and possibly fp js bugs.
-		//so added options to embed alternatively. should purge cache after changing embed type.
-		//justin 20120928
-		$embedtype = $CFG->filter_poodll_fp_embedtype;
-
-
-		$jscontrolsid = "flowplayer_js_" . $playlisturlstring;
-
-		$defaultcontrolsheight = $CFG->filter_poodll_audioheight;
-
-		//usually we displayhtml5 controls depending on config prefs
-		//but for lists, so if we are mobile we use js, if not we use flash
-		if ($playertype == 'audiolist' || $playertype == 'videolist') {
-			if ($ismobile) {
-				$jscontrols = true;
-			} else {
-				$jscontrols = false;
-			}
-		} else {
-			$jscontrols = ($CFG->filter_poodll_html5controls == 'js') && $ismobile;
-		}
-
-		//This is used in styles.css in poodll filter folder, so it needs to be hard coded
-		$jscontrolsclass = "fpjscontrols";
-
-		//init our return code
-		$retcode = "";
-
-
-		//the params are different depending on the playertype
-		//we need to specify provider for audio if the clips are not MP3 or mp3
-		//jqueryseems unavoidable even if not using it for playlists
-		switch ($playertype) {
-			case "audio":
-				//If we have a splash screen show it and enable autoplay(user only clicks once)
-				//best to have a splash screen to prevent browser hangs on many flashplayers in a forum etc
-				if ($splashurl != '') {
-					$splash = "<img src='" . $splashurl . "' alt='click to play audio' width='" . $width . "' height='" . $height . "'/>";
-
-				} else if ($CFG->filter_poodll_audiosplash) {
-					$splash = "<img src='" . $CFG->wwwroot . "/filter/poodll/flowplayer/audiosplash.jpg' alt='click to play audio' width='" . $width . "' height='" . $height . "'/>";
-				} else {
-					$splash = "";
-				}
+	/*
+	* Convert a video file to a different format using ffmpeg
+	*
+	*/
+	public static function convert_with_ffmpeg_bg($filerecord, $originalfilename, $convfilenamebase, $convext){
+		global $CFG;
+	
+		switch ($convext){
+			case '.mp4':
+				$mediatype="video";
 				break;
-
-			case "audiolist":
-				$splash = "";
-				break;
-
-			case "video":
-				//If we have a splash screen show it and enable autoplay(user only clicks once)
-				//best to have a splash screen to prevent browser hangs on many flowplayers in a forum etc
-				if ($splashurl != '') {
-					$splash = "<img src='" . $splashurl . "' alt='click to play video' width='" . $width . "' height='" . $height . "'/>";
-
-				} else if ($CFG->filter_poodll_videosplash) {
-					if ($CFG->filter_poodll_thumbnailsplash) {
-						$splashurl = self::fetchVideoSplash($path);
-					} else {
-						$splashurl = false;
-					}
-					if (!$splashurl) {
-						$splashurl = $CFG->wwwroot . "/filter/poodll/flowplayer/videosplash.jpg";
-					}
-					$splash = "<img src='" . $splashurl . "' alt='click to play video' width='" . $width . "' height='" . $height . "'/>";
-
-				} else {
-					$splash = "";
-				}
-				break;
-
-			case "videolist":
-				$splash = "";
-				break;
-
-
-		}
-
-		//add a media rss playlist if one was passed in
-		if ($playlisturlstring == "") {
-			$playlisturlstring = null;
-		}
-
-		//put together the a link/div that will be replaced by a player
-		//gave up on a link because the mediaplugin kept trying to double replace it
-		//justin 20120928
-
-		//A link method
-		if ($embedtype == 'flowplayer') {
-			$retcode .= "<a href='" . $path . "'
-						style='display:block;width:" . $width . "px;height:" . $height . "px;'
-						id='" . $playerid . "' class='" . $playerclass . "' >
-						" . $splash . "
-					</a>";
-		} else {
-
-			//DIV method
-			$retcode .= "<div style='display:block;width:" . $width . "px;height:" . $height . "px;'
-						id='" . $playerid . "' class='" . $playerclass . "' >
-						" . $splash . "
-					</div>";
-		}
-
-
-		//put together the div that will be replaced by the JS controls if necessary
-		if ($jscontrols) {
-			$retcode .= "<div id='" . $jscontrolsid . "' class='" . $jscontrolsclass . "'></div>";
-		}
-
-		//determine the flowplayer components we need to incorp.
-		//the js will figure outhow to assemble it all
-		//but only flowplayer js embedding will do more than the basic swf player
-		$controls = "0";
-		$ipad = false;
-		$playlist = false;
-		$loop = false;
-
-		if ($ismobile) {
-			if (($playertype == "audiolist" || $playertype == "videolist") && $jscontrols) {
-				$controls = $jscontrolsid;
-				$ipad = true;
-				$playlist = true;
-				$loop = true;
-
-			} else if ($playertype == "audiolist" || $playertype == "videolist") {
-				$ipad = true;
-				$playlist = true;
-				$loop = true;
-
-			} else if ($jscontrols) {
-				$controls = $jscontrolsid;
-				$ipad = true;
-
-			} else {
-				$ipad = true;
-
-			}
-		} else {
-			if (($playertype == "audiolist" || $playertype == "videolist") && $jscontrols) {
-				$controls = $jscontrolsid;
-				$playlist = true;
-				$loop = true;
-
-			} else if ($playertype == "audiolist" || $playertype == "videolist") {
-				$playlist = true;
-				$loop = true;
-
-			} else if ($jscontrols) {
-				$controls = $jscontrolsid;
-			}
-		}
-
-		switch ($embedtype) {
-			case 'swfobject':
-				//likely to have already been loaded elsewhere
-				$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flash/swfobject_22.js'));
-				break;
-
-			case 'flashembed':
-				//Load JS dependancies
-				$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flowplayer/flowplayer-3.2.9.min.js'));
-				break;
-
-			case 'flowplayer':
+			case '.mp3':
 			default:
-				//Load JS dependancies
-				$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flowplayer/flowplayer-3.2.9.min.js'));
-
-				//these are for the list players, but i wonder if list players from flowplayer are too much hassle ...
-				if ($CFG->filter_poodll_fp_playlist) {
-					$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flowplayer/jquery.tools.min.js'));
-					//alternatively this can be used for the jquerystuff js, its better, but its inline and wont work on LAN only nets
-					//$retcode .= "<script src=\"http://cdn.jquerytools.org/1.2.7/full/jquery.tools.min.js\"></script>";
-
-					$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flowplayer/flowplayer.playlist-3.2.8.min.js'));
-					$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flowplayer/flowplayer.ipad-3.2.8.min.js'));
-				}
-
+				$mediatype="audio";
+				break;
 		}
-
-		//configure our options array
-		$opts = array(
-			"path" => $path,
-			"playerid" => $playerid,
-			"playerpath" => $playerpath,
-			"poodll_audiosplash" => ($CFG->filter_poodll_audiosplash == 1),
-			"poodll_videosplash" => ($CFG->filter_poodll_videosplash == 1),
-			"jscontrols" => $jscontrols,
-			"height" => $height,
-			"width" => $width,
-			"defaultcontrolsheight" => $defaultcontrolsheight,
-			"playertype" => $playertype,
-			"playlisturl" => $playlisturlstring,
-			"controls" => $controls,
-			"ipad" => $ipad,
-			"playlist" => $playlist,
-			"loop" => ($loop ? 'true' : 'false'),
-			"embedtype" => $embedtype,
-			"bgcolor" => $CFG->filter_poodll_fp_bgcolor,
-			"audiocontrolsurl" => $CFG->wwwroot . "/filter/poodll/flowplayer/flowplayer.audio-3.2.9.swf"
-		);
-
-		//We need this so that we can require the JSON , for json stringify
-		$jsmodule = array(
-			'name' => 'filter_poodll',
-			'fullpath' => '/filter/poodll/module.js',
-			'requires' => array('json')
-		);
-
-		//setup our JS call
-		$PAGE->requires->js_init_call('M.filter_poodll.loadflowplayer', array($opts), false, $jsmodule);
-
-
-		//return the html that the Flowplayer JS will swap out
-		return $retcode;
+		
+	
+		//store placeholder audio or video to display until conversion is finished
+		$filerecord->filename = $convfilenamebase . $convext;
+		//$stored_file =self::save_placeholderfile_in_moodle($filerecord,$convfilenamebase,$convext);
+		$stored_file =self::save_placeholderfile_in_moodle($mediatype,$filerecord);
+		//we need this id later, to find the old draft file and remove it, in ad hoc task
+		$filerecord->id = $stored_file->get_id();
+	
+		// register task
+	   $success = self::register_ffmpeg_task($filerecord,$originalfilename, $convfilenamebase,$convext);
+	 
+	   return $stored_file;
 	}
 
-
+	/*
+	* Fetch a splash image for video
+	**/
 	public static function fetchVideoSplash($src)
 	{
 		global $CFG;
@@ -3652,7 +1324,7 @@ class poodlltools
 		//if we are using FFMPEG, try to get the splash image
 		if ($CFG->filter_poodll_ffmpeg) {
 
-			$imagefile = get_splash_ffmpeg($file, $imagefilename);
+			$imagefile = self::get_splash_ffmpeg($file, $imagefilename);
 			if ($imagefile) {
 				return $fullimagepath;
 			} else {
@@ -3662,7 +1334,7 @@ class poodlltools
 			//if not FFMPEG pick it up from Red5 server
 		} else {
 
-			$result = instance_remotedownload($file->get_contextid(),
+			$result = filter_poodll_instance_remotedownload($file->get_contextid(),
 				$imagefilename,
 				$file->get_component(),
 				$file->get_filearea(),
@@ -3701,11 +1373,12 @@ class poodlltools
 
 	public static function fetchJSWidgetiFrame($widget, $rawparams, $width, $height, $bgcolor = "#FFFFFF", $usemastersprite = "false")
 	{
-		global $PAGE, $CFG;
+		global $CFG,$PAGE;
 
 		$lm = new \filter_poodll\licensemanager();
-		if(!$lm->validate_registrationkey($CFG->filter_poodll_registrationkey)) {
-			return $lm->fetch_unregistered_content();
+                $registration_status = $lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
+		if($registration_status != \filter_poodll\licensemanager::FILTER_POODLL_IS_REGISTERED){
+			return $lm->fetch_unregistered_content($registration_status);
 		}
 
 		$renderer = $PAGE->get_renderer('filter_poodll');
@@ -3718,8 +1391,9 @@ class poodlltools
 		global $PAGE, $CFG;
 
 		$lm = new \filter_poodll\licensemanager();
-		if(!$lm->validate_registrationkey($CFG->filter_poodll_registrationkey)) {
-			return $lm->fetch_unregistered_content();
+                $registration_status = $lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
+		if($registration_status != \filter_poodll\licensemanager::FILTER_POODLL_IS_REGISTERED){
+			return $lm->fetch_unregistered_content($registration_status);
 		}
 
 		$renderer = $PAGE->get_renderer('filter_poodll');
@@ -3733,8 +1407,9 @@ class poodlltools
 		global $CFG, $PAGE;
 
 		$lm = new \filter_poodll\licensemanager();
-		if(!$lm->validate_registrationkey($CFG->filter_poodll_registrationkey)) {
-			return $lm->fetch_unregistered_content();
+                $registration_status = $lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
+		if($registration_status != \filter_poodll\licensemanager::FILTER_POODLL_IS_REGISTERED){
+			return $lm->fetch_unregistered_content($registration_status);
 		}
 
 //get our module javascript all ready to go
@@ -3751,8 +1426,1000 @@ class poodlltools
 
 		$renderer = $PAGE->get_renderer('filter_poodll');
 		return $renderer->fetchLazloEmbedCode($widgetopts,$widgetid,$jsmodule);
+	}
 
+        
+        public static function fetch_placeholder_file_record($mediatype, $filename){
+            global $DB;
+            
+            switch($mediatype){
+                    case 'audio': $contenthash = POODLL_AUDIO_PLACEHOLDER_HASH;break;
+                    case 'video': $contenthash = POODLL_VIDEO_PLACEHOLDER_HASH;break;
+                    default:$contenthash = '';
+
+            }
+                 
+            $select = "filename='" . $filename. "' AND filearea <> 'draft' AND contenthash='" . $contenthash. "'";
+            $params = null;
+            $sort = "id DESC";
+            $dbfiles = $DB->get_records_select('files',$select,$params,$sort);
+            if(!$dbfiles){
+                return false;
+            }
+
+            //get the file we will replace
+            $thefilerecord = array_shift($dbfiles);	
+            return $thefilerecord;
+        }
+        
+        public static function replace_placeholderfile_in_moodle($draftfilerecord,$permfilerecord,$newfilepath){
+               $fs = get_file_storage();
+               $dfr=$draftfilerecord;
+               //TODO: do we really need the use old draft record?
+               $newfilename =$fs->get_unused_filename($dfr->contextid, $dfr->component, $dfr->filearea, $dfr->itemid, $dfr->filepath, $dfr->filename);
+               $draftfilerecord->filename =$newfilename;
+                $newfile = $fs->create_file_from_pathname($draftfilerecord, 
+			$newfilepath);
+                $permanentfile = $fs->get_file_by_id($permfilerecord->id);
+                $permanentfile->replace_file_with($newfile);
+		return true;
+        }//end of function
+            
+        
+        public static function save_placeholderfile_in_moodle($mediatype,$draftfilerecord){
+           global $CFG;
+            
+            $fs=get_file_storage();
+            $dfr=$draftfilerecord;
+            switch($mediatype){
+                case 'audio':$placeholderfilename = 'convertingmessage.mp3';break;
+                case 'video':$placeholderfilename = 'convertingmessage.mp4';break;
+            }
+            //if we already have a stored file (second submit) just return that
+            $stored_file = $fs->get_file($dfr->contextid, $dfr->component, $dfr->filearea, $dfr->itemid, $dfr->filepath, $dfr->filename);
+            if(!$stored_file){
+            	$stored_file = $fs->create_file_from_pathname($draftfilerecord, 
+				$CFG->dirroot . '/filter/poodll/' .  $placeholderfilename);
+			}
+			if(!$stored_file) {
+                self::send_debug_data(SELF::LOG_SAVE_PLACEHOLDER_FAIL,'Unable to save placeholder:' . $dfr->filename,$dfr->userid,$dfr->contextid);
+            }
+            return $stored_file ;
+            
+        }
+	
+	public static function register_s3_download_task($mediatype,$infilename,$outfilename, $draftfilerecord){
+         global $USER;
+
+	 	// set up task and add custom data
+	   $s3_task = new \filter_poodll\task\adhoc_s3_move();
+	   $savedatetime = new \DateTime();
+	   $isodate=$savedatetime->format('Y-m-d H:i');
+	   $qdata = array(
+		   'filerecord' => $draftfilerecord,
+		   'filename' => $draftfilerecord->filename,
+           'infilename'=>$infilename,
+            'outfilename'=>$outfilename,
+		   'mediatype'=> $mediatype,
+		   'isodate'=>$isodate
+	   );
+	   $s3_task->set_custom_data($qdata);
+	   // queue it
+	   \core\task\manager::queue_adhoc_task($s3_task);
+        \filter_poodll\event\adhoc_move_registered::create_from_task($qdata)->trigger();
 
 	}
+
+	//this should never be called, the adhoc task is no longer there.
+    //but we might need in near future, so we hang on to it.
+    public static function register_s3_transcode_task($mediatype,$s3filename){
+	 	// set up task and add custom data
+	   $s3_task = new \filter_poodll\task\adhoc_s3_transcode();
+	   $savedatetime = new \DateTime();
+           $isodate=$savedatetime->format('Y-m-d H:i');
+	   $qdata = array(
+                   's3filename'=>$s3filename,
+		   'mediatype'=> $mediatype,
+		   'isodate'=>$isodate
+	   );
+	   $s3_task->set_custom_data($qdata);
+	   // queue it
+	   \core\task\manager::queue_adhoc_task($s3_task);
+	}
+	
+	public static function commence_s3_transcode($mediatype,$infilename,$outfilename){
+		global $CFG,$USER;
+
+        $ret = false;
+        $awstools = new \filter_poodll\awstools();
+        
+        //does file exist on s3 in bucket
+		if($awstools->does_file_exist($mediatype,$infilename,'in' )){
+			$awstools->create_one_transcoding_job($mediatype,$infilename,$outfilename);
+			$ret = true;
+        }else{
+            self::send_debug_data(SELF::LOG_TRANSCODE,'Nothing to transcode:' . $infilename,$USER->id);
+        }
+        return $ret;
+	}
+        
+    public static function confirm_s3_arrival($mediatype,$filename){
+		global $CFG;
+          //does file exist on s3
+         $s3filename = \filter_poodll\awstools::fetch_s3_filename($mediatype, $filename);
+		$awstools = new \filter_poodll\awstools();
+		if($awstools->does_file_exist($mediatype,$s3filename,'in' )){
+                    return true;
+		}else{
+                   return false;
+        }
+	}
+        
+    public static function postprocess_s3_upload($mediatype,$draftfilerecord)
+    {
+        $s3filename = \filter_poodll\awstools::fetch_s3_filename($mediatype, $draftfilerecord->filename);
+        $infilename = $s3filename;
+        $outfilename = $infilename;
+        switch ($mediatype) {
+            case 'audio':
+                $newsuffix = '_' . rand(100000, 999999) . '.mp3';
+                $outfilename = str_replace('.mp3', $newsuffix, $infilename);
+                //$draftfilerecord->filename = str_replace('.mp3',$newsuffix ,$draftfilerecord->filename );
+                break;
+            case 'video':
+                $newsuffix = '_' . rand(100000, 999999) . '.mp4';
+                $outfilename = str_replace('.mp4', $newsuffix, $infilename);
+            //$draftfilerecord->filename = str_replace('.mp4',$newsuffix ,$draftfilerecord->filename );
+        }
+        $success = self::commence_s3_transcode($mediatype, $infilename, $outfilename);
+        if ($success) {
+            $success=false;
+            $storedfile = self::save_placeholderfile_in_moodle($mediatype, $draftfilerecord);
+            if($storedfile) {
+                $draftfilerecord->id = $storedfile->get_id();
+                self::register_s3_download_task($mediatype, $infilename, $outfilename, $draftfilerecord);
+                $success = true;
+            }
+        }
+        return $success;
+   }
+	
+	public static function register_ffmpeg_task($filerecord,$originalfilename, $convfilenamebase,$convext){
+		 // set up task and add custom data
+	   $conv_task = new \filter_poodll\task\adhoc_convert_media();
+	   $qdata = array(
+		   'filerecord' => $filerecord,
+		   'filename' => $filerecord->filename,
+		   'originalfilename' => $originalfilename,
+		   'convfilenamebase' => $convfilenamebase,
+		   'convext' => $convext,
+           'infilename'=>$originalfilename,
+           'outfilename'=>$filerecord->filename
+	   );
+	   //infilename and outfilename, are used only for logging. But we need them
+
+	   $conv_task->set_custom_data($qdata);
+	   // queue it
+	   \core\task\manager::queue_adhoc_task($conv_task);
+	   \filter_poodll\event\adhoc_convert_registered::create_from_task($qdata)->trigger();
+	   return true;
+	   
+	}
+	
+	/*
+	* Extract an image from the video for use as splash
+	* image stored in same location with same name (diff ext)
+	* as original video file
+	*
+	*/
+	public static function get_splash_ffmpeg($videofile, $newfilename){
+
+		global $CFG, $USER;
+
+			$tempdir =  $CFG->tempdir . "/";	
+	
+
+			//init our fs object
+			$fs = get_file_storage();
+			//it would be best if we could use $videofile->get_content_filehandle somehow ..
+			//but this works for now.
+			$tempvideofilepath = $tempdir . $videofile->get_filename();
+			$tempsplashfilepath = $tempdir . $newfilename;
+			$ok = $videofile->copy_content_to($tempvideofilepath);
+		
+			//call on ffmpeg to create the snapshot
+			//$ffmpegopts = "-vframes 1 -an ";
+			//this takes the frame after 1 s
+			$ffmpegopts = "-ss 00:00:01 -vframes 1 -an ";
+		
+			//if there is a version in poodll filter dir, use that
+			//else use ffmpeg version on path
+			if(file_exists($CFG->dirroot . '/filter/poodll/ffmpeg')){
+				$ffmpegpath = $CFG->dirroot . '/filter/poodll/ffmpeg';
+			}else{
+				$ffmpegpath = 'ffmpeg';
+			}
+		
+			//branch logic if windows
+			$iswindows =(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+			$command = $ffmpegpath . " -i " . $tempvideofilepath . " " . $ffmpegopts . " " . $tempsplashfilepath;
+
+			if($iswindows){
+				$output = system($command, $fv);
+			}else{
+				shell_exec($command . " >/dev/null 2>/dev/null ");
+			}
+		
+		
+			//add the play button
+			//this can be done from ffmpeg, but probably not on all installs, so we do in php
+			if(is_readable(realpath($tempsplashfilepath))){	
+				//provided this is not a place holder. We don't really want to confuse even more
+				if($videofile->get_contenthash()!=POODLL_VIDEO_PLACEHOLDER_HASH){
+					$bg = imagecreatefrompng($tempsplashfilepath);
+					$btn = imagecreatefrompng($CFG->dirroot . '/filter/poodll/pix/playbutton.png');
+					imagealphablending($bg, 1);
+					imagealphablending($btn, 1);
+					//bail if we failed here
+					if(!($bg && $btn)){return false;}
+			
+					//put the button on the bg picture
+					imagecopy($bg, $btn, (imagesx($bg)-imagesx($btn)) / 2, (imagesy($bg)-imagesy($btn)) / 2, 0 , 0,imagesx($btn) , imagesy($btn));			
+					$btnok = imagepng($bg, $tempsplashfilepath, 7);
+				}//end of if place holder
+			}else{
+				return false;
+			}
+		
+	
+			//initialize return value
+			$stored_file = false;
+	
+			//Check if we could create the image
+			if(is_readable(realpath($tempsplashfilepath))){			
+				//make our filerecord
+				 $record = new \stdClass();
+				$record->filearea = $videofile->get_filearea();
+				$record->component = $videofile->get_component();
+				$record->filepath = $videofile->get_filepath();
+				$record->itemid   = $videofile->get_itemid();
+				$record->license  = $CFG->sitedefaultlicense;
+				$record->author   = 'Moodle User';
+				$record->contextid = $videofile->get_contextid();
+				$record->userid    = $USER->id;
+				$record->source    = '';
+		
+				//set the image filename and call on Moodle to make a stored file from the image
+				$record->filename = $newfilename;
+			
+				//delete the existing file if we had one
+				$hash  = $fs->get_pathname_hash($record->contextid, 
+					$record->component, 
+					$record->filearea, 
+					$record->itemid, 
+					$record->filepath, 
+					$record->filename);
+				$stored_file = $fs->get_file_by_hash($hash);
+				if($stored_file){
+					$record->filename = 'temp_' . $record->filename;
+					$temp_file = $fs->create_file_from_pathname($record, $tempsplashfilepath );
+					$stored_file->replace_file_with($temp_file);
+					$temp_file->delete();
+				}else{
+					//create the new file
+					$stored_file = 	$fs->create_file_from_pathname($record, $tempsplashfilepath );
+				}
+				//need to kill the two temp files here
+				if(is_readable(realpath($tempsplashfilepath ))){
+					unlink(realpath($tempsplashfilepath ));
+				}
+				if(is_readable(realpath($tempvideofilepath))){
+					unlink(realpath($tempvideofilepath));
+				}
+	
+			//delete the temp file we made, regardless
+			}else{
+				if(is_readable(realpath($tempvideofilepath))){
+					unlink(realpath($tempvideofilepath));
+				}
+			}		
+			//return the stored file
+			return $stored_file;
+	}
+	
+	/*
+	* Convert a video file to a different format using ffmpeg
+	*
+	*/
+	public static function convert_with_ffmpeg($filerecord, $tempfilename, $convfilenamebase, $convext, $throwawayname = false){
+
+		global $CFG;
+
+			//init our fs object
+			$fs = get_file_storage();
+			$tempdir = $CFG->tempdir . '/';
+		
+			//if use ffmpeg, then attempt to convert mp3 or mp4
+			$convfilename = $convfilenamebase . $convext;
+			//work out the options we pass to ffmpeg. diff versions supp. dioff switches
+			//has to be this way really.
+
+			switch ($convext){
+				case '.mp4':
+					$ffmpegopts = $CFG->filter_poodll_ffmpeg_mp4opts;
+					break;
+				case '.mp3':
+					$ffmpegopts = $CFG->filter_poodll_ffmpeg_mp3opts;
+					break;
+				default:
+					$ffmpegopts = "";
+			}
+		
+			//if there is a version in poodll filter dir, use that
+			//else use ffmpeg version on path
+			if(file_exists($CFG->dirroot . '/filter/poodll/ffmpeg')){
+				$ffmpegpath = $CFG->dirroot . '/filter/poodll/ffmpeg';
+			}else{
+				$ffmpegpath = 'ffmpeg';
+			}
+		
+			//branch logic depending on if windows or nopt
+			$iswindows =(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+			$command = $ffmpegpath . " -i " . $tempdir . $tempfilename . " " . $ffmpegopts . " " . $tempdir . $convfilename;
+
+			if($iswindows){
+				$output = system($command, $fv);
+			}else{
+				shell_exec($command . " >/dev/null 2>/dev/null ");
+			}
+		
+			/* About FFMPEG conv
+			it would be better to do the conversion in the background not here.
+			in that case you would place an ampersand at the end .. like this ...
+			" >/dev/null 2>/dev/null &");
+			But you have to get the information back to Moodle, and copy the file over, so the plumbing gets tough.
+			That is why we call the background task convert_with_ffmpeg_bg
+			Right now there is no "converting message" displayed to user, but we need to do this.
+			*/
+		
+			//Check if conversion worked
+			if(is_readable(realpath($tempdir . $convfilename))){
+				if($throwawayname){
+					$filerecord->filename = $throwawayname;
+				}else{
+					$filerecord->filename = $convfilename;
+				}
+				//error_log('we converted successfully');
+				$stored_file = 	$fs->create_file_from_pathname($filerecord, $tempdir . $convfilename);
+				//error_log('we stashed successfully');
+				//need to kill the two temp files here
+				if(is_readable(realpath($tempdir . $convfilename))){
+					unlink(realpath($tempdir . $convfilename));
+				}
+				if(is_readable(realpath($tempdir . $tempfilename))){
+					unlink(realpath($tempdir . $tempfilename));
+				}
+				$filename = $convfilename;
+			//if failed, set return value to FALSE
+			//and delete the temp file we made
+			}else{
+				$stored_file = false;
+				if(is_readable(realpath($tempdir . $tempfilename))){
+					unlink(realpath($tempdir . $tempfilename));
+				}
+			}		
+			return $stored_file;
+
+	}//end of convert with FFMPEG
+	
+	
+	//This a legacy call from client plugins, that ais mapped to amd recorder code
+	public static function fetchAudioRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
+	{
+		  return self::fetchAMDRecorderCode('audio', $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs);      
+	}
+
+	//This a legacy call from client plugins, that ais mapped to amd recorder code
+	public static function fetchVideoRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
+	{
+                return self::fetchAMDRecorderCode('video', $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs);
+	}
+	
+    //This a legacy call from client plugins, that ais mapped to amd recorder code
+	public static function fetchHTML5SnapshotCamera($updatecontrol = "saveflvvoice", $width,$height,$contextid, $component, $filearea, $itemid, $callbackjs = false)
+	{
+		$mediatype = "snapshot";
+		return self::fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, 0, $callbackjs);
+	}
+	
+	//This a legacy call from client plugins, that ais mapped to amd recorder code
+	public static function fetch_HTML5RecorderForSubmission($updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $mediatype = "image", $fromrepo = false, $callbackjs = false)
+	{
+		return self::fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, 0, $callbackjs);
+	}
+	
+	//This is use for assembling the html elements + javascript that will be swapped out and replaced with the recorders
+	public static function fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
+	{
+		global $CFG, $PAGE;
+
+		$lm = new \filter_poodll\licensemanager();
+                $registration_status = $lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
+		if($registration_status != \filter_poodll\licensemanager::FILTER_POODLL_IS_REGISTERED){
+			return $lm->fetch_unregistered_content($registration_status);
+		}
+
+		// Lets determine if we are using S3
+		$using_s3 = $CFG->filter_poodll_cloudrecording && ($mediatype=='audio' || $mediatype=='video');
+
+		
+		// if we are using S3 lets get an upload url
+		if($using_s3){
+			switch($mediatype){
+				case 'audio': $ext='.mp3';break;
+				case 'video': $ext='.mp4';break;
+				default:$ext='.wav';
+			}
+			$filename = \html_writer::random_id('poodllfile') . $ext;
+            $s3filename = \filter_poodll\awstools::fetch_s3_filename($mediatype, $filename);
+			$awstools = new \filter_poodll\awstools();
+			$posturl  = $awstools->get_presigned_upload_url($mediatype,60,$s3filename);
+			$quicktime_signed_url = $awstools->get_presigned_upload_url($mediatype,60,$s3filename,true);
+		}else{
+			$filename = false;
+            $s3filename = false;
+			$posturl = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+			$quicktime_signed_url = '';
+		}
+		
+		//cloudbypassurl
+		$cloudbypassurl = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		
+		//generate a (most likely) unique id for the recorder, if one was not passed in
+		$widgetid = \html_writer::random_id('recorderbase');
+
+		$widgetopts = new \stdClass();
+		$widgetopts->id = $widgetid;
+		$widgetopts->widgetid = $widgetid;
+		$widgetopts->posturl = $posturl;
+		$widgetopts->cloudbypassurl = $cloudbypassurl;
+		$widgetopts->updatecontrol = $updatecontrol;
+		$widgetopts->mediatype=$mediatype;
+		$widgetopts->p1 = '';
+		$widgetopts->p2 = $contextid;
+		$widgetopts->p3 = $component;
+		$widgetopts->p4 = $filearea;
+		$widgetopts->p5 = $itemid;
+        $widgetopts->timelimit = $timelimit;
+        $widgetopts->callbackjs = $callbackjs;
+        $widgetopts->quicktimesignedurl =$quicktime_signed_url;
+		
+		//store the filename or "not yet decided flag"(ie false)
+		$widgetopts->filename = $filename;
+		$widgetopts->s3filename = $s3filename;
+		$widgetopts->using_s3 = intval($using_s3);
+                
+		//for mobile amd params
+		$rawparams = self::fetchMobileRecorderAMDParams($mediatype);
+                foreach ($rawparams as $key => $value) {
+                                $widgetopts->{$key} = $value;
+		}
+                
+		//for upload amd params
+		$rawparams = self::fetchUploadRecorderAMDParams();
+                foreach ($rawparams as $key => $value) {
+                                $widgetopts->{$key} = $value;
+		}
+                
+		//for mediarecorder amd params
+		$rawparams = self::fetchMediaRecorderAMDParams();
+		foreach ($rawparams as $key => $value) {
+						$widgetopts->{$key} = $value;
+		}
+
+		//for red5 video recorder amd params
+		$rawparams = self::fetchRed5VideoRecorderAMDParams($widgetid, $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs);
+		foreach ($rawparams as $key => $value) {
+						$widgetopts->{$key} = $value;
+		}
+
+		//for red5 audio recorder amd params
+		$rawparams = self::fetchRed5AudioRecorderAMDParams($widgetid, $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs);
+		foreach ($rawparams as $key => $value) {
+						$widgetopts->{$key} = $value;
+		}
+
+		//for audio mp3 recorder amd params
+		$rawparams = self::fetchFlashMP3RecorderAMDParams($widgetid,$updatecontrol, $contextid, $component, $filearea, $itemid,$timelimit, $callbackjs);
+		foreach ($rawparams as $key => $value) {
+								$widgetopts->{$key} = $value;
+		}
+		
+		//for html5 snapshot recorder amd params
+		$rawparams = self::fetchHTML5SnapshotAMDParams($widgetid,$updatecontrol,$timelimit, $callbackjs);
+		foreach ($rawparams as $key => $value) {
+								$widgetopts->{$key} = $value;
+		}
+		
+		//for flash snapshot recorder amd params
+		$rawparams = self::fetchFlashSnapshotAMDParams($widgetid,$updatecontrol,$contextid, $component, $filearea, $itemid, $timelimit, $callbackjs);
+		foreach ($rawparams as $key => $value) {
+								$widgetopts->{$key} = $value;
+		}
+
+        //send it to renderer for putting on the page
+		$renderer = $PAGE->get_renderer('filter_poodll');
+		return $renderer->fetchAMDRecorderEmbedCode($widgetopts,$widgetid);
+	}
+	
+        
+	public static function fetchRed5AudioRecorderAMDParams($widgetid,$updatecontrol, 
+        		$contextid, $component, $filearea, $itemid, $timelimit, $callbackjs){
+		  
+		global $CFG, $USER, $COURSE;
+		
+		//formerly this was from the flag assigname=poodllrepository=small
+		$bigorsmall='big';
+		
+		//Set the servername and a capture settings from config file
+		$flvserver = self::fetch_mediaserver_url();
+		
+
+		//set up auto transcoding (mp4) or not
+		if ($CFG->filter_poodll_audiotranscode) {
+			$saveformat = "mp3";
+		} else {
+			$saveformat = "flv";
+		}
+
+		//Set the microphone config params
+		$prefmic = $CFG->filter_poodll_studentmic;
+		$micrate = $CFG->filter_poodll_micrate;
+		$micgain = $CFG->filter_poodll_micgain;
+		$micsilence = $CFG->filter_poodll_micsilencelevel;
+		$micecho = $CFG->filter_poodll_micecho;
+		$micloopback = $CFG->filter_poodll_micloopback;
+
+
+		
+		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		$width = "350";
+		$height = "190";
+
+		//If no user id is passed in, try to get it automatically
+		//Not sure if  this can be trusted, but this is only likely to be the case
+		//when this is called from the filter. ie not from an assignment.
+		$userid = $USER->username;
+		$filename = "12345";
+
+		//Stopped using this
+		//$filename = $CFG->filter_poodll_filename;
+		$overwritemediafile = "false";
+		if ($updatecontrol == "saveflvvoice") {
+			$savecontrol = "<input name='saveflvvoice' type='hidden' value='' id='saveflvvoice' />";
+		} else {
+			$savecontrol = "";
+		}
+
+		//auto try ports, try 2 x on standard port, then 80, then 1935,then 80,1935 ad nauseum
+		$autotryports = $CFG->filter_poodll_autotryports == 1 ? "yes" : "no";
+
+		//set up config for recorders
+		$params = array();
+		$params['red5url'] = urlencode($flvserver);
+		$params['overwritefile'] = $overwritemediafile;
+		$params['rate'] = $micrate;
+		$params['gain'] = $micgain;
+		$params['loopback'] = $micloopback;
+		$params['echosupression'] = $micecho;
+		$params['silencelevel'] = $micsilence;
+		$params['filename'] = $filename;
+		$params['assigName'] = 'thismightsometimesbepoodllrepository';//can we delete this already?
+		$params['prefmic'] = $prefmic;
+		$params['course'] = -1;
+		$params['updatecontrol'] = $updatecontrol;
+		$params['saveformat'] = $saveformat;
+		$params['uid'] = $userid;
+		//for file system in moodle 2
+		$params['poodllfilelib'] = $poodllfilelib;
+		$params['contextid'] = $contextid;
+		$params['component'] = $component;
+		$params['filearea'] = $filearea;
+		$params['itemid'] = $itemid;
+		$params['timelimit'] = $timelimit;
+		$params['autotryports'] = $autotryports;
+		$params['debug'] = 'false';
+		$params['lzproxied'] = 'false';
+				
+		//fetch and merge lang params
+		$langparams = self::filter_poodll_fetch_recorder_strings();
+		$params = array_merge($params, $langparams);
+
+		//callbackjs
+		if ($callbackjs) {
+			$params['callbackjs'] = $callbackjs;
+		}
+			
+		 
+		//make the widget opts which we will return
+		$widgetopts= array();			
+		$widget="PoodLLAudioRecorder.lzx.swf9.swf";
+		$widgetopts['red5audio_widgetjson'] = self::fetchSWFWidgetJSON($widget, $params, $width, $height, '#FFFFFF', $widgetid);
+
+		//return opts
+		return $widgetopts;
+	}
+	
+	public static function fetchRed5VideoRecorderAMDParams($widgetid,$updatecontrol, 
+			$contextid, $component, $filearea, $itemid, $timelimit, $callbackjs){
+		  
+		global $CFG, $USER, $COURSE;
+		
+		//formerly this was from the flag assigname=poodllrepository=small
+		$bigorsmall='big';
+		
+		//Set the servername and a capture settings from config file
+		$flvserver = self::fetch_mediaserver_url();
+		$capturewidth = $CFG->filter_poodll_capturewidth;
+		$captureheight = (string)(0.75 * intval($CFG->filter_poodll_capturewidth));
+		$capturefps = $CFG->filter_poodll_capturefps;
+		$prefcam = $CFG->filter_poodll_studentcam;
+		$prefmic = $CFG->filter_poodll_studentmic;
+		$bandwidth = $CFG->filter_poodll_bandwidth;
+		$picqual = $CFG->filter_poodll_picqual;
+
+		//set up auto transcoding (mp4) or not
+		if ($CFG->filter_poodll_videotranscode) {
+			$saveformat = "mp4";
+		} else {
+			$saveformat = "flv";
+		}
+
+		//Set the microphone config params
+		$micrate = $CFG->filter_poodll_micrate;
+		$micgain = $CFG->filter_poodll_micgain;
+		$micsilence = $CFG->filter_poodll_micsilencelevel;
+		$micecho = $CFG->filter_poodll_micecho;
+		$micloopback = $CFG->filter_poodll_micloopback;
+
+
+		
+		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		switch ($bigorsmall) {
+			case 'small':
+				$width = "298";
+				$height = "340";
+				break;
+			case 'big':
+			default:
+				$width = "350";
+				$height = "400";
+		}
+
+
+
+		//If no user id is passed in, try to get it automatically
+		//Not sure if  this can be trusted, but this is only likely to be the case
+		//when this is called from the filter. ie not from an assignment.
+		$userid = $USER->username;
+		$filename = "12345";
+
+		//Stopped using this
+		//$filename = $CFG->filter_poodll_filename;
+		$overwritemediafile = "false";
+		if ($updatecontrol == "saveflvvoice") {
+			$savecontrol = "<input name='saveflvvoice' type='hidden' value='' id='saveflvvoice' />";
+		} else {
+			$savecontrol = "";
+		}
+
+		//auto try ports, try 2 x on standard port, then 80, then 1935,then 80,1935 ad nauseum
+		$autotryports = $CFG->filter_poodll_autotryports == 1 ? "yes" : "no";
+
+		//set up config for recorders
+		$params = array();
+		$params['red5url'] = urlencode($flvserver);
+		$params['overwritefile'] = $overwritemediafile;
+		$params['rate'] = $micrate;
+		$params['gain'] = $micgain;
+		$params['loopback'] = $micloopback;
+		$params['echosupression'] = $micecho;
+		$params['silencelevel'] = $micsilence;
+		$params['capturefps'] = $capturefps;
+		$params['filename'] = $filename;
+		$params['assigName'] = 'thismightsometimesbepoodllrepository';//can we delete this already?
+		$params['captureheight'] = $captureheight;
+		$params['picqual'] = $picqual;
+		$params['bandwidth'] = $bandwidth;
+		$params['capturewidth'] = $capturewidth;
+		$params['prefmic'] = $prefmic;
+		$params['prefcam'] = $prefcam;
+		$params['course'] = -1;
+		$params['updatecontrol'] = $updatecontrol;
+		$params['saveformat'] = $saveformat;
+		$params['uid'] = $userid;
+		//for file system in moodle 2
+		$params['poodllfilelib'] = $poodllfilelib;
+		$params['contextid'] = $contextid;
+		$params['component'] = $component;
+		$params['filearea'] = $filearea;
+		$params['itemid'] = $itemid;
+		$params['timelimit'] = $timelimit;
+		$params['autotryports'] = $autotryports;
+		$params['debug'] = 'false';
+		$params['lzproxied'] = 'false';
+				
+		//fetch and merge lang params
+		$langparams = self::filter_poodll_fetch_recorder_strings();
+		$params = array_merge($params, $langparams);
+
+		//callbackjs
+		if ($callbackjs) {
+			$params['callbackjs'] = $callbackjs;
+		}
+			
+		 
+		//make the widget opts which we will return
+		$widgetopts= array();			
+		$widget="PoodLLVideoRecorder.lzx.swf9.swf";
+		$widgetopts['red5video_widgetjson'] = self::fetchSWFWidgetJSON($widget, $params, $width, $height, '#FFFFFF', $widgetid);
+		
+		//return opts
+		return $widgetopts;
+	}//end of fetch red5 video recorder amd params
+        
+        
+	/*
+	 * Fetch any special parameters required by the Flash recorder
+	 *
+	 */
+	public static function fetchFlashSnapshotAMDParams($widgetid,$updatecontrol,$contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false){
+		global $CFG;
+		
+		//Set  capture settings from config file
+		$capturewidth = $CFG->filter_poodll_capturewidth;
+		$captureheight = (string)(0.75 * intval($CFG->filter_poodll_capturewidth));
+		$capturefps = $CFG->filter_poodll_capturefps;
+		$prefcam = $CFG->filter_poodll_studentcam;
+		$prefmic = $CFG->filter_poodll_studentmic;
+		$bandwidth = $CFG->filter_poodll_bandwidth;
+		$picqual = $CFG->filter_poodll_picqual;
+		$filename ="somepicture.jpg"; //we need this?
+		
+		//just hardcode widtha nd height  ...for now(?)
+		$width = "350";
+		$height = "400";
+
+		//poodllfilelib for file handling
+		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		
+		
+
+		$params = array();
+		$params['capturefps'] = $capturefps;
+		$params['filename'] = $filename; //we need this?
+		$params['captureheight'] = $captureheight;
+		$params['picqual'] = $picqual;
+		$params['bandwidth'] = $bandwidth;
+		$params['capturewidth'] = $capturewidth;
+		$params['prefcam'] = $prefcam;
+		$params['updatecontrol'] = $updatecontrol;
+		$params['moodlewww'] = $CFG->wwwroot;
+
+		//for file system in moodle 2
+		$params['poodllfilelib'] = $poodllfilelib;
+		$params['contextid'] = $contextid;
+		$params['component'] = $component;
+		$params['filearea'] = $filearea;
+		$params['itemid'] = $itemid;
+
+		//recorder id
+		$params['recorderid'] = $widgetid;
+
+		//set to auto submit
+		$params['autosubmit'] = 'true';
+
+		//fetch and merge lang params
+		$langparams = self::filter_poodll_fetch_recorder_strings();
+		$params = array_merge($params, $langparams);
+
+		//callbackjs
+		if ($callbackjs) {
+			$params['callbackjs'] = $callbackjs;
+		}
+
+
+			
+		 //make the widget opts which we will return
+		$widgetopts= array();
+
+		
+		$widget="PoodLLSnapshot.lzx.swf9.swf";
+		$widgetopts['flashsnapshot_widgetjson'] = self::fetchSWFWidgetJSON($widget, $params, $width, $height, '#FFFFFF', $widgetid);
+
+		//return opts
+		return $widgetopts;
+
+			  
+	  }
+	  
+	  /*
+	 * Fetch any special parameters required by the Flash recorder
+	 *
+	 */
+	public static function fetchHTML5SnapshotAMDParams($widgetid,$updatecontrol,$timelimit = "0", $callbackjs = false){	  
+			  return array();
+	}
+        
+        
+        
+
+	 /*
+	 * Fetch any special parameters required by the MP3 recorder
+	 *
+	 */
+	  public static function fetchFlashMP3RecorderAMDParams($widgetid,$updatecontrol, $contextid, $component, $filearea, $itemid,$timelimit = "0", $callbackjs = false)
+		{
+			global $CFG, $USER, $COURSE;
+                
+
+		//Set the microphone config params
+		$micrate = $CFG->filter_poodll_micrate;
+		$micgain = $CFG->filter_poodll_micgain;
+		$micsilence = $CFG->filter_poodll_micsilencelevel;
+		$micecho = $CFG->filter_poodll_micecho;
+		$micloopback = $CFG->filter_poodll_micloopback;
+		$micdevice = $CFG->filter_poodll_studentmic;
+
+		//this only applies to direct from flash uploads (ala internet explorer)
+		$autosubmit = "true";
+
+		//can we pause or not
+		if ($CFG->filter_poodll_miccanpause == 1) {
+			$canpause = 'true';
+		} else {
+			$canpause = 'false';
+		}
+
+	
+		//setup config for recirder
+		$params = array();
+		$params['rate'] = $micrate;
+		$params['gain'] = $micgain;
+		$params['prefdevice'] = $micdevice;
+		$params['loopback'] = $micloopback;
+		$params['echosupression'] = $micecho;
+		$params['silencelevel'] = $micsilence;
+		$params['uid'] = $USER->id;
+		$params['autosubmit'] = $autosubmit;
+		$params['timelimit'] = $timelimit;
+		$params['canpause'] = $canpause;
+        $params['debug'] = 'false';
+		$params['lzproxied'] = 'false';
+		$params['sendmethod'] = 'post';//'ajax' = direct fron flash uploading;
+
+		$params['showexportbutton'] = 'false';
+		$poodllfilelib = $CFG->wwwroot . '/filter/poodll/poodllfilelib.php';
+		$params['posturl'] = $poodllfilelib;
+		$params['p1'] = 1;//?? what goes here?
+		$params['p2'] = $contextid;
+		$params['p3'] = $component;
+		$params['p4'] = $filearea;
+		$params['p5'] = $itemid;
+				
+		$params['updatecontrol'] = $updatecontrol;
+		$params['audiodatacontrol']=$widgetid . '_adc';
+		
+
+		//fetch and merge lang params
+		$langparams = self::filter_poodll_fetch_recorder_strings();
+		$params = array_merge($params, $langparams);
+
+		//callbackjs
+		if ($callbackjs) {
+			$params['callbackjs'] = $callbackjs;
+		} 
+                
+		//set dimensions
+		if ($CFG->filter_poodll_mp3recorder_size =='normal') {
+			$width = "350";
+			$height = "180";
+			$params['size'] = 'normal';
+		} else {
+			$width = "240";
+			$height  = "170";
+			$params['size'] = 'small';
+		}
+		
+		 //make the widget opts which we will return
+		$widgetopts= array();
+
+		
+		$widget="PoodllMP3Record.lzx.swf10.swf";
+		$widgetopts['flashmp3audio_widgetjson'] = self::fetchSWFWidgetJSON($widget, $params, $width, $height, '#FFFFFF', $widgetid);
+		//if we are bypassing clooud
+		$widgetopts['flashmp3_cloudbypass'] =  $CFG->filter_poodll_mp3recorder_nocloud;
+		
+		//return opts
+		return $widgetopts;
+                
+	}
+	
+	/*
+	 * Fetch any special parameters required by the Upload Recorder
+	 *
+	 */
+	public static function fetchUploadRecorderAMDParams()
+	{
+		return array();
+	}
+        
+      /*
+	 * Fetch any special parameters required by the Media Recorder
+	 *
+	 */
+	public static function fetchMediaRecorderAMDParams()
+	{
+		global $CFG;
+		$params=array();
+		$params['media_timeinterval'] = 5000;
+		$params['media_audiomimetype'] = 'audio/webm';//or audio/wav
+        $params['media_videorecordertype'] = 'auto';//or mediarec or webp
+        $params['media_videocapturewidth'] = 320;
+        $params['media_videocaptureheight'] = 240;   
+        $params['media_skin'] = $CFG->filter_poodll_html5recorder_skin; 
+		return $params;
+	}
+        
+        /*
+ * Fetch any special parameters required by the mobile recorder
+ *
+ */
+	public static function fetchMobileRecorderAMDParams($mediatype)
+	{
+		global $CFG;
+        $params=array();
+        switch($mediatype){
+        	case 'audio': 
+        		//from low/medium/high
+        		$params['mobilequality']=$CFG->filter_poodll_mobile_audio_quality; 
+        		break;
+        	case 'video': 
+        		//from low/medium/high
+        		$params['mobilequality']=$CFG->filter_poodll_mobile_video_quality;
+        		break;
+        	case 'image':
+        	default:
+        		//this is irrelevant because the app won't be handling it.
+        		//just for completeness
+        		$params['mobilequality']='medium';
+        }
+        //from front or back
+        $params['mobilecamera']=$CFG->filter_poodll_mobile_default_camera;
+       //show the mobile app button .. or not
+        $params['showmobile']=$CFG->filter_poodll_mobile_show;
+		return $params;
+	}
+
+    public static function send_debug_data($type,$message, $userid=false,$contextid=false, $source='poodlltools.php'){
+        global $CFG;
+        //only log if is on in Poodll settings
+        if(!$CFG->filter_poodll_debug){return;}
+
+        $debugdata = new \stdClass();
+        $debugdata->userid=$userid;
+        $debugdata->contextid=$contextid;
+        $debugdata->type=$type;
+        $debugdata->source='poodlltools.php';
+        if(array_key_exists('HTTP_USER_AGENT', $_SERVER)) {
+            $debugdata->useragent = $_SERVER['HTTP_USER_AGENT'];
+        }else{
+            $debugdata->useragent = '';
+        }
+        $debugdata->message=$message;
+        \filter_poodll\event\debug_log::create_from_data($debugdata)->trigger();
+    }
+
+
 
 }//end of class

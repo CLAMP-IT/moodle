@@ -36,16 +36,17 @@ if ($ADMIN->fulltree) {
 					'show_audiored5' => new lang_string('show_audiored5', 'atto_poodll'),
 					'show_video' => new lang_string('show_video', 'atto_poodll'),
 					'show_whiteboard' => new lang_string('show_whiteboard', 'atto_poodll'),
-					'show_snapshot' => new lang_string('show_snapshot', 'atto_poodll'));
+					'show_snapshot' => new lang_string('show_snapshot', 'atto_poodll'),
+					'show_widgets' => new lang_string('show_widgets', 'atto_poodll'));
 					
-	$recoptiondefaults = array('show_audiomp3' => 1,'show_audiored5' => 0,'show_video' => 1,'show_whiteboard' => 1,'show_snapshot' => 1);
+	$recoptiondefaults = array('show_audiomp3' => 1,'show_audiored5' => 0,'show_video' => 1,'show_whiteboard' => 1,'show_snapshot' => 1,'show_widgets' => 1);
 	$settings->add(new admin_setting_configmulticheckbox('atto_poodll/recorderstoshow',
 						   get_string('recorderstoshow', 'atto_poodll'),
 						   get_string('recorderstoshowdetails', 'atto_poodll'), $recoptiondefaults,$recoptions));	
 	
 	//PoodLL Whiteboard
 	$settings->add(new admin_setting_heading('atto_poodll/whiteboards', get_string('whiteboardheading', 'atto_poodll'), ''));
-	$wboptions = array('drawingboard' => 'Drawing Board(js)', 'literallycanvas' => 'Literally Canvas(js)','poodll' => 'PoodLL Whiteboard(Flash)');
+	$wboptions = array('drawingboard' => 'Drawing Board(js)', 'literallycanvas' => 'Literally Canvas(js)');
 	$settings->add(new admin_setting_configselect('atto_poodll/usewhiteboard', get_string('usewhiteboard', 'atto_poodll'), '', 'drawingboard', $wboptions));
 
 	

@@ -1,5 +1,11 @@
 Change List
 =========
+Version 2016112701
+fixed broken pdl links
+fixed broken whiteboard and video recorder
+
+Version 2016081401
+Added support for auto iframe resizing
 
 Version 2015121102
 Fixed a big that caused PoodLL repo to fail, and

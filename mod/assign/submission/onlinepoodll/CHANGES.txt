@@ -1,6 +1,23 @@
 Change List
 =========
 
+Version 2017020501
+Added better support for widths of submitted whiteboards, images and videos
+Fixed a bug when resubmitting assignments that had not passed form validation
+
+Version 2016112701
+Fixed an issue where widths were pulled from a  missing poodll property
+
+Version 2016112401
+Fixed an issue where the snapshot recorder was not properly supported
+
+Version 2016081402
+Fixed an issue with constant declaration that could mess up behat
+Added two new sizes for whiteboard. 
+
+Version 2016081401
+Version bump(big) for PoodLL 3 support, but no major changes
+
 Version 2015121101
 Support for refactored PoodLL filter and support for Moodle 3.0
 

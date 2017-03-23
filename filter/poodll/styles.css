@@ -1,18 +1,8 @@
-.reveal.filter_poodll_revealjs_container {
-	height: 400px;
+.hide {
+	display: none;
 }
 
-.reveal.filter_poodll_revealjs_container > .slides section {
-    height: 100%;
-}
 
-.filter_poodll_revealjs_next, .filter_poodll_revealjs_previous{
-	width: 45%;
-}
-.filter_poodll_revealjs_buttons{
-	width: 100%;
-	margin: 30px;
-}
 .filter_poodll_mp3skinned_recorder {
 	width: 240px;
 	height: 205px;
@@ -21,17 +11,6 @@
 	height: 80px;
 }
 
-
-
-.filter_poodll_revealjs_section{
-	border-radius: 15px;
-}
-.filter_poodll_revealjs_section_front{
-	background: #8AC007;
-}
-.filter_poodll_revealjs_section_back{
-	background: #8A07C0;
-}
 .filter_poodll_unregistered{
     font-weight: bold;
     border-style: double;
@@ -41,197 +20,6 @@
 }
 
 
-/* playlist style */
-div.poodllplaylist {
-    width:397px;
-    height:150px;
-    overflow-y:auto;
-    overflow-x:hidden;
-    border:1px solid #ccc;
-    padding:1px 1px 12px 1px;
-    background-color:#495171;
-    margin-top:5px;
-    float:left;
-}
- 
-/* playlist entry */
- div.poodllplaylist a {
-    display:block;
-    width:380px;
-    height:18px;
-    padding:3px;
-    background-color:#fff;
-    border:1px solid #ccc;
-    font:11px "bitstream vera sans", "lucida grande",verdana;
-    text-decoration:none;
-    margin-top:0px;
-    color:#666;
-}
- 
-/* different states of a playlist entry */
-div.poodllplaylist a:hover {
-    background-color:#c0c4d5;
-	color:#0;
-}
- 
-div.poodllplaylist a.progress {
-    background-color:#efefef;
-	color:#0;
-}
- 
-div.poodllplaylist a.playing {
-    border:1px solid #666;
-    background-color:#c0c4d5;
-	color:#0;
-}
- 
-div.poodllplaylist a.paused {
-    border:1px solid #666;
-    background-color:#c0c4d5;
-	color:#0;
-}
- 
-/* elements inside playlist entry */
-div.poodllplaylist a img {
-    border:0;
-    float:left;
-    margin-right:10px;
-}
- 
-div.poodllplaylist a strong {
-    color:blue;
-    padding-bottom:5px;
-}
- 
-div.poodllplaylist a em {
-    border:0;
-    float:left;
-    margin-right:10px;
-    background:url(/media/img/demos/clock.gif) no-repeat 0 50%;
-    padding-left:20px;
-    color:#333;
-    font-style:normal;
-    margin-top:10px;
-}
-
-/* root element should be positioned relatively so that
-    child elements can be positioned absolutely */
-.fpjscontrols {
-    position:relative;
-    height:40px;
-
-    /* black background with a gradient */
-    background:#000 url(/filter/poodll/flowplayer/fpjscontrols.png) repeat-x 0 -4px;
-    width:400px;
-}
-
-/* play/pause button */
-.fpjscontrols .play, .fpjscontrols .pause {
-    position:absolute;
-    width: 46px;
-    height: 40px;
-    display:block;
-    text-indent:-9999em;
-    background:url(/filter/poodll/flowplayer/fpjscontrols.png) no-repeat 10px -61px;
-    cursor:pointer;
-    border-right:1px solid #000;
-}
-
-.fpjscontrols .play:hover {
-    background-position:10px -105px;
-}
-
-/* pause state */
-.fpjscontrols .pause {
-    background-position:11px -148px;
-}
-
-.fpjscontrols .pause:hover {
-    background-position:11px -192px;
-}
-
-/* the timeline (or "scrubber")  */
-.fpjscontrols .track {
-    left:47px;
-    position:absolute;
-    cursor:pointer;
-    width:185px;
-    border-left:1px solid #999;
-    height:40px;
-}
-
-/* the draggable playhead */
-.fpjscontrols .playhead {
-    position:absolute;
-    cursor:pointer;
-    background-color:#4ff;
-    opacity:0.3;
-    filter: alpha(opacity=30);
-    width:3px;
-    height:40px;
-    border-right:1px solid #444;
-}
-
-/* buffer- and progress bars. upon runtime the width of these elements grows */
-.fpjscontrols .progress, .fpjscontrols .buffer {
-    position:absolute;
-    background-color:#4ff;
-    filter: alpha(opacity=10);
-    opacity:0.1;
-    width:0px;
-    height:40px;
-}
-
-.fpjscontrols .buffer {
-    background-color:#fff;
-    opacity:0.1;
-    filter: alpha(opacity=10);
-}
-
-/* time display */
-.fpjscontrols .time {
-    position:absolute;
-    width:129px;
-    left:230px;
-    padding:12px 0;
-    text-align:center;
-    border:1px solid #999;
-    border-width:0 1px;
-    font-size:12px;
-    color:#fff;
-}
-
-/* total duration in time display */
-.fpjscontrols .time strong {
-    font-weight:normal;
-    color:#666;
-}
-
-/* mute / unmute buttons */
-.fpjscontrols .mute, .fpjscontrols .unmute {
-    position:absolute;
-    left:360px;
-    width:40px;
-    height:40px;
-    text-align:center;
-    padding:8px 0;
-    cursor:pointer;
-    text-indent:-9999em;
-    background:url(/filter/poodll/flowplayer/fpjscontrols.png) no-repeat 5px -323px;
-}
-
-.fpjscontrols .mute:hover {
-    background-position:5px -367px;
-}
-
-/* unmute state */
-.fpjscontrols .unmute {
-    background-position:5px -235px;
-}
-
-.fpjscontrols .unmute:hover {
-    background-position:5px -279px;
-}
 
 /* For HTML5 Uploads */
 .p_progress p
@@ -242,7 +30,7 @@ div.poodllplaylist a em {
 	margin: 2px 0;
 	border: 1px inset #446;
 	border-radius: 5px;
-	background: #eee url("/filter/poodll/progress.png") 100% 0 repeat-y;
+	background: #eee url([[pix:filter_poodll|progress]]) 100% 0 repeat-y;
 }
 
 .p_progress p.success
@@ -356,7 +144,7 @@ left: -50%;
 /* literally canvas */
 .literally .button-style-1{border:2px solid transparent;border-radius:3px}.literally .button-style-1{text-decoration:none;cursor:pointer}.literally .button-style-1.selected:not(.disabled){background-color:#a1d9fe}.literally .button-style-1:hover:not(.disabled){border-color:#a1d9fe}.literally .button-style-1.disabled{cursor:default;opacity:0.3}.literally.toolbar-at-top .lc-drawing{bottom:0;top:31px}.literally.toolbar-at-top .lc-options{top:0;border-bottom:1px solid #555}.literally.toolbar-at-bottom .lc-drawing{bottom:31px;top:0}.literally.toolbar-at-bottom .lc-options{bottom:0;border-top:1px solid #555}.literally.toolbar-hidden .lc-drawing{left:0;right:0;bottom:0;top:0}.literally.toolbar-hidden .lc-options,.literally.toolbar-hidden .lc-picker{display:none}.literally{position:relative;background-color:#ddd;min-height:400px;-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;-ms-touch-action:none;user-select:none}.literally,.literally *{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}.literally>*{position:absolute}.literally .lc-picker{top:0;left:0;bottom:0;width:61px;background-color:#e6e6e6}.literally .lc-drawing{right:0;left:61px;cursor:default}.literally .lc-drawing>*{position:absolute;top:0;right:0;bottom:0;left:0}.literally .lc-drawing .polygon-toolbar{top:auto;height:31px}.literally .lc-drawing .polygon-toolbar .polygon-toolbar-button{float:left}.literally .lc-drawing .text-tool-input:focus{outline:none}.literally .lc-picker{z-index:2;border-right:1px solid #555}.literally .lc-picker .toolbar-button{width:26px;height:26px;line-height:26px;margin:2px;padding:0;cursor:pointer;text-align:center;border:2px solid transparent;border-radius:3px}.literally .lc-picker .toolbar-button{text-decoration:none;cursor:pointer}.literally .lc-picker .toolbar-button.selected:not(.disabled){background-color:#a1d9fe}.literally .lc-picker .toolbar-button:hover:not(.disabled){border-color:#a1d9fe}.literally .lc-picker .toolbar-button.disabled{cursor:default;opacity:0.3}.literally .lc-picker .thin-button{cursor:pointer;float:left;position:relative}.literally .lc-picker .fat-button{clear:both;width:56px}.literally .lc-picker .lc-pick-tool,.literally .lc-picker .lc-undo,.literally .lc-picker .lc-redo,.literally .lc-picker .lc-zoom-in,.literally .lc-picker .lc-zoom-out{background-size:100% auto;background-repeat:no-repeat;background-position:center center}.literally .color-well{font-size:10px;float:left;width:60px}.literally .color-well.open{background-color:#a1d9fe}.literally .color-well-color-container{border:2px solid transparent;border-radius:3px;border:1px solid #aaa;position:relative;width:28px;height:28px;margin:1px auto;overflow:visible}.literally .color-well-color-container{text-decoration:none;cursor:pointer}.literally .color-well-color-container.selected:not(.disabled){background-color:#a1d9fe}.literally .color-well-color-container:hover:not(.disabled){border-color:#a1d9fe}.literally .color-well-color-container.disabled{cursor:default;opacity:0.3}.literally .color-well-color-container .color-well-checker{position:absolute;width:50%;height:50%;background-color:black}.literally .color-well-color-container .color-well-checker-top-left{border-top-left-radius:3px}.literally .color-well-color-container .color-well-checker-bottom-right{border-bottom-right-radius:3px}.literally .color-well-color-container .color-well-color{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:3px}.literally .color-picker-popup{position:absolute;z-index:1;background-color:white;border:1px solid #555;left:60px;bottom:31px}.literally .color-picker-popup .color-row{clear:both}.literally .color-picker-popup .color-row .color-cell{cursor:pointer;width:20px;height:20px;line-height:20px;float:left}.literally .color-picker-popup .color-row .color-cell:hover,.literally .color-picker-popup .color-row .color-cell.selected{border:1px solid #555;line-height:18px}.literally .color-picker-popup .color-row .color-cell.transparent-cell{width:100%}.literally .horz-toolbar{height:31px;background-color:#e6e6e6}.literally .horz-toolbar label{line-height:30px;margin:0 0.25em 0 0.25em;font-size:12px;float:left}.literally .horz-toolbar .square-toolbar-button{border:2px solid transparent;border-radius:3px;margin:1px;border:1px solid #aaa;width:28px;height:28px;float:left;position:relative}.literally .horz-toolbar .square-toolbar-button{text-decoration:none;cursor:pointer}.literally .horz-toolbar .square-toolbar-button.selected:not(.disabled){background-color:#a1d9fe}.literally .horz-toolbar .square-toolbar-button:hover:not(.disabled){border-color:#a1d9fe}.literally .horz-toolbar .square-toolbar-button.disabled{cursor:default;opacity:0.3}.literally .horz-toolbar .square-toolbar-button img{max-width:100%;max-height:100%}.literally .horz-toolbar .square-toolbar-button label{position:absolute;top:0;right:0;bottom:0;left:0;line-height:26px;margin:auto;float:none;text-align:center}.literally .polygon-toolbar{border-top:1px solid #555}.literally .lc-options{z-index:1;right:0;left:61px}.literally .lc-options .lc-font-settings{height:30px;line-height:31px;padding-left:4px;background-color:#f5f5f5}.literally .lc-options .lc-font-settings input{margin:0 0.5em 0 0}.literally .lc-options .lc-font-settings input[type=checkbox]{margin:0 0.5em 0 0.5em}
 
-//owl carousel flashcards
+/*owl carousel flashcards*/
   .filter_poodll_flashcards_owl .owl-item a {
         text-decoration: none;
   }
@@ -387,5 +175,509 @@ left: -50%;
     background-color: #ffcccc;
     border: solid thick blue;
     border-radius: 1em;
+}
+
+.filter_poodll_dragdropsquare {
+    width:130px;
+    height:25px;
+    line-height: 25px;
+    text-align: center;
+    border-radius: 5px;
+    color: #73AD21;
+    border: 1px solid #73AD21;
+    padding:1px 1px 1px 1px;
+    background-color:#CBF2DC;
+    margin-top:5px;
+    float:right;
+}
+
+div.filter_poodll_dragging {
+   border:2px dashed #0000FF;
+}
+
+a.filter_poodll_mobilerecorderlink {
+	float: left;
+	margin: 3px;
+	-moz-box-shadow:inset 0px -3px 7px 0px #29bbff;
+	-webkit-box-shadow:inset 0px -3px 7px 0px #29bbff;
+	box-shadow:inset 0px -3px 7px 0px #29bbff;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #2dabf9), color-stop(1, #0688fa));
+	background:-moz-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
+	background:-webkit-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
+	background:-o-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
+	background:-ms-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
+	background:linear-gradient(to bottom, #2dabf9 5%, #0688fa 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#2dabf9', endColorstr='#0688fa',GradientType=0);
+	background-color:#2dabf9;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #0b0e07;
+	/*display:inline-block;*/
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Arial;
+	font-size:13px;
+	padding:9px 23px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #263666;
+}
+a.filter_poodll_mobilerecorderlink:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #0688fa), color-stop(1, #2dabf9));
+	background:-moz-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
+	background:-webkit-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
+	background:-o-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
+	background:-ms-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
+	background:linear-gradient(to bottom, #0688fa 5%, #2dabf9 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#0688fa', endColorstr='#2dabf9',GradientType=0);
+	background-color:#0688fa;
+}
+a.filter_poodll_mobilerecorderlink:active {
+	position:relative;
+	top:1px;
+}
+
+a.filter_poodll_uploadafilelink {
+	float: left;
+	margin: 3px;
+	-moz-box-shadow:inset 0px -3px 7px 0px #3e7327;
+	-webkit-box-shadow:inset 0px -3px 7px 0px #3e7327;
+	box-shadow:inset 0px -3px 7px 0px #3e7327;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #77b55a), color-stop(1, #72b352));
+	background:-moz-linear-gradient(top, #77b55a 5%, #72b352 100%);
+	background:-webkit-linear-gradient(top, #77b55a 5%, #72b352 100%);
+	background:-o-linear-gradient(top, #77b55a 5%, #72b352 100%);
+	background:-ms-linear-gradient(top, #77b55a 5%, #72b352 100%);
+	background:linear-gradient(to bottom, #77b55a 5%, #72b352 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#77b55a', endColorstr='#72b352',GradientType=0);
+	background-color:#77b55a;
+	-moz-border-radius:3px;
+	-webkit-border-radius:3px;
+	border-radius:3px;
+	border:1px solid #4b8f29;
+	/*display:inline-block;*/
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Arial;
+	font-size:13px;
+	padding:9px 23px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #5b8a3c;
+}
+a.filter_poodll_uploadafilelink:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #72b352), color-stop(1, #77b55a));
+	background:-moz-linear-gradient(top, #72b352 5%, #77b55a 100%);
+	background:-webkit-linear-gradient(top, #72b352 5%, #77b55a 100%);
+	background:-o-linear-gradient(top, #72b352 5%, #77b55a 100%);
+	background:-ms-linear-gradient(top, #72b352 5%, #77b55a 100%);
+	background:linear-gradient(to bottom, #72b352 5%, #77b55a 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#72b352', endColorstr='#77b55a',GradientType=0);
+	background-color:#72b352;
+}
+a.filter_poodll_uploadafilelink:active {
+	position:relative;
+	top:1px;
+}
+
+
+.poodll_take-snapshot{
+   margin-top: 5px;
+}
+.poodll_cancel-snapshot{
+   margin-top: 5px;
+}
+.filter_poodll_chooseopenapp_button{
+	
+}
+.filter_poodll_chooseupload_button{
+	
+}
+
+.poodll_save-recording{
+    clear: both;
+    width:320px;
+}
+
+
+/* MEDIA RECORDER STANDARD SKIN .. need to remove '_standard' */
+.poodll_preview_standard{
+    border: black;
+    border-style:solid;
+    border-width: 2px;
+    background-color: #DDD;
+    clear:both;
+    width:320px;
+}
+audio.poodll_preview_standard{
+    height:37px;
+}
+
+.poodll_preview_standard.poodll_recording{
+	border: red;
+}
+
+.poodll_save-recording_standard{
+    clear: both;
+    width:320px;
+}
+
+.poodll_mediarecorderbox_standard {
+    width: 370px;
+    text-align: center;
+}
+
+.poodll_mediarecorder_button_standard {
+    margin: 5px;
+}
+
+.poodll_status_standard{
+    border: black;
+    border-style:solid;
+    border-width: 2px;
+    background-color: #DDD;
+    clear:both;
+    width:320px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 8px;
+}
+
+.poodll_status_standard.poodll_recording{
+	color: red;
+	border: red;
+}
+
+/* MEDIA RECORDER SKIN BURNT ROSE*/
+.poodll_preview_burntrose{
+    border: black;
+    border-style:solid;
+    border-width: 2px;
+    background-color: #DDD;
+    clear:both;
+    width:320px;
+}
+
+
+	.poodll_mediarecorderbox {
+		background: #eee url([[pix:filter_poodll|vc11]]) 100% no-repeat;
+		width: 352px !important;
+		height: 120px !important;
+	}
+
+	.poodll_status_burntrose {
+		clear: both;
+		color: #fff;
+		margin-left: 177px !important;
+		margin-top: 14px !important;
+		position: absolute;
+		width: 30px !important;
+	}
+
+    .poodll_mic {
+        background: #eee url([[pix:filter_poodll|mic1]])100%  no-repeat;
+        height: 31px!important;
+        margin-left: 197px!important;
+        margin-top: 38px!important;
+        position: absolute;
+        width: 15px !important;
+    }
+    .poodll_savebtn {
+       background: #eee url([[pix:filter_poodll|save1]])100%  no-repeat;
+        height: 34px!important;
+        margin-left: 155px!important;
+        margin-top: 77px!important;
+        position: absolute;
+        width: 99px !important;
+    }
+    .poodll_start-recording{
+        background: #eee url([[pix:filter_poodll|arrec]])100% no-repeat;
+        height: 45px!important;
+        margin-left: 3px!important;
+        margin-top: 32px!important;
+        position: absolute;
+        width: 64px!important;
+        background-position: 0px 0px !important;
+    }
+    .poodll_start-recording:hover,
+    .poodll_start-recording:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+
+    .poodll_play-recording
+    {
+        background: #eee url([[pix:filter_poodll|arplay]])100% no-repeat;
+        height: 45px!important;
+        margin-left: 59px!important;
+        border: none;
+        margin-top: 32px!important;
+        position: absolute;
+        width: 67px!important;
+        background-position: 0px 0px !important;
+    }
+    .poodll_play-recording:hover,
+    .poodll_play-recording:focus
+     {
+         background-position:0px 0px !important;
+         outline:none !important;
+     }
+    .poodll_stop-recording
+    {
+        background: #eee url([[pix:filter_poodll|arstop]])100% no-repeat;
+        height: 46px!important;
+        width: 64px!important;
+        background-position: 0px 0px !important;
+        position: absolute;
+        margin-left: 0px!important;
+        margin-top: 32px!important;
+    }
+    .poodll_stop-recording:hover,
+    .poodll_stop-recording:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+    .poodll_pause-recording
+    {
+        background: #eee url([[pix:filter_poodll|arpause]])100% no-repeat;
+        height: 45px!important;
+        width: 67px!important;
+        border: none;
+        margin-top: 32px!important;
+        background-position: 0px 0px !important;
+        position: absolute;
+        margin-left: 59px!important;
+    }
+    .poodll_pause-recording:hover,
+    .poodll_pause-recording:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+
+    .poodll_resume-recording
+    {
+        background: #eee url([[pix:filter_poodll|arresume]])100% no-repeat;
+        height: 45px!important;
+        width: 67px!important;
+        border: none;
+        margin-top: 32px!important;
+        background-position: 0px 0px !important;
+        position: absolute;
+        margin-left: 59px!important;
+    }
+    .poodll_resume-recording:hover,
+    .poodll_resume-recording:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+    .poodll_save-recording_burntrose
+    {
+        background: #eee url([[pix:filter_poodll|save2]])100% no-repeat !important;
+        height: 33px!important;
+        border: none;
+        width:94px !important;
+        margin-left: 155px!important;
+        margin-top: 77px!important;
+
+        background-position:0px 0px !important;
+        position:absolute
+    }
+    .poodll_save-recording_burntrose:hover,
+    .poodll_save-recording_burntrose:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+
+    .poodll_playsave
+    {
+        height: 46px!important;
+        width: 67px!important;
+        border: none!important;
+        margin-top: 32px!important;
+        background-position: 0px 0px !important;
+        position: absolute;
+        margin-left: 60px!important;
+        background: #eee url([[pix:filter_poodll|arplaysave]])100% 0 no-repeat;
+
+    }
+    .poodll_playsave:hover,
+    .poodll_playsave:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+
+    .poodll_savebtn:hover,
+    .poodll_savebtn:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+
+    .poodll_savedsuccessfully
+    {
+        background-image: url(pix/savesuccess.png);
+
+        height: 49px!important;
+        border: none!important;
+        width:103px !important;
+        margin-left: 152px!important;
+        background: #eee url([[pix:filter_poodll|savesuccess]])100%  no-repeat;
+        margin-top:69px!important;
+
+        background-position:0px 0px !important;
+        position:absolute
+    }
+    .poodll_savedsuccessfully:hover,
+    .poodll_savedsuccessfully:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+
+    .poodll_mic:hover,
+    .poodll_mic:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+    .poodll_recmic
+    {
+        background: #eee url([[pix:filter_poodll|mic3]])100% no-repeat;
+        border:none;
+        height: 31px!important;
+        margin-left: 197px!important;
+        width: 19px!important;
+        margin-top: 38px!important;
+        background-position:0px 0px !important;
+        position:absolute;
+    }
+    
+    
+    .poodll_recmic:hover,
+    .poodll_recmic:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+
+
+    .poodll_line
+    {
+        background: #eee url([[pix:filter_poodll|line]])100% 0 repeat;
+    }
+    .poodll_resume_mic
+    {
+        background: #eee url([[pix:filter_poodll|mic2]])100%  no-repeat;
+        border: none;
+        height: 34px!important;
+        margin-left: 197px!important;
+        width: 19px !important;
+        margin-top: 39px!important;
+        background-position: 0px 0px !important;
+        position: absolute;
+    }
+    .poodll_resume_mic:hover,
+    .poodll_resume_mic:focus
+    {
+        background-position:0px 0px !important;
+        outline:none !important;
+    }
+	.poodll_mediavideobox > .poodll_status_burntrose {
+		margin-left: 176px !important;
+		margin-top: 263px !important;
+		position: absolute;
+	}
+
+
+	.poodll_mediavideobox2 > .poodll_savebtn {
+		margin-left: 152px !important;
+		margin-top: 39px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_start-recording {
+
+		background: #eee url([[pix:filter_poodll|arrec]]) 100% no-repeat;
+		height: 49px !important;
+		width: 57px !important;
+		margin-top: 2px !important;
+		margin-left: 3px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_stop-recording {
+		margin-top: 2px !important;
+		background: #eee url([[pix:filter_poodll|arstop]]) 100% no-repeat;
+		height: 49px !important;
+		margin-left: 0px !important;
+		width:59px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_pause-recording {
+		margin-top: 1px !important;
+		background: #eee url([[pix:filter_poodll|vrpause12]]) 100% no-repeat;
+		height: 45px !important;
+		width: 54px !important;
+		margin-left: 60px !important;
+
+	}
+
+	.poodll_mediavideobox2 > .poodll_resume-recording {
+		margin-top: 1px !important;
+		background: #eee url([[pix:filter_poodll|vrresume12]]) 100% no-repeat;
+		height: 45px !important;
+		width: 54px !important;
+		margin-left: 60px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_play-recording {
+
+		background: #eee url([[pix:filter_poodll|arplay1]]) 100% no-repeat;
+		height: 48px !important;
+		margin-left: 60px !important;
+		width: 54px !important;
+		margin-top: 1px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_playsave {
+
+		background: #eee url([[pix:filter_poodll|arplaysave2]]) 100% no-repeat;
+		height: 45px !important;
+		margin-top: 2px !important;
+		width: 54px !important;
+		margin-left: 60px !important;
+
+	}
+
+	.poodll_mediavideobox2 {
+		background: #eee url([[pix:filter_poodll|vc13]]) 100% no-repeat;
+		width: 323px !important;
+		height: 96px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_save-recording_burntrose {
+		margin-left: 152px !important;
+		margin-top: 39px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_preview_burntrose {
+		width: 278px !important;
+	}
+
+	.poodll_mediavideobox2 > .poodll_savedsuccessfully {
+		margin-left: 152px !important;
+		margin-top: 40px !important;
+	}
+
+#messageAlert
+{
+	/*text-align:left*/
+}
+.filter_poodll_recorder_placeholder
+{
+	display: inline-block;
 }
 

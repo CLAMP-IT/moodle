@@ -5,6 +5,6 @@ define(['jquery','core/log', 'filter_poodll/react-with-addons'], function($, log
 
   log.debug('Filter PoodLL: revealjs initialising');
   window.React = React;
-  return {}
+  return {};
 });
 /* jshint ignore:end */

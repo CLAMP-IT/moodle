@@ -91,6 +91,17 @@ $capabilities = array(
 			'student' => CAP_ALLOW,
             'manager' => CAP_ALLOW
         )
+    ),
+    'atto/poodll:allowwidgets' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+			'coursecreator' => CAP_ALLOW,
+			'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+			'student' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
     )
 );
 

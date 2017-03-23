@@ -106,14 +106,6 @@ class assign_feedback_poodll extends assign_feedback_plugin {
 			$recorderoptions[FP_REPLYSNAPSHOT] = get_string("replysnapshot", "assignfeedback_poodll");
 		}
 		
-		//Show a list of recorders
-		/*
-        $recorderoptions = array( FP_REPLYMP3VOICE => get_string("replymp3voice", "assignfeedback_poodll"), 
-				FP_REPLYVOICE => get_string("replyvoice", "assignfeedback_poodll"), 
-				FP_REPLYVIDEO => get_string("replyvideo", "assignfeedback_poodll"),
-				FP_REPLYWHITEBOARD => get_string("replywhiteboard", "assignfeedback_poodll"),
-				FP_REPLYSNAPSHOT => get_string("replysnapshot", "assignfeedback_poodll"));
-		*/
 	
 	$mform->addElement('select', 'assignfeedback_poodll_recordertype', get_string("recordertype", "assignfeedback_poodll"), $recorderoptions);
         //$mform->addHelpButton('assignfeedback_poodll_recordertype', get_string('onlinepoodll', ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT), ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT);
@@ -168,14 +160,18 @@ class assign_feedback_poodll extends assign_feedback_plugin {
         return true;
     }
     
-    function shift_draft_file($grade) {
+    function shift_draft_file($grade, $data) {
         global $CFG, $USER, $DB,$COURSE;	
  
 	//When we add the recorder via the poodll filter, it adds a hidden form field of the name FP_FILENAMECONTROL
 	//the recorder updates that field with the filename of the audio/video it recorded. We pick up that filename here.
-        $filename = optional_param(FP_FILENAMECONTROL, '', PARAM_RAW);
-        $draftitemid = optional_param('draftitemid', '', PARAM_RAW);
-		
+	$filename ='';     
+	$draftitemid = 	0;
+	if(property_exists($data,FP_FILENAMECONTROL) && !empty($data->{FP_FILENAMECONTROL})){
+		$filename = $data->{FP_FILENAMECONTROL};
+		$draftitemid = $data->draftitemid;
+	}
+	
 		//Don't do anything in this case
 		//possibly the user is just updating something else on the page(eg grade)
 		//if we overwrite here, we might trash their existing poodllfeedback file
@@ -267,16 +263,15 @@ class assign_feedback_poodll extends assign_feedback_plugin {
      */
     public function get_form_elements_for_user($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
         global $USER,$PAGE,$CFG;
-        
+        $debug="";
         $PAGE->requires->js(new moodle_url($CFG->httpswwwroot . '/mod/assign/feedback/poodll/module.js'));
-        $displayname = $this->get_name();
-		 
+        $displayname = $this->get_name(); 
         $gradeid = $grade ? $grade->id : 0;
         
         if ($gradeid > 0 && get_config('assignfeedback_poodll', 'showcurrentfeedback')) {
-            $currentfeedback = $this->fetch_responses($gradeid);
+           $currentfeedback = $this->fetch_responses($gradeid);
             if($currentfeedback != ''){
-            	$deletefeedback = "<a href='javascript:void(0);' onclick='M.assignfeedback_poodll.deletefeedback();'>".
+				$deletefeedback = "<a href='javascript:void(0);' onclick='M.assignfeedback_poodll.deletefeedback();'>".
             						"<img src='" . $CFG->httpswwwroot . '/mod/assign/feedback/poodll/pix/deletebutton.png' . 
 									"' alt='" . get_string('deletefeedback','assignfeedback_poodll') . "'/>" . 
             						"</a>";
@@ -284,6 +279,7 @@ class assign_feedback_poodll extends assign_feedback_plugin {
             }
             $currentcontainer = 'currentfeedbackwrapper';
             $currentfeedback = "<div id='" .$currentcontainer. "'>" . $currentfeedback . "</div>";
+
              $mform->addElement('static', 'currentfeedback', $displayname,$currentfeedback);
              //reset the display name so it doesn't show with the recorder
              $displayname="";
@@ -377,11 +373,11 @@ class assign_feedback_poodll extends assign_feedback_plugin {
      */
     public function save(stdClass $grade, stdClass $data) {
         global $DB;
-        
+   
         //Move recorded files from draft to the correct area
         //if shift_draft_file is false, no change, so do nothing
         //if it is an empty string, user has deleted file, so we clear it too
-		$filename = $this->shift_draft_file($grade);
+		$filename = $this->shift_draft_file($grade, $data);
 		if($filename === false){return true;}
         
         $feedbackpoodll = $this->get_feedback_poodll($grade->id);
@@ -417,19 +413,10 @@ class assign_feedback_poodll extends assign_feedback_plugin {
 *
 *
 */
-function fetch_responses($gradeid, $embed=false){
+function fetch_responses($gradeid){
         global $CFG;
-
         $responsestring = "";
-
-        //if we are showing a list of files we want to use text links not players
-        //a whole page of players can crash a browser.
-
-        //modify Justin 20120525 lists of flowplayers/jw players will break if embedded and 
-        // flowplayers should have splash screens to defer loading anyway
-        $embedstring = 'clicktoplay';
-        $embed='false';
-
+		
         //get filename, from the filearea for this submission. 
         //there should be only one.
         $fs = get_file_storage();
@@ -437,7 +424,7 @@ function fetch_responses($gradeid, $embed=false){
         $files = $fs->get_area_files($this->assignment->get_context()->id, 
 				ASSIGNFEEDBACK_POODLL_COMPONENT, ASSIGNFEEDBACK_POODLL_FILEAREA, $gradeid, "id", false);
         if (!empty($files)) {
-           //if the filename property exists, and is filled, use that to fetch the file
+			//if the filename property exists, and is filled, use that to fetch the file
 			$poodllfeedback= $this->get_feedback_poodll($gradeid);
 			if(isset($poodllfeedback->filename) && !empty($poodllfeedback->filename)){
 				$filename =  $poodllfeedback->filename;
@@ -450,7 +437,7 @@ function fetch_responses($gradeid, $embed=false){
 				}
 			}
 	}
-		
+	
         //if this is a playback area, for teacher, show a string if no file
         if (empty($filename)){ 
                                 $responsestring .= "";
@@ -464,8 +451,7 @@ function fetch_responses($gradeid, $embed=false){
                 switch($this->get_config('recordertype')){
 
                         case FP_REPLYVOICE:
-                        	//use poodll filter here, otherwise it would display in a video player
-    						$responsestring .= format_text('{POODLL:type=audio,path='.	$mediapath .',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
+                        	$responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
 							if($this->get_config('downloadsok')){
 								$responsestring .= "<a href='" . $rawmediapath . "'>" 
 										. get_string('downloadfile', 'assignfeedback_poodll') 
@@ -476,8 +462,7 @@ function fetch_responses($gradeid, $embed=false){
                     
                         
                         case FP_REPLYMP3VOICE:
-							//originally tried to force poodll, but best to default to whatever
-							//$responsestring .= format_text('{POODLL:type=audio,path='.	$mediapath .',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
+	
 							$responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
 							if($this->get_config('downloadsok')){
 								$responsestring .= "<a href='" . $rawmediapath . "'>" 
@@ -488,32 +473,24 @@ function fetch_responses($gradeid, $embed=false){
 							break;						
 
                         case FP_REPLYVIDEO:
-                        	//originally tried to force poodll, but best to default to whatever
-                            //$responsestring .= format_text('{POODLL:type=video,path='.$mediapath .',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
                             $responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
                             break;
 
                         case FP_REPLYWHITEBOARD:
-                                $responsestring .= "<img alt=\"submittedimage\" width=\"" . $CFG->filter_poodll_videowidth 
-										. "\" src=\"" . $rawmediapath . "\" />";
+                                $responsestring .= "<img alt=\"submittedimage\" class=\"assignfeedback_poodll_whiteboardwidth\" src=\"" . $rawmediapath . "\" />";
                                 break;
 
                         case FP_REPLYSNAPSHOT:
-                                $responsestring .= "<img alt=\"submittedimage\" width=\"" . $CFG->filter_poodll_videowidth 
-										. "\" src=\"" . $rawmediapath . "\" />";
+                                $responsestring .= "<img alt=\"submittedimage\" class=\"assignfeedback_poodll_snapshotwidth\" src=\"" . $rawmediapath . "\" />";
                                 break;
 
                         default:
-                        		//originally tried to force poodll, but best to default to whatever
-                                //$responsestring .= format_text('{POODLL:type=audio,path='.	$mediapath .',protocol=http,embed=' . $embed . ',embedstring='. $embedstring .'}', FORMAT_HTML);
                                 $responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
 					break;
                                 break;	
 
                 }//end of switch
         }//end of if (checkfordata ...) 
-
-
 
         return $responsestring;
 		

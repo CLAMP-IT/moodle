@@ -18,3 +18,6 @@
 .que.poodllrecording div.qtype_poodllrecording_response textarea {
     width: 100%;
 }
+.qtype_poodllrecording_whiteboardwidth{
+ max-width: 80%;
+}

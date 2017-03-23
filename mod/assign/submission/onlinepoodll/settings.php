@@ -54,9 +54,15 @@ if(!defined('OP_REPLYVOICE')){
 	$settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/showcurrentsubmission', 
 					new lang_string('showcurrentsubmission', 'assignsubmission_onlinepoodll'), 
 					new lang_string('showcurrentsubmissiondetails', 'assignsubmission_onlinepoodll'), 1, $yesno_options));
-					
-	//The size of the video player on the various screens		
-	$size_options = array('0' => new lang_string('placeholderonly', 'assignsubmission_onlinepoodll'),
+
+	//Settings for video recordings
+    $settings->add(new admin_setting_heading('assignsubmission_onlinepoodll/video_heading',
+        get_string('setting_video_heading', 'assignsubmission_onlinepoodll'),
+        get_string('setting_video_heading_details', 'assignsubmission_onlinepoodll')));
+
+
+    //The size of the video player on the various screens
+	$size_options = array('0' => new lang_string('shownovideo', 'assignsubmission_onlinepoodll'),
 					'160' => '160x120', '320' => '320x240','480' => '480x360',
 					'640' => '640x480','800'=>'800x600','1024'=>'1024x768');
 				
@@ -66,7 +72,40 @@ if(!defined('OP_REPLYVOICE')){
 
 	$settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/displaysize_list', 
 						new lang_string('displaysizelist', 'assignsubmission_onlinepoodll'), 
-						new lang_string('displaysizelistdetails', 'assignsubmission_onlinepoodll'), '480', $size_options));
+						new lang_string('displaysizelistdetails', 'assignsubmission_onlinepoodll'), '0', $size_options));
+
+    //The width of an image
+    $width_options = array('0' => new lang_string('shownoimage', 'assignsubmission_onlinepoodll'),
+        '160' => '160', '320' => '320','480' => '480',
+        '640' => '640','800'=>'800','1024'=>'1024');
+
+    //Settings for snapshots
+    $settings->add(new admin_setting_heading('assignsubmission_onlinepoodll/snapshot_heading',
+        get_string('setting_snapshot_heading', 'assignsubmission_onlinepoodll'),
+        get_string('setting_snapshot_heading_details', 'assignsubmission_onlinepoodll')));
+
+    //snapshot
+    $settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/snapshot_displaysize_single',
+        new lang_string('imagedisplaysizesingle', 'assignsubmission_onlinepoodll'),
+        new lang_string('imagedisplaysizesingledetails', 'assignsubmission_onlinepoodll'), '320', $width_options));
+
+    $settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/snapshot_displaysize_list',
+        new lang_string('imagedisplaysizelist', 'assignsubmission_onlinepoodll'),
+        new lang_string('imagedisplaysizelistdetails', 'assignsubmission_onlinepoodll'), '160', $width_options));
+
+    //Settings for whiteboard images
+    $settings->add(new admin_setting_heading('assignsubmission_onlinepoodll/whiteboard_heading',
+        get_string('setting_whiteboard_heading', 'assignsubmission_onlinepoodll'),
+        get_string('setting_whiteboard_heading_details', 'assignsubmission_onlinepoodll')));
+
+    //whiteboard
+    $settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/whiteboard_displaysize_single',
+        new lang_string('imagedisplaysizesingle', 'assignsubmission_onlinepoodll'),
+        new lang_string('imagedisplaysizesingledetails', 'assignsubmission_onlinepoodll'), '320', $width_options));
+
+    $settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/whiteboard_displaysize_list',
+        new lang_string('imagedisplaysizelist', 'assignsubmission_onlinepoodll'),
+        new lang_string('imagedisplaysizelistdetails', 'assignsubmission_onlinepoodll'), '160', $width_options));
 					
 
 

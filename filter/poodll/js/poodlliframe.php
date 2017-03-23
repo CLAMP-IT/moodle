@@ -3,7 +3,7 @@
 /**
 * internal library of functions and constants for Poodll modules
 * accessed directly by poodll flash wdgets on web pages.
-* @package mod-poodllpairwork
+* @package filter_poodll
 * @category mod
 * @author Justin Hunt
 *
@@ -36,16 +36,53 @@ function fetchJSWidgetCode($widget,$params,$width,$height, $bgcolor="#FFFFFF"){
 	global $CFG;
 
 	$widgetid = html_writer::random_id('laszlobase');
-	$widgetjson = \filter_poodll\poodlltools::fetchJSWidgetJSON($widget,$params,$width,$height, $bgcolor="#FFFFFF", $widgetid);
+	$widgetjson = fetchJSWidgetJSON($widget,$params,$width,$height, $bgcolor="#FFFFFF", $widgetid);
 
 	$retcode = html_writer::div('','',array('id'=>$widgetid . 'Container'));
 	$pathtoJS = $CFG->wwwroot . '/filter/poodll/js/';
 	$retcode .=   '<script type="text/javascript" src="'. $pathtoJS . 'lps/includes/embed-compressed.js"></script>
         <script type="text/javascript"> lz.embed.dhtml(' . $widgetjson . ')</script>';
+       // $adjustscript_a="<script type='text/javascript'>var overflow= document.getElementsByClassName('lzappoverflow');overflow[0].style='width: $width px; height: $height px';</script>";
+       // $adjustscript_b="<script type='text/javascript'>var lzcanvas= document.getElementsByClassName('lzcanvasdiv');lzcanvas[0].style='width: $width px; height: $height px; overflow: hidden';</script>";
+       // $retcode .= $adjustscript_a . $adjustscript_b;
 
 	return $retcode;
 
 }
+//This is use for assembling the html elements + javascript that will be swapped out and replaced with the MP3 recorder
+ function fetchJSWidgetJSON($widget, $params, $width, $height, $bgcolor = "#FFFFFF", $widgetid = '')
+	{
+		global $CFG;
 
-	
+		$params .= '&debug=false&lzproxied=false';
+
+		//generate a (most likely) unique id for the recorder, if one was not passed in
+		if ($widgetid == '') {
+			$widgetid = 'lzapp_' . rand(100000, 999999);
+		}
+
+		$pathtoJS = $CFG->wwwroot . '/filter/poodll/js/';
+		$pathtowidgetfolder = $CFG->wwwroot . '/filter/poodll/js/' . $widget . '/';
+
+		$paramobj = new \stdClass();
+		$paramobj->url = $pathtowidgetfolder . $widget . $params;
+		$paramobj->bgcolor = $bgcolor;
+		$paramobj->cancelmousewheel = false;
+		$paramobj->cancelkeyboardcontrol = false;
+		$paramobj->usemastersprite = false;
+		$paramobj->skipchromeinstall = false;
+		$paramobj->allowfullscreen = true;
+		$paramobj->approot = $pathtowidgetfolder;
+		$paramobj->lfcurl = $pathtoJS . 'lps/includes/lfc/LFCdhtml.js';
+		$paramobj->serverroot = $pathtoJS . 'lps/resources/';
+		$paramobj->accessible = false;
+		$paramobj->width = $width;
+		$paramobj->height = $height;
+		$paramobj->id = $widgetid;
+		$paramobj->accessible = true;
+		$paramobj->appenddivid = $widgetid + 'Container';
+		$retjson = json_encode($paramobj);
+		return $retjson;
+	}
+
 ?>

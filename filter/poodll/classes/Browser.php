@@ -292,7 +292,7 @@ defined('MOODLE_INTERNAL') || die();
 		public function getAndroidMajorVersion() {
 			$androidPos = stripos($this->_agent,'Android') ;
 			if( $androidPos !== false ) {
-			    $aversion = substr($this->_agent, $androidPos+8,1);
+			    $aversion = substr($this->_agent, $androidPos+8,2);
 			    return intval($aversion);
 		    }
 		    return false;
@@ -304,7 +304,7 @@ defined('MOODLE_INTERNAL') || die();
 		public function getIOSMajorVersion() {
 			$iosPos = stripos($this->_agent,' OS') ;
 			if( $iosPos !== false ) {
-			    $iosversion = substr($this->_agent, $iosPos+4,1);
+			    $iosversion = substr($this->_agent, $iosPos+4,2);
 			    return intval($iosversion);
 		    }
 		    return false;

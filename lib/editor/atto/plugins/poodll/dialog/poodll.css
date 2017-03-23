@@ -15,3 +15,20 @@
 	top: 0px;
 	margin: 5px;
 }
+
+.atto_poodll_iframe_container {
+	padding: relative;
+	padding-bottom: 56.25%;
+	padding-top: 30px;
+	height: 0;
+	overflow: hidden;
+}
+.atto_poodll_iframe_container iframe,
+.atto_poodll_iframe_container object,
+.atto_poodll_iframe_container  embed{ 
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}

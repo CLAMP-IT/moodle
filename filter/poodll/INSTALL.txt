@@ -1,48 +1,25 @@
 PoodLL All
 ========================================
-Thanks for downloading PoodLL.
+Thanks for downloading the PoodLL filter
 
-The files in the poodllall archive are all in the necessary directory structure. 
-Upload the four directories into the root of your Moodle installation. 
-No core Moodle files will be overriden or removed when doing this.
--mod
--filter
--repository
--question
+Information on installing the PoodLL filter and getting started in general is available here.
+https://poodll.com/poodll-3-docs/getting-started/
 
-Then login to your site as admin and go to your Moodle site notifications page(under Site Admin).
-Moodle should then guide you through the installation or upgrade of the four modules. 
+In short however, upload the unzipped PoodLL filter into a directory called "poodll" in your Moodle site, under [path to Moodle]/filter
 
+Be sure that the files are in such a structure that [path to Moodle]/filter/poodll/version.php exists. If your folder structure is different Moodle will complain.
 
 Setting up the PoodLL Filter
 =============================
-It will finally show you the PoodLL filter settings page. You can probably accept the defaults, 
-scroll to the bottom of the page and press save.
-
-All of the PoodLL mods require the PoodLL filter to be installed and enabled so you should do that now.
-To enable the filter go to:
-"Site Administration->Plugins->Filters->Manage Filters"
-And set the PoodLL Filter to "On."
-
-It is not essential but advised to turn the Text Cache lifetime off, or to 30 seconds in:
-"Site Administration->Plugins->Filters->Common Filter Settings"
+After you install the PoodLL filter you will be presented with an impossibly long list of settings. 
+Just scroll to the bottom and save those settings as the defaults. Later you can return and edit them using from the site administration.
 
 
-
-Setting up the PoodLL Repository
-==================================
-Before you can use the repository you will have to set it up. Go to: 
-"Site Administration->Plugins->Repositories->Manage Repositories" 
-and set the PoodLL repository to "enabled and visible". 
-Then a "PoodLL" link will appear beneath "Manage Repositories" in the repositories menu. 
-From that link create one or more instances.
-Then each instance will show in the file picker and you can use it in your courses.
-
-More instructions, documentation and video tutorials are available at http://www.poodll.com .
+More instructions, documentation and tutorials are available at https://poodll.com/poodll-3-docs/
 
 Good luck.
 
 Justin Hunt
-Chief PoodLL'er
+The PoodLL Guy
 http://www.poodll.com
 poodllsupport@gmail.com
