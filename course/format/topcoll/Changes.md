@@ -1,7 +1,33 @@
 ﻿Version Information
 ===================
-Version 3.0.2.2
+Version 3.2.1.0
+  1. Remove old 'format_topcoll_delete_course' function and replace with '\core\event\course_content_deleted' event.
+  2. Add Boost theme specific style sheet - not the best of solutions but only one at the moment I can think of.
+
+Version 3.2.0.1
+  1. Detect 'Boost' theme as different grid system and no way core would put in code for a contributed plugin.
+  2. Update Travis CI.
+  3. Update tests for M3.2 and 'boost' as the new default theme.  Note: Need to write 'Boost' specific tests.
+
+Version 3.1.1.3
   1. Improve and fix responsive column layouts.
+  2. Cursor style in M3.1 when not editing - #25.
+
+Version 3.1.1.2
+  1. Fix toggle operating when editing the section name inline.
+  2. Fix the width of the input box for section name inline editing.
+
+Version 3.1.1.1
+  1. Fix inoperable toggle on iPhone's / iPad's.
+  2. Removed IE8 support.
+
+Version 3.1.1
+  1. First stable version for Moodle 3.1.
+
+Version 3.1.0.1
+  1. Alpha version for Moodle 3.1.
+  2. Refactor to use spans instead of links for the toggle for MDL-51802 as cannot have a link in a link.
+  3. Implement MDL-51802.
 
 Version 3.0.2.1
   1. Put back word-break on section-title.

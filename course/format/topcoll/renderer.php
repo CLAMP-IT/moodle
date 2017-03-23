@@ -52,6 +52,7 @@ class format_topcoll_renderer extends format_section_renderer_base {
     private $tctoggleiconsize;
     private $formatresponsive;
     private $rtl = false;
+    private $bsnewgrid = false;
 
     /**
      * Constructor method, calls the parent constructor - MDL-21097.
@@ -75,6 +76,10 @@ class format_topcoll_renderer extends format_section_renderer_base {
         $this->formatresponsive = get_config('format_topcoll', 'formatresponsive');
 
         $this->rtl = right_to_left();
+
+        if (strcmp($page->theme->name, 'boost') === 0) {
+            $this->bsnewgrid = true;
+        }
     }
 
     /**
@@ -82,7 +87,11 @@ class format_topcoll_renderer extends format_section_renderer_base {
      * @return string HTML to output.
      */
     protected function start_section_list() {
-        return html_writer::start_tag('ul', array('class' => 'ctopics'));
+        if ($this->bsnewgrid) {
+            return html_writer::start_tag('ul', array('class' => 'ctopics bsnewgrid'));
+        } else {
+            return html_writer::start_tag('ul', array('class' => 'ctopics'));
+        }
     }
 
     /**
@@ -91,6 +100,9 @@ class format_topcoll_renderer extends format_section_renderer_base {
      */
     protected function start_toggle_section_list() {
         $classes = 'ctopics topics';
+        if ($this->bsnewgrid) {
+            $classes .= ' bsnewgrid';
+        }
         $attributes = array();
         if (($this->mobiletheme === true) || ($this->tablettheme === true)) {
             $classes .= ' ctportable';
@@ -211,6 +223,28 @@ class format_topcoll_renderer extends format_section_renderer_base {
             }
         }
         return $o;
+    }
+
+    /**
+     * Generate the section title, wraps it in a link to the section page if page is to be displayed on a separate page
+     *
+     * @param stdClass $section The course_section entry from DB
+     * @param stdClass $course The course entry from DB
+     * @return string HTML to output.
+     */
+    public function section_title($section, $course) {
+        return $this->render($this->courseformat->inplace_editable_render_section_name($section));
+    }
+
+    /**
+     * Generate the section title to be displayed on the section page, without a link
+     *
+     * @param stdClass $section The course_section entry from DB
+     * @param stdClass $course The course entry from DB
+     * @return string HTML to output.
+     */
+    public function section_title_without_link($section, $course) {
+        return $this->render($this->courseformat->inplace_editable_render_section_name($section, false));
     }
 
     /**
@@ -424,23 +458,26 @@ class format_topcoll_renderer extends format_section_renderer_base {
                 $sectionclass = '';
             }
             $toggleclass .= ' the_toggle ' . $this->tctoggleiconsize;
-            $toggleurl = new moodle_url('/course/view.php', array('id' => $course->id));
-            $o .= html_writer::start_tag('a',
-                array('class' => $toggleclass, 'href' => $toggleurl, 'role' => 'button', 'aria-pressed' => $ariapressed)
+            $o .= html_writer::start_tag('span',
+                array('class' => $toggleclass, 'role' => 'button', 'aria-pressed' => $ariapressed)
             );
 
             if (empty($this->tcsettings)) {
                 $this->tcsettings = $this->courseformat->get_settings();
             }
 
-            $title = $this->courseformat->get_topcoll_section_name($course, $section, true);
+            if ($this->userisediting) {
+                $title = $this->section_title($section, $course);
+            } else {
+                $title = $this->courseformat->get_topcoll_section_name($course, $section, true);
+            }
             if ((($this->mobiletheme === false) && ($this->tablettheme === false)) || ($this->userisediting)) {
-                $o .= $this->output->heading($title, 3, 'section-title');
+                $o .= $this->output->heading($title, 3, 'sectionname');
             } else {
                 $o .= html_writer::tag('h3', $title); // Moodle H3's look bad on mobile / tablet with CT so use plain.
             }
 
-            $o .= html_writer::end_tag('a');
+            $o .= html_writer::end_tag('span');
             $o .= html_writer::end_tag('div');
 
             if ($this->tcsettings['showsectionsummary'] == 2) {
@@ -995,12 +1032,12 @@ class format_topcoll_renderer extends format_section_renderer_base {
         }
         $o .= html_writer::start_tag('div', array('class' => 'sectionbody' . $iconsetclass));
         $o .= html_writer::start_tag('h4', null);
-        $o .= html_writer::tag('a', get_string('topcollopened', 'format_topcoll'),
-            array('class' => 'on ' . $this->tctoggleiconsize, 'href' => '#', 'id' => 'toggles-all-opened',
+        $o .= html_writer::tag('span', get_string('topcollopened', 'format_topcoll'),
+            array('class' => 'on ' . $this->tctoggleiconsize, 'id' => 'toggles-all-opened',
             'role' => 'button')
         );
-        $o .= html_writer::tag('a', get_string('topcollclosed', 'format_topcoll'),
-            array('class' => 'off ' . $this->tctoggleiconsize, 'href' => '#', 'id' => 'toggles-all-closed',
+        $o .= html_writer::tag('span', get_string('topcollclosed', 'format_topcoll'),
+            array('class' => 'off ' . $this->tctoggleiconsize, 'id' => 'toggles-all-closed',
             'role' => 'button')
         );
         $o .= html_writer::end_tag('h4');
@@ -1060,11 +1097,23 @@ class format_topcoll_renderer extends format_section_renderer_base {
     }
 
     protected function get_row_class() {
-        return 'row-fluid';
+        if ($this->bsnewgrid) {
+            return 'row';
+        } else {
+            return 'row-fluid';
+        }
     }
 
     protected function get_column_class($columns) {
-        $colclasses = array(1 => 'span12', 2 => 'span6', 3 => 'span4', 4 => 'span3');
+        if ($this->bsnewgrid) {
+            $colclasses = array(
+                1 => 'col-sm-12 col-md-12 col-lg-12',
+                2 => 'col-sm-6 col-md-6 col-lg-6',
+                3 => 'col-md-4 col-lg-4',
+                4 => 'col-lg-3');
+        } else {
+            $colclasses = array(1 => 'span12', 2 => 'span6', 3 => 'span4', 4 => 'span3');
+        }
 
         return $colclasses[$columns];
     }
