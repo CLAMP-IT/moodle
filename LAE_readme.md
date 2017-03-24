@@ -1,4 +1,4 @@
-# [Moodle Liberal Arts Edition v3.2.1-LAE12.0.0]
+# [Moodle Liberal Arts Edition v3.2.2-LAE12.0.1]
 
 Welcome to the Moodle Liberal Arts Edition. The goal of the LAE is to provide a coherent package for modules, patches, and code developed (or improved) by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
@@ -16,7 +16,7 @@ Questions about the LAE can be sent to Ken Newquist at <newquisk@lafayette.edu> 
 
 ## Contents
 
-Moodle 3.2.1+LAE12.0.0 consists of the core Moodle 3.2.1 release plus a number of CLAMP-developed features and bug fixes.
+Moodle 3.2.2+LAE12.0.1 consists of the core Moodle 3.2.2 release plus a number of CLAMP-developed features and bug fixes.
 
 The following core features are included:
 
@@ -62,10 +62,10 @@ You can get the LAE in two ways:
 * Download the tar and zip packages from the CLAMP web site: <http://www.clamp-it.org/code/>
 * Download the current release branch from the CLAMP code repository:
 
-    git clone https://github.com/CLAMP-IT/moodle v3.2.1-LAE12.0.0
-    git checkout -b v3.2.1-LAE12.0.0
+    git clone https://github.com/CLAMP-IT/moodle v3.2.2-LAE12.0.1
+    git checkout -b v3.2.2-LAE12.0.1
 
-By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v3.2.1-LAE12.0.0-base tag instead.
+By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v3.2.2-LAE12.0.1-base tag instead.
 
 CLAMP maintains two branches for each major version:
 
