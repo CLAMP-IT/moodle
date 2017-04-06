@@ -613,7 +613,14 @@ class filter_poodll extends moodle_text_filter {
 			}
 		}
 
-	
+
+        //set up our revision flag for forcing cache refreshes etc
+        if (!empty($conf['revision'])) {
+            $revision = $conf['revision'];
+        } else {
+            $revision = '0';
+        }
+
 		//if not too late: load css in header
 		// if too late: inject it there via JS
 		$filterprops['CSSLINK']=false;
@@ -622,8 +629,7 @@ class filter_poodll extends moodle_text_filter {
 		//require any scripts from the template
 		$customcssurl=false;
 		if($conf['templatestyle_' . $tempindex]){
-			$customcssurl =new moodle_url( '/filter/poodll/templatecss.php?t=' . $tempindex);
-
+			$customcssurl =new moodle_url( '/filter/poodll/templatecss.php',array('t'=>$tempindex,'rev'=>$revision));
 		}
 	
 		if(!$PAGE->headerprinted && !$PAGE->requires->is_head_done()){
@@ -676,7 +682,8 @@ class filter_poodll extends moodle_text_filter {
 		}else{
 
 			//require any scripts from the template
-			$PAGE->requires->js('/filter/poodll/templatejs.php?t=' . $tempindex);	
+            $customjsurl= new moodle_url('/filter/poodll/templatejs.php',array('t'=>$tempindex,'rev'=>$revision));
+			$PAGE->requires->js($customjsurl);
 	
 			//for no AMD
 			$PAGE->requires->js_init_call('M.filter_poodll_templates.loadtemplate', array($filterprops),false,$jsmodule);

@@ -1,5 +1,11 @@
 Change List
 =========
+Version 3.0.33(Build 2017032601)
+- reworked the html5 recording to be more reliable and better on firefox
+
+Version 3.0.32(Build 2017032405)
+-fixed a bug that truncated html5 audio recordings and ignored < 4s ones
+
 Version 3.0.31(Build 2017031901)
 -Fixed erroneous error message from error log on s3 move complete
 -Added support for MS Edge audio recording via HTML5

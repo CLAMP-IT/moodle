@@ -21,7 +21,7 @@ define('POODLL_VIDEO_PLACEHOLDER_HASH','c2a342a0a664f2f1c4ea5387554a67caf3dd158e
 define('POODLL_AUDIO_PLACEHOLDER_HASH','e118549e4fc88836f418b6da6028f1fec571cd43');
 
 //we need to do this, because when called from a widet, cfg is not set
-//but the relative path fails from a quiz but it has already been set in that case
+//but the relative path fails from a quiz but it has alreadconvert_with_ffmpeg_bgy been set in that case
 //, so we check before we call it, to cover both bases
 
 if(!isset($CFG)){

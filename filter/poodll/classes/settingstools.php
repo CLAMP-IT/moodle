@@ -34,7 +34,14 @@ require_once($CFG->libdir . '/filelib.php');
  
 class settingstools
 {
-	
+
+public static function fetch_jumpcat_items($poodllcat){
+    $items=array();
+    $url = new \moodle_url('/admin/category.php',array('category'=>$poodllcat));
+    $items[] = new \admin_setting_heading('filter_poodll_jumpcat_settings', get_string('jumpcat_heading', 'filter_poodll'), get_string('jumpcat_explanation', 'filter_poodll',$url->out(false)));
+    return $items;
+}
+
 public static function fetch_general_items(){
 	global $CFG;
 	$items = array();
@@ -212,6 +219,41 @@ public static function fetch_widget_items(){
 
 }//end of function fetch widget items
 
+    //make a readable template name for menus and lists etc
+public static function fetch_template_title($conf,$tindex,$typeprefix=true){
+    //template display name
+    $tname='';
+    if($conf && property_exists($conf,'templatename_' . $tindex)){
+        $tname = $conf->{'templatename_' . $tindex};
+    }
+    if(empty($tname) && $conf && property_exists($conf,'templatekey_' . $tindex)){
+        $tname = $conf->{'templatekey_' . $tindex};
+    }
+    if(empty($tname)){$tname=$tindex;}
+
+    if(!$typeprefix){
+        return $tname;
+    }
+
+    if($conf && property_exists($conf,'templatekey_' . $tindex) && property_exists($conf,'template_showatto_' . $tindex) &&  $conf->{'template_showatto_' . $tindex} > 0){
+        $templatetitle = get_string('templatepagewidgetheading', 'filter_poodll',$tname);
+    }elseif($conf && property_exists($conf,'templatekey_' . $tindex) && property_exists($conf,'template_showplayers_' . $tindex) &&  $conf->{'template_showplayers_' . $tindex} > 0){
+        $templatetitle = get_string('templatepageplayerheading', 'filter_poodll',$tname);
+    }else{
+        $templatetitle = get_string('templatepageheading', 'filter_poodll',$tname);
+    }
+    return $templatetitle;
+}
+
+public static function fetch_template_table(){
+
+    $items=array();
+    $items[] =new \filter_poodll\poodlltemplatetable('filter_poodll/templatetable',
+        get_string('templates', 'filter_poodll'), '');
+    return $items;
+
+}
+
 public static function fetch_template_pages($conf){
 		$pages = array();
 
@@ -222,35 +264,19 @@ public static function fetch_template_pages($conf){
 			$templatecount = filtertools::FILTER_POODLL_TEMPLATE_COUNT;
 		}
                 
-                //fetch preset data, just once so we do nto need to repeat the call a zillion times
-                $presetdata = poodllpresets::fetch_presets();
+         //fetch preset data, just once so we do nto need to repeat the call a zillion times
+         $presetdata = poodllpresets::fetch_presets();
                 
 		for($tindex=1;$tindex<=$templatecount;$tindex++){
 		 
-			 //template display name
-             $tname='';
-            if($conf && property_exists($conf,'templatename_' . $tindex)){
-				$tname = $conf->{'templatename_' . $tindex};
-            }
-			if(empty($tname) && $conf && property_exists($conf,'templatekey_' . $tindex)){
-				$tname = $conf->{'templatekey_' . $tindex};
-        	}
-			if(empty($tname)){$tname=$tindex;}
-
-			if($conf && property_exists($conf,'templatekey_' . $tindex) && property_exists($conf,'template_showatto_' . $tindex) &&  $conf->{'template_showatto_' . $tindex} > 0){
-				$templatetitle = get_string('templatepagewidgetheading', 'filter_poodll',$tname);
-			}elseif($conf && property_exists($conf,'templatekey_' . $tindex) && property_exists($conf,'template_showplayers_' . $tindex) &&  $conf->{'template_showplayers_' . $tindex} > 0){
-				$templatetitle = get_string('templatepageplayerheading', 'filter_poodll',$tname);
-			}else{
-				$templatetitle = get_string('templatepageheading', 'filter_poodll',$tname);
-			}
+			 $templatetitle = \filter_poodll\settingstools::fetch_template_title($conf,$tindex);
 		 
 			 //template settings Page Settings 
-			$settings_page = new \admin_settingpage('filter_poodll_templatepage_' . $tindex,$templatetitle);
+			$settings_page = new \admin_settingpage('filter_poodll_templatepage_' . $tindex,$templatetitle,'moodle/site:config',true);
 		
 			//template page heading
 			$settings_page->add(new \admin_setting_heading('filter_poodll/templateheading_' . $tindex, 
-					get_string('templateheading', 'filter_poodll',$tname), ''));
+					get_string('templateheading', 'filter_poodll',$templatetitle), ''));
 				
 			//presets
 			$settings_page->add(new poodllpresets('filter_poodll/templatepresets_' . $tindex, 
@@ -312,7 +338,7 @@ public static function fetch_template_pages($conf){
 					
 			//template page JS heading
 			$settings_page->add(new \admin_setting_heading('filter_poodll/templateheading_js' . $tindex, 
-					get_string('templateheadingjs', 'filter_poodll',$tname), ''));
+					get_string('templateheadingjs', 'filter_poodll',$templatetitle), ''));
 					
 			//additional JS (external link)
 			 $settings_page->add(new \admin_setting_configtext('filter_poodll/templaterequire_js_' . $tindex , 
@@ -335,15 +361,16 @@ public static function fetch_template_pages($conf){
 			
 		
 			//template body script
-			 $settings_page->add(new \admin_setting_configtextarea('filter_poodll/templatescript_' . $tindex,
-						get_string('templatescript', 'filter_poodll',$tindex),
-						get_string('templatescript_desc', 'filter_poodll'),
-						'',PARAM_RAW));
-		
+            $setting=new \admin_setting_configtextarea('filter_poodll/templatescript_' . $tindex,
+                get_string('templatescript', 'filter_poodll',$tindex),
+                get_string('templatescript_desc', 'filter_poodll'),
+                '',PARAM_RAW);
+            $setting->set_updatedcallback('filter_poodll_update_revision');
+            $settings_page->add($setting);
 				 
 			//template page CSS heading
 			$settings_page->add(new \admin_setting_heading('filter_poodll/templateheading_css_' . $tindex, 
-					get_string('templateheadingcss', 'filter_poodll',$tname), ''));
+					get_string('templateheadingcss', 'filter_poodll',$templatetitle), ''));
 				 
 			//additional CSS (external link)
 			$settings_page->add(new \admin_setting_configtext('filter_poodll/templaterequire_css_' . $tindex , 
@@ -352,10 +379,12 @@ public static function fetch_template_pages($conf){
 					 '', PARAM_RAW,50));
 				 
 			//template body css
-			 $settings_page->add(new \admin_setting_configtextarea('filter_poodll/templatestyle_' . $tindex,
+			 $setting=new \admin_setting_configtextarea('filter_poodll/templatestyle_' . $tindex,
 						get_string('templatestyle', 'filter_poodll',$tindex),
 						get_string('templatestyle_desc', 'filter_poodll'),
-						'',PARAM_RAW));
+						'',PARAM_RAW);
+            $setting->set_updatedcallback('filter_poodll_update_revision');
+            $settings_page->add($setting);
 
 			//dataset
 			$settings_page->add(new \admin_setting_configtextarea('filter_poodll/dataset_' . $tindex,
