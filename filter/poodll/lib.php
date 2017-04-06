@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,18 +16,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * PoodLL filter
- *
- * @package    filter
- * @subpackage poodll
- * @copyright  2015 Justin Hunt poodllsupport@gmail.com
+ * @package filter_poodll
+ * @copyright  2017 Justin Hunt (https://poodll.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2017032601;
-$plugin->requires  = 2016052300;//moodle 3.1.0
-$plugin->component = 'filter_poodll'; 
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '3.0.33(Build 2017032601)';
+
+/**
+ * called back on customcss or custom js update, to bump the rev flag
+ * this is appended to the customcss url (and sometimes js) so will force a cache refresh
+ *
+ */
+function filter_poodll_update_revision() {
+    set_config('revision', time(), 'filter_poodll');
+}

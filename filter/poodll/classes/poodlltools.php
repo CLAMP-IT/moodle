@@ -2362,7 +2362,7 @@ class poodlltools
 	{
 		global $CFG;
 		$params=array();
-		$params['media_timeinterval'] = 5000;
+		$params['media_timeinterval'] = 2000;
 		$params['media_audiomimetype'] = 'audio/webm';//or audio/wav
         $params['media_videorecordertype'] = 'auto';//or mediarec or webp
         $params['media_videocapturewidth'] = 320;
