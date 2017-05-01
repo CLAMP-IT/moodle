@@ -1,0 +1,82 @@
+.block_panopto .courseProvisionResult
+{
+    border: solid 1px #C0C0C0;
+    padding: 5px;
+    margin-bottom: 20px;
+}
+
+.block_panopto .courseProvisionResult .attribute
+{
+    font-weight: bold;
+}
+
+.block_panopto .courseProvisionResult .value
+{
+    margin-left: 15px;
+    margin-bottom: 5px;
+}
+
+.block_panopto .courseProvisionResult .successMessage
+{
+    color: green;
+}
+
+.block_panopto .courseProvisionResult .errorMessage
+{
+    color: red;
+}
+
+
+/* Block sidebar */
+
+.block_panopto .sectionHeader
+{
+    margin-top: 10px;
+}
+
+.block_panopto #hiddenLecturesDiv
+{
+    display: none;
+}
+
+.block_panopto #showAllDiv
+{
+    margin-top: 5px;
+}
+
+.block_panopto #showAllToggle
+{
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.block_panopto .listItem
+{
+    margin-top: 3px;
+    font-size: 0.8em;
+}
+
+.block_panopto .listItemAlt
+{
+    background: #F0F0F0;
+}
+
+.block_panopto .rssLink
+{
+    font-size: 0.8em;
+}
+
+.block_panopto .rssParen
+{
+    font-size: 0.7em;
+}
+
+.block_panopto .nowrap
+{
+    white-space: nowrap;
+}
+
+.block_panopto .error
+{
+    color: red;
+}
