@@ -75,7 +75,7 @@ $editclass = 'edit_'.$tab;
 $editinstance = new $editclass($gallery, $cm, $image, $tab);
 
 $fs = get_file_storage();
-if (!$stored_file = $fs->get_file($context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $image)) {
+if (!$storedfile = $fs->get_file($context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $image)) {
     print_error(get_string('errornofile', 'lightboxgallery', $image));
 }
 
@@ -97,7 +97,7 @@ if ($editinstance->processing() && confirm_sesskey()) {
     redirect($CFG->wwwroot.'/mod/lightboxgallery/imageedit.php?id='.$cm->id.'&image='.$editinstance->image.'&tab='.$tab);
 }
 
-$image = new lightboxgallery_image($stored_file, $gallery, $cm);
+$image = new lightboxgallery_image($storedfile, $gallery, $cm);
 
 $table = new html_table();
 $table->width = '*';

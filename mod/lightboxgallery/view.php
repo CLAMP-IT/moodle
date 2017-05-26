@@ -52,8 +52,6 @@ if ($id) {
 }
 
 
-require_login($course, true, $cm);
-
 if ($gallery->ispublic) {
     $userid = (isloggedin() ? $USER->id : 0);
     $PAGE->set_cm($cm, $course);
@@ -85,7 +83,7 @@ $event->add_record_snapshot('course', $course);
 $event->add_record_snapshot('lightboxgallery', $gallery);
 $event->trigger();
 
-// Mark viewed
+// Mark viewed.
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
@@ -95,8 +93,8 @@ $PAGE->set_title($gallery->name);
 $PAGE->set_heading($course->shortname);
 $button = '';
 if (has_capability('mod/lightboxgallery:edit', $context)) {
-    $url_params = array('id' => $id, 'page' => $page, 'editing' => $editing ? '0' : '1');
-    $url = new moodle_url('/mod/lightboxgallery/view.php', $url_params);
+    $urlparams = array('id' => $id, 'page' => $page, 'editing' => $editing ? '0' : '1');
+    $url = new moodle_url('/mod/lightboxgallery/view.php', $urlparams);
     $strediting = get_string('turnediting'.($editing ? 'off' : 'on'));
     $button = $OUTPUT->single_button($url, $strediting, 'get').' ';
 }
@@ -120,7 +118,7 @@ echo $OUTPUT->heading($heading);
 if ($gallery->intro && !$editing) {
     echo $OUTPUT->box(format_module_intro('lightboxgallery', $gallery, $cm->id), 'generalbox', 'intro');
 }
-if($gallery->autoresize == AUTO_RESIZE_SCREEN || $gallery->autoresize == AUTO_RESIZE_BOTH){
+if ($gallery->autoresize == AUTO_RESIZE_SCREEN || $gallery->autoresize == AUTO_RESIZE_BOTH) {
     $resizecss = ' autoresize';
 } else {
     $resizecss = '';
@@ -128,52 +126,48 @@ if($gallery->autoresize == AUTO_RESIZE_SCREEN || $gallery->autoresize == AUTO_RE
 echo $OUTPUT->box_start('generalbox lightbox-gallery clearfix'.$resizecss);
 
 $fs = get_file_storage();
-$stored_files = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images');
+$storedfiles = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images');
 
-$image_count = 1;
+$imagecount = 1;
 
-foreach ($stored_files as $stored_file) {
-    if (!$stored_file->is_valid_image()) {
+foreach ($storedfiles as $storedfile) {
+    if (!$storedfile->is_valid_image()) {
         continue;
     }
 
     if ($gallery->perpage > 0 &&
-        (($image_count > (($gallery->perpage * $page) + $gallery->perpage) || ($image_count < ($gallery->perpage * $page) + 1)))) {
-        $image_count++;
+        (($imagecount > (($gallery->perpage * $page) + $gallery->perpage) || ($imagecount < ($gallery->perpage * $page) + 1)))) {
+        $imagecount++;
         continue;
     }
 
-    $image = new lightboxgallery_image($stored_file, $gallery, $cm);
+    $image = new lightboxgallery_image($storedfile, $gallery, $cm);
 
     echo $image->get_image_display_html($editing);
 
-    if (!is_float($image_count / $gallery->perrow)) {
-        echo $OUTPUT->box('', 'clearfix');
-    }
-
-    $image_count++;
+    $imagecount++;
 }
 
-echo ($image_count < 1 ? print_string('errornoimages', 'lightboxgallery') : '');
+echo ($imagecount < 1 ? print_string('errornoimages', 'lightboxgallery') : '');
 echo $OUTPUT->box_end();
 
 if ($gallery->perpage) {
     $barurl = $CFG->wwwroot.'/mod/lightboxgallery/view.php?id='.$cm->id.'&amp;' . ($editing ? 'editing=1&amp;' : '');
-    $pagingbar = new paging_bar($image_count - 1, $page, $gallery->perpage, $barurl);
+    $pagingbar = new paging_bar($imagecount - 1, $page, $gallery->perpage, $barurl);
     echo $OUTPUT->render($pagingbar);
 }
 
 $showtags = !in_array('tag', explode(',', get_config('lightboxgallery', 'disabledplugins')));
 
 if (!$editing && $showtags) {
-    $desc_compare = $DB->sql_compare_text('description');
-    $sql = "SELECT $desc_compare AS description
+    $desccompare = $DB->sql_compare_text('description');
+    $sql = "SELECT $desccompare AS description
               FROM {lightboxgallery_image_meta}
              WHERE gallery = {$gallery->id}
                AND metatype = 'tag'
-          GROUP BY $desc_compare
-          ORDER BY COUNT($desc_compare) DESC,
-                   $desc_compare ASC";
+          GROUP BY $desccompare
+          ORDER BY COUNT($desccompare) DESC,
+                   $desccompare ASC";
     if ($tags = $DB->get_records_sql($sql, array(), 0, 10)) {
         lightboxgallery_print_tags(get_string('tagspopular', 'lightboxgallery'), $tags, $course->id, $gallery->id);
     }

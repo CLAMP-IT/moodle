@@ -118,8 +118,8 @@ if ($results = $DB->get_records_sql($sql, $params)) {
             }
             $imgcontext = context_module::instance($imgcm->id);
 
-            if ($stored_file = $fs->get_file($imgcontext->id, 'mod_lightboxgallery', 'gallery_images', 0, '/', $result->image)) {
-                $image = new lightboxgallery_image($stored_file, $imggallery, $imgcm);
+            if ($storedfile = $fs->get_file($imgcontext->id, 'mod_lightboxgallery', 'gallery_images', 0, '/', $result->image)) {
+                $image = new lightboxgallery_image($storedfile, $imggallery, $imgcm);
                 echo $image->get_image_display_html();
                 $hashes[$result->image] = 1;
             }

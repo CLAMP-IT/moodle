@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 define('FLIP_VERTICAL', 1);
 define('FLIP_HORIZONTAL', 2);
 
@@ -36,8 +38,8 @@ class edit_flip extends edit_base {
         $mode = required_param('mode', PARAM_INT);
 
         $fs = get_file_storage();
-        $stored_file = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($stored_file, $this->gallery, $this->cm);
+        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
+        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
 
         if ($mode & FLIP_HORIZONTAL) {
             $image->flip_image('horizontal');
