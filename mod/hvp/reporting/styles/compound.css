@@ -1,0 +1,36 @@
+.h5p-compound-task-description {
+  font-size: 20px;
+  font-weight: 600;
+}
+.h5p-result {
+  margin: 2.5em 0;
+}
+.h5p-result:first-child {
+  margin-top: 0;
+}
+.h5p-result:last-child {
+  margin-bottom: 0;
+}
+
+.h5p-compound-container {
+  height: auto;
+  border: solid 1px #C9C9C9;
+  margin: auto 10px;
+  padding: 30px 50px 30px 50px;
+  background: #fff;
+  font-size: 15px;
+  color: #5C5C5C;
+  box-shadow: 0 0 20px 0 rgba(0,0,0,0.12);
+}
+
+.h5p-compound-container .h5p-compound-container,
+.h5p-compound-container .h5p-choices-container,
+.h5p-compound-container .h5p-fill-in-container,
+.h5p-compound-container .h5p-long-choice-container,
+.h5p-compound-container .h5p-matching-container,
+.h5p-compound-container .h5p-true-false-container {
+  border: none;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+}
