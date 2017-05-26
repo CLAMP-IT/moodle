@@ -118,6 +118,7 @@ class diagnosticstools {
 		
 		//poodll setting info		
 		$ds['cloudrecording']=$CFG->filter_poodll_cloudrecording;
+        $ds['cloudnotifications']=$CFG->filter_poodll_cloudnotifications;
 		$ds['filter_poodll_recorderorder']=$CFG->filter_poodll_recorderorder;
 		$ds['filter_poodll_mp3recorder_nocloud']=$CFG->filter_poodll_mp3recorder_nocloud;
 		$ds['filter_poodll_videotranscode']=$CFG->filter_poodll_videotranscode;

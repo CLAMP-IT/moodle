@@ -50,5 +50,17 @@ function xmldb_filter_poodll_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2016071604, 'filter', 'poodll');
     }
 
+    if ($oldversion < 2017051301) {
+        set_config('filter_poodll_recorderorder_audio',$CFG->filter_poodll_recorderorder);
+        set_config('filter_poodll_recorderorder_video',$CFG->filter_poodll_recorderorder);
+        set_config('filter_poodll_recorderorder_whiteboard',$CFG->filter_poodll_recorderorder);
+        set_config('filter_poodll_recorderorder_snapshot',$CFG->filter_poodll_recorderorder);
+
+        //  savepoint reached
+        upgrade_plugin_savepoint(true, 2017051301, 'filter', 'poodll');
+    }
+
+
+
     return true;
 }

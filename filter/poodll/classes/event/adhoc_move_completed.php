@@ -42,7 +42,11 @@ class adhoc_move_completed extends  adhoc_completed  {
      * @return string
      */
     public function get_description() {
-        return "An ad_hoc task to move file: '" .  $this->data['other']->outfilename .
+        $other=$this->data['other'];
+       if(gettype($other)=='object'){
+           $other=get_object_vars($other);
+       }
+        return "An ad_hoc task to move file: '" .  $other['outfilename'] .
             "', owned by userid: " . $this->data['userid'] . ", has been completed.";
     }
 

@@ -23,7 +23,7 @@
  */
 
 //some constants for poodll feedback
-if(!defined('FPS_REPLYVOICE')){
+if(!defined('FPS_REPLYMP3VOICE')){
 	define('FPS_REPLYMP3VOICE',0);
 	define('FPS_REPLYVOICE',1);
 	define('FPS_REPLYVIDEO',2);
@@ -38,8 +38,7 @@ if(!defined('FPS_REPLYVOICE')){
                    
 
 	//Recorders
-    $rec_options = array( FPS_REPLYMP3VOICE => get_string("replymp3voice", "assignfeedback_poodll"), 
-				FPS_REPLYVOICE => get_string("replyvoice", "assignfeedback_poodll"), 
+    $rec_options = array( FPS_REPLYMP3VOICE => get_string("replymp3voice", "assignfeedback_poodll"),
 				FPS_REPLYVIDEO => get_string("replyvideo", "assignfeedback_poodll"),
 				FPS_REPLYWHITEBOARD => get_string("replywhiteboard", "assignfeedback_poodll"),
 				FPS_REPLYSNAPSHOT => get_string("replysnapshot", "assignfeedback_poodll"));

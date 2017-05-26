@@ -29,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 function xmldb_filter_poodll_install() {
     $presets = \filter_poodll\poodllpresets::fetch_presets();
-	$forinstall = array('fff','flowplayer','mediaelementvideo','jwplayer','videojs','nativevideo','audiojs','mediaelementaudio','nativeaudio','youtubelightbox','stopwatch','tabs','tabitem','accordian','accordianitem');
+	$forinstall = array('fff','flowplayer','mediaelementvideo','jwplayer','videojs','nativevideo','audiojs_shim','mediaelementaudio','nativeaudio','youtube','stopwatch','tabs','tabitem','accordian','accordianitem');
 	$templateindex=0;
 	foreach($presets as $preset){			
 		if(in_array($preset['key'],$forinstall)){
@@ -42,6 +42,12 @@ function xmldb_filter_poodll_install() {
 	//Set the handlers
 	set_config('handlemp4', 1, 'filter_poodll');
 	set_config('handlemp3', 1, 'filter_poodll');
+    set_config('handleyoutube', 1, 'filter_poodll');
 	set_config('useplayermp4','fff','filter_poodll');
-	set_config('useplayermp3','audiojs','filter_poodll');
+	set_config('useplayermp3','audiojs_shim','filter_poodll');
+    set_config('useplayeryoutube','youtube','filter_poodll');
+    set_config('useplayerwebm','nativevideo','filter_poodll');
+    set_config('useplayerflv','fff','filter_poodll');
+    set_config('useplayerogv','nativevideo','filter_poodll');
+    set_config('useplayerogg','nativeaudio','filter_poodll');
 }

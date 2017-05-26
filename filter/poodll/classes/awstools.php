@@ -61,10 +61,41 @@ class awstools
      */
 	public static function fetch_s3_filename($mediatype, $filename){
             global $CFG,$USER;
-            $s3filename =$CFG->wwwroot . '/' . $USER->sesskey . '/' . $mediatype . '/' . $filename;
-            $s3filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $s3filename);
-            // Remove any runs of periods (thanks falstro!)
-            $s3filename = mb_ereg_replace("([\.]{2,})", '', $s3filename);       
+
+           //here we encode the URL so that the lambda notifier can process it.
+            $thewwwroot =  strtolower($CFG->wwwroot);
+            $wwwroot_bits = parse_url($thewwwroot);
+            $bits=array();
+            if($CFG->filter_poodll_cloudnotifications) {
+                $bits[] = 'Y';
+            }else{
+                $bits[] = 'N';
+            }
+            $bits[]=$wwwroot_bits['scheme'];
+            $bits[]=$wwwroot_bits['host'];
+            if(array_key_exists('port',$wwwroot_bits)) {
+                $bits[] = $wwwroot_bits['port'];
+            }elseif($wwwroot_bits['scheme']=='https'){
+                $bits[] = '443';
+            }else{
+                $bits[] = '80';
+            }
+            if(array_key_exists('path',$wwwroot_bits)) {
+                $bits[] = str_replace('/', '!', $wwwroot_bits['path']);
+            }else{
+                $bits[] = '';
+            }
+            $codedurl = implode('_',$bits);
+            $codedurl = $codedurl . '_';
+
+
+           // $s3filename =$USER->sesskey . '/' . $mediatype . '/' . $filename;
+            //removes uRL like chars
+           // $s3filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $s3filename);
+            //removes series of dots
+           // $s3filename = mb_ereg_replace("([\.]{2,})", '', $s3filename);
+            $s3filename =$USER->sesskey . '_' . $mediatype . '_' . $filename;
+            $s3filename = $codedurl . $s3filename;
             return $s3filename;
     }
 

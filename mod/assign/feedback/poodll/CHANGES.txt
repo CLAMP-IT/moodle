@@ -1,5 +1,8 @@
 Change List
 =========
+Version 2017052201
+Removed the Red5 audio recorder and references to Flash or Red5
+
 Version 2016112701
 Fixed an issue where widths were pulled from a  missing poodll property
 

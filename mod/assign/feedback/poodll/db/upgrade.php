@@ -28,6 +28,7 @@
  * @return bool
  */
 function xmldb_assignfeedback_poodll_upgrade($oldversion) {
+    global $DB;
     // do the upgrades
 	//add filename field
     if ($oldversion < 2013120500) {
@@ -39,6 +40,12 @@ function xmldb_assignfeedback_poodll_upgrade($oldversion) {
 		 // online PoodLL savepoint reached
         upgrade_plugin_savepoint(true, 2013120500, 'assignfeedback', 'poodll');
     
+    }
+    //set all audio red5 to new audio  recorder type
+    if ($oldversion < 2017052201) {
+        $DB->set_field('assignfeedback_poodll','poodlltype',0,array('poodlltype'=>1));
+        // online PoodLL savepoint reached
+        upgrade_plugin_savepoint(true, 2017052201, 'assignfeedback', 'poodll');
     }
 
 

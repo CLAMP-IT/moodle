@@ -81,6 +81,12 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
         global $CFG, $COURSE;
 
         $recordertype = $this->get_config('recordertype');
+
+        //convert old Red5 refs to audio media type option
+        if($recordertype==OP_REPLYVOICE){
+            $recordertype=OP_REPLYMP3VOICE;
+        }
+
 		$boardsize = $this->get_config('boardsize');
 		$backimage = $this->get_config('backimage');
 		$timelimit = $this->get_config('timelimit');
@@ -90,12 +96,10 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		$allowed_recorders = get_config('assignsubmission_onlinepoodll', 'allowedrecorders');
 		$allowed_recorders  = explode(',',$allowed_recorders);
 		$recorderoptions = array();
-		if(array_search(OP_REPLYMP3VOICE,$allowed_recorders)!==false){
+		if(array_search(OP_REPLYMP3VOICE,$allowed_recorders)!==false || array_search(OP_REPLYVOICE,$allowed_recorders)!==false){
 			$recorderoptions[OP_REPLYMP3VOICE] = get_string("replymp3voice", "assignsubmission_onlinepoodll");
 		}
-		if(array_search(OP_REPLYVOICE,$allowed_recorders)!==false){
-			$recorderoptions[OP_REPLYVOICE] = get_string("replyvoice", "assignsubmission_onlinepoodll");
-		}
+
 		if(array_search(OP_REPLYVIDEO ,$allowed_recorders)!==false){
 			$recorderoptions[OP_REPLYVIDEO ] = get_string("replyvideo", "assignsubmission_onlinepoodll");
 		}
@@ -105,18 +109,7 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		if(array_search(OP_REPLYSNAPSHOT,$allowed_recorders)!==false){
 			$recorderoptions[OP_REPLYSNAPSHOT] = get_string("replysnapshot", "assignsubmission_onlinepoodll");
 		}
-      
-      
-	/*
-        $recorderoptions = array( OP_REPLYMP3VOICE => get_string("replymp3voice", "assignsubmission_onlinepoodll"), 
-				OP_REPLYVOICE => get_string("replyvoice", "assignsubmission_onlinepoodll"), 
-				OP_REPLYVIDEO => get_string("replyvideo", "assignsubmission_onlinepoodll"),
-				OP_REPLYWHITEBOARD => get_string("replywhiteboard", "assignsubmission_onlinepoodll"),
-				OP_REPLYSNAPSHOT => get_string("replysnapshot", "assignsubmission_onlinepoodll"));
-	*/
-		
-		//we don't support talkback yet
-		//OP_REPLYTALKBACK => get_string("replytalkback", "assignsubmission_onlinepoodll"));
+
         
 		$mform->addElement('select', 'assignsubmission_onlinepoodll_recordertype', get_string("recordertype", "assignsubmission_onlinepoodll"), $recorderoptions);
         //$mform->addHelpButton('assignsubmission_onlinepoodll_recordertype', get_string('onlinepoodll', ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT), ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT);
@@ -313,13 +306,8 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		
 		//fetch the required "recorder
 		switch($this->get_config('recordertype')){
-			
-			case OP_REPLYVOICE:
-				$mediadata= \filter_poodll\poodlltools::fetchAudioRecorderForSubmission('swf','onlinepoodll',OP_FILENAMECONTROL, $usercontextid ,'user','draft',$draftitemid,$timelimit);
-				$mform->addElement('static', 'description', '',$mediadata);
 
-				break;
-				
+            case OP_REPLYVOICE:
 			case OP_REPLYMP3VOICE:
 				$mediadata= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission(OP_FILENAMECONTROL, $usercontextid ,'user','draft',$draftitemid,$timelimit);
 				$mform->addElement('static', 'description', '',$mediadata);
@@ -378,9 +366,9 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 					
 		}
 
-        // hidden params
-        $mform->addElement('hidden', 'id', 0);
-        $mform->setType('id', PARAM_INT);
+        // hidden params: Pretty sure we don't need this. Justin 20170523
+        //$mform->addElement('hidden', 'id', 0);
+        //$mform->setType('id', PARAM_INT);
 		return true;
 
     }
@@ -445,12 +433,8 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 
 			//prepare our response string, which will parsed and replaced with the necessary player
 			switch($this->get_config('recordertype')){
-							
-				case OP_REPLYVOICE:
-				case OP_REPLYTALKBACK:
-					//not supported yet
-					break;
-					
+
+                case OP_REPLYVOICE:
 				case OP_REPLYMP3VOICE:
 						$responsestring .= format_text("<a href='$rawmediapath'>$filename</a>", FORMAT_HTML);
 						break;						
@@ -793,8 +777,6 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 			case 0:
 			case 1:
 			case 2:
-				$this->set_config('recordertype',  OP_REPLYVOICE);
-				break;
 			case 7:
 				$this->set_config('recordertype',  OP_REPLYMP3VOICE);
 				break;

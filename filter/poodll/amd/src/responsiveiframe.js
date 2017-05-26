@@ -33,9 +33,7 @@ define(['jquery','core/log'], function($, log) {
             */
             _iframeResize: function(iframeprops){
                 var theiframe = iframeprops.theiframe;
-                
-                debugger;
-                
+
                 if(!theiframe ||theiframe.length < 1 ){
                     return;
                 }

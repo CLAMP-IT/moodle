@@ -137,6 +137,7 @@ class licensemanager
         //just in case, lowercase'ify them
         $thewwwroot =  strtolower($CFG->wwwroot);
         $theregisteredurl =  strtolower($this->registered_url);
+        $theregisteredurl =trim($theregisteredurl);
         $wwwroot_bits = parse_url($thewwwroot);
         $registered_bits = parse_url($theregisteredurl);
         
@@ -158,11 +159,11 @@ class licensemanager
         //match either the exact domain or the wildcard domain or fail
         if(array_key_exists('host', $registered_bits)){
             //this will cover exact matches and path matches
-            if($registered_bits['host'] == $wwwroot_bits['host']){
+            if($registered_bits['host'] === $wwwroot_bits['host']){
                 $this->validated = true;
                 return self::FILTER_POODLL_IS_REGISTERED;
             //this will cover subdomain matches but only for institution license
-            }elseif(($registered_bits['host']== $wildcard_subdomain_wwwroot) && 
+            }elseif(($registered_bits['host']=== $wildcard_subdomain_wwwroot) &&
                         $this->license_type==self::FILTER_POODLL_LICENSE_INSTITUTION){
                  $this->validated = true;
                 return self::FILTER_POODLL_IS_REGISTERED;
