@@ -191,7 +191,7 @@ class core_renderer extends \core_renderer {
         $footer = str_replace($this->unique_end_html_token, $this->page->requires->get_end_code(), $footer);
         $this->page->set_state(moodle_page::STATE_DONE);
         $info = '<!-- Essential theme version: '.$this->page->theme->settings->version.
-            'is developed by Gareth J Barnard: about.me/gjbarnard -->';
+            ' is developed by Gareth J Barnard: about.me/gjbarnard -->';
 
         return $output . $footer . $info;
     }
@@ -776,6 +776,9 @@ class core_renderer extends \core_renderer {
                 if ($mycoursescatsubmenu) {
                     $enablecategoryicon = \theme_essential\toolbox::get_setting('enablecategoryicon');
                     $defaultcategoryicon = \theme_essential\toolbox::get_setting('defaultcategoryicon');
+                    if (empty($defaultcategoryicon)) {
+                        $defaultcategoryicon = 'folder-open';
+                    }
                     $enablecustomcategoryicon = \theme_essential\toolbox::get_setting('enablecustomcategoryicon');
                     $mycoursescatsubmenucats = array();
                     $mycoursescatsubmenucatsnumcourses = array();
@@ -811,6 +814,9 @@ class core_renderer extends \core_renderer {
                             if ($enablecategoryicon) {
                                 if ($enablecustomcategoryicon) {
                                     $caticon = \theme_essential\toolbox::get_setting('categoryicon'.$categoriestoplist[$course->category]->topid);
+                                    if (empty($caticon)) {
+                                        $caticon = $defaultcategoryicon;
+                                    }
                                 } else {
                                     $caticon = $defaultcategoryicon;
                                 }
@@ -1736,6 +1742,7 @@ class core_renderer extends \core_renderer {
             'docs' => 'question-circle',
             'generate' => 'gift',
             'help' => 'question-circle-o',
+            'trash' => 'trash-o',
             'i/backup' => 'cloud-download',
             'i/badge' => 'trophy',
             'i/checkpermissions' => 'user',
@@ -1763,6 +1770,7 @@ class core_renderer extends \core_renderer {
             'i/publish' => 'globe',
             'i/reload' => 'refresh',
             'i/report' => 'list-alt',
+            'i/repository' => 'database',
             'i/restore' => 'cloud-upload',
             'i/return' => 'repeat',
             'i/roles' => 'user',
@@ -1771,7 +1779,7 @@ class core_renderer extends \core_renderer {
             'i/show' => 'eye-slash',
             'i/switchrole' => 'random',
             'i/user' => 'user',
-            'i/users' => 'user',
+            'i/users' => 'users',
             'i/withsubcat' => 'indent',
             'i/permissions' => 'key',
             'i/assignroles' => 'lock',
@@ -2198,25 +2206,27 @@ class core_renderer extends \core_renderer {
     }
 
     public function get_title($location) {
-        global $CFG, $SITE;
+        global $SITE;
         $title = '';
         if ($location === 'navbar') {
-            $url = preg_replace("(https?:)", "", $CFG->wwwroot);
             switch (\theme_essential\toolbox::get_setting('navbartitle')) {
                 case 0:
                     return false;
                 break;
                 case 1:
-                    $title = '<a class="brand" href="'.$url.'">'.format_string($SITE->fullname, true,
-                                    array('context' => context_course::instance(SITEID))).'</a>';
+                    $title = html_writer::link(new moodle_url('/'),
+                        format_string($SITE->fullname, true, array('context' => context_course::instance(SITEID))),
+                        array('class' => 'brand'));
                     break;
                 case 2:
-                    $title = '<a class="brand" href="'.$url.'">'.format_string($SITE->shortname, true,
-                                    array('context' => context_course::instance(SITEID))).'</a>';
+                    $title = html_writer::link(new moodle_url('/'),
+                        format_string($SITE->shortname, true, array('context' => context_course::instance(SITEID))),
+                        array('class' => 'brand'));
                     break;
                 default:
-                    $title = '<a class="brand" href="'.$url.'">' . format_string($SITE->shortname, true,
-                                    array('context' => context_course::instance(SITEID))).'</a>';
+                    $title = html_writer::link(new moodle_url('/'),
+                        format_string($SITE->shortname, true, array('context' => context_course::instance(SITEID))),
+                        array('class' => 'brand'));
                     break;
             }
         } else if ($location === 'header') {
@@ -2225,22 +2235,30 @@ class core_renderer extends \core_renderer {
                     return false;
                     break;
                 case 1:
-                    $title = '<h1 id="title">'.format_string($SITE->fullname, true,
-                                    array('context' => context_course::instance(SITEID))).'</h1>';
+                    $title = html_writer::tag('h1',
+                        format_string($SITE->fullname, true, array('context' => context_course::instance(SITEID))),
+                        array('id' => 'title'));
                     break;
                 case 2:
-                    $title = '<h1 id="title">'.format_string($SITE->shortname, true,
-                                    array('context' => context_course::instance(SITEID))).'</h1>';
+                    $title = html_writer::tag('h1',
+                        format_string($SITE->shortname, true, array('context' => context_course::instance(SITEID))),
+                        array('id' => 'title'));
                     break;
                 case 3:
-                    $title = '<h1 id="smalltitle">'.format_string($SITE->fullname, true,
-                                    array('context' => context_course::instance(SITEID))).'</h2>';
-                    $title .= '<h2 id="subtitle">'.format_text($SITE->summary).'</h3>';
+                    $title = html_writer::tag('h1',
+                        format_string($SITE->fullname, true, array('context' => context_course::instance(SITEID))),
+                        array('id' => 'smalltitle'));
+                    $title .= html_writer::tag('h2',
+                        format_string($SITE->summary),
+                        array('id' => 'subtitle'));
                     break;
                 case 4:
-                    $title = '<h1 id="smalltitle">'.format_string($SITE->shortname, true,
-                                    array('context' => context_course::instance(SITEID))).'</h2>';
-                    $title .= '<h2 id="subtitle">'.format_text($SITE->summary).'</h3>';
+                    $title = html_writer::tag('h1',
+                        format_string($SITE->shortname, true, array('context' => context_course::instance(SITEID))),
+                        array('id' => 'smalltitle'));
+                    $title .= html_writer::tag('h2',
+                        format_string($SITE->summary),
+                        array('id' => 'subtitle'));
                     break;
                 default:
                     break;
