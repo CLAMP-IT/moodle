@@ -1,3 +1,15 @@
+New in 3.2.1.1
+==============
+- FIX: Issue #817: Incorrect header closing tags in header title area.
+- FIX: Issue #818: Fix Apple touch icon.
+- FIX: Issue #819: Site summary in the header: element div not allowed as child of element h2 in this context.
+- FIX: Font-awesome icon for the recycle bin.
+- FIX: Font-awesome icon for the repositories.
+- FIX: MyCourses default icon.
+- FIX: Font-awesome users icon.
+- FIX: Duplicate socialheading id and redundant profileheading id.
+- NEW: Issue #622: Custom category icon images.  Gratefully funded by Gemma Lesterhuis.
+
 New in 3.2.1.0 - First stable version.
 ==============
 - FIX: Issue #812: Add icon replacements for t/message and t/addcontact.  Thanks to Jan Dageförde (https://github.com/Dagefoerde) for this fix.
