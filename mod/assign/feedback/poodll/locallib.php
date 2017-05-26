@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 
-if(!defined('FP_REPLYVOICE')){
+if(!defined('FP_REPLYMP3VOICE')){
  /**
  * File areas for PoodLL feedback
 	 */
@@ -83,6 +83,11 @@ class assign_feedback_poodll extends assign_feedback_plugin {
 
 		//get saved values and return them as defaults
         $recordertype = $this->get_config('recordertype');
+
+        //convert old Red5 refs to audio media type option
+        if($recordertype==FP_REPLYVOICE){
+            $recordertype=FP_REPLYMP3VOICE;
+        }
 		$boardsize = $this->get_config('boardsize');
 		$downloadsok = $this->get_config('downloadsok');
 		
@@ -90,11 +95,8 @@ class assign_feedback_poodll extends assign_feedback_plugin {
 		$allowed_recorders = get_config('assignfeedback_poodll', 'allowedrecorders');
 		$allowed_recorders  = explode(',',$allowed_recorders);
 		$recorderoptions = array();
-		if(array_search(FP_REPLYMP3VOICE,$allowed_recorders)!==false){
+		if(array_search(FP_REPLYMP3VOICE,$allowed_recorders)!==false || array_search(FP_REPLYVOICE,$allowed_recorders)!==false){
 			$recorderoptions[FP_REPLYMP3VOICE] = get_string("replymp3voice", "assignfeedback_poodll");
-		}
-		if(array_search(FP_REPLYVOICE,$allowed_recorders)!==false){
-			$recorderoptions[FP_REPLYVOICE] = get_string("replyvoice", "assignfeedback_poodll");
 		}
 		if(array_search(FP_REPLYVIDEO ,$allowed_recorders)!==false){
 			$recorderoptions[FP_REPLYVIDEO ] = get_string("replyvideo", "assignfeedback_poodll");
@@ -146,6 +148,7 @@ class assign_feedback_poodll extends assign_feedback_plugin {
      * @return bool 
      */
     public function save_settings(stdClass $data) {
+
         $this->set_config('recordertype', $data->assignfeedback_poodll_recordertype);
 		$this->set_config('downloadsok', $data->assignfeedback_poodll_downloadsok);
 		
@@ -305,22 +308,14 @@ class assign_feedback_poodll extends assign_feedback_plugin {
 		$mform->setType('usercontextid', PARAM_INT); 
 		$mform->setType(FP_FILENAMECONTROL, PARAM_TEXT); 
 	
-                //no timelimit on recordings
-                $timelimit=0;
+        //no timelimit on recordings
+        $timelimit=0;
+
+        //get saved values and return them as defaults
+        $recordertype = $this->get_config('recordertype');
 		
 		//fetch the required "recorder
-		switch($this->get_config('recordertype')){
-			
-			case FP_REPLYVOICE:
-				$mediadata= \filter_poodll\poodlltools::fetchAudioRecorderForSubmission('swf','poodllfeedback',FP_FILENAMECONTROL,
-						$usercontextid ,'user','draft',$draftitemid,$timelimit);
-				$mform->addElement('static', 'description',$displayname,$mediadata);
-				break;
-				
-			case FP_REPLYMP3VOICE:
-				$mediadata= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission(FP_FILENAMECONTROL, $usercontextid ,'user','draft',$draftitemid,$timelimit);
-				$mform->addElement('static', 'description',$displayname,$mediadata);
-				break;
+		switch($recordertype){
 				
 			case FP_REPLYWHITEBOARD:
 				//get board sizes
@@ -352,16 +347,40 @@ class assign_feedback_poodll extends assign_feedback_plugin {
 				$mform->addElement('static', 'description',$displayname,$mediadata);			
 									
 				break;
+
+            case FP_REPLYVOICE:
+            case FP_REPLYMP3VOICE:
+                $mediadata= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission(FP_FILENAMECONTROL, $usercontextid ,'user','draft',$draftitemid,$timelimit);
+                $mform->addElement('static', 'description',$displayname,$mediadata);
+                break;
 					
 		}
 
-        // hidden params
-        $mform->addElement('hidden', 'id', 0);
-        $mform->setType('id', PARAM_INT);
+        // hidden params: Pretty sure we don't need this. Justin 20170523
+        //$mform->addElement('hidden', 'id', 0);
+        //$mform->setType('id', PARAM_INT);
 	return true;
 
     }
 
+
+    public function is_feedback_modified(stdClass $grade, stdClass $data){
+
+        $thefilename = '';
+        /*
+        if ($grade) {
+            $poodllfeedback = $this->get_feedback_poodll($grade->id);
+            if (isset($poodllfeedback->filename) && !empty($poodllfeedback->filename)) {
+                $thefilename = $poodllfeedback->filename;
+            }
+        }
+        */
+        if($data->{FP_FILENAMECONTROL}==$thefilename){
+            return false;
+        }else{
+            return true;
+        }
+    }
 
 
     /**
@@ -450,17 +469,8 @@ function fetch_responses($gradeid){
                 //prepare our response string, which will parsed and replaced with the necessary player
                 switch($this->get_config('recordertype')){
 
+
                         case FP_REPLYVOICE:
-                        	$responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);
-							if($this->get_config('downloadsok')){
-								$responsestring .= "<a href='" . $rawmediapath . "'>" 
-										. get_string('downloadfile', 'assignfeedback_poodll') 
-										."</a>";
-							}
-							
-							break;						
-                    
-                        
                         case FP_REPLYMP3VOICE:
 	
 							$responsestring .= format_text("<a href=\"$rawmediapath\">$filename</a>", FORMAT_HTML);

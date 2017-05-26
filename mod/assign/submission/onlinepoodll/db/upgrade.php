@@ -91,6 +91,14 @@ function xmldb_assignsubmission_onlinepoodll_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2014052200, 'assignsubmission', 'onlinepoodll');
     }
 
+    //set all audio red5 to new audio  recorder type
+    if ($oldversion < 2017052201) {
+        $DB->set_field('assignsubmission_onlinepoodl','recorder',0,array('recorder'=>1));
+        // online PoodLL savepoint reached
+        upgrade_plugin_savepoint(true, 2017052201, 'assignsubmission', 'onlinepoodll');
+    }
+
+
     return true;
 }
 

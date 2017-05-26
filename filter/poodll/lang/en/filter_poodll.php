@@ -57,7 +57,17 @@ $string['flashcardstype'] ='Flashcards Type';
 
 $string['recorderorder'] = 'Preferred Recorder Order';
 $string['recorderorder_desc'] = 'PoodLL will choose the best recorder it can if the user browser and platform support it. You set the order here.';
+$string['recorderorder_audio'] = 'Audio Recorder Order';
+$string['recorderorder_audio_desc'] = '';
+$string['recorderorder_video'] = 'Video Recorder Order';
+$string['recorderorder_video_desc'] = '';
+$string['recorderorder_whiteboard'] = 'Whiteboard Recorder Order';
+$string['recorderorder_whiteboard_desc'] = '(This setting is currently not used and may be removed from Poodll soon)';
+$string['recorderorder_snapshot'] = 'Snapshot Recorder Order';
+$string['recorderorder_snapshot_desc'] = '';
+
 $string['showdownloadicon'] = 'Show download icon under players';
+$string['showdownloadicon_desc'] = '(This is currently not implemented in Poodll3 audio/video players but will be in an upcoming version)';
 
 
 $string['servername'] = 'PoodLL Host Address';
@@ -102,6 +112,7 @@ $string['mp3_nocloud_details'] ='Do not submit Flash mp3 recordings to cloud for
 
 //transcode settings
 $string['transcode_heading'] ='Audio/Video File Conversion Settings';
+$string['transcode_heading_desc'] ='The settings in this section are for FFMPEG and Red5, and do not apply when using cloud recording.';
 $string['videotranscode'] = 'Auto Conv. to MP4';
 $string['videotranscodedetails'] = 'Convert recorded/uploaded video files to MP4 format before storing in Moodle. This works for recordings made on tokyo.poodll.com, or uploaded recordings if using FFMPEG';
 $string['audiotranscode'] = 'Auto Conv. to MP3';
@@ -262,3 +273,13 @@ $string['event_debug_log'] = 'Poodll debug note';
 $string['debug_heading'] = 'Poodll Debugging';
 $string['debug_enable'] = 'Enable Debugging';
 $string['debug_enable_details'] = 'If enabled, information about recordings will be stored in the Moodle logs. These are intended to assist in troubleshooting and support from the Poodll helpdesk. Turn off when not needed or you will have useless junk in your Moodle log.';
+
+//ajax media query responses
+$string['have_task'] = 'Found a waiting move/convert task for: {$a}';
+$string['have_recent_event'] = 'Found a recently fired move-completed event for: {$a}';
+$string['no_event_or_task'] = 'Found neither a waiting move task, nor move-completed event for: {$a}';
+
+//cloud notifications
+$string['usecloudnotifications'] = 'Cloud notifications';
+$string['usecloudnotifications_desc'] = 'PoodLL cloud notifications. This enables instant notification that cloud transcoding is complete.';
+

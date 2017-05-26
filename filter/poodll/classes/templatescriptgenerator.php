@@ -135,6 +135,13 @@ class templatescriptgenerator
 			
 			}
 
+            //add our media refresher and logging
+            $requires[]="'" . 'filter_poodll/media_refresher' . "'" ;
+            $params[]=  'media_refresher';
+            $requires[]="'" . 'core/log' . "'" ;
+            $params[]=  'log';
+
+
 			$thefunction = "define('filter_poodll_d" . $tindex . "',[" . implode(',',$requires) . "], function(" . implode(',',$params) . "){ ";
 			$thefunction .= "return function(opts){" . $thescript. " \r\n}; });";
 

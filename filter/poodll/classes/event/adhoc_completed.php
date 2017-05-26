@@ -66,7 +66,8 @@ class adhoc_completed extends  \core\event\base  {
         );
         /** @var extension_granted $event */
         $event = self::create($data);
-        $event->add_record_snapshot('files', $filerecord);
+       //the filerecord data might not be sufficient here ...for now we skip it
+        // $event->add_record_snapshot('files', $filerecord);
 
         return $event;
     }

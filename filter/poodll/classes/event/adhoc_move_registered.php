@@ -44,8 +44,12 @@ class adhoc_move_registered extends adhoc_registered  {
      * @return string
      */
     public function get_description() {
+        $other=$this->data['other'];
+        if(gettype($other)=='object'){
+            $other=get_object_vars($other);
+        }
         return "The user with id '" . $this->data['userid'] .
-            "' has registered an ad_hoc task to move file of this name '" . $this->data['other']['outfilename'] .
+            "' has registered an ad_hoc task to move file of this name '" . $other['outfilename'] .
             "' back to Moodle.";
     }
 

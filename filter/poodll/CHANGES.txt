@@ -1,5 +1,45 @@
 Change List
 =========
+Version 3.0.42(Build 2017052201)
+-tweaked logging which was still giving (unnecessary) warning messages
+-tweaked placeholder save logic which was not working well with Poodll assignment feedback
+
+Version 3.0.41(Build 2017051601)
+-fixed unclosed span tag in burntrose skin
+-added refresh ability to cachebuster preset
+-better error handling in refreshable player presets
+-implemented different recorder_order settings for different media types
+
+Version 3.0.40(Build 2017050701)
+-Added cloud notifications, removing need for cron job
+-tweaks to presets to restore alternate content settings that got lost in 3.0.35
+-updated install defaults to set handler for youtube and other file extensions
+
+Version 3.0.39(Build 2017041704)
+-Added media refresh ability for FFMPEG conversions too
+-Added filename of converted file to FFMPEG log report
+
+Version 3.0.38(Build 2017041703)
+-further attempted fix for recursive getUserMedia call problemo
+-refactor of player skin code
+-removal of Own carousel
+
+Version 3.0.37(Build 2017041702)
+-attempted fix for recursive getUserMedia call problemo
+
+Version 3.0.35(Build 2017041700)
+-fixed an issue where Chrome failed to get webcam because js stack maxed on getUserMedia call
+
+Version 3.0.35(Build 2017041700)
+-fixed up skinning in prep for really improving recorders
+-added support for refeshing players in realtime when conversion process completes
+-some minor bug fixes for logging
+
+Version 3.0.34(Build 2017032602)
+-Beefed up protection against any XSS attempt via the Poodll filter string inputs
+https://github.com/justinhunt/moodle-filter_generico/issues/7
+-Added support for pulling Generico presets from theme directory
+
 Version 3.0.33(Build 2017032601)
 - reworked the html5 recording to be more reliable and better on firefox
 

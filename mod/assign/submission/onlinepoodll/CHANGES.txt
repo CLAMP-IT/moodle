@@ -1,5 +1,7 @@
 Change List
 =========
+Version 2017052201
+Removed recorder specific options and replaced with media types
 
 Version 2017020501
 Added better support for widths of submitted whiteboards, images and videos

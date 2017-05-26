@@ -228,10 +228,17 @@ class filtertools
 			$proparray['AUTOPOSTERURLPNG'] = $autoposterurlpng;
 			$proparray['TITLE'] = $title;
 			$proparray['FILEEXT'] = $ext;
+			//hardcoding for now, later we will do something better
+            $proparray['AUDIOPLACEHOLDERDURATION'] = 6.138;
+            $proparray['VIDEOPLACEHOLDERDURATION'] = 10.28644;
 			return $proparray;
 	}//end of function
 
 	public static function fetch_filter_properties($filterstring){
+        //lets do a general clean of all input here
+        //see: https://github.com/justinhunt/moodle-filter_generico/issues/7
+        $filterstring=clean_param($filterstring,PARAM_TEXT);
+
 		//this just removes the {POODLL: .. } 
 		$rawproperties = explode ("{POODLL:", $filterstring);
 		$rawproperties = $rawproperties[1];

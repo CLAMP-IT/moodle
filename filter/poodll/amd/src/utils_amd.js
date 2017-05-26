@@ -121,7 +121,7 @@ define(['jquery','core/log', 'filter_poodll/uploader'], function($, log, uploade
                     // BYTES_PER_ELEMENT == 2 for Uint16Array
                     var reusableByteLength = buffer.byteLength;
                     if (reusableByteLength % 2 != 0) {
-                        buffer = buffer.slice(0, reusableByteLength - 1)
+                        buffer = buffer.slice(0, reusableByteLength - 1);
                     }
                     tmp.set(new Uint16Array(buffer), lastOffset);
                     lastOffset += reusableByteLength;
@@ -139,7 +139,22 @@ define(['jquery','core/log', 'filter_poodll/uploader'], function($, log, uploade
         
         simpleConcatenateBlobs: function(blobs, type) {
             return new Blob(blobs,{'type': type});
+        },
+
+
+        bytesToSize: function(bytes) {
+            var k = 1000;
+            var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            if (bytes === 0) return '0 Bytes';
+            var i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10);
+            return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+        },
+
+        // below function via: http://goo.gl/6QNDcI
+        getTimeLength: function(milliseconds) {
+            var data = new Date(milliseconds);
+            return data.getUTCHours() + " hours, " + data.getUTCMinutes() + " minutes and " + data.getUTCSeconds() + " second(s)";
         }
         
-    }//end of return object
+    };//end of return object
 });

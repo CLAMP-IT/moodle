@@ -143,20 +143,37 @@ class poodllpresets extends \admin_setting {
         }//end of parse preset template
 
 
-        public static function fetch_presets(){          
-            global $CFG;
-			$ret = array();
-                        $dir = new \DirectoryIterator($CFG->dirroot . '/filter/poodll/presets');
-                        foreach($dir as $fileinfo){
-                            if(!$fileinfo->isDot()){
-                              $preset = self::parse_preset_template($fileinfo);
-                              if($preset){
-                                $ret[]=$preset;
-                              }
+        public static function fetch_presets(){
+            global $CFG,$PAGE;
+            //init return array
+            $ret = array();
+            $dirs=array();
+
+            //we search the Generico "presets" and the themes "generico" folders for presets
+            $poodll_presets_dir=$CFG->dirroot . '/filter/poodll/presets';
+            $theme_generico_dir=$PAGE->theme->dir . '/generico';
+            if(file_exists($poodll_presets_dir)) {
+                $dirs[] = new \DirectoryIterator($poodll_presets_dir);
+            }
+            if(file_exists($theme_generico_dir)) {
+                $dirs[] = new \DirectoryIterator($theme_generico_dir);
+            }
+            foreach($dirs as $dir) {
+                foreach ($dir as $fileinfo) {
+                    if (!$fileinfo->isDot()) {
+                        $preset = self::parse_preset_template($fileinfo);
+                        //if this is a generico template we want to set show_atto to true
+                        if ($preset) {
+                            if(!array_key_exists('showatto',$preset)){
+                                $preset['showatto']="1";
                             }
+                            $ret[] = $preset;
                         }
-                       return $ret;
-		}//end of fetch presets function
+                    }
+                }
+            }
+            return $ret;
+        }//end of fetch presets function
 				
 		public static function set_preset_to_config($preset, $templateindex){
 			$fields = array();

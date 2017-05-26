@@ -221,8 +221,23 @@ class filter_poodll_renderer extends plugin_renderer_base
         $widgetopts->widgetid = $widgetid;
 
         //recorder order of preference
-        $rec_order = explode(',', $CFG->filter_poodll_recorderorder); // array('mobile','media','flashaudio','red5','upload','flash');
-        $widgetopts->rec_order = $rec_order;
+        switch($widgetopts->mediatype) {
+
+            case 'video':
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_video);
+                break;
+            case 'whiteboard':
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_whiteboard);
+                break;
+            case 'snapshot':
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_snapshot);
+                break;
+            case 'audio':
+            default:
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_audio);
+                break;
+        }
+        $widgetopts->rec_order = $rec_order;// array('mobile','media','flashaudio','red5','upload','flash');
 
         //The CSS selector string
         $container = $widgetid . 'Container';

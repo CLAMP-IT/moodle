@@ -44,9 +44,13 @@ class adhoc_convert_registered extends adhoc_registered  {
      * @return string
      */
     public function get_description() {
+        $other=$this->data['other'];
+        if(gettype($other)=='object'){
+            $other=get_object_vars($other);
+        }
         return "The user with id '" . $this->data['userid'] .
-            "User has registered an ad_hoc task to FFMPEG convert file of name '" . $this->data['other']['infilename'] .
-            "' to a file of name '" . $this->data['other']['outfilename'];
+            "User has registered an ad_hoc task to FFMPEG convert file of name '" . $other['infilename'] .
+            "' to a file of name '" . $other['outfilename'];
     }
 
     /**

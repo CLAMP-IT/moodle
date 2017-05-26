@@ -275,7 +275,7 @@ function MultiStreamRecorder(arrayOfMediaStreams) {
 
     function getVideo(stream) {
         var video = document.createElement('video');
-        video.src = URL.createObjectURL(stream);
+        video.srcObject=stream;
         video.play();
         return video;
     }
@@ -623,13 +623,13 @@ function invokeSaveAsDialog(file, fileName) {
     if (!file) {
         throw 'Blob object is required.';
     }
-
-    if (!file.type) {
-        try {
-            file.type = 'video/webm';
-        } catch (e) {}
-    }
-
+    /*
+     if (!file.type) {
+     try {
+     file.type = 'video/webm';
+     } catch (e) {}
+     }
+     */
     var fileExtension = (file.type || 'video/webm').split('/')[1];
 
     if (fileName && fileName.indexOf('.') !== -1) {
@@ -783,8 +783,8 @@ function MediaRecorderWrapper(mediaStream) {
             self.mimeType = IsChrome ? 'audio/webm' : 'audio/ogg';
         }
 
-       // JUSTIN we turned off this flag. Confusing, and blob size works as well(?)
-       //self.dontFireOnDataAvailableEvent = false;
+        // JUSTIN we turned off this flag. Confusing, and blob size works as well(?)
+        //self.dontFireOnDataAvailableEvent = false;
 
         var recorderHints = {
             mimeType: self.mimeType
@@ -840,13 +840,13 @@ function MediaRecorderWrapper(mediaStream) {
             // how to fix FF-corrupt-webm issues?
             // should we leave this?          e.data.size < 26800
             //if (!e.data || !e.data.size || e.data.size < 26800 || firedOnDataAvailableOnce) {
-            
+
             //JUSTIN removed flag and file size check(above). ITs really only for firefix
             //problem was that < timeslice blob would get dropped
             //firefox goes bananas after first timeslice and produces mamny small blobs of satic
             //a low filesize check (<900) was good for that but somehow blew the blobs ability to play back in rec,
             // (though they would convert). Just removed it altogetehr
-             if (!e.data || !e.data.size ) {
+            if (!e.data || !e.data.size ) {
                 return;
             }
 
@@ -868,7 +868,7 @@ function MediaRecorderWrapper(mediaStream) {
             mediaRecorder = null;
 
             // record next interval
-           self.start(timeSlice, '__disableLogs');
+            self.start(timeSlice, '__disableLogs');
         };
 
         mediaRecorder.onerror = function(error) {
@@ -1081,7 +1081,7 @@ function PlainMediaRecorderWrapper(mediaStream) {
      * recorder.record();
      */
     this.start = function(timeSlice, __disableLogs) {
-        
+
         if (!self.mimeType) {
             self.mimeType = 'video/webm';
         }
@@ -1112,7 +1112,7 @@ function PlainMediaRecorderWrapper(mediaStream) {
             console.log('Passing following params over MediaRecorder API.', recorderHints);
         }
 
-      
+
         // http://dxr.mozilla.org/mozilla-central/source/content/media/MediaRecorder.cpp
         // https://wiki.mozilla.org/Gecko:MediaRecorder
         // https://dvcs.w3.org/hg/dap/raw-file/default/media-stream-capture/MediaRecorder.html
@@ -1140,14 +1140,14 @@ function PlainMediaRecorderWrapper(mediaStream) {
 
         // Dispatching OnDataAvailable Handler
         mediaRecorder.ondataavailable = function(e) {
-          //  console.log('JUSTIN .... data available:' + e.data.size );
+            //  console.log('JUSTIN .... data available:' + e.data.size );
 
-   
-             if (!e.data || !e.data.size ) {
+
+            if (!e.data || !e.data.size ) {
                 return;
             }
 
-  
+
             var blob = self.getNativeBlob ? e.data : new Blob([e.data], {
                 type: self.mimeType || 'video/webm'
             });
@@ -1196,7 +1196,7 @@ function PlainMediaRecorderWrapper(mediaStream) {
             mediaRecorder = null;
         }
 
-      
+
     };
 
     /**
@@ -1215,7 +1215,7 @@ function PlainMediaRecorderWrapper(mediaStream) {
         }
 
         if (mediaRecorder.state === 'recording') {
-              mediaRecorder.stop();
+            mediaRecorder.stop();
         }
     };
 
@@ -1564,10 +1564,10 @@ function StereoAudioRecorderHelper(mediaStream, root) {
     audioInput.connect(volume);
 
     /* From the spec: This value controls how frequently the audioprocess event is
-    dispatched and how many sample-frames need to be processed each call.
-    Lower values for buffer size will result in a lower (better) latency.
-    Higher values will be necessary to avoid audio breakup and glitches 
-    Legal values are 256, 512, 1024, 2048, 4096, 8192, and 16384.*/
+     dispatched and how many sample-frames need to be processed each call.
+     Lower values for buffer size will result in a lower (better) latency.
+     Higher values will be necessary to avoid audio breakup and glitches
+     Legal values are 256, 512, 1024, 2048, 4096, 8192, and 16384.*/
     var bufferSize = root.bufferSize || 2048;
     if (root.bufferSize === 0) {
         bufferSize = 0;
@@ -1739,7 +1739,7 @@ function WhammyRecorderHelper(mediaStream, root) {
             video = this.video.cloneNode();
         } else {
             video = document.createElement('video');
-            video.src = URL.createObjectURL(mediaStream);
+            video.srcObject=mediaStream;
 
             video.width = this.video.width;
             video.height = this.video.height;
@@ -2122,7 +2122,7 @@ function GifRecorder(mediaStream) {
     var video = document.createElement('video');
     video.muted = true;
     video.autoplay = true;
-    video.src = URL.createObjectURL(mediaStream);
+    video.srcObject = mediaStream;
     video.play();
 
     var lastAnimationFrame = null;
@@ -2459,8 +2459,8 @@ var Whammy = (function() {
             }
 
             var out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags].map(function(e) {
-                return String.fromCharCode(e);
-            }).join('') + data.frame;
+                    return String.fromCharCode(e);
+                }).join('') + data.frame;
 
             return out;
         }
