@@ -128,6 +128,7 @@ $string['resizeto'] = 'Resize to';
 $string['rsssubscribe'] = 'Gallery RSS feed';
 $string['saveimage'] = 'Save {$a}';
 $string['screen'] = 'Screen';
+$string['search:activity'] = 'Lightboxgallery - activity information';
 $string['selectflipmode'] = 'Select flip mode';
 $string['selectrotation'] = 'Select rotation angle';
 $string['selectthumbpos'] = 'Thumbnail offset (from centre)';

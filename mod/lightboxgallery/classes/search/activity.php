@@ -15,19 +15,23 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Lightbox gallery version info.
+ * Search area for mod_lightboxgallery activities.
  *
  * @package   mod_lightboxgallery
- * @copyright 2014 NetSpot Pty Ltd
+ * @copyright Copyright (c) 2017 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace mod_lightboxgallery\search;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2017050300;  // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires = 2014111000;  // Requires this Moodle version.
-$plugin->cron     = 0;           // Period for cron to check this plugin (secs).
-
-$plugin->component = 'mod_lightboxgallery';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.8.0.10';
+/**
+ * Search area for mod_lightboxgallery activities.
+ *
+ * @package   mod_lightboxgallery
+ * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class activity extends \core_search\area\base_activity {
+}

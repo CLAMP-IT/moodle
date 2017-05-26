@@ -61,7 +61,7 @@ $table->head = array(get_string($course->format == 'weeks' ? 'week' : 'topic'),
 $table->align = array('center', 'center', 'left', 'left', 'center');
 $table->width = '*';
 
-$fobj = new object;
+$fobj = new stdClass;
 $fobj->para = false;
 
 $prevsection = '';

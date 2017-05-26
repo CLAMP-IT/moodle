@@ -15,17 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package moodlecore
- * @subpackage backup-moodle2
+ * This file contains the backup activity for the lightboxgallery module
+ *
+ * @package mod_lightboxgallery
  * @copyright 2010
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->dirroot . '/mod/lightboxgallery/backup/moodle2/backup_lightboxgallery_stepslib.php');
 
 /**
- * certificate backup task that provides all the settings and steps to perform one
- * complete backup of the activity
+ * lightboxgallery backup task that provides all the settings and steps to perform one complete backup of the activity
+ *
+ * @package mod_lightboxgallery
  */
 class backup_lightboxgallery_activity_task extends backup_activity_task {
 
@@ -47,6 +51,8 @@ class backup_lightboxgallery_activity_task extends backup_activity_task {
     /**
      * Code the transformations to perform in the activity in
      * order to get transportable (encoded) links
+     * @param string $content
+     * @return string
      */
     static public function encode_content_links($content) {
         global $CFG;
@@ -54,12 +60,12 @@ class backup_lightboxgallery_activity_task extends backup_activity_task {
         $base = preg_quote($CFG->wwwroot, "/");
 
         // Link to the list of pages.
-        $search="/(".$base."\/mod\/lightboxgallery\/index.php\?id\=)([0-9]+)/";
-        $content= preg_replace($search, '$@LIGHTBOXGALLERYINDEX*$2@$', $content);
+        $search = "/(".$base."\/mod\/lightboxgallery\/index.php\?id\=)([0-9]+)/";
+        $content = preg_replace($search, '$@LIGHTBOXGALLERYINDEX*$2@$', $content);
 
         // Link to page view by moduleid.
-        $search="/(".$base."\/mod\/lightboxgallery\/view.php\?id\=)([0-9]+)/";
-        $content= preg_replace($search, '$@LIGHTBOXGALLERYVIEWBYID*$2@$', $content);
+        $search = "/(".$base."\/mod\/lightboxgallery\/view.php\?id\=)([0-9]+)/";
+        $content = preg_replace($search, '$@LIGHTBOXGALLERYVIEWBYID*$2@$', $content);
 
         return $content;
     }

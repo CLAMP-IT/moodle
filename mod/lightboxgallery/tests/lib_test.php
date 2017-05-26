@@ -18,7 +18,6 @@
  * Unit tests for (some of) mod/lightboxgallery/lib.php.
  *
  * @package    mod_lightboxgallery
- * @category   phpunit
  * @author     Adam Olley <adam.olley@netspot.com.au>
  * @copyright  2012 NetSpot Pty Ltd
  * @license    http://www.gnu.org/copyleft/gpl.html GNU Public License
@@ -32,6 +31,8 @@ require_once($CFG->dirroot . '/mod/lightboxgallery/lib.php');
 require_once($CFG->dirroot . '/mod/lightboxgallery/locallib.php');
 
 /**
+ * Unit tests for (some of) mod/lightboxgallery/lib.php.
+ *
  * @copyright  2012 NetSpot Pty Ltd
  * @license    http://www.gnu.org/copyleft/gpl.html GNU Public License
  */

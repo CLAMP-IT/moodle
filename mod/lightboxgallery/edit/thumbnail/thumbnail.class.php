@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 class edit_thumbnail extends edit_base {
 
     public function __construct($gallery, $cm, $image, $tab) {
@@ -23,8 +25,8 @@ class edit_thumbnail extends edit_base {
     public function output() {
 
         $fs = get_file_storage();
-        $stored_file = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($stored_file, $this->gallery, $this->cm);
+        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
+        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
 
         $result = '<input type="submit" name="index" value="' . get_string('setasindex', 'lightboxgallery')  . '" /><br /><br />' .
                    get_string('selectthumbpos', 'lightboxgallery') . '<br /><br />';
@@ -51,8 +53,8 @@ class edit_thumbnail extends edit_base {
     public function process_form() {
 
         $fs = get_file_storage();
-        $stored_file = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
-        $image = new lightboxgallery_image($stored_file, $this->gallery, $this->cm);
+        $storedfile = $fs->get_file($this->context->id, 'mod_lightboxgallery', 'gallery_images', '0', '/', $this->image);
+        $image = new lightboxgallery_image($storedfile, $this->gallery, $this->cm);
         $domove = true;
 
         if (optional_param('index', '', PARAM_TEXT)) {
@@ -65,16 +67,20 @@ class edit_thumbnail extends edit_base {
             $offset = optional_param('offset', 20, PARAM_INT);
             switch ($move) {
                 case 1:
-                    $offsetx = 0; $offsety = -$offset;
+                    $offsetx = 0;
+                    $offsety = -$offset;
                     break;
                 case 2:
-                    $offsetx = 0; $offsety = $offset;
+                    $offsetx = 0;
+                    $offsety = $offset;
                     break;
                 case 3:
-                    $offsetx = -$offset; $offsety = 0;
+                    $offsetx = -$offset;
+                    $offsety = 0;
                     break;
                 case 4:
-                    $offsetx = $offset; $offsety = 0;
+                    $offsetx = $offset;
+                    $offsety = 0;
                     break;
                 default:
                     $domove = false;
