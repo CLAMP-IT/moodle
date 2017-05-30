@@ -1,0 +1,14 @@
+{
+    "name": "tophatmonocle/thm-ss-moodle-plugin",
+    "type": "project",
+    "require": {
+        "phpunit/phpunit": "^5.7",
+        "dcai/curl": "^0.2.0"
+    },
+    "authors": [
+        {
+            "name": "Dongsheng Cai",
+            "email": "d@tux.im"
+        }
+    ]
+}
