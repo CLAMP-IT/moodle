@@ -58,3 +58,6 @@
 [submodule "theme/hampshire"]
 	path = theme/hampshire
 	url = https://gitlab.hampshire.edu/moodle/theme_hampshire.git
+[submodule "course/format/topcoll"]
+	path = course/format/topcoll
+	url = https://github.com/gjb2048/moodle-format_topcoll.git
