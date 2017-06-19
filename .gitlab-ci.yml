@@ -9,23 +9,26 @@ before_script:
   - git fetch --all --prune
   - git reset --hard $CI_BUILD_REF
   - git submodule sync
-  - git submodule update --init
+  - git clean -d -f -f
+  - git submodule update -f --init
   - cp -f config-dist.php config.php
+  - export BEHAT_IP=`ip addr show eth0 | grep -Po 'inet \K[\d.]+'`
   - sed -i 
     -e s/'password'/''/ 
-    -e s/example.com/localhost/ 
+    -e 's/example.com\/moodle/127.0.0.1:8000/'
     -e s%/home/example%$HOME% 
-    -e 's%// \(\$CFG.*behat_prefix\)%\1%' 
-    -e 's%// \(\$CFG.*behat_wwwroot\)%\1%' 
-    -e 's%// \(\$CFG.*behat_dataroot\)%\1%' 
-    -e 's%// \(\$CFG.*phpunit\)%\1%' 
-    -e s/'localhost'/'lafayette__mysql-moodle'/ 
+    -e 's%// \(\$CFG.*behat_prefix\)%\1%'
+    -e 's%// \(\$CFG.*behat_wwwroot\)%\1%'
+    -e 's%// \(\$CFG.*behat_dataroot\)%\1%'
+    -e 's%// \(\$CFG.*phpunit\)%\1%'
+    -e s/\'localhost\'/\'lafayette__mysql-moodle\'/
     -e s/\'pgsql\'/\'mysqli\'/ 
     -e s/\'username\'/\'moodle\'/ 
-    -e s/'http:\/\/127.0.0.1\/moodle'/'http:\/\/localhost:8000'/ 
+    -e "s/127.0.0.1\/moodle/$BEHAT_IP:8000/"
     config.php
+  - echo '$CFG->behat_config["default"]["extensions"]["Behat\MinkExtension\Extension"]["selenium2"]["wd_host"] = "http://selenium__standalone-chrome:4444/wd/hub";' >> config.php
+  - echo '$CFG->behat_config["default"]["extensions"]["Behat\MinkExtension\Extension"]["selenium2"]["browser"] = "chrome";' >> config.php
   - if [ -d \"$HOME/moodledata\" ]; then rm -rf $HOME/moodledata; fi
-  - (/opt/bin/entry_point.sh &) 2> /dev/null > /dev/null
   - mkdir -m777 -p $HOME/moodledata
   - if [ -d \"$HOME/bht_moodledata\" ]; then rm -rf $HOME/bht_moodledata; fi
   - mkdir -m777 -p $HOME/bht_moodledata
@@ -36,14 +39,15 @@ before_script:
   - composer install
   - locale-gen en_AU.UTF-8
   - php admin/tool/phpunit/cli/init.php
-  - php admin/tool/behat/cli/init.php
-  - (php -S localhost:8000 -t /var/www/moodle/htdocs &) 2> /dev/null > /dev/null
+  - php admin/tool/behat/cli/init.php --add-core-features-to-theme=hampshire
+  - (php -S 0.0.0.0:8000 -t /var/www/moodle/htdocs &) 2> /dev/null > /dev/null
   - sleep 5
 
 job1:
   script:
     - vendor/bin/phpunit /var/www/moodle/htdocs/local/provisional_enrolments/tests/provisional_enrolments_test.php
-    - vendor/bin/behat --config /root/bht_moodledata/behat/behat.yml --format=progress --tags "@blocks_course_description,@course_format_class,@blocks_library,@local_provisional_enrolments,@block_provisional_enrolments,@local_cohort_sync,@local_hamp,@theme_hampshire"
+    - vendor/bin/phpunit /var/www/moodle/htdocs/course/format/class/tests/format_class_test.php
+    - vendor/bin/behat --config /root/bht_moodledata/behat/behat.yml --format=progress --colors --tags @hampshire --suite=hampshire
 
 variables:
   DB_USER: 'moodle'
