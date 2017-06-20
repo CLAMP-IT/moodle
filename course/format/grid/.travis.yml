@@ -18,7 +18,7 @@ matrix:
 
 env:
  global:
-  - MOODLE_BRANCH=master
+  - MOODLE_BRANCH=MOODLE_32_STABLE
   - IGNORE_PATHS=amd/src/tooltip.js,test/test_image.php,upgrade/convert_legacy_image.php,yui/src/gridkeys/js/event-nav-keys-debug.js,yui/src/gridkeys/js/event-nav-keys.js,yui/src/gridkeys/scripts/backport.js,yui/gridkeys/gridkeys.js
   - IGNORE_NAMES=gf_colourpopup.php,gf_colourpopup.js
  matrix:

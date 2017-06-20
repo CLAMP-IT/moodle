@@ -28,6 +28,15 @@ defined('MOODLE_INTERNAL') || die();
 
 $capabilities = array(
 
+    'format/grid:changeimagecontaineralignment' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
+
     'format/grid:changeimagecontainersize' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,

@@ -44,30 +44,70 @@ class format_grid_courseformatlib_testcase extends advanced_testcase {
             array('format' => 'grid',
                 'numsections' => 1,
                 'hidesectiontitle' => 2,
+                'imagecontaineralignment' => 'left',
                 'sectiontitlegridlengthmaxoption' => 24,
                 'currentselectedimagecontainertextcolour' => '#ffffff',
                 'sectiontitleboxposition' => 1,
                 'sectiontitleboxinsideposition' => 2,
+                'sectiontitleboxheight' => 42,
+                'sectiontitleboxopacity' => '.3',
+                'sectiontitlefontsize' => 24,
+                'sectiontitlealignment' => 'left',
+                'sectiontitleinsidetitletextcolour' => '#ffffff',
+                'sectiontitleinsidetitlebackgroundcolour' => '#000000',
                 'showsectiontitlesummary' => 1,
                 'setshowsectiontitlesummaryposition' => 2,
-                'sectiontitleinsidetitletextcolour' => '#ffffff',
-                'sectiontitleinsidetitlebackgroundcolour' => '#000000'),
+                'sectiontitlesummarymaxlength' => 20,
+                'sectiontitlesummarytextcolour' => '#ffffff',
+                'sectiontitlesummarybackgroundcolour' => '#000000',
+                'sectiontitlesummarybackgroundopacity' => '.3'),
             array('createsections' => true));
         $this->courseformatone = course_get_format($this->courseone);
         $this->coursetwo = $this->getDataGenerator()->create_course(
             array('format' => 'grid',
                 'numsections' => 1,
                 'hidesectiontitle' => 2,
+                'imagecontaineralignment' => 'right',
                 'sectiontitlegridlengthmaxoption' => 12,
                 'currentselectedimagecontainertextcolour' => '#244896',
                 'sectiontitleboxposition' => 1,
                 'sectiontitleboxinsideposition' => 3,
+                'sectiontitleboxheight' => 34,
+                'sectiontitleboxopacity' => '.7',
+                'sectiontitlefontsize' => 12,
+                'sectiontitlealignment' => 'right',
+                'sectiontitleinsidetitletextcolour' => '#ffffff',
+                'sectiontitleinsidetitlebackgroundcolour' => '#000000',
                 'showsectiontitlesummary' => 1,
                 'setshowsectiontitlesummaryposition' => 3,
-                'sectiontitleinsidetitletextcolour' => '#ffffff',
-                'sectiontitleinsidetitlebackgroundcolour' => '#000000'),
+                'sectiontitlesummarymaxlength' => 10,
+                'sectiontitlesummarytextcolour' => '#ffffff',
+                'sectiontitlesummarybackgroundcolour' => '#000000',
+                'sectiontitlesummarybackgroundopacity' => '.7'),
             array('createsections' => true));
         $this->courseformattwo = course_get_format($this->courseone);
+    }
+
+    public function test_reset_image_container_alignment() {
+        $this->setAdminUser();
+        $data = new stdClass;
+        $data->resetimagecontaineralignment = true;
+        $this->courseformatone->update_course_format_options($data);
+        $cfo = $this->courseformatone->get_format_options();
+
+        $this->assertEquals('center', $cfo['imagecontaineralignment']);
+    }
+
+    public function test_reset_all_image_container_alignments() {
+        $this->setAdminUser();
+        $data = new stdClass;
+        $data->resetallimagecontaineralignment = true;
+        $this->courseformatone->update_course_format_options($data);
+        $cfo1 = $this->courseformatone->get_format_options();
+        $cfo2 = $this->courseformatone->get_format_options();
+
+        $this->assertEquals('center', $cfo1['imagecontaineralignment']);
+        $this->assertEquals('center', $cfo2['imagecontaineralignment']);
     }
 
     public function test_reset_image_container_style() {
@@ -80,10 +120,10 @@ class format_grid_courseformatlib_testcase extends advanced_testcase {
         $this->assertEquals('3b53ad', $cfo['currentselectedimagecontainertextcolour']);
     }
 
-    public function test_reset_image_container_styles() {
+    public function test_reset_all_image_container_styles() {
         $this->setAdminUser();
         $data = new stdClass;
-        $data->resetimagecontainerstyle = true;
+        $data->resetallimagecontainerstyle = true;
         $this->courseformatone->update_course_format_options($data);
         $cfo1 = $this->courseformatone->get_format_options();
         $cfo2 = $this->courseformatone->get_format_options();
@@ -103,10 +143,18 @@ class format_grid_courseformatlib_testcase extends advanced_testcase {
         $this->assertEquals(0, $cfo['sectiontitlegridlengthmaxoption']);
         $this->assertEquals(2, $cfo['sectiontitleboxposition']);
         $this->assertEquals(1, $cfo['sectiontitleboxinsideposition']);
-        $this->assertEquals(2, $cfo['showsectiontitlesummary']);
-        $this->assertEquals(1, $cfo['setshowsectiontitlesummaryposition']);
+        $this->assertEquals(0, $cfo['sectiontitleboxheight']);
+        $this->assertEquals('.8', $cfo['sectiontitleboxopacity']);
+        $this->assertEquals(0, $cfo['sectiontitlefontsize']);
+        $this->assertEquals('center', $cfo['sectiontitlealignment']);
         $this->assertEquals('000000', $cfo['sectiontitleinsidetitletextcolour']);
         $this->assertEquals('ffffff', $cfo['sectiontitleinsidetitlebackgroundcolour']);
+        $this->assertEquals(2, $cfo['showsectiontitlesummary']);
+        $this->assertEquals(1, $cfo['setshowsectiontitlesummaryposition']);
+        $this->assertEquals(0, $cfo['sectiontitlesummarymaxlength']);
+        $this->assertEquals('3b53ad', $cfo['sectiontitlesummarytextcolour']);
+        $this->assertEquals('ffc540', $cfo['sectiontitlesummarybackgroundcolour']);
+        $this->assertEquals('1', $cfo['sectiontitlesummarybackgroundopacity']);
     }
 
     public function test_reset_all_section_title_options() {
@@ -121,19 +169,35 @@ class format_grid_courseformatlib_testcase extends advanced_testcase {
         $this->assertEquals(0, $cfo1['sectiontitlegridlengthmaxoption']);
         $this->assertEquals(2, $cfo1['sectiontitleboxposition']);
         $this->assertEquals(1, $cfo1['sectiontitleboxinsideposition']);
-        $this->assertEquals(2, $cfo1['showsectiontitlesummary']);
-        $this->assertEquals(1, $cfo1['setshowsectiontitlesummaryposition']);
+        $this->assertEquals(0, $cfo1['sectiontitleboxheight']);
+        $this->assertEquals('.8', $cfo1['sectiontitleboxopacity']);
+        $this->assertEquals(0, $cfo1['sectiontitlefontsize']);
+        $this->assertEquals('center', $cfo1['sectiontitlealignment']);
         $this->assertEquals('000000', $cfo1['sectiontitleinsidetitletextcolour']);
         $this->assertEquals('ffffff', $cfo1['sectiontitleinsidetitlebackgroundcolour']);
+        $this->assertEquals(2, $cfo1['showsectiontitlesummary']);
+        $this->assertEquals(1, $cfo1['setshowsectiontitlesummaryposition']);
+        $this->assertEquals(0, $cfo1['sectiontitlesummarymaxlength']);
+        $this->assertEquals('3b53ad', $cfo1['sectiontitlesummarytextcolour']);
+        $this->assertEquals('ffc540', $cfo1['sectiontitlesummarybackgroundcolour']);
+        $this->assertEquals('1', $cfo1['sectiontitlesummarybackgroundopacity']);
 
         $this->assertEquals(1, $cfo2['hidesectiontitle']);
         $this->assertEquals(0, $cfo2['sectiontitlegridlengthmaxoption']);
         $this->assertEquals(2, $cfo2['sectiontitleboxposition']);
         $this->assertEquals(1, $cfo2['sectiontitleboxinsideposition']);
-        $this->assertEquals(2, $cfo2['showsectiontitlesummary']);
-        $this->assertEquals(1, $cfo2['setshowsectiontitlesummaryposition']);
+        $this->assertEquals(0, $cfo2['sectiontitleboxheight']);
+        $this->assertEquals('.8', $cfo2['sectiontitleboxopacity']);
+        $this->assertEquals(0, $cfo2['sectiontitlefontsize']);
+        $this->assertEquals('center', $cfo2['sectiontitlealignment']);
         $this->assertEquals('000000', $cfo2['sectiontitleinsidetitletextcolour']);
         $this->assertEquals('ffffff', $cfo2['sectiontitleinsidetitlebackgroundcolour']);
+        $this->assertEquals(2, $cfo2['showsectiontitlesummary']);
+        $this->assertEquals(1, $cfo2['setshowsectiontitlesummaryposition']);
+        $this->assertEquals(0, $cfo2['sectiontitlesummarymaxlength']);
+        $this->assertEquals('3b53ad', $cfo2['sectiontitlesummarytextcolour']);
+        $this->assertEquals('ffc540', $cfo2['sectiontitlesummarybackgroundcolour']);
+        $this->assertEquals('1', $cfo2['sectiontitlesummarybackgroundopacity']);
     }
 
     public function test_get_set_show_section_title_summary_position() {

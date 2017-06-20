@@ -46,6 +46,14 @@ if ($ADMIN->fulltree) {
     );
     $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
 
+    /* Container alignment. */
+    $name = 'format_grid/defaultimagecontaineralignment';
+    $title = get_string('defaultimagecontaineralignment', 'format_grid');
+    $description = get_string('defaultimagecontaineralignment_desc', 'format_grid');
+    $default = format_grid::get_default_image_container_alignment();
+    $choices = format_grid::get_horizontal_alignments();
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
     /* Icon width. */
     $name = 'format_grid/defaultimagecontainerwidth';
     $title = get_string('defaultimagecontainerwidth', 'format_grid');
@@ -173,6 +181,53 @@ if ($ADMIN->fulltree) {
     );
     $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
 
+    /* Section title box height. */
+    $name = 'format_grid/defaultsectiontitleboxheight';
+    $title = get_string('defaultsectiontitleboxheight', 'format_grid');
+    $description = get_string('defaultsectiontitleboxheight_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_box_height();
+    $settings->add(new admin_setting_configtext($name, $title, $description, $default, PARAM_INT));
+
+    /* Section title box opacity. */
+    $name = 'format_grid/defaultsectiontitleboxopacity';
+    $title = get_string('defaultsectiontitleboxopacity', 'format_grid');
+    $description = get_string('defaultsectiontitleboxopacity_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_box_opacity();
+    $choices = format_grid::get_default_opacities();
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Section title font size. */
+    $name = 'format_grid/defaultsectiontitlefontsize';
+    $title = get_string('defaultsectiontitlefontsize', 'format_grid');
+    $description = get_string('defaultsectiontitlefontsize_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_font_size();
+    $choices = format_grid::get_default_section_font_sizes();
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Section title alignment. */
+    $name = 'format_grid/defaultsectiontitlealignment';
+    $title = get_string('defaultsectiontitlealignment', 'format_grid');
+    $description = get_string('defaultsectiontitlealignment_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_alignment();
+    $choices = format_grid::get_horizontal_alignments();
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    // Default section title text colour in hexadecimal RGB with preceding '#'.
+    $name = 'format_grid/defaultsectiontitleinsidetitletextcolour';
+    $title = get_string('defaultsectiontitleinsidetitletextcolour', 'format_grid');
+    $description = get_string('defaultsectiontitleinsidetitletextcolour_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_inside_title_text_colour();
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
+    $settings->add($setting);
+
+    // Default section title background colour in hexadecimal RGB with preceding '#'.
+    $name = 'format_grid/defaultsectiontitleinsidetitlebackgroundcolour';
+    $title = get_string('defaultsectiontitleinsidetitlebackgroundcolour', 'format_grid');
+    $description = get_string('defaultsectiontitleinsidetitlebackgroundcolour_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_inside_title_background_colour();
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
+    $settings->add($setting);
+
     /* Show section title summary on hover - 1 = no, 2 = yes. */
     $name = 'format_grid/defaultshowsectiontitlesummary';
     $title = get_string('defaultshowsectiontitlesummary', 'format_grid');
@@ -197,21 +252,36 @@ if ($ADMIN->fulltree) {
     );
     $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
 
-    // Default section title text colour in hexadecimal RGB with preceding '#'.
-    $name = 'format_grid/defaultsectiontitleinsidetitletextcolour';
-    $title = get_string('defaultsectiontitleinsidetitletextcolour', 'format_grid');
-    $description = get_string('defaultsectiontitleinsidetitletextcolour_desc', 'format_grid');
-    $default = format_grid::get_default_section_title_inside_title_text_colour();
+    /* Section title summary maximum length with 0 for no truncation. */
+    $name = 'format_grid/defaultsectiontitlesummarymaxlength';
+    $title = get_string('defaultsectiontitlesummarymaxlength', 'format_grid');
+    $description = get_string('defaultsectiontitlesummarymaxlength_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_summary_max_length();
+    $settings->add(new admin_setting_configtext($name, $title, $description, $default, PARAM_INT));
+
+    // Default section title summary text colour on hover in hexadecimal RGB with preceding '#'.
+    $name = 'format_grid/defaultsectiontitlesummarytextcolour';
+    $title = get_string('defaultsectiontitlesummarytextcolour', 'format_grid');
+    $description = get_string('defaultsectiontitlesummarytextcolour_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_summary_text_colour();
     $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
     $settings->add($setting);
 
-    // Default section title background colour in hexadecimal RGB with preceding '#'.
-    $name = 'format_grid/defaultsectiontitleinsidetitlebackgroundcolour';
-    $title = get_string('defaultsectiontitleinsidetitlebackgroundcolour', 'format_grid');
-    $description = get_string('defaultsectiontitleinsidetitlebackgroundcolour_desc', 'format_grid');
-    $default = format_grid::get_default_section_title_inside_title_background_colour();
+    // Default section title summary background colour on hover in hexadecimal RGB with preceding '#'.
+    $name = 'format_grid/defaultsectiontitlesummarybackgroundcolour';
+    $title = get_string('defaultsectiontitlesummarybackgroundcolour', 'format_grid');
+    $description = get_string('defaultsectiontitlesummarybackgroundcolour_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_summary_background_colour();
     $setting = new admin_setting_configcolourpicker($name, $title, $description, $default);
     $settings->add($setting);
+
+    /* Section title title summary opacity on hover. */
+    $name = 'format_grid/defaultsectiontitlesummarybackgroundopacity';
+    $title = get_string('defaultsectiontitlesummarybackgroundopacity', 'format_grid');
+    $description = get_string('defaultsectiontitlesummarybackgroundopacity_desc', 'format_grid');
+    $default = format_grid::get_default_section_title_summary_opacity();
+    $choices = format_grid::get_default_opacities();
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
 
     /* Show new activity notification image - 1 = no, 2 = yes. */
     $name = 'format_grid/defaultnewactivity';
@@ -240,6 +310,17 @@ if ($ADMIN->fulltree) {
     $title = get_string('greyouthidden', 'format_grid');
     $description = get_string('greyouthidden_desc', 'format_grid');
     $default = 1;
+    $choices = array(
+        1 => new lang_string('no'),   // No.
+        2 => new lang_string('yes')   // Yes.
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
+    /* Custom mouse pointers - 1 = no, 2 = yes. */
+    $name = 'format_grid/defaultcustommousepointers';
+    $title = get_string('custommousepointers', 'format_grid');
+    $description = get_string('custommousepointers_desc', 'format_grid');
+    $default = 2;
     $choices = array(
         1 => new lang_string('no'),   // No.
         2 => new lang_string('yes')   // Yes.
