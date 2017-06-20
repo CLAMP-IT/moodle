@@ -92,6 +92,8 @@ div#gridmiddle-column > ul {
     width: 100%;
 }
 #gridiconcontainer ul.gridicons {
+    display: flex;
+    flex-wrap: wrap;
     margin: 0 auto;
     padding: 0;
     width: 100%;
@@ -113,7 +115,7 @@ div#gridmiddle-column > ul {
     position: absolute;
 }
 
-.course-content .gridicon_link {
+.course-content .gridcursor .gridicon_link {
     /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-hand-o-up-f]]'), auto;
 }
@@ -133,7 +135,7 @@ div#gridmiddle-column > ul {
     height: 40px;
     opacity: 0.8;
     overflow-wrap: break-word;
-    padding: 10px 10px 30px;
+    padding: 10px;
     position: absolute;
     text-overflow: inherit;
     white-space: pre-wrap;
@@ -147,7 +149,7 @@ div#gridmiddle-column > ul {
     top: 0;
 }
 .course-content ul.gridicons li .icon_content.content_inside.bottom {
-    bottom: 10px;
+    bottom: 0;
     left: 0;
     margin: auto;
     right: 0;
@@ -155,13 +157,17 @@ div#gridmiddle-column > ul {
 
 .course-content ul.gridicons li .gridicon_link .tooltip {
     font-size: 14px;
-	width: 100%;
+}
+
+/* Set the width of the tooltip when the section summary is 'Inside', thus within the 'image_holder'. */
+.course-content ul.gridicons li .gridicon_link .image_holder .tooltip {
+    width: 100%;
 }
 
 .course-content ul.gridicons li .gridicon_link .tooltip-inner {
     background-color: #ffc540;
     color: #3b53ad;
-	max-width: none;
+    max-width: none;
 }
 
 .course-content ul.gridicons li .gridicon_link .tooltip.top .tooltip-arrow {
@@ -186,7 +192,8 @@ div#gridmiddle-column > ul {
     -webkit-box-sizing: content-box;
        -moz-box-sizing: content-box;
             box-sizing: content-box;
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
     text-align: center;
     vertical-align: middle;
 }
@@ -207,10 +214,13 @@ div#gridmiddle-column > ul {
 
 /* @group Shadebox */
 
-div#gridshadebox_overlay {
-    background: black;
+.gridcursor div#gridshadebox_overlay {
     /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-times-circle-o-f]]'), auto;
+}
+
+div#gridshadebox_overlay {
+    background: black;
     /* for IE */
     filter: alpha(opacity=70);
     height: 500px;
@@ -285,18 +295,23 @@ body.jsenabled #gridshadebox_content.hide_content {
 #gridshadebox_content ul li ol li {
     list-style: decimal outside none;
 } 
- 
-#gridshadebox_close {
+
+.gridcursor #gridshadebox_close {
     /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-hand-o-up-f]]'), auto;
+}
+
+#gridshadebox_close {
     position: absolute;
     right: -10px;
     top: -10px;
     z-index: 2;
 }
 
-.gridshadebox_arrow {
+.gridcursor .gridshadebox_arrow {
     cursor: inherit;
+}
+.gridshadebox_arrow {
     height: 55px;
     opacity: 0.35;
     position: absolute;
@@ -325,14 +340,14 @@ body.jsenabled #gridshadebox_content.hide_content {
     right: -55px;
 }
 
-.gridshadebox_previous_area.ltr,
-.gridshadebox_next_area.rtl {
+.gridcursor .gridshadebox_previous_area.ltr,
+.gridcursor .gridshadebox_next_area.rtl {
     /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-hand-o-left-f]]'), auto;
 }
 
-.gridshadebox_next_area.ltr,
-.gridshadebox_previous_area.rtl {
+.gridcursor .gridshadebox_next_area.ltr,
+.gridcursor .gridshadebox_previous_area.rtl {
     /*rtl:ignore*/
     cursor: url('[[pix:format_grid|fa-hand-o-right-f]]'), auto;
 }
@@ -354,13 +369,15 @@ body.jsenabled #gridshadebox_content.hide_content {
 }
 
 @media (max-width: 767px) {
-    div#gridshadebox_overlay {
+    .gridcursor div#gridshadebox_overlay {
         /*rtl:ignore*/
         cursor: url('[[pix:format_grid|fa-times-circle-o-fsm]]'), auto;
     }
-    #gridshadebox_close {
+    .gridcursor #gridshadebox_close {
         /*rtl:ignore*/
         cursor: url('[[pix:format_grid|fa-hand-o-up-fsm]]'), auto;
+    }
+    #gridshadebox_close {
         height: 28px;
         width: 28px;
     }
@@ -377,13 +394,13 @@ body.jsenabled #gridshadebox_content.hide_content {
     .gridshadebox_next_area {
         right: -30px;
     }
-    .gridshadebox_previous_area.ltr,
-    .gridshadebox_next_area.rtl {
+    .gridcursor .gridshadebox_previous_area.ltr,
+    .gridcursor .gridshadebox_next_area.rtl {
         /*rtl:ignore*/
         cursor: url('[[pix:format_grid|fa-hand-o-left-fsm]]'), auto;
     }
-    .gridshadebox_next_area.ltr,
-    .gridshadebox_previous_area.rtl {
+    .gridcursor .gridshadebox_next_area.ltr,
+    .gridcursor .gridshadebox_previous_area.rtl {
         /*rtl:ignore*/
         cursor: url('[[pix:format_grid|fa-hand-o-right-fsm]]'), auto;
     }
