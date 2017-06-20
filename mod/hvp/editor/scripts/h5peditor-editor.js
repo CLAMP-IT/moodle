@@ -10,15 +10,18 @@ var ns = H5PEditor;
  * @class H5PEditor.Editor
  * @param {string} library
  * @param {Object} defaultParams
+ * @param {Element} replace
+ * @param {Function} iframeLoaded
  */
-ns.Editor = function (library, defaultParams, replace) {
+ns.Editor = function (library, defaultParams, replace, iframeLoaded) {
   var self = this;
+
   // Library may return "0", make sure this doesn't return true in checks
   library = library && library != 0 ? library : '';
 
   // Create iframe and replace the given element with it
   var iframe = ns.$('<iframe/>', {
-    css: {
+    'css': {
       display: 'block',
       width: '100%',
       height: '3em',
@@ -28,17 +31,20 @@ ns.Editor = function (library, defaultParams, replace) {
       left: 0
     },
     'class': 'h5p-editor-iframe',
-    frameBorder: '0'
+    'frameBorder': '0'
   }).replaceAll(replace).load(function () {
-    var LibrarySelector = this.contentWindow.H5PEditor.LibrarySelector;
+    if (iframeLoaded) {
+      iframeLoaded.call(this.contentWindow);
+    }
 
+    var LibrarySelector = this.contentWindow.H5PEditor.LibrarySelector;
     var $ = this.contentWindow.H5P.jQuery;
-    this.contentWindow.H5P.$body = $(this.contentDocument.body);
     var $container = $('body > .h5p-editor');
 
+    this.contentWindow.H5P.$body = $(this.contentDocument.body);
+
     $.ajax({
-      dataType: 'json',
-      url: ns.getAjaxUrl('libraries')
+      url: this.contentWindow.H5PEditor.getAjaxUrl('libraries')
     }).fail(function () {
       $container.html('Error, unable to load libraries.');
     }).done(function (data) {
@@ -50,6 +56,18 @@ ns.Editor = function (library, defaultParams, replace) {
       self.selector.on('resized', function () {
         resize();
       });
+
+      /**
+       * Event handler for exposing events
+       *
+       * @private
+       * @param {H5P.Event} event
+       */
+      var relayEvent = function (event) {
+        H5P.externalDispatcher.trigger(event);
+      }
+      self.selector.on('editorload', relayEvent);
+      self.selector.on('editorloaded', relayEvent);
 
       // Set library if editing
       if (library) {
@@ -82,7 +100,7 @@ ns.Editor = function (library, defaultParams, replace) {
       H5P.$window.resize(limitedResize);
       resize();
     }
-     else {
+    else {
       // Use an interval for resizing the iframe
       (function resizeInterval() {
         resize();
