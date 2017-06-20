@@ -93,6 +93,9 @@ public static function fetch_general_items(){
     $items[] = new \admin_setting_configtext('filter_poodll_recorderorder_snapshot', get_string('recorderorder_snapshot', 'filter_poodll'),
         get_string('recorderorder_snapshot_desc', 'filter_poodll'), 'snapshot,upload',PARAM_TEXT);
 
+    //Allow Adobe Flash on Android
+    $items[] = new \admin_setting_configcheckbox('filter_poodll_flash_on_android', get_string('flashonandroid', 'filter_poodll'), get_string('flashonandroid_desc', 'filter_poodll'), 0);
+
 
     $items[] = new \admin_setting_configcheckbox('filter_poodll_download_media_ok', get_string('showdownloadicon', 'filter_poodll'), get_string('showdownloadicon_desc', 'filter_poodll'), 0);
 
@@ -159,6 +162,8 @@ public static function fetch_general_items(){
 	$items[] = new \admin_setting_configtext('filter_poodll_whiteboardwidth', get_string('wboardwidth', 'filter_poodll'), '', '600', PARAM_INT);
 	$items[] = new \admin_setting_configtext('filter_poodll_whiteboardheight', get_string('wboardheight', 'filter_poodll'), '', '350', PARAM_INT);
 	$items[] = new \admin_setting_configtext('filter_poodll_autosavewhiteboard', get_string('wboardautosave', 'filter_poodll'), get_string('wboardautosave_details', 'filter_poodll'), 2000, PARAM_INT);
+    $items[] = new \admin_setting_configcheckbox('filter_poodll_whiteboardnozoom', get_string('wboardnozoom', 'filter_poodll'), get_string('wboardnozoom_details', 'filter_poodll'), 0);
+
 
     /*
     //Logging

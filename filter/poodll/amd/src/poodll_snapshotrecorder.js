@@ -1,5 +1,5 @@
 /* jshint ignore:start */
-define(['jquery','core/log', 'filter_poodll/uploader','filter_poodll/webcam'], function($, log, uploader, Webcam) {
+define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader','filter_poodll/webcam'], function($, log, utils, uploader, Webcam) {
 
     "use strict"; // jshint ;_;
 
@@ -24,7 +24,7 @@ define(['jquery','core/log', 'filter_poodll/uploader','filter_poodll/webcam'], f
     	
 		// This recorder supports the current browser
         supports_current_browser: function(config) { 
-        	var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        	var iOS = utils.is_ios();
         	if (iOS){
         		return false;
         	}else{

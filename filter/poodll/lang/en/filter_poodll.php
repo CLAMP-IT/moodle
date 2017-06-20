@@ -283,3 +283,10 @@ $string['no_event_or_task'] = 'Found neither a waiting move task, nor move-compl
 $string['usecloudnotifications'] = 'Cloud notifications';
 $string['usecloudnotifications_desc'] = 'PoodLL cloud notifications. This enables instant notification that cloud transcoding is complete.';
 
+//flash on android
+$string['flashonandroid'] = 'Use Flash on Android';
+$string['flashonandroid_desc'] = 'It is possible to use Flash on Android, though in many cases its not available and difficult to communicate to students what to do. So by default this is off.';
+
+//diable whiteboard zoom
+$string['wboardnozoom']='Disable Zoom ';
+$string['wboardnozoom_details']='Only applies to LiterallyCanvas. If checked sets the max and min zoom to 1.0, effectively disabling the zoom feature.';

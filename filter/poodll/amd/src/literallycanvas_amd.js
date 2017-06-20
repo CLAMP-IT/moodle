@@ -23,7 +23,15 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
             //init the whiteboard	(diff logic if have a background image)
             var element = '#' + opts['recorderid'] + '_literally';
             var lc_element = $(element)[0];
-            
+
+            //zoom feature
+            var zoomMax = 4;
+            var zoomMin = 0.2;
+
+            if(opts['whiteboardnozoom']>0){
+                zoomMax =1;
+                zoomMin = 1;
+            }
 
             if(opts['backgroundimage']){
                 //simple using opts['backgroundimage'] as src would be better than using a buffer image, but LC won't show it.
@@ -33,22 +41,27 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                 backgroundimage.crossOrigin = "Anonymous";
                 var backgroundshape= LC.createShape('Image', {x: 0, y: 0, image: backgroundimage, scale: 1});
 
+
                 var lc = LC.init(lc_element,{imageURLPrefix: opts['imageurlprefix'],
                     backgroundColor: opts['backgroundcolor'],
                     backgroundShapes: [backgroundshape],
-                    recorderid: opts['recorderid']
+                    recorderid: opts['recorderid'],
+                    zoomMax: zoomMax,
+                    zoomMin: zoomMin
 
                 });
             }else{
                 var lc = LC.init(lc_element,{imageURLPrefix: opts['imageurlprefix'],
                     backgroundColor: opts['backgroundcolor'],
-                    recorderid: opts['recorderid']
+                    recorderid: opts['recorderid'],
+                    zoomMax: zoomMax,
+                    zoomMin: zoomMin
                 });
             }
             this.lc = lc;
             
             //init uploader
-        	uploader.init(element, opts);
+            uploader.init(element, opts);
 
             //restore previous drawing if any
             var vectordata = opts['vectordata'];
@@ -67,12 +80,11 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
         
         registerEvents: function() {
         
-        	var mfp = this;
+            var mfp = this;
             
             var opts = this.config;
             var recid = opts['recorderid'];
-        
-        	//handle autosave
+            //handle autosave
             if(opts['autosave']){
                 //if user has drawn, commence countdown to save
                 this.lc.on('drawingChange',function(){
@@ -95,7 +107,7 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
             }else{
                 //lc.on('drawingChange',(function(mfp){return function(){mfp.setUnsavedWarning;}})(this));
                 //if user has drawn, alert to unsaved state
-                lc.on('drawingChange',function(){
+                this.lc.on('drawingChange',function(){
                         var m = $('#' + recid + '_messages');
                         if(m){
                             m.innerHTML = 'File has not been saved.';
@@ -103,20 +115,19 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                 });
             }//end of handling autosave
         
-        	 //set up the upload/save button
-            var uploadbuttonstring = '#' + opts['recorderid'] + '_btn_upload_whiteboard';
+             //set up the upload/save button
+            var uploadbuttonstring = '#' + recid + '_btn_upload_whiteboard';
             var uploadbutton = $(uploadbuttonstring);
             if(uploadbutton){
                 if(opts['autosave']){
-                    uploadbutton.click(function(){utils.WhiteboardUploadHandler(opts['recorderid'],mfp.lc,opts);});
+                    uploadbutton.click(function(){utils.WhiteboardUploadHandler(recid,mfp.lc,opts);});
                 }else{
-                	var cvs = utils.getCvs(opts['recorderid'],mfp.lc,opts);
                     uploadbutton.click(
-                    	function(){
-                    		utils.pokeVectorData(opts['recorderid'],mfp.lc,opts);
-                    		uploader.uploadFile(cvs.toDataURL(),'image');
-                    	}, 
-                    false);
+                        function(){
+                            var cvs = utils.getCvs(recid,mfp.lc,opts);
+                            utils.pokeVectorData(recid,mfp.lc,opts);
+                            uploader.uploadFile(cvs.toDataURL(),'image');
+                        });
                 }
             }
         },

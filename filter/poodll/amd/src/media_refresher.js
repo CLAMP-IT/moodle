@@ -7,22 +7,22 @@ define(['jquery','core/log'], function($, log) {
 
     return {
     
-    	placeholderduration: null,
+        placeholderduration: null,
         mediaduration: null, //audio or video tag
-		alertconverted: null,
+        alertconverted: null,
 
         //for making multiple instances
-		clone: function(){
-			return $.extend(true,{},this);
-		},
+        clone: function(){
+            return $.extend(true,{},this);
+        },
 
-    	//pass in config, the jquery video/audio object, and a function to be called when conversion has finshed
-    	init: function(filename, placeholderduration, mediaduration, alertconverted){
-    		this.placeholderduration = placeholderduration;
-    		this.mediaduration = mediaduration;
+        //pass in config, the jquery video/audio object, and a function to be called when conversion has finshed
+        init: function(filename, placeholderduration, mediaduration, alertconverted){
+            this.placeholderduration = placeholderduration;
+            this.mediaduration = mediaduration;
             this.alertconverted = alertconverted;
             this.check_updates(filename,'firstpass');
-    	},
+        },
 
         should_be_checked: function(filename){
             //check this is an uncoverted recording that we need to track
@@ -52,8 +52,8 @@ define(['jquery','core/log'], function($, log) {
             
             //set up our handler for the response
             xhr.onreadystatechange = function(e){
-            	if(this.readyState===4){
-            		if(xhr.status==200){
+                if(this.readyState===4){
+                    if(xhr.status==200){
                         log.debug('ok we got a mediarefresh response');
                         //get a yes or forgetit or tryagain
                         var payload = xhr.responseText;

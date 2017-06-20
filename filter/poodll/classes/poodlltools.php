@@ -312,7 +312,13 @@ class poodlltools
 
 		if ($CFG->filter_poodll_autosavewhiteboard && $forsubmission) {
 			$opts['autosave'] = $CFG->filter_poodll_autosavewhiteboard;
-		}
+		}else{
+            $opts['autosave'] =false;
+        }
+
+		//are we allowing zoom, or not ...
+		$opts['whiteboardnozoom'] = $CFG->filter_poodll_whiteboardnozoom;
+
 		
 		//set media type
 		$mediatype = "image";
@@ -368,7 +374,7 @@ class poodlltools
 			$savecontrol = "";
 		}
 
-		if (array_key_exists('autosave', $opts)) {
+		if ($opts['autosave']) {
 			$buttonclass = "w_btn";
 		} else {
 			$buttonclass = "p_btn";
@@ -1914,6 +1920,28 @@ class poodlltools
 		$widgetopts->filename = $filename;
 		$widgetopts->s3filename = $s3filename;
 		$widgetopts->using_s3 = intval($using_s3);
+
+        //recorder order of preference
+        switch($mediatype) {
+
+            case 'video':
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_video);
+                break;
+            case 'whiteboard':
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_whiteboard);
+                break;
+            case 'snapshot':
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_snapshot);
+                break;
+            case 'audio':
+            default:
+                $rec_order = explode(',', $CFG->filter_poodll_recorderorder_audio);
+                break;
+        }
+        $widgetopts->rec_order = $rec_order;// array('mobile','media','flashaudio','red5','upload','flash');
+
+		//do we use flash on android
+        $widgetopts->flashonandroid=$CFG->filter_poodll_flash_on_android;
                 
 		//for mobile amd params
 		$rawparams = self::fetchMobileRecorderAMDParams($mediatype);
