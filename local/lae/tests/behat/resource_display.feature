@@ -17,7 +17,7 @@ Feature: Set a resource display preference at the course level
     And the following config values are set as admin:
       | displayoptions | 0,1,2,3,4,5,6 | resource |
     And I log in as "teacher"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
   @javascript
   Scenario Outline: Setting the default will cause future uploads to have the expected display type
