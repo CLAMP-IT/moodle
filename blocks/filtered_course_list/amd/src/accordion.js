@@ -22,8 +22,9 @@
  */
 define(['jquery'], function($) {
     return {
-        init: function () {
-            $('.block_filtered_course_list .course-section').each(function() {
+        init: function(params) {
+            var blockid = params.blockid;
+            $('#' + blockid + '.block_filtered_course_list .course-section').each(function() {
                 if (!($(this).hasClass('expanded'))) {
                     $(this).addClass('collapsed');
                     $(this).attr('aria-expanded', 'false');
@@ -33,7 +34,7 @@ define(['jquery'], function($) {
                 $(this).find('a').attr('href', '#');
                 $(this).on('click', function(event) {
                     event.preventDefault();
-                    $('.block_filtered_course_list .course-section').each(function(){
+                    $('.block_filtered_course_list .course-section').each(function() {
                         $(this).attr('aria-selected', 'false');
                     });
                     $(this).attr('aria-selected', 'true');
@@ -42,8 +43,7 @@ define(['jquery'], function($) {
                         $(this).addClass('expanded');
                         $(this).attr('aria-expanded', 'true');
                         $(this).next().attr('aria-hidden', 'false');
-                    }
-                    else if ($(this).hasClass('expanded')) {
+                    } else if ($(this).hasClass('expanded')) {
                         $(this).removeClass('expanded');
                         $(this).addClass('collapsed');
                         $(this).attr('aria-expanded', 'false');

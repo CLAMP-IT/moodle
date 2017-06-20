@@ -15,17 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file contains version information for the Filtered course list block.
+ * block_online_users data generator
  *
  * @package    block_filtered_course_list
+ * @category   test
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017061200;
-$plugin->requires  = 2016052300; // Requires Moodle 3.1.
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v3.1.0';
-$plugin->component = 'block_filtered_course_list';
+
+/**
+ * Online users block data generator class
+ *
+ * @package    block_filtered_course_list
+ * @category   test
+ * @copyright  2016 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class block_filtered_course_list_generator extends testing_block_generator {
+    // We need to provide this class, but we don't need to do anything special.
+}
