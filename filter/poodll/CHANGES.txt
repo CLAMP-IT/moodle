@@ -1,5 +1,12 @@
 Change List
 =========
+Version 3.0.43(Build 2017061801)
+-fixed broken pause recording
+-added ability to allow/deny flash recorders on Android device
+-added ability to disable zoom on literally canvas
+-refactor of some AMD recorder order code
+
+
 Version 3.0.42(Build 2017052201)
 -tweaked logging which was still giving (unnecessary) warning messages
 -tweaked placeholder save logic which was not working well with Poodll assignment feedback

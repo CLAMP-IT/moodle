@@ -50,6 +50,6 @@ define(['jquery','core/log'], function($, log) {
                 setTimeout(iframeprops.thisref._iframeResize,100,iframeprops);
                 
            }//end of iframe resize
-	};//end of return object
+    };//end of return object
 });
 /* jshint ignore:end */
