@@ -113,7 +113,7 @@ install:
         fi
 
 before_script:
-    - apt-get install haveged
+    - apt-get -y install haveged
     - service haveged start
     - phpenv config-rm xdebug.ini
     - >
