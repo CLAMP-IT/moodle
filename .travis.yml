@@ -2,7 +2,7 @@
 # process (which uses our internal CI system) this file is here for the benefit
 # of community developers git clones - see MDL-51458.
 
-sudo: required
+sudo: false
 
 # We currently disable Travis notifications entirely until https://github.com/travis-ci/travis-ci/issues/4976
 # is fixed.
@@ -113,8 +113,8 @@ install:
         fi
 
 before_script:
-    - sudo apt-get install haveged
-    - sudo service haveged start
+    - apt-get install haveged
+    - service haveged start
     - phpenv config-rm xdebug.ini
     - >
       if [ "$TASK" = 'PHPUNIT' -o "$TASK" = 'UPGRADE' -o "$TASK" = 'BEHAT' ];
