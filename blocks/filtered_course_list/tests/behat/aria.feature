@@ -32,17 +32,14 @@ Feature: The block includes ARIA support
             | testuser | course22 | student |
             | testuser | course23 | student |
             | testuser | test     | student |
-        And I log in as "admin"
-        And I am on site homepage
-        And I follow "Test"
-        And I turn editing mode on
-        And I add the "Filtered course list" block
+        And the following "blocks" exist:
+            | blockname            | contextlevel | reference |
+            | filtered_course_list | Course       | test      |
         And I set the multiline "block_filtered_course_list" "filters" setting as admin to:
           """
           shortname | collapsed | Current courses | 3
           shortname | expanded  | Future courses  | 2
           """
-        And I log out
         When I log in as "testuser"
         And I am on site homepage
         And I follow "Test"

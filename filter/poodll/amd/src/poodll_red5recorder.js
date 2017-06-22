@@ -1,5 +1,5 @@
 /* jshint ignore:start */
-define(['jquery','core/log', 'filter_poodll/uploader', 'filter_poodll/lzflash'], function($, log, uploader, lz) {
+define(['jquery','core/log','filter_poodll/utils_amd', 'filter_poodll/uploader', 'filter_poodll/lzflash'], function($, log, utils, uploader, lz) {
 
     "use strict"; // jshint ;_;
 
@@ -9,8 +9,9 @@ define(['jquery','core/log', 'filter_poodll/uploader', 'filter_poodll/lzflash'],
     
     	// This recorder supports the current browser
         supports_current_browser: function(config) { 
-        	var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        	if (iOS){
+        	var iOS = utils.is_ios();
+        	var isAndroid = utils.is_android();
+        	if (iOS || (config.flashonandroid<1 && isAndroid)){
         		return false;
         	}else{
 				if(config.mediatype!='audio' && config.mediatype!='video'){return false;}

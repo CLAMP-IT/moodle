@@ -539,10 +539,10 @@ EOF;
 
         // Any user who sees the should also see the "All courses" link.
         $this->_allcourseslink ( array (
-            'none'  => true,
-            'guest' => true,
-            'user1' => true,
-            'admin' => true,
+            'none'  => 'Search courses',
+            'guest' => 'Search courses',
+            'user1' => 'All courses',
+            'admin' => 'Search courses',
             'user3' => false
         ));
 
@@ -554,7 +554,7 @@ EOF;
             'none'  => false,
             'guest' => false,
             'user1' => false,
-            'admin' => true
+            'admin' => 'Search courses',
         ));
     }
 
@@ -1008,8 +1008,8 @@ EOF;
             $bi->instance = new StdClass;
             $bi->instance->id = 17;
             $footer = $bi->get_content()->footer;
-            if ( $result === true ) {
-                $this->assertContains ( 'All courses' , $footer , "$user should see the All-courses link." );
+            if ( $result ) {
+                $this->assertContains ( $result , $footer , "$user should see the All-courses link." );
             } else {
                 $this->assertNotContains ( 'All courses' , $footer , "$user should not see the All-courses link." );
             }
@@ -1093,7 +1093,7 @@ EOF;
                     $anchors = $ul->getElementsByTagName('a');
                     foreach ($anchors as $anchor) {
                         $anchorclass = $anchor->attributes->getNamedItem('class')->nodeValue;
-                        if ( strpos( $anchorclass, 'fcl-course-link' ) !== false ) {
+                        if ( strpos( $anchorclass, 'block_filtered_course_list_list_item' ) !== false ) {
                             $anchortitle = $anchor->attributes->getNamedItem('title')->nodeValue;
                             if ( $anchortitle == $course ) {
                                 $hits++;

@@ -64,6 +64,7 @@ EXAMPLE: completion | exp | (In)complete | (in)complete
 
 EOF;
 $string['filters']                  = 'Filter configuration';
+$string['filters_help']             = $string['configfilters'];
 $string['hideallcourseslink']       = 'Hide "All courses" link';
 $string['hideothercourses']         = 'Hide other courses';
 $string['hidefromguests']           = 'Hide from guests';

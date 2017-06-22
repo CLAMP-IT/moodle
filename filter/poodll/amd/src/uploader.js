@@ -7,23 +7,23 @@ define(['jquery','core/log'], function($, log) {
 
     return {
     
-    	config: null,
-		//for making multiple instances
-		clone: function(){
-			return $.extend(true,{},this);
-		},
-    	
-    	init: function(element,config){
-    		this.config = config;
-    		this.insert_controls(element);
-    	},
+        config: null,
+        //for making multiple instances
+        clone: function(){
+            return $.extend(true,{},this);
+        },
 
-	insert_controls: function(element){     
+        init: function(element,config){
+            this.config = config;
+            this.insert_controls(element);
+        },
+
+    insert_controls: function(element){
          //progress
-			var controls='<div id="' + this.config.widgetid + '_progress" class="p_progress x"><p></p></div>';
-			controls += '<div id="' + this.config.widgetid + '_messages" class="p_messages x"></div>';
-			$(element).append(controls);  
-		},
+            var controls='<div id="' + this.config.widgetid + '_progress" class="p_progress x"><p></p></div>';
+            controls += '<div id="' + this.config.widgetid + '_messages" class="p_messages x"></div>';
+            $(element).append(controls);
+        },
         
         uploadBlob: function(blob,filetype){
             this.uploadFile(blob, filetype);
@@ -32,41 +32,41 @@ define(['jquery','core/log'], function($, log) {
         //extract filename from the text returned as response to upload
         extractFilename: function(returntext){
             var searchkey ="success<filename>";
-        	 var start= returntext.indexOf(searchkey);
-			if (start<1){return false;}
-			var end = returntext.indexOf("</filename>");
-			var filename= returntext.substring(start+(searchkey.length),end);
-			return filename;
+             var start= returntext.indexOf(searchkey);
+            if (start<1){return false;}
+            var end = returntext.indexOf("</filename>");
+            var filename= returntext.substring(start+(searchkey.length),end);
+            return filename;
         },
         //create a progress bar
         createProgressBar: function(xhr,uploader){
             var progress=false;
-        	var o_query = $("#" + uploader.config.widgetid + "_progress");
-			//if we got one
-			if(o_query.length){
-				//get the dom object so we can use direct manip.
-				var o = o_query.get(0);
-				progress = o.firstChild;
-				if(progress===null){
-					progress = o.appendChild(document.createElement("p"));
-				}
-				//reset/set background position to 0, and label to "uploading
-				progress.className="";
-				progress.style.display = "block";
-				progress.style.backgroundPosition = "100% 0";
+            var o_query = $("#" + uploader.config.widgetid + "_progress");
+            //if we got one
+            if(o_query.length){
+                //get the dom object so we can use direct manip.
+                var o = o_query.get(0);
+                progress = o.firstChild;
+                if(progress===null){
+                    progress = o.appendChild(document.createElement("p"));
+                }
+                //reset/set background position to 0, and label to "uploading
+                progress.className="";
+                progress.style.display = "block";
+                progress.style.backgroundPosition = "100% 0";
 
-				// progress bar
-				xhr.upload.addEventListener("progress", function(e) {
-					var pc = parseInt(100 - (e.loaded / e.total * 100));
-					progress.style.backgroundPosition = pc + "% 0";
-				}, false);
-			}
+                // progress bar
+                xhr.upload.addEventListener("progress", function(e) {
+                    var pc = parseInt(100 - (e.loaded / e.total * 100));
+                    progress.style.backgroundPosition = pc + "% 0";
+                }, false);
+            }
            return progress;
         },
         //fetch file extension from the filetype
         fetchFileExtension: function(filetype){
-        	var ext="";
-        	//Might need more mimetypes than this, and 3gpp maynot work
+            var ext="";
+            //Might need more mimetypes than this, and 3gpp maynot work
             switch(filetype){
                 case "image/jpeg": ext = "jpg";break;
                 case "image/png": ext = "png";break;
@@ -107,18 +107,18 @@ define(['jquery','core/log'], function($, log) {
         },
         
         alertRecorderSuccess: function(widgetid){
-        	if(this.config.hasOwnProperty('onuploadsuccess')){
-        		this.config.onuploadsuccess(widgetid);
-        	}
+            if(this.config.hasOwnProperty('onuploadsuccess')){
+                this.config.onuploadsuccess(widgetid);
+            }
         },
         
         alertRecorderFailure: function(widgetid){
-        	if(this.config.hasOwnProperty('onuploadfailure')){
-        		this.config.onuploadfailure(widgetid);
-        	}
+            if(this.config.hasOwnProperty('onuploadfailure')){
+                this.config.onuploadfailure(widgetid);
+            }
         },
 
-		doCallback: function(uploader,filename){
+        doCallback: function(uploader,filename){
             //invoke callbackjs if we have one, otherwise just update the control(default behav.)
             if(uploader.config.callbackjs && uploader.config.callbackjs !=''){
                 var callbackargs  = new Array();
@@ -133,40 +133,40 @@ define(['jquery','core/log'], function($, log) {
             }else {
                 uploader.pokeFilename(filename,uploader);
             }
-		},
+        },
         
         //after an upload handle the filename poke and callback call
         postProcessUpload: function(e,uploader){
-        	  var xhr = e.currentTarget;
-			  if (xhr.readyState == 4 ) {
-				if(xhr.status==200){
-					var filename = uploader.config.filename;
-					if(!filename){
-						filename = uploader.extractFilename(xhr.responseText);
-					}
-					if(!filename){
-						log.debug('upload failed #1');
-						log.debug(xhr);
-						return;
-					}
+              var xhr = e.currentTarget;
+              if (xhr.readyState == 4 ) {
+                if(xhr.status==200){
+                    var filename = uploader.config.filename;
+                    if(!filename){
+                        filename = uploader.extractFilename(xhr.responseText);
+                    }
+                    if(!filename){
+                        log.debug('upload failed #1');
+                        log.debug(xhr);
+                        return;
+                    }
 
-					//if we have a callback then call it
-					// this is for enabling buttons on tinymce etc, filename fields etc
-					this.doCallback(uploader,filename);
-					
-					//alert the recorder that this was successful
-					this.alertRecorderSuccess(uploader.config.widgetid);
-					
-				}else{
-					log.debug('upload failed #3');
-					log.debug(xhr);
-					uploader.Output(M.util.get_string('recui_uploaderror', 'filter_poodll'));
-					
-					//alert the recorder that this failed
-					this.alertRecorderFailure(uploader.config.widgetid);
-					
-				} //end of if status 200
-			}//end of if ready state 4
+                    //if we have a callback then call it
+                    // this is for enabling buttons on tinymce etc, filename fields etc
+                    this.doCallback(uploader,filename);
+
+                    //alert the recorder that this was successful
+                    this.alertRecorderSuccess(uploader.config.widgetid);
+
+                }else{
+                    log.debug('upload failed #3');
+                    log.debug(xhr);
+                    uploader.Output(M.util.get_string('recui_uploaderror', 'filter_poodll'));
+
+                    //alert the recorder that this failed
+                    this.alertRecorderFailure(uploader.config.widgetid);
+
+                } //end of if status 200
+            }//end of if ready state 4
         
         },
        
@@ -174,9 +174,9 @@ define(['jquery','core/log'], function($, log) {
         uploadFile: function(filedata,filetype) {
       
             var xhr = new XMLHttpRequest();
-			var config = this.config;
-			var uploader = this;
-			
+            var config = this.config;
+            var uploader = this;
+
             //get the file extension from the filetype
             var ext = this.fetchFileExtension(filetype);
  
@@ -189,11 +189,11 @@ define(['jquery','core/log'], function($, log) {
             this.Output(M.util.get_string('recui_uploading', 'filter_poodll'));
 
             xhr.onreadystatechange = function(e){
-            	if(using_s3 && this.readyState===4){
+                if(using_s3 && this.readyState===4){
                      //ping Moodle and inform that we have a new file
                     uploader.postprocess_s3_upload(uploader);
                 }
-            	uploader.postProcessUpload(e,uploader);
+                uploader.postProcessUpload(e,uploader);
                 
             };
 
@@ -206,52 +206,52 @@ define(['jquery','core/log'], function($, log) {
                    //We NEED to redo this bit of code ..
                    //its duplicating!!!
                    if(!(filedata instanceof Blob)){
-                   		var params = "datatype=uploadfile";
-						//We must URI encode the filedata, because otherwise the "+" characters get turned into spaces
-						//spent hours tracking that down ...justin 20121012
-						params += "&paramone=" + encodeURIComponent(filedata);
-						params += "&paramtwo=" + ext;
-						params += "&paramthree=" + config.mediatype;
-						params += "&requestid=" + config.widgetid;
-						params += "&contextid=" + config.p2;
-						params += "&component=" + config.p3;
-						params += "&filearea=" + config.p4;
-						params += "&itemid=" + config.p5;
-			
-						xhr.open("POST",config.posturl, true);
-						xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-						xhr.setRequestHeader("Cache-Control", "no-cache");
-						//xhr.setRequestHeader("Content-length", params.length);
-						//xhr.setRequestHeader("Connection", "close");
-						xhr.send(params);
-                   }else{
-						//we have to base64 string the blob  before sending it
-						var reader = new window.FileReader();
-						reader.readAsDataURL(filedata); 
-						reader.onloadend = function() {
-							var base64filedata = reader.result;                
-							//log.debug(params);
-							var params = "datatype=uploadfile";
-							//We must URI encode the filedata, because otherwise the "+" characters get turned into spaces
-							//spent hours tracking that down ...justin 20121012
-							params += "&paramone=" + encodeURIComponent(base64filedata);
-							params += "&paramtwo=" + ext;
-							params += "&paramthree=" + config.mediatype;
-							params += "&requestid=" + config.widgetid;
-							params += "&contextid=" + config.p2;
-							params += "&component=" + config.p3;
-							params += "&filearea=" + config.p4;
-							params += "&itemid=" + config.p5;
+                        var params = "datatype=uploadfile";
+                        //We must URI encode the filedata, because otherwise the "+" characters get turned into spaces
+                        //spent hours tracking that down ...justin 20121012
+                        params += "&paramone=" + encodeURIComponent(filedata);
+                        params += "&paramtwo=" + ext;
+                        params += "&paramthree=" + config.mediatype;
+                        params += "&requestid=" + config.widgetid;
+                        params += "&contextid=" + config.p2;
+                        params += "&component=" + config.p3;
+                        params += "&filearea=" + config.p4;
+                        params += "&itemid=" + config.p5;
 
-							xhr.open("POST",config.posturl, true);
-							xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-							xhr.setRequestHeader("Cache-Control", "no-cache");
-						   // xhr.setRequestHeader("Content-length", params.length);
-						   // xhr.setRequestHeader("Connection", "close");
-							xhr.send(params);
-                    	};//end of fileread on load end
+                        xhr.open("POST",config.posturl, true);
+                        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                        xhr.setRequestHeader("Cache-Control", "no-cache");
+                        //xhr.setRequestHeader("Content-length", params.length);
+                        //xhr.setRequestHeader("Connection", "close");
+                        xhr.send(params);
+                   }else{
+                        //we have to base64 string the blob  before sending it
+                        var reader = new window.FileReader();
+                        reader.readAsDataURL(filedata);
+                        reader.onloadend = function() {
+                            var base64filedata = reader.result;
+                            //log.debug(params);
+                            var params = "datatype=uploadfile";
+                            //We must URI encode the filedata, because otherwise the "+" characters get turned into spaces
+                            //spent hours tracking that down ...justin 20121012
+                            params += "&paramone=" + encodeURIComponent(base64filedata);
+                            params += "&paramtwo=" + ext;
+                            params += "&paramthree=" + config.mediatype;
+                            params += "&requestid=" + config.widgetid;
+                            params += "&contextid=" + config.p2;
+                            params += "&component=" + config.p3;
+                            params += "&filearea=" + config.p4;
+                            params += "&itemid=" + config.p5;
+
+                            xhr.open("POST",config.posturl, true);
+                            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                            xhr.setRequestHeader("Cache-Control", "no-cache");
+                           // xhr.setRequestHeader("Content-length", params.length);
+                           // xhr.setRequestHeader("Connection", "close");
+                            xhr.send(params);
+                        };//end of fileread on load end
                 }//end of if blob                 
-	     }//end of if using_s3
+         }//end of if using_s3
         },
         
       
@@ -263,8 +263,8 @@ define(['jquery','core/log'], function($, log) {
             //lets do a little error checking
             //if its a self signed error or rotten permissions on poodllfilelib.php we might error here.
             xhr.onreadystatechange = function(){
-            	if(this.readyState===4){
-            		if(xhr.status!=200){
+                if(this.readyState===4){
+                    if(xhr.status!=200){
                        that.Output('Post Process s3 Upload Error:' + xhr.status);
                        $('#' + that.config.widgetid + '_messages').show();
                      }
@@ -308,13 +308,13 @@ define(['jquery','core/log'], function($, log) {
         },
         
         dataURItoBlob: function(dataURI, mimetype) {
-			var byteString = atob(dataURI.split(',')[1]);
-			var ab = new ArrayBuffer(byteString.length);
-			var ia = new Uint8Array(ab);
-			for (var i = 0; i < byteString.length; i++) {
-				ia[i] = byteString.charCodeAt(i);
-			}
-			return new Blob([ab], { type: mimetype });
-		}//end of dataURItoBlob
+            var byteString = atob(dataURI.split(',')[1]);
+            var ab = new ArrayBuffer(byteString.length);
+            var ia = new Uint8Array(ab);
+            for (var i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            return new Blob([ab], { type: mimetype });
+        }//end of dataURItoBlob
     };//end of returned object
 });//total end

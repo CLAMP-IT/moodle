@@ -47,8 +47,8 @@ class block_filtered_course_list extends block_base {
     public $context;
     /** @var string A type of user for purposes of list display, should be 'user', 'manager' or 'guest' */
     private $usertype;
-    /** @var string The type of list to create, should be 'generic_list', 'filtered_list' or 'empty_block' */
-    private $liststyle = 'generic_list';
+    /** @var string Type of list: 'generic_list', 'filtered_list' or 'empty_block' */
+    private $liststyle;
 
     /**
      * Set the initial properties for the block
@@ -68,10 +68,22 @@ class block_filtered_course_list extends block_base {
     }
 
     /**
-     * Set the instance title just after the instance data is loaded
+     * Set the instance title and merge instance config as soon as nstance data is loaded
      */
     public function specialization() {
         $this->title = isset($this->config->title) ? $this->config->title : get_string('blockname', 'block_filtered_course_list');
+        if (isset($this->config->filters) && $this->config->filters != '') {
+            $this->fclconfig->filters = $this->config->filters;
+        }
+    }
+
+    /**
+     * Allow multiple instances
+     *
+     * @return bool Returns true
+     */
+    public function instance_allow_multiple() {
+        return true;
     }
 
     /**
@@ -89,7 +101,7 @@ class block_filtered_course_list extends block_base {
      * @return stdClass The block contents
      */
     public function get_content() {
-        global $CFG;
+        global $CFG, $PAGE;
 
         if ($this->content !== null) {
             return $this->content;
@@ -124,35 +136,32 @@ class block_filtered_course_list extends block_base {
         $this->mycourses = enrol_get_my_courses(null, "$sortstring");
 
         /* Call accordion AMD module */
-        if ($this->page) {
-            $this->page->requires->js_call_amd('block_filtered_course_list/accordion', 'init', array());
-        }
+        $params = array(
+            'blockid' => 'inst' . $this->instance->id,
+        );
+        $PAGE->requires->js_call_amd('block_filtered_course_list/accordion', 'init', array($params));
 
         $this->_calculate_usertype();
+        $this->liststyle = $this->_set_liststyle();
 
-        // The default liststyle is 'generic_list' but ...
-
-        if ($this->usertype == 'user' && empty($CFG->disablemycourses)) {
-            $this->liststyle = "filtered_list";
+        if ($this->liststyle != 'empty_block') {
+            $process = '_process_' . $this->liststyle;
+            $this->$process();
         }
-
-        if ($this->usertype == 'manager' &&
-            $this->fclconfig->managerview == BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_OWN &&
-            $this->mycourses ) {
-            $this->liststyle = "filtered_list";
-        }
-
-        if ($this->fclconfig->hidefromguests == BLOCK_FILTERED_COURSE_LIST_TRUE && $this->usertype == 'guest') {
-            $this->liststyle = "empty_block";
-        }
-
-        $process = '_process_' . $this->liststyle;
-        $this->$process();
 
         if (is_object($this->content) && $this->content->text != '') {
             $atts = array('role' => 'tablist', 'aria-multiselectable' => 'true');
             $this->content->text = html_writer::div($this->content->text, 'tablist', $atts);
         }
+
+        $output = $PAGE->get_renderer('block_filtered_course_list');
+        $params = array(
+            'usertype'           => $this->usertype,
+            'liststyle'          => $this->liststyle,
+            'hideallcourseslink' => $this->fclconfig->hideallcourseslink,
+        );
+        $footer = new \block_filtered_course_list\output\footer($params);
+        $this->content->footer = $output->render($footer);
 
         return $this->content;
     }
@@ -174,10 +183,33 @@ class block_filtered_course_list extends block_base {
     }
 
     /**
-     * Set block contents to null to display an empty block
+     * Set the list style
      */
-    private function _process_empty_block() {
-        $this->content = null;
+    private function _set_liststyle() {
+        global $CFG;
+
+        // The default liststyle is 'generic_list' but ...
+        $liststyle = 'generic_list';
+
+        if ($this->usertype == 'user' && empty($CFG->disablemycourses)) {
+            $liststyle = "filtered_list";
+        }
+
+        if ($this->usertype == 'manager' &&
+            $this->fclconfig->managerview == BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_OWN &&
+            $this->mycourses ) {
+            $liststyle = "filtered_list";
+        }
+
+        if ($this->fclconfig->hidefromguests == BLOCK_FILTERED_COURSE_LIST_TRUE && $this->usertype == 'guest') {
+            $liststyle = "empty_block";
+        }
+
+        if ($this->usertype == 'user' && !$this->mycourses) {
+            $liststyle = "empty_block";
+        }
+
+        return $liststyle;
     }
 
     /**
@@ -234,8 +266,6 @@ class block_filtered_course_list extends block_base {
         }, array_keys($this->rubrics), $this->rubrics);
 
         $this->content->text = implode($htmls);
-
-        $this->_print_allcourseslink();
     }
 
     /**
@@ -243,7 +273,8 @@ class block_filtered_course_list extends block_base {
      */
     private function _process_generic_list() {
 
-        global $CFG;
+        global $CFG, $PAGE;
+        $output = $PAGE->get_renderer('block_filtered_course_list');
 
         // Parent = 0   ie top-level categories only.
         $categories = coursecat::get(0)->get_children();
@@ -256,20 +287,10 @@ class block_filtered_course_list extends block_base {
                 current($categories)->coursecount > $this->fclconfig->maxallcourse)) {
                 $this->content->text .= '<ul class="collapsible list">';
                 foreach ($categories as $category) {
-                    $linkcss = $category->visible ? "" : "dimmed";
-                    $this->content->text .= html_writer::tag('li',
-                        html_writer::tag('a', format_string($category->name),
-                        array(
-                            'href' => $CFG->wwwroot . '/course/index.php?categoryid=' . $category->id,
-                            'class' => $linkcss))
-                        );
+                    $categorylink = new \block_filtered_course_list\output\category_link_list_item($category);
+                    $this->content->text .= $output->render($categorylink);
                 }
                 $this->content->text .= '</ul>';
-                $this->content->footer .= "<br><a href=\"$CFG->wwwroot/course/index.php\">" .
-                                          get_string('searchcourses') .
-                                          '</a> ...<br />';
-
-                $this->_print_allcourseslink();
 
             } else {
                 // Just print course names of single category.
@@ -279,11 +300,10 @@ class block_filtered_course_list extends block_base {
                 if ($courses) {
                     $this->content->text .= '<ul class="collapsible list">';
                     foreach ($courses as $course) {
-                        $this->content->text .= $this->_print_single_course($course);
+                        $courselink = new \block_filtered_course_list\output\course_link_list_item($course);
+                        $this->content->text .= $output->render($courselink);
                     }
                     $this->content->text .= '</ul>';
-
-                    $this->_print_allcourseslink();
                 }
             }
         }
@@ -297,6 +317,8 @@ class block_filtered_course_list extends block_base {
      * @return string HTML to display a rubric
      */
     private function _get_rubric_html($rubric, $arraykey) {
+        global $PAGE;
+        $output = $PAGE->get_renderer('block_filtered_course_list');
         $key = $arraykey + 1;
         $initialstate = $rubric->expanded;
         $ariaexpanded = ($initialstate == 'expanded') ? 'true' : 'false';
@@ -310,8 +332,9 @@ class block_filtered_course_list extends block_base {
             'aria-selected' => 'false',
         );
         $title = html_writer::tag('div', htmlentities($rubric->title), $atts);
-        $courselinks = array_map(function($course) {
-            return $this->_print_single_course($course);
+        $courselinks = array_map(function($course) use ($output) {
+            $courselink = new \block_filtered_course_list\output\course_link_list_item($course);
+            return $output->render($courselink);
         }, $rubric->courses);
         $ulatts = array(
             'id'              => "fcl_{$this->instance->id}_tabpanel{$key}",
@@ -322,36 +345,5 @@ class block_filtered_course_list extends block_base {
         );
         $ul = html_writer::tag('ul', implode($courselinks), $ulatts);
         return $title . $ul;
-    }
-
-    /**
-     * Build the HTML to display a single course in a filtered list
-     *
-     * @param object $course The course to display
-     * @return string HTML to display a link to a course
-     */
-    private function _print_single_course($course) {
-        global $CFG;
-        $linkcss = $course->visible ? "fcl-course-link" : "fcl-course-link dimmed";
-        $html = html_writer::tag('li',
-            html_writer::tag('a', format_string($course->fullname),
-            array('href' => $CFG->wwwroot . '/course/view.php?id=' . $course->id,
-                'title' => format_string($course->shortname), 'class' => $linkcss))
-        );
-        return $html;
-    }
-
-    /**
-     * Print or do not print a link to all courses, depending on manager settings
-     */
-    private function _print_allcourseslink() {
-        global $CFG;
-        // If we can update any course of the view all isn't hidden.
-        // Show the view all courses link.
-        if ($this->usertype == 'manager' || $this->fclconfig->hideallcourseslink == BLOCK_FILTERED_COURSE_LIST_FALSE) {
-            $this->content->footer .= "<a href=\"$CFG->wwwroot/course/index.php\">" .
-                                      get_string('fulllistofcourses') .
-                                      '</a> ...<br>';
-        }
     }
 }

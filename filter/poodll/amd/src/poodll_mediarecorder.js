@@ -37,7 +37,7 @@ define(['jquery','core/log','filter_poodll/utils_amd',  'filter_poodll/MediaStre
         	 	            ret = true;
         	 	             break;
         	 	        case 'video': 
-        	 	                var IsEdge = navigator.userAgent.indexOf('Edge') !== -1 &&
+        	 	                var IsEdge = utils.is_edge() !== -1 &&
         	 	                    (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob);
         	 	               if(!IsEdge){ret=true;}
         	 	    }

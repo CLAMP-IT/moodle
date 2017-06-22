@@ -24,13 +24,9 @@ Feature: Courses within a rubric can be sorted by various fields
       | d_shortname | testuser | student |
       | e_shortname | testuser | student |
       | test        | testuser | student |
-    And I log in as "admin"
-    And I am on site homepage
-    And I follow "Test"
-    And I turn editing mode on
-    And I add the "Filtered course list" block
-    And I wait "1" seconds
-    And I log out
+    And the following "blocks" exist:
+      | blockname            | contextlevel | reference |
+      | filtered_course_list | Course       | test      |
 
   @javascript
   Scenario Outline:

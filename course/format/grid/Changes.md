@@ -1,5 +1,25 @@
 History
 =============
+Version 3.2.1.2
+  1. Fix unable to use cursor keys to edit section title when editing.
+  2. Fix border colour spilling out of title.
+  3. Add ability to have a zero sized border.
+  4. Add tile alignment setting.
+  5. Add tile title height setting when 'inside' the tile.
+  6. Add tile title background opacity setting when 'inside' the tile.
+  7. Add tile title font size setting when 'inside' the tile.
+  8. Add section title text alignment setting.
+  9. Add section summary hover text length setting.
+ 10. Add section summary hover font colour setting.
+ 11. Add section summary hover background colour setting.
+ 12. Add section summary hover background opacity setting.
+ 13. Add ability to turn off custom cursors setting.
+ 14. Renderer API changes to support Adaptable theme changes.
+ 15. Fix 'Grey out unavailable broken' - #49.
+ 16. Fix 'Text not correctly escaped in grid popovers' - #52.
+ 17. Add nav drawer click functionality for Boost theme.
+ Changes 2-14 gratefully funded by Coventry University UK.
+
 Version 3.2.1.1
   1. Fix '"bordercolour" is set to 0 when creating courses using the "Upload courses" tool' - CONTRIB-6655.
   2. Fix 'Arrows and cursors in M3.2 with RTL' - #41.

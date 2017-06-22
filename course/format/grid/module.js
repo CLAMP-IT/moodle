@@ -81,6 +81,10 @@ M.format_grid.init = function(Y, the_editing_on, the_section_redirect, the_num_s
         Y.all(".grid_section").removeClass('hide_section');
     } else {
         Y.delegate('click', this.icon_click, Y.config.doc, 'ul.gridicons a.gridicon_link', this);
+        var navdrawer = M.format_grid.ourYUI.one('[data-region="drawer"] nav:first-child'); // Flat navigation.
+        if (navdrawer) {
+            Y.delegate('click', this.navdrawerclick, '[data-region="drawer"] nav:first-child', 'a', this);
+        }
 
         var shadeboxtoggleone = Y.one("#gridshadebox_overlay");
         if (shadeboxtoggleone) {
@@ -143,10 +147,34 @@ M.format_grid.icon_click = function(e) {
     "use strict";
     e.preventDefault();
     var icon_index = parseInt(e.currentTarget.get('id').replace("gridsection-", ""));
-    var previous_no = this.selected_section_no;
+    var previousno = this.selected_section_no;
     this.selected_section_no = icon_index;
-    this.update_selected_background(previous_no);
+    this.update_selected_background(previousno);
     this.icon_toggle(e);
+};
+
+/**
+ * Called when there is flat navigation and the nav drawer has been clicked.
+ * @param {object} e Click event.
+ * @return {boolean} Returns true if event is to be triggered normally or nothing otherwise as preventDefault will stop the
+                     default action of the event - https://www.w3.org/TR/DOM-Level-2-Events/events.html#Events-flow-cancelation.
+ */
+M.format_grid.navdrawerclick = function(e) {
+    "use strict";
+    var href = e.currentTarget.get('href');
+    var sectionref = href.indexOf("#section-");
+    if (sectionref === 0) {
+        return true;
+    }
+    var idx = parseInt(href.substring(sectionref + 9));
+    var min = 1;
+    if (this.shadebox_shown_array[0] == 2) { // Section 0 can be shown.
+        min = 0;
+    }
+    if ((idx >= min) && (idx <= this.num_sections) && (this.shadebox_shown_array[idx] == 2)) {
+        this.tab(idx);
+        this.icon_toggle(e);
+    }
 };
 
 /**
@@ -178,7 +206,7 @@ M.format_grid.grid_toggle = function() {
     if (this.selected_section_no != -1) { // Then a valid shown section has been selected.
         if ((this.editing_on === true) && (this.update_capability === true)) {
             // Jump to the section on the page.
-            window.scroll(0,document.getElementById("section-" + this.selected_section_no).offsetTop);
+            window.scroll(0, document.getElementById("section-" + this.selected_section_no).offsetTop);
         } else if (this.section_redirect !== null) {
             // Keyboard control of 'toggle' in 'One section per page' layout.
             location.replace(this.section_redirect + "&section=" + this.selected_section_no);

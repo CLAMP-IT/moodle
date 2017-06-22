@@ -137,12 +137,14 @@ function xmldb_block_filtered_course_list_upgrade($oldversion) {
         }
 
         for ($i = 1; $i <= 10; $i++) {
-            $settings = array("customlabel$i", "customshortname$i", "labelexpanded$i");
-            if (property_exists($fclcnf, $settings[0]) && $fclcnf->$settings[0] != '') {
-                $label = $fclcnf->$settings[0];
+            $labelvarname = "customlabel$i";
+            $shortnamevarname = "customshortname$i";
+            $expandedvarname = "labelexpanded$i";
+            if (property_exists($fclcnf, $labelvarname) && $fclcnf->$labelvarname != '') {
+                $label = $fclcnf->$labelvarname;
                 $label = str_replace('|', '-', $label);
-                $shortname = $fclcnf->$settings[1];
-                $expanded = ($fclcnf->$settings[2] || $fclcnf->collapsible == 0) ? 'expanded' : 'collapsed';
+                $shortname = $fclcnf->$shortnamevarname;
+                $expanded = ($fclcnf->$expandedvarname || $fclcnf->collapsible == 0) ? 'expanded' : 'collapsed';
                 $disabled = ($i > $fclcnf->labelscount) ? 'DISABLED ' : $disabled;
                 $newcnf .= "${disabled}$type | $expanded | $label | $shortname \n";
             }

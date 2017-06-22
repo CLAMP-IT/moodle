@@ -98,6 +98,8 @@ class diagnosticstools {
         if($fd > 0){$fd = round($fd / 1024 / 1024);}
         $ds['free_disk']=$fd . ' MB';
 
+        //active users Moodle
+
         //site setting info
 		$ds['currenttheme']= \core_useragent::get_device_type_theme('default');
 		$ds['cachejs']= $CFG->cachejs;
@@ -136,6 +138,7 @@ class diagnosticstools {
 		$ds['useplayermp4']=get_config('filter_poodll','useplayermp4');
 		$ds['useplayerwebm']=get_config('filter_poodll','useplayerwebm');
 		$ds['useplayertube']=get_config('filter_poodll','useplayeryoutube');
+        $ds['flashonandroid']=$CFG->filter_poodll_flash_on_android;
 		
 		//PHP settings
 		$ds['maxexecutiontime']=ini_get('max_execution_time'); 

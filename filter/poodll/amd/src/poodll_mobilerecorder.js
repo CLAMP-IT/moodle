@@ -1,5 +1,5 @@
 /* jshint ignore:start */
-define(['jquery','core/log', 'filter_poodll/uploader', 'filter_poodll/poodll_uploadrecorder',], function($, log, uploader, uploadrec) {
+define(['jquery','core/log','filter_poodll/utils_amd', 'filter_poodll/uploader', 'filter_poodll/poodll_uploadrecorder',], function($, log, utils, uploader, uploadrec) {
 
     "use strict"; // jshint ;_;
 
@@ -24,8 +24,8 @@ define(['jquery','core/log', 'filter_poodll/uploader', 'filter_poodll/poodll_upl
 		// This recorder supports the current browser
         supports_current_browser: function(config) { 
 				if(config.mediatype!='audio' && config.mediatype!='video'){return false;}
-                var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-				return iOS;//or false
+                var supports = utils.is_ios() ;
+				return supports;//or false
         },
         
          // Perform the embed of this recorder on the page
@@ -91,7 +91,6 @@ define(['jquery','core/log', 'filter_poodll/uploader', 'filter_poodll/poodll_upl
               		uploadrec.embed(element,config);
                 }
             );
-
         },
         
         insert_video_button: function(element, widgetid){

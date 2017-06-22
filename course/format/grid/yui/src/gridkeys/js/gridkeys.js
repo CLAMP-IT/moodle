@@ -47,46 +47,44 @@ M.format_grid.gridkeys = {
         return M.format_grid.gridkeys.currentGridBox;
     },
     init: function(params) {
-        if (!params.editing) {
-            Y.on('esc', function (e) {
+        Y.on('esc', function (e) {
+            e.preventDefault();
+            Y.log("Esc pressed");
+            Y.log("Selected section no: " + M.format_grid.selected_section_no);
+            M.format_grid.icon_toggle(e);
+        });
+        // Initiated in CONTRIB-3240...
+        Y.on('enter', function (e) {
+            if (M.format_grid.gridkeys.currentGridBox) {
                 e.preventDefault();
-                Y.log("Esc pressed");
-                Y.log("Selected section no: " + M.format_grid.selected_section_no);
-                M.format_grid.icon_toggle(e);
-            });
-            // Initiated in CONTRIB-3240...
-            Y.on('enter', function (e) {
-                if (M.format_grid.gridkeys.currentGridBox) {
-                    e.preventDefault();
-                    if (e.shiftKey) {
-                        Y.log("Shift Enter pressed");
-                        Y.log("Selected section no: " + M.format_grid.selected_section_no);
-                        M.format_grid.icon_toggle(e);
-                    } else {
-                        Y.log("Enter pressed");
-                        Y.log("Selected section no: " + M.format_grid.selected_section_no);
-                        M.format_grid.icon_toggle(e);
-                    }
-                }
-            });
-            Y.on('tab', function (/*e*/) {
-                setTimeout(function() {
-                    // Cope with the fact that the default event happens after us.
-                    // Therefore we need to react after focus has moved.
-                    if (M.format_grid.gridkeys.findfocused()) {
-                        M.format_grid.tab(M.format_grid.gridkeys.currentGridBoxIndex);
-                    }
-                }, 250);
-            });
-            Y.on('space', function (e) {
-                if (M.format_grid.gridkeys.currentGridBox) {
-                    e.preventDefault();
-                    Y.log("Space pressed");
+                if (e.shiftKey) {
+                    Y.log("Shift Enter pressed");
+                    Y.log("Selected section no: " + M.format_grid.selected_section_no);
+                    M.format_grid.icon_toggle(e);
+                } else {
+                    Y.log("Enter pressed");
                     Y.log("Selected section no: " + M.format_grid.selected_section_no);
                     M.format_grid.icon_toggle(e);
                 }
-            });
-        }
+            }
+        });
+        Y.on('tab', function (/*e*/) {
+            setTimeout(function() {
+                // Cope with the fact that the default event happens after us.
+                // Therefore we need to react after focus has moved.
+                if (M.format_grid.gridkeys.findfocused()) {
+                    M.format_grid.tab(M.format_grid.gridkeys.currentGridBoxIndex);
+                }
+            }, 250);
+        });
+        Y.on('space', function (e) {
+            if (M.format_grid.gridkeys.currentGridBox) {
+                e.preventDefault();
+                Y.log("Space pressed");
+                Y.log("Selected section no: " + M.format_grid.selected_section_no);
+                M.format_grid.icon_toggle(e);
+            }
+        });
         Y.on('left', function (e) {
             e.preventDefault();
             Y.log("Left pressed");
