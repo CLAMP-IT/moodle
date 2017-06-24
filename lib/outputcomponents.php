@@ -366,7 +366,7 @@ class user_picture implements renderable {
                     $hash = substr(sha1($CFG->hampshire_picture_salt . $idbase), 0, 10);
                 }
             }
-            return "https://photos.hampshire.edu/${hash}.jpg";
+            return new moodle_url("https://photos.hampshire.edu/${hash}.jpg");
         }
 
         if (is_null($renderer)) {
