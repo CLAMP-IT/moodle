@@ -24,6 +24,7 @@
 
 $string['autologinkeygenerationlockout'] = 'Auto-login key generation is blocked because of too many requests within an hour.';
 $string['autologinnotallowedtoadmins'] = 'Auto-login is not allowed for site admins.';
+$string['cachedef_plugininfo'] = 'This stores the list of plugins with mobile addons';
 $string['clickheretolaunchtheapp'] = 'Click here if the app does not open automatically.';
 $string['configmobilecssurl'] = 'A CSS file to customise your mobile app interface.';
 $string['enablesmartappbanners'] = 'Enable Smart App Banners';
@@ -46,4 +47,4 @@ $string['pluginname'] = 'Moodle Mobile tools';
 $string['smartappbanners'] = 'Smart App Banners (iOS only)';
 $string['pluginnotenabledorconfigured'] = 'Plugin not enabled or configured.';
 $string['typeoflogin'] = 'Type of login';
-$string['typeoflogin_desc'] = 'Choose the type of login.';
+$string['typeoflogin_desc'] = 'If the site uses a SSO authentication method, then select via a browser window or via an embedded browser. An embedded browser provides a better user experience, though it doesn\'t work with all SSO plugins. If using SSO, autologinguests should be disabled.';

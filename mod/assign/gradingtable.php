@@ -131,12 +131,6 @@ class assign_grading_table extends table_sql implements renderable {
         $params['assignmentid2'] = (int)$this->assignment->get_instance()->id;
         $params['assignmentid3'] = (int)$this->assignment->get_instance()->id;
 
-        $params['assignmentid5'] = (int)$this->assignment->get_instance()->id;
-        $params['assignmentid6'] = (int)$this->assignment->get_instance()->id;
-        $params['assignmentid7'] = (int)$this->assignment->get_instance()->id;
-        $params['assignmentid8'] = (int)$this->assignment->get_instance()->id;
-        $params['assignmentid9'] = (int)$this->assignment->get_instance()->id;
-
         $extrauserfields = get_extra_user_fields($this->assignment->get_context());
 
         $fields = user_picture::fields('u', $extrauserfields) . ', ';
@@ -187,6 +181,12 @@ class assign_grading_table extends table_sql implements renderable {
         $hasoverrides = $this->assignment->has_overrides();
 
         if ($hasoverrides) {
+            $params['assignmentid5'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid6'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid7'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid8'] = (int)$this->assignment->get_instance()->id;
+            $params['assignmentid9'] = (int)$this->assignment->get_instance()->id;
+
             $fields .= ', priority.priority, ';
             $fields .= 'effective.allowsubmissionsfromdate, ';
             $fields .= 'effective.duedate, ';
@@ -252,8 +252,8 @@ class assign_grading_table extends table_sql implements renderable {
         if (!empty($this->assignment->get_instance()->blindmarking)) {
             $from .= 'LEFT JOIN {assign_user_mapping} um
                              ON u.id = um.userid
-                            AND um.assignment = :assignmentid5 ';
-            $params['assignmentid5'] = (int)$this->assignment->get_instance()->id;
+                            AND um.assignment = :assignmentidblind ';
+            $params['assignmentidblind'] = (int)$this->assignment->get_instance()->id;
             $fields .= ', um.id as recordid ';
         }
 
@@ -307,9 +307,6 @@ class assign_grading_table extends table_sql implements renderable {
                         $params['markerid'] = $markerfilter;
                     }
                 }
-            } else { // Only show users allocated to this marker.
-                $where .= ' AND uf.allocatedmarker = :markerid';
-                $params['markerid'] = $USER->id;
             }
         }
 
@@ -652,8 +649,9 @@ class assign_grading_table extends table_sql implements renderable {
             list($sort, $params) = users_order_by_sql();
             $markers = get_users_by_capability($this->assignment->get_context(), 'mod/assign:grade', '', $sort);
             $markerlist[0] = get_string('choosemarker', 'assign');
+            $viewfullnames = has_capability('moodle/site:viewfullnames', $this->assignment->get_context());
             foreach ($markers as $marker) {
-                $markerlist[$marker->id] = fullname($marker);
+                $markerlist[$marker->id] = fullname($marker, $viewfullnames);
             }
         }
         if (empty($markerlist)) {
@@ -662,7 +660,8 @@ class assign_grading_table extends table_sql implements renderable {
         }
         if ($this->is_downloading()) {
             if (isset($markers[$row->allocatedmarker])) {
-                return fullname($markers[$row->allocatedmarker]);
+                return fullname($markers[$row->allocatedmarker],
+                        has_capability('moodle/site:viewfullnames', $this->assignment->get_context()));
             } else {
                 return '';
             }
@@ -1035,6 +1034,9 @@ class assign_grading_table extends table_sql implements renderable {
         $due = $instance->duedate;
         if ($row->extensionduedate) {
             $due = $row->extensionduedate;
+        } else if (!empty($row->duedate)) {
+            // The override due date.
+            $due = $row->duedate;
         }
 
         $group = false;

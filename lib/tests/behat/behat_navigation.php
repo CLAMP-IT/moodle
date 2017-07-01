@@ -290,21 +290,7 @@ class behat_navigation extends behat_base {
             if ($pnode && $this->running_javascript() && $pnode->hasAttribute('aria-expanded') &&
                 ($pnode->getAttribute('aria-expanded') == "false")) {
 
-                $this->ensure_node_is_visible($pnode);
-
-                // If node is a link then some driver click in the middle of the node, which click on link and
-                // page gets redirected. To ensure expansion works in all cases, check if the node to expand is a
-                // link and if yes then click on link and wait for it to navigate to next page with node expanded.
-                $nodetoexpandliteral = behat_context_helper::escape($parentnodes[$i]);
-                $nodetoexpandxpathlink = $pnodexpath . "/a[normalize-space(.)=" . $nodetoexpandliteral . "]";
-
-                if ($nodetoexpandlink = $node->find('xpath', $nodetoexpandxpathlink)) {
-                    $behatgeneralcontext = behat_context_helper::get('behat_general');
-                    $nodetoexpandlink->click();
-                    $behatgeneralcontext->wait_until_the_page_is_ready();
-                } else {
-                    $pnode->click();
-                }
+                $this->js_trigger_click($pnode);
 
                 // Wait for node to load, if not loaded before.
                 if ($pnode->hasAttribute('data-loaded') && $pnode->getAttribute('data-loaded') == "false") {
@@ -532,5 +518,94 @@ class behat_navigation extends behat_base {
         array_unshift($parentnodes, get_string('administrationsite'));
         $lastnode = array_pop($parentnodes);
         $this->select_node_in_navigation($lastnode, $parentnodes);
+    }
+
+    /**
+     * Opens the current users profile page in edit mode.
+     *
+     * @Given /^I open my profile in edit mode$/
+     * @throws coding_exception
+     * @return void
+     */
+    public function i_open_my_profile_in_edit_mode() {
+        global $USER;
+
+        $user = $this->get_session_user();
+        $globuser = $USER;
+        $USER = $user; // We need this set to the behat session user so we can call isloggedin.
+
+        $systemcontext = context_system::instance();
+
+        $bodynode = $this->find('xpath', 'body');
+        $bodyclass = $bodynode->getAttribute('class');
+        $matches = [];
+        if (preg_match('/(?<=^course-|\scourse-)\d/', $bodyclass, $matches) && !empty($matches)) {
+            $courseid = intval($matches[0]);
+        } else {
+            $courseid = SITEID;
+        }
+
+        if (isloggedin() && !isguestuser($user) && !is_mnet_remote_user($user)) {
+            if (is_siteadmin($user) ||  has_capability('moodle/user:update', $systemcontext)) {
+                $url = new moodle_url('/user/editadvanced.php', array('id' => $user->id, 'course' => SITEID,
+                    'returnto' => 'profile'));
+            } else if (has_capability('moodle/user:editownprofile', $systemcontext)) {
+                $userauthplugin = false;
+                if (!empty($user->auth)) {
+                    $userauthplugin = get_auth_plugin($user->auth);
+                }
+                if ($userauthplugin && $userauthplugin->can_edit_profile()) {
+                    $url = $userauthplugin->edit_profile_url();
+                    if (empty($url)) {
+                        if (empty($course)) {
+                            $url = new moodle_url('/user/edit.php', array('id' => $user->id, 'returnto' => 'profile'));
+                        } else {
+                            $url = new moodle_url('/user/edit.php', array('id' => $user->id, 'course' => $courseid,
+                                'returnto' => 'profile'));
+                        }
+                    }
+
+                }
+            }
+            $this->getSession()->visit($this->locate_path($url->out_as_local_url()));
+        }
+
+        // Restore global user variable.
+        $USER = $globuser;
+    }
+
+    /**
+     * Opens the course homepage.
+     *
+     * @Given /^I am on "(?P<coursefullname_string>(?:[^"]|\\")*)" course homepage$/
+     * @throws coding_exception
+     * @param string $coursefullname The full name of the course.
+     * @return void
+     */
+    public function i_am_on_course_homepage($coursefullname) {
+        global $DB;
+        $course = $DB->get_record("course", array("fullname" => $coursefullname), 'id', MUST_EXIST);
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $this->getSession()->visit($this->locate_path($url->out_as_local_url(false)));
+    }
+
+    /**
+     * Opens the course homepage with editing mode on.
+     *
+     * @Given /^I am on "(?P<coursefullname_string>(?:[^"]|\\")*)" course homepage with editing mode on$/
+     * @throws coding_exception
+     * @param string $coursefullname The course full name of the course.
+     * @return void
+     */
+    public function i_am_on_course_homepage_with_editing_mode_on($coursefullname) {
+        global $DB;
+        $course = $DB->get_record("course", array("fullname" => $coursefullname), 'id', MUST_EXIST);
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $this->getSession()->visit($this->locate_path($url->out_as_local_url(false)));
+        try {
+            $this->execute("behat_forms::press_button", get_string('turneditingon'));
+        } catch (Exception $e) {
+            $this->execute("behat_navigation::i_navigate_to_in_current_page_administration", [get_string('turneditingon')]);
+        }
     }
 }

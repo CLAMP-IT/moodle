@@ -554,6 +554,15 @@ function user_get_user_details($user, $course = null, array $userfields = array(
         $userdetails['preferences'] = $preferences;
     }
 
+    if ($currentuser or has_capability('moodle/user:viewalldetails', $context)) {
+        $extrafields = ['auth', 'confirmed', 'lang', 'theme', 'timezone', 'mailformat'];
+        foreach ($extrafields as $extrafield) {
+            if (in_array($extrafield, $userfields) && isset($user->$extrafield)) {
+                $userdetails[$extrafield] = $user->$extrafield;
+            }
+        }
+    }
+
     return $userdetails;
 }
 
@@ -1113,14 +1122,20 @@ function user_can_view_profile($user, $course = null, $usercontext = null) {
         return false;
     }
 
-    // If any of these four things, return true.
+    // Perform some quick checks and eventually return early.
+
     // Number 1.
-    if ($USER->id == $user->id) {
+    if (empty($CFG->forceloginforprofiles)) {
         return true;
+    } else {
+       if (!isloggedin() || isguestuser()) {
+            // User is not logged in and forceloginforprofile is set, we need to return now.
+            return false;
+        }
     }
 
     // Number 2.
-    if (empty($CFG->forceloginforprofiles)) {
+    if ($USER->id == $user->id) {
         return true;
     }
 
@@ -1142,6 +1157,11 @@ function user_can_view_profile($user, $course = null, $usercontext = null) {
     } else {
         $sharedcourses = enrol_get_shared_courses($USER->id, $user->id, true);
     }
+
+    if (empty($sharedcourses)) {
+        return false;
+    }
+
     foreach ($sharedcourses as $sharedcourse) {
         $coursecontext = context_course::instance($sharedcourse->id);
         if (has_capability('moodle/user:viewdetails', $coursecontext)) {

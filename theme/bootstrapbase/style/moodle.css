@@ -195,6 +195,9 @@ a.autolink.glossary:hover {
 .pagingbar .thispage {
   font-weight: bold;
 }
+img.userpicture {
+  margin-right: 5px;
+}
 img.resize {
   height: 1em;
   width: 1em;
@@ -518,7 +521,6 @@ a.skip:active {
 }
 .notepost .userpicture {
   float: left;
-  margin-right: 5px;
 }
 .notepost .content,
 .notepost .footer {
@@ -1017,7 +1019,12 @@ tr.flagged-tag a {
 .userenrolment .col_group .groups {
   margin-right: 30px;
 }
-.userenrolment .col_role .role,
+.userenrolment .col_role .role {
+  float: left;
+  padding: 0 3px 3px;
+  margin: 0 3px 3px;
+  white-space: nowrap;
+}
 .userenrolment .col_group .group {
   float: left;
   padding: 3px;
@@ -1048,8 +1055,8 @@ tr.flagged-tag a {
 }
 .userenrolment .col_enrol .enrolment {
   float: left;
-  padding: 3px;
-  margin: 3px;
+  padding: 0 3px 3px;
+  margin: 0 3px 3px;
 }
 .userenrolment .col_enrol .enrolment a {
   float: right;
@@ -4538,6 +4545,12 @@ span.editinstructions {
 #course-category-listings .select-a-category .notifymessage,
 #course-category-listings .select-a-category .alert {
   margin: 1em;
+}
+#page-course-management .coursesearchbox input[type="text"] + input[type="submit"] {
+  margin-bottom: 0;
+}
+#page-course-management #course-category-listings .detail-pair .pair-value select {
+  max-width: 80%;
 }
 #course-category-listings #course-listing .listitem .drag-handle {
   display: none;
@@ -14484,6 +14497,9 @@ body.path-mod-feedback #region-main .mform.feedback_form .feedback-item-pagebrea
 .path-mod-forum .forumheaderlist .discussion .replies,
 .path-mod-forum .forumheaderlist .discussion .lastpost {
   vertical-align: top;
+}
+.path-mod-forum .forumheaderlist .discussion .unread img {
+  margin: 0;
 }
 .forumpost {
   min-height: 20px;

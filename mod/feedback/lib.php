@@ -997,10 +997,9 @@ function feedback_get_incomplete_users(cm_info $cm,
 
     //now get all completeds
     $params = array('feedback'=>$cm->instance);
-    if (!$completedusers = $DB->get_records_menu('feedback_completed', $params, '', 'userid,id')) {
+    if (!$completedusers = $DB->get_records_menu('feedback_completed', $params, '', 'id, userid')) {
         return $allusers;
     }
-    $completedusers = array_keys($completedusers);
 
     //now strike all completedusers from allusers
     $allusers = array_diff($allusers, $completedusers);
@@ -1917,8 +1916,6 @@ function feedback_print_item_show_value($item, $value = false) {
  */
 function feedback_set_tmp_values($feedbackcompleted) {
     global $DB;
-    debugging('Function feedback_set_tmp_values() is deprecated and since it is '
-            . 'no longer used in mod_feedback', DEBUG_DEVELOPER);
 
     //first we create a completedtmp
     $tmpcpl = new stdClass();
@@ -2963,9 +2960,10 @@ function feedback_print_numeric_option_list($startval, $endval, $selectval = '',
  * @param object $feedback
  * @param object $course
  * @param stdClass|int $user
+ * @param stdClass $completed record from feedback_completed if known
  * @return void
  */
-function feedback_send_email($cm, $feedback, $course, $user) {
+function feedback_send_email($cm, $feedback, $course, $user, $completed = null) {
     global $CFG, $DB;
 
     if ($feedback->email_notification == 0) {  // No need to do anything
@@ -3014,6 +3012,13 @@ function feedback_send_email($cm, $feedback, $course, $user) {
             $info->url = $CFG->wwwroot.'/mod/feedback/show_entries.php?'.
                             'id='.$cm->id.'&'.
                             'userid=' . $user->id;
+            if ($completed) {
+                $info->url .= '&showcompleted=' . $completed->id;
+                if ($feedback->course == SITEID) {
+                    // Course where feedback was completed (for site feedbacks only).
+                    $info->url .= '&courseid=' . $completed->courseid;
+                }
+            }
 
             $a = array('username' => $info->username, 'feedbackname' => $feedback->name);
 

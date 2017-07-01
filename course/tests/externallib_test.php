@@ -483,7 +483,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 $this->assertEquals($courseinfo->numsections, $course3options['numsections']);
                 $this->assertEquals($courseinfo->coursedisplay, $course3options['coursedisplay']);
             } else {
-                throw moodle_exception('Unexpected shortname');
+                throw new moodle_exception('Unexpected shortname');
             }
         }
 
@@ -640,6 +640,32 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $courses = external_api::clean_returnvalue(core_course_external::get_courses_returns(), $courses);
 
         $this->assertEquals($DB->count_records('course'), count($courses));
+    }
+
+    /**
+     * Test get_courses without capability
+     */
+    public function test_get_courses_without_capability() {
+        $this->resetAfterTest(true);
+
+        $course1 = $this->getDataGenerator()->create_course();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        // No permissions are required to get the site course.
+        $courses = core_course_external::get_courses(array('ids' => [SITEID]));
+        $courses = external_api::clean_returnvalue(core_course_external::get_courses_returns(), $courses);
+
+        $this->assertEquals(1, count($courses));
+        $this->assertEquals('PHPUnit test site', $courses[0]['fullname']);
+        $this->assertEquals('site', $courses[0]['format']);
+
+        // Requesting course without being enrolled or capability to view it will throw an exception.
+        try {
+            core_course_external::get_courses(array('ids' => [$course1->id]));
+            $this->fail('Exception expected');
+        } catch (moodle_exception $e) {
+            $this->assertEquals(1, preg_match('/Course or activity not accessible. \(Not enrolled\)/', $e->getMessage()));
+        }
     }
 
     /**
@@ -1137,7 +1163,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 $this->assertEquals(0, $courseinfo->newsitems);
                 $this->assertEquals(FORMAT_MOODLE, $courseinfo->summaryformat);
             } else {
-                throw moodle_exception('Unexpected shortname');
+                throw new moodle_exception('Unexpected shortname');
             }
         }
 
@@ -2063,14 +2089,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(2, $result['courses']);
         $this->assertCount(28, $result['courses'][0]);  // Site course.
-        $this->assertCount(12, $result['courses'][1]);  // Only public information, not enrolled.
+        $this->assertCount(13, $result['courses'][1]);  // Only public information, not enrolled.
 
         $result = core_course_external::get_courses_by_field('id', $course1->id);
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(1, $result['courses']);
         $this->assertEquals($course1->id, $result['courses'][0]['id']);
         // Expect to receive all the files that a authenticated can see.
-        $this->assertCount(12, $result['courses'][0]);
+        $this->assertCount(13, $result['courses'][0]);
 
         // Course 2 is not visible.
         $result = core_course_external::get_courses_by_field('id', $course2->id);

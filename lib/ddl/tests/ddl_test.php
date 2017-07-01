@@ -584,7 +584,7 @@ class core_ddl_testcase extends database_driver_testcase {
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('name', XMLDB_TYPE_CHAR, '30', null, null, null, null);
         $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        for ($i = 0; $i < 15; $i++) {
+        for ($i = 0; $i < 12; $i++) {
             $table->add_field('text'.$i, XMLDB_TYPE_CHAR, '1333', null, null, null, null);
             $data->{'text'.$i} = $text;
         }
@@ -2080,6 +2080,38 @@ class core_ddl_testcase extends database_driver_testcase {
                         strlen($gen->getNameForObject($table, $fields, $suffix)),
                         'Generated object name is too long. $i = '.$i);
             }
+
+            // Now test to confirm that a duplicate name isn't issued, even if they come from different root names.
+            // Move to a new field.
+            $fields = "fl";
+
+            // Insert twice, moving is to a key with fl2.
+            $this->assertEquals($gen->names_max_length - 1, strlen($gen->getNameForObject($table, $fields, $suffix)));
+            $result1 = $gen->getNameForObject($table, $fields, $suffix);
+
+            // Make sure we end up with _fl2_ in the result.
+            $this->assertRegExp('/_fl2_/', $result1);
+
+            // Now, use a field that would result in the same key if it wasn't already taken.
+            $fields = "fl2";
+            // Because we are now at the max key length, it will try:
+            // - _fl2_ (the natural name)
+            // - _fl2_ (removing the original 2, and adding a counter 2)
+            // - then settle on _fl3_.
+            $result2 = $gen->getNameForObject($table, $fields, $suffix);
+            $this->assertRegExp('/_fl3_/', $result2);
+
+            // Make sure they don't match.
+            $this->assertNotEquals($result1, $result2);
+            // But are only different in the way we expect. This confirms the test is working properly.
+            $this->assertEquals(str_replace('_fl2_', '', $result1), str_replace('_fl3_', '', $result2));
+
+            // Now go back. We would expect the next result to be fl3 again, but it is taken, so it should move to fl4.
+            $fields = "fl";
+            $result3 = $gen->getNameForObject($table, $fields, $suffix);
+
+            $this->assertNotEquals($result2, $result3);
+            $this->assertRegExp('/_fl4_/', $result3);
         }
     }
 

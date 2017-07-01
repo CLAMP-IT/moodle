@@ -502,6 +502,8 @@ class core_userliblib_testcase extends advanced_testcase {
         $user5 = $this->getDataGenerator()->create_user();
         $user6 = $this->getDataGenerator()->create_user(array('deleted' => 1));
         $user7 = $this->getDataGenerator()->create_user();
+        $user8 = $this->getDataGenerator()->create_user();
+        $user8->id = 0; // Visitor.
 
         $studentrole = $DB->get_record('role', array('shortname' => 'student'));
         // Add the course creator role to the course contact and assign a user to that role.
@@ -575,6 +577,42 @@ class core_userliblib_testcase extends advanced_testcase {
         $this->assertTrue(user_can_view_profile($user4));
 
         $CFG->coursecontact = null;
+
+        // Visitor (Not a guest user, userid=0).
+        $CFG->forceloginforprofiles = 1;
+        $this->setUser($user8);
+
+        $allroles = $DB->get_records_menu('role', array(), 'id', 'archetype, id');
+        // Let us test with guest user.
+        $this->setGuestUser();
+        $CFG->forceloginforprofiles = 1;
+        foreach ($users as $user) {
+            $this->assertFalse(user_can_view_profile($user));
+        }
+
+        // Even with cap, still guests should not be allowed in.
+        assign_capability('moodle/user:viewdetails', CAP_ALLOW, $allroles['guest'], context_system::instance()->id, true);
+        reload_all_capabilities();
+        foreach ($users as $user) {
+            $this->assertFalse(user_can_view_profile($user));
+        }
+
+        $CFG->forceloginforprofiles = 0;
+        foreach ($users as $user) {
+            $this->assertTrue(user_can_view_profile($user));
+        }
+
+        // Let us test with Visitor user.
+        $this->setUser($user8);
+        $CFG->forceloginforprofiles = 1;
+        foreach ($users as $user) {
+            $this->assertFalse(user_can_view_profile($user));
+        }
+
+        $CFG->forceloginforprofiles = 0;
+        foreach ($users as $user) {
+            $this->assertTrue(user_can_view_profile($user));
+        }
     }
 
     /**
@@ -623,5 +661,35 @@ class core_userliblib_testcase extends advanced_testcase {
         // Get exception for invalid required fields.
         $this->expectException('moodle_exception');
         $result = user_get_user_details($student, $course1, array('wrongrequiredfield'));
+    }
+
+    /**
+     * Regression test for MDL-57840.
+     *
+     * Ensure the fields "auth, confirmed, idnumber, lang, theme, timezone and mailformat" are present when
+     * calling user_get_user_details() function.
+     */
+    public function test_user_get_user_details_missing_fields() {
+        $this->resetAfterTest(true);
+        $this->setAdminUser(); // We need capabilities to view the data.
+        $user = self::getDataGenerator()->create_user([
+                                                          'auth'       => 'auth_something',
+                                                          'confirmed'  => '0',
+                                                          'idnumber'   => 'someidnumber',
+                                                          'lang'       => 'en_ar',
+                                                          'theme'      => 'mytheme',
+                                                          'timezone'   => '50',
+                                                          'mailformat' => '0',
+                                                      ]);
+
+        // Fields that should get by default.
+        $got = user_get_user_details($user);
+        self::assertSame('auth_something', $got['auth']);
+        self::assertSame('0', $got['confirmed']);
+        self::assertSame('someidnumber', $got['idnumber']);
+        self::assertSame('en_ar', $got['lang']);
+        self::assertSame('mytheme', $got['theme']);
+        self::assertSame('50', $got['timezone']);
+        self::assertSame('0', $got['mailformat']);
     }
 }

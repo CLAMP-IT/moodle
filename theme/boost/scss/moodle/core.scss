@@ -9,9 +9,11 @@
 .context-header-settings-menu,
 .region-main-settings-menu {
     float: right;
-    width: 4em;
+    width: auto;
+    max-width: 4em;
     height: 2em;
     display: block;
+    margin-top: 4px;
 }
 
 .context-header-settings-menu .dropdown-toggle > .icon,
@@ -1030,11 +1032,17 @@ tr.flagged-tag a {
     margin-right: 30px;
 }
 
-.userenrolment .col_role .role,
 .userenrolment .col_group .group {
     float: left;
     padding: 3px;
     margin: 3px;
+    white-space: nowrap;
+}
+
+.userenrolment .col_role .role {
+    float: left;
+    padding: 0 3px 3px;
+    margin: 0 3px 3px;
     white-space: nowrap;
 }
 
@@ -1066,8 +1074,8 @@ tr.flagged-tag a {
 
 .userenrolment .col_enrol .enrolment {
     float: left;
-    padding: 3px;
-    margin: 3px;
+    padding: 0 3px 3px;
+    margin: 0 3px 3px;
 }
 
 .userenrolment .col_enrol .enrolment a {
@@ -1712,6 +1720,7 @@ ul.badges {
     display: inline-block;
     vertical-align: top;
     margin-top: 17px;
+    margin-bottom: 20px;
 
     .expireimage {
         width: 100px;
@@ -1725,9 +1734,10 @@ ul.badges {
 
     .singlebutton {
         padding-top: 5px;
+        display: block;
 
-        input {
-            margin-left: 0;
+        button {
+            margin-left: 4px;
         }
     }
 }
@@ -1882,12 +1892,12 @@ header {
 
     .page-header-image,
     .page-header-headings {
+        float: left;
         display: block;
         position: relative;
     }
 
     .page-header-image {
-        float: left;
         margin-right: 1em;
         margin-bottom: 1em;
     }
