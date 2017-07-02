@@ -47,7 +47,7 @@ job1:
   script:
     - vendor/bin/phpunit /var/www/moodle/htdocs/local/provisional_enrolments/tests/provisional_enrolments_test.php
     - vendor/bin/phpunit /var/www/moodle/htdocs/course/format/class/tests/format_class_test.php
-    - vendor/bin/behat --config /root/bht_moodledata/behat/behat.yml --format=progress --colors --tags @hampshire --suite=hampshire
+    - vendor/bin/behat --config /root/bht_moodledata/behatrun/behat/behat.yml --format=progress --colors --tags @hampshire --suite=hampshire
 
 variables:
   DB_USER: 'moodle'
