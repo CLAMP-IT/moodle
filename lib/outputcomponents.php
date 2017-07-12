@@ -344,7 +344,7 @@ class user_picture implements renderable {
             $institutions = array('amherst', 'mtholyoke', 'smith', 'umass');
             $institution = preg_replace('/.*@([^.]*).*/', "$1", $user->username);
             if (in_array($institution, $institutions)) {
-                return "https://photos.hampshire.edu/photo_${institution}.jpg";
+                return new moodle_url("https://photos.hampshire.edu/photo_${institution}.jpg");
             }
 
             // Use a personal image, if available, for Hampshire users.
