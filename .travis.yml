@@ -18,6 +18,10 @@ php:
 
 addons:
   postgresql: "9.3"
+  packages:
+    - mysql-server-5.6
+    - mysql-client-core-5.6
+    - mysql-client-5.6
 
 services:
     - redis-server
@@ -59,12 +63,6 @@ matrix:
         - php: 7.1
           env: DB=none     TASK=GRUNT   NVM_VERSION='node'
 
-    allow_failures:
-        - php: 7.1
-          env: DB=none     TASK=GRUNT   NVM_VERSION='4'
-        - php: 7.1
-          env: DB=none     TASK=GRUNT   NVM_VERSION='node'
-
     exclude:
         # Moodle 2.7 is not compatible with PHP 7 for the upgrade test.
         - env: DB=pgsql    TASK=UPGRADE
@@ -76,6 +74,28 @@ cache:
       - $HOME/.npm
 
 install:
+    - sudo apt-get -y install haveged
+    - sudo service haveged start
+    - >
+        if [ "$DB" = 'mysqli' ];
+        then
+            sudo mkdir /mnt/ramdisk
+            sudo mount -t tmpfs -o size=1024m tmpfs /mnt/ramdisk
+            sudo stop mysql
+            sudo mv /var/lib/mysql /mnt/ramdisk
+            sudo ln -s /mnt/ramdisk/mysql /var/lib/mysql
+            sudo start mysql
+        fi
+    - >
+        if [ "$DB" = 'pgsql' ];
+        then
+            sudo mkdir /mnt/ramdisk
+            sudo mount -t tmpfs -o size=1024m tmpfs /mnt/ramdisk
+            sudo service postgresql stop
+            sudo mv /var/lib/postgresql /mnt/ramdisk
+            sudo ln -s /mnt/ramdisk/postgresql /var/lib/postgresql
+            sudo service postgresql start 9.3
+        fi
     - >
         if [ "$TASK" = 'BEHAT' ];
         then
@@ -113,15 +133,6 @@ install:
         fi
 
 before_script:
-    - sudo apt-get update
-    - sudo apt-get -y install haveged
-    - sudo service haveged start
-    - sudo mkdir /mnt/ramdisk
-    - sudo mount -t tmpfs -o size=1024m tmpfs /mnt/ramdisk
-    - sudo stop mysql
-    - sudo mv /var/lib/mysql /mnt/ramdisk
-    - sudo ln -s /mnt/ramdisk/mysql /var/lib/mysql
-    - sudo start mysql
     - phpenv config-rm xdebug.ini
     - >
       if [ "$TASK" = 'PHPUNIT' -o "$TASK" = 'UPGRADE' -o "$TASK" = 'BEHAT' ];

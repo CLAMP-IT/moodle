@@ -22,6 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['defaulttab'] = 'Default tab';
+$string['defaulttab_desc'] = 'The tab that will be displayed when a user first views their course overview. When returning to their course overview, the user\'s active tab is remembered.';
 $string['future'] = 'Future';
 $string['inprogress'] = 'In progress';
 $string['morecourses'] = 'More courses';

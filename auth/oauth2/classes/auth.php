@@ -247,6 +247,10 @@ class auth extends \auth_plugin_base {
         if (!empty($user->picture)) {
             return false;
         }
+        if (!empty($CFG->enablegravatar)) {
+            return false;
+        }
+
         $picture = $this->get_static_user_picture();
         if (empty($picture)) {
             return false;
@@ -342,7 +346,7 @@ class auth extends \auth_plugin_base {
      * Complete the login process after oauth handshake is complete.
      * @param \core\oauth2\client $client
      * @param string $redirecturl
-     * @return none Either redirects or throws an exception
+     * @return void Either redirects or throws an exception
      */
     public function complete_login(client $client, $redirecturl) {
         global $CFG, $SESSION, $PAGE;
@@ -352,7 +356,7 @@ class auth extends \auth_plugin_base {
         if (!$userinfo) {
             // Trigger login failed event.
             $failurereason = AUTH_LOGIN_NOUSER;
-            $event = \core\event\user_login_failed::create(['other' => ['username' => $userinfo['username'],
+            $event = \core\event\user_login_failed::create(['other' => ['username' => 'unknown',
                                                                         'reason' => $failurereason]]);
             $event->trigger();
 
@@ -364,7 +368,7 @@ class auth extends \auth_plugin_base {
         if (empty($userinfo['username']) || empty($userinfo['email'])) {
             // Trigger login failed event.
             $failurereason = AUTH_LOGIN_NOUSER;
-            $event = \core\event\user_login_failed::create(['other' => ['username' => $userinfo['username'],
+            $event = \core\event\user_login_failed::create(['other' => ['username' => 'unknown',
                                                                         'reason' => $failurereason]]);
             $event->trigger();
 

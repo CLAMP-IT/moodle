@@ -2862,5 +2862,18 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2017050900.01);
     }
 
+    // Automatically generated Moodle v3.3.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2017051500.06) {
+        // Check if the value of 'navcourselimit' is set to the old default value, if so, change it to the new default.
+        if ($CFG->navcourselimit == 20) {
+            set_config('navcourselimit', 10);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2017051500.06);
+    }
+
     return true;
 }
