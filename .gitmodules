@@ -61,3 +61,6 @@
 [submodule "course/format/topcoll"]
 	path = course/format/topcoll
 	url = https://github.com/gjb2048/moodle-format_topcoll.git
+[submodule "local/instructor_files"]
+	path = local/instructor_files
+	url = https://github.com/hampshirecollege/moodle-local_instructor_files.git
