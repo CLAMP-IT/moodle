@@ -11,6 +11,8 @@ require(dirname(dirname(dirname(dirname(__FILE__)))).'/config.php');
 
 // Ensure errors are well explained
 $CFG->debug = DEBUG_NORMAL;
+preg_match("/\/usr\/share\/moodle(.*)/",$CFG->dirroot,$matches);
+$instance = $matches[1];
 
 require_once($CFG->dirroot . '/lib/gradelib.php');
 
@@ -26,7 +28,7 @@ if (!isset($argv[1]) or !in_array($argv[1],$valid_methods)) {
   print "Must pass enrol request that matches one of the following " . join(',',$valid_methods) . "\n";
   die;
 }
-$lock = check_lock_file($argv[1]);
+$lock = check_lock_file($argv[1],$instance);
 if ($argv[1] == 'peoplesoft_enrol' ) {
   if (!isset($argv[2])) {
     $redirect = 0;
@@ -44,8 +46,8 @@ if ($argv[1] == 'peoplesoft_enrol' ) {
   print "Unknown enrol request!";
 }
 #print "Results were: " . var_dump($results);
-release_lock_file($lock,$argv[1]);
-$fh = fopen("/tmp/" . $argv[1] . $argv[2] . "_results","a+");
+release_lock_file($lock,$argv[1],$instance);
+$fh = fopen("/tmp/" . $argv[1] . $argv[2] . "_" . $instance . "_results." . date('Ymd'),"a+");
 fwrite($fh,print_r($results,true));
 fclose($fh);
 
@@ -169,8 +171,15 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     }
     /* just a unique identifier for tagging results hash */
     $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
+    global $DB;
+    /* new policy is to update course names from PS on every enrol */
+    $ps_course = get_peoplesoft_course_data($psdb,$course);
+    $moodle_course->fullname = $ps_course['full_name'];
+    $moodle_course->shortname = $ps_course['short_name'];
+    $result = $DB->update_record('course',$moodle_course);
 
     $auth_students = $enrol->get_members_from_peoplesoft($moodle_course,$psdb);
+   
     #var_dump($auth_students);
     if ($auth_students === false ) {
       print "Database errors";
@@ -185,12 +194,16 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     if ($auth_teachers === false ) {
       print "Database errors";
       continue;
+   }
+    #if no ps course, force empty enrolment
+    if (!$ps_course) {
+       $auth_teachers = array();
+       $auth_students = array();
     }
-    /* role id 5 == student */
     $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"student",false,true);
     $master_results[$courseinfo]['student_sync'] = $result;
-    /* role id 3 == teacher */
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"teacher",false,true);
+
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"editingteacher",false,true);
     $master_results[$courseinfo]['teacher_sync'] = $result;
   }
   /* no need to notify on redirect course creation */ 

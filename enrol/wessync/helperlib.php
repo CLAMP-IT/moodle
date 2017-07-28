@@ -71,12 +71,12 @@ function get_peoplesoft_course_data($psdbh,$course) {
 
 
 /*checks for lock file, creates one if it does not exist - this *will* stick around if the script exits in an unpredictable fashion*/
-function check_lock_file($process_name) {
-  if (file_exists("/tmp/$process_name.lock")) {
+function check_lock_file($process_name,$instance) {
+  if (file_exists("/tmp/$process_name.$instance.lock")) {
     echo "File already exists, script is running, please investigate!";
     exit;
   }
-  $file = fopen("/tmp/$process_name.lock",'w');
+  $file = fopen("/tmp/$process_name.$instance.lock",'w');
   if ($file === false ) {
     echo "Could not create lock file\n";
     exit;
@@ -89,9 +89,9 @@ function check_lock_file($process_name) {
   return $file;
 }
 /*cleans up lock file*/
-function release_lock_file ($lock_file,$process) {
+function release_lock_file ($lock_file,$process,$instance) {
    fclose($lock_file);
-   unlink("/tmp/$process.lock");
+   unlink("/tmp/$process.$instance.lock");
 }
 
 /* fetches moodle course based on idnumber, Wesleyan's unique identifier */
@@ -123,10 +123,10 @@ function get_moodlecreate_courses( $db_handle = '', $term = '', $redirect=0) {
      $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y'");
   } else if (!$redirect && $term) {
      /* hardcoded to only Create fall and up courses */
-     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y' and TERM >= '$term' and TERM > '1157'");
+     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='Y' and TERM >= '$term' and TERM >= '1179'");
    #TO BE IMPLEMENTED
   } else if ($term == '' && $redirect) {
-     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='N' and TERM >= '$term'");
+     $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='N' and TERM >= '$term' and TERM >= '1179' LIMIT 1");
   } else if ($redirect) {
      $stmt = $db_handle->prepare("select ID,TERM,CRSE_ID,SHORT_NAME,LONG_NAME,VISIBLE,REQUESTED_BY,STATUS,ALT_STATUS from course where MOODLE2_COURSE='N'");
   }
