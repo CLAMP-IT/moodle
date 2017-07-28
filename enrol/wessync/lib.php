@@ -394,10 +394,17 @@ class enrol_wessync_plugin extends enrol_plugin {
       $bc = new backup_controller(backup::TYPE_1COURSE, $course_template_id, backup::FORMAT_MOODLE, backup::INTERACTIVE_NO, backup::MODE_SAMESITE, "$admin_id");
       $bc->execute_plan();
       $backupfile = $bc->get_results();
-      $packer = new zip_packer();
+      $packer = get_file_packer('application/vnd.moodle.backup') ;
+
       
       #unzip our backup to a temporary restore file
-      $backupfile['backup_destination']->extract_to_pathname($packer,"$CFG->tempdir/backup/$course_template_id");
+      $result = $backupfile['backup_destination']->extract_to_pathname($packer,"$CFG->tempdir/backup/$course_template_id"); 
+      if (!$result) {
+        #figure out how to do this right.
+        $transaction->rollback("Backup unpack failed");
+        die;
+      }
+
       $bc->destroy();
       $restore = new restore_controller($course_template_id,$new_course_id,backup::INTERACTIVE_NO,backup::MODE_SAMESITE,"$admin_id",backup::TARGET_NEW_COURSE);
       if (!$restore->execute_precheck('true')) {
@@ -434,7 +441,7 @@ class enrol_wessync_plugin extends enrol_plugin {
       /*update with the new object */
       $result = $DB->update_record('course',$moodle_course);
       $category_context = get_context_instance(CONTEXT_COURSECAT,$moodle_course->category);
-      context_moved($course_context,$category_context);
+      $course_context->update_moved($category_context);
       if (!$result) {
         array_push($this->ERRORS,"Could not update course");
         return 0;
