@@ -54,8 +54,12 @@ if(preg_match('/\w+/', $ruser)) {
 		  }
 		}
 
-                #$ldap->update_user_record($ruser, $updatekeys);
-
+		// An empty array for $updatekeys causes _all_ available
+		// fields to be updated. Let's not do that.				   
+		if ( !empty($updatekeys) ) {
+                  $ldap->update_user_record($ruser, $updatekeys);
+		}
+		
                 // user be all up in this Moozy, so log them in
                 do_login($user);
         } else {
