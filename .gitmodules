@@ -64,3 +64,6 @@
 [submodule "local/instructor_files"]
 	path = local/instructor_files
 	url = https://github.com/hampshirecollege/moodle-local_instructor_files.git
+[submodule "admin/tool/deletecourses"]
+	path = admin/tool/deletecourses
+	url = https://github.com/LafColITS/moodle-tool_deletecourses.git
