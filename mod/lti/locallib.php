@@ -387,7 +387,7 @@ function lti_build_request($instance, $typeconfig, $course, $typeid = null, $isl
         'roles' => $role,
         'context_id' => $course->id,
         'context_label' => trim(html_to_text($course->shortname)),
-        'context_title' => trim(html_to_text($course->fullname)),
+        'context_title' => trim(html_to_text($course->fullname, 200))
     );
     if (!empty($instance->name)) {
         $requestparams['resource_link_title'] = trim(html_to_text($instance->name));
