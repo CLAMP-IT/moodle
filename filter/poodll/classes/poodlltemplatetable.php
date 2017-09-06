@@ -85,20 +85,19 @@ class poodlltemplatetable extends \admin_setting {
             get_string('name'),
             get_string('type','filter_poodll'),
             get_string('version'),
-            get_string('description'),
-            get_string('edit')
+            get_string('description')
         );
-        $table->headspan = array(1,1,1,1,1);
+        $table->headspan = array(1,1,1,1);
         $table->colclasses = array(
-            'templatenamecol','templatetypecol', 'templateversioncol', 'templateinstructionscol', 'templateeditcol'
+            'templatenamecol','templatetypecol', 'templateversioncol', 'templateinstructionscol'
         );
 
         //loop through templates and add to table
         foreach ($template_details as $item) {
             $row = new \html_table_row();
 
-
-            $titlecell = new \html_table_cell($item->title);
+            $titlelink = $editlink = \html_writer::link($item->url,$item->title);
+            $titlecell = new \html_table_cell($titlelink);
             $versioncell = new \html_table_cell($item->version);
             $instructionscell = new \html_table_cell($item->instructions);
 
@@ -112,15 +111,13 @@ class poodlltemplatetable extends \admin_setting {
             }
             $typecell = new \html_table_cell($typetext);
 
-            $editlink = \html_writer::link($item->url, get_string('edit'));
-            $editcell = new \html_table_cell($editlink);
         /*
             $deleteurl = new \moodle_url($actionurl, array('itemid'=>$item->id,'action'=>'confirmdelete'));
             $deletelink = \html_writer::link($deleteurl, get_string('deleteitem', "local_trigger"));
             $deletecell = new \html_table_cell($deletelink);
         */
             $row->cells = array(
-                $titlecell, $typecell,$versioncell, $instructionscell, $editcell
+                $titlecell, $typecell,$versioncell, $instructionscell
             );
             $table->data[] = $row;
         }

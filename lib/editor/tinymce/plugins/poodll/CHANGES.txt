@@ -1,5 +1,8 @@
 Change List
 =========
+Version 2017080401
+Fixes some bad formatiing in popup
+
 Version 2016081402
 Added new HTML5 snapshot taker
 

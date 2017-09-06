@@ -18,7 +18,7 @@ namespace filter_poodll\task;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . '/filter/poodll/poodllfilelib.php');
+//require_once($CFG->dirroot . '/filter/poodll/poodllfilelib.php');
 
 /**
  *

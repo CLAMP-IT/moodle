@@ -20,8 +20,9 @@ define(['jquery','core/log'], function($, log) {
 
     insert_controls: function(element){
          //progress
-            var controls='<div id="' + this.config.widgetid + '_progress" class="p_progress x"><p></p></div>';
-            controls += '<div id="' + this.config.widgetid + '_messages" class="p_messages x"></div>';
+            var skin_style = this.config.media_skin_style;
+            var controls='<div id="' + this.config.widgetid + '_progress" class="p_progress x progress_' + skin_style + '"><p></p></div>';
+            controls += '<div id="' + this.config.widgetid + '_messages" class="p_messages x messages_' + skin_style + '"></div>';
             $(element).append(controls);
         },
         

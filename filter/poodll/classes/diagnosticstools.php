@@ -48,43 +48,62 @@ class diagnosticstools {
 		return new \stdClass();
 	}
 	
-	public function compile_properties(){
-		global $CFG, $DB;
-		
-		$ds = Array();
-		
-		//general version info
-		$ds['moodle_version'] = $CFG->version;
-		$ds['os_version']= php_uname();
-		//server time
+	public function compile_properties()
+    {
+        global $CFG, $DB;
+
+        $ds = Array();
+
+        //general version info
+        $ds['moodle_version'] = $CFG->version;
+        $ds['os_version'] = php_uname();
+        //server time
         date_default_timezone_set('Asia/Tokyo');
         $timestamp = time();
         $server_time = date("d-m-Y (D) H:i:s", $timestamp);
-		$ds['server_time']=$server_time . ' (translated to JAPAN STANDARD TIME)';
+        $ds['server_time'] = $server_time . ' (translated to JAPAN STANDARD TIME)';
 
-		
-		//poodll version info
-		$ds['poodll_filter_version'] = get_config('filter_poodll','version');
-		$ds['poodll_atto_version'] = get_config('atto_poodll','version');
-		$ds['poodll_tinymce_version'] = get_config('tinymce_poodll','version');
-		$ds['assignsubmission_onlinepoodll_version'] = get_config('assignsubmission_onlinepoodll','version');
-		$ds['assignfeedback_poodll_version'] = get_config('assignfeedback_poodll','version');
-		$ds['qtype_poodllrecording_version'] = get_config('qtype_poodllrecording','version');
-		$ds['data_field_version'] = get_config('datafield_poodll','version');
-		$ds['repository_poodll'] = get_config('repository_poodll','version');
-		
-		//license info
-		if($CFG && property_exists($CFG,'filter_poodll_registrationkey') && !empty($CFG->filter_poodll_registrationkey)){
-			$lm = new \filter_poodll\licensemanager();
-			$lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
-			$license_details = $lm->fetch_license_details();
-			$display_license_details = get_string('license_details', 'filter_poodll',$license_details);
-		}else{
-			$display_license_details="";
-		}
-		$ds['license_details'] = $display_license_details;
-	
-		//site info
+
+        //poodll version info
+        $ds['poodll_filter_version'] = get_config('filter_poodll', 'version');
+        $ds['poodll_atto_version'] = get_config('atto_poodll', 'version');
+        $ds['poodll_tinymce_version'] = get_config('tinymce_poodll', 'version');
+        $ds['assignsubmission_onlinepoodll_version'] = get_config('assignsubmission_onlinepoodll', 'version');
+        $ds['assignfeedback_poodll_version'] = get_config('assignfeedback_poodll', 'version');
+        $ds['qtype_poodllrecording_version'] = get_config('qtype_poodllrecording', 'version');
+        $ds['data_field_version'] = get_config('datafield_poodll', 'version');
+        $ds['repository_poodll'] = get_config('repository_poodll', 'version');
+
+        //license info
+        if ($CFG && property_exists($CFG, 'filter_poodll_registrationkey') && !empty($CFG->filter_poodll_registrationkey)) {
+            $lm = new \filter_poodll\licensemanager();
+            $lm->validate_registrationkey($CFG->filter_poodll_registrationkey);
+            $license_details = $lm->fetch_license_details();
+            $display_license_details = get_string('license_details', 'filter_poodll', $license_details);
+        } else {
+            $display_license_details = "";
+        }
+        $ds['license_details'] = $display_license_details;
+
+        //get active users
+        $oneyearago = strtotime('-1 year');
+        $rec = $DB->get_record_sql('SELECT count(*) as activeusers FROM {user} WHERE lastaccess > ?', array($oneyearago));
+        if ($rec) {
+            $ds['activeusers'] = $rec->activeusers;
+        }else{
+            $ds['activeusers'] = 'unknown';
+        }
+
+        //get poodll users
+        $sql="SELECT COUNT(DISTINCT(userid)) as poodllusers FROM {logstore_standard_log} WHERE component = 'filter_poodll' AND timecreated > ?";
+        $rec = $DB->get_record_sql($sql,array($oneyearago));
+        if ($rec) {
+            $ds['poodllusers'] = $rec->poodllusers;
+        }else{
+            $ds['poodllusers'] = 'unknown';
+        }
+
+        //site info
 		$ds['wwwroot'] = $CFG->wwwroot;
 		$ds['dirroot'] = $CFG->dirroot;
         $ds['dataroot'] = $CFG->dataroot;
@@ -121,7 +140,12 @@ class diagnosticstools {
 		//poodll setting info		
 		$ds['cloudrecording']=$CFG->filter_poodll_cloudrecording;
         $ds['cloudnotifications']=$CFG->filter_poodll_cloudnotifications;
-		$ds['filter_poodll_recorderorder']=$CFG->filter_poodll_recorderorder;
+        $ds['awsregion']=$CFG->filter_poodll_aws_region;
+        $ds['filter_poodll_recorderorder_audio'] = $CFG->filter_poodll_recorderorder_audio;
+        $ds['filter_poodll_recorderorder_video'] = $CFG->filter_poodll_recorderorder_video;
+        $ds['filter_poodll_recorderorder_whiteboard'] = $CFG->filter_poodll_recorderorder_whiteboard;
+        $ds['filter_poodll_recorderorder_snapshot'] = $CFG->filter_poodll_recorderorder_snapshot;
+
 		$ds['filter_poodll_mp3recorder_nocloud']=$CFG->filter_poodll_mp3recorder_nocloud;
 		$ds['filter_poodll_videotranscode']=$CFG->filter_poodll_videotranscode;
 		$ds['filter_poodll_audiotranscode']=$CFG->filter_poodll_audiotranscode;
