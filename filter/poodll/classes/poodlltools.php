@@ -35,6 +35,9 @@ class poodlltools
 {
     const LOG_SAVE_PLACEHOLDER_FAIL = 1;
     const LOG_NOTHING_TO_TRANSCODE = 2;
+    
+    const AUDIO_PLACEHOLDER_HASH ='e118549e4fc88836f418b6da6028f1fec571cd43';
+    const VIDEO_PLACEHOLDER_HASH ='c2a342a0a664f2f1c4ea5387554a67caf3dd158e';
 
 	//this is just a temporary function, until the PoodLL filter client plugins are upgraded to not use simpleaudioplayer
     public static function fetchSimpleAudioPlayer($param1='auto',$url,$param3='http',$param4='width', $param5='height'){ 
@@ -567,35 +570,6 @@ class poodlltools
 		}
 
 	}
-
-	/*
-	 * To be removed. No longer called as of 2017 04 18
-	 */
-	public static function fetch_flashcards_owl($cardset, $cardsetname, $cardwidth, $cardheight)
-	{
-		global $CFG, $COURSE, $PAGE;
-
-
-
-		//for AMD
-		$proparray = array();
-		$proparray['FLASHCARDS_ID'] = "owlcards_" . time() . rand(10000, 999999);
-		$proparray['CARDWIDTH'] = $cardwidth;
-		$proparray['CARDHEIGHT'] = $cardheight;
-		$proparray['SINGLEITEM'] = true;
-		$proparray['AUTOHEIGHT'] = false;
-		$proparray['CSS_INJECT'] = true;
-		$proparray['CSS_OWL'] = $CFG->wwwroot . '/filter/poodll/3rdparty/owl/owl-carousel/owl.carousel.css';
-		$proparray['CSS_THEME'] = $CFG->wwwroot . '/filter/poodll/3rdparty/owl/owl-carousel/owl.theme.css';
-
-		$PAGE->requires->js_call_amd('filter_poodll/owl_amd', 'loadowl', array($proparray));
-
-		$dm = new \filter_poodll\dataset_manager();
-		$renderer = $PAGE->get_renderer('filter_poodll');
-		$carddata = $dm->fetch_flashcard_data($cardset, $cardsetname);
-		return $renderer->fetch_owl_flashcards($carddata, $proparray);
-	}
-
 
 	public static function fetch_flashcards_poodll($runtime, $cardset, $cardsetname, $frontcolor, $backcolor, $cardwidth, $cardheight, $randomize, $width, $height)
 	{
@@ -1438,8 +1412,8 @@ class poodlltools
             global $DB, $CFG;
             
             switch($mediatype){
-                    case 'audio': $contenthash = POODLL_AUDIO_PLACEHOLDER_HASH;break;
-                    case 'video': $contenthash = POODLL_VIDEO_PLACEHOLDER_HASH;break;
+                    case 'audio': $contenthash = self::AUDIO_PLACEHOLDER_HASH;break;
+                    case 'video': $contenthash = self::VIDEO_PLACEHOLDER_HASH;break;
                     default:$contenthash = '';
 
             }
@@ -1921,11 +1895,13 @@ class poodlltools
 		$widgetopts->s3filename = $s3filename;
 		$widgetopts->using_s3 = intval($using_s3);
 
-        //recorder order of preference
+        //recorder order of preference and media skin style
+        $skinstyle = $CFG->filter_poodll_html5recorder_skinstyle_audio;
         switch($mediatype) {
 
             case 'video':
                 $rec_order = explode(',', $CFG->filter_poodll_recorderorder_video);
+                $skinstyle = $CFG->filter_poodll_html5recorder_skinstyle_video;
                 break;
             case 'whiteboard':
                 $rec_order = explode(',', $CFG->filter_poodll_recorderorder_whiteboard);
@@ -1935,10 +1911,12 @@ class poodlltools
                 break;
             case 'audio':
             default:
+                $skinstyle = $CFG->filter_poodll_html5recorder_skinstyle_audio;
                 $rec_order = explode(',', $CFG->filter_poodll_recorderorder_audio);
                 break;
         }
         $widgetopts->rec_order = $rec_order;// array('mobile','media','flashaudio','red5','upload','flash');
+        $widgetopts->media_skin_style= $skinstyle;
 
 		//do we use flash on android
         $widgetopts->flashonandroid=$CFG->filter_poodll_flash_on_android;
@@ -2411,7 +2389,7 @@ class poodlltools
         $params['media_videorecordertype'] = 'auto';//or mediarec or webp
         $params['media_videocapturewidth'] = 320;
         $params['media_videocaptureheight'] = 240;   
-        $params['media_skin'] = $CFG->filter_poodll_html5recorder_skin; 
+        $params['media_skin'] = $CFG->filter_poodll_html5recorder_skin;
 		return $params;
 	}
         

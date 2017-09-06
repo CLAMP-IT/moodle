@@ -66,8 +66,8 @@ $string['recorderorder_whiteboard_desc'] = '(This setting is currently not used 
 $string['recorderorder_snapshot'] = 'Snapshot Recorder Order';
 $string['recorderorder_snapshot_desc'] = '';
 
-$string['showdownloadicon'] = 'Show download icon under players';
-$string['showdownloadicon_desc'] = '(This is currently not implemented in Poodll3 audio/video players but will be in an upcoming version)';
+$string['showdownloadicon'] = 'Show download button under players';
+$string['showdownloadicon_desc'] = 'This is implemented in some players. native players, mediaelement players, audiojs_shim, flowplayer first frame and Video JS';
 
 
 $string['servername'] = 'PoodLL Host Address';
@@ -222,7 +222,7 @@ $string['templaterequire_amd'] = 'Load via AMD';
 $string['templaterequire_amd_desc'] = 'AMD is a javascript loading mechanism. If you upload or link to javascript libraries in your template, you might have to uncheck this. It only applies if on Moodle 2.9 or greater';
 $string['templatealternate'] = 'Alternate content (template {$a})'; 
 $string['templatealternate_desc'] = 'Content that can be used when the custom CSS and javascript content is not available. Currently this is used when the template is processed by a webservice, probably for content on the mobile app';
-$string['templatealternate_end'] = 'Alternate content end ((template {$a})'; 
+$string['templatealternate_end'] = 'Alternate content end (template {$a})';
 $string['templatealternate_end_desc'] = 'Closing alternate content tags for templates that enclose user content with start and end PoodLL tags';
 $string['extensions'] = 'File Extensions';
 $string['extensions_desc'] = 'A CSV (comma separated value) list of file extensions this filter can parse.';
@@ -256,8 +256,16 @@ $string['exportdiagnostics']="Export";
 
 //html5 recorder
 $string['plain_recorder']="Plain";
-$string['burntrose_recorder']="Burnt Rose";
+$string['burntrose_recorder']="Burnt Rose  (old)";
+$string['onetwothree_recorder']="One Two Three";
+$string['gold_recorder']="Gold";
+$string['bmr_recorder']="Burnt Rose";
 $string['html5recorder_skin']="HTML5 Recorder Skin";
+$string['skinstyleaudio']="Skin style(audio)";
+$string['skinstyleaudio_details']="A CSS class name that will be added to the audio recorder to assist in customizing recorder appearance.";
+$string['skinstylevideo']="Skin style(video)";
+$string['skinstylevideo_details']="A CSS class name that will be added to the video recorder to assist in customizing recorder appearance.";
+
 $string['filter_poodll_html5recorder_heading']="HTML5 Recorder Settings";
 
 //events
@@ -290,3 +298,20 @@ $string['flashonandroid_desc'] = 'It is possible to use Flash on Android, though
 //diable whiteboard zoom
 $string['wboardnozoom']='Disable Zoom ';
 $string['wboardnozoom_details']='Only applies to LiterallyCanvas. If checked sets the max and min zoom to 1.0, effectively disabling the zoom feature.';
+
+$string['awsregion']='Cloud Region (AWS)';
+$string['awsregion_desc']='Choose the closest region to your Moodle server for best performance and to satisfy any data protection policies or regulations that apply to you.';
+$string['REGION_APS1'] = 'Asia Pacific (Mumbai)';
+$string['REGION_APN2'] = 'Asia Pacific (Seoul)';
+$string['REGION_APSE1'] = 'Asia Pacific (Singapore)';
+$string['REGION_APSE2'] = 'Asia Pacific (Sydney)';
+$string['REGION_APN1'] = 'Asia Pacific (Tokyo)';
+$string['REGION_USE2'] ='US East (Ohio)';
+$string['REGION_USE1'] = 'US East (N. Virginia)';
+$string['REGION_USW1'] = 'US West (N. California)';
+$string['REGION_USW2'] = 'US West (Oregon)';
+$string['REGION_CAC1'] = 'Canada (Central)';
+$string['REGION_EUC1'] = 'EU (Frankfurt)';
+$string['REGION_EUW1'] = 'EU (Ireland)';
+$string['REGION_EUW2'] = 'EU (London)';
+$string['REGION_SAE1'] = 'South America (São Paulo)';

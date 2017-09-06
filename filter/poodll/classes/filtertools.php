@@ -271,4 +271,11 @@ class filtertools
 		}
 		return $itemprops;
 	}//end of function
+
+    public static function fetch_local_filter_props($filter,$contextid){
+	    global $CFG;
+	    require_once ($CFG->libdir . '/filterlib.php');
+        $props = filter_get_local_config($filter, $contextid);
+        return $props;
+    }
 }//end of class

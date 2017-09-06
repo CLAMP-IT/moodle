@@ -202,7 +202,10 @@ class filter_poodll extends moodle_text_filter {
 			return $lm->fetch_unregistered_content($registration_status);
 		}
 
+		//get the Poodll configs
 		 $conf = get_object_vars(get_config('filter_poodll'));
+		//setup context, but only fetch it when we need to
+		$context=false;
 		 
 		 //we use this to see if its a web service calling this, 
 		//in which case we return the alternate content
@@ -288,6 +291,15 @@ class filter_poodll extends moodle_text_filter {
 		//is stored in $filterprops and passed to js. we dont replace it server side because
 		//of caching
 		$js_custom_script = $conf['templatescript_' . $tempindex];
+
+        //if we have a download variable in the template
+        $filterprops['CANDOWNLOAD']='hide';
+        if ($CFG->filter_poodll_download_media_ok ) {
+            $context = context_course::instance($COURSE->id);
+            if(has_capability('filter/poodll:candownloadmedia',$context)){
+                $filterprops['CANDOWNLOAD']='filter_poodll_download_button';
+            };
+        }
 	
 		//replace the specified names with spec values
 		foreach($filterprops as $name=>$value){
@@ -319,7 +331,7 @@ class filter_poodll extends moodle_text_filter {
 				}
 			}
 		}
-	
+
 		//If we have autoid lets deal with that
 		$autoid = 'filterpoodll_' . time() . (string)rand(100,32767) ;
 		$poodlltemplate = str_replace('@@AUTOID@@',$autoid,$poodlltemplate);
@@ -425,7 +437,9 @@ class filter_poodll extends moodle_text_filter {
 					if(array_key_exists($courseprop,$coursevars)){
 						$propvalue=$coursevars[$courseprop];
 					}elseif($courseprop=='contextid'){
-						$context = context_course::instance($COURSE->id);
+					    if(!$context) {
+                            $context = context_course::instance($COURSE->id);
+                        }
 						if($context){
 							$propvalue=$context->id;
 						}

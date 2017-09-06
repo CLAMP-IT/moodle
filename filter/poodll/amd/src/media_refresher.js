@@ -18,6 +18,7 @@ define(['jquery','core/log'], function($, log) {
 
         //pass in config, the jquery video/audio object, and a function to be called when conversion has finshed
         init: function(filename, placeholderduration, mediaduration, alertconverted){
+            //debugger;
             this.placeholderduration = placeholderduration;
             this.mediaduration = mediaduration;
             this.alertconverted = alertconverted;
@@ -25,8 +26,16 @@ define(['jquery','core/log'], function($, log) {
         },
 
         should_be_checked: function(filename){
-            //check this is an uncoverted recording that we need to track
-            if(this.mediaduration != this.placeholderduration){
+            //check this is an unconverted recording that we need to track
+            //log.debug('mediaduration: ' + this.mediaduration);
+            //log.debug('placeholderduration: ' + this.placeholderduration);
+
+            //if any of these numbers is not numeric we kill it
+            if(!$.isNumeric(this.placeholderduration)){return false;}
+            if(!$.isNumeric(this.mediaduration)){return false;}
+            //if the two numbers are equivalent to one decimal place we credit it
+            //firefox calcs mp3 size diff to chrome, but they seem same to 1 place ... now anyway
+            if( parseFloat(this.mediaduration).toFixed(1) !=  parseFloat(this.placeholderduration).toFixed(1)){
                 return false;
             }
             //this is a bogus check.

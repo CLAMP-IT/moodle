@@ -17,8 +17,8 @@
 /**
  * Plugin capabilities
  *
- * @package    tinymce_skim
- * @copyright  2013 Justin Hunt {@link http://www.poodll.com}
+ * @package    filter_poodll
+ * @copyright  2017 Justin Hunt {@link http://www.poodll.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

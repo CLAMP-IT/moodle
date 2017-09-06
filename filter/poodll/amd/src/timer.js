@@ -18,14 +18,14 @@ define(['jquery','core/log'], function($, log) {
         },
 
         init: function(initseconds,callback){
-            this.initseconds = initseconds;
-            this.seconds = initseconds;
+            this.initseconds = parseInt(initseconds);
+            this.seconds = parseInt(initseconds);
             this.callback = callback;
         },
 
         start: function(){
             var self = this;
-            this.increment = 1;
+            if(this.initseconds > 0){this.increment=-1;}else{this.increment = 1;}
             this.intervalhandle = setInterval(function(){
                     self.seconds = self.seconds + self.increment;
                     self.callback();
@@ -55,7 +55,7 @@ define(['jquery','core/log'], function($, log) {
             this.increment = 0;
         },
         resume: function(){
-            this.increment = 1;
+            if(this.initseconds > 0){this.increment=-1;}else{this.increment = 1;}
         }
 
     };//end of returned object

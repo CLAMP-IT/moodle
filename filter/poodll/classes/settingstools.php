@@ -66,7 +66,18 @@ public static function fetch_general_items(){
 	$items[] = new \admin_setting_configselect('filter_poodll_aws_sdk', get_string('awssdkversion', 'filter_poodll'), 
 		get_string('awssdkversion_desc', 'filter_poodll'), '2.x', $options);
 
-		//PoodLL Network Settings.
+    //Adding Amazon AWS regions
+    //for now we REMOVED the EUC1 and CAC1 regions, but they cost more and be slow
+   $options = array(awstools::REGION_APN1 => get_string('REGION_APN1', 'filter_poodll'),
+       awstools::REGION_APSE2 => get_string('REGION_APSE2', 'filter_poodll'),
+       awstools::REGION_EUW1 => get_string('REGION_EUW1', 'filter_poodll'),
+       awstools::REGION_USE1 => get_string('REGION_USE1', 'filter_poodll'));
+   $items[] = new \admin_setting_configselect('filter_poodll_aws_region', get_string('awsregion', 'filter_poodll'),
+       get_string('awsregion_desc', 'filter_poodll'), awstools::REGION_APN1, $options);
+
+
+
+    //PoodLL Network Settings.
 	$items[] = new \admin_setting_heading('filter_poodll_network_settings', get_string('filter_poodll_network_heading', 'filter_poodll'), '');
 	$items[] = new \admin_setting_configtext('filter_poodll_servername', get_string('servername', 'filter_poodll'), '', 'tokyo.poodll.com');
 	$items[] = new \admin_setting_configtext('filter_poodll_serverid', get_string('serverid', 'filter_poodll'), '', 'poodll');
@@ -138,14 +149,18 @@ public static function fetch_general_items(){
 
    //html5 recorder settings.
 	$items[] = new \admin_setting_heading('filter_poodll_html5recorder_settings', get_string('filter_poodll_html5recorder_heading', 'filter_poodll'), '');
-	$options = array('standard' => get_string('plain_recorder', 'filter_poodll'), 'burntrose' => get_string('burntrose_recorder', 'filter_poodll'));
+	$options = array('standard' => get_string('plain_recorder', 'filter_poodll'),'bmr' => get_string('bmr_recorder', 'filter_poodll') ,'onetwothree' => get_string('onetwothree_recorder', 'filter_poodll'), 'burntrose' => get_string('burntrose_recorder', 'filter_poodll'));
 	$items[] = new \admin_setting_configselect('filter_poodll_html5recorder_skin', get_string('html5recorder_skin', 'filter_poodll'), '', 'standard', $options);
+    $items[] = new \admin_setting_configtext('filter_poodll_html5recorder_skinstyle_audio', get_string('skinstyleaudio', 'filter_poodll'),
+        get_string('skinstyleaudio_details', 'filter_poodll'), '');
+    $items[] = new \admin_setting_configtext('filter_poodll_html5recorder_skinstyle_video', get_string('skinstylevideo', 'filter_poodll'),
+        get_string('skinstylevideo_details', 'filter_poodll'), '');
 
 
 
-	/*
-	//File Conversions
-	*/
+    /*
+    //File Conversions
+    */
 	$items[] = new \admin_setting_heading('filter_poodll_transcode_settings', get_string('transcode_heading', 'filter_poodll'), get_string('transcode_heading_desc', 'filter_poodll'));
 	$items[] = new \admin_setting_configcheckbox('filter_poodll_videotranscode', get_string('videotranscode', 'filter_poodll'), get_string('videotranscodedetails', 'filter_poodll'), 0);
 	$items[] = new \admin_setting_configcheckbox('filter_poodll_audiotranscode', get_string('audiotranscode', 'filter_poodll'), get_string('audiotranscodedetails', 'filter_poodll'), 0);

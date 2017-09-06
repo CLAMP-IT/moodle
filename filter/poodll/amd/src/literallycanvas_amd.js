@@ -6,7 +6,11 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
     log.debug('Filter PoodLL: literallycanvas.js initialising');
 
     return {
-    
+
+        instanceprops: [],
+
+
+
         // handle literallycanvas whiteboard saves for Moodle
         loadliterallycanvas: function(opts) {
 
@@ -18,7 +22,6 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                 this.config = opts;
                 $(theid).remove();
             }
-
 
             //init the whiteboard	(diff logic if have a background image)
             var element = '#' + opts['recorderid'] + '_literally';
@@ -58,10 +61,9 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                     zoomMin: zoomMin
                 });
             }
-            this.lc = lc;
-            
-            //init uploader
-            uploader.init(element, opts);
+
+            //store our lc reference
+            opts.lc = lc;
 
             //restore previous drawing if any
             var vectordata = opts['vectordata'];
@@ -72,22 +74,30 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                 }
             }
 
-            
+            //init the uploader
+            opts.uploader  = uploader.clone();
+            opts.uploader.init(element, opts);
+
+            //save opts under recorder id key. This is important to support multi on one page
+            //"this" is a singleton
+            this.instanceprops[opts['recorderid']]=opts;
+
+
             //register the draw and save events that we need to handle
-            this.registerEvents();
+            this.registerEvents(opts['recorderid']);
            
         },
         
-        registerEvents: function() {
+        registerEvents: function(recid) {
         
             var mfp = this;
-            
-            var opts = this.config;
-            var recid = opts['recorderid'];
+            var opts = this.instanceprops[recid];
+
+
             //handle autosave
             if(opts['autosave']){
                 //if user has drawn, commence countdown to save
-                this.lc.on('drawingChange',function(){
+                opts.lc.on('drawingChange',function(){
                         var m = $('#' + recid + '_messages')[0];
                         var savebutton = $('#' + recid + '_btn_upload_whiteboard')[0];
                         if(m) {
@@ -98,7 +108,7 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                             var th = utils.timeouthandles[recid];
                             if(th){clearTimeout(th);}
                             utils.timeouthandles[recid] = setTimeout(
-                                function(){ utils.WhiteboardUploadHandler(recid,mfp.lc,opts);},
+                                function(){ utils.WhiteboardUploadHandler(recid,opts.lc,opts,opts.uploader);},
                                 opts['autosave']);
                         }
                 });
@@ -107,7 +117,7 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
             }else{
                 //lc.on('drawingChange',(function(mfp){return function(){mfp.setUnsavedWarning;}})(this));
                 //if user has drawn, alert to unsaved state
-                this.lc.on('drawingChange',function(){
+                opts.lc.on('drawingChange',function(){
                         var m = $('#' + recid + '_messages');
                         if(m){
                             m.innerHTML = 'File has not been saved.';
@@ -120,13 +130,14 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
             var uploadbutton = $(uploadbuttonstring);
             if(uploadbutton){
                 if(opts['autosave']){
-                    uploadbutton.click(function(){utils.WhiteboardUploadHandler(recid,mfp.lc,opts);});
+                    uploadbutton.click(function(){utils.WhiteboardUploadHandler(recid,opts.lc,opts,opts.uploader);});
                 }else{
                     uploadbutton.click(
+
                         function(){
-                            var cvs = utils.getCvs(recid,mfp.lc,opts);
-                            utils.pokeVectorData(recid,mfp.lc,opts);
-                            uploader.uploadFile(cvs.toDataURL(),'image');
+                            var cvs = utils.getCvs(recid,opts.lc,opts);
+                            utils.pokeVectorData(recid,opts.lc,opts);
+                            opts.uploader.uploadFile(cvs.toDataURL(),'image');
                         });
                 }
             }

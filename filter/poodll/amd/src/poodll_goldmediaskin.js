@@ -9,7 +9,6 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
     
         instanceprops: null,
         pmr: null,
-        uploaded: false,
 
         //for making multiple instances
         clone: function(){
@@ -125,31 +124,31 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 var ip = this.fetch_instanceprops(controlbarid);
                 var skin_style = ip.config.media_skin_style;
 
-                var controls ='<div class="poodll_mediarecorderholder_standard ' + skin_style + '" id="holder_' + controlbarid + '">' ;
-                controls +='<div class="poodll_mediarecorderbox_standard ' + skin_style + '" id="' + controlbarid + '">' ;
-                var status = this.fetch_status_bar('standard');
+                var controls ='<div class="poodll_mediarecorderholder_gold ' + skin_style + '" id="holder_' + controlbarid + '">' ;
+                controls +='<div class="poodll_mediarecorderbox_gold ' + skin_style + '" id="' + controlbarid + '">' ;
+                var status = this.fetch_status_bar('gold');
                 controls += status,
                 controls += preview,
-                controls +=  '<button type="button" class="poodll_mediarecorder_button_standard poodll_start-recording_standard">' + M.util.get_string('recui_record', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_stop-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_stop', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_pause-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_pause', 'filter_poodll') + '</button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_resume-recording_standard pmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '</button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_play-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_save-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button>';
+                controls +=  '<button type="button" class="poodll_mediarecorder_button_gold poodll_start-recording_gold">' + M.util.get_string('recui_record', 'filter_poodll') + '</button>';
+                controls += '<button type="button" class="poodll_mediarecorder_button_gold poodll_stop-recording_gold pmr_disabled" disabled>' + M.util.get_string('recui_stop', 'filter_poodll') + '</button>';
+                controls += '<button type="button" class="poodll_mediarecorder_button_gold poodll_pause-recording_gold pmr_disabled" disabled>' + M.util.get_string('recui_pause', 'filter_poodll') + '</button>';
+                controls += ' <button type="button" class="poodll_mediarecorder_button_gold poodll_resume-recording_gold pmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '</button>';
+                controls += ' <button type="button" class="poodll_mediarecorder_button_gold poodll_play-recording_gold pmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '</button>';
+                controls += '<button type="button" class="poodll_save-recording_gold pmr_disabled" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button>';
                 controls += '</div></div>';
                 $(element).prepend(controls);
                 var controlbar ={
-                    status: $('#' + controlbarid + ' > .poodll_status_standard'),
-                    preview: $('#' + controlbarid + ' > .poodll_preview_standard'),
-                    startbutton: $('#' + controlbarid + ' > .poodll_start-recording_standard'),
-                    stopbutton: $('#' + controlbarid + ' > .poodll_stop-recording_standard'),
-                    pausebutton: $('#' + controlbarid + ' > .poodll_pause-recording_standard'),
-                    resumebutton: $('#' + controlbarid + ' > .poodll_resume-recording_standard'),
-                    playbutton: $('#' + controlbarid + ' > .poodll_play-recording_standard'),
-                    savebutton: $('#' + controlbarid + ' > .poodll_save-recording_standard')    
+                    status: $('#' + controlbarid + ' > .poodll_status_gold'),
+                    preview: $('#' + controlbarid + ' > .poodll_preview_gold'),
+                    startbutton: $('#' + controlbarid + ' > .poodll_start-recording_gold'),
+                    stopbutton: $('#' + controlbarid + ' > .poodll_stop-recording_gold'),
+                    pausebutton: $('#' + controlbarid + ' > .poodll_pause-recording_gold'),
+                    resumebutton: $('#' + controlbarid + ' > .poodll_resume-recording_gold'),
+                    playbutton: $('#' + controlbarid + ' > .poodll_play-recording_gold'),
+                    savebutton: $('#' + controlbarid + ' > .poodll_save-recording_gold')    
                 };
                 return controlbar;
-        }, //end of fetch_control_bar_standard
+        }, //end of fetch_control_bar_gold
 
 
         register_controlbar_events_video: function(onMediaSuccess, mediaConstraints, controlbarid) {
@@ -198,10 +197,10 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                self.update_status(controlbarid);
                 
                self.enable_button(ip.controlbar.playbutton);
+               self.enable_button(ip.controlbar.savebutton);
                self.disable_button(ip.controlbar.pausebutton);
-              if(!self.uploaded){
+              if(!ip.uploaded){
                 self.enable_button(ip.controlbar.startbutton);
-                self.enable_button(ip.controlbar.savebutton);
               } 
                ip.controlbar.resumebutton.hide();
                ip.controlbar.pausebutton.show();
@@ -249,7 +248,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
               self.disable_button(this);
               if(ip.blobs && ip.blobs.length > 0){
                   pmr.do_save_audio(ip);
-                  self.uploaded = true;
+                  ip.uploaded = true;
                   self.disable_button(ip.controlbar.startbutton);
                 }else{
                     ip.uploader.Output(M.util.get_string('recui_nothingtosaveerror','filter_poodll'));
@@ -265,7 +264,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                     preview.get(0).pause();
                 }
             };
-        }, //end of register_control_bar_events_standard
+        }, //end of register_control_bar_events_gold
 
         enable_button: function(button){
             $(button).attr('disabled',false);

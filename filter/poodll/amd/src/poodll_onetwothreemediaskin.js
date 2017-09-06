@@ -9,6 +9,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
     
         instanceprops: null,
         pmr: null,
+        stage: 'none',
         uploaded: false,
 
         //for making multiple instances
@@ -57,24 +58,24 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
 
         onMediaSuccess_video: function(controlbarid){
             var ip = this.fetch_instanceprops(controlbarid);
-            ip.controlbar.stopbutton.attr('disabled',false);
-            ip.controlbar.pausebutton.attr('disabled',false);
-            ip.controlbar.savebutton.attr('disabled',false);
+            ip.controlbar.stoprecbutton.attr('disabled',false);
+          //  ip.controlbar.pausebutton.attr('disabled',false);
+            //ip.controlbar.savebutton.attr('disabled',false);
         },
 
         onMediaSuccess_audio: function(controlbarid){
             var ip = this.fetch_instanceprops(controlbarid);
             ip.controlbar.preview.attr('src',null);
-            ip.controlbar.stopbutton.attr('disabled',false);
-            ip.controlbar.pausebutton.attr('disabled',false);
-            ip.controlbar.savebutton.attr('disabled',false);
+            ip.controlbar.stoprecbutton.attr('disabled',false);
+           // ip.controlbar.pausebutton.attr('disabled',false);
+            // ip.controlbar.savebutton.attr('disabled',false);
         },
 
         handle_timer_update: function(controlbarid){
             var ip = this.fetch_instanceprops(controlbarid);
             ip.controlbar.status.html(ip.timer.fetch_display_time());
             if(ip.timer.seconds==0 && ip.timer.initseconds >0){
-                 ip.controlbar.stopbutton.click();
+                 ip.controlbar.stoprecbutton.click();
             }
         },
 
@@ -112,6 +113,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                     ip.controlbar.preview.removeClass('poodll_recording');
                     ip.controlbar.status.removeClass('poodll_recording');
                     break;
+                
            }
 
        },
@@ -125,31 +127,33 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 var ip = this.fetch_instanceprops(controlbarid);
                 var skin_style = ip.config.media_skin_style;
 
-                var controls ='<div class="poodll_mediarecorderholder_standard ' + skin_style + '" id="holder_' + controlbarid + '">' ;
-                controls +='<div class="poodll_mediarecorderbox_standard ' + skin_style + '" id="' + controlbarid + '">' ;
-                var status = this.fetch_status_bar('standard');
+                var controls ='<div class="poodll_mediarecorderholder_onetwothree ' + skin_style + '" id="holder_' + controlbarid + '">' ;
+                controls +='<div class="poodll_mediarecorderbox_onetwothree ' + skin_style + '" id="' + controlbarid + '">' ;
+                var status = this.fetch_status_bar('onetwothree');
                 controls += status,
                 controls += preview,
-                controls +=  '<button type="button" class="poodll_mediarecorder_button_standard poodll_start-recording_standard">' + M.util.get_string('recui_record', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_stop-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_stop', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_pause-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_pause', 'filter_poodll') + '</button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_resume-recording_standard pmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '</button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_play-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_save-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button>';
+                controls +=  '<button type="button" class="poodll_mediarecorder_button_onetwothree poodll_start-recording_onetwothree">' + M.util.get_string('recui_record', 'filter_poodll') + '</button> ';
+                controls += '<button type="button" class="poodll_mediarecorder_button_onetwothree poodll_stop-recording_onetwothree pmr_disabled hide" disabled>' + M.util.get_string('recui_stop', 'filter_poodll') + '</button> <input type="checkbox" class="step-1"/>';
+                controls += '<button type="button" class="poodll_mediarecorder_button_onetwothree poodll_pause-recording_onetwothree pmr_disabled hide" disabled>' + M.util.get_string('recui_pause', 'filter_poodll') + '</button>';
+                controls += ' <button type="button" class="poodll_mediarecorder_button_onetwothree poodll_resume-recording_onetwothree pmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '</button>';
+                controls += '<button type="button" class="poodll_mediarecorder_button_onetwothree poodll_play-recording_onetwothree pmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '</button> ';
+                 controls += '<button type="button" class="poodll_mediarecorder_button_onetwothree poodll_stop-playing_onetwothree pmr_disabled hide" disabled>' + M.util.get_string('recui_stop', 'filter_poodll') + '</button> <input type="checkbox" class="step-2" />';
+                controls += '<button type="button" class="poodll_mediarecorder_button_onetwothree poodll_save-recording_onetwothree pmr_disabled" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button> </button> <input type="checkbox" class="step-3" />';
                 controls += '</div></div>';
                 $(element).prepend(controls);
                 var controlbar ={
-                    status: $('#' + controlbarid + ' > .poodll_status_standard'),
-                    preview: $('#' + controlbarid + ' > .poodll_preview_standard'),
-                    startbutton: $('#' + controlbarid + ' > .poodll_start-recording_standard'),
-                    stopbutton: $('#' + controlbarid + ' > .poodll_stop-recording_standard'),
-                    pausebutton: $('#' + controlbarid + ' > .poodll_pause-recording_standard'),
-                    resumebutton: $('#' + controlbarid + ' > .poodll_resume-recording_standard'),
-                    playbutton: $('#' + controlbarid + ' > .poodll_play-recording_standard'),
-                    savebutton: $('#' + controlbarid + ' > .poodll_save-recording_standard')    
+                    status: $('#' + controlbarid + ' > .poodll_status_onetwothree'),
+                    preview: $('#' + controlbarid + ' > .poodll_preview_onetwothree'),
+                    startbutton: $('#' + controlbarid + ' > .poodll_start-recording_onetwothree'),
+                    stoprecbutton: $('#' + controlbarid + ' > .poodll_stop-recording_onetwothree'),
+                    stopbutton: $('#' + controlbarid + ' > .poodll_stop-playing_onetwothree'),
+                    pausebutton: $('#' + controlbarid + ' > .poodll_pause-recording_onetwothree'),
+                    resumebutton: $('#' + controlbarid + ' > .poodll_resume-recording_onetwothree'),
+                    playbutton: $('#' + controlbarid + ' > .poodll_play-recording_onetwothree'),
+                    savebutton: $('#' + controlbarid + ' > .poodll_save-recording_onetwothree')    
                 };
                 return controlbar;
-        }, //end of fetch_control_bar_standard
+        }, //end of fetch_control_bar_onetwothree
 
 
         register_controlbar_events_video: function(onMediaSuccess, mediaConstraints, controlbarid) {
@@ -159,61 +163,99 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
         register_controlbar_events_audio: function(onMediaSuccess, mediaConstraints, controlbarid){
             var self = this;
             var pmr=this.pmr;
+            var stage= this.stage;
             var ip = this.fetch_instanceprops(controlbarid);
 
+
+
+      
+        
+        
             ip.controlbar.startbutton.click(function() {
+    
+                 log.debug('video starting');
+               //  $('.step-1').hide();
+                 
+                 
                 pmr.do_start_audio(ip, mediaConstraints, onMediaSuccess);
 
                 //clear messages
                 $('#' + ip.config.widgetid  + '_messages').text('');
-                self.disable_button(this);
+               self.disable_button(this);
+
                 self.disable_button(ip.controlbar.playbutton);
-                ip.controlbar.resumebutton.hide();
-                self.enable_button(ip.controlbar.stopbutton);
-                self.disable_button(ip.controlbar.savebutton);
-                ip.controlbar.pausebutton.show();
-                self.enable_button(ip.controlbar.pausebutton);
+               ip.controlbar.playbutton.show();
+               
+               self.disable_button(ip.controlbar.stopbutton);
+               ip.controlbar.stopbutton.hide();
+      
+               self.disable_button(ip.controlbar.savebutton);
+                ip.controlbar.savebutton.show();
+               
+                
+                //for now we do not support pause on the 123 recorder, but these buttones pause and resule do work if eabld
+                // ip.controlbar.resumebutton.hide();
+               // ip.controlbar.pausebutton.show();
+                //ip.controlbar.pausebutton.attr('disabled',false);
+           
+                self.enable_button(ip.controlbar.stoprecbutton);
+                ip.controlbar.stoprecbutton.show();
+               
+                
+                
+                $(this).hide();
                 self.set_visual_mode('recordmode',controlbarid);
                 
                 //timer and status bar
                 ip.timer.reset();
                 ip.timer.start();
                 self.update_status(controlbarid);
+                
+                //set recording stage
+                stage="recorded";
             });
             
-            ip.controlbar.stopbutton.click(function() {
-
-                pmr.do_stop_audio(ip);
+            ip.controlbar.stoprecbutton.click(function() {
+   
+                $('.step-1').show();
+                $('.step-1').attr('checked', true);
 
                 self.disable_button(this);
-                 var preview = ip.controlbar.preview;
-                if(preview && preview.get(0)){
-                    preview.get(0).pause();
-                }
+                $(this).hide();
+              pmr.do_stop_audio(ip);
+              
+                 self.enable_button(ip.controlbar.startbutton);
+                 ip.controlbar.startbutton.show();
                 
-               //turn border black etc
-               self.set_visual_mode('previewmode',controlbarid);
-               //timer and status bar
-               ip.timer.stop()
-               self.update_status(controlbarid);
+                 self.enable_button(ip.controlbar.playbutton);
+                 ip.controlbar.playbutton.show();
+                 
+                 self.disable_button(ip.controlbar.savebutton);
+                 ip.controlbar.savebutton.show();
                 
-               self.enable_button(ip.controlbar.playbutton);
-               self.disable_button(ip.controlbar.pausebutton);
-              if(!self.uploaded){
-                self.enable_button(ip.controlbar.startbutton);
-                self.enable_button(ip.controlbar.savebutton);
-              } 
-               ip.controlbar.resumebutton.hide();
-               ip.controlbar.pausebutton.show();
+                self.set_visual_mode('pausedmode',controlbarid);
+                
+                //timer and status bar
+                ip.timer.stop();
+                ip.timer.reset();
+                self.update_status(controlbarid);
             });
-          
+            
+            // currently not used
             ip.controlbar.pausebutton.click(function() {
                 this.disabled = true;
                 $(this).hide();
+               
                 ip.controlbar.resumebutton.show();
                 pmr.do_pause_audio(ip);
                 self.enable_button(ip.controlbar.resumebutton);
+                
+                 self.enable_button(ip.controlbar.playbutton);
+                 ip.controlbar.playbutton.show();
+                 
                  self.enable_button(ip.controlbar.savebutton);
+                 ip.controlbar.savebutton.show();
+                
                 self.set_visual_mode('pausedmode',controlbarid);
                 
                 //timer and status bar
@@ -221,9 +263,9 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 self.update_status(controlbarid);
             });
             
+            //currently not used
             ip.controlbar.resumebutton.click(function() {
-                self.disable_button(ip.controlbar.resumebutton);
-                 self.disable_button(ip.controlbar.savebutton);
+                self.disable_button(this);
                 $(this).hide();
                 ip.controlbar.pausebutton.show();
                 pmr.do_resume_audio(ip);
@@ -235,22 +277,83 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 self.update_status(controlbarid);
             });
             
+            
+            ip.controlbar.stopbutton.click(function() {
+                
+                
+                //Glen
+                $('.step-2').show();
+                $('.step-2').prop('checked', true);
+             
+             //stop playing
+             var preview = ip.controlbar.preview.get(0);
+              pmr.do_stopplay_audio(ip,preview);
+             
+               self.enable_button(ip.controlbar.playbutton);
+               ip.controlbar.playbutton.show();
+               
+               /* currently not used */
+              // ip.controlbar.pausebutton.attr('disabled',true);
+             //  ip.controlbar.pausebutton.hide();
+             
+              if(!self.uploaded){
+                self.enable_button(ip.controlbar.savebutton);
+                self.enable_button(ip.controlbar.startbutton);
+        
+              } 
+      
+              ip.controlbar.startbutton.show();
+              
+               self.disable_button(this);
+                $(this).hide();
+               //ip.controlbar.resumebutton.hide();
+               //ip.controlbar.pausebutton.show();
+            });
+            
             ip.controlbar.playbutton.click(function() {
-                self.disable_button(this);
+                
+                
+                //Glen
+               // $('.step-2').hide();
+                
+              
+                
+               //turn border black etc
+               self.set_visual_mode('previewmode',controlbarid);
                 var preview = ip.controlbar.preview.get(0);
                 pmr.do_play_audio(ip,preview);
 
                 self.enable_button(ip.controlbar.stopbutton);
+                ip.controlbar.stopbutton.show();
+                
                 self.disable_button(ip.controlbar.startbutton);
-                self.disable_button(ip.controlbar.savebutton);
+                ip.controlbar.startbutton.show();
+                
+                self.disable_button(ip.controlbar.resumebutton);
+                ip.controlbar.resumebutton.hide();
+                
+                self.disable_button(this);
+                $(this).hide();
+                
+                //set recording stage
+                stage="played";
+                
             });
             
            ip.controlbar.savebutton.click(function() {
+                
+                  
               self.disable_button(this);
+              //glen
+              $('.step-3').prop('checked',true);
+               log.debug('save');
               if(ip.blobs && ip.blobs.length > 0){
                   pmr.do_save_audio(ip);
                   self.uploaded = true;
                   self.disable_button(ip.controlbar.startbutton);
+                  
+                  //set recording stage
+                  stage="saved";
                 }else{
                     ip.uploader.Output(M.util.get_string('recui_nothingtosaveerror','filter_poodll'));
                 }//end of if self.blobs		
@@ -265,8 +368,8 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                     preview.get(0).pause();
                 }
             };
-        }, //end of register_control_bar_events_standard
-
+        }, //end of register_control_bar_events_onetwothree
+        
         enable_button: function(button){
             $(button).attr('disabled',false);
             $(button).removeClass('pmr_disabled');
@@ -277,4 +380,6 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
         },
 
     };//end of returned object
+    
 });//total end
+

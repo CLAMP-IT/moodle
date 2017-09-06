@@ -1,5 +1,43 @@
 Change List
 =========
+Version 3.0.52(Build 2017081501)
+-fixed bug introduced in 3.0.51 where aws notifications would fail
+
+Version 3.0.51(Build 2017081101)
+-added rewritten burnt rose recorder skin (need to manually update it from general settings page)
+-added nomediaplugin switch to players to prevent double filtering
+-removed lots of old code from poodlllogiclib and paoodlldatamanager
+-removed blob templates that we do not need anymore
+
+Version 3.0.50(Build 2017080401)
+-Added more skins
+-added multiplayer and scroller templates
+-fixed issue in poodllfilelib and poodlllogiclib
+-fixed broken recording timelimit feature
+
+
+Version 3.0.49(Build 2017071701)
+-fixed issue with players that do not "refresh" properly on Firefox
+-added recorder skin styles
+- added a new once player
+
+Version 3.0.48(Build 2017071001)
+-fixed error in whiteboads preventing multiple players on same page from saving properly
+
+Version 3.0.47(Build 2017070401)
+-fixed error in support info file from a bad SQL statement
+
+Version 3.0.46(Build 2017070301)
+-added download feature to players
+
+Version 3.0.45(Build 2017062501)
+-added 4 working AWS regions
+
+Version 3.0.44(Build 2017062301)
+-Added AWS regions(not fully implemented)
+-Added active user and poodll user counts and media recorderorder to support info
+-fixed problem with amd loader for flash recorder
+
 Version 3.0.43(Build 2017061801)
 -fixed broken pause recording
 -added ability to allow/deny flash recorders on Android device
