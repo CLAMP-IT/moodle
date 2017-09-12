@@ -32,28 +32,142 @@ use Aws\S3\S3Client;
  */
 class awstools
 {
-	protected $awsversion="2.x";//3.x
+
+    const REGION_APS1 = 'ap-south-1'; //Asia Pacific (Mumbai)
+    const REGION_APN2 = 'ap-northeast-2'; //Asia Pacific (Seoul)
+    const REGION_APSE1 = 'ap-southeast-1'; //Asia Pacific (Singapore)
+    const REGION_APSE2 = 'ap-southeast-2'; //Asia Pacific (Sydney)
+    const REGION_APN1 = 'ap-northeast-1'; //Asia Pacific (Tokyo)
+    const REGION_USE2 ='us-east-2'; //US East (Ohio)
+    const REGION_USE1 = 'us-east-1'; //US East (N. Virginia)
+    const REGION_USW1 = 'us-west-1'; //US West (N. California)
+    const REGION_USW2 = 'us-west-2'; //US West (Oregon)
+    const REGION_CAC1 = 'ca-central-1'; //Canada (Central)
+    const REGION_EUC1 = 'eu-central-1'; //EU (Frankfurt)
+    const REGION_EUW1 = 'eu-west-1'; //EU (Ireland)
+    const REGION_EUW2 = 'eu-west-2'; //EU (London)
+    const REGION_SAE1 = 'sa-east-1'; //South America (São Paulo)
+
+    const BUCKET_NAME_VIDEOIN='poodll-videoprocessing-in';
+    const BUCKET_NAME_VIDEOOUT='poodll-videoprocessing-out';
+    const BUCKET_NAME_VIDEOTHUMBS='poodll-video-thumbs';
+    const BUCKET_NAME_AUDIOIN='poodll-audioprocessing-in';
+    const BUCKET_NAME_AUDIOOUT='poodll-audioprocessing-out';
+    const BUCKET_NAME_AUDIOTHUMBS='poodll-audio-thumbs';
+
+
+    protected $awsversion="2.x";//3.x
 	protected $transcoder = false; //the single transcoder object
 	protected $s3client = false; //the single S3 object
 	protected $default_segment_size = 4;
-	protected $region = 'ap-northeast-1';
+	protected $region = self::REGION_APN1;
     protected $convfolder = 'transcoded/';
     protected $accesskey ='';
     protected $secretkey='';
-	protected $pipeline_video ='1467090278549-scfvbk'; //standard-transcoding-pipeline
-	protected $pipeline_audio ='1467090404312-4yquey'; //standard-transcoding-pipeline
-	protected $bucket_video_archive ='poodll-video-process-archive'; //video archive bucket
-	protected $bucket_video_in ='poodll-videoprocessing-in'; //video in bucket
-	protected $bucket_video_out ='poodll-videoprocessing-out'; //video out bucket
-	protected $bucket_audio_in ='poodll-audioprocessing-in'; //audio in bucket
-	protected $bucket_audio_out ='poodll-audioprocessing-out'; //audio out bucket
-	protected $bucket_audio_archive ='poodll-audioprocessing-archive'; //audio archive
-	protected $bucket_thumbnails ='poodll-video-thumbs'; //video thumbs bucket
-	protected $bucket_production ='poodll-pickup'; //web accessible bucket
-	protected $preset_mp3 = "1467090564863-tc7k8e";
-	protected $preset_mp4 = "1467090505514-0gibkw";
-	protected $thumbnail_preset = '1467090505514-0gibkw'; //thumbnail size is set to preset size so use 720p preset to get a bigger thumbnail. 
 
+	protected $bucket_video_in =''; //video in bucket (pathname)
+	protected $bucket_video_out =''; //video out bucket (pathname)
+	protected $bucket_audio_in =''; //audio in bucket (pathname)
+	protected $bucket_audio_out =''; //audio out bucket (pathname)
+	protected $bucket_thumbnails =''; //video thumbs bucket (pathname)
+    protected $pipeline_video =''; // ID of video pipeline (region specific)
+    protected $pipeline_audio =''; // ID of audio pipeline (region specific)
+	protected $preset_mp3 = ""; // ID of MP3 preset (region specific)
+	protected $preset_mp4 = ""; // ID of MP4 preset (region specific)
+
+
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        global $CFG;
+        $lm = new \filter_poodll\licensemanager();
+        $this->accesskey = $lm->get_cloud_access_key($CFG->filter_poodll_registrationkey);
+        $this->secretkey = $lm->get_cloud_access_secret($CFG->filter_poodll_registrationkey);
+
+        //once we are set up we enable this
+        $this->region=$CFG->filter_poodll_aws_region;
+        $bucketsuffix='-' . $this->region;
+
+        switch($this->region){
+            case self::REGION_APN1:
+                $this->pipeline_video ='1467090278549-scfvbk';
+                $this->pipeline_audio ='1467090404312-4yquey';
+                $this->preset_mp3 = "1467090564863-tc7k8e";
+                $this->preset_mp4 = "1467090505514-0gibkw";
+                //there are no suffixes on the ap-northeast-1 buckets
+                //so we clear it here
+                $bucketsuffix='';
+                break;
+
+
+            case self::REGION_EUW1:
+                $this->pipeline_video ='1498301226886-igwgt8';
+                $this->pipeline_audio ='1498301312122-rfjmqr';
+                $this->preset_mp3 = "1498301559020-465p9k";
+                $this->preset_mp4 = "1498301496472-zlun4d";
+                break;
+
+            case self::REGION_APSE2:
+                $this->pipeline_video ='1498354812258-1t97j4';
+                $this->pipeline_audio ='1498354852450-l4ysr7';
+                $this->preset_mp4 = "1498353281271-mpkox5";
+                $this->preset_mp3 = "1498353323686-ql5apg";
+                break;
+
+
+            case self::REGION_USE1:
+                $this->pipeline_video ='1498352710890-ybul2c';
+                $this->pipeline_audio ='1498352776647-bgnr1z';
+                $this->preset_mp4 = "1498353119116-pdxliz";
+                $this->preset_mp3 = "1498353166217-bfalp1";
+                break;
+
+            //canada region has no elastic transcoder, so we use USE1 elastic trans . and a special pipeline NG
+            /*
+            case self::REGION_CAC1:
+                $this->pipeline_video ='1498353689240-c4zdjs'; //special pipeline for diff region s3 buckets: COST
+                $this->pipeline_audio ='1498353802503-em5xlp'; //special pipeline for diff region s3 buckets: COST
+                $this->preset_mp4 = "1498353119116-pdxliz"; //USE1
+                $this->preset_mp3 = "1498353166217-bfalp1"; //USE1
+                break;
+               */
+            //Frankfurt region has no elastic transcoder, so we use EUW1 elast_transe. and a special pipeline NG
+            /*
+            case self::REGION_EUC1:
+                $this->pipeline_video ='1498353981671-apvats'; //special pipeline for diff region s3 buckets: COST
+                $this->pipeline_audio ='1498354454000-3xp4bl'; //special pipeline for diff region s3 buckets: COST
+                $this->preset_mp4 = "1498301559020-465p9k"; //EUW1
+                $this->preset_mp3 = "1498301496472-zlun4d"; //EUW1
+                break;
+            */
+
+            //buckets for these also created, but there was no Elastic transcoder service in the region
+            //and we were stuch by 4 pipeline limit on the nearest region with elastic transcoder
+            //case self::REGION_EUW2
+            //case self::REGION_SAE1
+
+
+        }
+
+        //set buckets
+        $this->bucket_video_in = self::BUCKET_NAME_VIDEOIN . $bucketsuffix; //video in bucket
+        $this->bucket_video_out = self::BUCKET_NAME_VIDEOOUT . $bucketsuffix; //video out bucket
+        $this->bucket_audio_in = self::BUCKET_NAME_AUDIOIN . $bucketsuffix; //audio in bucket
+        $this->bucket_audio_out = self::BUCKET_NAME_AUDIOOUT . $bucketsuffix; //audio out bucket
+        $this->bucket_thumbnails = self::BUCKET_NAME_VIDEOTHUMBS . $bucketsuffix; //video thumbs bucket
+
+        //We need to support pre 5.5 versions of PHP
+        // but aws 3.x is from php 5.5 and up.
+        if($CFG->filter_poodll_aws_sdk=="2.x"){
+            $this->awsversion = "2.x";
+            require_once($CFG->dirroot . '/filter/poodll/3rdparty/aws-v2/aws-autoloader.php');
+        }else{
+            $this->awsversion = "3.x";
+            require_once($CFG->dirroot . '/filter/poodll/3rdparty/aws-v3/aws-autoloader.php');
+        }
+    }
 
 
     /**
@@ -87,37 +201,12 @@ class awstools
             }
             $codedurl = implode('_',$bits);
             $codedurl = $codedurl . '_';
-
-
-           // $s3filename =$USER->sesskey . '/' . $mediatype . '/' . $filename;
-            //removes uRL like chars
-           // $s3filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $s3filename);
-            //removes series of dots
-           // $s3filename = mb_ereg_replace("([\.]{2,})", '', $s3filename);
             $s3filename =$USER->sesskey . '_' . $mediatype . '_' . $filename;
             $s3filename = $codedurl . $s3filename;
             return $s3filename;
     }
 
-	 /**
-     * Constructor
-     */
-    public function __construct() {
-		global $CFG;
-                $lm = new \filter_poodll\licensemanager();
-                $this->accesskey = $lm->get_cloud_access_key($CFG->filter_poodll_registrationkey);
-		$this->secretkey = $lm->get_cloud_access_secret($CFG->filter_poodll_registrationkey);
 
-                 //We need to support pre 5.5 versions of PHP
-		// but aws 3.x is from php 5.5 and up.
-		if($CFG->filter_poodll_aws_sdk=="2.x"){
-			$this->awsversion = "2.x";
-			require_once($CFG->dirroot . '/filter/poodll/3rdparty/aws-v2/aws-autoloader.php');
-		}else{
-			$this->awsversion = "3.x";
-			require_once($CFG->dirroot . '/filter/poodll/3rdparty/aws-v3/aws-autoloader.php');
-		 }
-    }
 	
 /**
 *

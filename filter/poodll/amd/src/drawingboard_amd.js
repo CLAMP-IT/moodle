@@ -6,8 +6,9 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
     log.debug('Filter PoodLL: drawingboard.js initialising');
 
     return {
-    
-        whiteboard: null,
+
+        instanceprops: [],
+
     
         // handle drawingboard whiteboard saves for Moodle
         loaddrawingboard: function(opts) {
@@ -46,10 +47,8 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                     enlargeYourContainer: true,
                     eraserColor: erasercolor
                 });
-            this.whiteboard = db;
+            opts.db = db;
 
-            //init uploader
-            uploader.init(element, opts);
 
             //restore previous drawing if any
             //restore vectordata
@@ -62,21 +61,25 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                 }
             }
 
+            //init uploader
+           opts.uploader  = uploader.clone();
+           opts.uploader.init(element, opts);
+
+           //store opts in instance props, cos this is a singleton
+            this.instanceprops[opts['recorderid']]=opts;
             
             //register the draw and save events that we need to handle
-            this.registerEvents();
+            this.registerEvents(opts['recorderid']);
            
         },
         
-        registerEvents: function() {
+        registerEvents: function(recid) {
             //register events. if autosave we need to do more.
-            var recid = this.config['recorderid'];
-            var that = this;
-            var opts = this.config;
-            if(this.config['autosave']){
+            var opts = this.instanceprops[recid];
+            if(opts['autosave']){
                     //autosave, clear messages and save callbacks on start drawing
 
-                    this.whiteboard.ev.bind('board:startDrawing', function(){
+                    opts.db.ev.bind('board:startDrawing', function(){
                                     var m = document.getElementById(recid + '_messages');
                                     if(m){
                                         m.innerHTML = 'File has not been saved.';
@@ -85,20 +88,20 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
                                         var th = utils.timeouthandles[recid];
                                         if(th){clearTimeout(th);}
                                         utils.timeouthandles[recid] = setTimeout(
-                                            function(){ utils.WhiteboardUploadHandler(recid,that.whiteboard,opts);},
+                                            function(){ utils.WhiteboardUploadHandler(recid,opts.db,opts, opts.uploader);},
                                             opts['autosave']);
                                     }
                                 }//end of start drawing function
                     );
 
                     //autosave, clear previous callbacks,set new save callbacks on stop drawing
-                    this.whiteboard.ev.bind('board:stopDrawing', function(){
+                    opts.db.ev.bind('board:stopDrawing', function(){
                                     var m = document.getElementById(recid + '_messages');
                                     if(m){
                                         var th = utils.timeouthandles[recid];
                                         if(th){clearTimeout(th);}
                                         utils.timeouthandles[recid] = setTimeout(
-                                            function(){ utils.WhiteboardUploadHandler(recid,that.whiteboard,opts);},
+                                            function(){ utils.WhiteboardUploadHandler(recid,opts.db,opts,opts.uploader);},
                                             opts['autosave']);
                                     }
                                 }//end of stop drawing function
@@ -106,7 +109,7 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
 
 
             }else{
-                this.whiteboard.ev.bind('board:stopDrawing', function(){
+                opts.db.ev.bind('board:stopDrawing', function(){
                                     var m = document.getElementById(recid + '_messages');
                                     if(m){
                                         m.innerHTML = 'File has not been saved.';
@@ -116,21 +119,20 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
             }
 
              //set up the upload/save button
-            var uploadbuttonstring = '#' + opts['recorderid'] + '_btn_upload_whiteboard';
+            var uploadbuttonstring = '#' + recid + '_btn_upload_whiteboard';
             var uploadbutton = $(uploadbuttonstring);
             if(uploadbutton){
-                if(opts['autosave']){
-                    uploadbutton.click(function(){utils.WhiteboardUploadHandler(recid,that.whiteboard,opts);});
+                if(opts.autosave){
+                    uploadbutton.click(function(){utils.WhiteboardUploadHandler(recid,opts.db,opts,opts.uploader);});
                 }else{
-                    var cvs = utils.getCvs(opts['recorderid'],that.whiteboard,opts);
                     uploadbutton.click(
                         function(){
-                            utils.pokeVectorData(opts['recorderid'],that.whiteboard,opts);
-                            uploader.uploadFile(cvs.toDataURL(),'image');
-                        },
-                    false);
+                            var cvs = utils.getCvs(recid,opts.db,opts);
+                            utils.pokeVectorData(recid,opts.db,opts);
+                            opts.uploader.uploadFile(cvs.toDataURL(),'image');
+                        });
                 }
             }//end of if upload button
-        }, //end of reg events
+        } //end of reg events
     }
 });

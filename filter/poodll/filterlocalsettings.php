@@ -38,6 +38,8 @@ class poodll_filter_local_settings_form extends filter_local_settings_form {
 		//create player select list
 		$playeroptions['sitedefault'] = get_string('sitedefault','filter_poodll');
 
+        $mform->addElement('header', 'extensions', get_string('extensions', 'filter_poodll'));
+        $mform->setExpanded('extensions', true);
 		
 		//add extensions checkbox and dropdown list
 		foreach($extensions as $ext){
@@ -55,9 +57,38 @@ class poodll_filter_local_settings_form extends filter_local_settings_form {
 			$elname = 'useplayer' . $ext;	
 			$mform->addElement('select', $elname, get_string('useplayer', 'filter_poodll', strtoupper($ext)),$playeroptions);
 	  		$mform->setDefault($elname, 'sitedefault');
-
-		
 		}
+/*
+		mappings
+        filter_poodll_html5recorder_skin -> 'filter_poodll/html5recorder_skin_audio'
+        filter_poodll_html5recorder_skin -> 'filter_poodll/html5recorder_skin_video'
+        filter_poodll_html5recorder_skinstyle_audio ->  'filter_poodll/skinstyleaudio'
+        filter_poodll_html5recorder_skinstyle_video -> 'filter_poodll/skinstylevideo'
+*/
+
+        $mform->addElement('header', 'html5recorder', get_string('filter_poodll_html5recorder_heading', 'filter_poodll'));
+        $mform->setExpanded('html5recorder', true);
+
+		//add html5 recorder information
+        //Recorder skin dropdown list and skin style text box
+        $recorderoptions = \filter_poodll\settingstools::fetch_html5_recorder_items();
+        $recorderoptions['sitedefault'] = get_string('sitedefault','filter_poodll');
+
+        $elname = 'html5recorder_skin_audio';
+        $mform->addElement('select', $elname, get_string($elname, 'filter_poodll'),$recorderoptions);
+        $mform->setDefault($elname, 'sitedefault');
+
+        $elname = 'skinstyleaudio';
+        $mform->addElement('text',$elname, get_string($elname, 'filter_poodll'), array('size'=>'30'));
+        $mform->setType($elname, PARAM_TEXT);
+
+        $elname = 'html5recorder_skin_video';
+        $mform->addElement('select', $elname, get_string($elname, 'filter_poodll'),$recorderoptions);
+        $mform->setDefault($elname, 'sitedefault');
+
+        $elname = 'skinstylevideo';
+        $mform->addElement('text',$elname, get_string($elname, 'filter_poodll'), array('size'=>'30'));
+        $mform->setType($elname, PARAM_TEXT);
 
 	}
 }

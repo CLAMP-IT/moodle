@@ -22,11 +22,13 @@ define('POODLL_AUDIO_PLACEHOLDER_HASH','e118549e4fc88836f418b6da6028f1fec571cd43
 
 //we need to do this, because when called from a widet, cfg is not set
 //but the relative path fails from a quiz but it has alreadconvert_with_ffmpeg_bgy been set in that case
-//, so we check before we call it, to cover both bases
+//, so we check before we call it, to cover both httpsbases
 
 if(!isset($CFG)){
 require_once("../../config.php");
 }
+
+require_login();
 
 //added for moodle 2
 require_once($CFG->libdir . '/filelib.php');

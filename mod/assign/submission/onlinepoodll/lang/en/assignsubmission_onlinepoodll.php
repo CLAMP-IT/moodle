@@ -69,3 +69,5 @@ $string['setting_snapshot_heading'] = 'Snapshot recorder/image settings';
 $string['setting_snapshot_heading_details'] = '';
 $string['setting_whiteboard_heading'] = 'Whiteboard recorder/image settings';
 $string['setting_whiteboard_heading_details'] = '';
+$string['deletesubmission'] = 'Delete this submission.';
+$string['reallydeletesubmission'] = 'Really delete this submission?';

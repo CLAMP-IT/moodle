@@ -35,6 +35,9 @@ class poodlltools
 {
     const LOG_SAVE_PLACEHOLDER_FAIL = 1;
     const LOG_NOTHING_TO_TRANSCODE = 2;
+    
+    const AUDIO_PLACEHOLDER_HASH ='e118549e4fc88836f418b6da6028f1fec571cd43';
+    const VIDEO_PLACEHOLDER_HASH ='c2a342a0a664f2f1c4ea5387554a67caf3dd158e';
 
 	//this is just a temporary function, until the PoodLL filter client plugins are upgraded to not use simpleaudioplayer
     public static function fetchSimpleAudioPlayer($param1='auto',$url,$param3='http',$param4='width', $param5='height'){ 
@@ -281,10 +284,10 @@ class poodlltools
     * The old fetch MP3 Recorder fetch call now delegates to the AMD based universal recorder
    *
    */
-	public static function fetchMP3RecorderForSubmission($updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
+	public static function fetchMP3RecorderForSubmission($updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false,$hints=[])
 	{
 		return self::fetchAMDRecorderCode('audio', $updatecontrol, $contextid, 
-					$component, $filearea, $itemid, $timelimit, $callbackjs);
+					$component, $filearea, $itemid, $timelimit, $callbackjs,$hints);
 
 	}
 
@@ -567,35 +570,6 @@ class poodlltools
 		}
 
 	}
-
-	/*
-	 * To be removed. No longer called as of 2017 04 18
-	 */
-	public static function fetch_flashcards_owl($cardset, $cardsetname, $cardwidth, $cardheight)
-	{
-		global $CFG, $COURSE, $PAGE;
-
-
-
-		//for AMD
-		$proparray = array();
-		$proparray['FLASHCARDS_ID'] = "owlcards_" . time() . rand(10000, 999999);
-		$proparray['CARDWIDTH'] = $cardwidth;
-		$proparray['CARDHEIGHT'] = $cardheight;
-		$proparray['SINGLEITEM'] = true;
-		$proparray['AUTOHEIGHT'] = false;
-		$proparray['CSS_INJECT'] = true;
-		$proparray['CSS_OWL'] = $CFG->wwwroot . '/filter/poodll/3rdparty/owl/owl-carousel/owl.carousel.css';
-		$proparray['CSS_THEME'] = $CFG->wwwroot . '/filter/poodll/3rdparty/owl/owl-carousel/owl.theme.css';
-
-		$PAGE->requires->js_call_amd('filter_poodll/owl_amd', 'loadowl', array($proparray));
-
-		$dm = new \filter_poodll\dataset_manager();
-		$renderer = $PAGE->get_renderer('filter_poodll');
-		$carddata = $dm->fetch_flashcard_data($cardset, $cardsetname);
-		return $renderer->fetch_owl_flashcards($carddata, $proparray);
-	}
-
 
 	public static function fetch_flashcards_poodll($runtime, $cardset, $cardsetname, $frontcolor, $backcolor, $cardwidth, $cardheight, $randomize, $width, $height)
 	{
@@ -1438,8 +1412,8 @@ class poodlltools
             global $DB, $CFG;
             
             switch($mediatype){
-                    case 'audio': $contenthash = POODLL_AUDIO_PLACEHOLDER_HASH;break;
-                    case 'video': $contenthash = POODLL_VIDEO_PLACEHOLDER_HASH;break;
+                    case 'audio': $contenthash = self::AUDIO_PLACEHOLDER_HASH;break;
+                    case 'video': $contenthash = self::VIDEO_PLACEHOLDER_HASH;break;
                     default:$contenthash = '';
 
             }
@@ -1836,32 +1810,32 @@ class poodlltools
 	
 	
 	//This a legacy call from client plugins, that ais mapped to amd recorder code
-	public static function fetchAudioRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
+	public static function fetchAudioRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false,$hints=[])
 	{
-		  return self::fetchAMDRecorderCode('audio', $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs);      
+		  return self::fetchAMDRecorderCode('audio', $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs,$hints);      
 	}
 
 	//This a legacy call from client plugins, that ais mapped to amd recorder code
-	public static function fetchVideoRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
+	public static function fetchVideoRecorderForSubmission($runtime, $assigname, $updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false,$hints=[])
 	{
-                return self::fetchAMDRecorderCode('video', $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs);
+                return self::fetchAMDRecorderCode('video', $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit, $callbackjs,$hints);
 	}
 	
     //This a legacy call from client plugins, that ais mapped to amd recorder code
-	public static function fetchHTML5SnapshotCamera($updatecontrol = "saveflvvoice", $width,$height,$contextid, $component, $filearea, $itemid, $callbackjs = false)
+	public static function fetchHTML5SnapshotCamera($updatecontrol = "saveflvvoice", $width,$height,$contextid, $component, $filearea, $itemid, $callbackjs = false,$hints=[])
 	{
 		$mediatype = "snapshot";
-		return self::fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, 0, $callbackjs);
+		return self::fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, 0, $callbackjs,$hints);
 	}
 	
 	//This a legacy call from client plugins, that ais mapped to amd recorder code
-	public static function fetch_HTML5RecorderForSubmission($updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $mediatype = "image", $fromrepo = false, $callbackjs = false)
+	public static function fetch_HTML5RecorderForSubmission($updatecontrol = "saveflvvoice", $contextid, $component, $filearea, $itemid, $mediatype = "image", $fromrepo = false, $callbackjs = false,$hints=[])
 	{
-		return self::fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, 0, $callbackjs);
+		return self::fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, 0, $callbackjs,$hints);
 	}
 	
 	//This is use for assembling the html elements + javascript that will be swapped out and replaced with the recorders
-	public static function fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false)
+	public static function fetchAMDRecorderCode($mediatype, $updatecontrol, $contextid, $component, $filearea, $itemid, $timelimit = "0", $callbackjs = false, $hints=[])
 	{
 		global $CFG, $PAGE;
 
@@ -1921,7 +1895,8 @@ class poodlltools
 		$widgetopts->s3filename = $s3filename;
 		$widgetopts->using_s3 = intval($using_s3);
 
-        //recorder order of preference
+        //recorder order of preference and media skin style
+        $skinstyle = '';
         switch($mediatype) {
 
             case 'video':
@@ -1940,6 +1915,13 @@ class poodlltools
         }
         $widgetopts->rec_order = $rec_order;// array('mobile','media','flashaudio','red5','upload','flash');
 
+        //size profile
+        if(array_key_exists('size',$hints)){
+        	$widgetopts->size= $hints['size'];
+        }else{
+        	$widgetopts->size= 'auto';
+        }
+
 		//do we use flash on android
         $widgetopts->flashonandroid=$CFG->filter_poodll_flash_on_android;
                 
@@ -1956,7 +1938,7 @@ class poodlltools
 		}
                 
 		//for mediarecorder amd params
-		$rawparams = self::fetchMediaRecorderAMDParams();
+		$rawparams = self::fetchMediaRecorderAMDParams($mediatype,$hints);
 		foreach ($rawparams as $key => $value) {
 						$widgetopts->{$key} = $value;
 		}
@@ -2402,16 +2384,74 @@ class poodlltools
 	 * Fetch any special parameters required by the Media Recorder
 	 *
 	 */
-	public static function fetchMediaRecorderAMDParams()
+	public static function fetchMediaRecorderAMDParams($mediatype, $hints)
 	{
-		global $CFG;
+		global $CFG, $COURSE;
+
 		$params=array();
 		$params['media_timeinterval'] = 2000;
 		$params['media_audiomimetype'] = 'audio/webm';//or audio/wav
         $params['media_videorecordertype'] = 'auto';//or mediarec or webp
         $params['media_videocapturewidth'] = 320;
-        $params['media_videocaptureheight'] = 240;   
-        $params['media_skin'] = $CFG->filter_poodll_html5recorder_skin; 
+        $params['media_videocaptureheight'] = 240;
+
+		if(array_key_exists('coursecontextid',$hints)){
+        	$coursecontextid = $hints['coursecontextid'];
+        }else{
+        	$coursecontextid = \context_course::instance($COURSE->id)->id;
+        }
+        if(array_key_exists('modulecontextid',$hints)){
+            $localconfig = filtertools::fetch_local_filter_props('poodll',$hints['modulecontextid']);
+        }else{
+            $localconfig = false;
+        }
+        $courseconfig = filtertools::fetch_local_filter_props('poodll',$coursecontextid);
+        $adminconfig = get_config('filter_poodll');
+
+        switch($mediatype) {
+
+            case 'video':
+
+                $prop= "html5recorder_skin_video";
+                if($localconfig && isset($localconfig[$prop]) && $localconfig[$prop] != 'sitedefault'){
+                    $params['media_skin'] = $localconfig[$prop];
+                }elseif( isset($courseconfig[$prop]) && $courseconfig[$prop] != 'sitedefault'){
+                    $params['media_skin'] = $courseconfig[$prop];
+                }else{
+                    $params['media_skin'] = $adminconfig->{$prop};
+                }
+
+                $prop= "skinstylevideo";
+                if($localconfig && isset($localconfig[$prop]) && $localconfig[$prop] != ''){
+                    $params['media_skin_style'] = $localconfig[$prop];
+                }elseif(isset($courseconfig[$prop]) && $courseconfig[$prop] != ''){
+                    $params['media_skin_style'] = $courseconfig[$prop];
+                }else{
+                    $params['media_skin_style'] = $adminconfig->{$prop};
+                }
+
+                break;
+            case 'audio':
+            default:
+                $prop= "html5recorder_skin_audio";
+                if($localconfig && isset($localconfig[$prop]) && $localconfig[$prop] != 'sitedefault'){
+                    $params['media_skin'] = $localconfig[$prop];
+                }elseif( isset($courseconfig[$prop]) && $courseconfig[$prop] != 'sitedefault'){
+                    $params['media_skin'] = $courseconfig[$prop];
+                }else{
+                    $params['media_skin'] = $adminconfig->{$prop};
+                }
+
+                $prop= "skinstyleaudio";
+                if($localconfig && isset($localconfig[$prop]) && $localconfig[$prop] != ''){
+                    $params['media_skin_style'] = $localconfig[$prop];
+                }elseif(isset($courseconfig[$prop]) && $courseconfig[$prop] != ''){
+                    $params['media_skin_style'] = $courseconfig[$prop];
+                }else{
+                    $params['media_skin_style'] = $adminconfig->{$prop};
+                }
+        }
+
 		return $params;
 	}
         

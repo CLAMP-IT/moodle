@@ -18,7 +18,7 @@ namespace filter_poodll\task;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . '/filter/poodll/poodllfilelib.php');
+//require_once($CFG->dirroot . '/filter/poodll/poodllfilelib.php');
 
 /**
  *
@@ -44,7 +44,8 @@ class adhoc_s3_move extends \core\task\adhoc_task {
     	//so wrap some function calls in try catch to prevent that happening
     	
     	global $DB,$CFG;
-    	
+
+
     	//get passed in data we need to perform conversion
     	$cd =  $this->get_custom_data();
     	$awstools = new \filter_poodll\awstools();
