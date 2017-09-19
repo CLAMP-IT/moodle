@@ -62,6 +62,7 @@ function atto_poodll_params_for_js($elementid, $options, $fpoptions) {
 	//config our array of data
 	$params = array();
 	$params['usercontextid'] = $usercontextid;
+	$params['coursecontextid'] = $coursecontext->id;
 
 		//If they don't have permission don't show it
 		if(!has_capability('atto/poodll:visible', $coursecontext) ){

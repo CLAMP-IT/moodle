@@ -1,5 +1,12 @@
 Change List
 =========
+Version 3.0.53(Build 2017082601)
+-More and better recorder skins
+-Support for hints so we can set recorder sizes and skins at diff levels
+-Added ability to select html5 recorder skin at course and module level
+-Added player template for Paypal Accessible Video Player
+-Fixed bug sometimes called calls to support_info
+
 Version 3.0.52(Build 2017081501)
 -fixed bug introduced in 3.0.51 where aws notifications would fail
 

@@ -18,7 +18,7 @@
 /**
  * Provides the JSON return
  *
- * @package mod_moodlecst
+ * @package filter_poodll
  * @copyright  2014 Justin Hunt  {@link http://poodll.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/

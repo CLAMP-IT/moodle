@@ -87,7 +87,11 @@ class diagnosticstools {
 
         //get active users
         $oneyearago = strtotime('-1 year');
-        $rec = $DB->get_record_sql('SELECT count(*) as activeusers FROM {user} WHERE lastaccess > ?', array($oneyearago));
+        try{
+        	$rec = $DB->get_record_sql('SELECT count(*) as activeusers FROM {user} WHERE lastaccess > ?', array($oneyearago));
+        }catch(Exception $e){
+        	$rec=false;
+        }
         if ($rec) {
             $ds['activeusers'] = $rec->activeusers;
         }else{
@@ -96,7 +100,11 @@ class diagnosticstools {
 
         //get poodll users
         $sql="SELECT COUNT(DISTINCT(userid)) as poodllusers FROM {logstore_standard_log} WHERE component = 'filter_poodll' AND timecreated > ?";
-        $rec = $DB->get_record_sql($sql,array($oneyearago));
+        try{
+        	$rec = $DB->get_record_sql($sql,array($oneyearago));
+        }catch(Exception $e){
+        	$rec=false;
+        }
         if ($rec) {
             $ds['poodllusers'] = $rec->poodllusers;
         }else{

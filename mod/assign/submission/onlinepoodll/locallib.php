@@ -149,6 +149,7 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		}else{
 			$mform->addElement('hidden', 'backimage',$backimage);
 		}
+		$mform->setType('backimage', PARAM_INT);
 
 		
 		//board sizes
@@ -171,6 +172,7 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		}else{
 			$mform->addElement('hidden', 'assignsubmission_onlinepoodll_boardsize',$boardsize);
 		}
+		$mform->setType('assignsubmission_onlinepoodll_boardsize', PARAM_TEXT);
 
     }
     
@@ -248,7 +250,7 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
      * @return true if elements were added to the form
      */
     public function get_form_elements($submission, MoodleQuickForm $mform, stdClass $data) {
-		 global $CFG, $USER;
+		 global $CFG, $USER, $PAGE;
 		 
         $elements = array();
 
@@ -258,11 +260,29 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
         if ($submission && get_config('assignsubmission_onlinepoodll', 'showcurrentsubmission')) {
             $onlinepoodllsubmission = $this->get_onlinepoodll_submission($submission->id);
             $size=get_config('assignsubmission_onlinepoodll', 'displaysize_single');
-			//show the previous submission in a player or whatever
+
+            //show the previous submission in a player or whatever
+            $currentsubmission = $this->fetchResponses($submission->id,false);
+            if($currentsubmission != ''){
+                $deletesubmission = "<a href='javascript:void(0);' onclick='M.assignsubmission_onlinepoodll.deletesubmission();'>".
+                    "<img src='" . $CFG->httpswwwroot . '/mod/assign/submission/onlinepoodll/pix/deletebutton.png' .
+                    "' alt='" . get_string('deletesubmission','assignsubmission_onlinepoodll') . "'/>" .
+                    "</a>";
+                $currentsubmission .= $deletesubmission;
+            }
+            $currentcontainer = 'currentsubmissionwrapper';
+            $currentsubmission = "<div id='" .$currentcontainer. "'>" . $currentsubmission . "</div>";
 			$mform->addElement('static', 'currentsubmission', 
 				get_string('currentsubmission', 'assignsubmission_onlinepoodll') ,
-				$this->fetchResponses($submission->id,false));
-			
+				$currentsubmission);
+
+            $opts = array(
+                "filecontrolid"=> OP_FILENAMECONTROL,
+                "reallydeletesubmission"=> get_string('reallydeletesubmission','assignsubmission_onlinepoodll'),
+                "currentcontainer"=> $currentcontainer
+            );
+
+            $PAGE->requires->js_init_call('M.assignsubmission_onlinepoodll.init',array($opts),false);
         }
         
          if (!isset($data->vectordata)) {
@@ -303,13 +323,16 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 	
 		//get timelimit for recorders if set
 		$timelimit = $this->get_config('timelimit');
-		
+		$hints = Array();
+		$hints['modulecontextid']=$contextid;
+		$callbackjs =false;
 		//fetch the required "recorder
 		switch($this->get_config('recordertype')){
 
             case OP_REPLYVOICE:
 			case OP_REPLYMP3VOICE:
-				$mediadata= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission(OP_FILENAMECONTROL, $usercontextid ,'user','draft',$draftitemid,$timelimit);
+				$mediadata= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission(OP_FILENAMECONTROL, $usercontextid ,
+                    'user','draft',$draftitemid,$timelimit,$callbackjs,$hints);
 				$mform->addElement('static', 'description', '',$mediadata);
 				break;
 				
@@ -359,7 +382,8 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 				break;
 
 			case OP_REPLYVIDEO:
-				$mediadata= \filter_poodll\poodlltools::fetchVideoRecorderForSubmission('swf','onlinepoodll',OP_FILENAMECONTROL, $usercontextid ,'user','draft',$draftitemid,$timelimit);
+				$mediadata= \filter_poodll\poodlltools::fetchVideoRecorderForSubmission('swf','onlinepoodll',OP_FILENAMECONTROL,
+                    $usercontextid ,'user','draft',$draftitemid,$timelimit,$callbackjs,$hints);
 				$mform->addElement('static', 'description', '',$mediadata);			
 									
 				break;
@@ -576,6 +600,11 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		 $browser = get_file_browser();
          $fs->delete_area_files($this->assignment->get_context()->id, ASSIGNSUBMISSION_ONLINEPOODLL_COMPONENT,ASSIGNSUBMISSION_ONLINEPOODLL_FILEAREA , $submission->id);
 
+        //if filename = -1 we are being told to delete the file
+        //so we have done enough
+        if($filename==-1){
+            return '';
+        }
 
 		//fetch the file info object for our original file
 		$original_context = context::instance_by_id($usercontextid);
