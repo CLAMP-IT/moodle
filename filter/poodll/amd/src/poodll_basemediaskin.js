@@ -38,7 +38,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
         },		
 
         fetch_status_bar: function(skin){
-            var status = '<div class="poodll_status_' + skin + '" width="320" height="50">00:00:00</div>';
+            var status = '<div class="poodll_status_' + skin + '" width="100%" height="50">00:00:00</div>';
             return status;
         },
         
@@ -47,7 +47,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
             return preview;
         },
         fetch_preview_video: function(skin){
-            var preview ='<video class="poodll_preview_' + skin + '" width="320" height="240"></video>';
+            var preview ='<video class="poodll_preview_' + skin + '" width="100%" height="100%"></video>';
             return preview;
         },
         
@@ -118,15 +118,40 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
 
         //insert the control bar and return it to be reused
         insert_controlbar_video: function(element, controlbarid, preview) {
-              return this.insert_controlbar_audio(element,controlbarid,preview);
+            var controlbar = this.prepare_controlbar(element,controlbarid, preview,'video');
+        	return controlbar;
         },
         //insert the control bar and return it to be reused
         insert_controlbar_audio: function(element,controlbarid, preview){
+        	var controlbar = this.prepare_controlbar(element,controlbarid, preview,'audio');
+        	return controlbar;
+        },
+        
+        //insert the control bar and return it to be reused
+        prepare_controlbar: function(element,controlbarid, preview, mediatype){
                 var ip = this.fetch_instanceprops(controlbarid);
                 var skin_style = ip.config.media_skin_style;
+                
+                var recorder_class = mediatype=='video' ?  'poodll_mediarecorder_video' : 'poodll_mediarecorder_audio';
+                
+                var size_class = 'poodll_mediarecorder_size_auto';
+                switch(ip.config.size){
+                	case 'small':
+	                	size_class = 'poodll_mediarecorder_size_small';
+                		break;
+                	case 'big':
+                		size_class = 'poodll_mediarecorder_size_big';
+                		break;
+                	case 'auto':
+	                	size_class = 'poodll_mediarecorder_size_auto';		
+                }
 
-                var controls ='<div class="poodll_mediarecorderholder_standard ' + skin_style + '" id="holder_' + controlbarid + '">' ;
-                controls +='<div class="poodll_mediarecorderbox_standard ' + skin_style + '" id="' + controlbarid + '">' ;
+
+                var controls ='<div class="poodll_mediarecorderholder_standard ' 
+                	+ recorder_class + ' ' + size_class + '" id="holder_' + controlbarid + '">' ;
+                	
+                controls +='<div class="poodll_mediarecorderbox_standard" id="' + controlbarid + '">' ;
+                controls +='<div class="style-holder ' + skin_style + '">' ;
                 var status = this.fetch_status_bar('standard');
                 controls += status,
                 controls += preview,
@@ -136,17 +161,18 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_resume-recording_standard pmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '</button>';
                 controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_play-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '</button>';
                 controls += '<button type="button" class="poodll_save-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button>';
-                controls += '</div></div>';
+                controls += '</div></div></div>';
                 $(element).prepend(controls);
+
                 var controlbar ={
-                    status: $('#' + controlbarid + ' > .poodll_status_standard'),
-                    preview: $('#' + controlbarid + ' > .poodll_preview_standard'),
-                    startbutton: $('#' + controlbarid + ' > .poodll_start-recording_standard'),
-                    stopbutton: $('#' + controlbarid + ' > .poodll_stop-recording_standard'),
-                    pausebutton: $('#' + controlbarid + ' > .poodll_pause-recording_standard'),
-                    resumebutton: $('#' + controlbarid + ' > .poodll_resume-recording_standard'),
-                    playbutton: $('#' + controlbarid + ' > .poodll_play-recording_standard'),
-                    savebutton: $('#' + controlbarid + ' > .poodll_save-recording_standard')    
+                    status: $('#' + controlbarid + '  .poodll_status_standard'),
+                    preview: $('#' + controlbarid + '  .poodll_preview_standard'),
+                    startbutton: $('#' + controlbarid + '  .poodll_start-recording_standard'),
+                    stopbutton: $('#' + controlbarid + '  .poodll_stop-recording_standard'),
+                    pausebutton: $('#' + controlbarid + '  .poodll_pause-recording_standard'),
+                    resumebutton: $('#' + controlbarid + '  .poodll_resume-recording_standard'),
+                    playbutton: $('#' + controlbarid + '  .poodll_play-recording_standard'),
+                    savebutton: $('#' + controlbarid + '  .poodll_save-recording_standard')    
                 };
                 return controlbar;
         }, //end of fetch_control_bar_standard

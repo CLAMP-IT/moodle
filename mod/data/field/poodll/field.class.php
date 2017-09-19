@@ -104,17 +104,25 @@ class data_field_poodll extends data_field_base {
         
        // $type = DBP_AUDIOMP3;
         $usercontextid=context_user::instance($USER->id)->id;
+        $callbackjs=false;
+        $hints=Array();
+        $timelimit=0;
+        $hints['modulecontextid']=$this->context->id;
+
         switch ($this->field->param4){
         	case DBP_AUDIO:
-        		$str .= \filter_poodll\poodlltools::fetchAudioRecorderForSubmission('auto','ignore',$updatecontrol,$usercontextid,"user","draft",$draftitemid);
+        		$str .= \filter_poodll\poodlltools::fetchAudioRecorderForSubmission('auto','ignore',$updatecontrol,
+                    $usercontextid,"user","draft",$draftitemid,$timelimit,$callbackjs,$hints);
         		break;
         	
         	case DBP_VIDEO:
-        		$str .= \filter_poodll\poodlltools::fetchVideoRecorderForSubmission('auto','ignore',$updatecontrol,$usercontextid,"user","draft",$draftitemid);
+        		$str .= \filter_poodll\poodlltools::fetchVideoRecorderForSubmission('auto','ignore',$updatecontrol,
+                    $usercontextid,"user","draft",$draftitemid,$timelimit,$callbackjs,$hints);
         		break;
         	
         	case DBP_AUDIOMP3:
-        		$str .= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission($updatecontrol,$usercontextid,"user","draft",$draftitemid);
+        		$str .= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission($updatecontrol,$usercontextid,
+                    "user","draft",$draftitemid,$timelimit,$callbackjs,$hints);
         		break;
         	
         	case DBP_WHITEBOARDSIMPLE:

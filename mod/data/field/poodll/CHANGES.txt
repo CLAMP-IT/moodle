@@ -1,5 +1,11 @@
 Change List
 =========
+
+Version 2017082600
+Added support for passing "hints" to audio and video recorder
+We use these allow sizes and skins to be set from different context levels
+
+
 Version 2016112101
 Added a labeltype lang string a poodll.png img (which wont display)
 Removed reference to setting videowidth and replaced with css class for snapshot and whiteboard images

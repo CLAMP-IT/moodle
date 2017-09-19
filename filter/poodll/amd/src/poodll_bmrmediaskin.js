@@ -136,30 +136,47 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 var ip = this.fetch_instanceprops(controlbarid);
                 var skin_style = ip.config.media_skin_style;
                 
-                var record_icon = mediatype=='video' ?  'fa-video-camera' : 'fa-microphone';
+                var size_class = 'poodll_mediarecorder_size_auto';
+                switch(ip.config.size){
+                	case 'small':
+	                	size_class = 'poodll_mediarecorder_size_small';
+                		break;
+                	case 'big':
+                		size_class = 'poodll_mediarecorder_size_big';
+                		break;
+                	case 'auto':
+	                	size_class = 'poodll_mediarecorder_size_auto';		
+                }
 
-                var controls ='<div class="poodll_mediarecorderholder_bmr poodll_videorecorderholder_bmr' + skin_style + '" id="holder_' + controlbarid + '">' ;
-                controls +='<div class="poodll_mediarecorderbox_bmr ' + skin_style + '" id="' + controlbarid + '">' ;
+                
+                var record_icon = mediatype=='video' ?  'fa-video-camera' : 'fa-microphone';
+				var recorder_class = mediatype=='video' ?  'poodll_mediarecorder_video' : 'poodll_mediarecorder_audio';
+
+                var controls ='<div class="poodll_mediarecorderholder_bmr poodll_videorecorderholder_bmr ' 
+                	+ recorder_class + ' ' + size_class + '" id="holder_' + controlbarid + '">' ;
+                	
+                controls +='<div class="poodll_mediarecorderbox_bmr" id="' + controlbarid + '">' ;
+                controls +='<div class="style-holder ' + skin_style + '">' ;
                 var status = this.fetch_status_bar('bmr');
                 controls += status,
                 controls += preview,
-                controls +=  '<button type="button" class="poodll_mediarecorder_button_bmr poodll_start-recording_bmr">' + M.util.get_string('recui_record', 'filter_poodll') + '<i class="fa ' + record_icon + '" aria-hidden="true"></i></button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_bmr poodll_resume-recording_bmr bmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '<i class="fa ' + record_icon + '" aria-hidden="true"></i></button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_bmr poodll_stop-recording_bmr bmr_disabled" disabled>' + M.util.get_string('recui_stop', 'filter_poodll') + '<i class="fa fa-stop" aria-hidden="true"></i></button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_bmr poodll_pause-recording_bmr bmr_disabled" disabled>' + M.util.get_string('recui_pause', 'filter_poodll') + '<i class="fa fa-pause" aria-hidden="true"></i></button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_bmr poodll_play-recording_bmr bmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '<i class="fa fa-play" aria-hidden="true"></i></button>';
+                controls +=  '<button type="button" class="poodll_mediarecorder_button_bmr poodll_start-recording_bmr"><i class="fa ' + record_icon + '" aria-hidden="true"></i></button>';
+                controls += ' <button type="button" class="poodll_mediarecorder_button_bmr poodll_resume-recording_bmr bmr_disabled hide" disabled><i class="fa ' + record_icon + '" aria-hidden="true"></i></button>';
+                controls += '<button type="button" class="poodll_mediarecorder_button_bmr poodll_stop-recording_bmr bmr_disabled" disabled><i class="fa fa-stop" aria-hidden="true"></i></button>';
+                controls += '<button type="button" class="poodll_mediarecorder_button_bmr poodll_pause-recording_bmr bmr_disabled" disabled><i class="fa fa-pause" aria-hidden="true"></i></button>';
+                controls += ' <button type="button" class="poodll_mediarecorder_button_bmr poodll_play-recording_bmr bmr_disabled" disabled><i class="fa fa-play" aria-hidden="true"></i></button>';
                 controls += '<button type="button" class="poodll_save-recording_bmr" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button>';
-                controls += '</div></div>';
+                controls += '</div></div></div>';
                 $(element).prepend(controls);
                 var controlbar ={
-                    status: $('#' + controlbarid + ' > .poodll_status_bmr'),
-                    preview: $('#' + controlbarid + ' > .poodll_preview_bmr'),
-                    startbutton: $('#' + controlbarid + ' > .poodll_start-recording_bmr'),
-                    stopbutton: $('#' + controlbarid + ' > .poodll_stop-recording_bmr'),
-                    pausebutton: $('#' + controlbarid + ' > .poodll_pause-recording_bmr'),
-                    resumebutton: $('#' + controlbarid + ' > .poodll_resume-recording_bmr'),
-                    playbutton: $('#' + controlbarid + ' > .poodll_play-recording_bmr'),
-                    savebutton: $('#' + controlbarid + ' > .poodll_save-recording_bmr')    
+                    status: $('#' + controlbarid + ' .poodll_status_bmr'),
+                    preview: $('#' + controlbarid + ' .poodll_preview_bmr'),
+                    startbutton: $('#' + controlbarid + ' .poodll_start-recording_bmr'),
+                    stopbutton: $('#' + controlbarid + ' .poodll_stop-recording_bmr'),
+                    pausebutton: $('#' + controlbarid + ' .poodll_pause-recording_bmr'),
+                    resumebutton: $('#' + controlbarid + ' .poodll_resume-recording_bmr'),
+                    playbutton: $('#' + controlbarid + ' .poodll_play-recording_bmr'),
+                    savebutton: $('#' + controlbarid + ' .poodll_save-recording_bmr')    
                 };
                 return controlbar;
         }, //end of fetch_control_bar_bmr

@@ -115,17 +115,42 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
 
        },
 
-        //insert the control bar and return it to be reused
+       //insert the control bar and return it to be reused
         insert_controlbar_video: function(element, controlbarid, preview) {
-              return this.insert_controlbar_audio(element,controlbarid,preview);
+            var controlbar = this.prepare_controlbar(element,controlbarid, preview,'video');
+        	return controlbar;
         },
         //insert the control bar and return it to be reused
         insert_controlbar_audio: function(element,controlbarid, preview){
+        	var controlbar = this.prepare_controlbar(element,controlbarid, preview,'audio');
+        	return controlbar;
+        },
+        
+        //insert the control bar and return it to be reused
+        prepare_controlbar: function(element,controlbarid, preview, mediatype){
                 var ip = this.fetch_instanceprops(controlbarid);
                 var skin_style = ip.config.media_skin_style;
 
-                var controls ='<div class="poodll_mediarecorderholder_gold ' + skin_style + '" id="holder_' + controlbarid + '">' ;
-                controls +='<div class="poodll_mediarecorderbox_gold ' + skin_style + '" id="' + controlbarid + '">' ;
+				var recorder_class = mediatype=='video' ?  'poodll_mediarecorder_video' : 'poodll_mediarecorder_audio';
+				
+				var size_class = 'poodll_mediarecorder_size_auto';
+                switch(ip.config.size){
+                	case 'small':
+	                	size_class = 'poodll_mediarecorder_size_small';
+                		break;
+                	case 'big':
+                		size_class = 'poodll_mediarecorder_size_big';
+                		break;
+                	case 'auto':
+	                	size_class = 'poodll_mediarecorder_size_auto';		
+                }
+
+				
+                var controls ='<div class="poodll_mediarecorderholder_gold ' 
+                	+ recorder_class + '" id="holder_' + controlbarid + '">' ;
+                	
+                controls +='<div class="poodll_mediarecorderbox_gold" id="' + controlbarid + '">' ;
+                controls +='<div class="style-holder ' + skin_style + '">' ;
                 var status = this.fetch_status_bar('gold');
                 controls += status,
                 controls += preview,
@@ -135,17 +160,17 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 controls += ' <button type="button" class="poodll_mediarecorder_button_gold poodll_resume-recording_gold pmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '</button>';
                 controls += ' <button type="button" class="poodll_mediarecorder_button_gold poodll_play-recording_gold pmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '</button>';
                 controls += '<button type="button" class="poodll_save-recording_gold pmr_disabled" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button>';
-                controls += '</div></div>';
+                controls += '</div></div></div>';
                 $(element).prepend(controls);
                 var controlbar ={
-                    status: $('#' + controlbarid + ' > .poodll_status_gold'),
-                    preview: $('#' + controlbarid + ' > .poodll_preview_gold'),
-                    startbutton: $('#' + controlbarid + ' > .poodll_start-recording_gold'),
-                    stopbutton: $('#' + controlbarid + ' > .poodll_stop-recording_gold'),
-                    pausebutton: $('#' + controlbarid + ' > .poodll_pause-recording_gold'),
-                    resumebutton: $('#' + controlbarid + ' > .poodll_resume-recording_gold'),
-                    playbutton: $('#' + controlbarid + ' > .poodll_play-recording_gold'),
-                    savebutton: $('#' + controlbarid + ' > .poodll_save-recording_gold')    
+                    status: $('#' + controlbarid + ' .poodll_status_gold'),
+                    preview: $('#' + controlbarid + ' .poodll_preview_gold'),
+                    startbutton: $('#' + controlbarid + ' .poodll_start-recording_gold'),
+                    stopbutton: $('#' + controlbarid + ' .poodll_stop-recording_gold'),
+                    pausebutton: $('#' + controlbarid + ' .poodll_pause-recording_gold'),
+                    resumebutton: $('#' + controlbarid + ' .poodll_resume-recording_gold'),
+                    playbutton: $('#' + controlbarid + ' .poodll_play-recording_gold'),
+                    savebutton: $('#' + controlbarid + ' .poodll_save-recording_gold')    
                 };
                 return controlbar;
         }, //end of fetch_control_bar_gold
