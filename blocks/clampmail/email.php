@@ -290,7 +290,7 @@ if ($form->is_cancelled()) {
             // Send emails.
             foreach (explode(',', $data->mailto) as $userid) {
                 $success = email_to_user($everyone[$userid], $user, $subject,
-                    $data->messagetext, $data->messagehtml, $file, $filename);
+                    $data->messagetext, $data->messagehtml, $file, $filename, false, $user->email);
 
                 if (!$success) {
                     $warnings[] = get_string("no_email", 'block_clampmail', $everyone[$userid]);
@@ -299,7 +299,7 @@ if ($form->is_cancelled()) {
 
             if ($data->receipt) {
                 email_to_user($USER, $user, $subject,
-                    $data->messagetext, $data->messagehtml, $file, $filename);
+                    $data->messagetext, $data->messagehtml, $file, $filename, false, $user->email);
             }
 
             if (!empty($actualfile)) {

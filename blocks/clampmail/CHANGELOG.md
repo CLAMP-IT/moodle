@@ -1,3 +1,8 @@
+## 3.3.0 (August 28, 2017)
+
+- Fixed a bug in which the real email address was not set as reply-to.
+- Changed version numbering to match stable version
+
 ## 1.3.3 (June 23, 2017)
 
 - Minor code cleanup
