@@ -555,7 +555,7 @@ class enrol_flatfile_plugin extends enrol_plugin {
                 if ($action == ENROL_EXT_REMOVED_UNENROL) {
                     $unenrolled = true;
                     if (!$plugin->roles_protected()) {
-                        role_unassign_all(array('contextid'=>$context->id, 'userid'=>$user->id, 'roleid'=>$roleid, 'component'=>'', 'itemid'=>0), true);
+                        role_unassign($roleid, $user->id, $context->id, 'enrol_'.$instance->enrol, $instance->id);
                     }
                     $plugin->unenrol_user($instance, $user->id);
                     $trace->output("User $user->id was unenrolled from course $course->id (enrol_$instance->enrol)", 1);
@@ -563,11 +563,13 @@ class enrol_flatfile_plugin extends enrol_plugin {
                 } else if ($action == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
                     if ($plugin->allow_manage($instance)) {
                         if ($ue->status == ENROL_USER_ACTIVE) {
-                            $unenrolled = true;
-                            $plugin->update_user_enrol($instance, $user->id, ENROL_USER_SUSPENDED);
                             if (!$plugin->roles_protected()) {
-                                role_unassign_all(array('contextid'=>$context->id, 'userid'=>$user->id, 'component'=>'enrol_'.$instance->enrol, 'itemid'=>$instance->id), true);
-                                role_unassign_all(array('contextid'=>$context->id, 'userid'=>$user->id, 'roleid'=>$roleid, 'component'=>'', 'itemid'=>0), true);
+								role_unassign($roleid, $user->id, $context->id, 'enrol_'.$instance->enrol, $instance->id);
+								role_unassign($roleid, $user->id, $context->id);
+                            }
+                            if (0 == $DB->count_records('role_assignments', array('userid'=>$user->id, 'contextid'=>$context->id))) {
+                                $unenrolled = true;
+                                $plugin->update_user_enrol($instance, $user->id, ENROL_USER_SUSPENDED);
                             }
                             $trace->output("User $user->id enrolment was suspended in course $course->id (enrol_$instance->enrol)", 1);
                         }
