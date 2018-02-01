@@ -103,6 +103,14 @@ echo $OUTPUT->heading(get_string('participants'));
 $filtersapplied = optional_param_array('unified-filters', [], PARAM_NOTAGS);
 $filterwassubmitted = optional_param('unified-filter-submitted', 0, PARAM_BOOL);
 
+// When we first arrive at the page, filter on active enrolments by default.
+if (has_capability('moodle/course:enrolreview', $context)) {
+    $defaultstatus = USER_FILTER_STATUS . ':' . ENROL_USER_ACTIVE;
+    if (!$filterwassubmitted) {
+        $filtersapplied[] = USER_FILTER_STATUS . ':' . ENROL_USER_ACTIVE;
+    }
+}
+
 // If they passed a role make sure they can view that role.
 if ($roleid) {
     $viewableroles = get_profile_roles($context);
