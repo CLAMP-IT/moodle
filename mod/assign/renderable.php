@@ -855,6 +855,8 @@ class assign_files implements renderable {
     public $cm;
     /** @var stdClass $course */
     public $course;
+    /** @var string $multiplesallowed */
+    public $multiplesallowed = false;
 
     /**
      * The constructor
@@ -865,7 +867,7 @@ class assign_files implements renderable {
      * @param string $component
      */
     public function __construct(context $context, $sid, $filearea, $component) {
-        global $CFG;
+        global $CFG, $DB;
         $this->context = $context;
         list($context, $course, $cm) = get_context_info_array($context->id);
         $this->cm = $cm;
@@ -879,6 +881,21 @@ class assign_files implements renderable {
                                      $sid,
                                      'timemodified',
                                      false);
+
+        $dbparams = array('assignment' => $this->cm->instance,
+                          'plugin' => 'file',
+                          'subtype' => 'assignsubmission',
+                          'name' => 'maxfilesubmissions',
+                      );
+        $result = $DB->get_record('assign_plugin_config', $dbparams, 'value', IGNORE_MISSING);
+        if ($result && $result->value > 1) {
+            $this->multiplesallowed = true;
+            $recursivesort = function( &$dir ) use ( &$recursivesort ) {
+                foreach ($dir['subdirs'] as &$subdir) { $recursivesort($subdir); }
+                uasort($dir['files'], function($a, $b) {return $a->get_timemodified() > $b->get_timemodified();});
+            };
+            $recursivesort($this->dir);
+        }
 
         if (!empty($CFG->enableportfolios)) {
             require_once($CFG->libdir . '/portfoliolib.php');
@@ -940,6 +957,9 @@ class assign_files implements renderable {
                     $file->get_filename();
             $url = file_encode_url("$CFG->wwwroot/pluginfile.php", $path, true);
             $filename = $file->get_filename();
+            if ($this->multiplesallowed) {
+                $filename .= ' (' . date('M j, Y g:ia', $file->get_timemodified()) . ')';
+            }
             $file->fileurl = html_writer::link($url, $filename, [
                     'target' => '_blank',
                 ]);
