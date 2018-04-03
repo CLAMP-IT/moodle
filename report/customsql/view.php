@@ -29,6 +29,7 @@ require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/validateurlsyntax.php');
 
 $id = required_param('id', PARAM_INT);
+$urlparams = ['id' => $id];
 $report = $DB->get_record('report_customsql_queries', array('id' => $id));
 if (!$report) {
     print_error('invalidreportid', 'report_customsql', report_customsql_url('index.php'), $id);
@@ -52,9 +53,6 @@ if ($report->runable == 'manual') {
             $queryparams[substr($queryparam, 1)] = 'queryparam'.substr($queryparam, 1);
         }
 
-        $PAGE->set_url(new moodle_url('/report/customsql/view.php'));
-        $PAGE->set_context($context);
-        $PAGE->set_title($report->displayname);
         $relativeurl = 'view.php?id=' . $id;
         $mform = new report_customsql_view_form(report_customsql_url($relativeurl), $queryparams);
 
@@ -74,9 +72,10 @@ if ($report->runable == 'manual') {
             }
         } else {
 
-            admin_externalpage_setup('report_customsql');
-            $PAGE->set_title($report->displayname);
-            $PAGE->navbar->add($report->displayname);
+            admin_externalpage_setup('report_customsql', '', $urlparams,
+                    '/report/customsql/view.php');
+            $PAGE->set_title(format_string($report->displayname));
+            $PAGE->navbar->add(format_string($report->displayname));
             echo $OUTPUT->header();
             echo $OUTPUT->heading(format_string($report->displayname));
             if (!html_is_blank($report->description)) {
@@ -106,12 +105,14 @@ if ($report->runable == 'manual') {
     }
 } else {
     $csvtimestamp = optional_param('timestamp', time(), PARAM_INT);
+    $urlparams['timestamp'] = $csvtimestamp;
 }
 
 // Start the page.
-admin_externalpage_setup('report_customsql');
-$PAGE->set_title($report->displayname);
-$PAGE->navbar->add($report->displayname);
+admin_externalpage_setup('report_customsql', '', $urlparams,
+        '/report/customsql/view.php');
+$PAGE->set_title(format_string($report->displayname));
+$PAGE->navbar->add(format_string($report->displayname));
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($report->displayname));
 
@@ -204,12 +205,8 @@ if (!empty($queryparams)) {
 }
 
 if (has_capability('report/customsql:definequeries', $context)) {
-    $imgedit = html_writer::tag('img', '', array('src' => $OUTPUT->pix_url('t/edit'),
-                                'class' => 'iconsmall',
-                                'alt' => get_string('edit')));
-    $imgdelete = html_writer::tag('img', '', array('src' => $OUTPUT->pix_url('t/delete'),
-                                  'class' => 'iconsmall',
-                                  'alt' => get_string('delete')));
+    $imgedit = $OUTPUT->pix_icon('t/edit', get_string('edit'));
+    $imgdelete = $OUTPUT->pix_icon('t/delete', get_string('delete'));
     echo html_writer::start_tag('p').
          $OUTPUT->action_link(new moodle_url(report_customsql_url('edit.php'),
                                              array('id' => $id)), $imgedit.' '.
@@ -222,9 +219,7 @@ if (has_capability('report/customsql:definequeries', $context)) {
          html_writer::end_tag('p');
 }
 
-$imglarrow = html_writer::tag('img', '', array('src' => $OUTPUT->pix_url('t/collapsed_rtl'),
-                              'class' => 'iconsmall',
-                              'alt' => ''));
+$imglarrow = $OUTPUT->pix_icon('t/left', '');
 echo html_writer::start_tag('p').
      $OUTPUT->action_link(new moodle_url(report_customsql_url('index.php')), $imglarrow.
                                          get_string('backtoreportlist', 'report_customsql')).

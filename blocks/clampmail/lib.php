@@ -147,53 +147,6 @@ abstract class clampmail {
         });
     }
 
-    public static function load_config($courseid) {
-        global $DB;
-
-        $fields = 'name,value';
-        $params = array('coursesid' => $courseid);
-        $table = 'block_clampmail_config';
-
-        $config = $DB->get_records_menu($table, $params, '', $fields);
-
-        if (empty($config)) {
-            $m = 'moodle';
-            $roleselection = get_config($m, 'block_clampmail_roleselection');
-            $prepender = get_config($m, 'block_clampmail_prepend_class');
-            $receipt = get_config($m, 'block_clampmail_receipt');
-
-            $config = array(
-                'roleselection' => $roleselection,
-                'prepend_class' => $prepender,
-                'receipt' => $receipt
-            );
-        }
-
-        return $config;
-    }
-
-    public static function default_config($courseid) {
-        global $DB;
-
-        $params = array('coursesid' => $courseid);
-        $DB->delete_records('block_clampmail_config', $params);
-    }
-
-    public static function save_config($courseid, $data) {
-        global $DB;
-
-        self::default_config($courseid);
-
-        foreach ($data as $name => $value) {
-            $config = new stdClass;
-            $config->coursesid = $courseid;
-            $config->name = $name;
-            $config->value = $value;
-
-            $DB->insert_record('block_clampmail_config', $config);
-        }
-    }
-
     public static function delete_dialog($courseid, $type, $typeid) {
         global $DB, $OUTPUT;
 

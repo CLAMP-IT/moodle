@@ -140,6 +140,10 @@ function choice_add_instance($choice) {
 
     // Add calendar events if necessary.
     choice_set_events($choice);
+    if (!empty($choice->completionexpected)) {
+        \core_completion\api::update_completion_date_event($choice->coursemodule, 'choice', $choice->id,
+                $choice->completionexpected);
+    }
 
     return $choice->id;
 }
@@ -189,6 +193,8 @@ function choice_update_instance($choice) {
 
     // Add calendar events if necessary.
     choice_set_events($choice);
+    $completionexpected = (!empty($choice->completionexpected)) ? $choice->completionexpected : null;
+    \core_completion\api::update_completion_date_event($choice->coursemodule, 'choice', $choice->id, $completionexpected);
 
     return $DB->update_record('choice', $choice);
 
@@ -530,7 +536,8 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses) {
     $allusers = [];
     foreach ($choice->option as $optionid => $optiontext) {
         $display->options[$optionid] = new stdClass;
-        $display->options[$optionid]->text = $optiontext;
+        $display->options[$optionid]->text = format_string($optiontext, true,
+            ['context' => context_module::instance($cm->id)]);
         $display->options[$optionid]->maxanswer = $choice->maxanswers[$optionid];
 
         if (array_key_exists($optionid, $allresponses)) {
@@ -782,8 +789,9 @@ function choice_get_response_data($choice, $cm, $groupmode, $onlyactive) {
 
 /// First get all the users who have access here
 /// To start with we assume they are all "unanswered" then move them later
+    $extrafields = get_extra_user_fields($context);
     $allresponses[0] = get_enrolled_users($context, 'mod/choice:choose', $currentgroup,
-            user_picture::fields('u', array('idnumber')), null, 0, 0, $onlyactive);
+            user_picture::fields('u', $extrafields), null, 0, 0, $onlyactive);
 
 /// Get all the recorded responses for this choice
     $rawresponses = $DB->get_records('choice_answers', array('choiceid' => $choice->id));
@@ -1005,7 +1013,7 @@ function choice_print_overview($courses, &$htmlarray) {
  */
 function choice_get_my_response($choice) {
     global $DB, $USER;
-    return $DB->get_records('choice_answers', array('choiceid' => $choice->id, 'userid' => $USER->id));
+    return $DB->get_records('choice_answers', array('choiceid' => $choice->id, 'userid' => $USER->id), 'optionid');
 }
 
 
@@ -1118,16 +1126,27 @@ function choice_get_availability_status($choice) {
 /**
  * This standard function will check all instances of this module
  * and make sure there are up-to-date events created for each of them.
- * If courseid = 0, then every chat event in the site is checked, else
- * only chat events belonging to the course specified are checked.
+ * If courseid = 0, then every choice event in the site is checked, else
+ * only choice events belonging to the course specified are checked.
  * This function is used, in its new format, by restore_refresh_events()
  *
  * @param int $courseid
+ * @param int|stdClass $instance Choice module instance or ID.
+ * @param int|stdClass $cm Course module object or ID (not used in this module).
  * @return bool
  */
-function choice_refresh_events($courseid = 0) {
+function choice_refresh_events($courseid = 0, $instance = null, $cm = null) {
     global $DB, $CFG;
     require_once($CFG->dirroot.'/mod/choice/locallib.php');
+
+    // If we have instance information then we can just update the one event instead of updating all events.
+    if (isset($instance)) {
+        if (!is_object($instance)) {
+            $instance = $DB->get_record('choice', array('id' => $instance), '*', MUST_EXIST);
+        }
+        choice_set_events($instance);
+        return true;
+    }
 
     if ($courseid) {
         if (! $choices = $DB->get_records("choice", array("course" => $courseid))) {

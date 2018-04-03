@@ -3,32 +3,51 @@ language: php
 cache:
   directories:
     - $HOME/.composer/cache
+    - $HOME/.npm
 
 addons:
-  postgresql: 9.3
+  firefox: "47.0.1"
+  postgresql: "9.3"
+  apt:
+    packages:
+      - oracle-java8-installer
+      - oracle-java8-set-default
+      - postfix
 
 php:
  - 5.6
  - 7.0
+ - 7.1
 
 env:
  global:
   - IGNORE_PATHS=js/jquery.js
  matrix:
   - DB=pgsql MOODLE_BRANCH=MOODLE_33_STABLE
+  - DB=pgsql MOODLE_BRANCH=MOODLE_34_STABLE
+  - DB=pgsql MOODLE_BRANCH=master
   - DB=mysqli MOODLE_BRANCH=MOODLE_33_STABLE
+  - DB=mysqli MOODLE_BRANCH=MOODLE_34_STABLE
+  - DB=mysqli MOODLE_BRANCH=master
 
 matrix:
   fast_finish: true
+  exclude:
+    - php: 5.6
+      env: DB=pgsql MOODLE_BRANCH=master
+    - php: 5.6
+      env: DB=mysqli MOODLE_BRANCH=master
+    - php: 5.6
+      env: DB=pgsql MOODLE_BRANCH=MOODLE_34_STABLE
+    - php: 5.6
+      env: DB=mysqli MOODLE_BRANCH=MOODLE_34_STABLE
 
 before_install:
-  - echo "always_populate_raw_post_data = -1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - phpenv config-rm xdebug.ini
-  - sudo apt-get update -qq
-  - sudo apt-get install -y -qq postfix
+  - nvm install 8.9
+  - nvm use 8.9
   - cd ../..
-  - composer selfupdate
-  - composer create-project -n --no-dev moodlerooms/moodle-plugin-ci ci ^1
+  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^2
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
 
 before_script:
@@ -45,4 +64,9 @@ script:
   - moodle-plugin-ci phpcpd
   - moodle-plugin-ci phpmd
   - moodle-plugin-ci codechecker
+  - moodle-plugin-ci validate
+  - moodle-plugin-ci savepoints
+  - moodle-plugin-ci mustache
+  - moodle-plugin-ci grunt
+  - moodle-plugin-ci phpunit
   - moodle-plugin-ci behat

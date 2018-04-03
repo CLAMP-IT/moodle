@@ -1,4 +1,4 @@
-@ou @ou_vle @report @report_customsql
+@ou @ou_vle @report @report_customsql @javascript
 Feature: Ad-hoc database queries report
   As an administrator
   In order to understand what is going on in my Moodle site
@@ -20,8 +20,7 @@ Feature: Ad-hoc database queries report
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
     And I log in as "admin"
- 
-  @javascript @report_customsql_s1
+
   Scenario: Create a query, edit it and then delete it.
     When I navigate to "Ad-hoc database queries" node in "Site administration > Reports"
     And I follow "Ad-hoc database queries"
@@ -56,7 +55,6 @@ Feature: Ad-hoc database queries report
     And I follow "Delete this query"
     And I press "Yes"
 
-  @javascript @report_customsql_s2
   Scenario: Create a query where the query cannot be found in DB.
     When I navigate to "Ad-hoc database queries" node in "Site administration > Reports"
     And I follow "Ad-hoc database queries"
@@ -70,13 +68,12 @@ Feature: Ad-hoc database queries report
     And I press "Save changes"
     Then I should see "This query did not return any data."
 
-  @javascript @report_customsql_s3
   Scenario: Create 2 categories and create a query for each category.
     # Do the basic
     When I navigate to "Ad-hoc database queries" node in "Site administration > Reports"
     And I follow "Ad-hoc database queries"
     And I press "Manage report categories"
- 
+
     # Create the first category and create a query in this category.
     And I press "Add a new category"
     And I set the field "Category name" to "Category 1"
@@ -102,13 +99,13 @@ Feature: Ad-hoc database queries report
 
     And I follow "Ad-hoc database queries"
     And I press "Manage report categories"
- 
+
     # Create another category
     And I press "Add a new category"
     And I set the field "Category name" to "Category 2"
     And I press "Add a new category"
     Then I should see "Manage report categories"
- 
+
     # Create a query in Category 2
     And I follow "Ad-hoc database queries"
     And I press "Add a new query"
@@ -120,7 +117,17 @@ Feature: Ad-hoc database queries report
     And I press "Save changes"
     Then I should see "Query for cat2"
 
- @javascript @report_customsql_s4
+    # Test exand/collapse of categories.
+    When I navigate to "Ad-hoc database queries" node in "Site administration > Reports"
+    Then I should see "Expand all"
+    And I should not see "Query1 for category1"
+    When I follow "Category 1"
+    And I should see "Query1 for category1"
+    And I should not see "Expand all"
+    When I follow "Collapse all"
+    Then I should not see "Query1 for category1"
+    And I should see "Expand all"
+
   Scenario: Create a query and then edit it by filling most of the elements in the form.
     When I navigate to "Ad-hoc database queries" node in "Site administration > Reports"
     And I follow "Ad-hoc database queries"

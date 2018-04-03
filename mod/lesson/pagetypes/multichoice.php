@@ -169,13 +169,12 @@ class lesson_page_type_multichoice extends lesson_page {
             foreach ($answers as $answer) {
                 foreach ($studentanswers as $answerid) {
                     if ($answerid == $answer->id) {
-                        $result->studentanswer .= '<br />'.format_text($answer->answer, $answer->answerformat, $formattextdefoptions);
-                        if (trim(strip_tags($answer->response))) {
-                            $responses[$answerid] = format_text($answer->response, $answer->responseformat, $formattextdefoptions);
-                        }
+                        $studentanswerarray[] = format_text($answer->answer, $answer->answerformat, $formattextdefoptions);
+                        $responses[$answerid] = format_text($answer->response, $answer->responseformat, $formattextdefoptions);
                     }
                 }
             }
+            $result->studentanswer = implode(self::MULTIANSWER_DELIMITER, $studentanswerarray);
             $correctpageid = null;
             $wrongpageid = null;
 
@@ -223,11 +222,11 @@ class lesson_page_type_multichoice extends lesson_page {
 
             if ((count($studentanswers) == $ncorrect) and ($nhits == $ncorrect)) {
                 $result->correctanswer = true;
-                $result->response  = implode('<br />', $responses);
+                $result->response  = implode(self::MULTIANSWER_DELIMITER, $responses);
                 $result->newpageid = $correctpageid;
                 $result->answerid  = $correctanswerid;
             } else {
-                $result->response  = implode('<br />', $responses);
+                $result->response  = implode(self::MULTIANSWER_DELIMITER, $responses);
                 $result->newpageid = $wrongpageid;
                 $result->answerid  = $wronganswerid;
             }

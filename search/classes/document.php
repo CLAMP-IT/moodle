@@ -231,6 +231,8 @@ class document implements \renderable, \templatable {
 
                 if ($file = $fs->get_file_by_id($id)) {
                     $this->files[$id] = $file;
+                } else {
+                    unset($this->files[$id]); // Index is out of date and referencing a file that does not exist.
                 }
             }
         }
@@ -278,6 +280,16 @@ class document implements \renderable, \templatable {
         } else {
             // Replace all groups of line breaks and spaces by single spaces.
             $this->data[$fieldname] = preg_replace("/\s+/u", " ", $value);
+            if ($this->data[$fieldname] === null) {
+                if (isset($this->data['id'])) {
+                    $docid = $this->data['id'];
+                } else {
+                    $docid = '(unknown)';
+                }
+                throw new \moodle_exception('error_indexing', 'search', '', null, '"' . $fieldname .
+                        '" value causes preg_replace error (may be caused by unusual characters) ' .
+                        'in document with id "' . $docid . '"');
+            }
         }
 
         return $this->data[$fieldname];

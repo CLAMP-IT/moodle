@@ -2653,13 +2653,21 @@ class restore_calendarevents_structure_step extends restore_structure_step {
         $data = (object)$data;
         $oldid = $data->id;
         $restorefiles = true; // We'll restore the files
+
+        // If this is a new action event, it will automatically be populated by the adhoc task.
+        // Nothing to do here.
+        if (isset($data->type) && $data->type == CALENDAR_EVENT_TYPE_ACTION) {
+            return;
+        }
+
         // User overrides for activities are identified by having a courseid of zero with
         // both a modulename and instance value set.
         $isuseroverride = !$data->courseid && $data->modulename && $data->instance;
 
         // If we don't want to include user data and this record is a user override event
-        // for an activity then we should not create it.
-        if (!$this->task->get_setting_value('userinfo') && $isuseroverride) {
+        // for an activity then we should not create it. (Only activity events can be user override events - which must have this
+        // setting).
+        if ($isuseroverride && $this->task->setting_exists('userinfo') && !$this->task->get_setting_value('userinfo')) {
             return;
         }
 
@@ -3082,7 +3090,8 @@ class restore_course_logs_structure_step extends restore_structure_step {
 
         $data = (object)($data);
 
-        $data->time = $this->apply_date_offset($data->time);
+        // There is no need to roll dates. Logs are supposed to be immutable. See MDL-44961.
+
         $data->userid = $this->get_mappingid('user', $data->userid);
         $data->course = $this->get_courseid();
         $data->cmid = 0;
@@ -3129,7 +3138,8 @@ class restore_activity_logs_structure_step extends restore_course_logs_structure
 
         $data = (object)($data);
 
-        $data->time = $this->apply_date_offset($data->time);
+        // There is no need to roll dates. Logs are supposed to be immutable. See MDL-44961.
+
         $data->userid = $this->get_mappingid('user', $data->userid);
         $data->course = $this->get_courseid();
         $data->cmid = $this->task->get_moduleid();
@@ -5527,5 +5537,24 @@ class restore_completion_defaults_structure_step extends restore_structure_step 
 
         // Save id mapping for restoring associated events.
         $this->set_mapping('course_completion_defaults', $oldid, $newid);
+    }
+}
+/**
+ * Restore action events.
+ *
+ * @package     core_backup
+ * @copyright   2017 onwards Ankit Agarwal
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class restore_calendar_action_events extends restore_execution_step {
+    /**
+     * What to do when this step is executed.
+     */
+    protected function define_execution() {
+        // We just queue the task here rather trying to recreate everything manually.
+        // The task will automatically populate all data.
+        $task = new \core\task\refresh_mod_calendar_events_task();
+        $task->set_custom_data(array('courseid' => $this->get_courseid()));
+        \core\task\manager::queue_adhoc_task($task, true);
     }
 }

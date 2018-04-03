@@ -4,6 +4,10 @@
 
 Quickmail is a Moodle block that provides selective, bulk emailing within courses. CLAMPMail is a fork maintained by the Collaborative Liberal Arts Moodle Project which sends attachments via email instead of providing a download link within Moodle.
 
+## Requirements
+
+- Moodle 3.3 (build 2017051500 or later)
+
 ## Features
 
 * Multiple attachments

@@ -52,7 +52,7 @@ class block_clampmail extends block_list {
 
         $context = context_course::instance($COURSE->id);
 
-        $config = clampmail::load_config($COURSE->id);
+        $config = block_clampmail\config::load_configuration($COURSE);
         $permission = has_capability('block/clampmail:cansend', $context);
 
         $iconclass = array('class' => 'icon');

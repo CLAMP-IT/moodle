@@ -1090,6 +1090,8 @@ function quiz_update_open_attempts(array $conditions) {
 
 /**
  * Returns SQL to compute timeclose and timelimit for every attempt, taking into account user and group overrides.
+ * The query used herein is very similar to the one in function quiz_get_user_timeclose, so, in case you
+ * would change either one of them, make sure to apply your changes to both.
  *
  * @param string $redundantwhereclauses extra where clauses to add to the subquery
  *      for performance. These can use the table alias iquiza for the quiz attempts table.
@@ -1203,6 +1205,57 @@ function quiz_get_user_image_options() {
         QUIZ_SHOWIMAGE_SMALL => get_string('showsmallimage', 'quiz'),
         QUIZ_SHOWIMAGE_LARGE => get_string('showlargeimage', 'quiz'),
     );
+}
+
+/**
+ * Return an user's timeclose for all quizzes in a course, hereby taking into account group and user overrides.
+ * The query used herein is very similar to the one in function quiz_get_attempt_usertime_sql, so, in case you
+ * would change either one of them, make sure to apply your changes to both.
+ *
+ * @param int $courseid the course id.
+ * @return object An object with quizids and unixdates of the most lenient close overrides, if any.
+ */
+function quiz_get_user_timeclose($courseid) {
+    global $DB, $USER;
+
+    // For teacher and manager/admins return timeclose.
+    if (has_capability('moodle/course:update', context_course::instance($courseid))) {
+        $sql = "SELECT quiz.id, quiz.timeclose AS usertimeclose, COALESCE(quiz.timelimit, 0) AS usertimelimit
+                  FROM {quiz} quiz
+                 WHERE quiz.course = :courseid";
+
+        $results = $DB->get_records_sql($sql, array('courseid' => $courseid));
+        return $results;
+    }
+
+    // The multiple qgo JOINS are necessary because we want timeclose/timelimit = 0 (unlimited) to supercede
+    // any other group override.
+
+    $sql = "SELECT q.id,
+  COALESCE(v.oneclose, v.twoclose, v.threeclose, q.timeclose, 0) AS usertimeclose,
+  COALESCE(v.onelimit, v.twolimit, v.threelimit, q.timelimit, 0) AS usertimelimit
+  FROM (
+      SELECT quiz.id AS quizid,
+             MAX(quo.timeclose) AS oneclose, MAX(qgo1.timeclose) AS twoclose, MAX(qgo2.timeclose) AS threeclose,
+             MAX(quo.timelimit) AS onelimit, MAX(qgo3.timelimit) AS twolimit, MAX(qgo4.timelimit) AS threelimit
+       FROM {quiz} quiz
+  LEFT JOIN {quiz_overrides} quo ON quo.quiz = quiz.id
+  LEFT JOIN {groups_members} gm ON gm.userid = quo.userid
+  LEFT JOIN {quiz_overrides} qgo1 ON qgo1.timeclose = 0 AND qgo1.quiz = quiz.id
+  LEFT JOIN {quiz_overrides} qgo2 ON qgo2.timeclose > 0 AND qgo2.quiz = quiz.id
+  LEFT JOIN {quiz_overrides} qgo3 ON qgo3.timelimit = 0 AND qgo3.quiz = quiz.id
+  LEFT JOIN {quiz_overrides} qgo4 ON qgo4.timelimit > 0 AND qgo4.quiz = quiz.id
+                                  AND qgo1.groupid = gm.groupid
+                                  AND qgo2.groupid = gm.groupid
+                                  AND qgo3.groupid = gm.groupid
+                                  AND qgo4.groupid = gm.groupid
+      WHERE quiz.course = :courseid
+            AND ((quo.userid = :userid) OR ((gm.userid IS NULL) AND (quo.userid IS NULL)))
+   GROUP BY quiz.id) v
+  JOIN {quiz} q ON q.id = v.quizid";
+
+    $results = $DB->get_records_sql($sql, array('courseid' => $courseid, 'userid' => $USER->id));
+    return $results;
 }
 
 /**
@@ -2063,12 +2116,7 @@ function quiz_add_quiz_question($questionid, $quiz, $page = 0, $maxmark = null) 
         $slot->slot = $lastslotbefore + 1;
         $slot->page = min($page, $maxpage + 1);
 
-        $DB->execute("
-                UPDATE {quiz_sections}
-                   SET firstslot = firstslot + 1
-                 WHERE quizid = ?
-                   AND firstslot > ?
-                ", array($quiz->id, max($lastslotbefore, 1)));
+        quiz_update_section_firstslots($quiz->id, 1, max($lastslotbefore, 1));
 
     } else {
         $lastslot = end($slots);
@@ -2086,6 +2134,27 @@ function quiz_add_quiz_question($questionid, $quiz, $page = 0, $maxmark = null) 
 
     $DB->insert_record('quiz_slots', $slot);
     $trans->allow_commit();
+}
+
+/**
+ * Move all the section headings in a certain slot range by a certain offset.
+ *
+ * @param int $quizid the id of a quiz
+ * @param int $direction amount to adjust section heading positions. Normally +1 or -1.
+ * @param int $afterslot adjust headings that start after this slot.
+ * @param int|null $beforeslot optionally, only adjust headings before this slot.
+ */
+function quiz_update_section_firstslots($quizid, $direction, $afterslot, $beforeslot = null) {
+    global $DB;
+    $where = 'quizid = ? AND firstslot > ?';
+    $params = [$direction, $quizid, $afterslot];
+    if ($beforeslot) {
+        $where .= ' AND firstslot < ?';
+        $params[] = $beforeslot;
+    }
+    $firstslotschanges = $DB->get_records_select_menu('quiz_sections',
+            $where, $params, '', 'firstslot, firstslot + ?');
+    update_field_with_unique_index('quiz_sections', 'firstslot', $firstslotschanges, ['quizid' => $quizid]);
 }
 
 /**

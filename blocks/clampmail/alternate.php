@@ -24,7 +24,6 @@
 require_once('../../config.php');
 require_once('lib.php');
 require_once('alt_lib.php');
-require_once('alt_form.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $action = optional_param('action', 'view', PARAM_TEXT);

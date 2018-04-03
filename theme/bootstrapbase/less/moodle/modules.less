@@ -164,11 +164,14 @@ body.path-mod-feedback #region-main .mform.feedback_form .feedback-item-pagebrea
             .topic,
             .discussionsubscription,
             .topic.starter,
-            .picture,
             .author,
             .replies,
             .lastpost {
                 vertical-align: top;
+            }
+            .picture {
+                margin: 0 20px;
+                float: left;
             }
             .unread {
                 img {
@@ -311,6 +314,10 @@ div#dock {
         float: left;
         padding-right: 1em;
     }
+
+    .horizontal .choices .option {
+        display: inline-block;
+    }
 }
 
 // Lesson module
@@ -441,12 +448,19 @@ div#dock {
 .path-mod-lesson .answeroptiongroup .felement label p:last-child {
     margin-bottom: 0;
 }
+.path-mod-lesson .answeroption .fradio label p,
+.path-mod-lesson .answeroption .fcheckbox label p {
+    display: inline;
+}
 
 /**
  * Style for view.php
  **/
 #page-mod-lesson-view .password-form .submitbutton {
     display: inline;
+}
+#page-mod-lesson-view .branchbuttoncontainer .singlebutton input[type="submit"] {
+    white-space: normal;
 }
 .path-mod-lesson .reviewessay {
     width: 40%;
@@ -846,6 +860,11 @@ div#dock {
 }
 
 // Quiz module
+#page-mod-quiz-edit ul.slots li.section li.activity .instancemaxmarkcontainer form input {
+    margin: 0;
+    padding: 0.2em;
+    height: 1em;
+}
 
 // Question navigation block.
 .path-mod-quiz #mod_quiz_navblock {
@@ -941,3 +960,6 @@ div#dock {
     display: block;
 }
 
+.path-mod-scorm #region-main #intro {
+    width: auto;
+}

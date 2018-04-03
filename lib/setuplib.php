@@ -384,7 +384,14 @@ function default_exception_handler($ex) {
                 // If you enable db debugging and exception is thrown, the print footer prints a lot of rubbish
                 $DB->set_debug(0);
             }
-            echo $OUTPUT->fatal_error($info->message, $info->moreinfourl, $info->link, $info->backtrace, $info->debuginfo,
+            if (AJAX_SCRIPT) {
+                // If we are in an AJAX script we don't want to use PREFERRED_RENDERER_TARGET.
+                // Because we know we will want to use ajax format.
+                $renderer = new core_renderer_ajax($PAGE, 'ajax');
+            } else {
+                $renderer = $OUTPUT;
+            }
+            echo $renderer->fatal_error($info->message, $info->moreinfourl, $info->link, $info->backtrace, $info->debuginfo,
                 $info->errorcode);
         } catch (Exception $e) {
             $out_ex = $e;
@@ -897,7 +904,11 @@ function initialise_fullme() {
     // (That is, the Moodle server uses http, with an external box translating everything to https).
     if (empty($CFG->sslproxy)) {
         if ($rurl['scheme'] === 'http' and $wwwroot['scheme'] === 'https') {
-            print_error('sslonlyaccess', 'error');
+            if (defined('REQUIRE_CORRECT_ACCESS') && REQUIRE_CORRECT_ACCESS) {
+                print_error('sslonlyaccess', 'error');
+            } else {
+                redirect($CFG->wwwroot, get_string('wwwrootmismatch', 'error', $CFG->wwwroot), 3);
+            }
         }
     } else {
         if ($wwwroot['scheme'] !== 'https') {

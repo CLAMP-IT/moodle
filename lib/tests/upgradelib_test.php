@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir.'/upgradelib.php');
+require_once($CFG->libdir.'/db/upgradelib.php');
 
 /**
  * Tests various classes and functions in upgradelib.php library.
@@ -975,5 +976,182 @@ class core_upgradelib_testcase extends advanced_testcase {
 
         // Assert the new format took precedence in case of conflict.
         $this->assertSame('val1', get_config('auth_qux', 'name1'));
+    }
+
+    /**
+     * Create a collection of test themes to test determining parent themes.
+     *
+     * @return Url to the path containing the test themes
+     */
+    public function create_testthemes() {
+        global $CFG;
+
+        $themedircontent = [
+            'testtheme' => [
+                'config.php' => '<?php $THEME->name = "testtheme"; $THEME->parents = [""];',
+            ],
+            'childoftesttheme' => [
+                'config.php' => '<?php $THEME->name = "childofboost"; $THEME->parents = ["testtheme"];',
+            ],
+            'infinite' => [
+                'config.php' => '<?php $THEME->name = "infinite"; $THEME->parents = ["forever"];',
+            ],
+            'forever' => [
+                'config.php' => '<?php $THEME->name = "forever"; $THEME->parents = ["infinite", "childoftesttheme"];',
+            ],
+            'orphantheme' => [
+                'config.php' => '<?php $THEME->name = "orphantheme"; $THEME->parents = [];',
+            ],
+            'loop' => [
+                'config.php' => '<?php $THEME->name = "loop"; $THEME->parents = ["around"];',
+            ],
+            'around' => [
+                'config.php' => '<?php $THEME->name = "around"; $THEME->parents = ["loop"];',
+            ],
+            'themewithbrokenparent' => [
+                'config.php' => '<?php $THEME->name = "orphantheme"; $THEME->parents = ["nonexistent", "testtheme"];',
+            ],
+        ];
+        $vthemedir = \org\bovigo\vfs\vfsStream::setup('themes', null, $themedircontent);
+
+        return \org\bovigo\vfs\vfsStream::url('themes');
+    }
+
+    /**
+     * Test finding theme locations.
+     */
+    public function test_upgrade_find_theme_location() {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $CFG->themedir = $this->create_testthemes();
+
+        $this->assertSame($CFG->dirroot . '/theme/boost', upgrade_find_theme_location('boost'));
+        $this->assertSame($CFG->dirroot . '/theme/clean', upgrade_find_theme_location('clean'));
+        $this->assertSame($CFG->dirroot . '/theme/bootstrapbase', upgrade_find_theme_location('bootstrapbase'));
+
+        $this->assertSame($CFG->themedir . '/testtheme', upgrade_find_theme_location('testtheme'));
+        $this->assertSame($CFG->themedir . '/childoftesttheme', upgrade_find_theme_location('childoftesttheme'));
+    }
+
+    /**
+     * Test figuring out if theme is or is a child of a certain theme.
+     */
+    public function test_upgrade_theme_is_from_family() {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $CFG->themedir = $this->create_testthemes();
+
+        $this->assertTrue(upgrade_theme_is_from_family('boost', 'boost'), 'Boost is a boost theme');
+        $this->assertTrue(upgrade_theme_is_from_family('bootstrapbase', 'clean'), 'Clean is a bootstrap base theme');
+        $this->assertFalse(upgrade_theme_is_from_family('boost', 'clean'), 'Clean is not a boost theme');
+
+        $this->assertTrue(upgrade_theme_is_from_family('testtheme', 'childoftesttheme'), 'childoftesttheme is a testtheme');
+        $this->assertFalse(upgrade_theme_is_from_family('testtheme', 'orphantheme'), 'ofphantheme is not a testtheme');
+        $this->assertTrue(upgrade_theme_is_from_family('testtheme', 'infinite'), 'Infinite loop with testtheme parent is true');
+        $this->assertFalse(upgrade_theme_is_from_family('testtheme', 'loop'), 'Infinite loop without testtheme parent is false');
+        $this->assertTrue(upgrade_theme_is_from_family('testtheme', 'themewithbrokenparent'), 'No error on broken parent');
+    }
+
+    /**
+     * Data provider of serialized string.
+     *
+     * @return array
+     */
+    public function serialized_strings_dataprovider() {
+        return [
+            'A configuration that uses the old object' => [
+                'O:6:"object":3:{s:4:"text";s:32:"Nothing that anyone cares about.";s:5:"title";s:16:"Really old block";s:6:"format";s:1:"1";}',
+                true,
+                'O:8:"stdClass":3:{s:4:"text";s:32:"Nothing that anyone cares about.";s:5:"title";s:16:"Really old block";s:6:"format";s:1:"1";}'
+            ],
+            'A configuration that uses stdClass' => [
+                'O:8:"stdClass":5:{s:5:"title";s:4:"Tags";s:12:"numberoftags";s:2:"80";s:12:"showstandard";s:1:"0";s:3:"ctx";s:3:"289";s:3:"rec";s:1:"1";}',
+                false,
+                'O:8:"stdClass":5:{s:5:"title";s:4:"Tags";s:12:"numberoftags";s:2:"80";s:12:"showstandard";s:1:"0";s:3:"ctx";s:3:"289";s:3:"rec";s:1:"1";}'
+            ],
+            'A setting I saw when importing a course with blocks from 1.9' => [
+                'N;',
+                false,
+                'N;'
+            ],
+            'An object in an object' => [
+                'O:6:"object":2:{s:2:"id";i:5;s:5:"other";O:6:"object":1:{s:4:"text";s:13:"something new";}}',
+                true,
+                'O:8:"stdClass":2:{s:2:"id";i:5;s:5:"other";O:8:"stdClass":1:{s:4:"text";s:13:"something new";}}'
+            ],
+            'An array with an object in it' => [
+                'a:3:{s:4:"name";s:4:"Test";s:10:"additional";O:6:"object":2:{s:2:"id";i:5;s:4:"info";s:18:"text in the object";}s:4:"type";i:1;}',
+                true,
+                'a:3:{s:4:"name";s:4:"Test";s:10:"additional";O:8:"stdClass":2:{s:2:"id";i:5;s:4:"info";s:18:"text in the object";}s:4:"type";i:1;}'
+            ]
+        ];
+    }
+
+    /**
+     * Test that objects in serialized strings will be changed over to stdClass.
+     *
+     * @dataProvider serialized_strings_dataprovider
+     * @param string $initialstring The initial serialized setting.
+     * @param bool $expectededited If the string is expected to be edited.
+     * @param string $expectedresult The expected serialized setting to be returned.
+     */
+    public function test_upgrade_fix_serialized_objects($initialstring, $expectededited, $expectedresult) {
+        list($edited, $resultstring) = upgrade_fix_serialized_objects($initialstring);
+        $this->assertEquals($expectededited, $edited);
+        $this->assertEquals($expectedresult, $resultstring);
+    }
+
+    /**
+     * Data provider for base64_encoded block instance config data.
+     */
+    public function encoded_strings_dataprovider() {
+        return [
+            'Normal data using stdClass' => [
+                'Tzo4OiJzdGRDbGFzcyI6NTp7czo1OiJ0aXRsZSI7czo0OiJUYWdzIjtzOjEyOiJudW1iZXJvZnRhZ3MiO3M6MjoiODAiO3M6MTI6InNob3dzdGFuZGFyZCI7czoxOiIwIjtzOjM6ImN0eCI7czozOiIyODkiO3M6MzoicmVjIjtzOjE6IjEiO30=',
+                'Tzo4OiJzdGRDbGFzcyI6NTp7czo1OiJ0aXRsZSI7czo0OiJUYWdzIjtzOjEyOiJudW1iZXJvZnRhZ3MiO3M6MjoiODAiO3M6MTI6InNob3dzdGFuZGFyZCI7czoxOiIwIjtzOjM6ImN0eCI7czozOiIyODkiO3M6MzoicmVjIjtzOjE6IjEiO30='
+            ],
+            'No data at all' => [
+                '',
+                ''
+            ],
+            'Old data using object' => [
+                'Tzo2OiJvYmplY3QiOjM6e3M6NDoidGV4dCI7czozMjoiTm90aGluZyB0aGF0IGFueW9uZSBjYXJlcyBhYm91dC4iO3M6NToidGl0bGUiO3M6MTY6IlJlYWxseSBvbGQgYmxvY2siO3M6NjoiZm9ybWF0IjtzOjE6IjEiO30=',
+                'Tzo4OiJzdGRDbGFzcyI6Mzp7czo0OiJ0ZXh0IjtzOjMyOiJOb3RoaW5nIHRoYXQgYW55b25lIGNhcmVzIGFib3V0LiI7czo1OiJ0aXRsZSI7czoxNjoiUmVhbGx5IG9sZCBibG9jayI7czo2OiJmb3JtYXQiO3M6MToiMSI7fQ=='
+            ]
+        ];
+    }
+
+    /**
+     * Check that entries in the block_instances table are coverted over correctly.
+     *
+     * @dataProvider encoded_strings_dataprovider
+     * @param string $original The original base64_encoded block config setting.
+     * @param string $expected The expected base64_encoded block config setting.
+     */
+    public function test_upgrade_fix_block_instance_configuration($original, $expected) {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $data = new stdClass();
+        $data->blockname = 'html';
+        $data->parentcontextid = 1;
+        $data->showinsubcontexts = 0;
+        $data->requirebytheme = 0;
+        $data->pagetypepattern = 'admin-setting-frontpagesettings';
+        $data->defaultregion = 'side-post';
+        $data->defaultweight = 1;
+        $data->timecreated = time();
+        $data->timemodified = time();
+
+        $data->configdata = $original;
+        $entryid = $DB->insert_record('block_instances', $data);
+        upgrade_fix_block_instance_configuration();
+        $record = $DB->get_record('block_instances', ['id' => $entryid]);
+        $this->assertEquals($expected, $record->configdata);
     }
 }

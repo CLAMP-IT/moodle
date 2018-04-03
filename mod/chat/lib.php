@@ -133,6 +133,11 @@ function chat_add_instance($chat) {
 
         calendar_event::create($event);
     }
+
+    if (!empty($chat->completionexpected)) {
+        \core_completion\api::update_completion_date_event($chat->coursemodule, 'chat', $returnid, $chat->completionexpected);
+    }
+
     return $returnid;
 }
 
@@ -155,7 +160,8 @@ function chat_update_instance($chat) {
 
     $event = new stdClass();
 
-    if ($event->id = $DB->get_field('event', 'id', array('modulename' => 'chat', 'instance' => $chat->id))) {
+    if ($event->id = $DB->get_field('event', 'id', array('modulename' => 'chat',
+        'instance' => $chat->id, 'eventtype' => CHAT_EVENT_TYPE_CHATTIME))) {
 
         if ($chat->schedule > 0) {
             $event->type        = CALENDAR_EVENT_TYPE_ACTION;
@@ -191,6 +197,9 @@ function chat_update_instance($chat) {
             calendar_event::create($event);
         }
     }
+
+    $completionexpected = (!empty($chat->completionexpected)) ? $chat->completionexpected : null;
+    \core_completion\api::update_completion_date_event($chat->coursemodule, 'chat', $chat->id, $completionexpected);
 
     return true;
 }
@@ -431,10 +440,28 @@ function chat_cron () {
  *
  * @global object
  * @param int $courseid
+ * @param int|stdClass $instance Chat module instance or ID.
+ * @param int|stdClass $cm Course module object or ID.
  * @return bool
  */
-function chat_refresh_events($courseid = 0) {
+function chat_refresh_events($courseid = 0, $instance = null, $cm = null) {
     global $DB;
+
+    // If we have instance information then we can just update the one event instead of updating all events.
+    if (isset($instance)) {
+        if (!is_object($instance)) {
+            $instance = $DB->get_record('chat', array('id' => $instance), '*', MUST_EXIST);
+        }
+        if (isset($cm)) {
+            if (!is_object($cm)) {
+                chat_prepare_update_events($instance);
+                return true;
+            } else {
+                chat_prepare_update_events($instance, $cm);
+                return true;
+            }
+        }
+    }
 
     if ($courseid) {
         if (! $chats = $DB->get_records("chat", array("course" => $courseid))) {
@@ -445,34 +472,45 @@ function chat_refresh_events($courseid = 0) {
             return true;
         }
     }
-    $moduleid = $DB->get_field('modules', 'id', array('name' => 'chat'));
-
     foreach ($chats as $chat) {
-        $cm = get_coursemodule_from_instance('chat', $chat->id, $chat->course);
-        $event = new stdClass();
-        $event->name        = $chat->name;
-        $event->type        = CALENDAR_EVENT_TYPE_ACTION;
-        $event->description = format_module_intro('chat', $chat, $cm->id);
-        $event->timestart   = $chat->chattime;
-
-        if ($event->id = $DB->get_field('event', 'id', array('modulename' => 'chat', 'instance' => $chat->id))) {
-            $calendarevent = calendar_event::load($event->id);
-            $calendarevent->update($event);
-        } else if ($chat->schedule > 0) {
-            // The chat is scheduled and the event should be published.
-            $event->courseid    = $chat->course;
-            $event->groupid     = 0;
-            $event->userid      = 0;
-            $event->modulename  = 'chat';
-            $event->instance    = $chat->id;
-            $event->eventtype   = CHAT_EVENT_TYPE_CHATTIME;
-            $event->timeduration = 0;
-            $event->visible = $DB->get_field('course_modules', 'visible', array('module' => $moduleid, 'instance' => $chat->id));
-
-            calendar_event::create($event);
-        }
+        chat_prepare_update_events($chat);
     }
     return true;
+}
+
+/**
+ * Updates both the normal and completion calendar events for chat.
+ *
+ * @param  stdClass $chat The chat object (from the DB)
+ * @param  stdClass $cm The course module object.
+ */
+function chat_prepare_update_events($chat, $cm = null) {
+    global $DB;
+    if (!isset($cm)) {
+        $cm = get_coursemodule_from_instance('chat', $chat->id, $chat->course);
+    }
+    $event = new stdClass();
+    $event->name        = $chat->name;
+    $event->type        = CALENDAR_EVENT_TYPE_ACTION;
+    $event->description = format_module_intro('chat', $chat, $cm->id);
+    $event->timestart   = $chat->chattime;
+    $event->timesort    = $chat->chattime;
+    if ($event->id = $DB->get_field('event', 'id', array('modulename' => 'chat', 'instance' => $chat->id,
+            'eventtype' => CHAT_EVENT_TYPE_CHATTIME))) {
+        $calendarevent = calendar_event::load($event->id);
+        $calendarevent->update($event);
+    } else if ($chat->schedule > 0) {
+        // The chat is scheduled and the event should be published.
+        $event->courseid    = $chat->course;
+        $event->groupid     = 0;
+        $event->userid      = 0;
+        $event->modulename  = 'chat';
+        $event->instance    = $chat->id;
+        $event->eventtype   = CHAT_EVENT_TYPE_CHATTIME;
+        $event->timeduration = 0;
+        $event->visible = $cm->visible;
+        calendar_event::create($event);
+    }
 }
 
 // Functions that require some SQL.
@@ -530,7 +568,7 @@ function chat_get_latest_message($chatid, $groupid=0) {
 
     $sql = "SELECT *
         FROM {chat_messages_current} WHERE chatid = :chatid $groupselect
-        ORDER BY timestamp DESC";
+        ORDER BY timestamp DESC, id DESC";
 
     // Return the lastest one message.
     return $DB->get_record_sql($sql, $params, true);
@@ -674,7 +712,8 @@ function chat_update_chat_times($chatid=0) {
         $params = array('chattime' => $chat->chattime, 'chatid' => $chat->id);
 
         if ($event->id = $DB->get_field_select('event', 'id', $cond, $params)) {
-            $event->timestart   = $chat->chattime;
+            $event->timestart = $chat->chattime;
+            $event->timesort = $chat->chattime;
             $calendarevent = calendar_event::load($event->id);
             $calendarevent->update($event, false);
         }
@@ -686,12 +725,12 @@ function chat_update_chat_times($chatid=0) {
  *
  * @param object $chatuser The chat user record.
  * @param string $messagetext The message to be sent.
- * @param bool $system False for non-system messages, true for system messages.
+ * @param bool $issystem False for non-system messages, true for system messages.
  * @param object $cm The course module object, pass it to save a database query when we trigger the event.
  * @return int The message ID.
  * @since Moodle 2.6
  */
-function chat_send_chatmessage($chatuser, $messagetext, $system = false, $cm = null) {
+function chat_send_chatmessage($chatuser, $messagetext, $issystem = false, $cm = null) {
     global $DB;
 
     $message = new stdClass();
@@ -699,14 +738,14 @@ function chat_send_chatmessage($chatuser, $messagetext, $system = false, $cm = n
     $message->userid    = $chatuser->userid;
     $message->groupid   = $chatuser->groupid;
     $message->message   = $messagetext;
-    $message->system    = $system ? 1 : 0;
+    $message->issystem  = $issystem ? 1 : 0;
     $message->timestamp = time();
 
     $messageid = $DB->insert_record('chat_messages', $message);
     $DB->insert_record('chat_messages_current', $message);
     $message->id = $messageid;
 
-    if (!$system) {
+    if (!$issystem) {
 
         if (empty($cm)) {
             $cm = get_coursemodule_from_instance('chat', $chatuser->chatid, $chatuser->course);
@@ -764,7 +803,7 @@ function chat_format_message_manually($message, $courseid, $sender, $currentuser
 
     // Start processing the message.
 
-    if (!empty($message->system)) {
+    if (!empty($message->issystem)) {
         // System event.
         $output->text = $message->strtime.': '.get_string('message'.$message->message, 'chat', fullname($sender));
         $output->html  = '<table class="chat-event"><tr'.$rowclass.'><td class="picture">'.$message->picture.'</td>';
@@ -947,7 +986,7 @@ function chat_format_message_theme ($message, $chatuser, $currentuser, $grouping
                         " href=\"$CFG->wwwroot/user/view.php?id=$sender->id&amp;course=$courseid\">$message->picture</a>";
 
     // Start processing the message.
-    if (!empty($message->system)) {
+    if (!empty($message->issystem)) {
         $result->type = 'system';
 
         $senderprofile = $CFG->wwwroot.'/user/view.php?id='.$sender->id.'&amp;course='.$courseid;

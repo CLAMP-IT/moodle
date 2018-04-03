@@ -6,41 +6,34 @@ Feature: Send email
 
   Background:
     Given the following "courses" exist:
-      | fullname | shortname | category | groupmode |
-      | Test Course | CF101 | 0 | 1 |
+      | fullname    | shortname | category | groupmode |
+      | Test Course | CF101     | 0        | 1         |
     And the following "users" exist:
-      | username | firstname | lastname | email |
-      | teacher1 | Teacher | 1 | teacher1@example.com |
-      | student1 | Student | 1 | student1@example.com |
-      | student2 | Student | 2 | student2@example.com |
-      | student3 | Student | 3 | student3@example.com |
-      | student4 | Student | 4 | student4@example.com |
+      | username | firstname | lastname | email | emailstop |
+      | teacher1 | Teacher | 1 | teacher1@example.com | 0 |
+      | student1 | Student | 1 | student1@example.com | 0 |
+      | student2 | Student | 2 | student2@example.com | 0 |
+      | student3 | Student | 3 | student3@example.com | 0 |
+      | student4 | Student | 4 | student4@example.com | 0 |
+      | student5 | Student | 5 | student5@example.com | 1 |
     And the following "course enrolments" exist:
       | user | course | role |
       | teacher1 | CF101 | editingteacher |
       | student1 | CF101 | student |
       | student2 | CF101 | student |
-      | student4 | CF101 | student |
       | student3 | CF101 | student |
-    And the following "groups" exist:
-      | name | description | course | idnumber |
-      | Group A | Group A | CF101 | GROUPA |
-      | Group B | Group B | CF101 | GROUPB |
-    And the following "group members" exist:
-      | user | group |
-      | student1 | GROUPA |
-      | student2 | GROUPA |
-      | student3 | GROUPB |
-      | student4 | GROUPB |
+      | student4 | CF101 | student |
     And I log in as "teacher1"
     And I am on "Test Course" course homepage
     And I turn editing mode on
-    When I add the "Quickmail" block
-    Then I should see "Compose new email"
+    And I add the "Quickmail" block
+    And I log out
 
   @javascript
   Scenario: Internal navigation
-    Given I follow "Compose new email"
+    Given I log in as "teacher1"
+    And I am on "Test Course" course homepage
+    And I follow "Compose new email"
     And I follow "View drafts"
     Then I should see "You have no email drafts"
     When I press "Continue"
@@ -50,11 +43,11 @@ Feature: Send email
     Then I should see "Selected recipients"
 
   @javascript
-  Scenario: Compose
-    Given I follow "Compose new email"
-    And I set the following fields to these values:
-      | groups | Group B |
-    And I press "Add"
+  Scenario: Teacher sends an attachment to everyone
+    Given I log in as "teacher1"
+    And I am on "Test Course" course homepage
+    And I follow "Compose new email"
+    And I press "Add all"
     And I set the following fields to these values:
       | Subject | Doom At 11 |
       | Message | Salvation At Noon |
@@ -63,5 +56,6 @@ Feature: Send email
     Then I should see "View history"
     And I should see "uploadtext.txt"
     And I follow "Open email"
-    Then I should see "Student 3" in the "#mail_users" "css_element"
+    And I should see "Student 3" in the "#mail_users" "css_element"
     And I should see "Student 4" in the "#mail_users" "css_element"
+    And I should not see "Student 5" in the "#mail_users" "css_element"

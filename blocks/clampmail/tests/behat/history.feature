@@ -1,4 +1,4 @@
-@plugintype @block_clampmail
+@block @block_clampmail
 Feature: Email history
   In order to communicate effectively
   As someone who can send email

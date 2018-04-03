@@ -183,7 +183,7 @@ abstract class clampmail_alternate implements clampmail_alternate_actions {
     }
 
     public static function interact($course, $id) {
-        $form = new clampmail_alternate_form(null, array(
+        $form = new block_clampmail\alternate_form(null, array(
             'course' => $course, 'action' => self::INTERACT
         ));
 
@@ -227,12 +227,7 @@ abstract class clampmail_alternate implements clampmail_alternate_actions {
             $form->set_data(self::get_one($id));
         }
 
-        // MDL-31677.
-        $reflect = new ReflectionClass('clampmail_alternate_form');
-        $formfield = $reflect->getProperty('_form');
-        $formfield->setAccessible(true);
-
-        return $formfield->getValue($form)->toHtml();
+        return $form->render();
     }
 
     public static function view($course) {

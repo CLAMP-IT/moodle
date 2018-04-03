@@ -23,7 +23,7 @@
 
 require_once('../../config.php');
 require_once('lib.php');
-require_once('email_form.php');
+require_once($CFG->libdir . '/formslib.php');
 
 require_login();
 
@@ -48,7 +48,7 @@ if (!empty($type) and empty($typeid)) {
     print_error('no_typeid', 'block_clampmail', '', $string);
 }
 
-$config = clampmail::load_config($courseid);
+$config = block_clampmail\config::load_configuration($course);
 
 $context = context_course::instance($courseid);
 if (!has_capability('block/clampmail:cansend', $context)) {
@@ -71,7 +71,7 @@ $PAGE->navbar->add($blockname);
 $PAGE->navbar->add($header);
 $PAGE->set_title($blockname . ': '. $header);
 $PAGE->set_heading($blockname . ': '.$header);
-$PAGE->set_url('/course/view.php', array('courseid' => $courseid));
+$PAGE->set_url('/blocks/clampmail/email.php', array('courseid' => $courseid));
 $PAGE->set_pagetype($blockname);
 $PAGE->set_pagelayout('standard');
 
@@ -91,55 +91,30 @@ foreach ($roles as $id => $role) {
     }
 }
 
-$allgroups = groups_get_all_groups($courseid);
+// Build groups list.
+$groupmode = $config['groupmode'];
+$groups = block_clampmail\groups::get_groups($groupmode, $courseid);
 
-$mastercap = true;
-$groups = $allgroups;
+// Get all the users in the course.
+$users = $everyone = block_clampmail\users::get_users($courseid, $groupmode);
 
-if (!has_capability('moodle/site:accessallgroups', $context)) {
-    $mastercap = false;
-    $mygroups = groups_get_user_groups($courseid);
-    $gids = implode(',', array_values($mygroups['0']));
-    $groups = empty($gids) ? array() : $DB->get_records_select('groups', 'id IN ('.$gids.')');
+// Exclude the current user.
+unset($users[$USER->id]);
+
+// In separate groups we filter out users for students.
+if ($groupmode == SEPARATEGROUPS && !has_capability('block/clampmail:cansendtoall', $context)) {
+    foreach ($everyone as $userid => $user) {
+        // Drop users who aren't in a group the user can see.
+        if (empty(array_intersect_key($groups, array_flip($user->groups)))) {
+            unset($users[$userid]);
+        }
+    }
 }
 
-$globalaccess = empty($allgroups);
-
-// Fill the course users by.
-$users = array();
-$userstoroles = array();
-$userstogroups = array();
-
-$everyone = get_enrolled_users($context, '', 0, user_picture::fields('u', array('mailformat', 'maildisplay')), "", 0, 0, true);
-
-foreach ($everyone as $userid => $user) {
-    $usergroups = groups_get_user_groups($courseid, $userid);
-
-    if ($globalaccess || $mastercap) {
-        $gids = array_values($usergroups['0']);
-    } else {
-        $gids = array_intersect(array_values($mygroups['0']), array_values($usergroups['0']));
-    }
-
-    $userroles = get_user_roles($context, $userid);
-    $filterd = clampmail::filter_roles($userroles, $roles);
-
-    // Available groups.
-    if ((!$globalaccess and !$mastercap) and
-        empty($gids) or empty($filterd) or $userid == $USER->id) {
-        continue;
-    }
-
-    $groupmapper = function($id) use ($allgroups) { return $allgroups[$id];
-    };
-
-    $userstogroups[$userid] = array_map($groupmapper, $gids);
-    $userstoroles[$userid] = $filterd;
-    $users[$userid] = $user;
-}
-
+// Stop execution if there's no valid email target.
+$returnurl = new moodle_url('/course/view.php', array('id' => $course->id));
 if (empty($users)) {
-    print_error('no_users', 'block_clampmail');
+    notice(get_string('no_users', 'block_clampmail'), $returnurl);
 }
 
 if (!empty($type)) {
@@ -183,15 +158,14 @@ if (!empty($email->mailto)) {
     }
 }
 
-$form = new email_form(null,
+$form = new block_clampmail\email_form(null,
     array(
         'editor_options' => $editoroptions,
         'selected' => $selected,
         'users' => $users,
         'roles' => $roles,
         'groups' => $groups,
-        'users_to_roles' => $userstoroles,
-        'users_to_groups' => $userstogroups,
+        'groupmode' => $groupmode,
         'sigs' => array_map(function($sig) { return $sig->title;
         }, $sigs),
         'alternates' => $alternates
@@ -290,7 +264,7 @@ if ($form->is_cancelled()) {
             // Send emails.
             foreach (explode(',', $data->mailto) as $userid) {
                 $success = email_to_user($everyone[$userid], $user, $subject,
-                    $data->messagetext, $data->messagehtml, $file, $filename);
+                    $data->messagetext, $data->messagehtml, $file, $filename, false, $user->email);
 
                 if (!$success) {
                     $warnings[] = get_string("no_email", 'block_clampmail', $everyone[$userid]);
@@ -299,7 +273,7 @@ if ($form->is_cancelled()) {
 
             if ($data->receipt) {
                 email_to_user($USER, $user, $subject,
-                    $data->messagetext, $data->messagehtml, $file, $filename);
+                    $data->messagetext, $data->messagehtml, $file, $filename, false, $user->email);
             }
 
             if (!empty($actualfile)) {

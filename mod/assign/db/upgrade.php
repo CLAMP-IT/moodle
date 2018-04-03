@@ -79,6 +79,29 @@ function xmldb_assign_upgrade($oldversion) {
 
         $count = $DB->count_records_sql($countsql, array(1));
         if ($count == 0) {
+            // Look for grade records with no submission record.
+            // This is when a teacher has marked a student before they submitted anything.
+            $records = $DB->get_records_sql('SELECT g.id, g.assignment, g.userid, g.attemptnumber
+                                               FROM {assign_grades} g
+                                          LEFT JOIN {assign_submission} s
+                                                 ON s.assignment = g.assignment
+                                                AND s.userid = g.userid
+                                              WHERE s.id IS NULL');
+            $submissions = array();
+            foreach ($records as $record) {
+                $submission = new stdClass();
+                $submission->assignment = $record->assignment;
+                $submission->userid = $record->userid;
+                $submission->attemptnumber = $record->attemptnumber;
+                $submission->status = 'new';
+                $submission->groupid = 0;
+                $submission->latest = 0;
+                $submission->timecreated = time();
+                $submission->timemodified = time();
+                array_push($submissions, $submission);
+            }
+
+            $DB->insert_records('assign_submission', $submissions);
 
             // Mark the latest attempt for every submission in mod_assign.
             $maxattemptsql = 'SELECT assignment, userid, groupid, max(attemptnumber) AS maxattempt
@@ -105,29 +128,6 @@ function xmldb_assign_upgrade($oldversion) {
                 $select = 'id IN(' . $maxattemptidssql . ')';
                 $DB->set_field_select('assign_submission', 'latest', 1, $select);
             }
-
-            // Look for grade records with no submission record.
-            // This is when a teacher has marked a student before they submitted anything.
-            $records = $DB->get_records_sql('SELECT g.id, g.assignment, g.userid
-                                               FROM {assign_grades} g
-                                          LEFT JOIN {assign_submission} s
-                                                 ON s.assignment = g.assignment
-                                                AND s.userid = g.userid
-                                              WHERE s.id IS NULL');
-            $submissions = array();
-            foreach ($records as $record) {
-                $submission = new stdClass();
-                $submission->assignment = $record->assignment;
-                $submission->userid = $record->userid;
-                $submission->status = 'new';
-                $submission->groupid = 0;
-                $submission->latest = 1;
-                $submission->timecreated = time();
-                $submission->timemodified = time();
-                array_push($submissions, $submission);
-            }
-
-            $DB->insert_records('assign_submission', $submissions);
         }
 
         // Assign savepoint reached.
@@ -291,6 +291,44 @@ function xmldb_assign_upgrade($oldversion) {
 
         // Assign savepoint reached.
         upgrade_mod_savepoint(true, 2017042800, 'assign');
+    }
+
+    // Automatically generated Moodle v3.3.0 release upgrade line.
+    // Put any upgrade step following this.
+    if ($oldversion < 2017051501) {
+        // Data fix any assign group override event priorities which may have been accidentally nulled due to a bug on the group
+        // overrides edit form.
+
+        // First, find all assign group override events having null priority (and join their corresponding assign_overrides entry).
+        $sql = "SELECT e.id AS id, o.sortorder AS priority
+                  FROM {assign_overrides} o
+                  JOIN {event} e ON (e.modulename = 'assign' AND o.assignid = e.instance AND e.groupid = o.groupid)
+                 WHERE o.groupid IS NOT NULL AND e.priority IS NULL
+              ORDER BY o.id";
+        $affectedrs = $DB->get_recordset_sql($sql);
+
+        // Now update the event's priority based on the assign_overrides sortorder we found. This uses similar logic to
+        // assign_refresh_events(), except we've restricted the set of assignments and overrides we're dealing with here.
+        foreach ($affectedrs as $record) {
+            $DB->set_field('event', 'priority', $record->priority, ['id' => $record->id]);
+        }
+        $affectedrs->close();
+
+        // Main savepoint reached.
+        upgrade_mod_savepoint(true, 2017051501, 'assign');
+    }
+
+    if ($oldversion < 2017051502) {
+        require_once($CFG->dirroot.'/mod/assign/upgradelib.php');
+        $brokenassigns = get_assignments_with_rescaled_null_grades();
+
+        // Set config value.
+        foreach ($brokenassigns as $assign) {
+            set_config('has_rescaled_null_grades_' . $assign, 1, 'assign');
+        }
+
+        // Main savepoint reached.
+        upgrade_mod_savepoint(true, 2017051502, 'assign');
     }
 
     return true;

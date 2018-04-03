@@ -21,9 +21,8 @@ $(document).ready () ->
             $(selectors).each (inner, selector) ->
 
                 $(selector).children("*").each (select, option) ->
-                    values = $(option).val().split ' '
-                    roles = values[2].split ','
-                    groups = values[1].split ','
+                    groups = $(option).data('groups')
+                    roles = $(option).data('roles')
 
                     in_list = (obj, list) ->
                         filter = ->

@@ -42,6 +42,7 @@ class workshop_submission_form extends moodleform {
         $mform->addElement('text', 'title', get_string('submissiontitle', 'workshop'));
         $mform->setType('title', PARAM_TEXT);
         $mform->addRule('title', null, 'required', null, 'client');
+        $mform->addRule('title', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         $mform->addElement('editor', 'content_editor', get_string('submissioncontent', 'workshop'), null, $contentopts);
         $mform->setType('content', PARAM_RAW);
@@ -86,6 +87,12 @@ class workshop_submission_form extends moodleform {
             if ($DB->count_records_sql($sql, array($data['cmid'], $USER->id))) {
                 $errors['title'] = get_string('err_multiplesubmissions', 'mod_workshop');
             }
+        }
+
+        $getfiles = file_get_drafarea_files($data['attachment_filemanager']);
+        if (empty($getfiles->list) and html_is_blank($data['content_editor']['text'])) {
+            $errors['content_editor'] = get_string('submissionrequiredcontent', 'mod_workshop');
+            $errors['attachment_filemanager'] = get_string('submissionrequiredfile', 'mod_workshop');
         }
 
         if (isset($data['attachment_filemanager']) and isset($this->_customdata['workshop']->submissionfiletypes)) {

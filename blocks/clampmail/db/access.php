@@ -68,5 +68,14 @@ $capabilities = array(
         'archetypes' => array(
             'manager' => CAP_ALLOW,
         )
+    ),
+    'block/clampmail:cansendtoall' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW
+        ),
+        'clonepermissionsfrom'  => 'moodle/site:accessallgroups'
     )
 );

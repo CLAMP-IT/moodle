@@ -44,7 +44,7 @@ function download_as_dataformat($filename, $dataformat, $columns, $iterator, $ca
 
     $classname = 'dataformat_' . $dataformat . '\writer';
     if (!class_exists($classname)) {
-        throw new coding_exception("Unable to locate dataformat/$type/classes/writer.php");
+        throw new coding_exception("Unable to locate dataformat/$dataformat/classes/writer.php");
     }
     $format = new $classname;
 
@@ -56,7 +56,13 @@ function download_as_dataformat($filename, $dataformat, $columns, $iterator, $ca
 
     $format->set_filename($filename);
     $format->send_http_headers();
-    $format->write_header($columns);
+    // This exists to support all dataformats - see MDL-56046.
+    if (method_exists($format, 'write_header')) {
+        $format->write_header($columns);
+    } else {
+        $format->start_output();
+        $format->start_sheet($columns);
+    }
     $c = 0;
     foreach ($iterator as $row) {
         if ($callback) {
@@ -67,6 +73,12 @@ function download_as_dataformat($filename, $dataformat, $columns, $iterator, $ca
         }
         $format->write_record($row, $c++);
     }
-    $format->write_footer($columns);
+    // This exists to support all dataformats - see MDL-56046.
+    if (method_exists($format, 'write_footer')) {
+        $format->write_footer($columns);
+    } else {
+        $format->close_sheet($columns);
+        $format->close_output();
+    }
 }
 

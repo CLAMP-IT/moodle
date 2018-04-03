@@ -229,6 +229,16 @@ $definitions = array(
         'staticaccelerationsize' => 2, // Should be current course and site course.
     ),
 
+    // Used to cache course completion status.
+    'coursecompletion' => array(
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'ttl' => 3600,
+        'staticacceleration' => true,
+        'staticaccelerationsize' => 30, // Will be users list of current courses in nav.
+    ),
+
     // A simple cache that stores whether a user can expand a course in the navigation.
     // The key is the course ID and the value will either be 1 or 0 (cast to bool).
     // The cache isn't always up to date, it should only ever be used to save a costly call to
@@ -319,4 +329,29 @@ $definitions = array(
         'staticaccelerationsize' => 1
     ),
 
+    // Caches processed CSS.
+    'postprocessedcss' => array(
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'staticacceleration' => false,
+    ),
+
+    // Caches grouping and group ids of a user.
+    'user_group_groupings' => array(
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'staticacceleration' => true,
+    ),
+
+    // This is the user's pre sign-up session cache.
+    // This cache is used to record the user's pre sign-up data such as
+    // age of digital consent (minor) status, accepted policies, etc.
+    'presignup' => array(
+        'mode' => cache_store::MODE_SESSION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'ttl' => 1800,
+    ),
 );

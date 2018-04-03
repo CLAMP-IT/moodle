@@ -50,6 +50,14 @@ class core_course_renderer extends plugin_renderer_base {
     protected $strings;
 
     /**
+     * Whether a category content is being initially rendered with children. This is mainly used by the
+     * core_course_renderer::corsecat_tree() to render the appropriate action for the Expand/Collapse all link on
+     * page load.
+     * @var bool
+     */
+    protected $categoryexpandedonload = false;
+
+    /**
      * Override the constructor so that we can initialise the string cache
      *
      * @param moodle_page $page
@@ -450,7 +458,7 @@ class core_course_renderer extends plugin_renderer_base {
     public function course_section_cm_completion($course, &$completioninfo, cm_info $mod, $displayoptions = array()) {
         global $CFG;
         $output = '';
-        if (!$mod->is_visible_on_course_page()) {
+        if (!empty($displayoptions['hidecompletion']) || !isloggedin() || isguestuser() || !$mod->uservisible) {
             return $output;
         }
         if ($completioninfo === null) {
@@ -628,7 +636,7 @@ class core_course_renderer extends plugin_renderer_base {
             }
         } else {
             $linkclasses .= ' dimmed';
-            $textclasses .= ' dimmed_text';
+            $textclasses .= ' dimmed dimmed_text';
         }
         return array($linkclasses, $textclasses);
     }
@@ -728,7 +736,24 @@ class core_course_renderer extends plugin_renderer_base {
      * @return string
      */
     public function availability_info($text, $additionalclasses = '') {
+
         $data = ['text' => $text, 'classes' => $additionalclasses];
+        $additionalclasses = array_filter(explode(' ', $additionalclasses));
+
+        if (in_array('ishidden', $additionalclasses)) {
+            $data['ishidden'] = 1;
+
+        } else if (in_array('isstealth', $additionalclasses)) {
+            $data['isstealth'] = 1;
+
+        } else if (in_array('isrestricted', $additionalclasses)) {
+            $data['isrestricted'] = 1;
+
+            if (in_array('isfullinfo', $additionalclasses)) {
+                $data['isfullinfo'] = 1;
+            }
+        }
+
         return $this->render_from_template('core/availability_info', $data);
     }
 
@@ -752,7 +777,7 @@ class core_course_renderer extends plugin_renderer_base {
             if (!empty($mod->availableinfo)) {
                 $formattedinfo = \core_availability\info::format_info(
                         $mod->availableinfo, $mod->get_course());
-                $output = $this->availability_info($formattedinfo);
+                $output = $this->availability_info($formattedinfo, 'isrestricted');
             }
             return $output;
         }
@@ -775,9 +800,9 @@ class core_course_renderer extends plugin_renderer_base {
             // Display information about conditional availability.
             // Don't add availability information if user is not editing and activity is hidden.
             if ($mod->visible || $this->page->user_is_editing()) {
-                $hidinfoclass = '';
+                $hidinfoclass = 'isrestricted isfullinfo';
                 if (!$mod->visible) {
-                    $hidinfoclass = 'hide';
+                    $hidinfoclass .= ' hide';
                 }
                 $ci = new \core_availability\info_module($mod);
                 $fullinfo = $ci->get_full_information();
@@ -926,6 +951,34 @@ class core_course_renderer extends plugin_renderer_base {
 
         $output .= html_writer::end_tag('div');
         return $output;
+    }
+
+    /**
+     * Message displayed to the user when they try to access unavailable activity following URL
+     *
+     * This method is a very simplified version of {@link course_section_cm()} to be part of the error
+     * notification only. It also does not check if module is visible on course page or not.
+     *
+     * The message will be displayed inside notification!
+     *
+     * @param cm_info $cm
+     * @return string
+     */
+    public function course_section_cm_unavailable_error_message(cm_info $cm) {
+        if ($cm->uservisible) {
+            return null;
+        }
+        if (!$cm->availableinfo) {
+            return get_string('activityiscurrentlyhidden');
+        }
+
+        $altname = get_accesshide(' ' . $cm->modfullname);
+        $name = html_writer::empty_tag('img', array('src' => $cm->get_icon_url(),
+                'class' => 'iconlarge activityicon', 'alt' => ' ', 'role' => 'presentation')) .
+            html_writer::tag('span', ' '.$cm->get_formatted_name() . $altname, array('class' => 'instancename'));
+        $formattedinfo = \core_availability\info::format_info($cm->availableinfo, $cm->get_course());
+        return html_writer::div($name, 'activityinstance-error') .
+        html_writer::div($formattedinfo, 'availabilityinfo-error');
     }
 
     /**
@@ -1466,6 +1519,8 @@ class core_course_renderer extends plugin_renderer_base {
             $classes[] = 'loaded';
             if (!empty($categorycontent)) {
                 $classes[] = 'with_children';
+                // Category content loaded with children.
+                $this->categoryexpandedonload = true;
             }
         }
 
@@ -1512,6 +1567,8 @@ class core_course_renderer extends plugin_renderer_base {
      * @return string
      */
     protected function coursecat_tree(coursecat_helper $chelper, $coursecat) {
+        // Reset the category expanded flag for this course category tree first.
+        $this->categoryexpandedonload = false;
         $categorycontent = $this->coursecat_category_content($chelper, $coursecat, 0);
         if (empty($categorycontent)) {
             return '';
@@ -1527,10 +1584,17 @@ class core_course_renderer extends plugin_renderer_base {
                 'collapseexpand',
             );
 
+            // Check if the category content contains subcategories with children's content loaded.
+            if ($this->categoryexpandedonload) {
+                $classes[] = 'collapse-all';
+                $linkname = get_string('collapseall');
+            } else {
+                $linkname = get_string('expandall');
+            }
+
             // Only show the collapse/expand if there are children to expand.
             $content .= html_writer::start_tag('div', array('class' => 'collapsible-actions'));
-            $content .= html_writer::link('#', get_string('expandall'),
-                    array('class' => implode(' ', $classes)));
+            $content .= html_writer::link('#', $linkname, array('class' => implode(' ', $classes)));
             $content .= html_writer::end_tag('div');
             $this->page->requires->strings_for_js(array('collapseall', 'expandall'), 'moodle');
         }
@@ -2055,7 +2119,6 @@ class core_course_renderer extends plugin_renderer_base {
                 set_attributes(array('class' => 'frontpage-category-names'));
         return $this->coursecat_tree($chelper, coursecat::get(0));
     }
-
 }
 
 /**

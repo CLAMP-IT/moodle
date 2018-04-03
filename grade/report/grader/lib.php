@@ -448,22 +448,22 @@ class grade_report_grader extends grade_report {
                     $this->groupwheresql_params, $enrolledparams, $relatedctxparams);
 
             $sortjoin = "LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = $this->sortitemid";
-            $sort = "g.finalgrade $this->sortorder";
+            $sort = "g.finalgrade $this->sortorder, u.idnumber, u.lastname, u.firstname, u.email";
         } else {
             $sortjoin = '';
             switch($this->sortitemid) {
                 case 'lastname':
-                    $sort = "u.lastname $this->sortorder, u.firstname $this->sortorder";
+                    $sort = "u.lastname $this->sortorder, u.firstname $this->sortorder, u.idnumber, u.email";
                     break;
                 case 'firstname':
-                    $sort = "u.firstname $this->sortorder, u.lastname $this->sortorder";
+                    $sort = "u.firstname $this->sortorder, u.lastname $this->sortorder, u.idnumber, u.email";
                     break;
                 case 'email':
-                    $sort = "u.email $this->sortorder";
+                    $sort = "u.email $this->sortorder, u.firstname, u.lastname, u.idnumber";
                     break;
                 case 'idnumber':
                 default:
-                    $sort = "u.idnumber $this->sortorder";
+                    $sort = "u.idnumber $this->sortorder, u.firstname, u.lastname, u.email";
                     break;
             }
 
@@ -974,7 +974,7 @@ class grade_report_grader extends grade_report {
                 $usergrades = $this->allgrades[$userid];
                 $hidingaffected = grade_grade::get_hiding_affected($usergrades, $allgradeitems);
                 $altered = $hidingaffected['altered'];
-                $unknown = $hidingaffected['unknown'];
+                $unknown = $hidingaffected['unknowngrades'];
                 unset($hidingaffected);
             }
 
@@ -996,7 +996,7 @@ class grade_report_grader extends grade_report {
                 // Get the decimal points preference for this item
                 $decimalpoints = $item->get_decimals();
 
-                if (in_array($itemid, $unknown)) {
+                if (array_key_exists($itemid, $unknown)) {
                     $gradeval = null;
                 } else if (array_key_exists($itemid, $altered)) {
                     $gradeval = $altered[$itemid];

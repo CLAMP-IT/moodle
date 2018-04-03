@@ -23,7 +23,6 @@
 
 require_once('../../config.php');
 require_once('lib.php');
-require_once('config_form.php');
 
 require_login();
 
@@ -54,13 +53,14 @@ $changed = false;
 
 if ($reset) {
     $changed = true;
-    clampmail::default_config($courseid);
+    block_clampmail\config::reset_course_configuration($courseid);
 }
 
 $roles = $DB->get_records_menu('role', null, 'sortorder ASC', 'id, shortname');
-$form = new config_form(null, array(
+$form = new block_clampmail\config_form(null, array(
     'courseid' => $courseid,
-    'roles' => $roles
+    'roles' => $roles,
+    'groupmodeforce' => $course->groupmodeforce
 ));
 
 if ($data = $form->get_data()) {
@@ -70,11 +70,11 @@ if ($data = $form->get_data()) {
 
     $config['roleselection'] = implode(',', $config['roleselection']);
 
-    clampmail::save_config($courseid, $config);
+    block_clampmail\config::save_configuration($courseid, $config);
     $changed = true;
 }
 
-$config = clampmail::load_config($courseid);
+$config = block_clampmail\config::load_configuration($course);
 $config['roleselection'] = explode(',', $config['roleselection']);
 
 $form->set_data($config);

@@ -23,7 +23,6 @@
 
 require_once('../../config.php');
 require_once('lib.php');
-require_once('signature_form.php');
 
 $courseid    = required_param('courseid', PARAM_INT);
 $signatureid = optional_param('id', 0, PARAM_INT);
@@ -38,7 +37,7 @@ if ($courseid and !$course = $DB->get_record('course', array('id' => $courseid))
 }
 
 // Setup page.
-$PAGE->set_url('/block/clampmail/signature.php', array('courseid' => $courseid));
+$PAGE->set_url('/blocks/clampmail/signature.php', array('courseid' => $courseid));
 $PAGE->set_pagelayout('report');
 
 // Check permissions.
@@ -90,7 +89,7 @@ $PAGE->set_title($course->shortname . ': '.
 $PAGE->set_heading($course->fullname);
 
 // Create form.
-$mform = new clampmail_signature_form('signature.php', array(
+$mform = new block_clampmail\signature_form('signature.php', array(
     'courseid' => $courseid
 ));
 $mform->set_data($signature);

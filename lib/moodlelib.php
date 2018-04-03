@@ -439,6 +439,11 @@ define('FEATURE_SHOW_DESCRIPTION', 'showdescription');
 /** True if module uses the question bank */
 define('FEATURE_USES_QUESTIONS', 'usesquestions');
 
+/**
+ * Maximum filename char size
+ */
+define('MAX_FILENAME_SIZE', 90);
+
 /** Unspecified module archetype */
 define('MOD_ARCHETYPE_OTHER', 0);
 /** Resource-like type module */
@@ -488,13 +493,14 @@ define('HOMEPAGE_USER', 2);
 /**
  * Hub directory url (should be moodle.org)
  */
-define('HUB_HUBDIRECTORYURL', "http://hubdirectory.moodle.org");
+define('HUB_HUBDIRECTORYURL', "https://hubdirectory.moodle.org");
 
 
 /**
- * Moodle.org url (should be moodle.org)
+ * Moodle.net url (should be moodle.net)
  */
-define('HUB_MOODLEORGHUBURL', "http://hub.moodle.org");
+define('HUB_MOODLEORGHUBURL', "https://moodle.net");
+define('HUB_OLDMOODLEORGHUBURL', "http://hub.moodle.org");
 
 /**
  * Moodle mobile app service name
@@ -984,6 +990,21 @@ function clean_param($param, $type) {
             $param = preg_replace('~[[:cntrl:]]|[&<>"`\|\':\\\\/]~u', '', $param);
             if ($param === '.' || $param === '..') {
                 $param = '';
+            }
+            // Extract a part of the filename if it's char size exceeds MAX_FILENAME_SIZE.
+            // If the filename is too long, the file cannot be created on the filesystem due to exceeding max byte size.
+            // Limiting the filename to a certain size (considering multibyte characters) will prevent this.
+            if (core_text::strlen($param) > MAX_FILENAME_SIZE) {
+                // Exclude extension if present in filename.
+                $mimetypes = get_mimetypes_array();
+                $extension = pathinfo($param, PATHINFO_EXTENSION);
+                if ($extension && !empty($mimetypes[$extension])) {
+                    $basename = pathinfo($param, PATHINFO_FILENAME);
+                    $param = core_text::substr($basename, 0, MAX_FILENAME_SIZE);
+                    $param .= '.' . $extension;
+                } else {
+                    $param = core_text::substr($param, 0, MAX_FILENAME_SIZE);
+                }
             }
             return $param;
 
@@ -2116,7 +2137,7 @@ function make_timestamp($year, $month=1, $day=1, $hour=0, $minute=0, $second=0, 
  * Format a date/time (seconds) as weeks, days, hours etc as needed
  *
  * Given an amount of time in seconds, returns string
- * formatted nicely as weeks, days, hours etc as needed
+ * formatted nicely as years, days, hours etc as needed
  *
  * @package core
  * @category time
@@ -2709,24 +2730,24 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
         return;
     }
 
+    // Scripts have a chance to declare that $USER->policyagreed should not be checked.
+    // This is mostly for places where users are actually accepting the policies, to avoid the redirect loop.
+    if (!defined('NO_SITEPOLICY_CHECK')) {
+        define('NO_SITEPOLICY_CHECK', false);
+    }
+
     // Check that the user has agreed to a site policy if there is one - do not test in case of admins.
-    if (!$USER->policyagreed and !is_siteadmin()) {
-        if (!empty($CFG->sitepolicy) and !isguestuser()) {
+    // Do not test if the script explicitly asked for skipping the site policies check.
+    if (!$USER->policyagreed && !is_siteadmin() && !NO_SITEPOLICY_CHECK) {
+        $manager = new \core_privacy\local\sitepolicy\manager();
+        if ($policyurl = $manager->get_redirect_url(isguestuser())) {
             if ($preventredirect) {
-                throw new moodle_exception('sitepolicynotagreed', 'error', '', $CFG->sitepolicy);
+                throw new moodle_exception('sitepolicynotagreed', 'error', '', $policyurl->out());
             }
             if ($setwantsurltome) {
                 $SESSION->wantsurl = qualified_me();
             }
-            redirect($CFG->wwwroot .'/user/policy.php');
-        } else if (!empty($CFG->sitepolicyguest) and isguestuser()) {
-            if ($preventredirect) {
-                throw new moodle_exception('sitepolicynotagreed', 'error', '', $CFG->sitepolicyguest);
-            }
-            if ($setwantsurltome) {
-                $SESSION->wantsurl = qualified_me();
-            }
-            redirect($CFG->wwwroot .'/user/policy.php');
+            redirect($policyurl);
         }
     }
 
@@ -2898,13 +2919,11 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
         if ($preventredirect) {
             throw new require_login_exception('Activity is hidden');
         }
-        if ($course->id != SITEID) {
-            $url = new moodle_url('/course/view.php', array('id' => $course->id));
-        } else {
-            $url = new moodle_url('/');
-        }
-        redirect($url, get_string('activityiscurrentlyhidden'), null,
-                \core\output\notification::NOTIFY_ERROR);
+        // Get the error message that activity is not available and why (if explanation can be shown to the user).
+        $PAGE->set_course($course);
+        $renderer = $PAGE->get_renderer('course');
+        $message = $renderer->course_section_cm_unavailable_error_message($cm);
+        redirect(course_get_url($course), $message, null, \core\output\notification::NOTIFY_ERROR);
     }
 
     // Set the global $COURSE.
@@ -3933,11 +3952,11 @@ function update_user_record_by_id($id) {
                 // Unknown or must not be changed.
                 continue;
             }
-            $confval = $userauth->config->{'field_updatelocal_' . $key};
-            $lockval = $userauth->config->{'field_lock_' . $key};
-            if (empty($confval) || empty($lockval)) {
+            if (empty($userauth->config->{'field_updatelocal_' . $key}) || empty($userauth->config->{'field_lock_' . $key})) {
                 continue;
             }
+            $confval = $userauth->config->{'field_updatelocal_' . $key};
+            $lockval = $userauth->config->{'field_lock_' . $key};
             if ($confval === 'onlogin') {
                 // MDL-4207 Don't overwrite modified user profile values with
                 // empty LDAP values when 'unlocked if empty' is set. The purpose
@@ -5175,11 +5194,6 @@ function shift_course_mod_dates($modname, $fields, $timeshift, $courseid, $modid
         $return = $DB->execute($updatesql, $params) && $return;
     }
 
-    $refreshfunction = $modname.'_refresh_events';
-    if (function_exists($refreshfunction)) {
-        $refreshfunction($courseid);
-    }
-
     return $return;
 }
 
@@ -5435,6 +5449,8 @@ function reset_course_userdata($data) {
             } else {
                 debugging('Missing lib.php in '.$modname.' module!');
             }
+            // Update calendar events for all modules.
+            course_module_bulk_update_calendar_events($modname, $data->courseid);
         }
     }
 
@@ -7500,13 +7516,22 @@ function get_plugins_with_function($function, $file = 'lib.php', $include = true
     $key = $function . '_' . clean_param($file, PARAM_ALPHA);
     $pluginfunctions = $cache->get($key);
 
+    // Use the plugin manager to check that plugins are currently installed.
+    $pluginmanager = \core_plugin_manager::instance();
+
     if ($pluginfunctions !== false) {
 
         // Checking that the files are still available.
         foreach ($pluginfunctions as $plugintype => $plugins) {
 
             $allplugins = \core_component::get_plugin_list($plugintype);
-            foreach ($plugins as $plugin => $fullpath) {
+            $installedplugins = $pluginmanager->get_installed_plugins($plugintype);
+            foreach ($plugins as $plugin => $function) {
+                if (!isset($installedplugins[$plugin])) {
+                    // Plugin code is still present on disk but it is not installed.
+                    unset($pluginfunctions[$plugintype][$plugin]);
+                    continue;
+                }
 
                 // Cache might be out of sync with the codebase, skip the plugin if it is not available.
                 if (empty($allplugins[$plugin])) {
@@ -7535,7 +7560,12 @@ function get_plugins_with_function($function, $file = 'lib.php', $include = true
 
         // We need to include files here.
         $pluginswithfile = \core_component::get_plugin_list_with_file($plugintype, $file, true);
+        $installedplugins = $pluginmanager->get_installed_plugins($plugintype);
         foreach ($pluginswithfile as $plugin => $notused) {
+
+            if (!isset($installedplugins[$plugin])) {
+                continue;
+            }
 
             $fullfunction = $plugintype . '_' . $plugin . '_' . $function;
 
@@ -7715,6 +7745,37 @@ function component_callback_exists($component, $function) {
         return $function;
     }
     return false;
+}
+
+/**
+ * Call the specified callback method on the provided class.
+ *
+ * If the callback returns null, then the default value is returned instead.
+ * If the class does not exist, then the default value is returned.
+ *
+ * @param   string      $classname The name of the class to call upon.
+ * @param   string      $methodname The name of the staticically defined method on the class.
+ * @param   array       $params The arguments to pass into the method.
+ * @param   mixed       $default The default value.
+ * @return  mixed       The return value.
+ */
+function component_class_callback($classname, $methodname, array $params, $default = null) {
+    if (!class_exists($classname)) {
+        return $default;
+    }
+
+    if (!method_exists($classname, $methodname)) {
+        return $default;
+    }
+
+    $fullfunction = $classname . '::' . $methodname;
+    $result = call_user_func_array($fullfunction, $params);
+
+    if (null === $result) {
+        return $default;
+    } else {
+        return $result;
+    }
 }
 
 /**

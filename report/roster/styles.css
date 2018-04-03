@@ -1,20 +1,23 @@
 .report-roster {
-  list-style: none;
-  margin-top: 20px;
-  text-align: justify;
+    list-style: none;
+    margin-top: 20px;
+    text-align: justify;
 }
+
 .report-roster li {
-  display: inline-block;
-  margin-bottom: 5px;
-  max-width: 100px;
-  vertical-align: top;
+    display: inline-block;
+    margin-bottom: 5px;
+    max-width: 100px;
+    vertical-align: top;
 }
+
 .report-roster li span {
-  display: block;
-  text-align: center;
+    display: block;
+    text-align: center;
 }
+
 .report-roster:after {
-  content: '';
-  display: inline-block;
-  width: 100%;
+    content: '';
+    display: inline-block;
+    width: 100%;
 }

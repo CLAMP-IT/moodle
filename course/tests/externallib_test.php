@@ -362,6 +362,40 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
     }
 
     /**
+     * Test create_courses numsections
+     */
+    public function test_create_course_numsections() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        // Set the required capabilities by the external function.
+        $contextid = context_system::instance()->id;
+        $roleid = $this->assignUserCapability('moodle/course:create', $contextid);
+        $this->assignUserCapability('moodle/course:visibility', $contextid, $roleid);
+
+        $numsections = 10;
+        $category  = self::getDataGenerator()->create_category();
+
+        // Create base categories.
+        $course1['fullname'] = 'Test course 1';
+        $course1['shortname'] = 'Testcourse1';
+        $course1['categoryid'] = $category->id;
+        $course1['courseformatoptions'][] = array('name' => 'numsections', 'value' => $numsections);
+
+        $courses = array($course1);
+
+        $createdcourses = core_course_external::create_courses($courses);
+        foreach ($createdcourses as $createdcourse) {
+            $existingsections = $DB->get_records('course_sections', array('course' => $createdcourse['id']));
+            $modinfo = get_fast_modinfo($createdcourse['id']);
+            $sections = $modinfo->get_section_info_all();
+            $this->assertEquals(count($sections), $numsections + 1); // Includes generic section.
+            $this->assertEquals(count($existingsections), $numsections + 1); // Includes generic section.
+        }
+    }
+
+    /**
      * Test create_courses
      */
     public function test_create_courses() {
@@ -2174,6 +2208,21 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(0, $result['courses']);
     }
+
+    /**
+     * Test get_courses_by_field_invalid_theme_and_lang
+     */
+    public function test_get_courses_by_field_invalid_theme_and_lang() {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $course = self::getDataGenerator()->create_course(array('theme' => 'kkt', 'lang' => 'kkl'));
+        $result = core_course_external::get_courses_by_field('id', $course->id);
+        $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
+        $this->assertEmpty($result['courses']['0']['theme']);
+        $this->assertEmpty($result['courses']['0']['lang']);
+    }
+
 
     public function test_check_updates() {
         global $DB;

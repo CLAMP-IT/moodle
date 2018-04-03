@@ -39,7 +39,7 @@ if ($ADMIN->fulltree) {
     };
 
     $settings->add(
-        new admin_setting_configmultiselect('block_clampmail_roleselection',
+        new admin_setting_configmultiselect('block_clampmail/roleselection',
             get_string('select_roles', 'block_clampmail'), get_string('select_roles', 'block_clampmail'),
             array_keys($defaults),
             array_map($onlynames, $roles)
@@ -47,7 +47,7 @@ if ($ADMIN->fulltree) {
     );
 
     $settings->add(
-        new admin_setting_configselect('block_clampmail_receipt',
+        new admin_setting_configselect('block_clampmail/receipt',
         get_string('receipt', 'block_clampmail'), get_string('receipt_help', 'block_clampmail'),
         0, $select
         )
@@ -60,9 +60,22 @@ if ($ADMIN->fulltree) {
     );
 
     $settings->add(
-        new admin_setting_configselect('block_clampmail_prepend_class',
+        new admin_setting_configselect('block_clampmail/prepend_class',
             get_string('prepend_class', 'block_clampmail'), get_string('prepend_class_desc', 'block_clampmail'),
             0, $options
+        )
+    );
+
+    $choices = array();
+    $choices[NOGROUPS] = get_string('groupsnone', 'group');
+    $choices[SEPARATEGROUPS] = get_string('groupsseparate', 'group');
+    $choices[VISIBLEGROUPS] = get_string('groupsvisible', 'group');
+    $settings->add(
+        new admin_setting_configselect('block_clampmail/groupmode',
+            get_string('defaultgroupmode', 'block_clampmail'),
+            get_string('defaultgroupmode_desc', 'block_clampmail'),
+            SEPARATEGROUPS,
+            $choices
         )
     );
 }

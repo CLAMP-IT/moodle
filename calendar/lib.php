@@ -1457,7 +1457,7 @@ function calendar_get_mini($courses, $groups, $users, $calmonth = false, $calyea
                         $name = format_string($event->name, true);
                     }
                 }
-                $popupcontent .= \html_writer::link($dayhref, $name);
+                $popupcontent .= \html_writer::link($dayhref, clean_text($name));
                 $popupcontent .= \html_writer::end_tag('div');
             }
 
@@ -1481,7 +1481,7 @@ function calendar_get_mini($courses, $groups, $users, $calmonth = false, $calyea
                 $class .= ' duration_finish';
             }
             $data = array(
-                'url' => $dayhref,
+                'url' => $dayhref->out(false),
                 'day' => $day,
                 'content' => $popupdata['data-core_calendar-popupcontent'],
                 'title' => $popupdata['data-core_calendar-title']
@@ -2114,6 +2114,13 @@ function calendar_time_representation($time) {
     $timeformat = get_user_preferences('calendar_timeformat');
     if (empty($timeformat)) {
         $timeformat = get_config(null, 'calendar_site_timeformat');
+    }
+
+    // Allow language customization of selected time format.
+    if ($timeformat === CALENDAR_TF_12) {
+        $timeformat = get_string('strftimetime12', 'langconfig');
+    } else if ($timeformat === CALENDAR_TF_24) {
+        $timeformat = get_string('strftimetime24', 'langconfig');
     }
 
     return userdate($time, empty($timeformat) ? $langtimeformat : $timeformat);
@@ -2935,7 +2942,8 @@ function calendar_add_icalendar_event($event, $courseid, $subscriptionid, $timez
         // Check to see if the event started at Midnight on the imported calendar.
         date_default_timezone_set($timezone);
         if (date('H:i:s', $eventrecord->timestart) === "00:00:00") {
-            // This event should be an all day event.
+            // This event should be an all day event. This is not correct, we don't do anything differently for all day events.
+            // See MDL-56227.
             $eventrecord->timeduration = 0;
         }
         \core_date::set_default_server_timezone();

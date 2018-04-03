@@ -24,11 +24,15 @@
 defined('MOODLE_INTERNAL') || die;
 
 function xmldb_block_clampmail_upgrade($oldversion) {
-    global $DB;
+    global $CFG;
 
-    $result = true;
+    require_once($CFG->dirroot . '/blocks/clampmail/db/upgradelib.php');
 
-    $dbman = $DB->get_manager();
+    if ($oldversion < 2017092301) {
+        // Move configuration to plugin namespace.
+        block_clampmail_migrate_settings();
+        upgrade_plugin_savepoint(true, 2017092301, 'block', 'clampmail');
+    }
 
-    return $result;
+    return true;
 }

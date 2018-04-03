@@ -1448,7 +1448,9 @@ function format_string($string, $striplinks = true, $options = null) {
     }
 
     // Calculate md5.
-    $md5 = md5($string.'<+>'.$striplinks.'<+>'.$options['context']->id.'<+>'.$options['escape'].'<+>'.current_language());
+    $cachekeys = array($string, $striplinks, $options['context']->id,
+        $options['escape'], current_language(), $options['filter']);
+    $md5 = md5(implode('<+>', $cachekeys));
 
     // Fetch from cache if possible.
     if (isset($strcache[$md5])) {
@@ -3242,8 +3244,7 @@ class text_progress_trace extends progress_trace {
      * @return void Output is echo'd
      */
     public function output($message, $depth = 0) {
-        echo str_repeat('  ', $depth), $message, "\n";
-        flush();
+        mtrace(str_repeat('  ', $depth) . $message);
     }
 }
 

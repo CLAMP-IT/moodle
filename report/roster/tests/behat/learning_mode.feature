@@ -27,6 +27,6 @@ Feature: In the roster report a teacher may toggle the display of names
     When I press "Learning mode off"
     Then I should not see "Sally Student"
     And I should see "Learning mode on"
-    When I press "Learning mode on" 
+    When I press "Learning mode on"
     Then I should see "Sally Student"
     And I should see "Learning mode off"

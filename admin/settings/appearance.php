@@ -179,10 +179,11 @@ preferences,moodle|/user/preferences.php|preferences',
         'idnumber' => new lang_string('sort_idnumber', 'admin'),
     );
     $temp->add(new admin_setting_configselect('navsortmycoursessort', new lang_string('navsortmycoursessort', 'admin'), new lang_string('navsortmycoursessort_help', 'admin'), 'sortorder', $sortoptions));
-    $temp->add(new admin_setting_configtext('navcourselimit',new lang_string('navcourselimit','admin'),new lang_string('confignavcourselimit', 'admin'),20,PARAM_INT));
+    $temp->add(new admin_setting_configtext('navcourselimit', new lang_string('navcourselimit', 'admin'),
+        new lang_string('confignavcourselimit', 'admin'), 10, PARAM_INT));
     $temp->add(new admin_setting_configcheckbox('usesitenameforsitepages', new lang_string('usesitenameforsitepages', 'admin'), new lang_string('configusesitenameforsitepages', 'admin'), 0));
     $temp->add(new admin_setting_configcheckbox('linkadmincategories', new lang_string('linkadmincategories', 'admin'), new lang_string('linkadmincategories_help', 'admin'), 1));
-    $temp->add(new admin_setting_configcheckbox('linkcoursesections', new lang_string('linkcoursesections', 'admin'), new lang_string('linkcoursesections_help', 'admin'), 0));
+    $temp->add(new admin_setting_configcheckbox('linkcoursesections', new lang_string('linkcoursesections', 'admin'), new lang_string('linkcoursesections_help', 'admin'), 1));
     $temp->add(new admin_setting_configcheckbox('navshowfrontpagemods', new lang_string('navshowfrontpagemods', 'admin'), new lang_string('navshowfrontpagemods_help', 'admin'), 1));
     $temp->add(new admin_setting_configcheckbox('navadduserpostslinks', new lang_string('navadduserpostslinks', 'admin'), new lang_string('navadduserpostslinks_help', 'admin'), 1));
 
@@ -225,6 +226,10 @@ preferences,moodle|/user/preferences.php|preferences',
             new lang_string('configcourseoverviewfileslimit', 'admin'), 1, PARAM_INT));
     $temp->add(new admin_setting_configtext('courseoverviewfilesext', new lang_string('courseoverviewfilesext'),
             new lang_string('configcourseoverviewfilesext', 'admin'), '.jpg,.gif,.png'));
+    $temp->add(new admin_setting_configtext('coursegraceperiodbefore', new lang_string('coursegraceperiodbefore', 'admin'),
+        new lang_string('configcoursegraceperiodbefore', 'admin'), 0, PARAM_INT));
+    $temp->add(new admin_setting_configtext('coursegraceperiodafter', new lang_string('coursegraceperiodafter', 'admin'),
+        new lang_string('configcoursegraceperiodafter', 'admin'), 0, PARAM_INT));
     $ADMIN->add('appearance', $temp);
 
     $temp = new admin_settingpage('ajax', new lang_string('ajaxuse'));
@@ -250,4 +255,3 @@ preferences,moodle|/user/preferences.php|preferences',
     $ADMIN->add('appearance', $temp);
 
 } // end of speedup
-

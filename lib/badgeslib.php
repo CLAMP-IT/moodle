@@ -1161,6 +1161,7 @@ function badges_download($userid) {
         // Need to make image name user-readable and unique using filename safe characters.
         $name =  $badge->name . ' ' . userdate($issued->dateissued, '%d %b %Y') . ' ' . hash('crc32', $badge->id);
         $name = str_replace(' ', '_', $name);
+        $name = clean_param($name, PARAM_FILE);
         if ($file = $fs->get_file($context->id, 'badges', 'userbadge', $issued->badgeid, '/', $issued->uniquehash . '.png')) {
             $filelist[$name . '.png'] = $file;
         }
@@ -1183,6 +1184,12 @@ function badges_download($userid) {
  * @return string Code of backpack accessibility status.
  */
 function badges_check_backpack_accessibility() {
+    if (defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING) {
+        // For behat sites, do not poll the remote badge site.
+        // Behat sites should not be available, but we should pretend as though they are.
+        return 'available';
+    }
+
     global $CFG;
     include_once $CFG->libdir . '/filelib.php';
 

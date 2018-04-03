@@ -22,6 +22,8 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 define('REPORT_CUSTOMSQL_MAX_RECORDS', 5000);
 define('REPORT_CUSTOMSQL_START_OF_WEEK', 6); // Saturday.
 
@@ -135,7 +137,7 @@ function report_customsql_generate_csv($report, $timenow) {
                 report_customsql_email_report($report);
             }
             if (!empty($report->customdir)) {
-                report_customsql_copy_csv_to_customdir($report);
+                report_customsql_copy_csv_to_customdir($report, $timenow);
             }
         }
     }
@@ -144,7 +146,7 @@ function report_customsql_generate_csv($report, $timenow) {
 
 /**
  * @param mixed $value some value
- * @return whether $value is an integer, or a string that looks like an integer.
+ * @return bool whether $value is an integer, or a string that looks like an integer.
  */
 function report_customsql_is_integer($value) {
     return (string) (int) $value === (string) $value;
@@ -318,12 +320,8 @@ function report_customsql_print_reports_for($reports, $type) {
                               array('href' => report_customsql_url('view.php?id='.$report->id))).
              ' '.report_customsql_time_note($report, 'span');
         if ($canedit) {
-            $imgedit = html_writer::tag('img', '', array('src' => $OUTPUT->pix_url('t/edit'),
-                                                         'class' => 'iconsmall',
-                                                         'alt' => get_string('edit')));
-            $imgdelete = html_writer::tag('img', '', array('src' => $OUTPUT->pix_url('t/delete'),
-                                                           'class' => 'iconsmall',
-                                                           'alt' => get_string('delete')));
+            $imgedit = $OUTPUT->pix_icon('t/edit', get_string('edit'));
+            $imgdelete = $OUTPUT->pix_icon('t/delete', get_string('delete'));
             echo ' '.html_writer::tag('span', get_string('availableto', 'report_customsql',
                                       $capabilities[$report->capability]),
                                       array('class' => 'admin_note')).' '.
@@ -373,6 +371,7 @@ function report_customsql_write_csv_row($handle, $data) {
         $value = str_replace('%%WWWROOT%%', $CFG->wwwroot, $value);
         $value = str_replace('%%Q%%', '?', $value);
         $value = str_replace('%%C%%', ':', $value);
+        $value = str_replace('%%S%%', ';', $value);
         $escapeddata[] = '"'.str_replace('"', '""', $value).'"';
     }
     fwrite($handle, implode(',', $escapeddata)."\r\n");
@@ -488,7 +487,8 @@ function report_customsql_validate_users($userstring, $capability) {
 
 function report_customsql_get_message_no_data($report) {
     // Construct subject.
-    $subject = get_string('emailsubject', 'report_customsql', $report->displayname);
+    $subject = get_string('emailsubject', 'report_customsql',
+            report_customsql_plain_text_report_name($report->displayname));
     $url = new moodle_url('/report/customsql/view.php', array('id' => $report->id));
     $link = get_string('emailink', 'report_customsql', html_writer::tag('a', $url, array('href' => $url)));
     $fullmessage = html_writer::tag('p', get_string('nodatareturned', 'report_customsql') . ' ' . $link);
@@ -520,7 +520,8 @@ function report_customsql_get_message($report, $csvfilename) {
     fclose($handle);
 
     // Construct subject.
-    $subject = get_string('emailsubject', 'report_customsql', $report->displayname);
+    $subject = get_string('emailsubject', 'report_customsql',
+            report_customsql_plain_text_report_name($report->displayname));
 
     // Construct message without the table.
     $fullmessage = '';
@@ -691,3 +692,12 @@ function report_customsql_copy_csv_to_customdir($report, $timenow, $csvfilename 
     mtrace("Exported $csvfilename to $filepath");
 }
 
+/**
+ * Get a report name as plain text, for use in places like cron output and email subject lines.
+ *
+ * @param object $report report settings from the database.
+ */
+function report_customsql_plain_text_report_name($report) {
+    return format_string($report->displayname, true,
+            ['context' => \context_system::instance()]);
+}

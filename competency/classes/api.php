@@ -165,7 +165,7 @@ class api {
         require_capability('moodle/competency:competencymanage', $competency->get_context());
 
         // Reset the sortorder, use reorder instead.
-        $competency->set('sortorder', null);
+        $competency->set('sortorder', 0);
         $competency->create();
 
         \core\event\competency_created::create_from_competency($competency)->trigger();
@@ -1349,7 +1349,8 @@ class api {
                   JOIN {user} u
                     ON u.id = uc.userid
                  WHERE (uc.status = :waitingforreview
-                    OR (uc.status = :inreview AND uc.reviewerid = :reviewerid))";
+                    OR (uc.status = :inreview AND uc.reviewerid = :reviewerid))
+                   AND u.deleted = 0";
         $ordersql = " ORDER BY c.shortname ASC";
         $params = array(
             'inreview' => user_competency::STATUS_IN_REVIEW,

@@ -51,7 +51,7 @@ if ($USER->id != $user->id and has_capability('moodle/user:viewuseractivitiesrep
     require_login($course);
 }
 
-if (!report_stats_can_access_user_report($user, $course, true)) {
+if (!report_stats_can_access_user_report($user, $course)) {
     // this should never happen
     print_error('nocapability', 'report_stats');
 }
@@ -156,7 +156,7 @@ foreach ($stats as $stat) {
     if (!empty($stat->zerofixed)) {  // Don't know why this is necessary, see stats_fix_zeros above - MD
         continue;
     }
-    $a = array(userdate($stat->timeend,get_string('strftimedate'),$CFG->timezone),$stat->line1);
+    $a = array(userdate($stat->timeend - DAYSECS, get_string('strftimedate'), $CFG->timezone), $stat->line1);
     $a[] = $stat->line2;
     $a[] = $stat->line3;
     $table->data[] = $a;

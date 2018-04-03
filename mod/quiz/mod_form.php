@@ -242,6 +242,9 @@ class mod_quiz_mod_form extends moodleform_mod {
                 'neq', 'wontmatch');
         $mform->disabledIf('overallfeedbackduring', 'preferredbehaviour',
                 'neq', 'wontmatch');
+        foreach (self::$reviewfields as $field => $notused) {
+            $mform->disabledIf($field . 'closed', 'timeclose[enabled]');
+        }
 
         // -------------------------------------------------------------------------------
         $mform->addElement('header', 'display', get_string('appearance'));
@@ -514,6 +517,11 @@ class mod_quiz_mod_form extends moodleform_mod {
                 $toform[$name] = $value;
             }
         }
+
+        // Completion settings check.
+        if (empty($toform['completionusegrade'])) {
+            $toform['completionpass'] = 0; // Forced unchecked.
+        }
     }
 
     public function validation($data, $files) {
@@ -596,6 +604,10 @@ class mod_quiz_mod_form extends moodleform_mod {
             }
         }
 
+        // If CBM is involved, don't show the warning for grade to pass being larger than the maximum grade.
+        if (($data['preferredbehaviour'] == 'deferredcbm') OR ($data['preferredbehaviour'] == 'immediatecbm')) {
+            unset($errors['gradepass']);
+        }
         // Any other rule plugins.
         $errors = quiz_access_manager::validate_settings_form_fields($errors, $data, $files, $this);
 
@@ -614,7 +626,7 @@ class mod_quiz_mod_form extends moodleform_mod {
         $group = array();
         $group[] = $mform->createElement('advcheckbox', 'completionpass', null, get_string('completionpass', 'quiz'),
                 array('group' => 'cpass'));
-
+        $mform->disabledIf('completionpass', 'completionusegrade', 'notchecked');
         $group[] = $mform->createElement('advcheckbox', 'completionattemptsexhausted', null,
                 get_string('completionattemptsexhausted', 'quiz'),
                 array('group' => 'cattempts'));
