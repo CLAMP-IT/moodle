@@ -15,9 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Language strings for local_remote_courses.
+ *
  * @package    local_remote_courses
  * @copyright  2015 Lafayette College ITS
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'Remote Courses services';
+$string['extracttermcode'] = 'Term code';
+$string['extracttermcode_desc'] = 'Use this setting to define a regular expression for extracting the term code from a course idnumber. For example, <code>/[0-9]+\.([0-9]+)/</code> would extract "201610" from "999999.201610"';
+$string['pluginname'] = 'Remote course web service';

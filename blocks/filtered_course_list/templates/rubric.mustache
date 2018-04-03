@@ -1,0 +1,73 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_filtered_course_list/rubric
+
+    Template to define Filtered course list rubrics
+
+    Classes required for JS:
+    * expanded
+    * collapsed
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * state - string: initial expansion state
+    * exp - string: value for aria-expanded attribute of rubric heading div
+    * label - string: text content of the rubric heading div
+    * hidden - string: value for the aria-hidden attribute of the list of items
+    * instid - string: instance id of the block
+    * key - string: array key to make rubric unique within block
+    * items - array: of links
+
+    Example context (json):
+    {
+        "state": "expanded",
+        "exp": "true",
+        "label": "Current courses",
+        "hidden": "false",
+        "instid": "17",
+        "key": "1",
+        "items": [
+            {
+                "classes": "block-fcl__list__item block-fcl__list__item--course",
+                "displaytext": "Link to a course, category, etc.",
+                "linkclasses": "block-fcl__list__link",
+                "title": "Text to display on hover",
+                "url": "/course/index.php"
+            },
+            {
+                "classes": "block-fcl__list__item block-fcl__list__item--course",
+                "displaytext": "Another link to a course, category, etc.",
+                "linkclasses": "block-fcl__list__link",
+                "title": "Text to display on hover",
+                "url": "/course/index.php"
+            }
+        ]
+    }
+}}
+<div id="fcl_{{ instid }}_tab{{ key }}" class="block-fcl__rubric block-fcl__rubric--{{ state }} tab{{ key }}" role="tab" aria-controls="fcl_{{ instid }}_tabpanel{{ key }}" aria-expanded="{{ exp }}" aria-selected="false">
+    {{ label }}
+</div>
+<div id="fcl_{{ instid }}_tabpanel{{ key }}" class="block-fcl__list collapsible tabpanel{{ key }}" role="tabpanel" aria-labelledby="fcl_{{ instid }}_tab{{ key }}" aria-hidden="{{ hidden }}">
+    <ul>
+        {{# items }}
+            {{> block_filtered_course_list/list_item }}
+        {{/ items }}
+    </ul>
+</div>

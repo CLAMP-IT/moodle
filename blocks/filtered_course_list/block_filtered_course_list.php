@@ -43,8 +43,6 @@ class block_filtered_course_list extends block_base {
     private $rubrics = array();
     /** @var arrray A list of courses for the current user */
     private $mycourses = array();
-    /** @var stdClass This block's context */
-    public $context;
     /** @var string A type of user for purposes of list display, should be 'user', 'manager' or 'guest' */
     private $usertype;
     /** @var string Type of list: 'generic_list', 'filtered_list' or 'empty_block' */
@@ -87,12 +85,12 @@ class block_filtered_course_list extends block_base {
     }
 
     /**
-     * Returns the role that best describes the block... 'navigation'
+     * Returns the role that best describes the block... 'region'
      *
-     * @return string 'navigation'
+     * @return string 'region'
      */
     public function get_aria_role() {
-        return 'navigation';
+        return 'region';
     }
 
     /**
@@ -110,7 +108,6 @@ class block_filtered_course_list extends block_base {
         $this->content         = new stdClass;
         $this->content->text   = '';
         $this->content->footer = '';
-        $this->context = context_system::instance();
 
         $sortsettings = array(
             array(
@@ -135,18 +132,14 @@ class block_filtered_course_list extends block_base {
 
         $this->mycourses = enrol_get_my_courses(null, "$sortstring");
 
-        /* Call accordion AMD module */
-        $params = array(
-            'blockid' => 'inst' . $this->instance->id,
-        );
-        $PAGE->requires->js_call_amd('block_filtered_course_list/accordion', 'init', array($params));
-
         $this->_calculate_usertype();
         $this->liststyle = $this->_set_liststyle();
 
         if ($this->liststyle != 'empty_block') {
-            $process = '_process_' . $this->liststyle;
-            $this->$process();
+            if ($this->liststyle == 'generic_list') {
+                $this->fclconfig->filters = 'generic|e';
+            }
+            $this->_process_filtered_list();
         }
 
         if (is_object($this->content) && $this->content->text != '') {
@@ -175,7 +168,7 @@ class block_filtered_course_list extends block_base {
 
         if (empty($USER->id) || isguestuser()) {
             $this->usertype = 'guest';
-        } else if (has_capability('moodle/course:view', $this->context)) {
+        } else if (has_capability('moodle/course:view', context_system::instance())) {
             $this->usertype = 'manager';
         } else {
             $this->usertype = 'user';
@@ -216,10 +209,8 @@ class block_filtered_course_list extends block_base {
      * Build a user-specific Filtered course list block
      */
     private function _process_filtered_list() {
-
-        if (!$this->mycourses) {
-            return;
-        }
+        global $PAGE;
+        $output = $PAGE->get_renderer('block_filtered_course_list');
 
         // Parse the textarea settings into an array of arrays.
         $filterconfigs = array_map(function($line) {
@@ -244,7 +235,8 @@ class block_filtered_course_list extends block_base {
             ),
         'array_merge', array());
 
-        if ($this->fclconfig->hideothercourses == BLOCK_FILTERED_COURSE_LIST_FALSE) {
+        if ($this->fclconfig->hideothercourses == BLOCK_FILTERED_COURSE_LIST_FALSE &&
+                $this->liststyle != 'generic_list') {
 
             $mentionedcourses = array_unique(array_reduce(array_map(function($item) {
                 return $item->courses;
@@ -256,94 +248,14 @@ class block_filtered_course_list extends block_base {
 
             if (!empty($othercourses)) {
                 $otherrubric = new block_filtered_course_list_rubric(get_string('othercourses',
-                    'block_filtered_course_list'), $othercourses);
+                    'block_filtered_course_list'), $othercourses, $this->fclconfig);
                 $this->rubrics[] = $otherrubric;
             }
         }
 
-        $htmls = array_map(function($key, $rubric) {
-            return $this->_get_rubric_html($rubric, $key);
-        }, array_keys($this->rubrics), $this->rubrics);
-
-        $this->content->text = implode($htmls);
-    }
-
-    /**
-     * Build a generic Filtered course list block
-     */
-    private function _process_generic_list() {
-
-        global $CFG, $PAGE;
-        $output = $PAGE->get_renderer('block_filtered_course_list');
-
-        // Parent = 0   ie top-level categories only.
-        $categories = coursecat::get(0)->get_children();
-
-        // Check we have categories.
-        if ($categories) {
-            // Just print top level category links.
-            if (count($categories) > 1 ||
-               (count($categories) == 1 &&
-                current($categories)->coursecount > $this->fclconfig->maxallcourse)) {
-                $this->content->text .= '<ul class="collapsible list">';
-                foreach ($categories as $category) {
-                    $categorylink = new \block_filtered_course_list\output\category_link_list_item($category);
-                    $this->content->text .= $output->render($categorylink);
-                }
-                $this->content->text .= '</ul>';
-
-            } else {
-                // Just print course names of single category.
-                $category = array_shift($categories);
-                $courses = get_courses($category->id);
-
-                if ($courses) {
-                    $this->content->text .= '<ul class="collapsible list">';
-                    foreach ($courses as $course) {
-                        $courselink = new \block_filtered_course_list\output\course_link_list_item($course);
-                        $this->content->text .= $output->render($courselink);
-                    }
-                    $this->content->text .= '</ul>';
-                }
-            }
+        if (count($this->rubrics) > 0) {
+            $content = new \block_filtered_course_list\output\content($this->rubrics, $this->instance->id);
+            $this->content->text = $output->render($content);
         }
-    }
-
-    /**
-     * Build the HTML to print out a single rubric and its contents.
-     *
-     * @param object $rubric The rubric object to be rendered
-     * @param int $arraykey The numeric key of the rubric object
-     * @return string HTML to display a rubric
-     */
-    private function _get_rubric_html($rubric, $arraykey) {
-        global $PAGE;
-        $output = $PAGE->get_renderer('block_filtered_course_list');
-        $key = $arraykey + 1;
-        $initialstate = $rubric->expanded;
-        $ariaexpanded = ($initialstate == 'expanded') ? 'true' : 'false';
-        $ariahidden = ($initialstate == 'expanded') ? 'false' : 'true';
-        $atts = array(
-            'id'            => "fcl_{$this->instance->id}_tab{$key}",
-            'class'         => "course-section tab{$key} $initialstate",
-            'role'          => 'tab',
-            'aria-controls' => "fcl_{$this->instance->id}_tabpanel{$key}",
-            'aria-expanded' => "$ariaexpanded",
-            'aria-selected' => 'false',
-        );
-        $title = html_writer::tag('div', htmlentities($rubric->title), $atts);
-        $courselinks = array_map(function($course) use ($output) {
-            $courselink = new \block_filtered_course_list\output\course_link_list_item($course);
-            return $output->render($courselink);
-        }, $rubric->courses);
-        $ulatts = array(
-            'id'              => "fcl_{$this->instance->id}_tabpanel{$key}",
-            'class'           => "collapsible list tabpanel{$key}",
-            'role'            => "tabpanel",
-            'aria-labelledby' => "fcl_{$this->instance->id}_tab{$key}",
-            'aria-hidden'     => "$ariahidden",
-        );
-        $ul = html_writer::tag('ul', implode($courselinks), $ulatts);
-        return $title . $ul;
     }
 }

@@ -1,90 +1,92 @@
-.block_filtered_course_list.block .list {
-    padding: 10px 0 0;
+.block-fcl__content ul {
+    margin: 0;
+    padding: 0;
 }
-
-.block_filtered_course_list_list_item {
-    background: url([[pix:moodle|i/course]]) no-repeat 0 1px transparent;
-    margin-left: 0;
-    padding: 0 0 10px 20px;
-}
-
-.block_filtered_course_list_list_item.fcl-category-link {
-    background: url([[pix:moodle|i/folder]]) no-repeat 0 1px transparent;
-}
-
-.dir-rtl .block_filtered_course_list_list_item {
-    background: url([[pix:moodle|i/course]]) no-repeat right 1px transparent;
-    margin-right: 0;
-    padding: 0 20px 10px 0;
-}
-
-.dir-rtl .block_filtered_course_list_list_item.fcl-category-link {
-    background: url([[pix:moodle|i/folder]]) no-repeat right 1px transparent;
-}
-
-.jsenabled .block_filtered_course_list.block .list li {
-    background-position: 10px 1px;
-    padding: 0 0 10px 31px;
-}
-
-.dir-rtl.jsenabled .block_filtered_course_list.block .list li {
-    background-position: calc(100% - 10px) 1px;
-    padding: 0 31px 10px 0;
-}
-
-.block_filtered_course_list_footer {
-    padding-top: 1rem;
-}
-
-.block_filtered_course_list .course-section {
+.block-fcl__rubric {
     font-weight: bold;
     margin-top: 3px;
     padding-left: 1px;
     padding-right: 1em;
 }
-
-.dir-rtl .block_filtered_course_list .course-section {
-    padding-right: 1px;
-    padding-left: 1em;
+.block-fcl__rubric--expanded {
+    background: url([[pix:t/expanded]]) no-repeat 0 2px transparent;
 }
-
-.jsenabled .block_filtered_course_list .course-section {
+.block-fcl__rubric--expanded + .block-fcl__list {
+    display: block;
+}
+.block-fcl__list {
+    padding: 10px 0 0;
+}
+.block-fcl__list__item {
+    list-style-type: none;
+    margin-left: 0;
+    padding: 0 0 10px 20px;
+}
+.block-fcl__list__item--course {
+    background: url([[pix:moodle|i/course]]) no-repeat 0 1px transparent;
+}
+.block-fcl__list__item--category {
+    background: url([[pix:moodle|i/folder]]) no-repeat 0 1px transparent;
+}
+.block-fcl__footer {
+    padding-top: 1rem;
+}
+/*
+* JS Enabled
+*/
+.jsenabled .block-fcl__rubric {
     cursor: pointer;
     padding-left: 21px;
 }
-
-.dir-rtl.jsenabled .block_filtered_course_list .course-section {
-    padding-right: 21px;
-}
-
-.jsenabled .block_filtered_course_list .course-section a {
+.jsenabled .block-fcl__rubric a,
+.jsenabled .block-fcl__rubric a:hover,
+.jsenabled .block-fcl__rubric a:active,
+.jsenabled .block-fcl__rubric a:visited {
     text-decoration: none;
 }
-
-.jsenabled .block_filtered_course_list .course-section + .collapsible.list {
-    display: none;
-}
-
-.block_filtered_course_list .course-section.collapsed {
+.jsenabled .block-fcl__rubric--collapsed {
     background: url([[pix:t/collapsed]]) no-repeat 0 2px transparent;
 }
-
-.dir-rtl .block_filtered_course_list .course-section.collapsed {
-    background: url([[pix:t/collapsed_rtl]]) no-repeat right 2px transparent;
+.jsenabled .block-fcl__rubric--collapsed + .block-fcl__list {
+    display: none;
 }
-
-.block_filtered_course_list .course-section.expanded + .collapsible.list {
-    display: block;
+.jsenabled .block-fcl__list__item {
+    background-position: 10px 1px;
+    padding: 0 0 10px 31px;
 }
-
-.block_filtered_course_list .course-section.expanded {
-    background: url([[pix:t/expanded]]) no-repeat 0 2px transparent;
+/*
+* Right-to-left
+*/
+.dir-rtl .block-fcl__rubric {
+    padding-right: 1px;
+    padding-left: 1em;
 }
-
-.dir-rtl .block_filtered_course_list .course-section.expanded {
+.dir-rtl .block-fcl__rubric--expanded {
     background: url([[pix:t/expanded]]) no-repeat right 2px transparent;
 }
-
+.dir-rtl .block-fcl__list__item {
+    margin-right: 0;
+    padding: 0 20px 10px 0;
+}
+.dir-rtl .block-fcl__list__item--course {
+    background: url([[pix:moodle|i/course]]) no-repeat right 1px transparent;
+}
+.dir-rtl .block-fcl__list__item--category {
+    background: url([[pix:moodle|i/folder]]) no-repeat right 1px transparent;
+}
+/*
+* JS Enabled and right-to-left
+*/
+.dir-rtl.jsenabled .block-fcl__rubric {
+    padding-right: 21px;
+}
+.dir-rtl.jsenabled .block-fcl__rubric--collapsed {
+    background: url([[pix:t/collapsed_rtl]]) no-repeat right 2px transparent;
+}
+.dir-rtl.jsenabled .block-fcl__list__item {
+    background-position: calc(100% - 10px) 1px;
+    padding: 0 31px 10px 0;
+}
 #page-admin-setting-blocksettingfiltered_course_list #id_s_block_filtered_course_list_filters {
     font-family: monospace;
 }

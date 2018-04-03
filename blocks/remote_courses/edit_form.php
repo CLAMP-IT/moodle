@@ -21,14 +21,30 @@
  * @copyright 2015 Lafayette College ITS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+require_once("$CFG->dirroot/blocks/remote_courses/locallib.php");
+
+/**
+ * Loads the block editing form.
+ *
+ * @package   block_remote_courses
+ * @copyright 2015 Lafayette College ITS
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class block_remote_courses_edit_form extends block_edit_form {
+
+    /**
+     * Defines the block editing form.
+     *
+     * @param stdClass $mform
+     */
     protected function specific_definition($mform) {
         // Section header title according to language file.
         $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
 
         // Configure the block title.
         $mform->addElement('text', 'config_title', get_string('blocktitle', 'block_remote_courses'));
-        $mform->setDefault('config_title', 'Remote Courses');
+        $mform->setDefault('config_title', get_string('remote_courses', 'block_remote_courses'));
         $mform->setType('config_title', PARAM_MULTILANG);
 
         // Remote site.
@@ -50,7 +66,7 @@ class block_remote_courses_edit_form extends block_edit_form {
         // Courses to show.
         $mform->addElement('text', 'config_numcourses',
             get_string('blocknumcourses', 'block_remote_courses'), array('size' => '2'));
-        $mform->setDefault('config_numcourses', 3);
+        $mform->setDefault('config_numcourses', REMOTE_COURSES_DEFAULT_DISPLAY);
         $mform->setType('config_numcourses', PARAM_INT);
     }
 }

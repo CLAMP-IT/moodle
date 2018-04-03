@@ -35,26 +35,54 @@ require_once(dirname(__FILE__) . '/locallib.php');
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-abstract class list_item implements \renderable, \templatable {
+class list_item implements \renderable, \templatable {
 
     /** @var array of CSS classes for the list item */
-    public $classes = array('block_filtered_course_list_list_item');
+    public $classes = array('block-fcl__list__item');
     /** @var string Display text for the list item link */
     public $displaytext;
     /** @var array of CSS classes for the list item link */
-    public $linkclasses = array('block_filtered_course_list_list_item_link');
+    public $linkclasses = array('block-fcl__list__link');
     /** @var string Text to display when the list item link is hovered */
     public $title;
-    /** @var string Link to the Course index page */
+    /** @var moodle_url object The destination for the list item link */
     public $url;
+    /** @var mixed Empty string or link to course summary URL */
+    public $summaryurl;
 
     /**
-     * An abstract constructor
-     * Decendant classes should define the class properties.
+     * Class constructor
      *
-     * @param mixed $object A object from which to derive the class properties
+     * @param mixed $itemobject A object from which to derive the class properties
+     * @param object $config The plugin options object
      */
-    abstract public function __construct($object);
+    public function __construct($itemobject, $config) {
+
+        $type = (get_class($itemobject) == 'coursecat') ? 'category' : 'course';
+
+        switch ($type){
+            case 'course':
+                $this->classes[] = 'block-fcl__list__item--course';
+                $this->displaytext = \block_filtered_course_list_lib::coursedisplaytext($itemobject, $config->coursenametpl);
+                if (!$itemobject->visible) {
+                    $this->linkclasses[] = 'dimmed';
+                }
+                $this->title = format_string($itemobject->shortname);
+                $this->url = new \moodle_url('/course/view.php?id=' . $itemobject->id);
+                $this->summaryurl = new \moodle_url('/course/info.php?id=' . $itemobject->id);
+                break;
+            case 'category':
+                $this->classes[] = 'block-fcl__list__item--category';
+                $this->displaytext = format_string($itemobject->name);
+                if (!$itemobject->visible) {
+                    $this->linkclasses[] = 'dimmed';
+                }
+                $this->title = '';
+                $this->url = new \moodle_url('/course/index.php?categoryid=' . $itemobject->id);
+                $this->summaryurl = '';
+                break;
+        }
+    }
 
     /**
      * Export the object data for use by a template
@@ -69,60 +97,110 @@ abstract class list_item implements \renderable, \templatable {
             'linkclasses' => implode(' ', $this->linkclasses),
             'title'       => $this->title,
             'url'         => $this->url,
+            'summaryurl'  => $this->summaryurl,
         );
         return $data;
     }
 }
 
 /**
- * Helper class for course link list items.
+ * Helper class for rendering rubrics.
  *
  * @package    block_filtered_course_list
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class course_link_list_item extends list_item implements \templatable, \renderable {
+class renderable_rubric implements \renderable, \templatable {
+
+    /** @var object Rubric */
+    public $rubric;
+    /** @var string Block instance id */
+    public $instid;
+    /** @var string Rubric key */
+    public $key;
 
     /**
      * Constructor
-     * Defines class properties for course link list items.
      *
-     * @param \stdClass $course A moodle course object
+     * @param array $rubric An original rubric object
+     * @param string $instid The instance id of the calling block
+     * @param string $key The array index of the rubric
      */
-    public function __construct($course) {
-        $this->classes[] = 'fcl-course-link';
-        $this->displaytext = format_string($course->fullname);
-        if (!$course->visible) {
-            $this->linkclasses[] = 'dimmed';
-        }
-        $this->title = format_string($course->shortname);
-        $this->url = new \moodle_url('/course/view.php?id=' . $course->id);
+    public function __construct($rubric, $instid, $key) {
+        $this->rubric = $rubric;
+        $this->instid = $instid;
+        $this->key = $key;
+    }
+
+    /**
+     * Export the object data for use by a template
+     *
+     * @param renderer_base $output A renderer_base object
+     * @return array $data Template-ready data
+     */
+    public function export_for_template(\renderer_base $output) {
+        $itemdata = array_map(function($item) use ($output) {
+            $renderable = new list_item($item, $this->rubric->config);
+            $export = $renderable->export_for_template($output);
+            return $export;
+        }, $this->rubric->courses);
+        $exp = ($this->rubric->expanded == 'expanded') ? 'true' : 'false';
+        $hidden = ($this->rubric->expanded != 'expanded') ? 'true' : 'false';
+        $data = array(
+            'state'  => $this->rubric->expanded,
+            'exp'    => $exp,
+            'label'  => $this->rubric->title,
+            'hidden' => $hidden,
+            'instid' => $this->instid,
+            'key'    => $this->key + 1,
+            'items'  => array_values($itemdata),
+        );
+        return $data;
     }
 }
 
 /**
- * Helper class for category link list items.
+ * Helper class for the main block content
  *
  * @package    block_filtered_course_list
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class category_link_list_item extends list_item implements \templatable, \renderable {
+class content implements \renderable, \templatable {
+
+    /** @var array Rubrics to display */
+    public $rubrics = array();
+    /** @var string Block instance id */
+    public $instid;
 
     /**
      * Constructor
-     * Defines class properties for course link list items.
      *
-     * @param \coursecat $category A moodle course object
+     * @param array $rubrics The list of rubrics to display
+     * @param string $instid The instance id of the calling block
      */
-    public function __construct($category) {
-        $this->classes[] = 'fcl-category-link';
-        $this->displaytext = format_string($category->name);
-        if (!$category->visible) {
-            $this->linkclasses[] = 'dimmed';
-        }
-        $this->title = '';
-        $this->url = new \moodle_url('/course/index.php?categoryid=' . $category->id);
+    public function __construct($rubrics = array(), $instid) {
+        $this->rubrics = $rubrics;
+        $this->instid = $instid;
+    }
+
+    /**
+     * Export the object data for use by a template
+     *
+     * @param renderer_base $output A renderer_base object
+     * @return array $data Template-ready data
+     */
+    public function export_for_template(\renderer_base $output) {
+        $rubricdata = array_map(function($rubric, $key) use ($output) {
+            $rubrichelper = new renderable_rubric($rubric, $this->instid, $key);
+            $export = $rubrichelper->export_for_template($output);
+            return $export;
+        }, $this->rubrics, array_keys($this->rubrics));
+        $data = array(
+            'instid'  => $this->instid,
+            'rubrics' => $rubricdata,
+        );
+        return $data;
     }
 }
 
@@ -201,24 +279,35 @@ class renderer extends \plugin_renderer_base {
     }
 
     /**
-     * Render HTML for course link list item
+     * Render HTML for list item
      *
-     * @param course_link_list_item $courselink
+     * @param list_item $listitem
      * @return string The rendered html
      */
-    protected function render_course_link_list_item (course_link_list_item $courselink) {
-        $data = $courselink->export_for_template($this);
+    protected function render_list_item (list_item $listitem) {
+        $data = $listitem->export_for_template($this);
         return $this->render_from_template('block_filtered_course_list/list_item', $data);
     }
 
     /**
-     * Render HTML for category link list item
+     * Render HTML for rubric
      *
-     * @param category_link_list_item $categorylink
+     * @param rubric $rubric
      * @return string The rendered html
      */
-    protected function render_category_link_list_item (category_link_list_item $categorylink) {
-        $data = $categorylink->export_for_template($this);
-        return $this->render_from_template('block_filtered_course_list/list_item', $data);
+    protected function render_rubric (rubric $rubric) {
+        $data = $rubric->export_for_template($this);
+        return $this->render_from_template('block_filtered_course_list/rubric', $data);
+    }
+
+    /**
+     * Render HTML for content
+     *
+     * @param content $content
+     * @return string The rendered html
+     */
+    protected function render_content (content $content) {
+        $data = $content->export_for_template($this);
+        return $this->render_from_template('block_filtered_course_list/content', $data);
     }
 }

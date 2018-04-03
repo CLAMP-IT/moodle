@@ -4,7 +4,6 @@
  * mod_scheduler data generator
  *
  * @package    mod_scheduler
- * @category   phpunit
  * @copyright  2014 Henning Bostelmann and others (see README.txt)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -16,7 +15,6 @@ defined('MOODLE_INTERNAL') || die();
  * Scheduler module PHPUnit data generator class
  *
  * @package    mod_scheduler
- * @category   phpunit
  * @copyright  2014 Henning Bostelmann and others (see README.txt)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -72,12 +70,12 @@ class mod_scheduler_generator extends testing_module_generator {
                 $slot->schedulerid = $id;
                 $slot->starttime = $time;
                 $slot->duration = 10;
-                $slot->teacherid = 2; // admin - for the moment
+                $slot->teacherid = 2; // Admin user - for the moment.
                 $slot->appointmentlocation = 'Test Loc';
                 $slot->timemodified = time();
                 $slot->notes = '';
-                $slot->appointmentnote = '';
-                $slot->exclusivity = 0;
+                $slot->slotnote = '';
+                $slot->exclusivity = isset($options['slotexclusivity'][$slotkey]) ? $options['slotexclusivity'][$slotkey] : 0;
                 $slot->emaildate = 0;
                 $slot->hideuntil = 0;
                 $slotid = $DB->insert_record('scheduler_slots', $slot);
@@ -91,6 +89,7 @@ class mod_scheduler_generator extends testing_module_generator {
                         $appointment->attended = isset($options['slotattended'][$slotkey]) && $options['slotattended'][$slotkey];
                         $appointment->grade = 0;
                         $appointment->appointmentnote = '';
+                        $appointment->teachernote = '';
                         $appointment->timecreated = time();
                         $appointment->timemodified = time();
                         $appointmentid = $DB->insert_record('scheduler_appointment', $appointment);

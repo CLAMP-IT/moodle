@@ -1,7 +1,7 @@
-Moodle Remote Courses block
+Remote courses block
 ===========================
 
-This block prints a list of courses from another Moodle instance. It is designed for use with the [Remote Courses local plugin](https://github.com/LafColITS/moodle-local_remote_courses).
+This block prints a list of courses from another Moodle instance. It is designed for use with the [Remote course web service](https://github.com/LafColITS/moodle-local_remote_courses).
 
 Configuration
 -------------

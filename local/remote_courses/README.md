@@ -1,7 +1,9 @@
-Moodle Remote Courses
-=====================
+Remote course web service
+=========================
 
-This local module provides a web service which returns a given user's courses based on username. It returns the courses sorted by access time, with the most recently-access course at the top. The standard use case is to create deep links to courses in one Moodle installation in another Moodle installation.
+[![Build Status](https://api.travis-ci.org/LafColITS/moodle-local_remote_courses.png)](https://api.travis-ci.org/LafColITS/moodle-local_remote_courses)
+
+This local module provides a web service which returns a given user's courses based on username. It returns the courses sorted by access time, with the most recently-accessed course at the top. You may also configure it to return term information. The standard use case is to create deep links to courses in one Moodle installation in another Moodle installation.
 
 Configuration
 -------------
@@ -17,9 +19,11 @@ See [Using web services](https://docs.moodle.org/29/en/Using_web_services) in th
 - `moodle/course:viewhiddencourses`
 - `moodle/course:viewparticipants`
 
+There is a setting for extracting a term code from the course `idnumber` using a regular expression. For example, the regular expression `/[0-9]+\.([0-9]+)/` would extract "201610" from "999999.201610".
+
 Requirements
 ------------
-- Moodle 2.6 (build 2013111800 or later)
+- Moodle 3.1 (build 2016052300 or later)
 
 Installation
 ------------

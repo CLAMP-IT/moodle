@@ -22,9 +22,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$plugin->version   = 2013061400;
+$plugin->version   = 2016080200;
 $plugin->requires  = 2013111800;
-$plugin->cron      = 0;
 $plugin->component = 'block_remote_courses';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.0.0';
+$plugin->release   = 'v1.1.1';

@@ -14,11 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Version information for local_remote_courses.
+ *
+ * @package    local_remote_courses
+ * @copyright  2015 Lafayette College ITS
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2015072000;
-$plugin->requires  = 2013111800;
-$plugin->cron      = 0;
+$plugin->version   = 2017080300;
+$plugin->requires  = 2016052300;
 $plugin->component = 'local_remote_courses';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v1.0.0';
+$plugin->release   = 'v3.1.0';

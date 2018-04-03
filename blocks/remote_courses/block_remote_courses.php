@@ -22,17 +22,36 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/**
+ * Block definition.
+ *
+ * @package   block_remote_courses
+ * @copyright 2015 Lafayette College ITS
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class block_remote_courses extends block_base {
+
+    /**
+     * Sets the block title.
+     */
     public function init() {
         $this->title = get_string('remote_courses', 'block_remote_courses');
     }
 
+    /**
+     * Returns supported formats.
+     * @return array
+     */
     public function applicable_formats() {
         return array(
             'site-index' => true
         );
     }
 
+    /**
+     * Returns the block content.
+     * @return string
+     */
     public function get_content() {
         require_login();
 
@@ -42,7 +61,7 @@ class block_remote_courses extends block_base {
             return $this->content;
         }
 
-        $this->content         = new stdClass;
+        $this->content         = new stdClass();
         $this->content->text   = '';
         $this->content->footer = '';
 
@@ -53,7 +72,7 @@ class block_remote_courses extends block_base {
 
         // Quit if remote URL and token aren't set.
         if (empty($this->config->wstoken) || empty($this->config->remotesite)) {
-            $this->content->text = 'Webservice not configured';
+            $this->content->text = get_string('unconfigured', 'block_remote_courses');
             return $this->content;
         }
 
@@ -88,15 +107,23 @@ class block_remote_courses extends block_base {
         return $this->content;
     }
 
+    /**
+     * Multiple instances are not supported.
+     * @return boolean
+     */
     public function instance_allow_multiple() {
         return false;
     }
 
+    /**
+     * Returns the block title.
+     * @return string
+     */
     public function specialization() {
         if (!empty($this->config->title)) {
             $this->title = $this->config->title;
         } else {
-            $this->title = 'Remote Courses';
+            $this->title = get_string('remote_courses', 'block_remote_courses');
         }
     }
 }
