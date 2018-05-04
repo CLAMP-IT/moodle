@@ -83,17 +83,17 @@ div#gridmiddle-column > ul {
     float: right;
 }
 
-/* @group Topic Icons */
+/* @group Icons */
 #gridiconcontainer {
     height: auto;
     margin: 0 auto;
     padding: 0;
-    text-align: center;
     width: 100%;
 }
 #gridiconcontainer ul.gridicons {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-start;
     margin: 0 auto;
     padding: 0;
     width: 100%;
@@ -230,7 +230,7 @@ div#gridshadebox_overlay {
     position: fixed;
     top: 0;
     width: 100%;
-    z-index: 2;
+    z-index: 3;
 }
 #gridshadebox_content {
     background: #fff;
@@ -245,7 +245,7 @@ body.jsenabled #gridshadebox_content.hide_content {
     left: 60px;
     position: absolute;
     right: 60px;
-    z-index: 2;
+    z-index: 3;
 }
 
 #gridshadebox_content.fit_to_window {
@@ -254,7 +254,7 @@ body.jsenabled #gridshadebox_content.hide_content {
     position: fixed;
     right: 10%;
     top: 10%;
-    z-index: 2;
+    z-index: 3;
 }
 
 #gridshadebox_content.fit_to_window ul.gtopics {
