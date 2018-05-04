@@ -266,5 +266,15 @@ function xmldb_lightboxgallery_upgrade($oldversion=0) {
         upgrade_mod_savepoint(true, 2013051300, 'lightboxgallery');
     }
 
+    if ($oldversion < 2017070700) {
+        $table = new xmldb_table('lightboxgallery');
+        $field = new xmldb_field('folder');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2017070700, 'lightboxgallery');
+    }
+
     return true;
 }

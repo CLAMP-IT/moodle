@@ -39,7 +39,7 @@ class backup_lightboxgallery_activity_structure_step extends backup_activity_str
 
         // Define each element separated.
         $lightboxgallery = new backup_nested_element('lightboxgallery', array('id'), array(
-            'course', 'folder', 'name', 'perpage', 'comments', 'extinfo',
+            'course', 'name', 'perpage', 'comments', 'extinfo',
             'timemodified', 'ispublic', 'rss', 'autoresize', 'resize', 'perrow',
             'captionfull', 'captionpos', 'intro', 'introformat'
         ));

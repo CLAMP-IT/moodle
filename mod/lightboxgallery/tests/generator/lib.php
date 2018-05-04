@@ -15,23 +15,27 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Search area for mod_lightboxgallery activities.
+ * mod_lightboxgallery data generator.
  *
- * @package   mod_lightboxgallery
- * @copyright Copyright (c) 2017 Blackboard Inc.
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod_lightboxgallery
+ * @category   test
+ * @copyright  2017 Blackboard Inc.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-namespace mod_lightboxgallery\search;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Search area for mod_lightboxgallery activities.
+ * mod_lightboxgallery data generator class.
  *
- * @package   mod_lightboxgallery
- * @copyright Copyright (c) 2017 Blackboard Inc.
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod_lightboxgallery
+ * @category   test
+ * @copyright  2017 Blackboard Inc.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class activity extends \core_search\base_activity {
+class mod_lightboxgallery_generator extends testing_module_generator {
+
+    public function create_instance($record = null, array $options = null) {
+        return parent::create_instance($record, (array)$options);
+    }
 }
