@@ -72,8 +72,6 @@ by:
 PayPal - Please contact me (Gareth) via my 'Moodle profile' in 'Developed and maintained by' above for details as I am an individual
 and therefore am unable to have 'buy me now' buttons under their terms.
 
-Flattr - flattr.com/profile/gjb2048
-
 Sponsorships help to facilitate maintenance and allow me to provide you with more and better features.  Without your support the theme
 cannot be maintained.
 
@@ -94,6 +92,7 @@ Daniel Méthot - e-learning-facile.com/formations/
 Floyd Saner, Learning Contexts, LLC
 Gemma Lesterhuis
 Mihai Bojonca, TCM International Institute
+Amigos Library Services
 
 If you are a valued sponsor and have not already told me, please could you state if you would like a credit here and if so what
 would you like.  Please contact via my 'Moodle profile' above.

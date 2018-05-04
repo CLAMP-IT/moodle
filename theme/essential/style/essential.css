@@ -204,6 +204,9 @@ a.autolink.glossary:hover {
 .pagingbar .thispage {
   font-weight: bold;
 }
+img.userpicture {
+  margin-right: 5px;
+}
 img.resize {
   height: 1em;
   width: 1em;
@@ -463,23 +466,13 @@ a.skip:active {
   margin-bottom: 5px;
   margin-top: 15px;
 }
-.loginbox .signuppanel .subcontent {
-  text-align: left;
-}
 .loginbox .loginsub {
   margin-left: 0;
   margin-right: 0;
 }
 .loginbox .guestsub,
-.loginbox .forgotsub,
-.loginbox .potentialidps {
+.loginbox .forgotsub {
   margin: 5px 12%;
-}
-.loginbox .potentialidps .potentialidplist {
-  margin-left: 40%;
-}
-.loginbox .potentialidps .potentialidplist div {
-  text-align: left;
 }
 .loginbox .loginform {
   margin-top: 1em;
@@ -518,6 +511,9 @@ a.skip:active {
   margin-bottom: -2000px;
   padding-bottom: 2000px;
 }
+.loginbox .potentialidp {
+  margin-bottom: 0.3em;
+}
 .loginbox .potentialidp .smallicon {
   vertical-align: text-bottom;
   margin: 0 .3em;
@@ -527,7 +523,6 @@ a.skip:active {
 }
 .notepost .userpicture {
   float: left;
-  margin-right: 5px;
 }
 .notepost .content,
 .notepost .footer {
@@ -6907,6 +6902,9 @@ a.ygtvspacer:hover {
 #categoryquestions label {
   margin: 0;
 }
+#categoryquestions .header {
+  text-align: left;
+}
 #page-mod-quiz-edit div.questionbankwindow div.header {
   margin: 0;
 }
@@ -7002,6 +7000,12 @@ body.path-question-type .fitem_fgroup .accesshide {
 .formulation select {
   width: auto;
   vertical-align: baseline;
+}
+.que.multianswer .formulation .yui3-widget-positioned .feedbackspan {
+  box-sizing: content-box;
+  padding-bottom: 0;
+  max-width: inherit;
+  width: inherit;
 }
 .path-mod-quiz input[size] {
   width: auto;
@@ -7504,9 +7508,12 @@ body.path-question-type .mform fieldset.hidden {
 .userlist table#participants {
   text-align: center;
 }
-.userlist table#participants td,
-.userlist table#participants th {
+.userlist table#participants td {
+  text-align: left;
+  padding: 4px;
   vertical-align: middle;
+}
+.userlist table#participants th {
   text-align: left;
   padding: 4px;
 }
@@ -13884,6 +13891,12 @@ form {
 .singleselect label {
   margin-right: .3em;
 }
+.custom-select {
+  max-width: 100%;
+}
+.custom-select + input[type="submit"] {
+  margin: 0 0 0 5px;
+}
 #portfolio-add-button {
   display: inline;
 }
@@ -14339,6 +14352,9 @@ body.modal-open {
   border-radius: 10px;
   border: none;
 }
+.modal-container .modal.modal-lg {
+  max-width: 900px;
+}
 .modal-container .modal .modal-header {
   min-height: 13px;
   padding: 5px;
@@ -14390,6 +14406,19 @@ body.modal-open {
 .modal-container .modal .modal-body {
   max-height: none;
 }
+.modal-container .modal .modal-body > .loading-icon {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.modal-container .modal .modal-body > .loading-icon .icon {
+  position: absolute;
+  top: 50%;
+  /*rtl:ignore*/
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 .modal-container .modal .modal-footer {
   border-top: 1px solid #bbb;
   text-align: center;
@@ -14397,9 +14426,6 @@ body.modal-open {
   background-color: #f2f2f2;
   box-shadow: none;
   border-radius: 0 0 10px 10px;
-}
-.modal-container.large .modal {
-  max-width: 900px;
 }
 .modal-backdrop {
   z-index: 4049;
@@ -14531,11 +14557,17 @@ body.path-mod-feedback #region-main .mform.feedback_form .feedback-item-pagebrea
 .path-mod-forum .forumheaderlist .discussion .topic,
 .path-mod-forum .forumheaderlist .discussion .discussionsubscription,
 .path-mod-forum .forumheaderlist .discussion .topic.starter,
-.path-mod-forum .forumheaderlist .discussion .picture,
 .path-mod-forum .forumheaderlist .discussion .author,
 .path-mod-forum .forumheaderlist .discussion .replies,
 .path-mod-forum .forumheaderlist .discussion .lastpost {
   vertical-align: top;
+}
+.path-mod-forum .forumheaderlist .discussion .picture {
+  margin: 0 20px;
+  float: left;
+}
+.path-mod-forum .forumheaderlist .discussion .unread img {
+  margin: 0;
 }
 .forumpost {
   min-height: 20px;
@@ -14656,6 +14688,9 @@ div#dock {
 .path-mod-choice .media-left {
   float: left;
   padding-right: 1em;
+}
+.path-mod-choice .horizontal .choices .option {
+  display: inline-block;
 }
 .path-mod-lesson .firstpageoptions {
   margin: auto;
@@ -16678,6 +16713,7 @@ div[data-flexitour="step-background-fader"],
 }
 span[data-flexitour="container"] div[data-role="flexitour-step"] {
   background-color: #fff;
+  color: #333;
   border-radius: 6px;
   border: 1px solid rgba(0, 0, 0, 0.2);
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
@@ -19149,6 +19185,9 @@ ul.indented-list {
 .text-nowrap {
   white-space: nowrap !important;
 }
+.carousel-indicators {
+  z-index: 2;
+}
 .muted,
 a.muted:hover,
 a.muted:focus {
@@ -19173,6 +19212,12 @@ html[dir='rtl'] .tree_item a {
   unicode-bidi: embed;
 }
 /* Moodle fixes blocks end */
+/* Moodle fixes core begin */
+/* Only set these options if we're showing the js container */
+.jschooser .choosercontainer #chooseform .alloptions .option .typename {
+  display: inline;
+}
+/* Moodle fixes core end */
 /* Moodle fixes dock begin */
 #dockeditempanel .dockeditempanel_hd h2 {
   float: none;
@@ -19271,6 +19316,7 @@ a:focus {
 }
 .moodle-actionmenu[data-enhanced].show .menu {
   box-shadow: none;
+  z-index: 2;
 }
 .moodle-actionmenu[data-enhanced].show .menu .iconsmall,
 .moodle-actionmenu[data-enhanced].show .menu .smallicon {
@@ -19330,6 +19376,9 @@ ins {
 }
 .bor {
   height: 20px;
+  margin: 0 0 4px;
+}
+.no-bor {
   margin: 0 0 4px;
 }
 #page-admin-upgradesettings #page,
@@ -19567,6 +19616,10 @@ table.ygtvtable td a {
   position: absolute;
   top: 0;
   left: 0;
+}
+.courseitemsearch #courseitemsearchtype {
+  margin-bottom: 0;
+  margin-left: 4px;
 }
 /* @end */
 /* @group Blocks */
@@ -21659,13 +21712,6 @@ body#page-admin-setting-messageinbound_mailsettings fieldset select {
   font-size: 1em;
   font-family: monospace;
 }
-#region-main form .form-buttons {
-  width: 400px;
-  border-radius: 8px;
-}
-#region-main form .form-buttons input {
-  margin: 0;
-}
 #region-main form table#form td.submit,
 #region-main form .form-buttons,
 #region-main form .path-admin .buttons,
@@ -21673,13 +21719,12 @@ body#page-admin-setting-messageinbound_mailsettings fieldset select {
 #region-main form .fp-content-center form + div,
 #region-main form div.backup-section + form,
 #region-main form #fgroup_id_buttonar {
-  width: 30%;
-  text-align: center;
+  border-radius: 4px;
   margin-left: auto;
   margin-right: auto;
+  padding: 10px 10px 0 5px;
+  text-align: center;
   z-index: 101;
-  padding: 10px;
-  border-radius: 4px;
 }
 #region-main form table#form td.submit .felement,
 #region-main form .form-buttons .felement,
@@ -21699,7 +21744,6 @@ body#page-admin-setting-messageinbound_mailsettings fieldset select {
 #region-main form div.backup-section + form > .fgroup,
 #region-main form #fgroup_id_buttonar > .fgroup {
   margin: 0;
-  padding-top: 15px;
 }
 #region-main form table#form td.submit input[type=submit],
 #region-main form .form-buttons input[type=submit],
@@ -21878,6 +21922,12 @@ select {
 }
 .form-description {
   word-break: break-word;
+}
+.mform label .adv > .icon,
+.mform label .req > .icon {
+  height: 16px;
+  vertical-align: text-bottom;
+  width: 16px;
 }
 /* @end */
 /* @group Forums */
@@ -22150,9 +22200,6 @@ body .forumpost .row .options .commands {
 }
 #marketing-spots .marketing-spot .marketing-buttons a.marketing-button.responsive {
   display: none;
-}
-#marketing-spots > div {
-  display: flex;
 }
 /* @end */
 /* @end */
@@ -22461,11 +22508,11 @@ body button.ios:focus {
   background-color: #000;
 }
 body button.windows:hover,
-body button.ios:focus {
+body button.windows:focus {
   background-color: #008a00;
 }
 body button.winphone:hover,
-body button.ios:focus {
+body button.winphone:focus {
   background-color: #9b4f96;
 }
 body button.android:hover,
@@ -22561,7 +22608,7 @@ ul.socials li {
   position: fixed;
   top: 0;
   width: 100%;
-  z-index: 2;
+  z-index: 3;
 }
 #essentialnavbar .navbar {
   position: fixed;
@@ -22609,10 +22656,9 @@ div.dropdown-menu > ul li a {
   background-image: none;
   border: none;
   box-shadow: none;
-  line-height: 0;
 }
 .navbar .navbar-inner .btn-navbar {
-  margin: 5px 10px 0;
+  margin: 4px 10px 0;
 }
 .navbar .navbar-inner .btn-navbar .icon-bar {
   background-image: none;
@@ -22697,74 +22743,6 @@ div.dropdown-menu > ul li a {
   height: 0;
   border: none;
 }
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu {
-  margin: 0;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a {
-  background: #fff;
-  padding: 0;
-  overflow: hidden;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message {
-  padding: 5px 10px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .fa {
-  margin: 0 5px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body {
-  display: inline-block;
-  padding-right: 80px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body span.msg-sender,
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body span.msg-text,
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body span.msg-time {
-  width: 100%;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message.unread {
-  background: #eee;
-  margin: 0;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message.unread .msg-text {
-  font-weight: 700;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message.read {
-  opacity: 0.75;
-  filter: alpha(opacity=75);
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification {
-  padding: 5px 10px;
-  overflow: hidden;
-  width: 255px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification .icon {
-  float: left;
-  font-size: 5em;
-  margin-right: 10px;
-  margin-top: 5px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification .notification-text {
-  font-size: 12px;
-  white-space: normal;
-  width: 185px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification.read {
-  opacity: 0.75;
-  filter: alpha(opacity=75);
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification.unread {
-  background: #eee;
-  margin: 0;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification.unread .msg-text {
-  font-weight: 700;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a:hover .message {
-  opacity: 1;
-  filter: alpha(opacity=100);
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li:first-of-type > a {
-  border-top: none;
-}
 .navbar .navbar-inner .btn-navbar {
   float: left;
 }
@@ -22819,39 +22797,14 @@ div.dropdown-menu > ul li a {
 .navbar .navbar-inner .usermenu .dropdown .dropdown-menu .fa {
   margin-right: 5px;
 }
-.navbar .navbar-inner .messagemenu ul.nav > li > a > .fa {
-  margin-left: 5px;
+.navbar .navbar-inner .popover-region-toggle {
+  height: 40px;
+  line-height: 40px;
+  padding-left: 15px;
+  padding-right: 15px;
 }
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu {
-  left: auto;
-  right: 10px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-picture {
-  float: left;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body {
-  padding-right: 80px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body span.msg-sender,
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body span.msg-text,
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .message .msg-body span.msg-time {
-  float: left;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification .icon {
-  float: left;
-  margin-right: 10px;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification .notification-text {
-  float: right;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu li > a > .notification .msg-time {
-  clear: right;
-  float: left;
-}
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu:before,
-.navbar .navbar-inner .messagemenu ul.nav .dropdown-menu:after {
-  left: auto;
-  right: 10px;
+.navbar .navbar-inner .popover-region-toggle .fa {
+  color: inherit;
 }
 #page-mod-forum-view .notification.unread {
   background-color: inherit;
@@ -22883,6 +22836,9 @@ div.dropdown-menu > ul li a {
     right: 32px;
     top: -50px;
     width: 64px;
+  }
+  .loggedin #essentialnavbar.oldnavbar.affix .navbar .navbar-inner .custommenus .usermenu ul.nav .dropdown > .dropdown-toggle {
+    min-width: 100px;
   }
 }
 /* @end */
@@ -22976,6 +22932,14 @@ body.format-topcoll .course-content ul.ctopics li.section .content .toggle a h3:
 }
 .nav-tabs > li > a {
   border: 1px solid #eee;
+}
+/* @end */
+/* @group User */
+#groupeditform .groups,
+#groupeditform .members {
+  display: inline-block;
+  float: none;
+  vertical-align: top;
 }
 /* @end */
 /* @group Print Styling */
@@ -23205,6 +23169,11 @@ body.format-topcoll .course-content ul.ctopics li.section .content .toggle a h3:
     margin-left: 0;
   }
 }
+@media (min-width: 768px) {
+  #marketing-spots > div {
+    display: flex;
+  }
+}
 @media (max-width: 767px) {
   body {
     font-size: 12px !important;
@@ -23271,9 +23240,6 @@ a[name="lastused"] {
 }
 .path-mod-feedback .generalbox div table tbody img {
   height: 35px;
-}
-.course-content #completionprogressid {
-  z-index: 10;
 }
 table th,
 table td {

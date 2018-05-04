@@ -45,7 +45,6 @@ class core_renderer extends \core_renderer {
     use core_renderer_toolbox;
     public $language = null;
     protected $themeconfig;
-    protected $left;
 
     protected $essential = null; // Used for determining if this is a Essential or child of renderer.
 
@@ -58,7 +57,6 @@ class core_renderer extends \core_renderer {
     public function __construct(moodle_page $page, $target) {
         parent::__construct($page, $target);
         $this->themeconfig = array(\theme_config::load('essential'));
-        $this->left = !\right_to_left();
     }
 
     /**
@@ -251,7 +249,7 @@ class core_renderer extends \core_renderer {
      *
      * @return string the HTML to output.
      */
-    public function course_title() {
+    public function course_title($divider = true) {
         $content = '';
         if ($this->page->course->id > 1) {
             $enablecategorycti = $this->get_setting('enablecategorycti');
@@ -323,7 +321,12 @@ class core_renderer extends \core_renderer {
                 $content .= '</div>';
             }
 
-            $content .= '<div class="bor"></div>';
+            if ($divider) {
+                $borclass = 'bor';
+            } else {
+                $borclass = 'no-bor';
+            }
+            $content .= '<div class="'.$borclass.'"></div>';
         }
 
         return $content;
@@ -345,6 +348,16 @@ class core_renderer extends \core_renderer {
                 $content .= '<div><p>'.get_string('findcoursecontent', 'theme_essential').'</p></div>';
                 $content .= '<div id="courseitemsearchresults">';
                 $content .= '<input type="text" name="courseitemsearch" id="courseitemsearch" disabled="disabled">';
+                $content .= '<input type="checkbox" name="courseitemsearchtype" id="courseitemsearchtype" disabled="disabled"';
+                $searchallcoursecontentdefault = 0;
+                if ($this->get_setting('searchallcoursecontentdefault')) {
+                    $searchallcoursecontentdefault = 1;
+                }
+                $courseitemsearchtype = get_user_preferences('theme_essential_courseitemsearchtype', $searchallcoursecontentdefault);
+                if ($courseitemsearchtype) {
+                    $content .= ' checked';
+                }
+                $content .= '><label for="courseitemsearchtype">'.get_string('searchallcoursecontent', 'theme_essential').'</label>';
                 $content .= '</div></div>';
             }
         }
@@ -1025,230 +1038,6 @@ class core_renderer extends \core_renderer {
     }
 
     /**
-     * Outputs the messages menu
-     * @return custom_menu object
-     */
-    public function custom_menu_messages() {
-        global $CFG;
-        $messagemenu = new custom_menu();
-
-        if (!isloggedin() || isguestuser() || empty($CFG->messaging)) {
-            return false;
-        }
-
-        $messages = $this->get_user_messages();
-        $totalmessages = count($messages['messages']);
-
-        if (empty($totalmessages)) {
-            $messagemenuicon = $this->getfontawesomemarkup('envelope-o');
-            $messagetitle = get_string('nomessagesfound', 'theme_essential');
-            $messagemenutext = html_writer::span($messagemenuicon);
-            $messagemenu->add(
-                $messagemenutext,
-                new moodle_url('/message/index.php', array('viewing' => 'recentconversations')),
-                $messagetitle,
-                9999
-            );
-        } else {
-
-            if (empty($messages['newmessages'])) {
-                $messagemenuicon = $this->getfontawesomemarkup('envelope-o');
-            } else {
-                $messagemenuicon = $this->getfontawesomemarkup('envelope');
-            }
-            $messagetitle = get_string('unreadmessages', 'theme_essential', $messages['newmessages']);
-
-            $messagemenutext = html_writer::tag('span', $messages['newmessages']) . $messagemenuicon;
-            $messagesubmenu = $messagemenu->add(
-                $messagemenutext,
-                new moodle_url('/message/index.php', array('viewing' => 'recentconversations')),
-                $messagetitle,
-                9999
-            );
-
-            foreach ($messages['messages'] as $message) {
-                $addclass = 'read';
-                $iconadd = '-o';
-
-                if ($message->unread) {
-                    $addclass = 'unread';
-                    $iconadd = '';
-                }
-                if ($message->type === 'notification') {
-                    $messagecontent = html_writer::start_div('notification ' . $addclass);
-                    $messagecontent .= $this->getfontawesomemarkup('info-circle', array('icon'));
-                    $messagecontent .= html_writer::start_span('msg-time');
-                    $messagecontent .= $this->getfontawesomemarkup('comment'.$iconadd);
-                    $messagecontent .= $this->get_time_difference($message->date);
-                    $messagecontent .= html_writer::end_span();
-                    $messagecontent .= html_writer::span(htmlspecialchars($message->text, ENT_COMPAT | ENT_HTML401, 'UTF-8'),
-                        'notification-text');
-                    $messagecontent .= html_writer::end_div();
-                } else {
-                    if (!is_object($message->from) || !empty($message->from->deleted)) {
-                        continue;
-                    }
-                    $senderpicture = new \user_picture($message->from);
-                    $senderpicture->link = false;
-                    $senderpicture->size = 60;
-
-                    $messagecontent = html_writer::start_div('message ' . $addclass);
-                    $messagecontent .= html_writer::start_span('msg-picture').$this->render($senderpicture).
-                        html_writer::end_span();
-                    $messagecontent .= html_writer::start_span('msg-body');
-                    $messagecontent .= html_writer::start_span('msg-time');
-                    $messagecontent .= $this->getfontawesomemarkup('comments'.$iconadd);
-                    $messagecontent .= $this->get_time_difference($message->date);
-                    $messagecontent .= html_writer::end_span();
-                    $messagecontent .= html_writer::span($message->from->firstname, 'msg-sender');
-                    $messagecontent .= html_writer::span($message->text, 'msg-text');
-                    $messagecontent .= html_writer::end_span();
-                    $messagecontent .= html_writer::end_div();
-                }
-
-                $messagesubmenu->add($messagecontent, $message->url, $message->text);
-            }
-        }
-        return $this->render_custom_menu($messagemenu);
-    }
-
-    /**
-     * Retrieves messages from the database
-     * @return array $messagelist
-     */
-    private function get_user_messages() {
-        global $USER, $DB;
-        $messagelist['messages'] = array();
-        $maxmessages = 5;
-
-        $newmessagesql = "SELECT id, smallmessage, useridfrom, useridto, timecreated, fullmessageformat, notification, contexturl
-                          FROM {message}
-                          WHERE useridto = :userid
-                          ORDER BY timecreated DESC";
-
-        $messages = $DB->get_records_sql($newmessagesql, array('userid' => $USER->id), 0, $maxmessages);
-        $messagelist['newmessages'] = count($messages);
-
-        foreach ($messages as $message) {
-            $messagelist['messages'][] = $this->process_message($message);
-        }
-
-        if ($messagelist['newmessages'] < $maxmessages) {
-            $maxmessages = 5 - $messagelist['newmessages'];
-
-            $readmessagesql = "
-                SELECT id, smallmessage, useridfrom, useridto, timecreated, timeread, fullmessageformat,notification, contexturl
-                FROM {message_read}
-                WHERE useridto = :userid
-                ORDER BY timecreated DESC";
-
-            $messages = $DB->get_records_sql($readmessagesql, array('userid' => $USER->id), 0, $maxmessages);
-
-            foreach ($messages as $message) {
-                if (!$message->notification) {
-                    $messagelist['messages'][] = $this->process_message($message);
-                }
-            }
-        }
-
-        return $messagelist;
-
-    }
-
-    /**
-     * Takes the content of messages from database and makes it usable
-     * @param $message object
-     * @return object $messagecontent
-     */
-    private function process_message($message) {
-        global $DB, $USER;
-        $messagecontent = new stdClass();
-
-        if ($message->notification || $message->useridfrom < 1) {
-            $messagecontent->text = $message->smallmessage;
-            $messagecontent->type = 'notification';
-            $messagecontent->url = new moodle_url($message->contexturl);
-            if (empty($message->contexturl)) {
-                $messagecontent->url = new moodle_url('/message/index.php', array('user1' => $USER->id,
-                    'viewing' => 'recentnotifications'));
-            }
-        } else {
-            $messagecontent->type = 'message';
-            if ($message->fullmessageformat == FORMAT_HTML) {
-                $message->smallmessage = html_to_text($message->smallmessage);
-            }
-            if (strlen($message->smallmessage) > 18) {
-                $messagecontent->text = \core_text::substr($message->smallmessage, 0, 15) . '...';
-            } else {
-                $messagecontent->text = $message->smallmessage;
-            }
-            $messagecontent->from = $DB->get_record('user', array('id' => $message->useridfrom));
-            $messagecontent->url = new moodle_url('/message/index.php', array('user1' => $USER->id,
-                'user2' => $message->useridfrom));
-        }
-
-        $options = new stdClass();
-        $options->para = false;
-        $messagecontent->text = format_text($messagecontent->text, FORMAT_PLAIN, $options);
-        $messagecontent->text = strip_tags($messagecontent->text);
-
-        $messagecontent->date = $message->timecreated;
-        $messagecontent->unread = empty($message->timeread);
-        return $messagecontent;
-    }
-
-    /**
-     * Calculates time difference between now and a timestamp
-     * @param $created_time int
-     * @return string
-     */
-    private function get_time_difference($createdtime) {
-        // It returns the time difference in Seconds...
-        $timedifference = time() - $createdtime;
-
-        // To Calculate the time difference in Years...
-        $years = 60 * 60 * 24 * 365;
-
-        // To Calculate the time difference in Months...
-        $months = 60 * 60 * 24 * 30;
-
-        // To Calculate the time difference in Days...
-        $days = 60 * 60 * 24;
-
-        // To Calculate the time difference in Hours...
-        $hours = 60 * 60;
-
-        // To Calculate the time difference in Minutes...
-        $minutes = 60;
-
-        if (intval($timedifference / $years) > 1) {
-            return get_string('ago', 'core_message', intval($timedifference / $years).' '.get_string('years'));
-        } else if (intval($timedifference / $years) > 0) {
-            return get_string('ago', 'core_message', intval($timedifference / $years).' '.get_string('year'));
-        } else if (intval($timedifference / $months) > 1) {
-            return get_string('ago', 'core_message', intval($timedifference / $months).' '.get_string('months'));
-        } else if (intval(($timedifference / $months)) > 0) {
-            return get_string('ago', 'core_message', intval($timedifference / $months).' '.get_string('month'));
-        } else if (intval(($timedifference / $days)) > 1) {
-            return get_string('ago', 'core_message', intval($timedifference / $days).' '.get_string('days'));
-        } else if (intval(($timedifference / $days)) > 0) {
-            return get_string('ago', 'core_message', intval($timedifference / $days).' '.get_string('day'));
-        } else if (intval(($timedifference / $hours)) > 1) {
-            return get_string('ago', 'core_message', intval($timedifference / $hours).' '.get_string('hours'));
-        } else if (intval(($timedifference / $hours)) > 0) {
-            return get_string('ago', 'core_message', intval($timedifference / $hours).' '.get_string('hour'));
-        } else if (intval(($timedifference / $minutes)) > 1) {
-            return get_string('ago', 'core_message', intval($timedifference / $minutes).' '.get_string('minutes'));
-        } else if (intval(($timedifference / $minutes)) > 0) {
-            return get_string('ago', 'core_message', intval($timedifference / $minutes).' '.get_string('minute'));
-        } else if (intval(($timedifference)) > 20) {
-            return get_string('ago', 'core_message', intval($timedifference).' '.get_string('seconds'));
-        } else {
-            return get_string('ago', 'core_message', get_string('few', 'theme_essential').get_string('seconds'));
-        }
-    }
-
-    /**
      * Outputs the goto bottom menu.
      * @return custom_menu object
      */
@@ -1765,6 +1554,7 @@ class core_renderer extends \core_renderer {
             'i/marker' => 'lightbulb-o',
             'i/move_2d' => 'arrows',
             'i/navigationitem' => 'file',
+            'i/notifications' => 'bell',
             'i/outcomes' => 'magic',
             'i/preview' => 'search',
             'i/publish' => 'globe',
@@ -2398,7 +2188,7 @@ class core_renderer extends \core_renderer {
         return $html;
     }
 
-    private function getfontawesomemarkup($theicon, $classes = array(), $attributes = array(), $content = '') {
+    public function getfontawesomemarkup($theicon, $classes = array(), $attributes = array(), $content = '') {
         $classes[] = 'fa fa-'.$theicon;
         $attributes['aria-hidden'] = 'true';
         $attributes['class'] = implode(' ', $classes);
