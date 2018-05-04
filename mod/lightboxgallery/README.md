@@ -1,4 +1,4 @@
-#Lightbox gallery activity for Moodle 2.7+
+# Lightbox gallery activity for Moodle 2.7+
 
 [![Build Status](https://travis-ci.org/netspotau/moodle-mod_lightboxgallery.svg?branch=master)](https://travis-ci.org/netspotau/moodle-mod_lightboxgallery)
 [![License](https://poser.pugx.org/netspotau/moodle-mod_lightboxgallery/license)](https://packagist.org/packages/netspotau/moodle-mod_lightboxgallery)
@@ -13,11 +13,11 @@ Clicking on any of the thumbnails brings that image into focus, and allows you t
 gallery at your leisure. Using the Lightbox scripts creates nice transition effects when loading and
 scrolling through the images.
 
-##Install
+## Install
 ### Using Moodle
 You can install the plugin from the Moodle plugin repository from within your Moodle installation.
 ### Using a downloaded zip file
-You can download a zip of this module from: https://github.com/netspotau/moodle-mod_lightboxgalley/zipball/master  
+You can download a zip of this module from: https://github.com/netspotau/moodle-mod_lightboxgallery/zipball/master  
 Unzip it to your mod/ folder and rename the extracted folder to 'lightboxgallery'.
 ### Using Git
 To install using git, run the following command from the root of your moodle installation:  
@@ -25,6 +25,6 @@ git clone git://github.com/netspotau/moodle-mod_lightboxgallery.git mod/lightbox
 
 Then add mod/lightboxgallery to your gitignore.
 
-##Credits
+## Credits
 Maintainer: Adam Olley (adam.olley@netspot.com.au)  
 Original plugin: Paul Holden (pholden[at]greenhead[dot]ac[dot]uk)  
