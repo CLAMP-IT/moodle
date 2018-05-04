@@ -46,3 +46,4 @@ $string['showcurrentfeedbackdetails'] = 'Show previously recorded PoodLL feedbac
 $string['deletefeedback'] = 'Delete this feedback.';
 $string['reallydeletefeedback'] = 'Really delete this feedback?';
 
+$string['poodll:use'] = 'Allow use of Poodll for feedback';

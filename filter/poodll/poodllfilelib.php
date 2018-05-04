@@ -16,10 +16,6 @@
 
 global $CFG;
 
-
-define('POODLL_VIDEO_PLACEHOLDER_HASH','c2a342a0a664f2f1c4ea5387554a67caf3dd158e');
-define('POODLL_AUDIO_PLACEHOLDER_HASH','e118549e4fc88836f418b6da6028f1fec571cd43');
-
 //we need to do this, because when called from a widet, cfg is not set
 //but the relative path fails from a quiz but it has alreadconvert_with_ffmpeg_bgy been set in that case
 //, so we check before we call it, to cover both httpsbases
@@ -28,12 +24,17 @@ if(!isset($CFG)){
 require_once("../../config.php");
 }
 
-require_login();
+  //we would almost always require login, except in the special case where its an upload from
+  //the iframe embed ... then we don't. Because users won't be logged in, in that case.	
+  $datatype = optional_param('datatype', "", PARAM_TEXT);    // Type of action/data we are requesting
+  if($datatype!='handleuploadfromiframeembed'){	
+		require_login();
+	}
 
-//added for moodle 2
+//we do file operations here, so we need this
 require_once($CFG->libdir . '/filelib.php');
-
-	$datatype = optional_param('datatype', "", PARAM_TEXT);    // Type of action/data we are requesting
+	
+	
 	$contextid  = optional_param('contextid', 0, PARAM_INT);  // the id of the course 
 	$courseid  = optional_param('courseid', 0, PARAM_INT);  // the id of the course 
 	$moduleid  = optional_param('moduleid', 0, PARAM_INT);  // the id of the module 
@@ -73,8 +74,6 @@ require_once($CFG->libdir . '/filelib.php');
     CONST LOG_PFL_DOWNLOAD_FAIL=6;
     CONST LOG_PFL_CREATE_FROM_URL_FAIL=7;
     CONST LOG_PFL_FILE_CREATED=8;
-
-
 
 
 //map general recorder upload data to what we expect otherwise
@@ -121,6 +120,14 @@ require_once($CFG->libdir . '/filelib.php');
 			   echo "<?xml version=\"1.0\"?>";
 			   break;
 
+        case 'handleuploadfromiframeembed':
+            $returnxml = filter_poodll_handle_upload_fromiframeembed($mediatype,$filename);
+            //probably not necessary to return anything, but just in case
+            if(!$returnxml){return;}
+            header("Content-type: text/xml");
+            echo "<?xml version=\"1.0\"?>";
+            break;
+
 		case "instancedownload":
 			//paramone=mimetype paramtwo=path paramthree=hash
 			filter_poodll_instance_download($paramone,$paramtwo,$hash,$requestid);
@@ -136,6 +143,19 @@ require_once($CFG->libdir . '/filelib.php');
 
 			break;
 
+        case "speaktext":
+            $audiodata = filter_poodll_speaktext($paramone);
+            $audiobytes     = $audiodata->get('AudioStream')->getContents();
+
+            header('Content-Transfer-Encoding: binary');
+            header('Content-Type: audio/mpeg, audio/x-mpeg, audio/x-mpeg-3, audio/mpeg3');
+            header('Content-length: ' . strlen($audiobytes));
+           // header('Content-Disposition: attachment; filename="poodlltts.mp3"');
+            header('X-Pad: avoid browser bug');
+            header('Cache-Control: no-cache');
+
+            echo $audiobytes;
+            return;
 		default:
 			return;
 
@@ -213,7 +233,7 @@ function filter_poodll_uploadfile($filedata,  $fileextension, $mediatype, $actio
 
 	//setup our return object
 	$return=filter_poodll_fetchReturnArray(true);
-//error_log('FE:' . $fileextension);
+
 	//make sure nobodyapassed in a bogey file extension
 	switch($fileextension){
 		case "mp3":
@@ -479,6 +499,44 @@ function filter_poodll_handle_s3_upload($mediatype, $contextid, $comp, $farea,$i
         
 //set up return object
 
+}
+
+/* The alerts us to the fact that the file has been uploaded to S3. We commence handling */
+function filter_poodll_handle_upload_fromiframeembed($mediatype, $filename){
+
+    $return=filter_poodll_fetchReturnArray(true);
+
+    global $CFG,$USER;
+
+    $ret =  \filter_poodll\poodlltools::postprocess_upload_fromiframeembed($mediatype, $filename);
+
+    if(!$ret){
+        $return['success']=false;
+        array_push($return['messages'],"Unable to postprocess upload from iframe embed." );
+    }
+
+    //we process the result for return to browser
+    $xml_output=filter_poodll_prepareXMLReturn($return, '99999');
+
+    //we return to browser the result of our file operation
+    return $xml_output;
+
+//set up return object
+
+}
+
+function filter_poodll_speaktext($text){
+    $awstools = new \filter_poodll\awstools();
+    $textarray= explode('|',$text);
+    if(count($textarray)>2) {
+        $textarray[2]= str_replace('PPPP','<',$textarray[2]);
+        $textarray[2]= str_replace('dddd','>',$textarray[2]);
+        $spokentext = $awstools->fetch_pollyspeech($textarray[2],$textarray[0],$textarray[1]);
+    }else{
+        $spokentext = $awstools->fetch_pollyspeech($text);
+    }
+
+    return $spokentext;
 }
 
 /* download file from remote server and stash it in our file area */

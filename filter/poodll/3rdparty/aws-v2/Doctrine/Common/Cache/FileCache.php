@@ -251,6 +251,8 @@ abstract class FileCache extends CacheProvider
         $tmpFile = tempnam($filepath, 'swap');
         @chmod($tmpFile, 0666 & (~$this->umask));
 
+        //JUSTIN not used and a Moodle Sin
+        /*
         if (file_put_contents($tmpFile, $content) !== false) {
             if (@rename($tmpFile, $filename)) {
                 return true;
@@ -258,6 +260,7 @@ abstract class FileCache extends CacheProvider
 
             @unlink($tmpFile);
         }
+        */
 
         return false;
     }

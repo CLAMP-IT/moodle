@@ -23,6 +23,14 @@
  */
 
 
-$capabilities = array();
+$capabilities = array('assignfeedback/poodll:use' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW
+        ),
+    ),
+);
 
 

@@ -1,5 +1,14 @@
 Change List
 =========
+Version 2018020701
+Removed Red5 references
+
+Version 2017112001
+Fixed an incorrect path in dialog.php
+
+Version 2017100301
+Added a check for 0 id user when fetching usercontextid
+
 Version 2016112701
 Updated styles of widget dialog
 removed option to select the good ol poodll flash whiteboard

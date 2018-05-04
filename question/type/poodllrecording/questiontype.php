@@ -64,14 +64,15 @@ class qtype_poodllrecording extends question_type {
 		//the filemanager doesn't produce this, so need to use file save draft area directly
 		//$options->backimage = $this->import_or_save_files($formdata->backimage,
 		// $context, 'qtype_poodllrecording', 'backimage', $formdata->id);
-		if (isset($formdata->backimage)){
-			file_save_draft_area_files($formdata->backimage, $context->id, 'qtype_poodllrecording',
-			'backimage', $formdata->id, array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1));
+		if (isset($formdata->qresource)){
+			file_save_draft_area_files($formdata->qresource, $context->id, 'qtype_poodllrecording',
+                \qtype_poodllrecording\constants::FILEAREA_QRESOURCE, $formdata->id,
+                array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1));
 			
 			//save the itemid of the backimage filearea
-			$options->backimage = $formdata->backimage;
+			$options->qresource = $formdata->qresource;
 		}else{
-			$options->backimage = null;
+			$options->qresource = null;
 		}
 		
 
@@ -101,7 +102,7 @@ class qtype_poodllrecording extends question_type {
         $question->responseformat = $questiondata->options->responseformat;
 		$question->graderinfo = $questiondata->options->graderinfo;
         $question->graderinfoformat = $questiondata->options->graderinfoformat;
-		$question->backimage=$questiondata->options->backimage;
+		$question->qresource=$questiondata->options->qresource;
 		$question->boardsize=$questiondata->options->boardsize;
 		$question->timelimit=$questiondata->options->timelimit;
     }
@@ -112,7 +113,6 @@ class qtype_poodllrecording extends question_type {
      */
     public function response_formats() {
         return array(
-			'mp3' => get_string('formatmp3', 'qtype_poodllrecording'),
             'audio' => get_string('formataudio', 'qtype_poodllrecording'),
 			'video' => get_string('formatvideo', 'qtype_poodllrecording'),
 			'picture' => get_string('formatpicture', 'qtype_poodllrecording'),
@@ -166,16 +166,20 @@ class qtype_poodllrecording extends question_type {
         parent::move_files($questionid, $oldcontextid, $newcontextid);
         $fs = get_file_storage();
         $fs->move_area_files_to_new_context($oldcontextid,
-                $newcontextid, 'qtype_poodllrecording', 'graderinfo', $questionid);
+                $newcontextid, 'qtype_poodllrecording',
+            \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, $questionid);
         $fs->move_area_files_to_new_context($oldcontextid,
-                $newcontextid, 'qtype_poodllrecording', 'backimage', $questionid);
+                $newcontextid, 'qtype_poodllrecording',
+            \qtype_poodllrecording\constants::FILEAREA_QRESOURCE, $questionid);
     }
 
     protected function delete_files($questionid, $contextid) {
         parent::delete_files($questionid, $contextid);
         $fs = get_file_storage();
-        $fs->delete_area_files($contextid, 'qtype_poodllrecording', 'graderinfo', $questionid);
-        $fs->delete_area_files($contextid, 'qtype_poodllrecording', 'backimage', $questionid);
+        $fs->delete_area_files($contextid, 'qtype_poodllrecording',
+            \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, $questionid);
+        $fs->delete_area_files($contextid, 'qtype_poodllrecording',
+            \qtype_poodllrecording\constants::FILEAREA_QRESOURCE, $questionid);
     }
     
      /**
@@ -191,7 +195,7 @@ class qtype_poodllrecording extends question_type {
     		"responseformat",
     		"responsefieldlines","attachments",
     		"graderinfo","graderinfoformat",
-    		"backimage","boardsize", "timelimit");
+    		"qresource","boardsize", "timelimit");
     		
         return $tableinfo;
     }
@@ -218,11 +222,11 @@ class qtype_poodllrecording extends question_type {
 				$format->format($question->options->graderinfoformat) . ">\n";
 		$expout .= $format->writetext($question->options->graderinfo, 3);
 		$expout .= $format->write_files($fs->get_area_files($question->contextid,  'qtype_poodllrecording',
-				'graderinfo', $question->id));
+            \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, $question->id));
 		$expout .= "    </graderinfo>\n";
-		$expout .= "    <backimage>" . $format->write_files($fs->get_area_files($question->contextid, 'qtype_poodllrecording',
-				'backimage', $question->id)).
-				"</backimage>\n";
+		$expout .= "    <qresource>" . $format->write_files($fs->get_area_files($question->contextid, 'qtype_poodllrecording',
+                \qtype_poodllrecording\constants::FILEAREA_QRESOURCE, $question->id)).
+				"</qresource>\n";
 		$expout .= "    <boardsize>" . $question->options->boardsize .
 				"</boardsize>\n";
 		$expout .= "    <timelimit>" . $question->options->timelimit .
@@ -249,7 +253,7 @@ class qtype_poodllrecording extends question_type {
         $q = $data;
         
         $qo->responseformat = $format->getpath($q,
-                array('#', 'responseformat', 0, '#'), 'picture');
+                array('#', 'responseformat', 0, '#'), \qtype_poodllrecording\constants::RESPONSEFORMAT_PICTURE);
         $qo->responsefieldlines = $format->getpath($q,
                 array('#', 'responsefieldlines', 0, '#'), 15);
         $qo->attachments = $format->getpath($q,
@@ -257,19 +261,19 @@ class qtype_poodllrecording extends question_type {
         //older versions handled files diff. SeeM DL-39-57        
     	if($CFG->version < 2013051400){
     		$qo->graderinfo['text'] = $format->getpath($q,
-                array('#', 'graderinfo', 0, '#', 'text', 0, '#'), '', true);
+                array('#', \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, 0, '#', 'text', 0, '#'), '', true);
         	$qo->graderinfo['format'] = $format->trans_format($format->getpath($q,
-                array('#', 'graderinfo', 0, '@', 'format'), $format->get_format($qo->questiontextformat)));
+                array('#', \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, 0, '@', 'format'), $format->get_format($qo->questiontextformat)));
         	$qo->graderinfo['files'] = $format->import_files($format->getpath($q,
-                array('#', 'graderinfo', '0', '#', 'file'), array()));
+                array('#', \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, '0', '#', 'file'), array()));
                 
-            $qo->backimage = $format->import_files($format->getpath($q,
-                array('#', 'backimage', '0', '#', 'file'), array()));
+            $qo->qresource = $format->import_files($format->getpath($q,
+                array('#',\qtype_poodllrecording\constants::FILEAREA_QRESOURCE, '0', '#', 'file'), array()));
     	
     	}else{
-    		$qo->graderinfo =  $format->import_text_with_files($q, array('#', 'graderinfo', 0), '', $qo->questiontextformat);
-    		$qo->backimage  = $format->import_files_as_draft($format->getpath($q,
-                array('#', 'backimage', '0', '#', 'file'), array()));
+    		$qo->graderinfo =  $format->import_text_with_files($q, array('#', \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, 0), '', $qo->questiontextformat);
+    		$qo->qresource  = $format->import_files_as_draft($format->getpath($q,
+                array('#', \qtype_poodllrecording\constants::FILEAREA_QRESOURCE, '0', '#', 'file'), array()));
     		
     	}                     
         

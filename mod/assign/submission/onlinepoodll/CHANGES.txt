@@ -1,5 +1,7 @@
 Change List
 =========
+Version 2017092200
+Added the ability to not show audio player in list or summary pages
 
 Version 2017082600
 Added support for passing "hints" to audio and video recorder

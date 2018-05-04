@@ -55,7 +55,23 @@ if(!defined('OP_REPLYVOICE')){
 					new lang_string('showcurrentsubmission', 'assignsubmission_onlinepoodll'), 
 					new lang_string('showcurrentsubmissiondetails', 'assignsubmission_onlinepoodll'), 1, $yesno_options));
 
-	//Settings for video recordings
+
+    //Settings for audio recordings
+    $settings->add(new admin_setting_heading('assignsubmission_onlinepoodll/audio_heading',
+    get_string('setting_audio_heading', 'assignsubmission_onlinepoodll'),
+    get_string('setting_audio_heading_details', 'assignsubmission_onlinepoodll')));
+
+    $settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/displayaudioplayer_single',
+    new lang_string('displayaudioplayersingle', 'assignsubmission_onlinepoodll'),
+    '', '1', $yesno_options));
+
+    $settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/displayaudioplayer_list',
+    new lang_string('displayaudioplayerlist', 'assignsubmission_onlinepoodll'),
+    '', '1', $yesno_options));
+
+
+
+//Settings for video recordings
     $settings->add(new admin_setting_heading('assignsubmission_onlinepoodll/video_heading',
         get_string('setting_video_heading', 'assignsubmission_onlinepoodll'),
         get_string('setting_video_heading_details', 'assignsubmission_onlinepoodll')));
@@ -106,7 +122,3 @@ if(!defined('OP_REPLYVOICE')){
     $settings->add(new admin_setting_configselect('assignsubmission_onlinepoodll/whiteboard_displaysize_list',
         new lang_string('imagedisplaysizelist', 'assignsubmission_onlinepoodll'),
         new lang_string('imagedisplaysizelistdetails', 'assignsubmission_onlinepoodll'), '160', $width_options));
-					
-
-
-

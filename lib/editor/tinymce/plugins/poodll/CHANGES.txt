@@ -1,5 +1,9 @@
 Change List
 =========
+Version 2017020701
+Removed references to red5
+
+
 Version 2017080401
 Fixes some bad formatiing in popup
 

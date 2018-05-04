@@ -11,11 +11,9 @@ $string['unexpectedevent'] = 'An unexpected event was detected. Consider reporti
 
 $string['save'] = 'Save';
 $string['name'] = 'Name';
-$string['audio'] = 'Audio Recorder(Red5)';
-$string['video'] = 'Video Recorder(Red5)';
-$string['mp3recorder'] = 'AudioRecorder(MP3 Standalone)';
+$string['audio'] = 'Audio Recorder';
+$string['video'] = 'Video Recorder';
 $string['snapshot'] = 'Snapshot(Webcam)';
-$string['widget'] = 'PoodLL Widgets';
 $string['whiteboard'] = 'PoodLL Whiteboard';
 $string['recording_format'] = 'PoodLL Repository Type';
 $string['hide_player_opts'] = 'Audio Player Selection';

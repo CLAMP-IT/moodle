@@ -33,13 +33,12 @@ if ($ADMIN->fulltree) {
 
 	// Recorder settings
 	$recoptions = array('show_audiomp3' => new lang_string('show_audiomp3', 'atto_poodll'),
-					'show_audiored5' => new lang_string('show_audiored5', 'atto_poodll'),
 					'show_video' => new lang_string('show_video', 'atto_poodll'),
 					'show_whiteboard' => new lang_string('show_whiteboard', 'atto_poodll'),
 					'show_snapshot' => new lang_string('show_snapshot', 'atto_poodll'),
 					'show_widgets' => new lang_string('show_widgets', 'atto_poodll'));
 					
-	$recoptiondefaults = array('show_audiomp3' => 1,'show_audiored5' => 0,'show_video' => 1,'show_whiteboard' => 1,'show_snapshot' => 1,'show_widgets' => 1);
+	$recoptiondefaults = array('show_audiomp3' => 1,'show_video' => 1,'show_whiteboard' => 1,'show_snapshot' => 1,'show_widgets' => 1);
 	$settings->add(new admin_setting_configmulticheckbox('atto_poodll/recorderstoshow',
 						   get_string('recorderstoshow', 'atto_poodll'),
 						   get_string('recorderstoshowdetails', 'atto_poodll'), $recoptiondefaults,$recoptions));	

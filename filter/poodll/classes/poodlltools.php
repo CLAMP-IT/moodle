@@ -35,9 +35,14 @@ class poodlltools
 {
     const LOG_SAVE_PLACEHOLDER_FAIL = 1;
     const LOG_NOTHING_TO_TRANSCODE = 2;
-    
-    const AUDIO_PLACEHOLDER_HASH ='e118549e4fc88836f418b6da6028f1fec571cd43';
-    const VIDEO_PLACEHOLDER_HASH ='c2a342a0a664f2f1c4ea5387554a67caf3dd158e';
+
+    const AUDIO_PLACEHOLDER_HASH ='805daf96c0b5e197a728f230d9550e9ba49e5ea7';
+    const VIDEO_PLACEHOLDER_HASH ='4eab92af4205d642e774718c85d5ea3a19881ba6';
+    const AUDIO_PLACEHOLDER_LENGTH = 4.362449;// as reported by firefox: 4.388496
+    const VIDEO_PLACEHOLDER_LENGTH = 4.133333;//as reported by firefox: 4.202811
+
+    const AUDIO_PLACEHOLDER_HASH_OLD ='e118549e4fc88836f418b6da6028f1fec571cd43';
+    const VIDEO_PLACEHOLDER_HASH_OLD ='c2a342a0a664f2f1c4ea5387554a67caf3dd158e';
 
 	//this is just a temporary function, until the PoodLL filter client plugins are upgraded to not use simpleaudioplayer
     public static function fetchSimpleAudioPlayer($param1='auto',$url,$param3='http',$param4='width', $param5='height'){ 
@@ -257,26 +262,6 @@ class poodlltools
 		$returnString .= $savecontrol;
 
 		return $returnString;
-
-	}
-
-
-   /*
-    * The MP3 Recorder based on skins
-   *
-   */
-	public static function fetchMP3SkinnedRecorderForSubmission($params, $skin)
-	{
-		global $CFG;
-		$poodll_audio_url = $CFG->wwwroot . "/filter/poodll/mp3recorderskins";
-		$params['poodll_audio_url'] = $poodll_audio_url;
-		$width = "240";
-		$height = "170";
-		//$params['callbackjs']= 'poodll_audiosdk.audiohelper.poodllcallback';
-		$iframe_src_url = new \Moodle_URL("/filter/poodll/mp3recorderskins/$skin/index.php", $params);
-		$ret = \html_writer::tag('iframe', '', array('src' => $iframe_src_url->out(false), 'frameBorder' => 0, 'scrolling' => 'none', 'allowTransparency' => 'true', 'class' => 'filter_poodll_mp3skinned_recorder'));
-		return $ret;
-
 
 	}
 
@@ -885,6 +870,7 @@ class poodlltools
 
 		//Get localised labels:
 		$params['ui_record'] = urlencode(get_string('recui_record', 'filter_poodll'));
+        $params['ui_restart'] = urlencode(get_string('recui_restart', 'filter_poodll'));
 		$params['ui_play'] = urlencode(get_string('recui_play', 'filter_poodll'));
 		$params['ui_continue'] = urlencode(get_string('recui_continue', 'filter_poodll'));
 		$params['ui_pause'] = urlencode(get_string('recui_pause', 'filter_poodll'));
@@ -949,7 +935,7 @@ class poodlltools
 		$paramobj->id = $widgetid;
 		$paramobj->accessible = true;
 		$paramobj->serverroot = '/';
-		$paramobj->appenddivid = $widgetid + 'Container';
+		$paramobj->appenddivid = $widgetid . 'Container';
 
 		$retjson = json_encode($paramobj);
 		return $retjson;
@@ -1005,63 +991,6 @@ class poodlltools
 
 	}
 
-
-//If we wish to show a styled upload button, here we return true
-//on Firefox on Android doesn't support it currently, so we hard code that to false
-//also for MS Surface
-//(2013/08/19)
-	public static function showFancyButton($browser)
-	{
-		global $CFG;
-
-		if ($browser->getPlatform() == Browser::PLATFORM_ANDROID &&
-			$browser->getBrowser() == Browser::BROWSER_FIREFOX
-		) {
-			return false;
-		} else if ($browser->getPlatform() == Browser::PLATFORM_MICROSOFT_SURFACE) {
-			return false;
-		} else {
-			return true;
-		}
-	}
-
-//Here we try to detect if this supports uploading audio files spec
-//iOS doesn't but android can record from mic. Apple and Windows can just filter by audio when browsing
-//(2013/03/05)Firefox on android, doesn't use sound recorder currently.
-//(2013/03/05)Chrome on android gives wrong useragent(ipad/safari!)
-	public static function canSpecAudio($browser)
-	{
-
-		switch ($browser->getPlatform()) {
-
-			case Browser::PLATFORM_APPLE:
-			case Browser::PLATFORM_WINDOWS:
-				return true;
-				break;
-
-			case Browser::PLATFORM_IPAD:
-				return false;
-				break;
-
-			case Browser::PLATFORM_IPOD:
-			case Browser::PLATFORM_IPHONE:
-				return false;
-				break;
-
-			case Browser::PLATFORM_ANDROID:
-				if ($browser->getBrowser() == Browser::BROWSER_FIREFOX) {
-					return false;
-				} else if ($browser->isNexus7()) {
-					return false;
-				} else {
-					return true;
-				}
-				break;
-
-			default:
-				return false;
-		}//end of switch
-	}
 
 //We check if the OS version is too old here,
 //Android 4+ iOS6+
@@ -1203,132 +1132,6 @@ class poodlltools
 	   return $stored_file;
 	}
 
-	/*
-	* Fetch a splash image for video
-	**/
-	public static function fetchVideoSplash($src)
-	{
-		global $CFG;
-
-		$src = urldecode($src);
-
-		//if this is not a local file , quit.
-		$possy = strpos($src, "pluginfile.php");
-		if (!$possy) {
-			return false;
-		}
-		//get relative path
-		//e.g http://m23.poodll.com/pluginfile.php/59/mod_page/content/20/360332574229687.flv
-		//should become /59/mod_page/content/20/360332574229687.flv
-		$relpath = substr($src, $possy + 14);
-
-		//remove any pesky forcedownload params
-		$relpath = str_replace("?forcedownload=1", "", $relpath);
-
-		//if something went wrong, and we can't confirm get a handle on the file,
-		//muddle with the itemid. Some mods don't bother to use it if it is a certain filearea
-		//eg assignment intro, others use it strangely,eg mod_page, and we need to set it to 0
-		//quiz questions have extra stuff between filearea and itemid
-		$fs = get_file_storage();
-		$file = $fs->get_file_by_hash(sha1($relpath));
-		if (!$file) {
-			$relarray = explode('/', $relpath);
-			//index 1 = contextid, 2 =component,3=filearea
-			//itemid can change, filename is last
-
-			switch ($relarray[2]) {
-				case 'question':
-					$qitemid = $relarray[count($relarray) - 2];
-					$qfilename = $relarray[count($relarray) - 1];
-					$relpath = '/' . $relarray[1] . '/' . $relarray[2] . '/' . $relarray[3];
-					$relpath .= '/' . $qitemid . '/' . $qfilename;
-					break;
-
-				case 'mod_page':
-					//1st we set itemid to 0
-					$originalitemid = $relarray[4];
-					$relarray[4] = '0';
-					$relpath = implode('/', $relarray);
-					break;
-
-				case 'mod_assign':
-					array_splice($relarray, 4, 0, '0');
-					$relpath = implode('/', $relarray);
-					break;
-
-				default:
-					//if we have no itemid, zero is assumed
-					if (count($relarray) == 5) {
-						$relpath = '/' . $relarray[1] . '/' . $relarray[2] . '/' . $relarray[3];
-						$relpath .= '/0/' . $relarray[4];
-					}
-			}
-
-
-			//Then hash the path and try to get the file
-			$file = $fs->get_file_by_hash(sha1($relpath));
-
-			//if we still don't have a file, give up
-			if (!$file) {
-				return false;
-			}
-		}
-
-
-		//check if we really can have/make a splash for this file
-		//if name is too short, we didn't make it, it wont be on our red5 server
-		$filename = $file->get_filename();
-		if (strlen($filename) < 5) {
-			return false;
-		}
-
-		//if we are NOT using FFMPEG, we can only take snaps from Red5, so ...
-		//if name is not numeric, it is not a video file we recorded on red5.it wont be there
-		if (!$CFG->filter_poodll_ffmpeg && !is_numeric(substr($filename, 0, strlen($filename) - 4))) {
-			return false;
-		}
-
-		//check if we have an image file here already, if so return that URL
-		$relimagepath = substr($relpath, 0, strlen($relpath) - 3) . 'png';
-		$trimsrc = str_replace("?forcedownload=1", "", $src);
-		$fullimagepath = substr($trimsrc, 0, strlen($trimsrc) - 3) . 'png';
-		$imagefilename = substr($filename, 0, strlen($filename) - 3) . 'png';
-		if ($imagefile = $fs->get_file_by_hash(sha1($relimagepath))) {
-			return $fullimagepath;
-		}
-
-		//from this point on we will need our file handling functions
-		require_once($CFG->dirroot . '/filter/poodll/poodllfilelib.php');
-
-		//if we are using FFMPEG, try to get the splash image
-		if ($CFG->filter_poodll_ffmpeg) {
-
-			$imagefile = self::get_splash_ffmpeg($file, $imagefilename);
-			if ($imagefile) {
-				return $fullimagepath;
-			} else {
-				return false;
-			}
-
-			//if not FFMPEG pick it up from Red5 server
-		} else {
-
-			$result = filter_poodll_instance_remotedownload($file->get_contextid(),
-				$imagefilename,
-				$file->get_component(),
-				$file->get_filearea(),
-				$file->get_itemid(),
-				"99999",
-				$file->get_filepath()
-			);
-
-			if (strpos($result, "success")) {
-				return $fullimagepath;
-			} else {
-				return false;
-			}
-		}//end of if ffmpeg
-	}//end of fetchVideoSplash
 
 	public static function fetchAutoWidgetCode($widget, $paramsArray, $width, $height, $bgcolor = "#FFFFFF")
 	{
@@ -1418,28 +1221,20 @@ class poodlltools
 
             }
 
-            //replacing the draft file is a bit risky, but we will miss the notificationotherwise from AWS
-            //so lets try check first for the non draft file. And failing that lets check for the draft file
-            //previously we only replaced draft if using cloud notifications .. but its kind of the same really
-            //            if($CFG->filter_poodll_cloudnotifications)
-
-            $no_draft_select="filename='" . $filename. "' AND filearea <> 'draft' AND contenthash='" . $contenthash. "'";
-            $with_draft_select = "filename='" . $filename. "'  AND contenthash='" . $contenthash. "'";
+            //We replace both permanent and draft files because otherwise some race conditions can cause placeholder
+            //to overwrite converted files when user is editing an html area after intially submitting and before conv. compl.
+            $perm_draft_select = "filename='" . $filename. "'  AND contenthash='" . $contenthash. "'";
             $params = null;
             $sort = "id DESC";
-            $dbfiles = $DB->get_records_select('files',$no_draft_select,$params,$sort);
-            if(!$dbfiles){
-                $dbfiles = $DB->get_records_select('files',$with_draft_select,$params,$sort);
-            }
+            $placeholderfiles = $DB->get_records_select('files',$perm_draft_select,$params,$sort);
 
             //if we did not get anything then just return
-            if(!$dbfiles){
+            if(!$placeholderfiles){
                 return false;
             }
 
             //get the file we will replace
-            $thefilerecord = array_shift($dbfiles);	
-            return $thefilerecord;
+            return $placeholderfiles;
         }
         
         public static function replace_placeholderfile_in_moodle($draftfilerecord,$permfilerecord,$newfilepath){
@@ -1531,9 +1326,11 @@ class poodlltools
 		if($awstools->does_file_exist($mediatype,$infilename,'in' )){
 			$awstools->create_one_transcoding_job($mediatype,$infilename,$outfilename);
 			$ret = true;
-        }else{
-            self::send_debug_data(SELF::LOG_NOTHING_TO_TRANSCODE,'Nothing to transcode:' . $infilename,$USER->id);
-        }
+        }else {
+            if ($USER->id) {
+                self::send_debug_data(SELF::LOG_NOTHING_TO_TRANSCODE, 'Nothing to transcode:' . $infilename, $USER->id, \context_user::instance($USER->id)->id);
+            }
+		}
         return $ret;
 	}
         
@@ -1548,7 +1345,18 @@ class poodlltools
                    return false;
         }
 	}
-        
+
+
+    public static function postprocess_upload_fromiframeembed($mediatype,$filename)
+    {
+        $s3filename = \filter_poodll\awstools::fetch_s3_filename($mediatype, $filename);
+        $infilename = $s3filename;
+        $outfilename = $infilename;
+
+        $success = self::commence_s3_transcode($mediatype, $infilename, $outfilename);
+        return $success;
+    }
+
     public static function postprocess_s3_upload($mediatype,$draftfilerecord)
     {
         $s3filename = \filter_poodll\awstools::fetch_s3_filename($mediatype, $draftfilerecord->filename);
@@ -1577,7 +1385,7 @@ class poodlltools
         }
         return $success;
    }
-	
+
 	public static function register_ffmpeg_task($filerecord,$originalfilename, $convfilenamebase,$convext){
 		 // set up task and add custom data
 	   $conv_task = new \filter_poodll\task\adhoc_convert_media();
@@ -1606,7 +1414,7 @@ class poodlltools
 	* Extract an image from the video for use as splash
 	* image stored in same location with same name (diff ext)
 	* as original video file
-	*
+	* THIS IS NOW UNUSED : left as reference J 20180326
 	*/
 	public static function get_splash_ffmpeg($videofile, $newfilename){
 
@@ -1651,7 +1459,7 @@ class poodlltools
 			//this can be done from ffmpeg, but probably not on all installs, so we do in php
 			if(is_readable(realpath($tempsplashfilepath))){	
 				//provided this is not a place holder. We don't really want to confuse even more
-				if($videofile->get_contenthash()!=POODLL_VIDEO_PLACEHOLDER_HASH){
+				if($videofile->get_contenthash()!=self::VIDEO_PLACEHOLDER_HASH){
 					$bg = imagecreatefrompng($tempsplashfilepath);
 					$btn = imagecreatefrompng($CFG->dirroot . '/filter/poodll/pix/playbutton.png');
 					imagealphablending($bg, 1);
@@ -1785,9 +1593,9 @@ class poodlltools
 				}else{
 					$filerecord->filename = $convfilename;
 				}
-				//error_log('we converted successfully');
+
 				$stored_file = 	$fs->create_file_from_pathname($filerecord, $tempdir . $convfilename);
-				//error_log('we stashed successfully');
+
 				//need to kill the two temp files here
 				if(is_readable(realpath($tempdir . $convfilename))){
 					unlink(realpath($tempdir . $convfilename));
@@ -1889,11 +1697,14 @@ class poodlltools
         $widgetopts->timelimit = $timelimit;
         $widgetopts->callbackjs = $callbackjs;
         $widgetopts->quicktimesignedurl =$quicktime_signed_url;
-		
-		//store the filename or "not yet decided flag"(ie false)
+
+
+		//store the filename
 		$widgetopts->filename = $filename;
 		$widgetopts->s3filename = $s3filename;
+        $widgetopts->iframeembed = false;//this is only when embedding from iframe
 		$widgetopts->using_s3 = intval($using_s3);
+		$widgetopts->allowedURL=$CFG->wwwroot;
 
         //recorder order of preference and media skin style
         $skinstyle = '';
@@ -1922,8 +1733,28 @@ class poodlltools
         	$widgetopts->size= 'auto';
         }
 
+        //resource
+        if(array_key_exists('resource',$hints)){
+            $widgetopts->resource= $hints['resource'];
+        }else{
+            $widgetopts->resource= '';
+        }
+
+        //model url
+        if(array_key_exists('resource2',$hints)){
+            $widgetopts->resource2= $hints['resource2'];
+        }else{
+            $widgetopts->resource2= '';
+        }
+
+        //hints we pass these as is
+        $widgetopts->hints=$hints;
+
 		//do we use flash on android
         $widgetopts->flashonandroid=$CFG->filter_poodll_flash_on_android;
+
+        //do we user html5 audio on desktop safari
+        $widgetopts->html5ondsafari=$CFG->filter_poodll_html5ondsafari;
                 
 		//for mobile amd params
 		$rawparams = self::fetchMobileRecorderAMDParams($mediatype);
@@ -2391,9 +2222,9 @@ class poodlltools
 		$params=array();
 		$params['media_timeinterval'] = 2000;
 		$params['media_audiomimetype'] = 'audio/webm';//or audio/wav
-        $params['media_videorecordertype'] = 'auto';//or mediarec or webp
-        $params['media_videocapturewidth'] = 320;
-        $params['media_videocaptureheight'] = 240;
+        	$params['media_videorecordertype'] = 'auto';//or mediarec or webp
+        	$params['media_videocapturewidth'] = 320;
+        	$params['media_videocaptureheight'] = 240;
 
 		if(array_key_exists('coursecontextid',$hints)){
         	$coursecontextid = $hints['coursecontextid'];
@@ -2407,6 +2238,7 @@ class poodlltools
         }
         $courseconfig = filtertools::fetch_local_filter_props('poodll',$coursecontextid);
         $adminconfig = get_config('filter_poodll');
+
 
         switch($mediatype) {
 
@@ -2451,6 +2283,12 @@ class poodlltools
                     $params['media_skin_style'] = $adminconfig->{$prop};
                 }
         }
+
+        //the above mediaskin selection goes out the window if its passed in the hints array
+        if(array_key_exists('mediaskin',$hints)){
+            $params['media_skin']= $hints['mediaskin'];
+        }
+
 
 		return $params;
 	}

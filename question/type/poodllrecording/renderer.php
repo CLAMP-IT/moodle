@@ -73,7 +73,7 @@ class qtype_poodllrecording_renderer extends qtype_renderer {
         $question = $qa->get_question();
         return html_writer::nonempty_tag('div', $question->format_text(
                 $question->graderinfo, $question->graderinfo, $qa, 'qtype_poodllrecording',
-                'graderinfo', $question->id), array('class' => 'graderinfo'));
+            \qtype_poodllrecording\constants::FILEAREA_GRADERINFO, $question->id), array('class' => 'graderinfo'));
     }
 }
 
@@ -398,18 +398,21 @@ class qtype_poodllrecording_format_picture_renderer extends qtype_poodllrecordin
 		//output vectordata control and load it with data
 		//whiteboard doesn't read data from here, but we stash it to be sure it is
 		//resubmitted when user transitions page without touching whiteboard.
-		$ret .= html_writer::empty_tag('input', array('type' => 'hidden','id'=>$vectorcontrol,'name' => $vectorcontrol, 'value' => $vectordata));	
+		$ret .= html_writer::empty_tag('input', array('type' => 'hidden',
+            'id'=>$vectorcontrol,'name' => $vectorcontrol, 'value' => $vectordata));
 		
 		//output base64data control
-		$ret .= html_writer::empty_tag('input', array('type' => 'hidden','id'=>$base64control,'name' => $base64control, 'value' => ''));
+		$ret .= html_writer::empty_tag('input', array('type' => 'hidden',
+            'id'=>$base64control,'name' => $base64control, 'value' => ''));
 		
 		//get a handle on the question
 		$q = $qa->get_question();
 	
-		//Get Backimage, if we have one
+		//Get question resource, if we have one
 		// get file system handle for fetching url to submitted media prompt (if there is one) 
 		$fs = get_file_storage();
-		$files = $fs->get_area_files($q->contextid, 'qtype_poodllrecording', 'backimage', $q->id);
+		$files = $fs->get_area_files($q->contextid, 'qtype_poodllrecording',
+            \qtype_poodllrecording\constants::FILEAREA_QRESOURCE, $q->id);
 		$imageurl="";
 		//$ret .= '<br />' . $q->id;
 		//$ret .= '<br />' . $context->id;
@@ -458,8 +461,8 @@ class qtype_poodllrecording_format_picture_renderer extends qtype_poodllrecordin
 
     }//end of function
     
-    private function prepareWhiteboard($updatecontrol, $contextid,$component,$filearea,$itemid,$width=0,$height=0,$backimage="",$vectorcontrol,$vectordata){
-    	$whiteboardString = \filter_poodll\poodlltools::fetchWhiteboardForSubmission($updatecontrol, $contextid,$component,$filearea,$itemid,$width,$height,$backimage,'','',$vectorcontrol,$vectordata);
+    private function prepareWhiteboard($updatecontrol, $contextid,$component,$filearea,$itemid,$width=0,$height=0,$qresource="",$vectorcontrol,$vectordata){
+    	$whiteboardString = \filter_poodll\poodlltools::fetchWhiteboardForSubmission($updatecontrol, $contextid,$component,$filearea,$itemid,$width,$height,$qresource,'','',$vectorcontrol,$vectordata);
     	return $whiteboardString;
     }
 
@@ -478,9 +481,8 @@ class qtype_poodllrecording_format_simplepicture_renderer extends qtype_poodllre
     }
     
     
-	private function prepareWhiteboard($updatecontrol, $contextid,$component,$filearea,$itemid,$width=0,$height=0,$backimage=""){
-    	$whiteboardString = \filter_poodll\poodlltools::fetchWhiteboardForSubmission($updatecontrol, $contextid,$component,$filearea,$itemid,$width,$height,$backimage);
-    	return $whiteboardString;
+	private function prepareWhiteboard($updatecontrol, $contextid,$component,$filearea,$itemid,$width=0,$height=0,$qresource=""){
+    	$whiteboardString = \filter_poodll\poodlltools::fetchWhiteboardForSubmission($updatecontrol, $contextid,$component,$filearea,$itemid,$width,$height,$qresource);
     }
 }//end of class
 

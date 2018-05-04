@@ -164,6 +164,7 @@ class DeduplicationHandler extends BufferHandler
 
     private function appendRecord(array $record)
     {
-        file_put_contents($this->deduplicationStore, $record['datetime']->getTimestamp() . ':' . $record['level_name'] . ':' . preg_replace('{[\r\n].*}', '', $record['message']) . "\n", FILE_APPEND);
+        //JUSTIN commenting Moodle sin
+        //file_put_contents($this->deduplicationStore, $record['datetime']->getTimestamp() . ':' . $record['level_name'] . ':' . preg_replace('{[\r\n].*}', '', $record['message']) . "\n", FILE_APPEND);
     }
 }

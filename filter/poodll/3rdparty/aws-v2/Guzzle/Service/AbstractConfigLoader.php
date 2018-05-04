@@ -99,9 +99,11 @@ abstract class AbstractConfigLoader implements ConfigLoaderInterface
         switch (pathinfo($filename, PATHINFO_EXTENSION)) {
             case 'js':
             case 'json':
-                $level = error_reporting(0);
+                //JUSTIN commenting out a Moodle Sin
+                //$level = error_reporting(0);
                 $json = file_get_contents($filename);
-                error_reporting($level);
+                //JUSTIN commenting out a Moodle Sin
+                //error_reporting($level);
 
                 if ($json === false) {
                     $err = error_get_last();

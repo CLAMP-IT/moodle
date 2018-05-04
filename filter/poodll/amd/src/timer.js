@@ -9,6 +9,7 @@ define(['jquery','core/log'], function($, log) {
         increment: 1,
         initseconds: 0,
         seconds: 0,
+        finalseconds: 0,
         intervalhandle: null,
         callback: null,
 
@@ -25,19 +26,22 @@ define(['jquery','core/log'], function($, log) {
 
         start: function(){
             var self = this;
+            this.finalseconds=0;
             if(this.initseconds > 0){this.increment=-1;}else{this.increment = 1;}
             this.intervalhandle = setInterval(function(){
                     self.seconds = self.seconds + self.increment;
+                    self.finalseconds=self.finalseconds+1;
                     self.callback();
             },1000);
         },
 
-        fetch_display_time: function(){
-            var theHours = '00' + parseInt(this.seconds/3600);
+        fetch_display_time: function(someseconds){
+            if(!someseconds){someseconds=this.seconds;}
+            var theHours = '00' + parseInt(someseconds/3600);
             theHours = theHours.substr(theHours.length -2,2);
-            var theMinutes = '00' + parseInt(this.seconds/60);
+            var theMinutes = '00' + parseInt(someseconds/60);
             theMinutes = theMinutes.substr(theMinutes.length -2,2);
-            var theSeconds = '00' + parseInt(this.seconds%60);
+            var theSeconds = '00' + parseInt(someseconds%60);
             theSeconds = theSeconds.substr(theSeconds.length -2,2);
             var display_time= theHours + ':' + theMinutes + ':' + theSeconds ;
             return display_time;

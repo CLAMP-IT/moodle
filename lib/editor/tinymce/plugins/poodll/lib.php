@@ -25,7 +25,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 class tinymce_poodll extends editor_tinymce_plugin {
     /** @var array list of buttons defined by this plugin */
-    protected $buttons = array('poodllaudiomp3','poodllaudiored5','poodllvideo','poodllwhiteboard','poodllsnapshot');
+    protected $buttons = array('poodllaudiomp3','poodllvideo','poodllwhiteboard','poodllsnapshot');
 
     protected function update_init_params(array &$params, context $context,
             array $options = null) {
@@ -44,10 +44,14 @@ class tinymce_poodll extends editor_tinymce_plugin {
         }
 	
 		//add icons to editor if the permissions are all ok
-		$recorders = array('audiomp3','audiored5','video','whiteboard','snapshot');
+		$recorders = array('audiomp3','video','whiteboard','snapshot');
 		$allowedrecorders =  $this->get_config('recorderstoshow');
 		if(!empty($allowedrecorders)){
 			$allowedrecorders = explode(',',$allowedrecorders);
+            //we deleted the red5 option, just in case, we map it here to mp3
+            if(array_key_exists('show_audiored5',$allowedrecorders) && !array_key_exists('show_audiomp3',$allowedrecorders) ){
+                $allowedrecorders[]='show_audiomp3';
+            }
 			foreach($recorders as $recorder){
 				if((array_search('show_' . $recorder,$allowedrecorders)!==false) && has_capability('tinymce/poodll:allow' . $recorder, $context)){
 					$this->add_button_after($params, 3, 'poodll' . $recorder, 'image');

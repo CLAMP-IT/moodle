@@ -73,10 +73,12 @@ class ErrorLogHandler extends AbstractProcessingHandler
         if ($this->expandNewlines) {
             $lines = preg_split('{[\r\n]+}', (string) $record['formatted']);
             foreach ($lines as $line) {
-                error_log($line, $this->messageType);
+                //Justin 20170921 this is a Moodle Sin it seems
+               // error_log($line, $this->messageType);
             }
         } else {
-            error_log((string) $record['formatted'], $this->messageType);
+            //Justin 20170921 this is a Moodle Sin it seems
+            // error_log((string) $record['formatted'], $this->messageType);
         }
     }
 }

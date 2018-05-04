@@ -1,5 +1,11 @@
 Change List
 =========
+Version 2018020701
+Removed Red5 references
+Renmoved Widget selection option
+Removed player selection feature (though we want it back, just working and back)
+
+
 Version 2016112701
 fixed broken pdl links
 fixed broken whiteboard and video recorder

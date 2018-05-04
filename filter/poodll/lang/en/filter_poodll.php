@@ -23,7 +23,7 @@ $string['filter_poodll_flashcards_heading'] ='Flashcards Settings';
 $string['filter_poodll_registration_explanation'] ="PoodLL 3 requires a registration key. If you do not have one visit Poodll.com to get one.";
 
 $string['registrationkey'] = 'Registration Key';
-$string['registrationkey_explanation'] ="Enter your PoodLL registration key here. You can obtain a key from <a href='https://poodll.com/poodll-3-2'>https://poodll.com/poodll-3-2</a>";
+$string['registrationkey_explanation'] ="Enter your PoodLL registration key here. You can obtain a key from <a href='https://poodll.com/pricing'>https://poodll.com/pricing</a>";
 $string['license_details'] ='<br> -------------- <br> License type: {$a->license_type} <br> Expires(JST): {$a->expire_date} <br> Registered URL: {$a->registered_url} ';
 
 $string['usecloudrecording'] = 'Cloud recording';
@@ -41,7 +41,7 @@ $string['camerafront'] = 'front';
 $string['cameraback'] = 'back';
 
 $string['awssdkversion'] = 'AWS SDK';
-$string['awssdkversion_desc'] = 'PoodLL cloud recording uses Amazon Web Services (AWS). Version 3.x is supported but not shipped with PoodLL. Version 2.x of the AWS SDK will work on PHP 5.3 or greater. You should not need to change this, but contact PoodLL support if the need arises. ';
+$string['awssdkversion_desc'] = 'PoodLL cloud recording uses Amazon Web Services (AWS). Version 3.x is supported but not shipped with PoodLL. Version 2.x of the AWS SDK will work on PHP 5.3 or greater. If you need to use AWS SDK 3.x then place it in a folder called aws-v3 in filter/poodll/3rdparty.';
 
 $string['uploadkey'] = 'Upload key';
 $string['uploadkey_desc'] = 'PoodLL cloud recording requires an upload key for recording. You should receive this when you sign up for PoodLL. Enter the upload key here.';
@@ -130,7 +130,8 @@ $string['mobile_os_version_warning'] ='<p>Your OS Version is too low</p>
 
 $string['defaultwhiteboard'] = 'Default whiteboard';
 $string['whiteboardsave'] = 'Save Picture';
-$string['poodll:candownloadmedia'] = 'Can download media'; 
+$string['poodll:candownloadmedia'] = 'Can download media';
+$string['poodll:use'] = 'Can use the PoodLL filter'; 
 
 $string['bgtranscode_video'] = 'Perform Conversions to MP4 Background'; 
 $string['bgtranscodedetails_video'] = 'This is more reliable than performing them while user waits. But the user will not get their video till cron has run after saving. Only works if you are using FFMPEG and Moodle 2.7 or higher.'; 
@@ -141,6 +142,7 @@ $string['recui_recordorchoose'] ='Record or Choose';
 $string['recui_pause'] ='Pause';
 $string['recui_play'] ='Play';
 $string['recui_stop'] ='Stop';
+$string['recui_restart'] ='Restart';
 $string['recui_save'] ='Upload';
 $string['recui_time'] ='Time:';
 $string['recui_audiogain'] ='Audio Gain';
@@ -164,8 +166,13 @@ $string['recui_awaitingconfirmation'] ='Awaiting confirmation';
 $string['recui_openrecorderapp'] ='PoodLL App';
 $string['recui_uploadafile'] ='Upload File';
 $string['recui_uploadsuccess'] ='Uploaded successfully';
+$string['recui_awaitingconversion'] ='Awaiting conversion';
 $string['recui_takesnapshot'] ='Take Picture';
 $string['recui_cancelsnapshot'] ='Cancel';
+$string['recui_ready'] ='Ready';
+$string['recui_finished'] ='Finished';
+$string['recui_playing'] ='Playing: ';
+$string['recui_recording'] ='Recording: ';
 $string['insert'] ='Insert';
 $string['cancel'] ='Cancel';
 
@@ -191,7 +198,7 @@ $string['templatename_desc'] = 'The name can contain numbers and letters, unders
 $string['templatekey'] = 'The key that identifies template {$a}';
 $string['templatekey_desc'] = 'The key should be one word and only contain numbers and letters, underscores, hyphens and dots .';
 $string['templateversion'] = 'The version of this template {$a}';
-$string['templateversion_desc'] = 'When sharing templates it is best to maintain a clear version per release. The version format is up to you.';
+$string['templateversion_desc'] = 'Use semantic versioning e.g 1.0.0. Poodll will show an update button when the preset version is greater than the template version.';
 $string['templateinstructions'] = 'Instructions (template {$a})';
 $string['templateinstructions_desc'] = 'Any instructions entered here will be displayed on the PoodLL atto form if this template is available to be shown there. Keep them short or it will look bad.';
 $string['template_showatto'] = 'Show in Atto (template {$a})';
@@ -258,15 +265,18 @@ $string['exportdiagnostics']="Export";
 $string['plain_recorder']="Plain";
 $string['burntrose_recorder']="Burnt Rose  (old)";
 $string['onetwothree_recorder']="One Two Three";
-$string['gold_recorder']="Gold";
+$string['gold_recorder']="Single Button (beta)";
 $string['bmr_recorder']="Burnt Rose";
+$string['shadow_recorder']="Shadow";
+$string['split_recorder']="Split";
 $string['html5recorder_skin_audio']="HTML5 Recorder Skin(Audio)";
 $string['html5recorder_skin_video']="HTML5 Recorder Skin(Video)";
 $string['skinstyleaudio']="Skin style(audio)";
 $string['skinstyleaudio_details']="A CSS class name that will be added to the audio recorder to assist in customizing recorder appearance.";
 $string['skinstylevideo']="Skin style(video)";
 $string['skinstylevideo_details']="A CSS class name that will be added to the video recorder to assist in customizing recorder appearance.";
-
+$string['html5ondsafari']="Use on desktop Safari";
+$string['html5ondsafaridetails']="Desktop Safari may not select the correct audio device and there is no option to select a different one. In most cases its ok, but on Mac Mini it may not detect a working audio device at all.";
 $string['filter_poodll_html5recorder_heading']="HTML5 Recorder Settings";
 
 //events
@@ -316,3 +326,10 @@ $string['REGION_EUC1'] = 'EU (Frankfurt)';
 $string['REGION_EUW1'] = 'EU (Ireland)';
 $string['REGION_EUW2'] = 'EU (London)';
 $string['REGION_SAE1'] = 'South America (São Paulo)';
+
+//updated templates message
+$string['templateupdated'] = '{$a} Poodll Templates Updated.';
+$string['updatetoversion'] = 'Update to {$a}';
+$string['updateall'] = 'Update all.';
+$string['poodlltemplatesadmin'] = 'Poodll Filter Templates Admin';
+$string['cleartemplate'] = 'Clear template';

@@ -45,17 +45,12 @@ class repository_poodll extends repository {
         	get_string('audio', 'repository_poodll'),
         	get_string('video', 'repository_poodll'),
 			get_string('snapshot', 'repository_poodll'),
-			get_string('mp3recorder', 'repository_poodll'),
-			get_string('widget', 'repository_poodll'),
 			get_string('whiteboard', 'repository_poodll')
         );
         
         $mform->addElement('select', 'recording_format', get_string('recording_format', 'repository_poodll'), $recording_format_options);  
         $mform->addRule('recording_format', get_string('required'), 'required', null, 'client');
-		/* $mform->addElement('checkbox', 'hide_player_opts', 
-			get_string('hide_player_opts', 'repository_poodll'),
-			get_string('hide_player_opts_details', 'repository_poodll'));
-			*/
+/*
 		$hide_player_opts_options = array(
         	get_string('hide_player_opts_show', 'repository_poodll'),
         	get_string('hide_player_opts_hide', 'repository_poodll'));
@@ -65,7 +60,7 @@ class repository_poodll extends repository {
 		$mform->disabledIf('hide_player_opts', 'recording_format', 'eq', self::POODLLSNAPSHOT);
 		$mform->disabledIf('hide_player_opts', 'recording_format', 'eq', self::POODLLWIDGET);
 		$mform->disabledIf('hide_player_opts', 'recording_format', 'eq', self::POODLLWHITEBOARD);
-
+*/
     }
 
 	//login overrride start
@@ -74,7 +69,7 @@ class repository_poodll extends repository {
      // Generate search form
      //
     public function print_login($ajax = true) {
-        global $CFG,$PAGE,$USER;
+        global $CFG;
 
         //Init our array
         $ret = array();
@@ -104,7 +99,7 @@ class repository_poodll extends repository {
         $width=310;
 
         $iframeid = html_writer::random_id('repository_poodll');
-	$search->label = "<iframe id=\"$iframeid\" scrolling=\"no\" frameBorder=\"0\" src=\"{$CFG->wwwroot}/repository/poodll/recorder.php?repo_id={$this->id}&iframe_id=$iframeid\" height=\"". $height ."\" width=\"" . $width . "\"></iframe>";
+	$search->label = "<iframe id=\"$iframeid\" allow=\"camera,microphone\" scrolling=\"no\" frameBorder=\"0\" src=\"{$CFG->wwwroot}/repository/poodll/recorder.php?repo_id={$this->id}&iframe_id=$iframeid\" height=\"". $height ."\" width=\"" . $width . "\"></iframe>";
 //when called from here it did not get run ...? so call from iframe       
 // $PAGE->requires->js_call_amd("filter_poodll/responsiveiframe", 'init', array(array('iframeid' => $iframeid)));
         
@@ -205,12 +200,13 @@ class repository_poodll extends repository {
 			case self::MP3AUDIO:
 				
 					//normal player
+                //formerly audio had 'audionormal.png' and 280/100
 					if($ext==".mp3"){
 						$list[] = array(
 							'title'=> $filename,
-							'thumbnail'=>"{$CFG->wwwroot}/repository/poodll/pix/audionormal.jpg",
-							'thumbnail_width'=>280,
-							'thumbnail_height'=>100,
+							'thumbnail'=>"{$CFG->wwwroot}/repository/poodll/pix/bigicon.png",
+							'thumbnail_width'=>330,
+							'thumbnail_height'=>115,
 							'size'=>'',
 							'date'=>'',
 							'source'=>$source
@@ -219,16 +215,18 @@ class repository_poodll extends repository {
 					}else{
 						$list[] = array(
 							'title'=> substr_replace($filename,'.audio' . $ext,-4),
-							'thumbnail'=>"{$CFG->wwwroot}/repository/poodll/pix/audionormal.jpg",
-							'thumbnail_width'=>280,
-							'thumbnail_height'=>100,
+							'thumbnail'=>"{$CFG->wwwroot}/repository/poodll/pix/bigicon.png",
+							'thumbnail_width'=>330,
+							'thumbnail_height'=>115,
 							'size'=>'',
 							'date'=>'',
 							'source'=>$source
 						);
 					}
 				
-				if(!$hideoptions){
+				//if(!$hideoptions){
+                //we leave player selection code here, because we might bring back a modern version of this one day
+                if(false){
 					$list[] = array(
 							'title'=> substr_replace($filename,'.mini'. $ext,-4),
 							'thumbnail'=>"{$CFG->wwwroot}/repository/poodll/pix/miniplayer.jpg",
@@ -299,8 +297,10 @@ class repository_poodll extends repository {
      *   url: URL to the source (from parameters)
      */
     public function get_file($url, $filename = '') {
-        global $CFG,$USER;
+        global $USER;
 			//get the filename as used by our recorder
+            //strip of the ?player=xx bit
+            $url=strtok($url, '?');
 			$recordedname = basename($url);
 			
 			//get a temporary download path
@@ -498,7 +498,7 @@ class repository_poodll extends repository {
 				break;
 			case self::POODLLVIDEO:
 				//$ret .= \filter_poodll\poodlltools::fetchSimpleVideoRecorder('swf','poodllrepository',$USER->id,$filename,'','298', '340');
-				$ret .= \filter_poodll\poodlltools::fetchVideoRecorderForSubmission('swf', 'poodllrepository', $filename, $context->id,$component,$filearea,$itemid,0);
+				$ret .= \filter_poodll\poodlltools::fetchVideoRecorderForSubmission('auto', 'poodllrepository', $filename, $context->id,$component,$filearea,$itemid,0);
 				break;
 			case self::MP3AUDIO:
 				$ret .= \filter_poodll\poodlltools::fetchMP3RecorderForSubmission($filename,$context->id,$component,$filearea,$itemid );

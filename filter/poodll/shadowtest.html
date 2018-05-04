@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="http://localhost/moodle/filter/poodll/styles.css">
+    <link rel="stylesheet" type="text/css" href="http://localhost/moodle/lib/fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link href="http://localhost/moodle/filter/poodll/3rdparty/featherlight-1.5.0/assets/stylesheets/bootstrap.min.css" rel="stylesheet" />
+    <title>Shadow iFrame Project</title>
+
+
+
+    <script type="text/javascript">
+        //<![CDATA[
+        M={};
+        M.yui={};
+        M.str = {"moodle":{"lastmodified":"Last modified","name":"Name","error":"Error","info":"Information","yes":"Yes","no":"No","cancel":"Cancel","confirm":"Confirm","areyousure":"Are you sure?","closebuttontitle":"Close","unknownerror":"Unknown error"},"repository":{"type":"Type","size":"Size","invalidjson":"Invalid JSON string","nofilesattached":"No files attached","filepicker":"File picker","logout":"Logout","nofilesavailable":"No files available","norepositoriesavailable":"Sorry, none of your current repositories can return files in the required format.","fileexistsdialogheader":"File exists","fileexistsdialog_editor":"A file with that name has already been attached to the text you are editing.","fileexistsdialog_filemanager":"A file with that name has already been attached","renameto":"Rename to \"{$a}\"","referencesexist":"There are {$a} alias\/shortcut files that use this file as their source","select":"Select"},"admin":{"confirmdeletecomments":"You are about to delete comments, are you sure?","confirmation":"Confirmation"}};
+        M.util={};
+        M.util.get_string=function(){return '';}
+        //]]>
+    </script>
+
+    <!-- data-main attribute tells require.js to load
+         scripts/main.js after require.js loads. -->
+    <!--
+    <script type="text/javascript" src="http://localhost/moodle/theme/yui_combo.php?rollup/3.17.2/yui-moodlesimple.js"></script>
+    -->
+    <!--
+    <script type="text/javascript" src="http://localhost/moodle/lib/javascript.php/-1/lib/javascript-static.js"></script>
+    -->
+    <script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="core/first" src="http://localhost/moodle/lib/requirejs.php/-1/core/first.js"></script>
+    <script type="text/javascript">
+        require(['filter_poodll/poodll_mediarecorder'], function(pmr) {
+            //just once trigger the permissions dialog, if needed
+            /*
+            if (!('filter_poodll_navigator_checked' in window)) {
+                window.filter_poodll_navigator_checked = true;
+                navigator.mediaDevices.getUserMedia({"audio": true});
+            }
+            */
+            var params = [];
+            params['widgetid'] = 'AUTOID';
+            params['media_timeinterval'] = 2000;
+            params['media_audiomimetype'] = 'audio/webm';//or audio/wav
+            params['media_videorecordertype'] = 'auto';//or mediarec or webp
+            params['media_videocapturewidth'] = 320;
+            params['media_videocaptureheight'] = 240;
+            params['mediatype'] = 'audio';
+            //params['media_skin'] = 'shadow';
+            //params['hideupload'] = true;
+            //params['resource'] = 'https://path.to.some.audio.com';
+            params['media_skin'] = 'onetwothree';
+            params['media_skin_style'] = 'none';
+            params['timelimit'] = 0;
+
+
+
+            pmr.embed('#' + 'AUTOID', params);
+        });
+
+    </script>
+
+</head>
+<body>
+<h1>My Sample Project</h1>
+<div id="AUTOID"></div>
+</body>
+</html>

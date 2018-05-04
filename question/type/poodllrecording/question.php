@@ -50,7 +50,9 @@ class qtype_poodllrecording_question extends question_with_responses {
     public function get_format_renderer(moodle_page $page) {
 		//Nadav reported a possible problem here, I can't reproduce it, but hope this fixes it.
 		//https://github.com/justinhunt/moodle-qtype_poodllrecording/issues/1
-		if ($this->responseformat == 'editor') $this->responseformat = 'picture'; 
+		if ($this->responseformat ==  \qtype_poodllrecording\constants::RESPONSEFORMAT_EDITOR) {
+		    $this->responseformat = \qtype_poodllrecording\constants::RESPONSEFORMAT_PICTURE;
+        }
 		
         return $page->get_renderer('qtype_poodllrecording', 'format_' . $this->responseformat);
     }
@@ -109,10 +111,10 @@ class qtype_poodllrecording_question extends question_with_responses {
 		   return true;
 		  
 		  //if we are showing a whiteboard backimage, there is no need to restrict here
-		 } else if ($component == 'qtype_poodllrecording' && $filearea == 'backimage') {
+		 } else if ($component == 'qtype_poodllrecording' && $filearea == \qtype_poodllrecording\constants::FILEAREA_QRESOURCE) {
 			return true;
 			
-        } else if ($component == 'qtype_poodllrecording' && $filearea == 'graderinfo') {
+        } else if ($component == 'qtype_poodllrecording' && $filearea == \qtype_poodllrecording\constants::FILEAREA_GRADERINFO) {
             return $options->manualcomment;
 			
         } else {

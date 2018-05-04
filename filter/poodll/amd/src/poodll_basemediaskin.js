@@ -1,5 +1,5 @@
 /* jshint ignore:start */
-define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) {
+define(['jquery','jqueryui','core/log','filter_poodll/utils_amd','filter_poodll/dlg_devicesettings'], function($, jqui, log, utils,settings) {
 
     "use strict"; // jshint ;_;
 
@@ -10,6 +10,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
         instanceprops: null,
         pmr: null,
         uploaded: false,
+        devsettings: null,
 
         //for making multiple instances
         clone: function(){
@@ -19,6 +20,8 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
         init: function(ip, pmr){
             this.instanceprops=ip;
             this.pmr=pmr;
+            this.devsettings=settings.clone();
+            this.devsettings.init(pmr,ip);
         },
 
 
@@ -43,12 +46,23 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
         },
         
         fetch_preview_audio: function(skin){
-            var preview = '<audio class="poodll_preview_' + skin + ' hide" controls></audio>';
+            var preview = '<audio class="poodll_preview_' + skin + ' playsinline hide" controls></audio>';
             return preview;
         },
         fetch_preview_video: function(skin){
-            var preview ='<video class="poodll_preview_' + skin + '" width="100%" height="100%"></video>';
+            var preview ='<video class="poodll_preview_' + skin + '" playsinline width="100%" height="100%"></video>';
             return preview;
+        },
+        fetch_resource_audio: function(skin){
+            var resourceplayer = '<audio class="poodll_resourceplayer_' + skin + ' hide" ></audio>';
+            return resourceplayer;
+        },
+        fetch_resource_video: function(skin){
+            var resourceplayer = '<video class="poodll_resourceplayer_' + skin + ' hide" ></video>';
+            return resourceplayer;
+        },
+        fetch_uploader_skin: function(controlbarid, element){
+            return false;
         },
         
         onMediaError: function(e) {
@@ -57,17 +71,33 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
 
         onMediaSuccess_video: function(controlbarid){
             var ip = this.fetch_instanceprops(controlbarid);
-            ip.controlbar.stopbutton.attr('disabled',false);
-            ip.controlbar.pausebutton.attr('disabled',false);
-            ip.controlbar.savebutton.attr('disabled',false);
+            //clear messages
+            ip.uploader.Output('');
+
+            //set visuals
+            this.set_visual_mode('recordmode',controlbarid);
+            ip.controlbar.preview.attr('src',null);
+
+            //timer and status bar
+            ip.timer.reset();
+            ip.timer.start();
+            this.update_status(controlbarid);
         },
 
         onMediaSuccess_audio: function(controlbarid){
             var ip = this.fetch_instanceprops(controlbarid);
-            ip.controlbar.preview.attr('src',null);
-            ip.controlbar.stopbutton.attr('disabled',false);
-            ip.controlbar.pausebutton.attr('disabled',false);
-            ip.controlbar.savebutton.attr('disabled',false);
+
+            //clear messages
+            ip.uploader.Output('');
+
+            //set visuals
+            this.set_visual_mode('recordmode',controlbarid);
+
+            //timer and status bar
+            ip.timer.reset();
+            ip.timer.start();
+            this.update_status(controlbarid);
+
         },
 
         handle_timer_update: function(controlbarid){
@@ -91,6 +121,15 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
            switch(mode){
 
                case 'recordmode':
+
+                   self.disable_button(ip.controlbar.startbutton);
+                   self.disable_button(ip.controlbar.playbutton);
+                   ip.controlbar.resumebutton.hide();
+                   self.enable_button(ip.controlbar.stopbutton);
+                   self.disable_button(ip.controlbar.savebutton);
+                   ip.controlbar.pausebutton.show();
+                   self.enable_button(ip.controlbar.pausebutton);
+
                     ip.controlbar.preview.addClass('poodll_recording');
                     ip.controlbar.status.addClass('poodll_recording');
                     if(ip.config.mediatype=='audio'){
@@ -117,18 +156,18 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
        },
 
         //insert the control bar and return it to be reused
-        insert_controlbar_video: function(element, controlbarid, preview) {
-            var controlbar = this.prepare_controlbar(element,controlbarid, preview,'video');
+        insert_controlbar_video: function(element, controlbarid, preview,resource) {
+            var controlbar = this.prepare_controlbar(element,controlbarid, preview,resource,'video');
         	return controlbar;
         },
         //insert the control bar and return it to be reused
-        insert_controlbar_audio: function(element,controlbarid, preview){
-        	var controlbar = this.prepare_controlbar(element,controlbarid, preview,'audio');
+        insert_controlbar_audio: function(element,controlbarid, preview,resource){
+        	var controlbar = this.prepare_controlbar(element,controlbarid, preview,resource,'audio');
         	return controlbar;
         },
         
         //insert the control bar and return it to be reused
-        prepare_controlbar: function(element,controlbarid, preview, mediatype){
+        prepare_controlbar: function(element,controlbarid, preview,resource, mediatype){
                 var ip = this.fetch_instanceprops(controlbarid);
                 var skin_style = ip.config.media_skin_style;
                 
@@ -146,25 +185,33 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
 	                	size_class = 'poodll_mediarecorder_size_auto';		
                 }
 
-
-                var controls ='<div class="poodll_mediarecorderholder_standard ' 
-                	+ recorder_class + ' ' + size_class + '" id="holder_' + controlbarid + '">' ;
-                	
-                controls +='<div class="poodll_mediarecorderbox_standard" id="' + controlbarid + '">' ;
-                controls +='<div class="style-holder ' + skin_style + '">' ;
-                var status = this.fetch_status_bar('standard');
-                controls += status,
-                controls += preview,
-                controls +=  '<button type="button" class="poodll_mediarecorder_button_standard poodll_start-recording_standard">' + M.util.get_string('recui_record', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_stop-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_stop', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_pause-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_pause', 'filter_poodll') + '</button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_resume-recording_standard pmr_disabled hide" disabled>' + M.util.get_string('recui_continue', 'filter_poodll') + '</button>';
-                controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_play-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_play', 'filter_poodll') + '</button>';
-                controls += '<button type="button" class="poodll_save-recording_standard pmr_disabled" disabled>' + M.util.get_string('recui_save', 'filter_poodll') + '</button>';
-                controls += '</div></div></div>';
+				var ss = this.pmr.fetch_strings();
+				var hideshowupload = ip.showupload ? '' : 'hide';
+                var controls ='<div class="poodll_mediarecorderholder_standard ' + recorder_class + ' ' + size_class + '" id="holder_' + controlbarid + '">' ;
+					controls +='<div class="poodll_mediarecorderbox_standard" id="' + controlbarid + '">' ;
+					controls += this.devsettings.fetch_dialogue_box();
+                    controls += ip.errordialog.fetch_dialogue_box();
+						controls +='<div class="style-holder ' + skin_style + '">' ;
+							var status = this.fetch_status_bar('standard');
+							controls += status,
+							controls += preview,
+							controls += '<div class="settingsicon" id="settingsicon_'+controlbarid+'"><button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal"><i class="fa fa-cogs" aria-hidden="true"></i></button></div>';
+							controls +=  '<button type="button" class="poodll_mediarecorder_button_standard poodll_start-recording_standard">' + ss['recui_record'] + '</button>';
+							controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_stop-recording_standard pmr_disabled" disabled>' + ss['recui_stop'] + '</button>';
+							controls += '<button type="button" class="poodll_mediarecorder_button_standard poodll_pause-recording_standard pmr_disabled" disabled>' + ss['recui_pause'] + '</button>';
+							controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_resume-recording_standard pmr_disabled hide" disabled>' + ss['recui_continue'] + '</button>';
+							controls += ' <button type="button" class="poodll_mediarecorder_button_standard poodll_play-recording_standard pmr_disabled" disabled>' + ss['recui_play'] + '</button>';
+							controls += '<button type="button" class="poodll_save-recording_standard pmr_disabled ' + hideshowupload + '" disabled>' + ss['recui_save'] + '</button>';
+							controls += '</div>';
+						controls += '</div>';
+					controls += '</div>';
+					
                 $(element).prepend(controls);
 
                 var controlbar ={
+					settingsdialog: $('#' + controlbarid + ' .poodll_dialogue_box_settings'),
+                    errorsdialog: $('#' + controlbarid + ' .poodll_dialogue_box_errors'),
+					settingsicon: $('#' + controlbarid + ' .settingsicon'),
                     status: $('#' + controlbarid + '  .poodll_status_standard'),
                     preview: $('#' + controlbarid + '  .poodll_preview_standard'),
                     startbutton: $('#' + controlbarid + '  .poodll_start-recording_standard'),
@@ -174,37 +221,34 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                     playbutton: $('#' + controlbarid + '  .poodll_play-recording_standard'),
                     savebutton: $('#' + controlbarid + '  .poodll_save-recording_standard')    
                 };
+            //settings and error dialogs
+            //They use the same dialog and just fill it with different stuff
+            //settings is on 'this' because it is shown from skin events, but errors are from pmr stuff
+            ip.errordialog.set_dialogue_box(controlbar.errorsdialog);
+            this.devsettings.set_dialogue_box(controlbar.settingsdialog)
+				 
                 return controlbar;
         }, //end of fetch_control_bar_standard
 
 
-        register_controlbar_events_video: function(onMediaSuccess, mediaConstraints, controlbarid) {
-            return this.register_controlbar_events_audio(onMediaSuccess, mediaConstraints, controlbarid);
+        register_controlbar_events_video: function(onMediaSuccess, controlbarid) {
+            return this.register_controlbar_events_audio(onMediaSuccess, controlbarid);
         },
 
-        register_controlbar_events_audio: function(onMediaSuccess, mediaConstraints, controlbarid){
+        register_controlbar_events_audio: function(onMediaSuccess, controlbarid){
             var self = this;
             var pmr=this.pmr;
             var ip = this.fetch_instanceprops(controlbarid);
+			
+			
+			ip.controlbar.settingsicon.click(function(){
+				self.devsettings.open();
+			});
 
             ip.controlbar.startbutton.click(function() {
-                pmr.do_start_audio(ip, mediaConstraints, onMediaSuccess);
 
-                //clear messages
-                $('#' + ip.config.widgetid  + '_messages').text('');
-                self.disable_button(this);
-                self.disable_button(ip.controlbar.playbutton);
-                ip.controlbar.resumebutton.hide();
-                self.enable_button(ip.controlbar.stopbutton);
-                self.disable_button(ip.controlbar.savebutton);
-                ip.controlbar.pausebutton.show();
-                self.enable_button(ip.controlbar.pausebutton);
-                self.set_visual_mode('recordmode',controlbarid);
-                
-                //timer and status bar
-                ip.timer.reset();
-                ip.timer.start();
-                self.update_status(controlbarid);
+                pmr.do_start_audio(ip, onMediaSuccess);
+
             });
             
             ip.controlbar.stopbutton.click(function() {

@@ -1,5 +1,16 @@
 Change List
 =========
+
+Version 2018020501
+Fixed bug in restore logic where backimage had not been renamed to qresource
+
+Version 2017102301
+Fixed bug where the question installer does not use the new field name qresource, and instead uses backimage
+
+Version 2017100301
+Removed mp3 recording format to leave just audio, video and picture
+Made prep for new question resource setting
+
 Version 2016112701
 Added a CSS style to control submitted image widths
 

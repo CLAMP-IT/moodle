@@ -75,5 +75,13 @@ function xmldb_filter_poodll_upgrade($oldversion) {
             set_config('skinstylevideo', $currentskin, 'filter_poodll');
         }
     }
+    if($oldversion < 2017092402) {
+     	if (property_exists($CFG, 'filter_poodll_recorderorder_audio')) {
+            $currentaudio = $CFG->filter_poodll_recorderorder_audio;
+            set_config('filter_poodll_recorderorder_audio', str_replace('mobile,media,','media,mobile,',$currentaudio));
+             $currentvideo = $CFG->filter_poodll_recorderorder_video;
+            set_config('filter_poodll_recorderorder_video', str_replace('mobile,media,','media,mobile,',$currentvideo));
+    	}
+    }
     return true;
 }

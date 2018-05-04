@@ -82,7 +82,9 @@ class taskrunner
                 return false;
             }
 
+            //fetch and instantiate task from record
             $task = \core\task\manager::adhoc_task_from_record($record);
+
             // Safety check in case the task in the DB does not match a real class (maybe something was uninstalled).
             if (!$task) {
                 $lock->release();
@@ -179,12 +181,6 @@ class taskrunner
             \core_php_time_limit::raise();
             $starttime = microtime();
 
-            // Increase memory limit
-            raise_memory_limit(MEMORY_EXTRA);
-
-            // Emulate normal session - we use admin accoutn by default
-           // cron_setup_user();
-
             // Start output log
             $timenow  = time();
             mtrace("Server Time: ".date('r', $timenow)."\n\n");
@@ -207,7 +203,6 @@ class taskrunner
             \core\task\manager::adhoc_task_complete($thetask);
         } catch (Exception $e) {
             if ($DB && $DB->is_transaction_started()) {
-                error_log('Database transaction aborted automatically in ' . get_class($thetask));
                 $DB->force_transaction_rollback();
             }
             if (isset($predbqueries)) {

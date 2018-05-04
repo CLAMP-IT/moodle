@@ -76,8 +76,9 @@ define(['jquery','core/log'], function($, log) {
           if(!presetindex && !presetdata){return;}
           if(presetindex==0 && presetdata){
             //this is good, we have something from dopopulate
+              //from a drag drop
           }else{
-           //this is a normal selection
+           //this is a normal selection from the presets control
             presetdata  =this.presetdata;
           }
 
@@ -87,7 +88,12 @@ define(['jquery','core/log'], function($, log) {
                   //first check we have a data item for this control(old bundles don7 have instructions etc)
                   //then set the data
                   if (presetdata[presetindex].hasOwnProperty(item)) {
-                   controls[item].value = presetdata[presetindex][item];
+                      if(presetdata[presetindex]['key']=='cleartemplate' && (item=='key' || item=='name')){
+                          var usevalue ='';
+                      }else {
+                          var usevalue = presetdata[presetindex][item];
+                      }
+                      controls[item].value = usevalue;
                   }else{
                     switch(item){
                         case 'amd':
@@ -120,6 +126,7 @@ define(['jquery','core/log'], function($, log) {
             var amdpresets = this;
             //handle the select box change event
             $("select[name='filter_poodll/presets']").change(function(){
+                debugger;
                 amdpresets.populateform(opts['templateindex'],$(this).val());
             });
 
