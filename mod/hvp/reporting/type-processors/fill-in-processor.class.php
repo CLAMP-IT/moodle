@@ -28,14 +28,9 @@ class FillInProcessor extends TypeProcessor {
    * Determines options for interaction and generates a human readable HTML
    * report.
    *
-   * @param string $description Description of interaction task
-   * @param array $crp Correct responses pattern
-   * @param string $response User response
-   * @param object $extras Additional data
-   *
-   * @return string HTML for report
+   * @inheritdoc
    */
-  public function generateHTML($description, $crp, $response, $extras) {
+  public function generateHTML($description, $crp, $response, $extras, $scoreSettings = NULL) {
     // We need some style for our report
     $this->setStyle('styles/fill-in.css');
 
@@ -53,12 +48,31 @@ class FillInProcessor extends TypeProcessor {
       $caseMatters['caseSensitive']
     );
 
-    $container = '<div class="h5p-fill-in-container">' . $report .
-                 '</div>';
+    $header = $this->generateHeader($scoreSettings);
+    $container =
+      '<div class="h5p-reporting-container h5p-fill-in-container">' .
+        $header . $report .
+      '</div>';
     $footer = $this->generateFooter();
 
 
     return $container . $footer;
+  }
+
+  /**
+   * Generate header element
+   *
+   * @param $scoreSettings
+   *
+   * @return string
+   */
+  private function generateHeader($scoreSettings) {
+    $scoreHtml = $this->generateScoreHtml($scoreSettings);
+
+    return
+      "<div class='h5p-fill-in-header'>" .
+        $scoreHtml .
+      "</div>";
   }
 
   /**
@@ -69,9 +83,9 @@ class FillInProcessor extends TypeProcessor {
   function generateFooter() {
     return
       '<div class="h5p-fill-in-footer">' .
-      '<span class="h5p-fill-in-correct-responses-pattern">Correct Answer</span>' .
-      '<span class="h5p-fill-in-user-response-correct">Your correct answer</span>' .
-      '<span class="h5p-fill-in-user-response-wrong">Your incorrect answer</span>' .
+        '<span class="h5p-fill-in-correct-responses-pattern">Correct Answer</span>' .
+        '<span class="h5p-fill-in-user-response-correct">Your correct answer</span>' .
+        '<span class="h5p-fill-in-user-response-wrong">Your incorrect answer</span>' .
       '</div>';
   }
 

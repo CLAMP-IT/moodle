@@ -21,24 +21,24 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-global $USER, $PAGE, $DB, $CFG, $OUTPUT, $COURSE;
 require_once(dirname(__FILE__) . '/../../config.php');
 require_once("locallib.php");
+global $USER, $PAGE, $DB, $CFG, $OUTPUT, $COURSE;
 
-$id       = required_param('id', PARAM_INT);
-$userid   = optional_param('user', (int)$USER->id, PARAM_INT);
+$id     = required_param('id', PARAM_INT);
+$userid = optional_param('user', (int) $USER->id, PARAM_INT);
 
 if (!$cm = get_coursemodule_from_instance('hvp', $id)) {
     print_error('invalidcoursemodule');
 }
-if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
+if (!$course = $DB->get_record('course', ['id' => $cm->course])) {
     print_error('coursemisconf');
 }
-require_login($course, FALSE, $cm);
+require_login($course, false, $cm);
 
-// Check permission
-$course_context = context_course::instance($COURSE->id);
-hvp_require_view_results_permission($userid, $course_context, $cm->id);
+// Check permission.
+$context = \context_module::instance($cm->id);
+hvp_require_view_results_permission($userid, $context, $cm->id);
 
 // Load H5P Content.
 $hvp = $DB->get_record_sql(
@@ -50,68 +50,118 @@ $hvp = $DB->get_record_sql(
            FROM {hvp} h
            JOIN {hvp_libraries} hl ON hl.id = h.main_library_id
           WHERE h.id = ?",
-    array($id));
+    [$id]);
 
-if ($hvp === FALSE) {
+if ($hvp === false) {
     print_error('invalidhvp');
 }
 
 // Set page properties.
-$pageurl = new moodle_url('/mod/hvp/review.php', array(
-    'id' => $hvp->id
-));
+$pageurl = new moodle_url('/mod/hvp/review.php', [
+    'id' => $hvp->id,
+]);
 $PAGE->set_url($pageurl);
 $PAGE->set_title($hvp->title);
 $PAGE->set_heading($COURSE->fullname);
 $PAGE->requires->css(new moodle_url($CFG->httpswwwroot . '/mod/hvp/xapi-custom-report.css'));
 
-$xAPIResults = $DB->get_records('hvp_xapi_results', array(
-    'content_id' => $id,
-    'user_id'    => $userid
-));
+// We have to get grades from gradebook as well.
+$xapiresults = $DB->get_records_sql("
+    SELECT x.*, i.grademax
+    FROM {hvp_xapi_results} x
+    JOIN {grade_items} i ON i.iteminstance = x.content_id
+    WHERE x.user_id = ?
+    AND x.content_id = ?
+    AND i.itemtype = 'mod'
+    AND i.itemmodule = 'hvp'", [$userid, $id]
+);
 
-if (!$xAPIResults) {
+if (!$xapiresults) {
     print_error('invalidxapiresult', 'hvp');
 }
 
-// Assemble our question tree
-$baseQuestion = NULL;
-foreach ($xAPIResults as $question) {
-    if ($question->parent_id === NULL) {
-        // This is the root of our tree
-        $baseQuestion = $question;
-    }
-    elseif (isset($xAPIResults[$question->parent_id])) {
-        // Add to parent
-        $xAPIResults[$question->parent_id]->children[] = $question;
+$totalrawscore       = 0;
+$totalmaxscore       = 0;
+$totalscaledscore    = 0;
+$scaledscoreperscore = 0;
+
+// Assemble our question tree.
+$basequestion = null;
+
+// Find base question.
+foreach ($xapiresults as $question) {
+    if ($question->parent_id === null) {
+        // This is the root of our tree.
+        $basequestion = $question;
+
+        if (isset($question->raw_score) && isset($question->grademax) && isset($question->max_score)) {
+            $scaledscoreperscore   = $question->max_score ? ($question->grademax / $question->max_score) : 0;
+            $question->score_scale = round($scaledscoreperscore, 2);
+            $totalrawscore         = $question->raw_score;
+            $totalmaxscore         = $question->max_score;
+            if ($question->max_score && $question->raw_score === $question->max_score) {
+                $totalscaledscore = round($question->grademax, 2);
+            } else {
+                $totalscaledscore = round($question->score_scale * $question->raw_score, 2);
+            }
+        }
+        break;
     }
 }
 
-// Initialize reporter
+foreach ($xapiresults as $question) {
+    if ($question->parent_id === null) {
+        // Already processed.
+        continue;
+    } else if (isset($xapiresults[$question->parent_id])) {
+        // Add to parent.
+        $xapiresults[$question->parent_id]->children[] = $question;
+    }
+
+    // Set scores.
+    if (isset($question->raw_score) && isset($question->grademax) && isset($question->max_score)) {
+        $question->score_scale = round($question->raw_score * $scaledscoreperscore, 2);
+    }
+
+    // Set score labels.
+    $question->score_label            = get_string('reportingscorelabel', 'hvp');
+    $question->scaled_score_label     = get_string('reportingscaledscorelabel', 'hvp');
+    $question->score_delimiter        = get_string('reportingscoredelimiter', 'hvp');
+    $question->scaled_score_delimiter = get_string('reportingscaledscoredelimiter', 'hvp');
+}
+
+// Initialize reporter.
 $reporter   = H5PReport::getInstance();
-$reportHtml = $reporter->generateReport($baseQuestion);
+$reporthtml = $reporter->generateReport($basequestion, null, count($xapiresults) <= 1);
 $styles     = $reporter->getStylesUsed();
 foreach ($styles as $style) {
     $PAGE->requires->css(new moodle_url($CFG->httpswwwroot . '/mod/hvp/reporting/' . $style));
 }
 
-// Print page HTML
-echo $OUTPUT->header();
-echo '<div class="clearer"></div>';
+$renderer = $PAGE->get_renderer('mod_hvp');
 
-// Print title and report
+// Print title and report.
 $title = $hvp->title;
 
-// Show user name if other then self
-if ($userid !== (int)$USER->id) {
-  $userresult = $DB->get_record('user', array("id" => $userid), 'username');
-  if (isset($userresult) && isset($userresult->username)) {
-    $title .= ": {$userresult->username}";
-  }
+// Show user name if other then self.
+if ($userid !== (int) $USER->id) {
+    $userresult = $DB->get_record('user', ["id" => $userid], 'username');
+    if (isset($userresult) && isset($userresult->username)) {
+        $title .= ": {$userresult->username}";
+    }
 }
-echo "<div class='h5p-report-container'>
-        <h2>{$title}</h2>
-        <div class='h5p-report-view'>{$reportHtml}</div>
-      </div>";
 
+// Create title.
+$reviewcontext = [
+    'title'          => $title,
+    'report'         => $reporthtml,
+    'rawScore'       => $totalrawscore,
+    'maxScore'       => $totalmaxscore,
+    'scaledScore'    => $totalscaledscore,
+    'maxScaledScore' => round($basequestion->grademax, 2),
+];
+
+// Print page HTML.
+echo $OUTPUT->header();
+echo $renderer->render_from_template('hvp/review', $reviewcontext);
 echo $OUTPUT->footer();

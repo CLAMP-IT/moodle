@@ -21,9 +21,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-global $DB, $PAGE, $USER, $COURSE;
 require_once(dirname(__FILE__) . '/../../config.php');
 require_once("locallib.php");
+
+global $DB, $PAGE, $USER, $COURSE;
 
 $id = required_param('id', PARAM_INT);
 $userid = optional_param('userid', (int)$USER->id, PARAM_INT);
@@ -36,9 +37,9 @@ if (! $course = $DB->get_record('course', array('id' => $cm->course))) {
 }
 require_course_login($course, false, $cm);
 
-// Check permission
-$course_context = context_course::instance($COURSE->id);
-hvp_require_view_results_permission($userid, $course_context, $cm->id);
+// Check permission.
+$context = \context_module::instance($cm->id);
+hvp_require_view_results_permission($userid, $context, $cm->id);
 
 // Load H5P Content.
 $hvp = $DB->get_record_sql(
@@ -56,7 +57,7 @@ if ($hvp === false) {
     print_error('invalidhvp');
 }
 
-// Log content result view
+// Log content result view.
 new \mod_hvp\event(
         'results', 'content',
         $hvp->id, $hvp->title,
@@ -70,17 +71,17 @@ $title = "Results for {$hvp->title}";
 $PAGE->set_title($title);
 $PAGE->set_heading($course->fullname);
 
-// List all results for specific content
+// List all results for specific content.
 $dataviewid = 'h5p-results';
 
-// Add required assets for data views
+// Add required assets for data views.
 $PAGE->requires->js(new moodle_url($CFG->httpswwwroot . '/mod/hvp/library/js/jquery.js'), true);
 $PAGE->requires->js(new moodle_url($CFG->httpswwwroot . '/mod/hvp/library/js/h5p-utils.js'), true);
 $PAGE->requires->js(new moodle_url($CFG->httpswwwroot . '/mod/hvp/library/js/h5p-data-view.js'), true);
 $PAGE->requires->js(new moodle_url($CFG->httpswwwroot . '/mod/hvp/dataviews.js'), true);
 $PAGE->requires->css(new moodle_url($CFG->httpswwwroot . '/mod/hvp/styles.css'));
 
-// Add JavaScript settings to data views
+// Add JavaScript settings to data views.
 $settings = array(
     'dataViews' => array(
         "{$dataviewid}" => array(
@@ -126,11 +127,11 @@ $settings = array(
 );
 $PAGE->requires->data_for_js('H5PIntegration', $settings, true);
 
-// Print page HTML
+// Print page HTML.
 echo $OUTPUT->header();
 echo '<div class="clearer"></div>';
 
-// Print H5P Content
+// Print H5P Content.
 echo "<h2>{$title}</h2>";
 echo '<div id="h5p-results">' . get_string('javascriptloading', 'hvp') . '</div>';
 

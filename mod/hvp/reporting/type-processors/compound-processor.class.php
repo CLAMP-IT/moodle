@@ -10,13 +10,9 @@ class CompoundProcessor extends TypeProcessor {
    * Determines options for interaction and generates a human readable HTML
    * report.
    *
-   * @param string $description Description of interaction task
-   * @param array $crp Correct responses pattern
-   * @param string $response User response
-   *
-   * @return string HTML for report
+   * @inheritdoc
    */
-  public function generateHTML($description, $crp, $response, $extras) {
+  public function generateHTML($description, $crp, $response, $extras, $scoreSettings = NULL) {
     // We need some style for our report
     $this->setStyle('styles/compound.css');
 
@@ -25,17 +21,24 @@ class CompoundProcessor extends TypeProcessor {
 
     if (isset($extras->children)) {
       foreach ($extras->children as $childData) {
-        $reports .= '<div class="h5p-result">' . $H5PReport->generateReport($childData) . '</div>';
+        $reports .=
+          '<div class="h5p-result">' .
+            $H5PReport->generateReport($childData, null, $this->disableScoring) .
+          '</div>';
       }
     }
 
     // Do not display description when children is empty
     if (!empty($reports) && !empty($description)) {
       $reports =
-          '<p class="h5p-compound-task-description">' . $description . '</p>' .
+          '<p class="h5p-reporting-description h5p-compound-task-description">' .
+            $description .
+          '</p>' .
           $reports;
     }
 
-    return '<div class="h5p-compound-container">' . $reports . '</div>';
+    return '<div class="h5p-reporting-container h5p-compound-container">' .
+             $reports .
+           '</div>';
   }
 }

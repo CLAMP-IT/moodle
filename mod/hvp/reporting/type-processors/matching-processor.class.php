@@ -19,14 +19,9 @@ class MatchingProcessor extends TypeProcessor  {
   /**
    * Processes xAPI data and returns a human readable HTML report
    *
-   * @param string $description Description
-   * @param array $crp Correct responses pattern
-   * @param string $response User given answer
-   * @param object $extras Additional data
-   *
-   * @return string HTML for the report
+   * @inheritdoc
    */
-  function generateHTML($description, $crp, $response, $extras) {
+  function generateHTML($description, $crp, $response, $extras = NULL, $scoreSettings = NULL) {
     // We need some style for our report
     $this->setStyle('styles/matching.css');
 
@@ -45,14 +40,49 @@ class MatchingProcessor extends TypeProcessor  {
       return '';
     }
 
+    $header = $this->generateHeader($description, $scoreSettings);
     $tableHTML = $this->generateTable($mappedCRP,
       $mappedResponse,
       $dropzones,
       $draggables
     );
-    $container = '<div class="h5p-matching-container">' . $tableHTML . '</div>';
+    $container = '<div class="h5p-reporting-container h5p-matching-container">' .
+                   $header . $tableHTML .
+                 '</div>';
 
     return $container;
+  }
+
+  /**
+   * Generate header element
+   *
+   * @param $description
+   * @param $scoreSettings
+   *
+   * @return string
+   */
+  private function generateHeader($description, $scoreSettings) {
+    $descriptionHtml = $this->generateDescription($description);
+    $scoreHtml = $this->generateScoreHtml($scoreSettings);
+
+    return
+      "<div class='h5p-matching-header'>" .
+        $descriptionHtml . $scoreHtml .
+      "</div>";
+  }
+
+  /**
+   * Generate description element
+   *
+   * @param string $description
+   *
+   * @return string Description element as a string
+   */
+  private function generateDescription($description) {
+    return
+      '<p class="h5p-reporting-description h5p-matching-task-description">' .
+        $description .
+      '</p>';
   }
 
   /**
@@ -143,6 +173,113 @@ class MatchingProcessor extends TypeProcessor  {
   }
 
   /**
+   * Sort handler for comparing result rows
+   *
+   * @param stdClass $a
+   * @param stdClass $b
+   * @return int
+   */
+  private static function rowcmp($a, $b) {
+    if ($a->isCorrect && $b->isCorrect || !$a->isCorrect && !$b->isCorrect) {
+      return strcmp($a->response, $b->response);
+    }
+    if ($a->isCorrect && !$b->isCorrect) {
+      return -1;
+    }
+    if (!$a->isCorrect && $b->isCorrect) {
+      return 1;
+    }
+  }
+
+  /**
+   * Creates the inital set of rows needed when generating the table HTML
+   *
+   * @param array $draggables
+   * @param array $crp
+   * @param array $response
+   * @return array
+   */
+  private static function createUserAnswerRows(&$draggables, &$crp, &$response) {
+    // Create list with all rows to display
+    $rows = array();
+    foreach ($response as $key => $answer) {
+
+      $row = (object) array(
+        'isCorrect' => in_array($answer, $crp),
+        'crp' => '',
+      );
+
+      // Locate response label
+      foreach ($draggables as $draggable) {
+        if ($draggable->id === $answer) {
+          $row->response = $draggable->value;
+          break;
+        }
+      }
+
+      $rows[] = $row;
+    }
+
+    // Sort rows
+    usort($rows, array('MatchingProcessor', 'rowcmp'));
+    return $rows;
+  }
+
+  /**
+   * Creates a list of soluton labels.
+   *
+   * @param array $draggables
+   * @param array $crp
+   * @return array
+   */
+  private static function createSolutionRows(&$draggables, &$crp) {
+    // Create list of solution labels
+    $solutions = array();
+    foreach ($crp as $pattern) {
+      $solutions[] = $draggables[$pattern]->value;
+    }
+    sort($solutions);
+    return $solutions;
+  }
+
+  /**
+   * Puts the solutions labels into the approperiate rows.
+   *
+   * @param array $rows
+   * @param array $solutions
+   */
+  private static function addSolutionsToRows(&$rows, &$solutions) {
+    // Add solution labels to rows
+    foreach ($rows as $key => &$row) {
+      if (empty($solutions)) {
+        break; // All solutions have been added
+      }
+
+      if ($row->isCorrect) {
+        // Add solution if hasn't been added yet
+        $index = array_search($row->response, $solutions);
+        if ($index !== FALSE) {
+          $row->crp = $solutions[$index];
+          unset($solutions[$index]); // Prevent adding multiple times
+        }
+      }
+      else {
+        // Add the next solution
+        $row->crp = array_shift($solutions);
+      }
+    }
+
+    // In case we still have some solutions left, add extra rows for them
+    foreach ($solutions as $solution) {
+      $rows[] = (object) array(
+        'isCorrect' => FALSE,
+        'crp' => $solution,
+        'response' => '',
+      );
+    }
+  }
+
+  /**
    * Generate row for a single dropzone and populate it with correct answers and
    * user answers
    *
@@ -154,60 +291,54 @@ class MatchingProcessor extends TypeProcessor  {
    * @return string Drop zone rows element
    */
   function generateDropzoneRows($dropzone, $draggables, $crp, $response) {
-    $dzRows = sizeof($crp) > sizeof($response) ? sizeof($crp) : sizeof($response);
-
-    // Skip row if no correct or user answers
-    if ($dzRows <= 0) {
-      return '';
+    if (!count($response) && !count($crp)) {
+      return ''; // Skip if no correct or user answers
     }
 
-    $rows = '';
+    // Get rows needed to display user answers
+    $rows = self::createUserAnswerRows($draggables, $crp, $response);
+
+    // Get correct solutions labels for the task
+    $solutions = self::createSolutionRows($draggables, $crp);
+
+    // Merges the solutions into the correct rows
+    self::addSolutionsToRows($rows, $solutions);
+
+    // Ready to generate the HTML
+    $rowsHtml = '';
     $lastCellInRow = 'h5p-matching-last-cell-in-row';
+    $numRows = count($rows);
 
-    for ($i = 0; $i < $dzRows; $i++) {
-      $row = '';
-      $tdClass = $i >= $dzRows - 1 ? $lastCellInRow : '';
+    foreach ($rows as $key => &$row) {
+      $rowHtml = '';
+      $tdClass = ($key >= $numRows - 1 ? $lastCellInRow : '');
 
-      if ($i === 0) {
-        // Add drop zone
-        $row .=
-          '<th
-            class="' . 'h5p-matching-dropzone ' . $lastCellInRow . '"
-            rowspan="' . $dzRows . '"' .
+      if ($key === 0) {
+        // Print Drop Zone
+        $rowHtml .=
+          '<th class="' . 'h5p-matching-dropzone ' . $lastCellInRow . '"' .
+            ' rowspan="' . $numRows . '"' .
           '>' .
             $dropzone->value .
           '</th>';
       }
 
       // Add correct response pattern
-      $crpCellContent = isset($crp[$i]) ? $draggables[$crp[$i]]->value : '';
-      $row .= '<td class="' . $tdClass . '">' .
-                $crpCellContent .
+      $rowHtml .= '<td class="' . $tdClass . '">' .
+                $row->crp .
               '</td>';
 
-
-      // Add user response
-      $isCorrectClass = '';
-      $responseCellContent = '';
-      if (isset($response[$i])) {
-        $isCorrectClass = isset($crp[$i]) && in_array($response[$i], $crp) ?
-          'h5p-matching-draggable-correct' : 'h5p-matching-draggable-wrong';
-        foreach ($draggables as $draggable) {
-          if ($draggable->id === $response[$i]) {
-            $responseCellContent = $draggable->value;
-            break;
-          }
-        }
-      }
-
-      $classes = $tdClass . (sizeof($isCorrectClass) ? ' ' : '') . $isCorrectClass;
-      $row .= '<td class="' . $classes . '">' .
-                $responseCellContent .
+      // Add user reponse
+      $correctClass = ($row->isCorrect ? 'h5p-matching-draggable-correct' : 'h5p-matching-draggable-wrong');
+      $classes = $tdClass . ($tdClass !== '' && $correctClass !== '' ?  ' ' : '') . ($row->response !== '' ? $correctClass : '');
+      $rowHtml .= '<td class="' . $classes . '">' .
+                $row->response .
               '</td>';
 
-      $rows .= '<tr>' . $row . '</tr>';
+      $rowsHtml .= '<tr>' . $rowHtml . '</tr>';
     }
-    return $rows;
+
+    return $rowsHtml;
   }
 
   /**

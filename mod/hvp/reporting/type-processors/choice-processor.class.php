@@ -10,15 +10,15 @@ class ChoiceProcessor extends TypeProcessor {
    * Determines options for interaction and generates a human readable HTML
    * report.
    *
-   * @param string $description Description of interaction task
-   * @param array $crp Correct responses pattern
-   * @param string $response User response
-   * @param stdClass $extras Optional xAPI properties like choice descriptions
-   * @return string HTML for report
+   * @inheritdoc
    */
-  public function generateHTML($description, $crp, $response, $extras = NULL) {
+  public function generateHTML($description, $crp, $response, $extras = NULL, $scoreSettings = NULL) {
     if ($this->isLongChoice($extras)) {
-      return H5PReport::getInstance()->generateReport($this->xapiData, 'long-choice');
+      return H5PReport::getInstance()->generateReport(
+        $this->xapiData,
+        'long-choice',
+        $this->disableScoring
+      );
     }
 
     // We need some style for our report
@@ -27,13 +27,31 @@ class ChoiceProcessor extends TypeProcessor {
     $correctAnswers = explode('[,]', $crp[0]);
     $responses = explode('[,]', $response);
 
-    $descriptionHTML = $this->generateDescription($description);
+    $headerHtml = $this->generateHeader($description, $scoreSettings);
     $tableHTML = $this->generateTable($extras, $correctAnswers, $responses);
 
     return
-      '<div class="h5p-choices-container">' .
-        $descriptionHTML . $tableHTML .
+      '<div class="h5p-reporting-container h5p-choices-container">' .
+        $headerHtml . $tableHTML .
       '</div>';
+  }
+
+  /**
+   * Generate header element
+   *
+   * @param $description
+   * @param $scoreSettings
+   *
+   * @return string
+   */
+  private function generateHeader($description, $scoreSettings) {
+    $descriptionHtml = $this->generateDescription($description);
+    $scoreHtml = $this->generateScoreHtml($scoreSettings);
+
+    return
+      "<div class='h5p-choices-header'>" .
+        $descriptionHtml . $scoreHtml .
+      "</div>";
   }
 
   /**
@@ -44,7 +62,9 @@ class ChoiceProcessor extends TypeProcessor {
    * @return string Description element as a string
    */
   private function generateDescription($description) {
-    return'<p class="h5p-choices-task-description">' . $description . '</p>';
+    return'<p class="h5p-reporting-description h5p-choices-task-description">'
+          . $description .
+          '</p>';
   }
 
   /**
@@ -83,7 +103,9 @@ class ChoiceProcessor extends TypeProcessor {
       }
 
       $row =
-        '<td>' . $choice->description->{'en-US'} . '</td>' .
+        '<td class="h5p-choices-alternative">' .
+            $choice->description->{'en-US'} .
+        '</td>' .
         '<td class="h5p-choices-icon-cell">' .
           '<span class="' . $userClasses . '"></span>' .
         '</td>' .
