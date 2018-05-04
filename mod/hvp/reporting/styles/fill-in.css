@@ -10,15 +10,12 @@
 }
 
 .h5p-fill-in-container {
-  height: auto;
-  border: solid 1px #C9C9C9;
-  margin: auto 10px;
-  padding: 30px 50px 30px 50px;
-  background: #fff;
-  font-size: 15px;
-  color: #5C5C5C;
-  box-shadow: 0 0 20px 0 rgba(0,0,0,0.12);
   line-height: 2.25;
+}
+
+.h5p-fill-in-container p {
+  line-height: 2.25;
+  margin-bottom: 0;
 }
 
 .h5p-fill-in-options {
@@ -31,11 +28,13 @@
 .h5p-fill-in-correct-responses-pattern,
 .h5p-fill-in-user-response-wrong,
 .h5p-fill-in-user-response-correct {
-  padding: 0.33em 0.66em;
+  display: inline-block;
+  padding: 0.15em 0.66em;
   margin-left: 0.33em;
   margin-right: 0.33em;
   border-radius: 0.33em;
   white-space: nowrap;
+  line-height: 1.5;
 }
 
 .h5p-fill-in-correct-responses-pattern {

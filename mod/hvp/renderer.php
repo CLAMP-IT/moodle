@@ -18,7 +18,7 @@
  * Defines the renderer for the hvp (H5P) module.
  *
  * @package     mod_hvp
- * @copyright   2016 onward Eiz Edddin Al Katrib <eiz@barasoft.co.uk>
+ * @copyright   2016 Joubel AS <contact@joubel.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -27,8 +27,10 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * The renderer for the hvp module.
  *
- * @copyright   2016 onward Eiz Edddin Al Katrib <eiz@barasoft.co.uk>
+ * @copyright   2016 Joubel AS <contact@joubel.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ * @SuppressWarnings(PHPMD)
  */
 class mod_hvp_renderer extends plugin_renderer_base {
 
@@ -38,9 +40,10 @@ class mod_hvp_renderer extends plugin_renderer_base {
      *
      * @param object $scripts List of stylesheets that will be loaded
      * @param array $libraries Array of libraries indexed by the library's machineName
-     * @param string $embedType Possible values: div, iframe, external, editor
+     * @param string $embedtype Possible values: div, iframe, external, editor
      */
-    public function hvp_alter_styles(&$scripts, $libraries, $embedType) {}
+    public function hvp_alter_styles(&$scripts, $libraries, $embedtype) {
+    }
 
     /**
      * Alter which scripts are loaded for H5P. Useful for adding your
@@ -48,9 +51,10 @@ class mod_hvp_renderer extends plugin_renderer_base {
      *
      * @param object $scripts List of JavaScripts that will be loaded
      * @param array $libraries Array of libraries indexed by the library's machineName
-     * @param string $embedType Possible values: div, iframe, external, editor
+     * @param string $embedtype Possible values: div, iframe, external, editor
      */
-    public function hvp_alter_scripts(&$scripts, $libraries, $embedType) {}
+    public function hvp_alter_scripts(&$scripts, $libraries, $embedtype) {
+    }
 
     /**
      * Alter semantics before they are processed. This is useful for changing
@@ -58,10 +62,11 @@ class mod_hvp_renderer extends plugin_renderer_base {
      *
      * @param object $semantics Semantics as object
      * @param string $name Machine name of library
-     * @param int $majorVersion Major version of library
-     * @param int $minorVersion Minor version of library
+     * @param int $majorversion Major version of library
+     * @param int $minorversion Minor version of library
      */
-    public function hvp_alter_semantics(&$semantics, $name, $majorVersion, $minorVersion) {}
+    public function hvp_alter_semantics(&$semantics, $name, $majorversion, $minorversion) {
+    }
 
     /**
      * Alter parameters of H5P content after it has been filtered through
@@ -69,8 +74,9 @@ class mod_hvp_renderer extends plugin_renderer_base {
      *
      * @param object $parameters The content parameters for the library
      * @param string $name The machine readable name of the library
-     * @param int $majorVersion Major version of the library
-     * @param int $minorVersion Minor version of the library
+     * @param int $majorversion Major version of the library
+     * @param int $minorversion Minor version of the library
      */
-    public function hvp_alter_filtered_parameters(&$parameters, $name, $majorVersion, $minorVersion) {}
+    public function hvp_alter_filtered_parameters(&$parameters, $name, $majorversion, $minorversion) {
+    }
 }

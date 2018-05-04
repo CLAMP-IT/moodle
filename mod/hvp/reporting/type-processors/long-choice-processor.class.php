@@ -10,28 +10,42 @@ class LongChoiceProcessor extends TypeProcessor {
    * Determines options for interaction and generates a human readable HTML
    * report.
    *
-   * @param string $description Description of interaction task
-   * @param array $crp Correct responses pattern
-   * @param string $response User response
-   * @param stdClass $extras Optional xAPI properties like choice descriptions
-   * @return string HTML for report
+   * @inheritdoc
    */
-  public function generateHTML($description, $crp, $response, $extras = NULL) {
+  public function generateHTML($description, $crp, $response, $extras = NULL, $scoreSettings = NULL) {
     // We need some style for our report
     $this->setStyle('styles/long-choice.css');
 
     $correctAnswers = explode('[,]', $crp[0]);
     $responses = !empty($response) ? explode('[,]', $response) : array();
 
-    $descriptionHTML = $this->generateDescription($description);
+    $header = $this->generateHeader($description, $scoreSettings);
     $bodyHTML = $this->generateBody($extras, $correctAnswers, $responses);
     $footer = $this->generateFooter();
 
     return
-      '<div class="h5p-long-choice-container">' .
-        $descriptionHTML . $bodyHTML .
+      '<div class="h5p-reporting-container h5p-long-choice-container">' .
+        $header . $bodyHTML .
       '</div>' .
       $footer;
+  }
+
+  /**
+   * Generate header element
+   *
+   * @param $description
+   * @param $scoreSettings
+   *
+   * @return string
+   */
+  private function generateHeader($description, $scoreSettings) {
+    $descriptionHtml = $this->generateDescription($description);
+    $scoreHtml = $this->generateScoreHtml($scoreSettings);
+
+    return
+      "<div class='h5p-long-choice-header'>" .
+        $descriptionHtml . $scoreHtml .
+      "</div>";
   }
 
   /**
@@ -42,7 +56,13 @@ class LongChoiceProcessor extends TypeProcessor {
    * @return string Description element
    */
   private function generateDescription($description) {
-    return'<div class="h5p-long-choice-task-description">' . $description . '</div>';
+    if (!$description) {
+      return '';
+    }
+
+    return '<div class="h5p-reporting-description h5p-long-choice-task-description">' .
+             $description .
+           '</div>';
   }
 
   /**

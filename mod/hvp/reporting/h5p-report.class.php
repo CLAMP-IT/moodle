@@ -22,10 +22,11 @@ class H5PReport {
    *
    * @param object $xapiData
    * @param string $forcedProcessor Force a processor type
+   * @param bool $disableScoring Disables scoring for the report
    *
    * @return string A report
    */
-  public function generateReport($xapiData, $forcedProcessor = null) {
+  public function generateReport($xapiData, $forcedProcessor = null, $disableScoring = false) {
     $interactionType = isset($forcedProcessor) ? $forcedProcessor :
       $xapiData->interaction_type;
 
@@ -39,7 +40,8 @@ class H5PReport {
     }
 
     // Generate and return report from xAPI data
-    return $this->processors[$interactionType]->generateReport($xapiData);
+    return $this->processors[$interactionType]
+      ->generateReport($xapiData, $disableScoring);
   }
 
   /**
@@ -48,7 +50,9 @@ class H5PReport {
    * @return array
    */
   public function getStylesUsed() {
-    $styles = array();
+    $styles = array(
+      'styles/shared-styles.css'
+    );
 
     // Fetch style used by each report processor
     foreach ($this->processors as $processor) {

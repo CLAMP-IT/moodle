@@ -10,33 +10,29 @@
 }
 
 .h5p-long-choice-container {
-  height: auto;
-  border: solid 1px #C9C9C9;
-  margin: auto 10px;
-  padding: 30px 50px 30px 50px;
-  background: #fff;
-  font-size: 15px;
-  color: #5C5C5C;
-  box-shadow: 0 0 20px 0 rgba(0,0,0,0.12);
   line-height: 2.25;
 }
 
 .h5p-long-choice-task-description {
-  font-size: 20px;
-  font-weight: 600;
+  border-bottom: 1px solid #e5e5e5;
+}
 
-  width: 100%;
-  border-bottom: 1px solid #e5e5e5e5;
+.h5p-long-choice-word {
+  margin-left: 0.25em;
+}
+
+.h5p-long-choice-word.h5p-long-choice-answered,
+.h5p-long-choice-word.h5p-long-choice-correct {
+  padding: 3px 10px;
+  margin-left: 5px;
+  margin-right: 5px;
+  border-radius: 5px;
 }
 
 .h5p-long-choice-word.h5p-long-choice-answered.h5p-long-choice-correct {
   color: #ffffff;
   background: #8AC062;
   border: dashed 1px #8AC062;
-  padding: 5px 10px 5px 10px;
-  margin-left: 5px;
-  margin-right: 5px;
-  border-radius: 5px;
 }
 
 .h5p-long-choice-word.h5p-long-choice-answered.h5p-long-choice-correct:before {
@@ -48,10 +44,6 @@
   color: #ffffff;
   background-color: #DF465A;
   border: dashed 1px #DF465A;
-  padding: 5px 10px 5px 10px;
-  margin-left: 5px;
-  margin-right: 5px;
-  border-radius: 5px;
 }
 
 .h5p-long-choice-word.h5p-long-choice-answered:before {
@@ -63,10 +55,6 @@
   color: #79B74B;
   background-color: #fff;
   border: dashed 1px #79B74B;
-  padding: 5px 10px 5px 10px;
-  margin-left: 5px;
-  margin-right: 5px;
-  border-radius: 5px;
 }
 
 .h5p-long-choice-footer {
@@ -76,4 +64,12 @@
   color: #5C5C5C;
   margin-left: auto;
   margin-right: auto;
+}
+
+.h5p-long-choice-correct,
+.h5p-long-choice-answered.h5p-long-choice-correct,
+.h5p-long-choice-answered {
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.5;
 }

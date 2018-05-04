@@ -1,4 +1,18 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * The mod_hvp content user data.
@@ -11,6 +25,8 @@
 
 namespace mod_hvp;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Class xapi_result handles xapi results and corresponding db operations.
  *
@@ -22,8 +38,7 @@ class xapi_result {
      * Handle xapi results endpoint
      */
     public static function handle_ajax() {
-
-        // Validate token
+        // Validate token.
         if (!self::validate_token()) {
             $core = framework::instance();
             \H5PCore::ajaxError($core->h5pF->t('Invalid security token.'),
@@ -31,27 +46,40 @@ class xapi_result {
             return;
         }
 
-        $contentId = required_param('contentId', PARAM_INT);
-        $xAPIResult = required_param('xAPIResult', PARAM_RAW);
+        $cm = get_coursemodule_from_id('hvp', required_param('contextId', PARAM_INT));
+        if (!$cm) {
+            \H5PCore::ajaxError('No such content');
+            http_response_code(404);
+            return;
+        }
 
-        $xAPIJson = json_decode($xAPIResult);
-        if (!$xAPIJson) {
+        $xapiresult = required_param('xAPIResult', PARAM_RAW);
+
+        // Validate.
+        $context = \context_module::instance($cm->id);
+        if (!has_capability('mod/hvp:saveresults', $context)) {
+            \H5PCore::ajaxError(get_string('nopermissiontosaveresult', 'hvp'));
+            return;
+        }
+
+        $xapijson = json_decode($xapiresult);
+        if (!$xapijson) {
             \H5PCore::ajaxError('Invalid json in xAPI data.');
             return;
         }
 
-        if (!self::validate_xAPI_data($xAPIJson)) {
+        if (!self::validate_xapi_data($xapijson)) {
             \H5PCore::ajaxError('Invalid xAPI data.');
             return;
         }
 
-        // Delete any old results
-        self::remove_xAPI_data($contentId);
+        // Delete any old results.
+        self::remove_xapi_data($cm->instance);
 
-        // Store results
-        self::store_xAPI_data($contentId, $xAPIJson);
+        // Store results.
+        self::store_xapi_data($cm->instance, $xapijson);
 
-        // Successfully inserted xAPI result
+        // Successfully inserted xAPI result.
         \H5PCore::ajaxSuccess();
     }
 
@@ -69,41 +97,43 @@ class xapi_result {
     /**
      * Validate xAPI data
      *
-     * @param object $xAPIData xAPI data
+     * @param object $xapidata xAPI data
      *
      * @return bool True if valid data
      */
-    private static function validate_xAPI_data($xAPIData) {
-        $xAPIData = new \H5PReportXAPIData($xAPIData);
-        return $xAPIData->validateData();
+    private static function validate_xapi_data($xapidata) {
+        $xapidata = new \H5PReportXAPIData($xapidata);
+        return $xapidata->validateData();
     }
 
     /**
      * Store xAPI result(s)
      *
-     * @param int $contentId Content id
-     * @param object $xAPIData xAPI data
-     * @param int $parentId Parent id
+     * @param int $contentid Content id
+     * @param object $xapidata xAPI data
+     * @param int $parentid Parent id
      */
-    private static function store_xAPI_data($contentId, $xAPIData, $parentId=NULL) {
+    private static function store_xapi_data($contentid, $xapidata, $parentid = null) {
         global $DB, $USER;
 
-        $xAPIData = new \H5PReportXAPIData($xAPIData, $parentId);
-        $insertedId = $DB->insert_record('hvp_xapi_results', (object) array(
-            'content_id' => $contentId,
+        $xapidata = new \H5PReportXAPIData($xapidata, $parentid);
+        $insertedid = $DB->insert_record('hvp_xapi_results', (object) array(
+            'content_id' => $contentid,
             'user_id' => $USER->id,
-            'parent_id' => $xAPIData->getParentID(),
-            'interaction_type' => $xAPIData->getInteractionType(),
-            'description' => $xAPIData->getDescription(),
-            'correct_responses_pattern' => $xAPIData->getCorrectResponsesPattern(),
-            'response' => $xAPIData->getResponse(),
-            'additionals' => $xAPIData->getAdditionals()
+            'parent_id' => $xapidata->getParentID(),
+            'interaction_type' => $xapidata->getInteractionType(),
+            'description' => $xapidata->getDescription(),
+            'correct_responses_pattern' => $xapidata->getCorrectResponsesPattern(),
+            'response' => $xapidata->getResponse(),
+            'additionals' => $xapidata->getAdditionals(),
+            'raw_score' => $xapidata->getScoreRaw(),
+            'max_score' => $xapidata->getScoreMax(),
         ));
 
-        // Save sub content statements data
-        if ($xAPIData->isCompound()) {
-            foreach ($xAPIData->getChildren($contentId) as $child) {
-                self::store_xAPI_data($contentId, $child, $insertedId);
+        // Save sub content statements data.
+        if ($xapidata->isCompound()) {
+            foreach ($xapidata->getChildren($contentid) as $child) {
+                self::store_xapi_data($contentid, $child, $insertedid);
             }
         }
     }
@@ -111,13 +141,13 @@ class xapi_result {
     /**
      * Remove xAPI result(s)
      *
-     * @param int $contentId Content id
+     * @param int $contentid Content id
      */
-    private static function remove_xAPI_data($contentId) {
+    private static function remove_xapi_data($contentid) {
         global $DB, $USER;
 
         $DB->delete_records('hvp_xapi_results', array(
-            'content_id' => $contentId,
+            'content_id' => $contentid,
             'user_id' => $USER->id
         ));
     }
