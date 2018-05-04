@@ -21,7 +21,9 @@
  * @copyright 2015 The Open University
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 namespace report_customsql\task;
+defined('MOODLE_INTERNAL') || die();
 
 class run_reports extends \core\task\scheduled_task {
 
@@ -73,7 +75,7 @@ class run_reports extends \core\task\scheduled_task {
         $reportstorun = array_merge($dailyreportstorun, $scheduledreportstorun);
 
         foreach ($reportstorun as $report) {
-            mtrace("... Running report " . strip_tags($report->displayname));
+            mtrace("... Running report " . report_customsql_plain_text_report_name($report));
             try {
                 report_customsql_generate_csv($report, $timenow);
             } catch (\Exception $e) {
