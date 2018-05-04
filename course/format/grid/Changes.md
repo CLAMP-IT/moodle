@@ -1,5 +1,25 @@
 History
 =============
+Version 3.2.1.6
+  1. Fix double entry for a course in the format_grid_summary when restoring.
+  2. Fix logic of showing grid boxes depending on if it is visible against the grey out setting and course 'Hidden sections' option.
+
+Version 3.2.1.5
+  1. Add the ability to 'Open in new tab' when the 'Course layout' is 'One section per page'.  Gratefully funded by Coventry University UK.
+
+Version 3.2.1.4
+  1. Fix colour popup form element not rendering correctly in Boost theme.
+  2. Fix 'No visual feedback of hidden sections' - #58.
+  3. Another attempt at addressing #63 for tooltip accessibility - #60.
+  4. Grid with essential fixed nav - nav bar overlaps the grid section when opened - #64.
+  5. Add the ability to have section 0 on its own page when out of the grid and the 'Course layout' is 'One section per page'.  Gratefully funded by Coventry University UK.
+
+Version 3.2.1.3
+  1. Fix "Error when restoring course" - CONTRIB-6917.
+  2. Fix not being able to tab to colour settings.
+  3. Allow section navigation in flat navigation.
+  4. Fix "gridcontainer alignment" - #54.
+
 Version 3.2.1.2
   1. Fix unable to use cursor keys to edit section title when editing.
   2. Fix border colour spilling out of title.

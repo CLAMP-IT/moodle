@@ -59,6 +59,8 @@ $string['defaultsectiontitlesummarybackgroundcolour'] = 'Set the section title s
 $string['defaultsectiontitlesummarybackgroundcolour_desc'] = 'Set the the section title summary background color when hovering over the section title in the grid box.';
 $string['centre'] = 'Center';
 
+$string['colourrule'] = "Please enter a valid RGB color, six hexadecimal digits.";
+
 // Section title text format options.
 $string['sectiontitleinsidetitletextcolour'] = 'Section title text color when \'Inside\' option';
 $string['sectiontitleinsidetitletextcolour_help'] = 'Set title text color when it is \'Inside\' the grid box.';
@@ -71,4 +73,12 @@ $string['defaultsectiontitleinsidetitlebackgroundcolour_help'] = 'Set title back
 $string['sectiontitlealignment_help'] = 'Set the section title alignment to one of \'Left\', \'Center\' or \'Right\'.';
 $string['defaultsectiontitlealignment_desc'] = 'Set the section title alignment to one of \'Left\', \'Center\' or \'Right\'.';
 
-$string['colourrule'] = "Please enter a valid RGB color, six hexadecimal digits.";
+// Reset.
+$string['resetgreyouthidden'] = 'Gray out unavailable';
+$string['resetgreyouthidden_desc'] = 'Resets the property \'Grid display show unavailable section images in gray and unlinked.\'';
+$string['resetgreyouthidden_help'] = 'Resets the property \'In Grid display show unavailable section images in gray and unlinked.\'';
+
+// Other.
+$string['greyouthidden'] = 'Gray out unavailable';
+$string['greyouthidden_desc'] = 'In Grid display show unavailable section images in gray and unlinked.';
+$string['greyouthidden_help'] = 'In Grid display show unavailable section images in gray and unlinked.';

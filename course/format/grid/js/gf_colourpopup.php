@@ -31,7 +31,10 @@ require_once("HTML/QuickForm/text.php");
  * @author       Iain Checkland - modified from ColourPicker by Jamie Pratt [thanks]
  * @access       public
  */
-class MoodleQuickForm_gfcolourpopup extends HTML_QuickForm_text {
+class MoodleQuickForm_gfcolourpopup extends HTML_QuickForm_text implements templatable {
+    use templatable_form_element {
+        export_for_template as export_for_template_base;
+    }
 
     /*
      * html for help button, if empty then no help
@@ -43,7 +46,10 @@ class MoodleQuickForm_gfcolourpopup extends HTML_QuickForm_text {
 
     public function __construct($elementName = null, $elementLabel = null, $attributes = null, $options = null) {
         parent::__construct($elementName, $elementLabel, $attributes);
-        $this->setType('colourtext');
+        /* Pretend we are a 'static' MoodleForm element so that we get the core_form/element-static template where
+           we can render our own markup via core_renderer::mform_element() in lib/outputrenderers.php.
+           used in combination with 'use' statement above and export_for_template() method below. */
+        $this->setType('static');
     }
 
     /*
@@ -69,10 +75,10 @@ class MoodleQuickForm_gfcolourpopup extends HTML_QuickForm_text {
         $content = "<input size='8' name='" . $this->getName() . "' value='" . $colour . "'id='{$id}' type='text' " .
                     $this->_getAttrString($this->_attributes) . " >";
         $content .= html_writer::tag('span', '&nbsp;', array('id' => 'colpicked_' . $id, 'tabindex' => '-1',
-                                     'style' => 'background-color:#' . $colour .
-                                     ';cursor:pointer;margin:0px;padding: 0 8px;border:1px solid black'));
-        $content .= html_writer::start_tag('div', array('id' => 'colpick_' . $id,
-                                           'style' => "display:none;position:absolute;z-index:500;",
+                                     'style' => 'background-color: #'.$colour.
+                                     '; cursor: pointer; margin: 0; padding: 0 8px; border: 1px solid black'));
+        $content .= html_writer::start_tag('div', array('id' => 'colpick_'.$id,
+                                           'style' => "display:none; position:absolute; z-index:500;",
                     'class' => 'form-colourpicker defaultsnext'));
         $content .= html_writer::tag('div', '', array('class' => 'admin_colourpicker clearfix'));
         $content .= html_writer::end_tag('div');
@@ -128,5 +134,12 @@ class MoodleQuickForm_gfcolourpopup extends HTML_QuickForm_text {
         } else {
             return 'default';
         }
+    }
+
+    public function export_for_template(renderer_base $output) {
+        $context = $this->export_for_template_base($output);
+        $context['html'] = $this->toHtml();
+        $context['staticlabel'] = false; // Not a static label!
+        return $context;
     }
 }

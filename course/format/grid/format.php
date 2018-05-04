@@ -79,8 +79,14 @@ $gfsettings['imagecontainerwidth'], $gfsettings['imagecontainerratio'], $gfsetti
 
 echo '<style type="text/css" media="screen">';
 echo '/* <![CDATA[ */';
-echo '#gridiconcontainer {';
-echo 'text-align: '.$gfsettings['imagecontaineralignment'].';';
+echo '#gridiconcontainer  ul.gridicons {';
+$imagecontaineralignment = $gfsettings['imagecontaineralignment'];
+if ($imagecontaineralignment == 'left') {
+    $imagecontaineralignment = 'flex-start';
+} else if ($imagecontaineralignment == 'right') {
+    $imagecontaineralignment = 'flex-end';
+}
+echo 'justify-content: '.$imagecontaineralignment.';';
 echo '}';
 echo '.course-content ul.gridicons li .icon_content {';
 if ($gfsettings['sectiontitlefontsize']) { // Font size is set.
@@ -222,7 +228,15 @@ echo '</style>';
 
 $sectionparam = optional_param('section', -1, PARAM_INT);
 if ($sectionparam != -1) {
-    $displaysection = $sectionparam;
+    if (($sectionparam == 0) && $courseformat->is_section0_attop() && ($gfsettings['setsection0ownpagenogridonesection'] == 1)) {
+        // Don't allow an old section 0 link to work.
+        $sectionparam = -1;
+    } else if ($gfsettings['coursedisplay'] == COURSE_DISPLAY_SINGLEPAGE) {
+        // Don't allow an old single page link to work.
+        $sectionparam = -1;
+    } else {
+        $displaysection = $sectionparam;
+    }
 }
 
 if ($sectionparam != -1) {

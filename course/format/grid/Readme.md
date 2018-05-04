@@ -2,7 +2,7 @@ Grid Course Format
 ============================
 A topics based format that uses a grid of user selectable images to pop up a light box of the section.
 
-[![Build Status](https://travis-ci.org/gjb2048/moodle-format_grid.svg?branch=master)](https://travis-ci.org/gjb2048/moodle-format_grid)
+[![Build Status](https://travis-ci.org/gjb2048/moodle-format_grid.svg?branch=MOODLE_32)](https://travis-ci.org/gjb2048/moodle-format_grid)
 
 Required version of Moodle
 ==========================

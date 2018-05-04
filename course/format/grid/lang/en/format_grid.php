@@ -162,7 +162,7 @@ $string['hidesectiontitle_help'] = 'Hide the section title.';
 $string['defaulthidesectiontitle'] = 'Hide section title option';
 $string['defaulthidesectiontitle_desc'] = 'Hide the section title.';
 $string['sectiontitlegridlengthmaxoption'] = 'Section title grid length option';
-$string['sectiontitlegridlengthmaxoption_help'] = 'Set the maximum length of the section title in the grid box.  Enter \'0\' for no truncation';
+$string['sectiontitlegridlengthmaxoption_help'] = 'Set the maximum length of the section title in the grid box.  Enter \'0\' for no truncation.';
 $string['defaultsectiontitlegridlengthmaxoption'] = 'Section title grid length option';
 $string['defaultsectiontitlegridlengthmaxoption_desc'] = 'Set the default maximum length of the section title in the grid box.  Enter \'0\' for no truncation.';
 $string['sectiontitlegridlengthmaxoptionrule'] = 'The maximum length of the section title in the grid box must not be zero.  Enter \'0\' for no truncation.';
@@ -268,8 +268,19 @@ $string['resetgreyouthidden'] = 'Grey out unavailable';
 $string['resetgreyouthidden_desc'] = 'Resets the property \'Grid display show unavailable section images in grey and unlinked.\'';
 $string['resetgreyouthidden_help'] = 'Resets the property \'In Grid display show unavailable section images in grey and unlinked.\'';
 
+// Section 0 on own page when out of the grid and course layout is 'Show one section per page'.
+$string['setsection0ownpagenogridonesection'] = 'Section 0 on its own page when out of the grid and on a single section page';
+$string['setsection0ownpagenogridonesection_help'] = 'Have section 0 on its own page when it is out of the grid and the \'Course layout\' setting is \'One section per page\'.';
+$string['defaultsection0ownpagenogridonesection'] = 'Section 0 on its own page when out of the grid and on a single section page';
+$string['defaultsection0ownpagenogridonesection_desc'] = 'Have section 0 on its own page when it is out of the grid and the \'Course layout\' setting is \'One section per page\'.';
+$string['resetimagecontainernavigation'] = 'Image container navigation';
+$string['resetimagecontainernavigation_help'] = 'Resets the image container navigation to the default value so it will be the same as a course the first time it is in the Grid format.';
+$string['resetallimagecontainernavigation'] = 'Image container navigations';
+$string['resetallimagecontainernavigation_help'] = 'Resets the image container navigation to the default value for all courses so it will be the same as a course the first time it is in the Grid format.';
+
 // Capabilities.
 $string['grid:changeimagecontaineralignment'] = 'Change or reset the image container alignment';
+$string['grid:changeimagecontainernavigation'] = 'Change or reset the image container navigation';
 $string['grid:changeimagecontainersize'] = 'Change or reset the image container size';
 $string['grid:changeimageresizemethod'] = 'Change or reset the image resize method';
 $string['grid:changeimagecontainerstyle'] = 'Change or reset the image container style';

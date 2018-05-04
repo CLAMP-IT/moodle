@@ -316,6 +316,17 @@ if ($ADMIN->fulltree) {
     );
     $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
 
+    /* Section 0 on own page when out of the grid and course layout is 'Show one section per page'. */
+    $name = 'format_grid/defaultsection0ownpagenogridonesection';
+    $title = get_string('defaultsection0ownpagenogridonesection', 'format_grid');
+    $description = get_string('defaultsection0ownpagenogridonesection_desc', 'format_grid');
+    $default = 1;
+    $choices = array(
+        1 => new lang_string('no'),   // No.
+        2 => new lang_string('yes')   // Yes.
+    );
+    $settings->add(new admin_setting_configselect($name, $title, $description, $default, $choices));
+
     /* Custom mouse pointers - 1 = no, 2 = yes. */
     $name = 'format_grid/defaultcustommousepointers';
     $title = get_string('custommousepointers', 'format_grid');
