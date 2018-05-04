@@ -51,6 +51,11 @@ $user = optional_param('user', 0, PARAM_INT); // User ID.
 $do = optional_param('do', "submissions", PARAM_ALPHAEXT);
 $action = optional_param('action', "", PARAM_ALPHA);
 $viewcontext = optional_param('view_context', "window", PARAM_ALPHAEXT);
+$migrated = optional_param('migrated', 0, PARAM_INT); // Migrated
+
+// If v1 migration tool is being enabled then this will prompt user to migrate when 
+// they return to the previous v1 assignment.
+$_SESSION["migrationtool"]["lastasked"] = 0;
 
 $notice = null;
 if (isset($_SESSION["notice"])) {
@@ -102,9 +107,9 @@ require_capability('mod/turnitintooltwo:view', $context);
 $PAGE->set_pagelayout('standard');
 
 // Settings for page navigation.
+$config = turnitintooltwo_admin_config();
 if ($viewcontext == "window") {
     // Show navigation if required.
-    $config = turnitintooltwo_admin_config();
     if ($config->inboxlayout == 1) {
         $PAGE->set_cm($cm);
         $PAGE->set_pagelayout('incourse');
@@ -126,6 +131,31 @@ $url = new moodle_url('/mod/turnitintooltwo/view.php', $urlparams);
 $turnitintooltwoview->load_page_components();
 
 $turnitintooltwoassignment = new turnitintooltwo_assignment($turnitintooltwo->id, $turnitintooltwo);
+
+if (isset($_SESSION["migrationtool"]["status"])) {
+    $notice = array();
+    switch ($_SESSION["migrationtool"]["status"]) {
+        case "success":
+            $notice["type"] = "success";
+            $notice["message"] = get_string('migrationtool:successful', 'turnitintooltwo');
+            $error = false;
+            break;
+        case "cron":
+            $notice["type"] = "success";
+            $notice["message"] = get_string('migrationtool:successfulcron', 'turnitintooltwo');
+            $error = false;
+            break;
+        case "gradebookerror":
+            $notice["type"] = "danger";
+            $notice["message"] = get_string('migrationtool:gradebookerror', 'turnitintooltwo');
+            $error = true;
+            break;
+    }
+    include_once("classes/v1migration/v1migration.php");
+    v1migration::check_account($config->accountid, $error);
+
+    unset($_SESSION["migrationtool"]["status"]);
+}
 
 // Define file upload options.
 $maxbytessite = $CFG->maxbytes;
@@ -440,7 +470,8 @@ if ($viewcontext == "box" || $viewcontext == "box_solid") {
 
     // Show Helpdesk link for tutors if enabled.
     if ($istutor && $config->helpdeskwizard) {
-        $helpdesklink = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/extras.php?id='.$id.'&cmd=supportwizard',
+        $helpdesklink = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/extras.php?id='.$id.'&legacy='
+                                            .$turnitintooltwoassignment->turnitintooltwo->legacy.'&cmd=supportwizard',
                                             get_string('helpdesklink', 'turnitintooltwo'));
 
         echo html_writer::tag('p', $helpdesklink);
@@ -456,7 +487,7 @@ if (!$istutor) {
     echo html_writer::tag('noscript', $noscriptcss);
 }
 
-if (!is_null($notice)) {
+if (isset($notice["message"])) {
     echo $turnitintooltwoview->show_notice($notice);
 }
 
@@ -470,7 +501,10 @@ $class = ($istutor) ? "js_required" : "";
 echo html_writer::start_tag("div", array("class" => $class));
 echo html_writer::tag("div", $viewcontext, array("id" => "view_context"));
 
-$course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+// Get the course type for this assignment.
+$coursetype = turnitintooltwo_get_course_type($turnitintooltwoassignment->turnitintooltwo->legacy);
+
+$course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
 
 switch ($do) {
     case "submission_success":
@@ -571,7 +605,7 @@ switch ($do) {
     case "rubricview":
         if (has_capability('mod/turnitintooltwo:submit', context_module::instance($cm->id))) {
             $user = new turnitintooltwo_user($USER->id, "Learner");
-            $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+            $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
             $user->join_user_to_class($course->turnitin_cid);
 
             echo html_writer::tag("div", $turnitintooltwoview->output_lti_form_launch('rubric_view', 'Learner',
@@ -627,7 +661,7 @@ switch ($do) {
 
             $eulaaccepted = false;
             $user = new turnitintooltwo_user($USER->id, $userrole);
-            $coursedata = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+            $coursedata = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
             $user->join_user_to_class($coursedata->turnitin_cid);
             // Has the student accepted the EULA?
             $eulaaccepted = $user->useragreementaccepted;
@@ -673,7 +707,7 @@ switch ($do) {
 
         // Get course data.
         if ($istutor) {
-            $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+            $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
         }
 
         // Update Assignment from Turnitin on first visit.
@@ -788,4 +822,5 @@ foreach ($parts as $part) {
 }
 $partsstring .= ")";
 $courseid = $course->turnitin_cid;
+
 echo '<!-- Turnitin Moodle Direct Version: '.turnitintooltwo_get_version().' - course ID: '.$courseid.' - '.$partsstring.' -->';

@@ -1,3 +1,169 @@
+### 2018-March-12
+### v2018031201
+
+### Fixes and enhancements
+
+---
+
+#### Manual adjustments to grades now stick during V1 to V2 migration
+
+>Following the migration of a Moodle Direct V1 assignment to V2, grades that had been manually adjusted in the Moodle grade book would be overwritten to match the grade originally set in Turnitin Feedback Studio. With this overwrite being completely unintentional, we've made several backend changes to ensure that future manual adjustments within the grade book always remain fixed during migration.
+
+#### V1 assignments are now removed automatically after migration
+ 	
+>If an administrator failed to delete a Moodle Direct V1 assignment after its migration to V2, the grade of the V1 assignment would remain in the Moodle grade book, causing grades to effectively double. We've now adjusted the behavior of the Moodle Migration Tool to resolve this. So that you no longer need to worry about incorrect grades in the grade book, Moodle V1 assignments are now automatically deleted after migration.
+>
+>There may be instances where you'll still be required to remove V1 assignments manually (for example, the migration has been successful but there are conflicting grades in the grade book).
+
+#### Deleting V1 assignments that were migrated in prior versions 
+
+> You can manually delete your previously migrated assignments from the usual spot in the Moodle Migration Tool; we encourage you to delete these as soon as possible in order to resolve any current issues in the grade book. Any V1 assignments migrated after this update will be automatically deleted.
+
+---
+
+### :snowflake: Date:		2018-January-16
+### :snowflake: Release:	v2018011601
+
+#### :zap: What's new
+
+---
+
+#### Instant Similarity Reports for up to three resubmissions
+
+Feedback Studio allows students to view their Similarity Report results immediately! Students can now view their initial Similarity Report, then revise and resubmit their work up to three times, without having to wait 24 hours for an updated report. After three resubmissions have been made, the 24-hour report generation wait time will be restored. Instantaneous similarity results give students the formative support they need to master paraphrasing and citation conventions efficiently.
+
+> To enable resubmissions for students, you must correctly configure the assignment settings of a new or existing Moodle Direct V2 assignment.
+>
+> 1. Scroll to **Originality Report Options**.
+> 2. Under **Originality Report Generation and Submissions**, select **Generate reports immediately (students can resubmit until due date): After 3 resubmissions, reports generate after 24 hours**. [Read more](https://guides.turnitin.com/03_Integrations/Turnitin_Partner_Integrations/Moodle/03_Moodle_Direct_V2/03_Instructors/Creating_an_assignment#Similarity_Report_options).
+
+#### Genre-specific rubrics in Feedback Studio (North America only)
+
+Revision Assistant's genre-specific rubrics are now available in Feedback Studio for our North American users, designed with 6th - 12th graders in mind! K-12 instructors can assign new rubrics to their assignments to help their students master the art of argumentative, narrative, informative, and analytical writing. If you're actively using Revision Assistant and Feedback Studio together, you can now promote consistency in the classroom by adopting the same rubrics.
+
+> To use a new rubric for grading, you can attach it from within the assignment settings of a new or existing assignment.
+> 
+> 1. Scroll to **GradeMark options**.
+> 2. Under **Attach a rubric to this assignment**, select a new genre-specific rubric from the drop-down list. [Read more](https://guides.turnitin.com/03_Integrations/Turnitin_Partner_Integrations/Moodle/03_Moodle_Direct_V2/03_Instructors/Creating_an_assignment#GradeMark_options).
+> 
+> Alternatively, launch the rubric and grading form manager from the Moodle Direct V2 submission inbox, or alternatively, from within Feedback Studio.
+
+#### K-12 QuickMark sets in Feedback Studio (North America only)
+
+QuickMarks are Turnitin's most popular feedback tool among Feedback Studio instructors! But in finding that many of our default QuickMark sets failed to address the needs of our K-12 instructors and students, we've added two new sets to the Feedback Studio collection, available to our North American users! Our new drag-and-drop (and customizable!) comments will help instructors help their students to engage in revision, save time, and more importantly, achieve learning outcomes. [Read more](https://guides.turnitin.com/01_Manuals_and_Guides/Release_Notes/Turnitin_Release_Notes/Genre-specific_rubrics_in_Feedback_Studio).
+> 
+> To view and edit your new QuickMarks, launch the QuickMark manager from the Moodle Direct V2 submission inbox, or alternatively, from within Feedback Studio.
+
+---
+
+### Date:       2017-November-23
+### Release:    v2017112301
+
+Support for Moodle 3.4
+
+After lots of tests against the release of Moodle 3.4, we're pleased to announce that Turnitin's Moodle Direct V2 plugin now supports it.
+
+---
+
+### Date:       2017-October-30
+### Release:    v2017103001
+
+V1 to V2 Moodle Migration Tool
+
+**The Moodle Migration Tool is now in early access mode!** - Before making the Moodle Migration Tool available to all of our Moodle users, we asked a subset of users to test the tool and advise us of any issues or errors they may have stumbled across during their experimenting. We'd like to thank all of our testers for their useful comments; they've helped us make the tool even better!
+
+Calling all administrators! To access the Moodle migration tool and enable instructor migration, visit our guide.
+
+Below, you can find several updates we've made to the tool based on the issues raised by our testers:
+
+- Updated migration tool setting information
+- We've made improvements to the migration workflow
+- We've made some table adjustments
+- Fixed an issue causing the grade book to unsuccessfully migrate
+
+**Updated migration tool setting information** - We've updated the information behind the question mark icon connected to the 'Migration action at assignment launch' setting; this referred to old functionality in the Moodle Migration Tool. The text now reflects the current state of the tool. Apologies if you became a little confused! 
+
+**We've made improvements to the migration workflow** -  We've made the migration workflow clearer by prompting the user to migrate on all V1 assignments. Even if you navigate away from the assignment, you'll be prompted again when you return. We hope this helps make your migration a smooth and simple one. 
+
+**We've made some table adjustments** - The table of migrated V1 assignments was appearing a little unkempt, so we tidied up by setting the table width. The table now looks much more aesthetically pleasing! 
+
+**Fixed an issue causing the grade book to unsuccessfully migrate** - When migrating we found a potential issue that would cause the migration of grade book to fail which would lead to issues with the migration of assignments. We've preemptively fixed this so you will be able to migrate your assignments without issue. 
+
+We've also been working on...
+
+- Fixed a bug preventing student enrollment
+- Removed the visibility of the delete icon after submission
+- Anonymous marking grades now pass to the grade book in all databases
+- Unit tests now pass successfully
+- Fixed several incorrectly named variables
+
+**Fixed a bug preventing student enrollment** - We received an alert that the Enrol All Students button accessible via the Turnitin Students tab wasn't functioning correctly; this removed the ability for students enrolled in the same class via Turnitin.com or TurnitinUK.com to submit to their Moodle Direct V2 assignment. We identified a missing parameter causing the issue and simply reinserted it. The button now works as intended. Thanks to @neillm for his input!
+
+> A parameter is a piece of information passed to a program by a user or another program; this information can be a name, number, or a selected option. Parameters have an effect on the operation of the program receiving them.
+
+**Removed the visibility of the delete icon after submission** - We received several reports from an institution concerning the presence of the submission delete icon in the student submission inbox. For assignments with resubmissions disabled, students who'd submitted an incorrect file type managed to delete and resubmit their paper. Although this is useful for students who've made a genuine submission error, this was not intended functionality.
+
+We also heard that by allowing late submissions in an assignment, this enabled students to delete and resubmit their paper after the post date. This unintentionally allowed students to resubmit after any instructor marking or grading had taken place. The delete icon has now been removed, meaning students will only be able to submit following the permissions set by their instructor.
+
+**Anonymous marking grades now pass to the grade book** - We noticed that grades failed to populate the grade book for papers submitted to an assignment with anonymous marking enabled. The call to send these grades failed in the Microsoft SQL database and produced an error. Not to worry! All grades now send to the grade book as expected.
+
+> SQL statements are used to perform tasks, such as updating data within a database (updating the grade book with grades!), or retrieving data from a database.
+
+**Unit tests now pass successfully** - With thanks to @danmarsden for his work on fixing some of our broken unit tests. These improvements help to instill user confidence in Moodle Direct V2.
+
+> Unit tests involve testing certain functions and areas – or units – of code. This gives developers the ability to verify that software functions work as intended.
+
+**Fixed several incorrectly named variables** - We've implemented some fixes kindly provided by @sk-unikent which tidied up several variable issues.
+
+> Variables are used to store information for easy manipulation and reference in a computer program. Rather than entering data directly into a program, a variable is used to represent data. When a program is executed, a variable is replaced with actual data. For example, firstName is a variable because it can be referenced and replaced with the actual first name of an individual.
+
+---
+
+### Date:		2017-August-09
+### Release:	v2017080901
+
+**Use new assignment dates during course reset** - We received a report that during a course reset, anonymous marking settings were not carried over if an assignment's due date had already passed.
+
+Now, you can opt to use new assignment dates when initiating a course reset by selecting the **Use new assignment dates** check box. The assignment start date will be set to the date and time of the course reset, while the due and post date will elapse seven days from then.
+
+If you’d rather not use new assignment dates, that’s fine; Turnitin will use the course’s original assignment dates instead. However, any anonymous marking settings will not be carried over for assignments where the post date has passed.
+
+![Reset course feature](https://github.com/turnitin/moodle-mod_turnitintooltwo/blob/master/pix/changelog/resetcourse.png "Reset course feature")
+
+---
+
+### Date:		2017-July-19
+### Release:	v2017071901
+
+This release is for beta testers of the V1 to V2 Migration Tool. Please note that you will also need to update to Moodle Direct V1 (v2017071901) in order for the Migration Tool to work.
+
+---
+
+### Date:		2017-July-03
+### Release:	v2017070301
+
+We now support Moodle 3.3!
+
+- Changed assignment names to be plugin specific
+- Added tool tips to interface icons  (Thanks to @rlorenzo)
+- All settings are preserved when duplicating or restoring an assignment
+- Students no longer see PHP warnings
+- Fixed a code issue for assignment backup and restore (Thanks to @davidscotson)
+
+**Changed assignment names to be plugin specific** - When creating a course that included both V1 and V2 assignments, it was difficult to differentiate between the two plugins during setup, with them both being titled 'Turnitin Assignment'. To resolve this, we've changed the assignment titles to be plugin specific.
+
+**Added tool tips to interface icons**  - We received a request to add a tooltip to the following Turnitin interface icons: trash can, pencil, grade, and download. We also swapped the cloud icon (used for downloading a submission) to an easier-to-identify arrow icon.
+
+**Note:** A tool tip is a message that appears when the cursor is positioned over an icon, image, or any other graphic. The inclusion of icon tooltips increases accessibility for users (particularly those using screen readers!)
+
+**All settings are preserved when duplicating or restoring an assignment** - We've fixed an issue that resulted in the 'Allow submission of any file type' and 'Check against Institutional Repository' settings to be forgotten about when duplicating or restoring from backup. Now, a restored or duplicated assignment will have identical settings to its source assignment. Phew!
+
+**Students no longer see PHP warnings** - We received reports that students were able to see PHP errors if Moodle debugging was set to full developer level by the administrator. We've fixed this to ensure that the PHP error is no longer visible to students.
+
+**Fixed a code issue for assignment backup and restore** - We noticed that in the assignment backup and restore code, the same URL substitution was used for V2 as in V1, which could potentially cause backup and restoration issues. We've corrected this so that 'TURNITINTOOLTWO' is now used to encode links to the module and module list, rather than its V1 counterpart, 'TURNITINTOOL'. 
+
+---
+
 ### Date:		2017-May-24
 ### Release:	v2017052401
 

@@ -40,31 +40,77 @@ require_once($CFG->dirroot . '/course/lib.php');
  */
 class mod_turnitintooltwo_view_testcase extends test_lib {
 
-	/**
-	 * Test that the page layout is set to standard so that the header displays.
-	 * 
-	 * @return  void
-	 */
-	public function test_output_header() {
-		global $PAGE;
-		$this->resetAfterTest();
+    /**
+     * Test that the page layout is set to standard so that the header displays.
+     */
+    public function test_output_header() {
+        global $PAGE;
+        $turnitintooltwoview = new turnitintooltwo_view();
 
-		$turnitintooltwoview = new turnitintooltwo_view();
+        $pageurl = '/fake/url/';
+        $pagetitle = 'Fake Title';
+        $pageheading = 'Fake Heading';
+        $turnitintooltwoview->output_header($pageurl, $pagetitle, $pageheading, true);
 
-		$pageurl = '/fake/url/';
-		$pagetitle = 'Fake Title';
-		$pageheading = 'Fake Heading';
-		$turnitintooltwoview->output_header($pageurl, $pagetitle, $pageheading, true);
+        $this->assertContains($pageurl, (string)$PAGE->url);
+        $this->assertEquals($pagetitle, $PAGE->title);
+        $this->assertEquals($pageheading, $PAGE->heading);
+    }
 
-		$this->assertContains($pageurl, (string)$PAGE->url);
-		$this->assertEquals($pagetitle, $PAGE->title);
-		$this->assertEquals($pageheading, $PAGE->heading);
-	}
+    /**
+     * Test that the v1 migration tab is present in the settings tabs if v1 is installed
+     * AND the tool has been activated.
+     */
+    public function test_draw_settings_menu_v1_installed() {
+        global $DB;
+        $this->resetAfterTest();
+        $turnitintooltwoview = new turnitintooltwo_view();
+
+        // If v1 is not installed then create a fake row to trick Moodle into thinking it's installed.
+        $module = $DB->get_record('config_plugins', array('plugin' => 'mod_turnitintool'));
+        if (!boolval($module)) {
+            $module = new stdClass();
+            $module->plugin = 'mod_turnitintool';
+            $module->name = 'version';
+            $module->value = 1001;
+            $DB->insert_record('config_plugins', $module);
+        }
+
+        // Test that tab is present.
+        $tabs = $turnitintooltwoview->draw_settings_menu('v1migration');
+        $this->assertContains(get_string('v1migrationtitle', 'turnitintooltwo'), $tabs);
+    }
+
+    /**
+     * Test that the v1 migration tab is not present in the settings tabs if v1 is not installed,
+     */
+    public function test_draw_settings_menu_v1_not_installed() {
+        global $DB;
+        $this->resetAfterTest();
+        $turnitintooltwoview = new turnitintooltwo_view();
+
+        // If v1 is installed then temporarily modify the plugin record to trick Moodle into thinking it's not installed.
+        $module = $DB->get_record('config_plugins', array('plugin' => 'mod_turnitintool'));
+        if (boolval($module)) {
+            $tmpmodule = new stdClass();
+            $tmpmodule->id = $module->id;
+            $tmpmodule->plugin = 'mod_turnitintool_tmp';
+            $DB->update_record('config_plugins', $tmpmodule);
+        }
+        
+        $tabs = $turnitintooltwoview->draw_settings_menu('v1migration');
+        $this->assertNotContains(get_string('v1migrationtitle', 'turnitintooltwo'), $tabs);
+
+        if (boolval($module)) {
+            $tmpmodule->plugin = 'mod_turnitintool';
+            $DB->update_record('config_plugins', $tmpmodule);
+        }
+    }
 
 	/**
 	 * Test that the submissions table layout conforms to expectations when the user is an instructor.
 	 *
-	 * @return  void
+	 * @return void
 	 */
 	public function test_inbox_table_structure_instructor() {
 		global $DB;
@@ -129,4 +175,47 @@ class mod_turnitintooltwo_view_testcase extends test_lib {
 		$this->assertContains("<table class=\"submissionsDataTable\" id=\"$partid\">", $table, 'Return did not include the expected table.');
 		$this->assertContains("<td class=\"centered_cell cell c0\" style=\"\">$partid</td>", $table, 'Return did not contain the expected student row.');
 	}
+
+    /**
+     * Test the method used to determine whether the delete link is shown to users.
+     * The delete link should only be shown to instructors if there has been a submission made to Moodle or
+     * to students if they have a submission and the due date hasn't passed or late submissions are allowed.
+     *
+     * @return void
+     */
+    public function test_show_delete_link() {
+        $turnitintooltwoview = new turnitintooltwo_view();
+
+        // Show delete link to instructor if a submission has been made.
+        $submission = new stdClass();
+        $submission->id = 1;
+        $showdeletelink = $turnitintooltwoview->show_delete_link(true, $submission, time(), 1);
+        $this->assertEquals(true, $showdeletelink);
+
+        // Do not show delete link to instructor if no submission has been made.
+        $submission = new stdClass();
+        $showdeletelink = $turnitintooltwoview->show_delete_link(true, $submission, time(), 1);
+        $this->assertEquals(false, $showdeletelink);
+
+        // Show delete link to student if a submission has only been made to moodle and the due date hasn't passed.
+        $submission = new stdClass();
+        $submission->id = 1;
+        $showdeletelink = $turnitintooltwoview->show_delete_link(false, $submission, time()+1000, 1);
+        $this->assertEquals(true, $showdeletelink);
+        
+        // Show delete link to student if a submission has only been made to moodle,
+        // the due date has passed and late submissions are allowed.
+        $showdeletelink = $turnitintooltwoview->show_delete_link(false, $submission, time()-1, 1);
+        $this->assertEquals(true, $showdeletelink);
+
+        // Do not show delete link to student if a submission has only been made to moodle,
+        // the due date has passed and late submissions are not allowed.
+        $showdeletelink = $turnitintooltwoview->show_delete_link(false, $submission, time()-1, 0);
+        $this->assertEquals(false, $showdeletelink);
+
+        // Do not show delete link to student if a submission has been sent to Turnitin.
+        $submission->submission_objectid = 1; 
+        $showdeletelink = $turnitintooltwoview->show_delete_link(false, $submission, time(), 1);
+        $this->assertEquals(false, $showdeletelink);
+    }
 }

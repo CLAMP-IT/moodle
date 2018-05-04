@@ -16,6 +16,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__."/lib.php");
 require_once(__DIR__.'/classes/digitalreceipt/receipt_message.php');
 require_once(__DIR__.'/classes/digitalreceipt/instructor_message.php');
 
@@ -318,7 +319,7 @@ class turnitintooltwo_submission {
 
         // Delete Moodle submission first.
         if (!$DB->delete_records('turnitintooltwo_submissions', array('id' => $this->id))) {
-            $notice["type"] = "error";
+            $notice["type"] = "danger";
             $notice["message"] = get_string('submissiondeleteerror', 'turnitintooltwo');
             return $notice;
         }
@@ -388,7 +389,7 @@ class turnitintooltwo_submission {
                     $this->userid
                 );
 
-                $notice["type"] = "full-error";
+                $notice["type"] = "danger";
                 $notice["message"] = get_string('submissiondeleted', 'turnitintooltwo').
                                         ' ('.get_string('turnitinid', 'turnitintooltwo').
                                             ': '.$this->submission_objectid.')';
@@ -419,7 +420,8 @@ class turnitintooltwo_submission {
         $context = context_module::instance($cm->id);
 
         // Check if user is a member of class, if not then join them to it.
-        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+        $coursetype = turnitintooltwo_get_course_type($turnitintooltwoassignment->turnitintooltwo->legacy);
+        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
         $user = new turnitintooltwo_user($userid, 'Learner');
         $user->join_user_to_class($course->turnitin_cid);
         $user->edit_tii_user();
@@ -506,7 +508,8 @@ class turnitintooltwo_submission {
         $context = context_module::instance($cm->id);
 
         // Check if user is a member of class, if not then join them to it.
-        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course);
+        $coursetype = turnitintooltwo_get_course_type($turnitintooltwoassignment->turnitintooltwo->legacy);
+        $course = $turnitintooltwoassignment->get_course_data($turnitintooltwoassignment->turnitintooltwo->course, $coursetype);
         $user = new turnitintooltwo_user($this->userid, 'Learner');
         $user->join_user_to_class($course->turnitin_cid);
         $user->edit_tii_user();
