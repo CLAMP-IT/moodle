@@ -1,3 +1,40 @@
+New in 3.2.1.5
+==============
+- Possible FIX: Issue #853: Possible solution for "Site logo needs textual description for accessibility".
+- FIX: Issue #862: Missing folder icon in courses list since commit 77abc460.
+- FIX: Improved course content search so that will work with $CFG->themedir.
+- FIX: Alert close icon in alternative colour schemes.
+- NEW: Added 'Search all course content' checkbox user preference to search all course content or only the course
+       title when performing a 'Course search' on the dashboard.  Thanks to "Linnaeus University" for funding this
+       enhancement.
+
+New in 3.2.1.4
+==============
+- FIX: Side pre block text colour when 'linkadmincategories' is unticked.
+- FIX: Above setting for 'coursetitleposition' does not work on 'incourse' / two column content pages.
+- FIX: Issue #842: Would it be possible to change a private to a protected?
+- FIX: Issue #843: Add an activity or resource popup display.
+- FIX: Issue #844: While adding images with floating submit buttons.
+- FIX: Issue #846: Group edit form layout.
+
+New in 3.2.1.3
+==============
+- FIX: Reduce navbar icons jumping when old navbar position.
+- FIX: Required field icon.
+- NEW: Issue #832: Use Core Notification and Messages menus.
+- NEW: Course title position feature setting.
+- NEW: Side pre block background, text, link and link hover settings.
+
+New in 3.2.1.2
+==============
+- FIX: Issue #821: Marketing spots no longer responsive for mobiles.
+- FIX: Issue #823: Social icons.
+- FIX: Issue #824: Header area/slide show/bullet-menu "on top".
+- FIX: Issue #828: div id# completionprogressid has z-index.
+- FIX: Issue #831: User tour with backdrop alignment off - partial.
+- FIX: Action menu overlapping navbar.
+- NEW: Tidy up.
+
 New in 3.2.1.1
 ==============
 - FIX: Issue #817: Incorrect header closing tags in header title area.

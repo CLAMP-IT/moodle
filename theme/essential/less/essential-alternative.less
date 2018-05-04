@@ -165,8 +165,78 @@
                         color: inherit;
                     }
                 }
-                button.socialicon .@{fa-css-prefix} {
-                    color: @white;
+                button {
+                    &.socialicon {
+                        background-color: #bbb;
+                        background-image: none;
+                        .@{fa-css-prefix} {
+                            color: @white;
+                        }
+                        &:hover,
+                        &:focus {
+                            background-image: none;
+                        }
+                    }
+                    &.facebook:hover,
+                    &.facebook:focus {
+                        background-color: #4a6ea9;
+                    }
+                    &.skype:hover,
+                    &.skype:focus {
+                        background-color: #00adf7;
+                    }
+                    &.instagram:hover,
+                    &.instagram:focus {
+                        background-color: #a5674a;
+                    }
+                    &.ios:hover,
+                    &.ios:focus {
+                        background-color: #000;
+                    }
+                    &.windows:hover,
+                    &.windows:focus {
+                        background-color: #008a00;
+                    }
+                    &.winphone:hover,
+                    &.winphone:focus {
+                        background-color: #9b4f96;
+                    }
+                    &.android:hover,
+                    &.android:focus {
+                        background-color: #98cd32;
+                    }
+                    &.vk:hover,
+                    &.vk:focus {
+                        background-color: #4a6ea9;
+                    }
+                    &.twitter:hover,
+                    &.twitter:focus {
+                        background-color: #00aced;
+                    }
+                    &.googleplus:hover,
+                    &.googleplus:focus {
+                        background-color: #f42941;
+                    }
+                    &.flickr:hover,
+                    &.flickr:focus {
+                        background-color: #ff3096;
+                    }
+                    &.instagram:hover,
+                    a.instagram:focus {
+                        background-color: #b99c6b;
+                    }
+                    &.youtube:hover,
+                    &.youtube:focus {
+                        background-color: #f42941;
+                    }
+                    &.pinterest:hover,
+                    &.pinterest:focus {
+                        background-color: #f42941;
+                    }
+                    &.linkedin:hover,
+                    &.linkedin:focus {
+                        background-color: #4a9cc9;
+                    }
                 }
 
                 a {
@@ -405,29 +475,15 @@
                         }
                     }
 
-                    .navbar-inner .messagemenu {
-                        ul.nav {
-                            .dropdown-menu {
-                                border: 1px solid ~"[[setting:alternativethemecolor@{index}]]";
-                                li > a {
-                                    border-top: 1px dotted ~"[[setting:alternativethemecolor@{index}]]";
-                                    &:hover {
-                                        .message,
-                                        .notification {
-                                            color: @white; // TODO: Page background colour needs to be a setting.
-                                            background-color: ~"[[setting:alternativethemehovercolor@{index}]]";
-                                            img {
-                                                &.userpicture,
-                                                &.profilepicture {
-                                                    box-shadow: 0 0 3px ~"[[setting:alternativethemenavcolor@{index}]]";
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                   .popover-region-toggle {
+                        color: ~"[[setting:alternativethemenavcolor@{index}]]";
+                        &:hover,
+                        &:focus {
+                            color: ~"[[setting:alternativethemecolor@{index}]]";
+                            background-color: ~"[[setting:alternativethemenavcolor@{index}]]";
                         }
                     }
+
                 }
 
                 .course-content ul li.section.main.current {
@@ -489,6 +545,11 @@
                         }
                     }
                 }
+
+                button.close {
+                    background: transparent;
+                }
+
                 .btn {
                     .buttonBackground(@btnBackground, @btnBackgroundHighlight, @grayDark, 0 1px 1px rgba(255,255,255,.75));
                     &:hover,
@@ -718,6 +779,28 @@
                     }
                     .icon {
                         color: ~"[[setting:alternativethemeiconcolor@{index}]]";
+                    }
+                }
+
+                #block-region-side-pre .block {
+                    background-color: ~"[[setting:alternativethemesidepreblockbackgroundcolour@{index}]]";
+                    color: ~"[[setting:alternativethemesidepreblocktextcolour@{index}]]";
+                    p.tree_item.branch {
+                        color: ~"[[setting:alternativethemesidepreblocktextcolour@{index}]]";
+                    }
+                    a,
+                    a:visited,
+                    .@{fa-css-prefix} { // Compromise with icon colour.
+                        color: ~"[[setting:alternativethemesidepreblockurlcolour@{index}]]";
+                    }
+                    a:focus,
+                    a:hover,
+                    .@{fa-css-prefix}:focus,
+                    .@{fa-css-prefix}:hover {
+                        color: ~"[[setting:alternativethemesidepreblockhovercolour@{index}]]";
+                    }
+                    .header .title h2 {
+                        color: ~"[[setting:alternativethemesidepreblocktextcolour@{index}]]";
                     }
                 }
 
