@@ -228,6 +228,13 @@ class filter_poodll extends moodle_text_filter {
 			if(empty($filterprops['TITLE'])){return $link[0];}
 		}
 
+		//if this was a link but it had a "nopoodll" class on it then we ought to ignore it
+        if($ext) {
+            if (preg_match('/class="[^"]*nopoodll/i', $link[0])) {
+                return $link[0];
+            }
+        }
+
 		//if we want to ignore the filter (for "how to use poodll" or "cut and paste" this style use) we let it go
 		//to use this, make the last parameter of the filter passthrough=1
 		if (!empty($filterprops['passthrough'])) return str_replace( ",passthrough=1","",$link[0]);
@@ -687,10 +694,13 @@ class filter_poodll extends moodle_text_filter {
 			$poodlltemplate = $props_html . $poodlltemplate;
 		
 			//load define for this template. Later it will be called from loadtemplate
-			$PAGE->requires->js_amd_inline($template_amd_script);
+            if(!empty($template_amd_script)) {
+                $PAGE->requires->js_amd_inline($template_amd_script);
+            }
 			//for AMD template script
 			$PAGE->requires->js_call_amd('filter_poodll/template_amd','loadtemplate', array(array('AUTOID'=>$filterprops['AUTOID'])));
 			//echo $filterprops['AUTOID'] . PHP_EOL;
+
 
 
 		}else{

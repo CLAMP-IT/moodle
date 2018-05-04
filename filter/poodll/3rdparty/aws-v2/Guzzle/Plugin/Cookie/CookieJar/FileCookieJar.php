@@ -40,11 +40,14 @@ class FileCookieJar extends ArrayCookieJar
      */
     protected function persist()
     {
+        //JUSTIN unused and a Moodle Sin
+        /*
         if (false === file_put_contents($this->filename, $this->serialize())) {
             // @codeCoverageIgnoreStart
             throw new RuntimeException('Unable to open file ' . $this->filename);
             // @codeCoverageIgnoreEnd
         }
+        */
     }
 
     /**

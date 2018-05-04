@@ -31,9 +31,15 @@ class licensemanager
     const FILTER_POODLL_IS_REGISTERED = 0;
     const FILTER_POODLL_IS_UNREGISTERED = 1;
     const FILTER_POODLL_IS_EXPIRED = 2;
-    
-    const FILTER_POODLL_LICENSE_INDIVIDUAL = 2512;
+
+    const FILTER_POODLL_LICENSE_ENTERPRISE = 4135;
+    const FILTER_POODLL_LICENSE_BIGDOG = 4134;
+    const FILTER_POODLL_LICENSE_STANDARD = 4132;
+    const FILTER_POODLL_LICENSE_TINY = 4141;
+
+    //Old subscription levels
     const FILTER_POODLL_LICENSE_INSTITUTION = 2511;
+    const FILTER_POODLL_LICENSE_INDIVIDUAL = 2512;
     const FILTER_POODLL_LICENSE_FREETRIAL = 2583;
 
     private $registered_url='';
@@ -87,12 +93,24 @@ class licensemanager
     		case self::FILTER_POODLL_LICENSE_FREETRIAL:
     			$details->license_type='Free Trial';
     			break;
-    		case self::FILTER_POODLL_LICENSE_INDIVIDUAL:
-    			$details->license_type='Individual';
+            case self::FILTER_POODLL_LICENSE_INDIVIDUAL:
+                $details->license_type='Individual Teacher';
+                break;
+            case self::FILTER_POODLL_LICENSE_INSTITUTION:
+                $details->license_type='Institution';
+                break;
+            case self::FILTER_POODLL_LICENSE_TINY:
+    			$details->license_type='Tiny';
     			break;
-    		case self::FILTER_POODLL_LICENSE_INSTITUTION:
-    			$details->license_type='Institution';
-    			break;
+            case self::FILTER_POODLL_LICENSE_STANDARD:
+                $details->license_type='Standard';
+                break;
+            case self::FILTER_POODLL_LICENSE_BIGDOG:
+                $details->license_type='Big';
+                break;
+            case self::FILTER_POODLL_LICENSE_ENTERPRISE:
+                $details->license_type='Enterprise';
+                break;
     		default:
     			$details->license_type="";
     	}
@@ -126,11 +144,7 @@ class licensemanager
         }
         $expire_time = strtotime($this->expire_date);
         $diff = $expire_time - time();
-        /*
-        echo ($this->expire_date . ' | ');
-        echo (date("D M j G:i:s T Y", time()) . ' | ');
-        echo($expire_time . ' | ' . time() . ' | ' . $diff); 
-       */
+
         if($diff < 0){return self::FILTER_POODLL_IS_EXPIRED;}
         
         //get arrays of the wwwroot and registered url
@@ -162,9 +176,13 @@ class licensemanager
             if($registered_bits['host'] === $wwwroot_bits['host']){
                 $this->validated = true;
                 return self::FILTER_POODLL_IS_REGISTERED;
-            //this will cover subdomain matches but only for institution license
+            //this will cover subdomain matches but only for institution bigdog and enterprise license
             }elseif(($registered_bits['host']=== $wildcard_subdomain_wwwroot) &&
-                        $this->license_type==self::FILTER_POODLL_LICENSE_INSTITUTION){
+                ( $this->license_type==self::FILTER_POODLL_LICENSE_INSTITUTION
+                    || $this->license_type==self::FILTER_POODLL_LICENSE_BIGDOG
+                    || $this->license_type==self::FILTER_POODLL_LICENSE_ENTERPRISE ))
+                {
+
                  $this->validated = true;
                 return self::FILTER_POODLL_IS_REGISTERED;
             }else{

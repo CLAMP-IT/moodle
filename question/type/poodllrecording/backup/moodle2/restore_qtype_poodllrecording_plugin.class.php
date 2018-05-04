@@ -70,7 +70,8 @@ class restore_qtype_poodllrecording_plugin extends restore_qtype_plugin {
      */
     public static function define_decode_contents() {
         return array(
-            new restore_decode_content('qtype_poodllrecording_opts', 'graderinfo', 'backimage','qtype_poodllrecording'),
+            new restore_decode_content('qtype_poodllrecording_opts', array(\qtype_poodllrecording\constants::FILEAREA_GRADERINFO,
+                'qresource'),'qtype_poodllrecording')
         );
     }
 
@@ -99,7 +100,7 @@ class restore_qtype_poodllrecording_plugin extends restore_qtype_plugin {
             $defaultoptions->responsefieldlines = 15;
             $defaultoptions->attachments = 0;
             $defaultoptions->graderinfo = '';
-			$defaultoptions->backimage = '';
+			$defaultoptions->qresource = '';
 			$defaultoptions->boardsize = '320x320';
             $defaultoptions->graderinfoformat = FORMAT_HTML;
             $DB->insert_record('qtype_poodllrecording_opts', $defaultoptions);

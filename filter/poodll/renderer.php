@@ -30,61 +30,6 @@ class filter_poodll_renderer extends plugin_renderer_base
 {
 
 
-    public function fetch_owl_flashcards($dataset, $opts)
-    {
-        $card_div_array = array();
-        $cardwidth = $opts['CARDWIDTH'];
-        $cardheight = $opts['CARDHEIGHT'];
-        $containerid = $opts['FLASHCARDS_ID'];
-
-        foreach ($dataset as $data) {
-            $qsection = html_writer::tag('div', html_writer::tag('h2', $data->questiontext),
-                array('class' => 'filter_poodll_flashcards_owl_card front'));
-            $asection = html_writer::tag('div', html_writer::tag('h2', $data->answertext),
-                array('class' => 'filter_poodll_flashcards_owl_card back'));
-            $cardsection = html_writer::tag('div', $qsection . $asection,
-                array('class' => 'filter_poodll_flashcards_owl_onecard', 'style' => 'min-height: ' . $cardheight . 'px;'));
-            $card_div_array[] = $cardsection;
-        }
-        $carddivs = implode(' ', $card_div_array);
-        $slides = html_writer::div($carddivs, 'filter_poodll_flashcards_owl owl-carousel owl-theme');
-        $previousbutton = html_writer::tag('a', 'previous', array('class' => 'filter_poodll_flashcards_owl_previous btn btn-primary'));
-        $nextbutton = html_writer::tag('a', 'next', array('class' => 'filter_poodll_flashcards_owl_next btn btn-primary'));
-
-        //buttons didn't work in AMD. TO DO .. fix em up
-        $buttons = html_writer::div($previousbutton . $nextbutton, 'filter_poodll_flashcards_owl_buttons');
-        $buttons = '';
-
-        $container = html_writer::tag('div', $slides . $buttons, array('id' => $containerid, 'class' => 'filter_poodll_flashcards_owl_container'));
-
-        return $container;
-
-    }
-
-
-    public function fetch_revealjs_flashcards($dataset)
-    {
-        $card_div_array = array();
-        foreach ($dataset as $data) {
-            $qsection = html_writer::tag('section', html_writer::tag('h2', $data->questiontext),
-                array('data-background' => '', 'class' => 'filter_poodll_revealjs_section filter_poodll_revealjs_section_front'));
-            $asection = html_writer::tag('section', html_writer::tag('h2', $data->answertext),
-                array('data-transition' => 'flip', 'data-background' => '', 'class' => 'filter_poodll_revealjs_section filter_poodll_revealjs_section_back'));
-            $cardsection = html_writer::tag('section', $qsection . $asection,
-                array());
-            $card_div_array[] = $cardsection;
-        }
-        $carddivs = implode(' ', $card_div_array);
-        $slides = html_writer::div($carddivs, 'slides');
-        $previousbutton = html_writer::tag('a', 'previous', array('class' => 'filter_poodll_revealjs_previous btn btn-primary'));
-        $nextbutton = html_writer::tag('a', 'next', array('class' => 'filter_poodll_revealjs_next btn btn-primary'));
-        $buttons = html_writer::div($previousbutton . $nextbutton, 'filter_poodll_revealjs_buttons');
-        $reveal = html_writer::div($slides, 'reveal filter_poodll_revealjs_container');
-
-        return $reveal . $buttons;
-
-    }
-
     public function fetchLiterallyCanvas($html)
     {
         global $PAGE;
@@ -124,6 +69,7 @@ class filter_poodll_renderer extends plugin_renderer_base
         $PAGE->requires->strings_for_js(array('insert',
             'cancel',
             'recui_record',
+            'recui_restart',
             'recui_recordorchoose',
             'recui_pause',
             'recui_play',
@@ -213,11 +159,6 @@ class filter_poodll_renderer extends plugin_renderer_base
     {
         global $CFG, $PAGE;
 
-        //this init the M.mod_readaloud thingy, after the page has loaded.
-        //we replaced this with a shim to the same js file to avoid load order badness
-        //Justin 20160805
-        //$PAGE->requires->js(new \moodle_url($CFG->httpswwwroot . '/filter/poodll/flash/embed-compressed.js'));
-
         $widgetopts->widgetid = $widgetid;
 
         //The CSS selector string
@@ -229,7 +170,12 @@ class filter_poodll_renderer extends plugin_renderer_base
 
         $PAGE->requires->strings_for_js(array('insert',
             'cancel',
+            'recui_finished',
+            'recui_ready',
+            'recui_playing',
+            'recui_recording',
             'recui_record',
+            'recui_restart',
             'recui_recordorchoose',
             'recui_pause',
             'recui_play',
@@ -241,6 +187,7 @@ class filter_poodll_renderer extends plugin_renderer_base
             'recui_uploading',
             'recui_uploadafile',
             'recui_uploadsuccess',
+            'recui_awaitingconversion',
             'recui_openrecorderapp',
             'recui_awaitingconfirmation',
             'recui_uploaderror',

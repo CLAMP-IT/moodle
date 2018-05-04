@@ -5,11 +5,10 @@ The Moodle PoodLL Anywhere plugin for Atto.
 It allows the user to record audio and video or draw pictures, or snap pictures, directly into forum posts, assignment descriptions, page resource content, question descriptions, question responses and other areas. 
 
 The recorders available are:
-i) audio (red5)
-ii) audio (mp3)
-iii) video (red5)
-iv) whiteboard
-v) snapshot
+i) audio
+ii) video
+iii) whiteboard
+iv) snapshot
 
 They can be hidden or shown using the settings found at:
 site admin -> plugins -> text editors ->  Atto html editor -> poodll anywhere
@@ -19,7 +18,6 @@ show icons depending on the user's role.
 
 The capabilities available to be set are:
 Atto/poodll:visible
-Atto/poodll:allowaudiored5
 Atto/poodll:allowaudiomp3
 Atto/poodll:allowvideo
 Atto/poodll:allowwhiteboard

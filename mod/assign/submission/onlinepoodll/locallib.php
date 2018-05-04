@@ -60,7 +60,22 @@ if(!defined('OP_REPLYMP3VOICE')){
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class assign_submission_onlinepoodll extends assign_submission_plugin {
+		
+  public function is_enabled() {
+      return $this->get_config('enabled') && $this->is_configurable();
+  }
 
+  public function is_configurable() {
+      $context = context_course::instance($this->assignment->get_course()->id);
+      if ($this->get_config('enabled')) {
+          return true;
+      }
+      if (!has_capability('assignsubmission/onlinepoodll:use', $context)) {
+          return false;
+      }
+      return parent::is_configurable();
+  }
+		
     /**
      * Get the name of the online text submission plugin
      * @return string
@@ -439,6 +454,7 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 		}
 
         //size params for our response players/images
+        //audio is a simple 1 or 0 for display or not
         $size = $this->fetch_response_size($this->get_config('recordertype'));
 
 		
@@ -460,8 +476,12 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
 
                 case OP_REPLYVOICE:
 				case OP_REPLYMP3VOICE:
-						$responsestring .= format_text("<a href='$rawmediapath'>$filename</a>", FORMAT_HTML);
-						break;						
+				    if($size) {
+                        $responsestring .= format_text("<a href='$rawmediapath'>$filename</a>", FORMAT_HTML);
+                    }else{
+                        $responsestring=get_string('audioplaceholder','assignsubmission_onlinepoodll');
+                    }
+                    break;
 					
 				case OP_REPLYVIDEO:
 						if($size->width==0){
@@ -532,8 +552,10 @@ class assign_submission_onlinepoodll extends assign_submission_plugin {
                 $size=$islist ? $sizes[$config->snapshot_displaysize_list] : $sizes[$config->snapshot_displaysize_single] ;
                 break;
             case OP_REPLYVOICE:
-            case OP_REPLYTALKBACK:
             case OP_REPLYMP3VOICE:
+                $size=$islist ? $config->displayaudioplayer_list : $config->displayaudioplayer_single ;
+                break;
+            case OP_REPLYTALKBACK:
             default:
                 break;
 

@@ -1,5 +1,65 @@
 Change List
 =========
+Version 3.0.63(Build 2018032301)
+-fixed ajax media refresher which did not detect placeholder video size correctly
+-fixed wrong sized progress bar on 123 recorder
+-fixed shim code which restricted shimmed players and widgets to only one per page
+-removed old code from module.js
+-removed splash generation code from FFMPEG calls
+-fixed bug in ffmpeg convert task when called from /cli/poodllcron.php
+
+Version 3.0.62(Build 2018022101)
+-removed doubled up (and old) definition of the placeholder content hash. This was breaking ffmpeg conversions
+
+Version 3.0.61(Build 2018021901)
+-Added more presets for speech and text (beta)
+-fixed bug with video recording in plain recorder skin
+
+Version 3.0.60(Build 2018020701)
+-added presets for Amazon Polly (requires Amazon SWD SDK v3 not shipped with poodll)
+-changes to uploader to support poodll cloud
+-fixed drawing board js bug where toolbar events did not set canvas 'dirty' flag
+-fixed blob concatenation issues in IE and Edge
+-added usepoodll event 
+-added new placeholder audio and video
+
+Version 3.0.58(Build 2017120201)
+-fixed broken pause on recording
+-added an error dialog
+-added one button audio player
+-changed URL of Poodll subscriptions page
+
+Version 3.0.57(Build 2017111701)
+-Added video to onebutton recorder (still beta)
+-Added new device settings to all recorders, enabling users to select audio/video device from within recorder
+-added QR code scanner player preset and library
+
+Version 3.0.56(Build 2017110501)
+-Added animations for recorders
+-Fixed bugs where placeholder could overwrite converted file
+-Added support for more than 6 recorders on page (by def. Google Chrome doesn't like this)
+-Major code refactor of media stream recorder
+-Added completion check to Shadow player
+-New One Button Recorder (still in beta)
+-New Speech Recognition (still in beta)
+-New 'Clear Template' preset for blanking a tempalte
+
+Version 3.0.55(Build 2017100701)
+-fixed display and volume button bugs in multi/twice/thriceplayers
+-improved display of thrice players
+-added ability to update templates in bulk or individually
+-improved video transcript preset
+-fixed toggle preset
+-styled shadow player
+-improved iOS support
+
+Version 3.0.54(Build 2017092401)
+-support for iOS html5 audio recording
+-support for recorders as widgets
+-removed unneeded AWS libs to trim size and possible issues
+-removed legacy mp3 recorder skins
+-tweaks to remove certain calls to file_put_contents in 3rd party libs
+
 Version 3.0.53(Build 2017082601)
 -More and better recorder skins
 -Support for hints so we can set recorder sizes and skins at diff levels

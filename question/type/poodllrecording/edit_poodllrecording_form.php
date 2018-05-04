@@ -51,12 +51,10 @@ class qtype_poodllrecording_edit_form extends question_edit_form {
 	   $mform->disabledIf('timelimit', 'responseformat', 'eq', 'picture');
 
 		// added Justin 20120814 bgimage, part of whiteboard response
-		$mform->addElement('filemanager', 'backimage', get_string('backimage', 'qtype_poodllrecording'), null,array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1));
+		$mform->addElement('filemanager', 'qresource', get_string('qresource', 'qtype_poodllrecording'), null,array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1));
 		$mform->addElement('select', 'boardsize',
 			get_string('boardsize', 'qtype_poodllrecording'), $qtype->board_sizes());
 			$mform->setDefault('boardsize', 'editor');
-		//commented out 20130120 was broken with moodle 2.6. Errors saying "you must not attach more than one files here" when tried to save, empty, disabled
-		//$mform->disabledIf('backimage', 'responseformat', 'ne', 'picture' );
 		$mform->disabledIf('boardsize', 'responseformat', 'ne', 'picture' );
 
     }
@@ -81,20 +79,20 @@ class qtype_poodllrecording_edit_form extends question_edit_form {
 
 	//best to use file_get_submitted_draft_itemid - because copying questions gets weird otherwise
 	//$draftitemid =$question->options->backimage;
-	$draftitemid = file_get_submitted_draft_itemid('backimage');
+	$draftitemid = file_get_submitted_draft_itemid(\qtype_poodllrecording\constants::FILEAREA_QRESOURCE);
 
-	file_prepare_draft_area($draftitemid, $this->context->id, 'qtype_poodllrecording', 'backimage', 
+	file_prepare_draft_area($draftitemid, $this->context->id, 'qtype_poodllrecording', \qtype_poodllrecording\constants::FILEAREA_QRESOURCE,
 		!empty($question->id) ? (int) $question->id : null,
 		array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1));
-	$question->backimage = $draftitemid;
+	$question->qresource = $draftitemid;
 
-        $draftid = file_get_submitted_draft_itemid('graderinfo');
+        $draftid = file_get_submitted_draft_itemid(\qtype_poodllrecording\constants::FILEAREA_GRADERINFO);
         $question->graderinfo = array();
         $question->graderinfo['text'] = file_prepare_draft_area(
             $draftid,           // draftid
             $this->context->id, // context
             'qtype_poodllrecording',      // component
-            'graderinfo',       // filarea
+            \qtype_poodllrecording\constants::FILEAREA_GRADERINFO,       // filarea
             !empty($question->id) ? (int) $question->id : null, // itemid
             $this->fileoptions, // options
             $question->options->graderinfo // text

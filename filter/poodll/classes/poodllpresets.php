@@ -34,6 +34,8 @@ class poodllpresets extends \admin_setting {
     public $visiblename;
     public $information;
 
+    const CLEARTEMPLATEKEY = 'cleartemplate';
+
     /**
      * not a setting, just text
      * @param string $name unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins.
@@ -97,7 +99,9 @@ class poodllpresets extends \admin_setting {
         	}
         	
         	//if its a player or a widget or a template mark it as such
-        	if(!empty($this->presetdata[$key]['showplayers'])){
+            if($this->presetdata[$key]['key']== self::CLEARTEMPLATEKEY){
+                $usename = '(A) ' . get_string('cleartemplate','filter_poodll');
+            }elseif(!empty($this->presetdata[$key]['showplayers'])){
         		$usename = '(P) ' . $usename;
         	}elseif(!empty($this->presetdata[$key]['showatto'])){
         		$usename = '(W) ' . $usename;        	
@@ -124,7 +128,7 @@ class poodllpresets extends \admin_setting {
 			'class' => 'filter_poodll_dragdropsquare'));
 		
 		return format_admin_setting($this, $this->visiblename,
-			$dragdropsquare . '<div class="form-text defaultsnext">'. $presetscontrol . $select .  '</div>',
+			$dragdropsquare .'<div class="form-text defaultsnext">'. $presetscontrol . $select .  '</div>',
 			$this->information, true, '','', $query);
 	}//end of output html
         
@@ -149,7 +153,8 @@ class poodllpresets extends \admin_setting {
             $ret = array();
             $dirs=array();
 
-            //we search the Generico "presets" and the themes "generico" folders for presets
+
+            //we search the Poodll "presets" and the themes "poodll" folders for presets
             $poodll_presets_dir=$CFG->dirroot . '/filter/poodll/presets';
             $theme_generico_dir=$PAGE->theme->dir . '/generico';
             if(file_exists($poodll_presets_dir)) {
@@ -172,6 +177,7 @@ class poodllpresets extends \admin_setting {
                     }
                 }
             }
+
             return $ret;
         }//end of fetch presets function
 				
@@ -194,7 +200,9 @@ class poodllpresets extends \admin_setting {
 			$fields['style']='templatestyle';
 			$fields['dataset']='dataset';
 			$fields['datavars']='datavars';
-			
+
+
+            //If we are setting the template, then lets do that.
 			foreach($fields as $fieldkey=>$fieldname){
 				if(array_key_exists($fieldkey,$preset)){
 					$fieldvalue=$preset[$fieldkey];
@@ -204,4 +212,46 @@ class poodllpresets extends \admin_setting {
 				set_config($fieldname . '_' . $templateindex, $fieldvalue, 'filter_poodll');
 			}
 		}//End of set_preset_to_config
+
+    public static function template_has_update($templateindex){
+        $presets = self::fetch_presets();
+        foreach($presets as $preset) {
+            if(get_config('filter_poodll', 'templatekey_' . $templateindex)==$preset['key']) {
+                $template_version = get_config('filter_poodll', 'templateversion_' . $templateindex);
+                $preset_version = $preset['version'];
+                if (version_compare($preset_version, $template_version) > 0) {
+                    return $preset_version;
+                }//end of version compare
+            }//end of if keys match
+        }//end of presets loop
+        return false;
+    }
+
+    public static function update_all_templates(){
+		    $templatecount = get_config('filter_poodll','templatecount');
+		    $updatecount=0;
+		    for($x=1;$x<$templatecount+1;$x++){
+		        $updated=self::update_template($x);
+		        if($updated){$updatecount++;}
+            }//end of templatecount loop
+            return $updatecount;
+    }//end of function
+
+    public static function update_template($templateindex){
+        $updated=false;
+        $presets = self::fetch_presets();
+        foreach($presets as $preset) {
+            if(get_config('filter_poodll', 'templatekey_' . $templateindex)==$preset['key']) {
+                $template_version = get_config('filter_poodll', 'templateversion_' . $templateindex);
+                $preset_version = $preset['version'];
+                if (version_compare($preset_version, $template_version) > 0) {
+                    self::set_preset_to_config($preset, $templateindex);
+                    $updated =true;
+                }//end of version compare
+                return $updated;
+            }//end of if keys match
+        }//end of presets loop
+        return false;
+    }//end of function
+
 }//end of class

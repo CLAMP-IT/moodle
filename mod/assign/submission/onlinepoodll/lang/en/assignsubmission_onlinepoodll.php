@@ -49,25 +49,32 @@ $string['allowedrecorders'] = 'Recorders to enable';
 $string['allowedrecordersdetails'] = '';
 $string['showcurrentsubmission'] = 'Show Current Submission';
 $string['showcurrentsubmissiondetails'] = 'Show previously recorded submission on submission form.';
+
+$string['displayaudioplayersingle'] = 'Show sub. audio player(normal)';
+$string['displayaudioplayerlist'] = 'Show audio player(lists)';
+
 $string['displaysizesingle'] = 'Video player size(normal)';
 $string['displaysizesingledetails'] = '';
 $string['displaysizelist'] = 'Video player size(in lists)';
 $string['displaysizelistdetails'] = '';
-$string['shownovideo'] = 'Do not display image';
+$string['shownovideo'] = 'Do not display video';
 $string['videoplaceholder'] = ' [video submitted] ';
+$string['audioplaceholder'] = ' [audio submitted] ';
 $string['shownoimage'] = 'Do not display image';
 $string['imageplaceholder'] = ' [image submitted] ';
-
 $string['imagedisplaysizesingle'] = 'Image display size(normal)';
 $string['imagedisplaysizesingledetails'] = '';
 $string['imagedisplaysizelist'] = 'Image display size(in lists)';
 $string['imagedisplaysizelistdetails'] = '';
-
-$string['setting_video_heading'] = 'Video recorder/player settings';
-$string['setting_video_heading_details'] = '';
-$string['setting_snapshot_heading'] = 'Snapshot recorder/image settings';
-$string['setting_snapshot_heading_details'] = '';
-$string['setting_whiteboard_heading'] = 'Whiteboard recorder/image settings';
-$string['setting_whiteboard_heading_details'] = '';
+$string['setting_audio_heading'] = 'Audio player settings';
+$string['setting_audio_heading_details'] = 'Settings controlling player appearance in submission review and list pages';
+$string['setting_video_heading'] = 'Video player settings';
+$string['setting_video_heading_details'] = 'Settings controlling player appearance in submission review and list pages';
+$string['setting_snapshot_heading'] = 'Snapshot image settings';
+$string['setting_snapshot_heading_details'] = 'Settings controlling image appearance in submission review and list pages';
+$string['setting_whiteboard_heading'] = 'Whiteboard image settings';
+$string['setting_whiteboard_heading_details'] = 'Settings controlling image appearance in submission review and list pages';
 $string['deletesubmission'] = 'Delete this submission.';
 $string['reallydeletesubmission'] = 'Really delete this submission?';
+
+$string['onlinepoodll:use'] = 'Allow use of Online Poodll submissions';

@@ -12,9 +12,9 @@
         <FIELD NAME="responsefieldlines" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="15" SEQUENCE="false" COMMENT="Approximate height, in lines, of the input box the students should be given for their response." PREVIOUS="responseformat" NEXT="attachments"/>
         <FIELD NAME="attachments" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" COMMENT="Whether, and how many, attachments a student is allowed to include with their response. -1 means unlimited." PREVIOUS="responsefieldlines" NEXT="graderinfo"/>
         <FIELD NAME="graderinfo" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="Information shown to people with permission to manually grade the question, when they are grading." PREVIOUS="attachments" NEXT="graderinfoformat"/>
-        <FIELD NAME="graderinfoformat" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="The text format for graderinfo." PREVIOUS="graderinfo" NEXT="backimage"/>
-      	<FIELD NAME="backimage" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="The URL of an image file to be be used as whiteboard background." PREVIOUS="graderinfoformat" NEXT="boardsize"  />
-		<FIELD NAME="boardsize" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="The size of the whiteboard drawing area." PREVIOUS="backimage" NEXT="timelimit" />
+        <FIELD NAME="graderinfoformat" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="The text format for graderinfo." PREVIOUS="graderinfo" NEXT="qresource"/>
+      	<FIELD NAME="qresource" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="The URL of an image file to be be used as whiteboard background." PREVIOUS="graderinfoformat" NEXT="boardsize"  />
+		<FIELD NAME="boardsize" TYPE="text" LENGTH="small" NOTNULL="false" SEQUENCE="false" COMMENT="The size of the whiteboard drawing area." PREVIOUS="qresource" NEXT="timelimit" />
 		<FIELD NAME="timelimit" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="boardsize"  />
       </FIELDS>
       <KEYS>

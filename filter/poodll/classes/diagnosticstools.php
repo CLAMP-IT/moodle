@@ -99,6 +99,7 @@ class diagnosticstools {
         }
 
         //get poodll users
+        /*
         $sql="SELECT COUNT(DISTINCT(userid)) as poodllusers FROM {logstore_standard_log} WHERE component = 'filter_poodll' AND timecreated > ?";
         try{
         	$rec = $DB->get_record_sql($sql,array($oneyearago));
@@ -110,7 +111,7 @@ class diagnosticstools {
         }else{
             $ds['poodllusers'] = 'unknown';
         }
-
+	*/
         //site info
 		$ds['wwwroot'] = $CFG->wwwroot;
 		$ds['dirroot'] = $CFG->dirroot;
@@ -160,7 +161,8 @@ class diagnosticstools {
 		$ds['filter_poodll_ffmpeg']=$CFG->filter_poodll_ffmpeg;
 		$ds['filter_poodll_bgtranscode_video']=$CFG->filter_poodll_bgtranscode_video;
 		$ds['filter_poodll_bgtranscode_audio']=$CFG->filter_poodll_bgtranscode_audio;
-		$ds['filter_poodll_html5recorder_skin']=$CFG->filter_poodll_html5recorder_skin;
+		$ds['filter_poodll_html5recorder_skin_audio']=get_config('filter_poodll','html5recorder_skin_audio');
+        $ds['filter_poodll_html5recorder_skin_video']=get_config('filter_poodll','html5recorder_skin_video');
 		$ds['extensions']=get_config('filter_poodll','extensions');
 		$ds['handlemp3']=get_config('filter_poodll','handlemp3');
 		$ds['handlemp4']=get_config('filter_poodll','handlemp4');

@@ -72,50 +72,53 @@ define(['jquery','core/log', 'filter_poodll/utils_amd', 'filter_poodll/uploader'
             this.registerEvents(opts['recorderid']);
            
         },
-        
+
         registerEvents: function(recid) {
             //register events. if autosave we need to do more.
             var opts = this.instanceprops[recid];
             if(opts['autosave']){
                     //autosave, clear messages and save callbacks on start drawing
+                    var doStartDrawing = function(){
+                        var m = document.getElementById(recid + '_messages');
+                        if(m){
+                            m.innerHTML = 'File has not been saved.';
+                            var savebutton = document.getElementById(recid + '_btn_upload_whiteboard');
+                            savebutton.disabled=false;
+                            var th = utils.timeouthandles[recid];
+                            if(th){clearTimeout(th);}
+                            utils.timeouthandles[recid] = setTimeout(
+                                function(){ utils.WhiteboardUploadHandler(recid,opts.db,opts, opts.uploader);},
+                                opts['autosave']);
+                        }
+                    }//end of start drawing function
 
-                    opts.db.ev.bind('board:startDrawing', function(){
-                                    var m = document.getElementById(recid + '_messages');
-                                    if(m){
-                                        m.innerHTML = 'File has not been saved.';
-                                        var savebutton = document.getElementById(recid + '_btn_upload_whiteboard');
-                                        savebutton.disabled=false;
-                                        var th = utils.timeouthandles[recid];
-                                        if(th){clearTimeout(th);}
-                                        utils.timeouthandles[recid] = setTimeout(
-                                            function(){ utils.WhiteboardUploadHandler(recid,opts.db,opts, opts.uploader);},
-                                            opts['autosave']);
-                                    }
-                                }//end of start drawing function
-                    );
+                   //autosave, clear previous callbacks,set new save callbacks on stop drawing
+                    var doStopDrawing = function(){
+                        var m = document.getElementById(recid + '_messages');
+                        if(m){
+                            var th = utils.timeouthandles[recid];
+                            if(th){clearTimeout(th);}
+                            utils.timeouthandles[recid] = setTimeout(
+                                function(){ utils.WhiteboardUploadHandler(recid,opts.db,opts,opts.uploader);},
+                                opts['autosave']);
+                        }
+                    }//end of stop drawing function
 
                     //autosave, clear previous callbacks,set new save callbacks on stop drawing
-                    opts.db.ev.bind('board:stopDrawing', function(){
-                                    var m = document.getElementById(recid + '_messages');
-                                    if(m){
-                                        var th = utils.timeouthandles[recid];
-                                        if(th){clearTimeout(th);}
-                                        utils.timeouthandles[recid] = setTimeout(
-                                            function(){ utils.WhiteboardUploadHandler(recid,opts.db,opts,opts.uploader);},
-                                            opts['autosave']);
-                                    }
-                                }//end of stop drawing function
-                    );
+                    opts.db.ev.bind('board:startDrawing', doStartDrawing);
+                    opts.db.ev.bind('board:stopDrawing', doStopDrawing);
+                    opts.db.ev.bind('board:reset', doStopDrawing);
+                    opts.db.ev.bind('historyNavigation',doStopDrawing);
 
 
             }else{
-                opts.db.ev.bind('board:stopDrawing', function(){
-                                    var m = document.getElementById(recid + '_messages');
-                                    if(m){
-                                        m.innerHTML = 'File has not been saved.';
-                                    }
-                                }//end of stop drawing function
-                );
+                var doStopDrawing = function(){
+                    var m = document.getElementById(recid + '_messages');
+                    if(m){
+                        m.innerHTML = 'File has not been saved.';
+                    }
+                }//end of stop drawing function
+                opts.db.ev.bind('board:stopDrawing',doStopDrawing);
             }
 
              //set up the upload/save button

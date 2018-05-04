@@ -37,7 +37,6 @@ function atto_poodll_strings_for_js() {
                                           'fieldsheader',
                                           'nofieldsheader',
                                           'dialogtitle',
-                                          'audiored5_desc',
                                           'audiomp3_desc',
                                           'video_desc',
                                           'whiteboard_desc',
@@ -56,7 +55,11 @@ function atto_poodll_params_for_js($elementid, $options, $fpoptions) {
 	$coursecontext=context_course::instance($COURSE->id);	
 	
 	//usercontextid
-	$usercontextid=context_user::instance($USER->id)->id;
+    if($USER->id ==0){
+        $usercontextid=0;
+    }else {
+        $usercontextid = context_user::instance($USER->id)->id;
+    }
 	$disabled=false;
 	
 	//config our array of data
@@ -81,10 +84,14 @@ function atto_poodll_params_for_js($elementid, $options, $fpoptions) {
         $params['usewhiteboard'] = get_config('atto_poodll','usewhiteboard');
 	
 		//add icons to editor if the permissions are all ok
-		$recorders = array('audiomp3','audiored5','video','whiteboard','snapshot','widgets');
+		$recorders = array('audiomp3','video','whiteboard','snapshot','widgets');
 		$allowedrecorders =  get_config('atto_poodll','recorderstoshow');
 		if(!empty($allowedrecorders)){
 			$allowedrecorders = explode(',',$allowedrecorders);
+			//we deleted the red5 option, just in case, we map it here to mp3
+			if(array_key_exists('show_audiored5',$allowedrecorders) && !array_key_exists('show_audiomp3',$allowedrecorders) ){
+			    $allowedrecorders[]='show_audiomp3';
+            }
 			foreach($recorders as $recorder){
 				if((array_search('show_' . $recorder,$allowedrecorders)!==false) && has_capability('atto/poodll:allow' . $recorder, $coursecontext)){
 					$params[$recorder]=true;

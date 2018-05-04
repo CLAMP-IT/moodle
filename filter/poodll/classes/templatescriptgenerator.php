@@ -38,7 +38,7 @@ class templatescriptgenerator
     public function __construct($templateindex) {
         $this->templateindex = $templateindex;
     }
-    
+
 
     public function get_template_script(){
     	global $CFG;
@@ -52,7 +52,6 @@ class templatescriptgenerator
 
 		//get presets
 		$thescript=$conf->{'templatescript_' . $tindex};
-		$defaults=$conf->{'templatedefaults_' . $tindex};
 
 
 		//fetch all the variables we use (make sure we have no duplicates)
@@ -72,68 +71,86 @@ class templatescriptgenerator
 			$thescript = str_replace('@@' . $propname .'@@',"opts['" . $propname . "']",$thescript);
 		}
 
-		if($require_amd){
+		if($require_amd) {
 
-			//figure out if this is https or http. We don't want to scare the browser
-			$scheme='http:';
-			if(strpos(strtolower($CFG->wwwroot),'https')===0){$scheme='https:';}
+            //figure out if this is https or http. We don't want to scare the browser
+            $scheme = 'http:';
+            if (strpos(strtolower($CFG->wwwroot), 'https') === 0) {
+                $scheme = 'https:';
+            }
 
 
-			//this is for loading as dependencies the uploaded or linked files
-			//massage the js URL depending on schemes and rel. links etc. Then insert it
-			$requiredjs = $conf->{'templaterequire_js_' . $tindex};
-			$requiredjs = str_replace('@@WWWROOT@@', $CFG->wwwroot ,$requiredjs);
-							
-			if($requiredjs){
-				if(strpos($requiredjs,'//')===0){
-					$requiredjs = $scheme . $requiredjs;
-				}elseif(strpos($requiredjs,'/')===0){
-					$requiredjs = $CFG->wwwroot . $requiredjs;
-				}
-			}
+            //this is for loading as dependencies the uploaded or linked files
+            //massage the js URL depending on schemes and rel. links etc. Then insert it
+            $requiredjs = $conf->{'templaterequire_js_' . $tindex};
+            $requiredjs = str_replace('@@WWWROOT@@', $CFG->wwwroot, $requiredjs);
 
-			//current key
-			$currentkey = $conf->{'templatekey_' . $tindex};
-			
-			//Do we need to shim here?
-			$shim_export = trim($conf->{'templaterequire_js_shim_' . $tindex});  
+            if ($requiredjs) {
+                if (strpos($requiredjs, '//') === 0) {
+                    $requiredjs = $scheme . $requiredjs;
+                } elseif (strpos($requiredjs, '/') === 0) {
+                    $requiredjs = $CFG->wwwroot . $requiredjs;
+                }
+            }
 
-			switch(empty($shim_export)){
-			
-				case true:
-					//no shim so we just set an empty string
-					$theshim='';
-					
-					//Create the dependency stuff in the output js
-					$requires = array("'" . 'jquery' . "'", "'" . 'jqueryui' . "'");
-					$params = array('$','jqui');
-		
-					if($requiredjs){
-						$requires[] =  "'" . $requiredjs . "'";
-						//$requires[] = "'recjs" . $tindex . "'";
-						$params[] = "requiredjs_" . $currentkey;
-					}
-					break;
-					
-				case false:
-					
-					//remove .js from end of js filepath if its there
-					if(strrpos($requiredjs,'.js')==(strlen($requiredjs) -3)){
-						$requiredjs = substr($requiredjs, 0, -3);
-					}
-					
-					$shimpath= $requiredjs;
-					$shimexport=$shim_export;
-					$shimkey = $currentkey . '-requiredjs'; 
-					
-					//build our dependencies and params
-					$requires = array("'" . $currentkey . "-jquery','" . $shimkey . "'");
-					$params=array('$',$shim_export);
-					
-					//build our shim script
-					$theshim = $this->build_shim_function($currentkey, $shimkey, $shimpath, $shimexport);
-			
-			}
+            //current key
+            $currentkey = $conf->{'templatekey_' . $tindex};
+
+            //Do we need to shim here?
+            $shim_export = trim($conf->{'templaterequire_js_shim_' . $tindex});
+
+            /*if its AMD and requires no Shim, then life is easy, we just set up the "requires" and "params"
+            /which we use in the definition of our AMD template module ..eg
+            / define('filter_poodll_d3',[$,jqui,url_of_required_js_config_value],function($,jqui,requiredjs_templatekey){
+                    return function(opts){
+                        custom js from script
+                 });
+
+                }
+            / If we are shimming, we have to define a shim for the requires part.
+            */
+            $theshim='';
+            switch(empty($shim_export)) {
+                case true:
+
+
+                    //Create the dependency stuff in the output js
+                    $requires = array("'" . 'jquery' . "'", "'" . 'jqueryui' . "'");
+                    $params = array('$', 'jqui');
+
+                    if ($requiredjs) {
+                        $requires[] = "'" . $requiredjs . "'";
+                        $params[] = "requiredjs_" . $currentkey;
+                    }
+                    break;
+
+                case false:
+
+
+                    //remove .js from end of js filepath if its there
+                    //shim doesnt want it
+                    if (strrpos($requiredjs, '.js') == (strlen($requiredjs) - 3)) {
+                        $requiredjs = substr($requiredjs, 0, -3);
+                    }
+
+
+                    $shimkey = $currentkey . '-requiredjs';
+
+                    //build our dependencies and params
+                    $requires = array();
+                    $requires[]="'shim-jquery'";
+                    $requires[]="'" . $shimkey . "'";
+                    $params=array('$',$shim_export);
+
+                    $theshimtemplate = "require.config(@@THESHIMCONFIG@@);";
+                    $shimpath = $requiredjs;
+                    $shimexport = $shim_export;
+                    $shimkey = $currentkey . '-requiredjs';
+                    $bigshim = $this->build_shim_function($shimkey,$shimpath,$shimexport);
+                    $theshimconfig=json_encode($bigshim,JSON_UNESCAPED_SLASHES);
+                    $theshim = str_replace('@@THESHIMCONFIG@@', $theshimconfig,$theshimtemplate);
+
+            }
 
             //add our media refresher and logging
             $requires[]="'" . 'filter_poodll/media_refresher' . "'" ;
@@ -141,56 +158,63 @@ class templatescriptgenerator
             $requires[]="'" . 'core/log' . "'" ;
             $params[]=  'log';
 
-
-			$thefunction = "define('filter_poodll_d" . $tindex . "',[" . implode(',',$requires) . "], function(" . implode(',',$params) . "){ ";
-			$thefunction .= "return function(opts){" . $thescript. " \r\n}; });";
+            $thefunction = $theshim;
+			$thefunction .= " define('filter_poodll_d" . $tindex . "',[" . implode(',',$requires) . "], function(" . implode(',',$params) . "){ ";
+			$thefunction .= " return function(opts){" . $thescript. " \r\n}; });";
 
 		//If not AMD
 		}else{
-                        //no shim so we just set an empty string
-			$theshim='';
+
 			$thefunction = "if(typeof filter_poodll_extfunctions == 'undefined'){filter_poodll_extfunctions={};}";
 			$thefunction .= "filter_poodll_extfunctions['" . $tindex . "']= function(opts) {" . $thescript. " \r\n};";
 
 		}
-		$return_js = $theshim . $thefunction;
+
+		$return_js =  $thefunction;
 		return $return_js;
     }//end of function
-	
-	protected function build_shim_function($currentkey, $shimkey, $shimpath, $shimexport){
+
+	/*
+	 *   Here we build a shim configuration that will be passed to requirejs for a call like this:
+	 *  require.config(shimconfig);
+	 * It contains a jquery and jquery ui dependency and the requirejs library from the template
+	 * Later we can use this "module" as a dependency for the template, as though it were AMD
+	 */
+	protected function build_shim_function($shimkey, $shimpath, $shimexport){
 			global $CFG;
-			
-			$theshim="";			
-			if(!empty($shimkey)){
-				$theshimtemplate = "requirejs.config(@@THESHIMCONFIG@@);";
+
 				$paths = new \stdClass();
 				$shim = new \stdClass();
 				
 				//Add a path to  a separetely loaded jquery for shimmed libraries
 				$jquery_shimconfig = new \stdClass();
 				$jquery_shimconfig->exports = '$';
-				$jquery_shimkey = $currentkey . '-jquery'; 
+                $jquery_shimkey = 'shim-jquery';
 				$shim->{$jquery_shimkey}=$jquery_shimconfig;
-				$paths->{$jquery_shimkey} = $CFG->wwwroot  . '/filter/poodll/3rdparty/jquery/jquery-1.12.4.min'; 
-		
-				//add a path for the required js ibrary
+				$paths->{$jquery_shimkey} = $CFG->wwwroot  . '/filter/poodll/3rdparty/jquery/jquery-1.12.4.min';
+
+                //Add a path to  a separetely loaded jqueryui for shimmed libraries
+                //could not get jqueryui to work here. But I left it in the hope, somebody, someday, somewhere can.
+                $jqueryui_shimconfig = new \stdClass();
+                $jqueryui_shimconfig->deps = array($jquery_shimkey);
+                $jqueryui_shimkey = 'shim-jqueryui';
+                $shim->{$jqueryui_shimkey}=$jqueryui_shimconfig;
+                $paths->{$jqueryui_shimkey} = $CFG->wwwroot  . '/filter/poodll/3rdparty/jqueryui/jquery-ui.min';
+
+                //add a path for the required js ibrary
 				$paths->{$shimkey} = $shimpath;
 				$oneshimconfig = new \stdClass();
 				$oneshimconfig->exports = $shimexport;
-				$oneshimconfig->deps = array($jquery_shimkey);
+				$oneshimconfig->deps = array($jquery_shimkey,$jqueryui_shimkey);
 				$shim->{$shimkey} = $oneshimconfig;
 				
 				
 				//buuld the actual function that will set up our shim
-				//we use php object -> json to kep it simple.
-				//But its still not simple
+				//we use php object and later convert that json for javascript to use.
 				$theshimobject = new \stdClass();
 				$theshimobject->paths=$paths;
 				$theshimobject->shim =$shim;
-				$theshimconfig=json_encode($theshimobject,JSON_UNESCAPED_SLASHES);
-				$theshim = str_replace('@@THESHIMCONFIG@@', $theshimconfig,$theshimtemplate);
-			}
-		return $theshim;
+		        return $theshimobject;
 	}
 
 }//end of class

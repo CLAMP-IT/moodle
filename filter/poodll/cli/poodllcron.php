@@ -57,9 +57,12 @@ Example:
     die;
 }
 
-// execute all the waiting Poodll move tasks
-
-$taskclassname= '\filter_poodll\task\adhoc_s3_move';
-$starttime=time();
-$tr = new \filter_poodll\taskrunner($taskclassname,$starttime);
-$tr->run_all_tasks();
+// execute all the waiting Poodll move(Cloud) and convert(FFMPEG) tasks
+$poodlltasks = array();
+$poodlltasks[]='\filter_poodll\task\adhoc_s3_move';
+$poodlltasks[]='\filter_poodll\task\adhoc_convert_media';
+foreach($poodlltasks as $poodlltask){
+ $starttime=time();
+ $tr = new \filter_poodll\taskrunner($poodlltask,$starttime);
+ $tr->run_all_tasks();
+}

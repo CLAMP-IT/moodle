@@ -49,7 +49,15 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
             var preview ='<video class="poodll_preview_' + skin + '" width="320" height="240"></video>';
             return preview;
         },
-        
+        fetch_resource_audio: function(skin){
+            var resourceplayer = '<audio class="poodll_resourceplayer_' + skin + ' hide" ></audio>';
+            return resourceplayer;
+        },
+        fetch_resource_video: function(skin){
+            var resourceplayer = '<video class="poodll_resourceplayer_' + skin + ' hide" ></video>';
+            return resourceplayer;
+        },
+
         onMediaError: function(e) {
                 console.error('media error', e);
         },
@@ -118,7 +126,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
 
         
         //insert the control bar and return it to be reused
-        insert_controlbar_audio: function(element,controlbarid, preview){
+        insert_controlbar_audio: function(element,controlbarid, preview,resource){
             var ip = this.fetch_instanceprops(controlbarid);
             var skin_style = ip.config.media_skin_style;
             
@@ -173,7 +181,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
         }, //end of fetch_control_bar_burntrose,
         
         //insert the control bar and return it to be reused
-        insert_controlbar_video: function(element,controlbarid, preview){
+        insert_controlbar_video: function(element,controlbarid, preview, resource){
             var ip = this.fetch_instanceprops(controlbarid);
             var skin_style = ip.config.media_skin_style;
             
@@ -232,11 +240,11 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 return controlbar;
         }, //end of fetch_control_bar_video_burntrose
 
-        register_controlbar_events_video: function(onMediaSuccess, mediaConstraints,controlbarid) {
-              return  this.register_controlbar_events_audio(onMediaSuccess, mediaConstraints,controlbarid);
+        register_controlbar_events_video: function(onMediaSuccess, controlbarid) {
+              return  this.register_controlbar_events_audio(onMediaSuccess, controlbarid);
         },
 
-        register_controlbar_events_audio: function(onMediaSuccess, mediaConstraints,controlbarid){
+        register_controlbar_events_audio: function(onMediaSuccess, controlbarid){
             var self = this;
             var pmr = this.pmr;
             var ip = this.fetch_instanceprops(controlbarid);
@@ -247,7 +255,7 @@ define(['jquery','core/log','filter_poodll/utils_amd'], function($, log, utils) 
                 //clear messages
                 $('#' + ip.config.widgetid  + '_messages').text('');
 
-                 pmr.do_start_audio(ip, mediaConstraints, onMediaSuccess);
+                 pmr.do_start_audio(ip,  onMediaSuccess);
 
                  ip.controlbar.playermic.hide();
                  ip.controlbar.recordmic.show();

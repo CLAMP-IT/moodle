@@ -32,7 +32,7 @@
  */
 
 define('NO_MOODLE_COOKIES', false);
-require(__DIR__ . '../../../../../../../config.php');
+require(__DIR__ . '/../../../../../../config.php');
 
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url('/lib/editor/atto/plugins/poodll/dialog/poodll.php');
@@ -81,10 +81,6 @@ switch($recorder){
 	$instruction = get_string('drawtheninsert', 'atto_poodll');
  	break;
  case 'audiored5':
- 	$recorderhtml =  \filter_poodll\poodlltools::fetchAudioRecorderForSubmission('auto', 'none', $updatecontrol,
-				$usercontextid,'user','draft',$itemid,0,$callbackjs,$hints);
-	$instruction = get_string('recordtheninsert', 'atto_poodll');
- 	break; 		
  case 'audiomp3':
  default:
 	$recorderhtml =  \filter_poodll\poodlltools::fetchMP3RecorderForSubmission($updatecontrol, $usercontextid ,'user','draft',$itemid,0,$callbackjs,$hints);

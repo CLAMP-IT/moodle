@@ -152,5 +152,20 @@ function xmldb_qtype_poodllrecording_upgrade($oldversion) {
 		
 	}
 
+    if($oldversion < 2017102301){
+
+        $DB->set_field('qtype_poodllrecording_opts','responseformat','audio',array('responseformat'=>'mp3'));
+
+        $table = new xmldb_table('qtype_poodllrecording_opts');
+        $field = new xmldb_field( 'backimage', XMLDB_TYPE_TEXT, 'small', null, null, null, null);
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->rename_field($table, $field,'qresource');
+        }
+
+        // poodllrecording savepoint reached
+        upgrade_plugin_savepoint(true, 2017102301, 'qtype', 'poodllrecording');
+
+    }
+
     return true;
 }

@@ -78,10 +78,11 @@ class adhoc_s3_move extends \core\task\adhoc_task {
             $tempfilepath = $ret;
         }
         
-        //fetch the permanent file record, that currently holds the placeholder file
-        $permfilerecord = \filter_poodll\poodlltools::fetch_placeholder_file_record($cd->mediatype, $cd->filename);
+        //fetch any file records, that currently hold the placeholder file
+        //usually just one, but occasionally there will be two (1 in draft, and 1 in perm)
+        $placeholder_file_recs = \filter_poodll\poodlltools::fetch_placeholder_file_record($cd->mediatype, $cd->filename);
         //do the replace, if it succeeds yay. If it fails ... try again. The user may just not have saved yet
-        if(!$permfilerecord){
+        if(!$placeholder_file_recs){
 			$giveup =false;
 			$message='could not find placeholder file:' . $cd->filename;
             $this->handle_s3_error(self::LOG_PLACEHOLDER_NOT_FOUND, $message ,$cd,$giveup);
@@ -89,16 +90,19 @@ class adhoc_s3_move extends \core\task\adhoc_task {
 		}
 		
         try{
-            \filter_poodll\poodlltools::replace_placeholderfile_in_moodle($cd->filerecord, $permfilerecord, $tempfilepath);
+            foreach($placeholder_file_recs as $file_rec) {
+                \filter_poodll\poodlltools::replace_placeholderfile_in_moodle($cd->filerecord, $file_rec, $tempfilepath);
+                //log what we just did
+                $cd->filerecord=$file_rec;
+                \filter_poodll\event\adhoc_move_completed::create_from_task($cd)->trigger();
+            }
         }catch (Exception $e) {
             $giveup =true;
             $message = 'could not get replace placeholder with converted::' . $cd->filename . ':' . $e->getMessage();
             $this->handle_s3_error(self::LOG_PLACEHOLDER_REPLACE_FAIL,$message,$cd,$giveup);
             return;
 		}
-        //nothing to do next. If it errors, it will be elsewhere. If it gets here it should be ok.
-        $cd->filerecord=$permfilerecord;
-        \filter_poodll\event\adhoc_move_completed::create_from_task($cd)->trigger();
+
     }
 
 	private function handle_s3_error($errorcode, $errorstring,$cd,$giveup){
@@ -114,14 +118,14 @@ class adhoc_s3_move extends \core\task\adhoc_task {
     		if($diffInSeconds > (60 * 60 * 2) || $giveup){
     			//we do not retry after two hours, we just report an error and return quietly
                 $errorstring .= ' :will not retry';
-                error_log('s3file:' . $errorstring);
+                mtrace('s3file:' . $errorstring);
                 //send to debug log
                 $this->send_debug_data($errorcode,
                     $errorstring,$userid,$contextid);
     		}else{
                 $errorstring .= ' :will retry';
-                error_log(print_r($cd,true));
-                error_log('s3file:' . $errorstring);
+                mtrace(print_r($cd,true));
+                mtrace('s3file:' . $errorstring);
                 //send to debug log
                 $this->send_debug_data($errorcode,
                     $errorstring,$userid,$contextid);
