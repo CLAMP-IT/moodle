@@ -644,21 +644,24 @@ class assign_submission_mahara extends assign_submission_plugin {
         }
 
         $maharasubmission = $this->get_mahara_submission($submission->id);
-        // Lock view on Mahara side as it has been submitted for assessment.
-        if (!$response = $this->mnet_submit_view($submission, $maharasubmission->viewid, $maharasubmission->iscollection)) {
-            throw new moodle_exception('errormnetrequest', 'assignsubmission_mahara', '', $this->get_error());
-        }
-        $maharasubmission->viewurl = $response['url'];
-        $maharasubmission->viewstatus = self::STATUS_SUBMITTED;
 
-        if (!$this->get_config('lock')) {
-            if ($this->mnet_release_submitted_view($maharasubmission->viewid, array(), $maharasubmission->iscollection) === false) {
+        if ($maharasubmission) {
+            // Lock view on Mahara side as it has been submitted for assessment.
+            if (!$response = $this->mnet_submit_view($submission, $maharasubmission->viewid, $maharasubmission->iscollection)) {
                 throw new moodle_exception('errormnetrequest', 'assignsubmission_mahara', '', $this->get_error());
             }
-            $maharasubmission->viewstatus = self::STATUS_RELEASED;
-        }
+            $maharasubmission->viewurl = $response['url'];
+            $maharasubmission->viewstatus = self::STATUS_SUBMITTED;
 
-        $DB->update_record('assignsubmission_mahara', $maharasubmission);
+            if (!$this->get_config('lock')) {
+                if ($this->mnet_release_submitted_view($maharasubmission->viewid, array(), $maharasubmission->iscollection) === false) {
+                    throw new moodle_exception('errormnetrequest', 'assignsubmission_mahara', '', $this->get_error());
+                }
+                $maharasubmission->viewstatus = self::STATUS_RELEASED;
+            }
+
+            $DB->update_record('assignsubmission_mahara', $maharasubmission);
+        }
     }
 
     /**
