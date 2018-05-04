@@ -183,6 +183,21 @@ class scheduler_instance extends mvc_record_model {
     }
 
     /**
+     * Retrieve whether individual scheduling is enabled in this instance.
+     * This is usually the case, but is disabled if the instance uses group scheduling
+     * and the configuration setting 'mixindivgroup' is set to inactive.
+     *
+     * @return boolean
+     */
+    public function is_individual_scheduling_enabled() {
+        if ($this->is_group_scheduling_enabled()) {
+            return (bool) get_config('mod_scheduler', 'mixindivgroup');
+        } else {
+            return true;
+        }
+    }
+
+    /**
      * get the last location of a certain teacher in this scheduler
      * @param $user
      * @uses $DB
@@ -683,7 +698,7 @@ class scheduler_instance extends mvc_record_model {
 
         $sql = "SELECT sl.*,
                        s.name AS schedulername,
-                       (s.id = :thisid) as isself,
+                       (CASE WHEN (s.id = :thisid) THEN 1 ELSE 0 END) AS isself,
                        c.id AS courseid, c.shortname AS courseshortname, c.fullname AS coursefullname,
                        (SELECT COUNT(*) FROM {scheduler_appointment} ac WHERE sl.id = ac.slotid) AS numstudents
                   FROM {scheduler_slots} sl
@@ -931,7 +946,7 @@ class scheduler_instance extends mvc_record_model {
     }
 
     /**
-     * Frees all empty slots that are in the past, hance no longer bookable.
+     * Frees all empty slots that are in the past, hence no longer bookable.
      * This applies to all schedulers in the system.
      * @uses $CFG
      * @uses $DB
@@ -945,7 +960,7 @@ class scheduler_instance extends mvc_record_model {
                           WHERE a.studentid IS NULL
                             AND starttime < ?";
         $now = time();
-        $todelete = $DB->get_records_sql($sql, array($now));
+        $todelete = $DB->get_records_sql($sql, array($now), 0, 1000);
         if ($todelete) {
             list($usql, $params) = $DB->get_in_or_equal(array_keys($todelete));
             $DB->delete_records_select('scheduler_slots', " id $usql ", $params);
