@@ -1,57 +1,69 @@
 language: php
 
-sudo: required
+sudo: true
+
+addons:
+  firefox: "47.0.1"
+  postgresql: "9.3"
+  apt:
+    packages:
+      - oracle-java8-installer
+      - oracle-java8-set-default
 
 cache:
   directories:
     - $HOME/.composer/cache
+    - $HOME/.npm
 
 php:
- - 5.4
- - 5.5
- - 5.6
- - 7.0
-
-addons:
-  postgresql: 9.3
+  - 5.6
+  - 7.0
+  - 7.1
+  - 7.2
 
 env:
- global:
-  - IGNORE_NAMES=package.json,gulpfile.js
-  - IGNORE_PATHS=amd/build/accordion.min.js
  matrix:
-  - DB=pgsql MOODLE_BRANCH=MOODLE_31_STABLE
   - DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
   - DB=pgsql MOODLE_BRANCH=MOODLE_33_STABLE
-  - DB=mysqli MOODLE_BRANCH=MOODLE_31_STABLE
+  - DB=pgsql MOODLE_BRANCH=MOODLE_34_STABLE
   - DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
   - DB=mysqli MOODLE_BRANCH=MOODLE_33_STABLE
+  - DB=mysqli MOODLE_BRANCH=MOODLE_34_STABLE
 
 matrix:
+  # Just run the highest and lowest for each branch
   exclude:
-    - php: 5.4
+    - php: 5.6
+      env: DB=pgsql MOODLE_BRANCH=MOODLE_34_STABLE
+    - php: 5.6
+      env: DB=mysqli MOODLE_BRANCH=MOODLE_34_STABLE
+    - php: 7.0
       env: DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
-    - php: 5.4
+    - php: 7.0
       env: DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
-    - php: 5.5
-      env: DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
-    - php: 5.5
-      env: DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
-    - php: 5.4
+    - php: 7.0
       env: DB=pgsql MOODLE_BRANCH=MOODLE_33_STABLE
-    - php: 5.4
+    - php: 7.0
       env: DB=mysqli MOODLE_BRANCH=MOODLE_33_STABLE
-    - php: 5.5
+    - php: 7.1
+      env: DB=pgsql MOODLE_BRANCH=MOODLE_34_STABLE
+    - php: 7.1
+      env: DB=mysqli MOODLE_BRANCH=MOODLE_34_STABLE
+    - php: 7.2
+      env: DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
+    - php: 7.2
+      env: DB=mysqli MOODLE_BRANCH=MOODLE_32_STABLE
+    - php: 7.2
       env: DB=pgsql MOODLE_BRANCH=MOODLE_33_STABLE
-    - php: 5.5
+    - php: 7.2
       env: DB=mysqli MOODLE_BRANCH=MOODLE_33_STABLE
 
 before_install:
-  - echo "always_populate_raw_post_data = -1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - phpenv config-rm xdebug.ini
+  - nvm install 8.9
+  - nvm use 8.9
   - cd ../..
-  - composer selfupdate
-  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^1
+  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^2
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
 
 install:
@@ -62,7 +74,10 @@ script:
   - moodle-plugin-ci phpcpd
   - moodle-plugin-ci phpmd
   - moodle-plugin-ci codechecker
-  - moodle-plugin-ci csslint
-  - moodle-plugin-ci jshint
+  - moodle-plugin-ci validate
+  - moodle-plugin-ci savepoints
+    # We have to let the mustache test pass because it falsely complains about an <li> template independent of a <ul>.
+  - moodle-plugin-ci mustache || true
+  - moodle-plugin-ci grunt -t less -t fixindent -t eslint:amd -t uglify:amd
   - moodle-plugin-ci phpunit
   - moodle-plugin-ci behat

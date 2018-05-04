@@ -49,6 +49,18 @@ if ($ADMIN->fulltree) {
         get_string('maxallcourse', 'block_filtered_course_list'),
         get_string('configmaxallcourse', 'block_filtered_course_list'), 10, '/^\d{1,3}$/', 3));
 
+    $settings->add(new admin_setting_configtext('block_filtered_course_list/coursenametpl',
+        get_string('coursenametpl', 'block_filtered_course_list'),
+        get_string('configcoursenametpl', 'block_filtered_course_list'), 'FULLNAME'));
+
+    $settings->add(new admin_setting_configtext('block_filtered_course_list/catrubrictpl',
+        get_string('catrubrictpl', 'block_filtered_course_list'),
+        get_string('configcatrubrictpl', 'block_filtered_course_list'), 'NAME'));
+
+    $settings->add(new admin_setting_configtext('block_filtered_course_list/catseparator',
+        get_string('catseparator', 'block_filtered_course_list'),
+        get_string('configcatseparator', 'block_filtered_course_list'), ' / '));
+
     $managerviews = array(
         BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_ALL => get_string('allcourses', 'block_filtered_course_list'),
         BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_OWN => get_string('owncourses', 'block_filtered_course_list')
@@ -60,17 +72,17 @@ if ($ADMIN->fulltree) {
         BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_ALL, $managerviews));
 
     $sortablefields = array(
-        'fullname'  => 'Full name',
-        'shortname' => 'Short name',
-        'sortorder' => 'Sort order',
-        'idnumber'  => 'ID number',
-        'startdate' => 'Start date',
-        'none'      => 'None',
+        'fullname'  => get_string('fullname'),
+        'shortname' => get_string('shortname'),
+        'sortorder' => get_string('sort_sortorder', 'core_admin'),
+        'idnumber'  => get_string('idnumber'),
+        'startdate' => get_string('startdate'),
+        'none'      => get_string('none'),
     );
 
     $sortvectors = array(
-        'ASC'  => 'Ascending',
-        'DESC' => 'Descending',
+        'ASC'  => get_string('asc'),
+        'DESC' => get_string('desc'),
     );
 
     $settings->add(new admin_setting_configselect('block_filtered_course_list/primarysort',

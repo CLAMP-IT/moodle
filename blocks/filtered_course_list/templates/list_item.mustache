@@ -32,15 +32,19 @@
     * title - string: Text to display when the list item link is hovered.
     * url - string: URL to a course, category, etc.
 
+    Additional context variables:
+    * summaryurl - string: URL to a summary page. Empty for category links.
+
     Example context (json):
     {
-        "classes": "block_filtered_course_list_list_item fcl-course-link",
+        "classes": "block-fcl__list__item block-fcl__list__item--course",
         "displaytext": "Link to a course, category, etc.",
-        "linkclasses": "block_filtered_course_list_list_item_link",
+        "linkclasses": "block-fcl__list__link",
         "title": "Text to display on hover",
-        "url": "/course/index.php"
+        "url": "/course/index.php",
+        "summaryurl": "/course/info.php"
     }
 }}
 <li class='{{ classes }}'>
-    <a href='{{ url }}' {{#title}} title='{{ title }}' {{/title}} class='{{ linkclasses }}'>{{ displaytext }}</a>
+    <a href='{{ url }}' {{#title}} title='{{{ title }}}' {{/title}} class='{{ linkclasses }}'>{{{ displaytext }}}</a>
 </li>

@@ -136,7 +136,8 @@ class block_filtered_course_list_shortname_configline extends block_filtered_cou
         if (empty($courselist)) {
             return null;
         }
-        $this->rubrics[] = new block_filtered_course_list_rubric($this->line['label'], $courselist, $this->line['expanded']);
+        $this->rubrics[] = new block_filtered_course_list_rubric($this->line['label'],
+                                        $courselist, $this->config, $this->line['expanded']);
         return $this->rubrics;
     }
 }
@@ -163,7 +164,8 @@ class block_filtered_course_list_regex_configline extends block_filtered_course_
         if (empty($courselist)) {
             return null;
         }
-        $this->rubrics[] = new block_filtered_course_list_rubric($this->line['label'], $courselist, $this->line['expanded']);
+        $this->rubrics[] = new block_filtered_course_list_rubric($this->line['label'],
+                                        $courselist, $this->config, $this->line['expanded']);
         return $this->rubrics;
     }
 }
@@ -208,15 +210,43 @@ class block_filtered_course_list_category_configline extends block_filtered_cour
      */
     public function get_rubrics() {
 
+        // We only need this for Moodle < 3.4.
+        global $CFG;
+        $moodleversion = $CFG->version;
+
         $categories = $this->_get_cat_and_descendants($this->line['catid'], $this->line['depth']);
         foreach ($categories as $category) {
+            $rubricname = $category->name;
+            if (isset($this->config->catrubrictpl) && $this->config->catrubrictpl != '') {
+                $parent = coursecat::get($category->parent)->get_formatted_name();
+                $separator = ' / ';
+                if (isset($this->config->catseparator) && $this->config->catseparator != '') {
+                    $separator = strip_tags($this->config->catseparator);
+                }
+                // Simplify the logic below when we drop support for Moodle 3.3.
+                if ($moodleversion >= 2017111300) { // For Moodle >= 3.4.
+                    $ancestry = $category->get_nested_name(false, $separator);
+                } else { // For Moodle < 3.4.
+                    $ancestors = coursecat::make_categories_list('', 0, $separator);
+                    $ancestry = $ancestors[$category->id];
+                }
+                $replacements = array(
+                    'NAME'     => $category->name,
+                    'IDNUMBER' => $category->idnumber,
+                    'PARENT'   => $parent,
+                    'ANCESTRY' => $ancestry,
+                );
+                $rubricname = str_replace(array_keys($replacements), $replacements, $this->config->catrubrictpl);
+                $rubricname = strip_tags($rubricname);
+            }
             $courselist = array_filter($this->courselist, function($course) use($category) {
                 return ($course->category == $category->id);
             });
             if (empty($courselist)) {
                 continue;
             }
-            $this->rubrics[] = new block_filtered_course_list_rubric($category->name, $courselist, $this->line['expanded']);
+            $this->rubrics[] = new block_filtered_course_list_rubric($rubricname, $courselist,
+                                                                $this->config, $this->line['expanded']);
         }
 
         return $this->rubrics;
@@ -314,7 +344,74 @@ class block_filtered_course_list_completion_configline extends block_filtered_co
             return null;
         }
 
-        $this->rubrics[] = new block_filtered_course_list_rubric($this->line['label'], $courselist, $this->line['expanded']);
+        $this->rubrics[] = new block_filtered_course_list_rubric($this->line['label'], $courselist,
+                                                                    $this->config, $this->line['expanded']);
+        return $this->rubrics;
+    }
+}
+
+/**
+ * A class to construct a rubric for generic course and category lists
+ *
+ * @package    block_filtered_course_list
+ * @copyright  2016 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class block_filtered_course_list_generic_configline extends block_filtered_course_list_configline {
+
+    /**
+     * Validate the line
+     *
+     * @param array $line The array of line elements that has been passed to the constructor
+     * @return array A fixed-up line array
+     */
+    public function validate_line($line) {
+        $keys = array('expanded', 'courselistheading', 'catlistheading');
+        $values = array_map(function($item) {
+            return trim($item);
+        }, explode('|', $line[1]));
+        $this->validate_expanded(0, $values);
+        if (!array_key_exists(1, $values)) {
+            $values[1] = get_string('courses');
+            $values[1] = strip_tags($values[1]);
+        }
+        if (!array_key_exists(2, $values)) {
+            $values[2] = get_string('categories');
+            $values[2] = strip_tags($values[2]);
+        }
+        return array_combine($keys, $values);
+    }
+
+    /**
+     * Populate the array of rubrics for this filter type
+     *
+     * @return array The list of rubric objects corresponding to the filter
+     */
+    public function get_rubrics() {
+
+        // Parent = 0   ie top-level categories only.
+        $categories = coursecat::get(0)->get_children();
+
+        if ($categories) {
+            // Just print top level category links.
+            if (count($categories) > 1 ||
+                    (count($categories) == 1 &&
+                    current($categories)->coursecount > $this->config->maxallcourse)) {
+                $label = $this->line['catlistheading'];
+                $list = $categories;
+                $this->rubrics[] = new block_filtered_course_list_rubric($label, $list, $this->config, $this->line['expanded']);
+            } else {
+                // Just print course names of single category.
+                $category = array_shift($categories);
+                $courses = get_courses($category->id);
+                if ($courses) {
+                    $label = $this->line['courselistheading'];
+                    $list = $courses;
+                    $this->rubrics[] = new block_filtered_course_list_rubric($label, $list, $this->config, $this->line['expanded']);
+                }
+            }
+        }
+
         return $this->rubrics;
     }
 }
@@ -333,17 +430,52 @@ class block_filtered_course_list_rubric {
     public $courses = array();
     /** @var string Indicates whether the rubric is expanded or collapsed by default */
     public $expanded;
+    /** @var array Config settings */
+    public $config;
 
     /**
      * Constructor
      *
      * @param string $title The display title of the rubric
      * @param array $courses Courses the user is enrolled in that match the Filtered
+     * @param array $config Block configuration
      * @param string $expanded Indicates the rubrics initial state: expanded or collapsed
      */
-    public function __construct($title, $courses, $expanded = false) {
+    public function __construct($title, $courses, $config, $expanded = false) {
         $this->title = $title;
         $this->courses = $courses;
+        $this->config = $config;
         $this->expanded = $expanded;
+    }
+}
+
+/**
+ * Utility functions
+ *
+ * @package    block_filtered_course_list
+ * @copyright  2017 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class block_filtered_course_list_lib {
+    /**
+     * Display a coursename according to the template
+     *
+     * @param object $course An object with all of the course attributes
+     * @param string $tpl The coursename display template
+     */
+    public static function coursedisplaytext($course, $tpl) {
+        if ($tpl == '') {
+            $tpl = 'FULLNAME';
+        }
+        $cat = coursecat::get($course->category, IGNORE_MISSING);
+        $catname = (is_object($cat)) ? $cat->name : '';
+        $replacements = array(
+            'FULLNAME'  => $course->fullname,
+            'SHORTNAME' => $course->shortname,
+            'IDNUMBER'  => $course->idnumber,
+            'CATEGORY'  => $catname,
+        );
+        $displaytext = str_replace(array_keys($replacements), $replacements, $tpl);
+        return strip_tags($displaytext);
     }
 }

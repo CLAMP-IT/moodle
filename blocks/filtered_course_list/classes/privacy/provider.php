@@ -15,17 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file contains version information for the Filtered course list block.
+ * This file explains this plugins status in relation to the GDPR.
  *
  * @package    block_filtered_course_list
- * @copyright  2016 CLAMP
+ * @copyright  2018 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+namespace block_filtered_course_list\privacy;
 
-$plugin->version   = 2018040600;
-$plugin->requires  = 2016120500; // Requires Moodle 3.2.
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v3.3.4';
-$plugin->component = 'block_filtered_course_list';
+defined('MOODLE_INTERNAL') || die;
+
+/**
+ * A provider class to address GDPR
+ *
+ * @package    block_filtered_course_list
+ * @copyright  2018 CLAMP
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements \core_privacy\metadata\null_provider {
+
+    /**
+     * Get the language string identifier from the component's language
+     * file to explain why this plugin stores no data.
+     *
+     * @return string
+     */
+    public static function get_reason() {
+        return 'privacy:null_reason';
+    }
+}
