@@ -36,6 +36,9 @@ define('TURNITINTOOLTWO_MAX_FILENAME_LENGTH', 180);
 define('TURNITIN_SUPPORT_FORM', 'http://turnitin.com/self-service/support-form.html');
 define('TURNITIN_COURSE_TITLE_LIMIT', 300);
 define('TURNITIN_ASSIGNMENT_TITLE_LIMIT', 300);
+define('MIGRATION_SUBMISSIONS_CUTOFF', 1000);
+define('REPORT_GEN_SPEED_NUM_RESUBMISSIONS', 3);
+define('REPORT_GEN_SPEED_NUM_HOURS', 24);
 
 // For use in course migration.
 $tiiintegrationids = array(0 => get_string('nointegration', 'turnitintooltwo'), 1 => 'Blackboard Basic',
@@ -313,9 +316,10 @@ function turnitintooltwo_delete_instance($id) {
  * @global object
  * @param var $courseid The course ID for the course to reset
  * @param string $action The action to use OLDCLASS or NEWCLASS
+ * @param int $renewdates The action to use new assignment dates or not.
  * @return array The status array to pass to turnitintooltwo_reset_userdata
  */
-function turnitintooltwo_duplicate_recycle($courseid, $action) {
+function turnitintooltwo_duplicate_recycle($courseid, $action, $renewdates = null) {
     set_time_limit(0);
     global $DB, $USER;
 
@@ -346,6 +350,20 @@ function turnitintooltwo_duplicate_recycle($courseid, $action) {
 
         foreach ($parts as $part) {
             $partsarray[$courseid][$turnitintooltwo->id][$part->id]['tiiassignid'] = $part->tiiassignid;
+        }
+
+        /* Set legacy to 0 for all TII2s so that we can have all recreated assignments on the same TII class.
+           Legacy is set to 1 only for migrated assignments that were migrated on a course where there were pre-existing V2 assignments.*/
+        if ($action == "NEWCLASS") {
+            $update = new stdClass();
+            $update->id = $turnitintooltwo->id;
+            $update->legacy = 0;
+            if (!$DB->update_record('turnitintooltwo', $update)) {
+                turnitintooltwo_print_error('tii2updateerror', 'turnitintooltwo', null, null, __FILE__, __LINE__);
+                exit();
+            } else {
+                turnitintooltwo_activitylog("Assignment updated (".$turnitintooltwo->id.")", "REQUEST");
+            }
         }
     }
 
@@ -455,12 +473,14 @@ function turnitintooltwo_duplicate_recycle($courseid, $action) {
             }
             $assignment->setEraterHandbook($eraterhandbook);
 
-            $attribute = "dtstart".$i;
-            $assignment->setStartDate(gmdate("Y-m-d\TH:i:s\Z", $turnitintooltwoassignment->turnitintooltwo->$attribute));
-            $attribute = "dtdue".$i;
-            $assignment->setDueDate(gmdate("Y-m-d\TH:i:s\Z", $turnitintooltwoassignment->turnitintooltwo->$attribute));
-            $attribute = "dtpost".$i;
-            $assignment->setFeedbackReleaseDate(gmdate("Y-m-d\TH:i:s\Z", $turnitintooltwoassignment->turnitintooltwo->$attribute));
+            // Generate the assignment dates depending on whether we are renewing them or not.
+            $date_start = turnitintooltwo_generate_part_dates($renewdates, "start", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $date_due   = turnitintooltwo_generate_part_dates($renewdates, "due", $turnitintooltwoassignment->turnitintooltwo, $i);
+            $date_post  = turnitintooltwo_generate_part_dates($renewdates, "post", $turnitintooltwoassignment->turnitintooltwo, $i);
+
+            $assignment->setStartDate($date_start);
+            $assignment->setDueDate($date_due);
+            $assignment->setFeedbackReleaseDate($date_post);
 
             $attribute = "partname".$i;
             $tiititle = $turnitintooltwoassignment->turnitintooltwo->name." ".$turnitintooltwoassignment->turnitintooltwo->$attribute;
@@ -471,7 +491,7 @@ function turnitintooltwo_duplicate_recycle($courseid, $action) {
                                 $turnitintooltwoassignment->turnitintooltwo->id, $i);
 
             if (empty($partassignid)) {
-                turnitintooltwo_activitylog("Moodle Assignment could not be created (".$turnitintooltwoassignment->id.") - ".
+                turnitintooltwo_activitylog("Moodle Assignment could not be created (".$tiitoolid.") - ".
                                                 $turnitintooltwoassignment->turnitintooltwo->name , "REQUEST");
                 $error = true;
             }
@@ -486,13 +506,10 @@ function turnitintooltwo_duplicate_recycle($courseid, $action) {
             $part->dtstart = strtotime($assignment->getStartDate());
             $part->dtdue = strtotime($assignment->getDueDate());
             $part->dtpost = strtotime($assignment->getFeedbackReleaseDate());
+            $part->unanon = 0;
+            $part->submitted = 0;
 
-            if (!$DB->update_record('turnitintooltwo_parts', $part)) {
-                turnitintooltwo_print_error('partupdateerror', 'turnitintooltwo', null, $i, __FILE__, __LINE__);
-                exit();
-            } else {
-                turnitintooltwo_activitylog("Moodle Assignment part updated (".$part->id.")", "REQUEST");
-            }
+            turnitintooltwo_reset_part_update($part, $i);
 
             if (!$DB->delete_records('turnitintooltwo_submissions', array('submission_part' => $partid))) {
                 turnitintooltwo_print_error('submissiondeleteerror', 'turnitintooltwo', null, null, __FILE__, __LINE__);
@@ -509,6 +526,49 @@ function turnitintooltwo_duplicate_recycle($courseid, $action) {
 }
 
 /**
+ * Function called by turnitintooltwo_duplicate_recycle to generate part dates during the course reset process.
+ *
+ * @param int $renewdates Determines whether to use new dates or existing dates.
+ * @param string $date_type "start", "due" or "post" - Determines the kind of date we need to return.
+ * @param object $part The assignment in which we need dates for.
+ * @param int The counter used during the part creation.
+ * @return int A timestamp for the date we requested.
+ */
+function turnitintooltwo_generate_part_dates($renewdates, $date_type, $part, $i) {
+    if ($renewdates) {
+        switch ($date_type) {
+            case 'start':
+                return gmdate("Y-m-d\TH:i:s\Z", time());
+            case 'due':
+            case 'post':
+               return gmdate("Y-m-d\TH:i:s\Z", strtotime("+1 week"));
+            default:
+                return NULL;
+        }
+    } else {
+        $attribute = "dt".$date_type.$i;
+        return gmdate("Y-m-d\TH:i:s\Z", $part->$attribute);
+    }
+}
+
+/**
+ * Function called by turnitintooltwo_duplicate_recycle to update a part during the course reset process.
+ *
+ * @param object $part The part data that we are updating.
+ * @param int $i The counter used during the part creation.
+ */
+function turnitintooltwo_reset_part_update($part, $i) {
+    global $DB;
+
+    if (!$DB->update_record('turnitintooltwo_parts', $part)) {
+        turnitintooltwo_print_error('partupdateerror', 'turnitintooltwo', null, $i, __FILE__, __LINE__);
+        exit();
+    } else {
+        turnitintooltwo_activitylog("Moodle Assignment part updated (".$part->id.")", "REQUEST");
+    }
+}
+
+/**
  * Function called by course/reset.php when resetting moodle course to actually reset / recycle the data
  *
  * @param object $data The data object passed by course reset
@@ -516,10 +576,13 @@ function turnitintooltwo_duplicate_recycle($courseid, $action) {
  */
 function turnitintooltwo_reset_userdata($data) {
     $status = array();
+
+    $renew_dates = isset($data->renew_assignment_dates) ? 1 : null;
+
     if ($data->reset_turnitintooltwo == 0) {
-        $status = turnitintooltwo_duplicate_recycle($data->courseid, 'NEWCLASS');
+        $status = turnitintooltwo_duplicate_recycle($data->courseid, 'NEWCLASS', $renew_dates);
     } else if ($data->reset_turnitintooltwo == 1) {
-        $status = turnitintooltwo_duplicate_recycle($data->courseid, 'OLDCLASS');
+        $status = turnitintooltwo_duplicate_recycle($data->courseid, 'OLDCLASS', $renew_dates);
     }
     return $status;
 }
@@ -540,13 +603,18 @@ function turnitintooltwo_reset_course_form_defaults($course) {
  * @param object $mform The mod form object passed by reference by course reset
  */
 function turnitintooltwo_reset_course_form_definition(&$mform) {
-    $mform->addElement('header', 'turnitintooltwoheader', get_string('modulenameplural', 'turnitintooltwo'));
+    $mform->addElement('header', 'turnitintooltwoheader', get_string('modulenamewithv2plural', 'turnitintooltwo'));
     $options = array(
             '0' => get_string('turnitintooltworesetdata0', 'turnitintooltwo'),
             '1' => get_string('turnitintooltworesetdata1', 'turnitintooltwo'),
             '2' => get_string('turnitintooltworesetdata2', 'turnitintooltwo')
     );
     $mform->addElement('select', 'reset_turnitintooltwo', get_string('selectoption', 'turnitintooltwo'), $options);
+
+    // Renew dates.
+    $mform->addElement('checkbox', 'renew_assignment_dates', get_string('renew_assignment_dates', 'turnitintooltwo'));
+    $mform->addHelpButton('renew_assignment_dates', 'renew_assignment_dates', 'turnitintooltwo');
+    $mform->setDefault('renew_assignment_dates', false);
 }
 
 /**
@@ -577,13 +645,13 @@ function turnitintooltwo_cron() {
 
     // Send grades to the gradebook for anonymous marking assignments when the post date has passed.
     // Get a list of assignments that need updating.
-    if ($assignmentlist = $DB->get_records_sql("SELECT t.id FROM {turnitintooltwo} t
+    if ($assignmentlist = $DB->get_records_sql("SELECT DISTINCT(t.id) FROM {turnitintooltwo} t
                                                 LEFT JOIN {turnitintooltwo_parts} p ON (p.turnitintooltwoid = t.id)
-                                                WHERE (turnitintooltwoid, dtpost) IN (SELECT turnitintooltwoid, MAX(dtpost)
-                                                    FROM {turnitintooltwo_parts}
-                                                    GROUP BY turnitintooltwoid)
-                                                AND t.anon = 1 AND t.anongradebook = 0 AND dtpost < ".time()."
-                                                GROUP BY t.id")) {
+                                                WHERE (p.turnitintooltwoid + p.dtpost IN 
+                                                    (SELECT p2.turnitintooltwoid + MAX(p2.dtpost)
+                                                        FROM {turnitintooltwo_parts} p2
+                                                        GROUP BY p2.turnitintooltwoid))
+                                                AND t.anon = 1 AND t.anongradebook = 0 AND p.dtpost < ".time())) {
 
         // Update each assignment.
         $task = "anongradebook";
@@ -612,6 +680,57 @@ function turnitintooltwo_cron() {
             }
         }
         echo 'Turnitintool submissions downloaded for assignments: '.implode(',', $updatedassignments).' ';
+    }
+
+    // Perform gradebook migrations for submissions that were not actioned during the migration tool.
+    turnitintooltwo_cron_migrate_gradebook();
+
+}
+
+/**
+ * Migrate the gradebook for submissions which were not migrated during the migration tool.
+ */
+function turnitintooltwo_cron_migrate_gradebook() {
+    global $DB;
+
+    // Get a list of assignments with outstanding gradebook migrations.
+    require_once(__DIR__.'/classes/v1migration/v1migration.php');
+    $sql = "migrate_gradebook = 1 GROUP BY turnitintooltwoid";
+    $assignments = $DB->get_records_select("turnitintooltwo_submissions", $sql, NULL, 'turnitintooltwoid', "turnitintooltwoid, count(turnitintooltwoid) AS numsubmissions");
+
+    $numsubmissions = 0;
+    foreach ($assignments as $assignment) {
+        // We will break out unless the number of submissions migrated + to be migrated is MIGRATION_SUBMISSIONS_CUTOFF or less.
+        if (($numsubmissions + $assignment->numsubmissions) <= MIGRATION_SUBMISSIONS_CUTOFF ||
+           (($numsubmissions == 0) && ($assignment->numsubmissions > MIGRATION_SUBMISSIONS_CUTOFF))) {
+
+            $numsubmissions += $assignment->numsubmissions;
+
+            // Get the course ID.
+            $courseid = $DB->get_field('turnitintooltwo', 'course', array('id' => $assignment->turnitintooltwoid));
+
+            // Get a TII assignment ID on this assignment so we can link back to V1.
+            $sql = "turnitintooltwoid = " . $assignment->turnitintooltwoid . " LIMIT 1";
+            $tiiid = $DB->get_field_select('turnitintooltwo_parts', 'tiiassignid', $sql);
+
+            // Get a V1 part belonging to this assignment.
+            $sql = "tiiassignid = " . $tiiid . " LIMIT 1";
+            $turnitintoolid = $DB->get_field_select('turnitintool_parts', 'turnitintoolid', $sql);
+
+            $gradeupdates = v1migration::migrate_gradebook($assignment->turnitintooltwoid, $turnitintoolid, $courseid, "cron");
+
+            // If we have migrated, update the titles.
+            if ($gradeupdates == "migrated") {
+                // Get the V1 assignment.
+                $v1assignment = $DB->get_record('turnitintool', array("id" => $turnitintoolid));
+
+                // Perform post-migration tasks.
+                $v1migration = new v1migration($courseid, $v1assignment);
+                $v1migration->post_migration($assignment->turnitintooltwoid);
+            }
+        } else {
+            break;
+        }
     }
 }
 
@@ -1207,7 +1326,8 @@ function turnitintooltwo_getfiles($moduleid) {
                                                             get_string('filedeleteconfirm', 'turnitintooltwo'))."');";
             $delete = html_writer::link($CFG->wwwroot.'/mod/turnitintooltwo/settings_extras.php?cmd=files&file='.
                             $file->id.'&filehash='.$file->hash,
-                                html_writer::tag('i', '', array('class' => 'fa fa-trash-o fa-lg')), $attributes);
+                                html_writer::tag('i', '', array('title' => get_string('deletesubmission', 'turnitintooltwo'),
+                                    'class' => 'fa fa-trash-o fa-lg')), $attributes);
         }
 
         $return["aaData"][] = array($assignment, $file->courseshort, $file->coursetitle, $submission,
@@ -1647,4 +1767,27 @@ function turnitintooltwo_genUuid() {
         mt_rand( 0, 0xffff ),
         mt_rand( 0, 0xffff )
     );
+}
+
+/**
+ * @param  $legacy The flag for whether we are using a legacy assignment or not.
+ * @return string The course type for this assignment.
+ */
+function turnitintooltwo_get_course_type($legacy = 0) {
+    if ($legacy == 1) {
+        return "V1";
+    } else {
+        return "TT";
+    }
+}
+
+/**
+ * @return object The parameters for report gen speed.
+ */
+function turnitintooltwo_get_report_gen_speed_params() {
+    $genparams = new stdClass();
+    $genparams->num_resubmissions = REPORT_GEN_SPEED_NUM_RESUBMISSIONS;
+    $genparams->num_hours = REPORT_GEN_SPEED_NUM_HOURS;
+
+    return $genparams;
 }

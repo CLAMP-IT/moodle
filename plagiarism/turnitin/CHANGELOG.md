@@ -1,3 +1,98 @@
+### :snowflake: Date:		2018-January-16
+### :snowflake: Release:	v2018011602
+
+### :zap: What's new
+
+#### Instant Similarity Reports for up to three resubmissions
+
+Feedback Studio allows students to view their Similarity Report results immediately! Students can now view their initial Similarity Report, then revise and resubmit their work up to three times, without having to wait 24 hours for an updated report. After three resubmissions have been made, the 24-hour report generation wait time will be restored. Instantaneous similarity results give students the formative support they need to master paraphrasing and citation conventions efficiently.
+
+> To enable resubmissions for students, you must correctly configure the assignment settings of a new or existing Moodle Direct V2 assignment.
+>
+> 1. Scroll to **Turnitin plagiarism plugin settings**.
+> 2. Under **Report Generation Speed**, select **Generate reports immediately (students can resubmit until due date): After 3 resubmissions, reports generate after 24 hours**.
+
+#### Genre-specific rubrics in Feedback Studio (North America only)
+
+Revision Assistant's genre-specific rubrics are now available in Feedback Studio for our North American users, designed with 6th - 12th graders in mind! K-12 instructors can assign new rubrics to their assignments to help their students master the art of argumentative, narrative, informative, and analytical writing. If you're actively using Revision Assistant and Feedback Studio together, you can now promote consistency in the classroom by adopting the same rubrics.
+
+> To use a new rubric for grading, you can attach it from within the assignment settings of a new or existing assignment.
+> 
+> 1. Scroll to **Turnitin plagiarism plugin settings**.
+> 2. Under **Attach a rubric to this assignment**, select a new genre-specific rubric from the drop-down list.
+> 
+> Alternatively, launch the rubric and grading form manager from the Moodle Direct V2 submission inbox, or alternatively, from within Feedback Studio.
+
+#### K-12 QuickMark sets in Feedback Studio (North America only)
+
+QuickMarks are Turnitin's most popular feedback tool among Feedback Studio instructors! But in finding that many of our default QuickMark sets failed to address the needs of our K-12 instructors and students, we've added two new sets to the Feedback Studio collection, available to our North American users! Our new drag-and-drop (and customizable!) comments will help instructors help their students to engage in revision, save time, and more importantly, achieve learning outcomes. [Read more](https://guides.turnitin.com/01_Manuals_and_Guides/Release_Notes/Turnitin_Release_Notes/Genre-specific_rubrics_in_Feedback_Studio).
+> 
+> To view and edit your new QuickMarks, you can access the QuickMark manager from within the assignment settings of a new or existing assignment.
+>
+> 1. Scroll to Turnitin plagiarism plugin settings.
+> 2. Select Launch QuickMark manager to view and manage your new QuickMarks.
+>
+> Alternatively, launch the QuickMark manager from within in Feedback Studio.
+
+### :wrench: Fixes and enhancements
+
+#### Resubmissions now overwrite the previous submission
+
+When a student made a resubmission to Turnitin, their previous submission wasn't removed from the assignment inbox; this led to confusion for instructors, who weren't too sure which submission was the most up-to-date version. We've made sure that resubmissions now overwrite the existing submission.
+
+#### Students can submit their group work without access error issues
+
+Students have frustratingly been receiving unauthorized access errors when submitting group work, which caused some confusion. After uploading their submission and navigating to the View all submissions page, the student would witness the error. We've made a solid fix to stop this from happening! A big thanks to [@micaherne](https://github.com/micaherne) for this pull request.
+
+---
+
+### Date:       2017-November-23
+### Release:    v2017112302
+
+- Support for Moodle 3.4
+- Fixed errors due to incorrect configuration of the plugin
+- Added default activity completion settings
+- Fixed an issue preventing group submission grades from updating
+
+**Support for Moodle 3.4** - After lots of tests against the release of Moodle 3.4, we're pleased to announce that Turnitin's Plagiarism Plugin now supports it.
+
+**Fixed errors due to incorrect configuration of the plugin** - If the Plagiarism Plugin was not configured correctly and PeerMark was simultaneously enabled, this would cause an error in the assignment inbox. We've managed to resolve this!
+
+**Added default activity completion settings** - We've added the default activity completion setting alongside the bulk edit activity completion. Default activity completion allows you to select one or more course activities or resources and change their default settings (usually 'manual') to a setting of your choice. Thanks to @tonyjbutler for his input!
+
+**Fixed an issue preventing group submission grades from updating** - Moodle's group submissions allow one student to submit on behalf of their group. However, we ran into a breakdown in functionality where grades failed to apply to all group participants for a submission; only the student who physically made the submission would receive a grade. Now, all students in a group can view their grade in Turnitin Feedback Studio.
+
+---
+
+### Date:		2017-August-10
+### Release:	v2017081001
+
+**Fixed a bug preventing submission after declining the EULA** - We received reports that students were unable to submit to a Moodle assignment after declining the Turnitin EULA. That definitely wasn't expected, but we've quickly fixed it. Students are now able to decline the Turnitin EULA but still submit to a Moodle assignment with Turnitin enabled.
+
+**Fixed a bug preventing submissions from processing** - We suspect our crons might have put on a little weight this month as they were becoming stuck for a few of our users! When some users deleted a submission, this would prevent the cron from running, and consequently, submissions would fail to process.
+
+> A cron is used to execute commands automatically at a set time or date.
+
+To resolve this, we've moved the delete_tii_submission function from private to public. The cron is now functioning as expected for affected users (having dropped a few much-needed pounds!). A big thanks to @aolley for the pull request!
+
+---
+
+### Date:		2017-July-03
+### Release:	v2017070301
+
+We now support Moodle 3.3!
+
+- Fixed a bug affecting the Moodle 3.3 bulk completion tool (Thanks to @Syxton)
+- Fixed a bug causing submissions from processing
+
+Fixed a bug affecting the Moodle 3.3 bulk completion tool - We received a report that the Moodle 3.3 bulk completion editing feature was broken as a result of the Plagiarism Plugin being installed.
+
+Fixed a bug causing submissions from processing - If a course was deleted before a submission was sent to Turnitin, the cron would become stuck. Submissions in the queued state would stop further submissions from being processed, revealing a database error message. We've stopped exceptions (such as a deleted course) from causing any further cron processing to fail.
+
+**Note:** A cron is used to execute commands automatically at a set time or date.
+
+---
+
 ### Date:		2017-May-24
 ### Release:	v2017052401
 

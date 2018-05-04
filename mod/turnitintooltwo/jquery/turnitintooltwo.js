@@ -543,7 +543,7 @@
         }
 
         // Show warning when changing the rubric linked to an assignment.
-        $('#id_rubric, #id_plagiarism_rubric').focus(function () {
+        $('#id_rubric, #id_plagiarism_rubric').mousedown(function () {
             if ($('input[name="instance"]').val() != '' && $('input[name="rubric_warning_seen"]').val() != 'Y') {
                 if (confirm(M.str.turnitintooltwo.changerubricwarning)) {
                     $('input[name="rubric_warning_seen"]').val('Y');
@@ -736,6 +736,14 @@
                         return response.msg;
                     } else if (response.field == "maxmarks") {
                         $('#refresh_' + response.partid).click();
+
+                        // Update the gradebook.
+                        $.ajax({
+                            type: "POST",
+                            url: M.cfg.wwwroot + "/mod/turnitintooltwo/ajax.php",
+                            dataType: "json",
+                            data: { action: "sync_all_submissions", assignment: $('#assignment_id').html(), sesskey: M.cfg.sesskey }
+                        });
                     } else if (response.field == "partname") {
                         var tabId = $(this).parentsUntil('.ui-tabs-panel').parent().attr('aria-labelledby');
                         $('#' + tabId).text(newValue);
@@ -954,11 +962,29 @@
                     $($(rubricElementId)).empty();
                     var options = data;
                     $.each(options, function (i, val) {
-                        $($(rubricElementId)).append($('<option>', {
-                            value: i,
-                            text: val
-                        }));
+                        if (!$.isNumeric(i) && i !== "") {
+
+                            var optgroup = $('<optgroup>');
+                            optgroup.attr('label', i);
+
+                            $.each(val, function (j, rubric) {
+                                var option = $("<option></option>");
+                                option.val(j);
+                                option.text(rubric);
+
+                                optgroup.append(option);
+                            });
+
+                            $(rubricElementId).append(optgroup);
+
+                        } else {
+                            $($(rubricElementId)).append($('<option>', {
+                                value: i,
+                                text: val
+                            }));
+                        }
                     });
+
                     $(rubricElementId + ' option[value="' + currentRubric + '"]').attr("selected", "selected");
                 }
             });
