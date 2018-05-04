@@ -1,5 +1,18 @@
 ﻿Version Information
 ===================
+Version 3.2.1.1
+  1. Update tests for https.
+  2. Update Travis CI for M3.2.
+  3. Fix section move name not changing.
+  4. Make the 'readme' course setting only display and not store in the database, thus regenerate and not broken in the
+     course backup.
+  5. Fix not being able to tab to colour settings.
+  6. Fix toggle all cursor.
+  7. Add folder icon from /pix/f.
+  8. One section only.
+  9. Remove 'coursedisplay' setting favour of combining the two and adding a link on the right of the toggle.
+ 10. Add opactity option for all four toggle colour settings
+
 Version 3.2.1.0
   1. Remove old 'format_topcoll_delete_course' function and replace with '\core\event\course_content_deleted' event.
   2. Add Boost theme specific style sheet - not the best of solutions but only one at the moment I can think of.
