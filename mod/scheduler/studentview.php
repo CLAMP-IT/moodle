@@ -107,8 +107,8 @@ if (count($pastslots) > 0) {
         } else {
             $others = null;
         }
-
-        $slottable->add_slot($pastslot, $appointment, $others);
+        $hasdetails = $scheduler->uses_studentdata();
+        $slottable->add_slot($pastslot, $appointment, $others, false, false, $hasdetails);
     }
 
     echo $output->heading(get_string('attendedslots', 'scheduler'), 3);
@@ -137,10 +137,12 @@ if (count($upcomingslots) > 0) {
         }
 
         $cancancel = $slot->is_in_bookable_period();
+        $canedit = $cancancel && $scheduler->uses_studentdata();
+        $canview = !$cancancel && $scheduler->uses_studentdata();
         if ($scheduler->is_group_scheduling_enabled()) {
             $cancancel = $cancancel && ($appointgroup >= 0);
         }
-        $slottable->add_slot($slot, $appointment, $others, $cancancel);
+        $slottable->add_slot($slot, $appointment, $others, $cancancel, $canedit, $canview);
     }
 
     echo $output->heading(get_string('upcomingslots', 'scheduler'), 3);

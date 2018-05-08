@@ -29,44 +29,59 @@ define ('SCHEDULER_MAX_GRADE', 1);  // Used for grading strategy.
  * Given an object containing all the necessary data,
  * will create a new instance and return the id number
  * of the new instance.
- * @param object $scheduler the current instance
+ *
+ * @param stdClass $data the current instance
+ * @param moodleform $mform the form that the user filled
  * @return int the new instance id
  * @uses $DB
  */
-function scheduler_add_instance($scheduler) {
+function scheduler_add_instance($data, $mform = null) {
     global $DB;
 
-    $scheduler->timemodified = time();
-    $scheduler->scale = isset($scheduler->grade) ? $scheduler->grade : 0;
+    $cmid = $data->coursemodule;
 
-    $id = $DB->insert_record('scheduler', $scheduler);
-    $scheduler->id = $id;
+    $data->timemodified = time();
+    $data->scale = isset($data->grade) ? $data->grade : 0;
 
-    scheduler_grade_item_update($scheduler);
+    $data->id = $DB->insert_record('scheduler', $data);
 
-    return $id;
+    $DB->set_field('course_modules', 'instance', $data->id, array('id' => $cmid));
+    $context = context_module::instance($cmid);
+
+    if ($mform) {
+        $mform->save_mod_data($data, $context);
+    }
+
+    scheduler_grade_item_update($data);
+
+    return $data->id;
 }
 
 /**
  * Given an object containing all the necessary data,
  * (defined by the form in mod.html) this function
  * will update an existing instance with new data.
+ *
  * @param object $scheduler the current instance
+ * @param moodleform $mform the form that the user filled
  * @return object the updated instance
  * @uses $DB
  */
-function scheduler_update_instance($scheduler) {
+function scheduler_update_instance($data, $mform) {
     global $DB;
 
-    $scheduler->timemodified = time();
-    $scheduler->id = $scheduler->instance;
+    $data->timemodified = time();
+    $data->id = $data->instance;
 
-    $scheduler->scale = $scheduler->grade;
+    $data->scale = $data->grade;
 
-    $DB->update_record('scheduler', $scheduler);
+    $DB->update_record('scheduler', $data);
+
+    $context = context_module::instance($data->coursemodule);
+    $mform->save_mod_data($data, $context);
 
     // Update grade item and grades.
-    scheduler_update_grades($scheduler);
+    scheduler_update_grades($data);
 
     return true;
 }
@@ -76,8 +91,9 @@ function scheduler_update_instance($scheduler) {
  * Given an ID of an instance of this module,
  * this function will permanently delete the instance
  * and any data that depends on it.
+ *
  * @param int $id the instance to be deleted
- * @return boolean true if success, false otherwise
+ * @return bool true if success, false otherwise
  * @uses $DB
  */
 function scheduler_delete_instance($id) {
@@ -101,6 +117,7 @@ function scheduler_delete_instance($id) {
  * Return a small object with summary information about what a
  * user has done with a given particular instance of this module
  * Used for user activity reports.
+ *
  * $return->time = the time they did it
  * $return->info = a short text description
  * @param object $course the course instance
@@ -137,6 +154,7 @@ function scheduler_user_outline($course, $user, $mod, $scheduler) {
 /**
  * Prints a detailed representation of what a user has done with
  * a given particular instance of this module, for user activity reports.
+ *
  * @param object $course the course instance
  * @param object $user the concerned user instance
  * @param object $mod the current course module instance
@@ -177,10 +195,11 @@ function scheduler_user_complete($course, $user, $mod, $scheduler) {
  * Given a course and a time, this module should find recent activity
  * that has occurred in scheduler activities and print it out.
  * Return true if there was output, or false is there was none.
+ *
  * @param object $course the course instance
- * @param boolean $isteacher true tells a teacher uses the function
+ * @param bool $isteacher true tells a teacher uses the function
  * @param int $timestart a time start timestamp
- * @return boolean true if anything was printed, otherwise false
+ * @return bool true if anything was printed, otherwise false
  */
 function scheduler_print_recent_activity($course, $isteacher, $timestart) {
 
@@ -189,12 +208,10 @@ function scheduler_print_recent_activity($course, $isteacher, $timestart) {
 
 
 /**
- * This function returns if a scale is being used by one newmodule
- * it it has support for grading and scales. Commented code should be
- * modified if necessary. See forum, glossary or journal modules
- * as reference.
+ * This function returns whether a scale is being used by a scheduler.
  *
- * @param int $newmoduleid ID of an instance of this module
+ * @param int $cmid ID of an instance of this module
+ * @param int $casleid the id of the scale in question
  * @return mixed
  * @uses $DB
  **/
@@ -217,9 +234,9 @@ function scheduler_scale_used($cmid, $scaleid) {
 /**
  * Checks if scale is being used by any instance of scheduler
  *
- * This is used to find out if scale used anywhere
- * @param $scaleid int
- * @return boolean True if the scale is used by any scheduler
+ * @param $scaleid int the id of the scale in question
+ * @return bool True if the scale is used by any scheduler
+ * @uses $DB
  */
 function scheduler_scale_used_anywhere($scaleid) {
     global $DB;
@@ -239,7 +256,10 @@ function scheduler_scale_used_anywhere($scaleid) {
 
 /**
  * Called by course/reset.php
+ *
  * @param $mform form passed by reference
+ * @uses $COURSE
+ * @uses $DB
  */
 function scheduler_reset_course_form_definition(&$mform) {
     global $COURSE, $DB;
@@ -256,6 +276,8 @@ function scheduler_reset_course_form_definition(&$mform) {
 
 /**
  * Default values for the reset form
+ *
+ * @param stdClass $course the course in which the reset takes place
  */
 function scheduler_reset_course_form_defaults($course) {
     return array('reset_scheduler_slots' => 1, 'reset_scheduler_appointments' => 1);
@@ -265,8 +287,9 @@ function scheduler_reset_course_form_defaults($course) {
 /**
  * This function is used by the remove_course_userdata function in moodlelib.
  * If this function exists, remove_course_userdata will execute it.
- * This function will remove all posts from the specified forum.
- * @param data the reset options
+ * This function will remove all slots and appointments from the specified scheduler.
+ *
+ * @param object $data the reset options
  * @return void
  */
 function scheduler_reset_userdata($data) {
@@ -317,6 +340,8 @@ function scheduler_reset_userdata($data) {
 }
 
 /**
+ * Determine whether a certain feature is supported by Scheduler.
+ *
  * @param string $feature FEATURE_xx constant for requested feature
  * @return mixed True if module supports feature, null if doesn't know
  */
@@ -347,8 +372,11 @@ function scheduler_supports($feature) {
 /**
  * Update activity grades
  *
- * @param object $scheduler
+ * @param object $schedulerrecord
  * @param int $userid specific user only, 0 means all
+ * @param bool $nullifnone not used
+ * @uses $CFG
+ * @uses $DB
  */
 function scheduler_update_grades($schedulerrecord, $userid=0, $nullifnone=true) {
     global $CFG, $DB;
@@ -377,7 +405,7 @@ function scheduler_update_grades($schedulerrecord, $userid=0, $nullifnone=true) 
  * Create grade item for given scheduler
  *
  * @param object $scheduler object
- * @param mixed optional array/object of grade(s); 'reset' means reset grades in gradebook
+ * @param mixed $grades optional array/object of grade(s); 'reset' means reset grades in gradebook
  * @return int 0 if ok, error code otherwise
  */
 function scheduler_grade_item_update($scheduler, $grades=null) {
@@ -485,6 +513,7 @@ function scheduler_grade_item_delete($scheduler) {
  */
 function scheduler_get_file_areas($course, $cm, $context) {
     return array(
+            'bookinginstructions' => get_string('bookinginstructions', 'scheduler'),
             'slotnote' => get_string('areaslotnote', 'scheduler'),
             'appointmentnote' => get_string('areaappointmentnote', 'scheduler'),
             'teachernote' => get_string('areateachernote', 'scheduler')
@@ -528,7 +557,12 @@ function scheduler_get_file_info($browser, $areas, $course, $cm, $context, $file
     try {
         $scheduler = scheduler_instance::load_by_coursemodule_id($cm->id);
 
-        if ($filearea === 'slotnote') {
+        if ($filearea === 'bookinginstructions') {
+            $cansee = true;
+            $canwrite = has_capability('moodle/course:manageactivities', $context);
+            $name = get_string('bookinginstructions', 'scheduler');
+
+        } else if ($filearea === 'slotnote') {
             $slot = $scheduler->get_slot($itemid);
 
             $cansee = true;
@@ -574,7 +608,7 @@ function scheduler_get_file_info($browser, $areas, $course, $cm, $context, $file
 }
 
 /**
- * Serves the files embedded in various notes fields
+ * Serves the files embedded in various rich text fields, or uploaded by students
  *
  * @package  mod_scheduler
  * @category files
@@ -585,10 +619,10 @@ function scheduler_get_file_info($browser, $areas, $course, $cm, $context, $file
  * @param array $args extra arguments
  * @param bool $forcedownload whether or not force download
  * @param array $options additional options affecting the file serving
- * @return bool false if file not found, does not return if found - justsend the file
+ * @return bool false if file not found, does not return if found - just send the file
  */
 function scheduler_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options=array()) {
-    global $CFG, $DB;
+    global $CFG, $DB, $USER;
 
     if ($context->contextlevel != CONTEXT_MODULE) {
         return false;
@@ -636,6 +670,26 @@ function scheduler_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
             }
 
             if (!($USER->id == $slot->teacherid)) {
+                require_capability('mod/scheduler:manageallappointments', $context);
+            }
+
+        } else if ($filearea === 'bookinginstructions') {
+            $caps = array('moodle/course:manageactivities', 'mod/scheduler:appoint');
+            if (!has_any_capability($caps)) {
+                return false;
+            }
+
+        } else if ($filearea === 'studentfiles') {
+            if (!$scheduler->uses_studentfiles()) {
+                return false;
+            }
+
+            list($slot, $app) = $scheduler->get_slot_appointment($entryid);
+            if (!$app) {
+                return false;
+            }
+
+            if (($USER->id != $slot->teacherid) && ($USER->id != $app->studentid)) {
                 require_capability('mod/scheduler:manageallappointments', $context);
             }
 

@@ -1,18 +1,20 @@
 <?php
 
 /**
+ * Define all the restore steps that will be used by the restore_scheduler_activity_task
+ *
  * @package    mod_scheduler
  * @copyright  2016 Henning Bostelmann and others (see README.txt)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
-/**
- * Define all the restore steps that will be used by the restore_scheduler_activity_task
- */
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Structure step to restore one scheduler activity
+ *
+ * @copyright  2016 Henning Bostelmann and others (see README.txt)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class restore_scheduler_activity_structure_step extends restore_activity_structure_step {
 
@@ -102,8 +104,10 @@ class restore_scheduler_activity_structure_step extends restore_activity_structu
     protected function after_execute() {
         // Add scheduler related files.
         $this->add_related_files('mod_scheduler', 'intro', null);
+        $this->add_related_files('mod_scheduler', 'bookinginstructions', null);
         $this->add_related_files('mod_scheduler', 'slotnote', 'scheduler_slot');
         $this->add_related_files('mod_scheduler', 'appointmentnote', 'scheduler_appointment');
         $this->add_related_files('mod_scheduler', 'teachernote', 'scheduler_appointment');
+        $this->add_related_files('mod_scheduler', 'studentfiles', 'scheduler_appointment');
     }
 }

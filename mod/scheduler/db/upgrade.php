@@ -1,11 +1,31 @@
 <?php
 
+/**
+ * Upgrade code for the scheduler module
+ *
+ * @package    mod_scheduler
+ * @copyright  2017 Henning Bostelmann and others (see README.txt)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+/**
+ * Migrate a configuration setting from global to plugin specific.
+ *
+ * @param string $name name of configuration setting
+ */
 function scheduler_migrate_config_setting($name) {
     $oldval = get_config('core', 'scheduler_'.$name);
     set_config($name, $oldval, 'mod_scheduler');
     unset_config('scheduler_'.$name);
 }
 
+/**
+ * Migrate the group mode settings to new 2.9 conventions.
+ *
+ * @param int $sid id of the scheduler to migrate
+ */
 function scheduler_migrate_groupmode($sid) {
     global $DB;
     $globalenable = (bool) get_config('mod_scheduler', 'groupscheduling');
@@ -22,8 +42,13 @@ function scheduler_migrate_groupmode($sid) {
     }
 }
 
+/**
+ * This function does anything necessary to upgrade older versions to match current functionality.
+ *
+ * @param int $oldversion version number to be migrated from
+ * @return bool true if upgrade is successful
+ */
 function xmldb_scheduler_upgrade($oldversion=0) {
-    // This function does anything necessary to upgrade older versions to match current functionality.
 
     global $CFG, $DB;
 
@@ -240,6 +265,61 @@ function xmldb_scheduler_upgrade($oldversion=0) {
 
         // Scheduler savepoint reached.
         upgrade_mod_savepoint(true, 2016051700, 'scheduler');
+    }
+
+    /* ******************* 3.3 upgrade line ********************** */
+
+    if ($oldversion < 2017040100) {
+
+        // Add new configuration fields (relating to booking form) to scheduler.
+        $table = new xmldb_table('scheduler');
+
+        $field = new xmldb_field('usebookingform', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'usenotes');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('bookinginstructions', XMLDB_TYPE_TEXT, null, null, null, null, null, 'usebookingform');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('bookinginstructionsformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'bookinginstructions');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('usestudentnotes', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'bookinginstructionsformat');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('requireupload', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'usestudentnotes');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('uploadmaxfiles', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'requireupload');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('uploadmaxsize', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'uploadmaxfiles');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('usecaptcha', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'uploadmaxsize');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add field "studentnote" and corresponding format field to scheduler_appointment.
+        $table = new xmldb_table('scheduler_appointment');
+        $field1 = new xmldb_field('studentnote', XMLDB_TYPE_TEXT, null, null, null, null, null, 'teachernoteformat');
+        if (!$dbman->field_exists($table, $field1)) {
+            $dbman->add_field($table, $field1);
+        }
+        $field2 = new xmldb_field('studentnoteformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'studentnote');
+        if (!$dbman->field_exists($table, $field2)) {
+            $dbman->add_field($table, $field2);
+        }
+
+        // Scheduler savepoint reached.
+        upgrade_mod_savepoint(true, 2017040100, 'scheduler');
     }
     return true;
 }

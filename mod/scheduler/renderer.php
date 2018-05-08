@@ -15,9 +15,10 @@ require_once($CFG->dirroot . '/mod/assign/locallib.php');
 /**
  * A custom renderer class that extends the plugin_renderer_base and is used by the scheduler module.
  *
+ * @copyright  2016 Henning Bostelmann and others (see README.txt)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_scheduler_renderer extends plugin_renderer_base {
-
 
     /**
      * Format a date in the current user's timezone.
@@ -74,8 +75,17 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $a;
     }
 
+    /**
+     * @var array a cached version of scale levels
+     */
     protected $scalecache = array();
 
+    /**
+     * Get a list of levels in a grading scale.
+     *
+     * @param int $scaleid id number of the scale
+     * @return array levels on the scale
+     */
     public function get_scale_levels($scaleid) {
         global $DB;
 
@@ -91,12 +101,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $this->scalecache[$scaleid];
     }
 
-
     /**
-     * Formats a grade in a specific scheduler for display
+     * Formats a grade in a specific scheduler for display.
+     *
      * @param mixed $subject either a scheduler instance or a scale id
      * @param string $grade the grade to be displayed
-     * @param boolean $short formats the grade in short form (result empty if grading is
+     * @param bool $short formats the grade in short form (result empty if grading is
      * not used, or no grade is available; parantheses are put around the grade if it is present)
      * @return string the formatted grade
      */
@@ -160,6 +170,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $scalegrades;
     }
 
+    /**
+     * Return a string describing the grading strategy of a scheduler.
+     *
+     * @param int $strategy id number for the strategy
+     * @return string description of the strategy
+     */
     public function format_grading_strategy($strategy) {
         if ($strategy == SCHEDULER_MAX_GRADE) {
             return get_string('maxgrade', 'scheduler');
@@ -168,11 +184,29 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         }
     }
 
+    /**
+     * Format a user-entered "note" on a slot or appointment, adjusting any links to embedded files.
+     *
+     * @param string $content content of the note
+     * @param int $format format of the note
+     * @param context $context context of the note
+     * @param string $area file ara for embedded files
+     * @param int $itemid item id for embedded files
+     * @return string the formatted note
+     */
     public function format_notes($content, $format, $context, $area, $itemid) {
         $text = file_rewrite_pluginfile_urls($content, 'pluginfile.php', $context->id, 'mod_scheduler', $area, $itemid);
         return format_text($text, $format);
     }
 
+    /**
+     * Format the notes relating to an appointment (appointment notes and confidential notes).
+     *
+     * @param scheduler_instance $scheduler the scheduler in whose context the appointment is
+     * @param stdClass $data database record describing the appointment
+     * @param string $idfield the field in the record containing the item id
+     * @return string formatted notes
+     */
     public function format_appointment_notes(scheduler_instance $scheduler, $data, $idfield = 'id') {
         $note = '';
         $id = $data->{$idfield};
@@ -187,11 +221,28 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $note;
     }
 
+    /**
+     * Produce HTML code for a link to a user's profile.
+     * That is, the full name of the user is displayed with a link to the user's course profile on it.
+     *
+     * @param scheduler_instance $scheduler the scheduler in whose context the link is
+     * @param stdClass $user the user to link to
+     * @return string HTML code of the link
+     */
     public function user_profile_link(scheduler_instance $scheduler, stdClass $user) {
         $profileurl = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $scheduler->course));
         return html_writer::link($profileurl, fullname($user));
     }
 
+    /**
+     * Produce HTML code for a link to a user's appointment.
+     * That is, the full name of the user is displayed with a link to a given appointment.
+     *
+     * @param unknown $scheduler the scheduler in whose context the link is
+     * @param unknown $user the use in question
+     * @param unknown $appointmentid id number of the appointment to link to
+     * @return string HTML code of the link
+     */
     public function appointment_link($scheduler, $user, $appointmentid) {
         $paras = array(
                         'what' => 'viewstudent',
@@ -202,6 +253,48 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return html_writer::link($url, fullname($user));
     }
 
+    /**
+     * Render a list of files in a filearea.
+     *
+     * @param int $contextid id number of the context of the files
+     * @param string $filearea name of the file area
+     * @param int $itemid item id in the file area
+     * @return string rendered list of files
+     */
+    public function render_attachments($contextid, $filearea, $itemid) {
+
+        $fs = get_file_storage();
+        $o = '';
+
+        // We retrieve all files according to the time that they were created.  In the case that several files were uploaded
+        // at the sametime (e.g. in the case of drag/drop upload) we revert to using the filename.
+        $files = $fs->get_area_files($contextid, 'mod_scheduler', $filearea, $itemid, "filename", false);
+        if ($files) {
+            $o .= html_writer::start_tag('ul', array('class' => 'scheduler_filelist'));
+            foreach ($files as $file) {
+                $filename = $file->get_filename();
+                $pathname = $file->get_filepath();
+                $mimetype = $file->get_mimetype();
+                $iconimage = $this->pix_icon(file_file_icon($file), get_mimetype_description($file),
+                                             'moodle', array('class' => 'icon'));
+                $path = moodle_url::make_pluginfile_url($contextid, 'mod_scheduler', $filearea, $itemid, $pathname, $filename);
+
+                $ulitem = html_writer::link($path, $iconimage) . html_writer::link($path, s($filename));
+                $o .= html_writer::tag('ul', $ulitem);
+            }
+            $o .= html_writer::end_tag('ul');
+        }
+
+        return $o;
+    }
+
+
+    /**
+     * Render the module introduction of a scheduler.
+     *
+     * @param scheduler_instance $scheduler the scheduler in question
+     * @return string rendered module info
+     */
     public function mod_intro($scheduler) {
         $o = $this->heading(format_string($scheduler->name), 2);
 
@@ -213,6 +306,16 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $o;
     }
 
+    /**
+     * Construct a tab header in the teacher view.
+     *
+     * @param moodle_url $baseurl
+     * @param string $namekey
+     * @param string $what
+     * @param string $subpage
+     * @param string $nameargs
+     * @return tabobject
+     */
     private function teacherview_tab(moodle_url $baseurl, $namekey, $what, $subpage = '', $nameargs = null) {
         $taburl = new moodle_url($baseurl, array('what' => $what, 'subpage' => $subpage));
         $tabname = get_string($namekey, 'scheduler', $nameargs);
@@ -221,6 +324,15 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $tab;
     }
 
+    /**
+     * Render the tab header hierarchy in the teacher view.
+     *
+     * @param scheduler_instance $scheduler the scheduler in question
+     * @param moodle_url $baseurl base URL for the tab addresses
+     * @param string $selected the selected tab
+     * @param array $inactive any inactive tabs
+     * @return string rendered tab tree
+     */
     public function teacherview_tabs(scheduler_instance $scheduler, moodle_url $baseurl, $selected, $inactive = null) {
 
         $statstab = $this->teacherview_tab($baseurl, 'statistics', 'viewstatistics', 'overall');
@@ -244,13 +356,20 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $this->tabtree($level1, $selected, $inactive);
     }
 
+    /**
+     * Render an action message (such as "1 slot added").
+     *
+     * @param string $message the message
+     * @param string $type type of the message
+     * @return string the rendered message
+     */
     public function action_message($message, $type = 'success') {
         $classes = 'actionmessage '.$type;
-        echo html_writer::div($message, $classes);
+        return html_writer::div($message, $classes);
     }
 
     /**
-     * Rendering a table of slots
+     * Render a table of slots
      *
      * @param scheduler_slot_table $slottable the table to rended
      * @return string the HTML output
@@ -291,7 +410,7 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         }
         if ($slottable->showactions) {
             $table->head[] = '';
-            $table->align[] = 'left';
+            $table->align[] = 'right';
         }
 
         $table->data = array();
@@ -357,6 +476,18 @@ class mod_scheduler_renderer extends plugin_renderer_base {
             }
             if ($slottable->showactions) {
                 $actions = '';
+                if ($slot->canedit) {
+                    $buttonurl = new moodle_url($slottable->actionurl,
+                                     array('what' => 'editbooking', 'appointmentid' => $slot->appointmentid));
+                    $button = new single_button($buttonurl, get_string('editbooking', 'scheduler'));
+                    $actions .= $this->render($button);
+                }
+                if ($slot->canview) {
+                    $buttonurl = new moodle_url($slottable->actionurl,
+                                     array('what' => 'viewbooking', 'appointmentid' => $slot->appointmentid));
+                    $button = new single_button($buttonurl, get_string('viewbooking', 'scheduler'));
+                    $actions .= $this->render($button);
+                }
                 if ($slot->cancancel) {
                     $buttonurl = new moodle_url($slottable->actionurl,
                                      array('what' => 'cancelbooking', 'slotid' => $slot->slotid));
@@ -374,8 +505,8 @@ class mod_scheduler_renderer extends plugin_renderer_base {
     /**
      * Rendering a list of student, to be displayed within a larger table
      *
-     * @param scheduler_slot_table $slottable the table to rended
-     * @return string the HTML output
+     * @param scheduler_student_list $studentlist
+     * @return string
      */
     public function render_scheduler_student_list(scheduler_student_list $studentlist) {
 
@@ -419,6 +550,21 @@ class mod_scheduler_renderer extends plugin_renderer_base {
                 } else {
                     $name = fullname($student->user);
                 }
+                $studicons = '';
+                $studprovided = array();
+                if ($student->notesprovided) {
+                    $studprovided[] = get_string('message', 'scheduler');
+                }
+                if ($student->filesprovided) {
+                    $studprovided[] = get_string('nfiles', 'scheduler', $student->filesprovided);
+                }
+                if ($studprovided) {
+                    $providedstr = implode(', ', $studprovided);
+                    $alttext = get_string('studentprovided', 'scheduler', $providedstr);
+                    $attachicon = new pix_icon('attachment', $alttext, 'scheduler', array('class' => 'studdataicon'));
+                    $studicons .= $this->render($attachicon);
+                }
+
                 if ($student->highlight) {
                     $class .= ' highlight';
                 }
@@ -427,7 +573,7 @@ class mod_scheduler_renderer extends plugin_renderer_base {
                 if ($studentlist->showgrades && $student->grade) {
                     $grade = $this->format_grade($studentlist->scheduler, $student->grade, true);
                 }
-                $o .= html_writer::div($checkbox.$picture.' '.$name.' '.$grade, $class);
+                $o .= html_writer::div($checkbox . $picture . ' ' . $name . $studicons . ' ' . $grade, $class);
             }
 
             if ($editable) {
@@ -444,6 +590,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $o;
     }
 
+    /**
+     * Render a slot booker.
+     *
+     * @param scheduler_slot_booker $booker
+     * @return string
+     */
     public function render_scheduler_slot_booker(scheduler_slot_booker $booker) {
 
         $table = new html_table();
@@ -504,7 +656,8 @@ class mod_scheduler_renderer extends plugin_renderer_base {
             $rowdata[] = $groupinfo;
 
             if ($slot->canbook) {
-                $bookurl = new moodle_url($booker->actionurl, array('what' => 'bookslot', 'slotid' => $slot->slotid));
+                $bookaction = $booker->scheduler->uses_bookingform() ? 'bookingform' : 'bookslot';
+                $bookurl = new moodle_url($booker->actionurl, array('what' => $bookaction, 'slotid' => $slot->slotid));
                 $button = new single_button($bookurl, get_string('bookslot', 'scheduler'));
                 $rowdata[] = $this->render($button);
             } else {
@@ -521,6 +674,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return html_writer::table($table);
     }
 
+    /**
+     * Render a command bar.
+     *
+     * @param scheduler_command_bar $commandbar
+     * @return string
+     */
     public function render_scheduler_command_bar(scheduler_command_bar $commandbar) {
         $o = '';
         foreach ($commandbar->linkactions as $id => $action) {
@@ -537,6 +696,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $o;
     }
 
+    /**
+     * Render a slot manager.
+     *
+     * @param scheduler_slot_manager $slotman
+     * @return string
+     */
     public function render_scheduler_slot_manager(scheduler_slot_manager $slotman) {
 
         $this->page->requires->yui_module('moodle-mod_scheduler-saveseen',
@@ -546,8 +711,8 @@ class mod_scheduler_renderer extends plugin_renderer_base {
 
         $table = new html_table();
         $table->head  = array('', get_string('date', 'scheduler'), get_string('start', 'scheduler'),
-                        get_string('end', 'scheduler'), get_string('students', 'scheduler') );
-        $table->align = array ('center', 'left', 'left', 'left', 'left');
+                        get_string('end', 'scheduler'), get_string('location', 'scheduler'), get_string('students', 'scheduler') );
+        $table->align = array ('center', 'left', 'left', 'left', 'left', 'left');
         if ($slotman->showteacher) {
             $table->head[] = s($slotman->scheduler->get_teacher_name());
             $table->align[] = 'left';
@@ -593,6 +758,8 @@ class mod_scheduler_renderer extends plugin_renderer_base {
             $rowdata[] = $startdatestr;
             $rowdata[] = $starttimestr;
             $rowdata[] = $endtimestr;
+
+            $rowdata[] = format_string($slot->location);
 
             $rowdata[] = $this->render($slot->students);
 
@@ -665,6 +832,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $o;
     }
 
+    /**
+     * Render a scheduling list.
+     *
+     * @param scheduler_scheduling_list $list
+     * @return string
+     */
     public function render_scheduler_scheduling_list(scheduler_scheduling_list $list) {
 
         $mtable = new html_table();
@@ -697,6 +870,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return html_writer::table($mtable);
     }
 
+    /**
+     * Render total grade information.
+     *
+     * @param scheduler_totalgrade_info $gradeinfo
+     * @return string
+     */
     public function render_scheduler_totalgrade_info(scheduler_totalgrade_info $gradeinfo) {
         $items = array();
 
@@ -734,6 +913,12 @@ class mod_scheduler_renderer extends plugin_renderer_base {
         return $o;
     }
 
+    /**
+     * Render a conflict list.
+     *
+     * @param scheduler_conflict_list $cl
+     * @return string
+     */
     public function render_scheduler_conflict_list(scheduler_conflict_list $cl) {
 
         $o = html_writer::start_tag('ul');
@@ -755,6 +940,124 @@ class mod_scheduler_renderer extends plugin_renderer_base {
 
         $o .= html_writer::end_tag('ul');
 
+        return $o;
+    }
+
+
+    /**
+     * Render a table containing information about a booked appointment
+     *
+     * @param scheduler_appointment_info $ai
+     * @return string
+     */
+    public function render_scheduler_appointment_info(scheduler_appointment_info $ai) {
+        $o = '';
+        $o .= $this->output->container_start('appointmentinfotable');
+
+        $o .= $this->output->box_start('boxaligncenter appointmentinfotable');
+
+        $t = new html_table();
+
+        if ($ai->showslotinfo) {
+            $row = new html_table_row();
+            $cell1 = new html_table_cell(get_string('slotdatetimelabel', 'scheduler'));
+            $data = self::slotdatetime($ai->slot->starttime, $ai->slot->duration);
+            $cell2 = new html_table_cell(get_string('slotdatetimelong', 'scheduler', $data));
+            $row->cells = array($cell1, $cell2);
+            $t->data[] = $row;
+
+            $row = new html_table_row();
+            $cell1 = new html_table_cell($ai->scheduler->get_teacher_name());
+            $cell2 = new html_table_cell(fullname($ai->slot->get_teacher()));
+            $row->cells = array($cell1, $cell2);
+            $t->data[] = $row;
+
+            if ($ai->slot->appointmentlocation) {
+                $row = new html_table_row();
+                $cell1 = new html_table_cell(get_string('location', 'scheduler'));
+                $cell2 = new html_table_cell(format_string($ai->slot->appointmentlocation));
+                $row->cells = array($cell1, $cell2);
+                $t->data[] = $row;
+            }
+
+            if ($ai->slot->notes) {
+                $row = new html_table_row();
+                $cell1 = new html_table_cell(get_string('comments', 'scheduler'));
+                $notes = $this->format_notes($ai->slot->notes, $ai->slot->notesformat, $ai->scheduler->get_context(),
+                                              'slotnote', $ai->slot->id);
+                $cell2 = new html_table_cell($notes);
+                $row->cells = array($cell1, $cell2);
+                $t->data[] = $row;
+            }
+        }
+
+        if ($ai->groupinfo) {
+            $row = new html_table_row();
+            $cell1 = new html_table_cell(get_string('appointfor', 'scheduler'));
+            $cell2 = new html_table_cell(format_string($ai->groupinfo));
+            $row->cells = array($cell1, $cell2);
+            $t->data[] = $row;
+        }
+
+        if ($ai->showbookinginfo) {
+            if ($ai->scheduler->has_bookinginstructions()) {
+                $row = new html_table_row();
+                $cell1 = new html_table_cell(get_string('bookinginstructions', 'scheduler'));
+                $cell2 = new html_table_cell(format_text($ai->scheduler->bookinginstructions,
+                                                         $ai->scheduler->bookinginstructionsformat));
+                $row->cells = array($cell1, $cell2);
+                $t->data[] = $row;
+            }
+        }
+
+        if ($ai->showstudentdata) {
+            if ($ai->scheduler->uses_studentnotes()) {
+                $row = new html_table_row();
+                if ($ai->onstudentside) {
+                    $key = 'yourstudentnote';
+                } else {
+                    $key = 'studentnote';
+                }
+                $cell1 = new html_table_cell(get_string($key, 'scheduler'));
+                $note = format_text($ai->appointment->studentnote, $ai->appointment->studentnoteformat);
+                $cell2 = new html_table_cell($note);
+                $row->cells = array($cell1, $cell2);
+                $t->data[] = $row;
+            }
+            if ($ai->scheduler->uses_studentfiles()) {
+                $row = new html_table_row();
+                $cell1 = new html_table_cell(get_string('studentfiles', 'scheduler'));
+                $att = $this->render_attachments($ai->scheduler->context->id, 'studentfiles', $ai->appointment->id);
+                $cell2 = new html_table_cell($att);
+                $row->cells = array($cell1, $cell2);
+                $t->data[] = $row;
+            }
+        }
+
+        if ($ai->showresult) {
+            if ($ai->scheduler->uses_appointmentnotes() && $ai->appointment->appointmentnote) {
+                $row = new html_table_row();
+                $cell1 = new html_table_cell(get_string('appointmentnotes', 'scheduler'));
+                $note = $this->format_notes($ai->appointment->appointmentnote, $ai->appointment->appointmentnoteformat,
+                                            $ai->scheduler->get_context(), 'appointmentnote', $ai->appointment->id);
+                $cell2 = new html_table_cell($note);
+                $row->cells = array($cell1, $cell2);
+                $t->data[] = $row;
+            }
+            if ($ai->scheduler->uses_grades()) {
+                $row = new html_table_row();
+                $cell1 = new html_table_cell(get_string('grade', 'scheduler'));
+                $gradetext = $this->format_grade($ai->scheduler, $ai->appointment->grade, false);
+                $cell2 = new html_table_cell($gradetext);
+                $row->cells = array($cell1, $cell2);
+                $t->data[] = $row;
+            }
+        }
+
+        $o .= html_writer::table($t);
+        $o .= $this->output->box_end();
+
+        $o .= $this->output->container_end();
         return $o;
     }
 
