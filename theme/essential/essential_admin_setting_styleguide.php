@@ -1159,20 +1159,6 @@ class essential_admin_setting_styleguide extends admin_setting {
         $return .= "margin-left: 0;";
         $return .= "margin-right: 0;";
         $return .= "}";
-        $return .= '.'.$this->name.' .thumbnail-container {';
-        $return .= 'width: 100%;';
-        $return .= 'position: relative;';
-        $return .= 'padding-bottom: 75%;';
-        $return .= '}';
-        $return .= '.'.$this->name.' .thumbnail-container img {';
-        $return .= 'position: absolute;';
-        $return .= 'max-height: 100%;';
-        $return .= 'left: 0;';
-        $return .= 'right: 0;';
-        $return .= 'top: 0;';
-        $return .= 'bottom: 0;';
-        $return .= 'margin: auto;';
-        $return .= '}';
         $return .= '/* ]]> */';
         $return .= '</style>';
 
@@ -5148,18 +5134,18 @@ class essential_admin_setting_styleguide extends admin_setting {
         $return .= 'different sizes.</p>';
         $return .= '<ul class="thumbnails row-fluid">';
         $return .= '<li class="span5">';
-        $return .= '<a href="#" class="thumbnail">';
+        $return .= '<span class="thumbnail">';
         $return .= '<div class="thumbnail-container">';
         $return .= $this->holder('360x270');
         $return .= '</div>';
-        $return .= '</a>';
+        $return .= '</span>';
         $return .= '</li>';
         $return .= '<li class="span4">';
-        $return .= '<a href="#" class="thumbnail">';
+        $return .= '<span class="thumbnail">';
         $return .= '<div class="thumbnail-container">';
         $return .= $this->holder('260x120');
         $return .= '</div>';
-        $return .= '</a>';
+        $return .= '</span>';
         $return .= '</li>';
         $return .= '<li class="span3">';
         $return .= '<a href="#" class="thumbnail">';
@@ -5169,18 +5155,18 @@ class essential_admin_setting_styleguide extends admin_setting {
         $return .= '</a>';
         $return .= '</li>';
         $return .= '<li class="span4">';
-        $return .= '<a href="#" class="thumbnail">';
+        $return .= '<span class="thumbnail">';
         $return .= '<div class="thumbnail-container">';
         $return .= $this->holder('260x120');
         $return .= '</div>';
-        $return .= '</a>';
+        $return .= '</span>';
         $return .= '</li>';
         $return .= '<li class="span3">';
-        $return .= '<a href="#" class="thumbnail">';
+        $return .= '<span class="thumbnail">';
         $return .= '<div class="thumbnail-container">';
         $return .= $this->holder('160x120');
         $return .= '</div>';
-        $return .= '</a>';
+        $return .= '</span>';
         $return .= '</li>';
         $return .= '</ul>';
 
@@ -7113,7 +7099,7 @@ class essential_admin_setting_styleguide extends admin_setting {
         $return .= '</ol>';
         $return .= '<div class="carousel-inner">';
         $return .= '<div class="item active">';
-        $return .= '<img src="'.$OUTPUT->pix_url('screenshot', 'theme').'" alt="">';
+        $return .= '<img src="'.$OUTPUT->image_url('screenshot', 'theme').'" alt="">';
         $return .= '<div class="carousel-caption">';
         $return .= '<h4>First Thumbnail label</h4>';
         $return .= '<p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida ';
@@ -7121,7 +7107,7 @@ class essential_admin_setting_styleguide extends admin_setting {
         $return .= '</div>';
         $return .= '</div>';
         $return .= '<div class="item">';
-        $return .= '<img src="'.$OUTPUT->pix_url('screenshot', 'theme').'" alt="">';
+        $return .= '<img src="'.$OUTPUT->image_url('screenshot', 'theme').'" alt="">';
         $return .= '<div class="carousel-caption">';
         $return .= '<h4>Second Thumbnail label</h4>';
         $return .= '<p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida ';
@@ -7129,7 +7115,7 @@ class essential_admin_setting_styleguide extends admin_setting {
         $return .= '</div>';
         $return .= '</div>';
         $return .= '<div class="item">';
-        $return .= '<img src="'.$OUTPUT->pix_url('screenshot', 'theme').'" alt="">';
+        $return .= '<img src="'.$OUTPUT->image_url('screenshot', 'theme').'" alt="">';
         $return .= '<div class="carousel-caption">';
         $return .= '<h4>Third Thumbnail label</h4>';
         $return .= '<p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida ';
@@ -7579,7 +7565,7 @@ class essential_admin_setting_styleguide extends admin_setting {
     }
 
     private function holder($resolution) {
-        return '<img data-src="holder.js/'.$resolution.'">';
+        return '<img data-src="holder.js/'.$resolution.'" class="img-responsive">';
     }
 
     private function threethumbnails() {
@@ -7606,11 +7592,11 @@ class essential_admin_setting_styleguide extends admin_setting {
         $return = '';
         for ($i = 0; $i < 4; $i++) {
             $return .= '<li class="span3">';
-            $return .= '<a href="#" class="thumbnail">';
+            $return .= '<span class="thumbnail">';
             $return .= '<div class="thumbnail-container">';
             $return .= $this->holder('260x180');
             $return .= '</div>';
-            $return .= '</a>';
+            $return .= '</span>';
             $return .= '</li>';
         }
         return $return;

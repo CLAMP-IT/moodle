@@ -18,24 +18,27 @@
  * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
- * @copyright   2016 Gareth J Barnard
- * @copyright   2015 Gareth J Barnard
+ * @copyright   2017 Gareth J Barnard
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace theme_essential\output;
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
-echo '<div id="page-top-header" class="clearfix">';
-echo '<div id="page-navbar" class="clearfix row-fluid">';
+class icon_system_fontawesome extends \core\output\icon_system_fontawesome {
 
-echo '<div class="breadcrumb-nav span9">';
-echo $OUTPUT->navbar();
-echo '</div>';
+    /**
+     * @var array $map Cached map of moodle icon names to font awesome icon names.
+     */
+    private $map = [];
 
-echo '<nav class="breadcrumb-button span3">';
-echo $OUTPUT->page_heading_button();
-echo '</nav>';
-echo '</div>';
-echo $OUTPUT->page_top_header();
-echo '</div>';
-echo $OUTPUT->essential_blocks('header', 'row-fluid', 'aside', 'headerblocksperrow');
+    public function get_core_icon_map() {
+        $iconmap = parent::get_core_icon_map();
+
+        $iconmap['core:i/navigationitem'] = 'fa-angle-right';
+
+        return $iconmap;
+    }
+
+}
+

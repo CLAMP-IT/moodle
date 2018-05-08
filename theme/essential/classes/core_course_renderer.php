@@ -303,7 +303,7 @@ class theme_essential_core_course_renderer extends core_course_renderer {
         if (is_enabled_auth('mnet')) {
             $remotecourses = get_my_remotecourses();
         }
-        // Remote courses will have -ve remoteid as key, so it can be differentiated from normal courses.
+        // Remote courses will have remoteid as key, so it can be differentiated from normal courses.
         foreach ($remotecourses as $id => $val) {
             $remoteid = $val->remoteid * -1;
             $val->id = $remoteid;
@@ -328,6 +328,7 @@ class theme_essential_core_course_renderer extends core_course_renderer {
                 $courseformat = course_get_format($course->id);
                 $course = $courseformat->get_course();
                 $courseformatsettings = $courseformat->get_format_options();
+                $coursenumsections = $courseformat->get_last_section_number();
 
                 foreach ($modinfo->get_section_info_all() as $section => $thissection) {
                     if (!$thissection->uservisible) {
@@ -344,11 +345,9 @@ class theme_essential_core_course_renderer extends core_course_renderer {
                     } else {
                         $sectionname = $courseformat->get_section_name($thissection->section);
                     }
-                    if ($thissection->section <= $course->numsections) {
+                    if ($thissection->section <= $coursenumsections) {
                         // Do not link 'orphaned' sections.
-                        $courseurl = new moodle_url('/course/view.php');
-                        $courseurl->param('id', $course->id);
-                        $courseurl->param('sesskey', $sesskey);
+                        $courseurl = new moodle_url('/course/view.php', array('id' => $course->id, 'sesskey' => $sesskey));
                         if ((!empty($courseformatsettings['coursedisplay'])) &&
                             ($courseformatsettings['coursedisplay'] == COURSE_DISPLAY_MULTIPAGE)) {
                             $courseurl->param('section', $thissection->section);

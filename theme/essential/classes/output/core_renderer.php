@@ -29,6 +29,8 @@ namespace theme_essential\output;
 
 defined('MOODLE_INTERNAL') || die;
 
+use action_link;
+use action_menu;
 use block_contents;
 use block_move_target;
 use coding_exception;
@@ -38,8 +40,11 @@ use custom_menu_item;
 use html_writer;
 use moodle_page;
 use moodle_url;
+use navigation_node;
 use pix_icon;
 use stdClass;
+
+require_once($CFG->dirroot."/course/format/lib.php");
 
 class core_renderer extends \core_renderer {
     use core_renderer_toolbox;
@@ -57,6 +62,33 @@ class core_renderer extends \core_renderer {
     public function __construct(moodle_page $page, $target) {
         parent::__construct($page, $target);
         $this->themeconfig = array(\theme_config::load('essential'));
+    }
+
+    /**
+     * The standard tags that should be included in the <head> tag
+     * including a meta description for the front page
+     *
+     * @return string HTML fragment.
+     */
+    public function standard_head_html() {
+        global $SITE, $PAGE;
+        $output = parent::standard_head_html();
+
+        // Setup help icon overlays.
+        $this->page->requires->yui_module('moodle-core-popuphelp', 'M.core.init_popuphelp');
+        $this->page->requires->strings_for_js(array(
+            'morehelp',
+            'loadinghelp',
+        ), 'moodle');
+
+        if ($PAGE->pagelayout == 'frontpage') {
+            $summary = s(strip_tags(format_text($SITE->summary, FORMAT_HTML)));
+            if (!empty($summary)) {
+                $output .= "<meta name=\"description\" content=\"$summary\" />\n";
+            }
+        }
+
+        return $output;
     }
 
     /**
@@ -83,7 +115,7 @@ class core_renderer extends \core_renderer {
                 if ((strlen($item->text) == 1) && ($item->text[0] == ' ')) {
                     continue;
                 }
-                if ((!$showcategories) && ($item->type == \navigation_node::TYPE_CATEGORY)) {
+                if ((!$showcategories) && ($item->type == navigation_node::TYPE_CATEGORY)) {
                     continue;
                 }
                 $item->hideicon = true;
@@ -363,6 +395,260 @@ class core_renderer extends \core_renderer {
         }
 
         return $content;
+    }
+
+    /**
+     * This is an optional menu that can be added to a layout by a theme. It contains the
+     * menu for the course administration, only on the course main page.
+     *
+     * @return string
+     */
+    public function context_header_settings_menu() {
+        $context = $this->page->context;
+        $menu = new action_menu();
+
+        $items = $this->page->navbar->get_items();
+        $currentnode = end($items);
+
+        $showcoursemenu = false;
+        $showfrontpagemenu = false;
+        $showusermenu = false;
+
+        // We are on the course home page.
+        if (($context->contextlevel == CONTEXT_COURSE) &&
+                !empty($currentnode) &&
+                ($currentnode->type == navigation_node::TYPE_COURSE || $currentnode->type == navigation_node::TYPE_SECTION)) {
+            $showcoursemenu = true;
+        }
+        $courseformat = \course_get_format($this->page->course);
+        // This is a single activity course format, always show the course menu on the activity main page.
+        if ($context->contextlevel == CONTEXT_MODULE &&
+                !$courseformat->has_view_page()) {
+
+            $this->page->navigation->initialise();
+            $activenode = $this->page->navigation->find_active_node();
+            // If the settings menu has been forced then show the menu.
+            if ($this->page->is_settings_menu_forced()) {
+                $showcoursemenu = true;
+            } else if (!empty($activenode) && ($activenode->type == navigation_node::TYPE_ACTIVITY ||
+                    $activenode->type == navigation_node::TYPE_RESOURCE)) {
+
+                // We only want to show the menu on the first page of the activity. This means
+                // the breadcrumb has no additional nodes.
+                if ($currentnode && ($currentnode->key == $activenode->key && $currentnode->type == $activenode->type)) {
+                    $showcoursemenu = true;
+                }
+            }
+        }
+
+        // This is the site front page.
+        if ($context->contextlevel == CONTEXT_COURSE &&
+                !empty($currentnode) &&
+                $currentnode->key === 'home') {
+            $showfrontpagemenu = true;
+        }
+
+        // This is the user profile page.
+        if ($context->contextlevel == CONTEXT_USER &&
+                !empty($currentnode) &&
+                ($currentnode->key === 'myprofile')) {
+            $showusermenu = true;
+        }
+
+        if ($showfrontpagemenu) {
+            $settingsnode = $this->page->settingsnav->find('frontpage', navigation_node::TYPE_SETTING);
+            $title = get_string('frontpagesettingstitle', 'theme_essential');
+            if ($settingsnode) {
+                // Build an action menu based on the visible nodes from this navigation tree.
+                $skipped = $this->build_action_menu_from_navigation($menu, $settingsnode, false, true);
+
+                // We only add a list to the full settings menu if we didn't include every node in the short menu.
+                if ($skipped) {
+                    $text = get_string('morenavigationlinks');
+                    $url = new moodle_url('/course/admin.php', array('courseid' => $this->page->course->id));
+                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
+                    $menu->add_secondary_action($link);
+                }
+            }
+        } else if ($showcoursemenu) {
+            $settingsnode = $this->page->settingsnav->find('courseadmin', navigation_node::TYPE_COURSE);
+            $title = get_string('coursesettingstitle', 'theme_essential');
+            if ($settingsnode) {
+                // Build an action menu based on the visible nodes from this navigation tree.
+                $skipped = $this->build_action_menu_from_navigation($menu, $settingsnode, false, true);
+
+                // We only add a list to the full settings menu if we didn't include every node in the short menu.
+                if ($skipped) {
+                    $text = get_string('morenavigationlinks');
+                    $url = new moodle_url('/course/admin.php', array('courseid' => $this->page->course->id));
+                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
+                    $menu->add_secondary_action($link);
+                }
+            }
+        } else if ($showusermenu) {
+            // Get the course admin node from the settings navigation.
+            $settingsnode = $this->page->settingsnav->find('useraccount', navigation_node::TYPE_CONTAINER);
+            $title = get_string('usersettingstitle', 'theme_essential');
+            if ($settingsnode) {
+                // Build an action menu based on the visible nodes from this navigation tree.
+                $this->build_action_menu_from_navigation($menu, $settingsnode);
+            }
+        }
+
+        if (($showfrontpagemenu) || ($showcoursemenu) || ($showusermenu)) {
+            return $this->render_navbar_action_menu($menu, $title);
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     * This is an optional menu that can be added to a layout by a theme. It contains the
+     * menu for the most specific thing from the settings block. E.g. Module administration.
+     *
+     * @return string
+     */
+    public function region_main_settings_menu() {
+        $context = $this->page->context;
+        $menu = null;
+
+        if ($context->contextlevel == CONTEXT_MODULE) {
+
+            $this->page->navigation->initialise();
+            $node = $this->page->navigation->find_active_node();
+            $buildmenu = false;
+            // If the settings menu has been forced then show the menu.
+            if ($this->page->is_settings_menu_forced()) {
+                $buildmenu = true;
+            } else if (!empty($node) && ($node->type == navigation_node::TYPE_ACTIVITY ||
+                    $node->type == navigation_node::TYPE_RESOURCE)) {
+
+                $items = $this->page->navbar->get_items();
+                $navbarnode = end($items);
+                // We only want to show the menu on the first page of the activity. This means
+                // the breadcrumb has no additional nodes.
+                if ($navbarnode && ($navbarnode->key === $node->key && $navbarnode->type == $node->type)) {
+                    $buildmenu = true;
+                }
+            }
+            if ($buildmenu) {
+                // Get the course admin node from the settings navigation.
+                $node = $this->page->settingsnav->find('modulesettings', navigation_node::TYPE_SETTING);
+                if ($node) {
+                    // Build an action menu based on the visible nodes from this navigation tree.
+                    $menu = new action_menu();
+                    $title = get_string('modulesettingstitle', 'theme_essential');
+                    $this->build_action_menu_from_navigation($menu, $node);
+                }
+            }
+
+        } else if ($context->contextlevel == CONTEXT_COURSECAT) {
+            // For course category context, show category settings menu, if we're on the course category page.
+            if ($this->page->pagetype === 'course-index-category') {
+                $node = $this->page->settingsnav->find('categorysettings', navigation_node::TYPE_CONTAINER);
+                if ($node) {
+                    // Build an action menu based on the visible nodes from this navigation tree.
+                    $menu = new action_menu();
+                    $title = get_string('coursecategorysettingstitle', 'theme_essential');
+                    $this->build_action_menu_from_navigation($menu, $node);
+                }
+            }
+
+        } else {
+            $items = $this->page->navbar->get_items();
+            $navbarnode = end($items);
+
+            if ($navbarnode && ($navbarnode->key === 'participants')) {
+                $node = $this->page->settingsnav->find('users', navigation_node::TYPE_CONTAINER);
+                if ($node) {
+                    // Build an action menu based on the visible nodes from this navigation tree.
+                    $menu = new action_menu();
+                    $title = get_string('participants');
+                    $this->build_action_menu_from_navigation($menu, $node);
+                }
+
+            }
+        }
+        if ($menu) {
+            return $this->render_navbar_action_menu($menu, $title, 'i/settings');
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     * Renders an action menu component.
+     *
+     * ARIA references:
+     *   - http://www.w3.org/WAI/GL/wiki/Using_ARIA_menus
+     *   - http://stackoverflow.com/questions/12279113/recommended-wai-aria-implementation-for-navigation-bar-menu
+     *
+     * @param action_menu $menu.
+     * @param string $title Menu title.
+     * @param string $iconkey Icon name.
+     * @return string HTML
+     */
+    protected function render_navbar_action_menu(action_menu $menu, $title, $iconkey = 't/edit_menu') {
+        $context = $menu->export_for_template($this);
+        $context->classes .= ' navbarrightitem';
+        $context->primary->caret = $this->getfontawesomemarkup('caret-right');
+        $context->primary->classes .= ' nav';
+        $context->primary->title = $title;
+        $context->primary->icon['title'] = $context->primary->title;
+        $context->primary->icon['key'] = $iconkey;
+        $context->primary->menutrigger = true;
+        return $this->render_from_template('theme_essential/navbar_action_menu', $context);
+    }
+
+    /**
+     * Take a node in the nav tree and make an action menu out of it.
+     * The links are injected in the action menu.
+     *
+     * @param action_menu $menu.
+     * @param navigation_node $node.
+     * @param boolean $indent.
+     * @param boolean $onlytopleafnodes.
+     * @return boolean nodesskipped - True if nodes were skipped in building the menu.
+     */
+    private function build_action_menu_from_navigation(action_menu $menu, navigation_node $node, $indent = false,
+        $onlytopleafnodes = false) {
+        $skipped = false;
+        // Build an action menu based on the visible nodes from this navigation tree.
+        foreach ($node->children as $menuitem) {
+            if ($menuitem->display) {
+                if ($onlytopleafnodes && $menuitem->children->count()) {
+                    $skipped = true;
+                    continue;
+                }
+                if ($menuitem->action) {
+                    if ($menuitem->action instanceof action_link) {
+                        $link = $menuitem->action;
+                        // Give preference to setting icon over action icon.
+                        if (!empty($menuitem->icon)) {
+                            $link->icon = $menuitem->icon;
+                        }
+                    } else {
+                        $link = new action_link($menuitem->action, $menuitem->text, null, null, $menuitem->icon);
+                    }
+                } else {
+                    if ($onlytopleafnodes) {
+                        $skipped = true;
+                        continue;
+                    }
+                    $link = new action_link(new moodle_url('#'), $menuitem->text, null, ['disabled' => true], $menuitem->icon);
+                }
+                if ($indent) {
+                    $link->add_class('m-l-1');
+                }
+                if (!empty($menuitem->classes)) {
+                    $link->add_class(implode(" ", $menuitem->classes));
+                }
+
+                $menu->add_secondary_action($link);
+                $skipped = $skipped || $this->build_action_menu_from_navigation($menu, $menuitem, true);
+            }
+        }
+        return $skipped;
     }
 
     /**
@@ -976,7 +1262,7 @@ class core_renderer extends \core_renderer {
                         $branch->add($icon.$modfullname, new moodle_url('/course/resources.php',
                             array('id' => $this->page->course->id)));
                     } else {
-                        $icon = '<img src="'.$this->pix_url('icon', $modname) . '" class="icon" alt="" />';
+                        $icon = $this->pix_icon('icon', '', $modname, array('class' => 'icon'));
                         $branch->add($icon.$modfullname, new moodle_url('/mod/'.$modname.'/index.php',
                             array('id' => $this->page->course->id)));
                     }
@@ -1002,7 +1288,7 @@ class core_renderer extends \core_renderer {
         // A copy of block_activity_modules.
         $course = $this->page->course;
         $modinfo = get_fast_modinfo($course);
-        $course = course_get_format($course)->get_course();
+        $course = \course_get_format($course)->get_course();
         $modfullnames = array();
         $archetypes = array();
 
@@ -1294,7 +1580,7 @@ class core_renderer extends \core_renderer {
 
             // Check if messaging is enabled.
             if (!empty($CFG->messaging)) {
-                $branchlabel = '<em>'.$this->getfontawesomemarkup('envelope').get_string('pluginname', 'block_messages').'</em>';
+                $branchlabel = '<em>'.$this->getfontawesomemarkup('envelope').get_string('messages', 'message').'</em>';
                 $branchurl = new moodle_url('/message/index.php');
                 $usermenu .= html_writer::tag('li', html_writer::link($branchurl, $branchlabel));
             }
@@ -1474,6 +1760,29 @@ class core_renderer extends \core_renderer {
     }
 
     /**
+     * Renders an action menu component.  From Boost - removes 'icon' class from the action menu.
+     *
+     * @param action_menu $menu
+     * @return string HTML
+     */
+    public function render_action_menu(action_menu $menu) {
+
+        // We don't want the class icon there!
+        foreach ($menu->get_secondary_actions() as $action) {
+            if ($action instanceof \action_menu_link && $action->has_class('icon')) {
+                $action->attributes['class'] = preg_replace('/(^|\s+)icon(\s+|$)/i', '', $action->attributes['class']);
+            }
+        }
+
+        if ($menu->is_empty()) {
+            return '';
+        }
+        $context = $menu->export_for_template($this);
+
+        return $this->render_from_template('core/action_menu', $context);
+    }
+
+    /**
      * Renders tabtree
      *
      * @param tabtree $tabtree
@@ -1515,98 +1824,6 @@ class core_renderer extends \core_renderer {
                 $link = html_writer::link($tab->link, $tab->text, array('title' => $tab->title));
             }
             return html_writer::tag('li', $link);
-        }
-    }
-
-    /*
-    * This code replaces icons in with
-    * FontAwesome variants where available.
-    */
-
-    public function render_pix_icon(pix_icon $icon) {
-        static $icons = array(
-            'add' => 'plus',
-            'book' => 'book',
-            'chapter' => 'file',
-            'docs' => 'question-circle',
-            'generate' => 'gift',
-            'help' => 'question-circle-o',
-            'trash' => 'trash-o',
-            'i/backup' => 'cloud-download',
-            'i/badge' => 'trophy',
-            'i/checkpermissions' => 'user',
-            'i/cohort' => 'users',
-            'i/competencies' => 'wifi fa-flip-vertical',
-            'i/delete' => 'times-circle',
-            'i/dragdrop' => 'arrows',
-            'i/edit' => 'pencil',
-            'i/enrolusers' => 'user-plus',
-            'i/filter' => 'filter',
-            'i/grades' => 'table',
-            'i/group' => 'group',
-            'i/groupn' => 'user',
-            'i/groupv' => 'user-plus',
-            'i/groups' => 'user-secret',
-            'i/hide' => 'eye',
-            'i/import' => 'upload',
-            'i/loading' => 'refresh fa-spin fa-2x',
-            'i/loading_small' => 'refresh fa-spin',
-            'i/marker' => 'lightbulb-o',
-            'i/move_2d' => 'arrows',
-            'i/navigationitem' => 'file',
-            'i/notifications' => 'bell',
-            'i/outcomes' => 'magic',
-            'i/preview' => 'search',
-            'i/publish' => 'globe',
-            'i/reload' => 'refresh',
-            'i/report' => 'list-alt',
-            'i/repository' => 'database',
-            'i/restore' => 'cloud-upload',
-            'i/return' => 'repeat',
-            'i/roles' => 'user',
-            'i/scales' => 'signal',
-            'i/settings' => 'cogs',
-            'i/show' => 'eye-slash',
-            'i/switchrole' => 'random',
-            'i/user' => 'user',
-            'i/users' => 'users',
-            'i/withsubcat' => 'indent',
-            'i/permissions' => 'key',
-            'i/assignroles' => 'lock',
-            't/addcontact' => 'address-card-o',
-            't/assignroles' => 'lock',
-            't/block_to_dock' => 'caret-square-o-left',
-            't/cohort' => 'users',
-            't/copy' => 'copy',
-            't/delete' => 'times-circle',
-            't/down' => 'arrow-down',
-            't/edit' => 'cog',
-            't/editstring' => 'pencil-square-o',
-            't/edit_menu' => 'cogs',
-            't/grades' => 'th-list',
-            't/hide' => 'eye',
-            't/left' => 'arrow-left',
-            't/message' => 'comments-o',
-            't/preview' => 'search',
-            't/right' => 'arrow-right',
-            't/show' => 'eye-slash',
-            't/sort' => 'sort',
-            't/sort_asc' => 'sort-asc',
-            't/sort_desc' => 'sort-desc',
-            't/up' => 'arrow-up'
-        );
-        if (array_key_exists($icon->pix, $icons)) {
-            $pix = $icons[$icon->pix];
-            /* Note: MUST have the 'i' tag instead of 'span' and the embedded icon even though it is not displayed otherwise
-               the editing action menu will break! */
-            if (empty($icon->attributes['alt'])) {
-                return '<i class="fa fa-'.$pix.' icon" aria-hidden="true">'.parent::render_pix_icon($icon).'</i>';
-            } else {
-                $alt = $icon->attributes['alt'];
-                return '<i class="fa fa-'.$pix.' icon" title="'.$alt.'" aria-hidden="true">'.parent::render_pix_icon($icon).'</i>';
-            }
-        } else {
-            return parent::render_pix_icon($icon);
         }
     }
 
@@ -1711,19 +1928,32 @@ class core_renderer extends \core_renderer {
             );
 
             $regioncontent = '';
+            $flatnavigation = false;
+            $flatnavigationcontent = '';
+            if ((\theme_essential\toolbox::get_setting('flatnavigation')) && ($region == 'side-pre')) {
+                global $PAGE;
+                $templatecontext = array('flatnavigation' => $PAGE->flatnav);
+                $flatnavigationcontent = $this->render_from_template('theme_essential/flat_navigation', $templatecontext);
+                $attributes['data-region'] = 'drawer';
+                $flatnavigation = true;
+            }
             $editing = $this->page->user_is_editing();
             if ($editing) {
                 $regioncontent .= html_writer::tag('span', html_writer::tag('span', get_string('region-'.$region, 'theme_essential')),
                     array('class' => 'regionname'));
             }
 
-            if ($this->page->blocks->region_has_content($region, $this)) {
+            if (($this->page->blocks->region_has_content($region, $this)) || ($flatnavigation)) {
                 if ($blocksperrow !== false) {
                     $attributes['class'] .= ' rowblock-blocks';
                     if ($editing) {
                         $attributes['class'] .= ' rowblock-edit';
                     }
-                    $regioncontent .= $this->essential_blocks_for_region($region, $blocksperrow, $editing);
+                    $regioncontent .= $flatnavigationcontent;
+                    $regioncontent .= $this->essential_blocks_for_region($region, $blocksperrow, $editing, $flatnavigation);
+                    $output = html_writer::tag($tag, $regioncontent, $attributes);
+                } else if ($flatnavigation) {
+                    $regioncontent .= $this->essential_flatnav_blocks_for_region($region, $flatnavigationcontent);
                     $output = html_writer::tag($tag, $regioncontent, $attributes);
                 } else {
                     $regioncontent .= $this->blocks_for_region($region);
@@ -1747,14 +1977,59 @@ class core_renderer extends \core_renderer {
     }
 
     /**
+     * Returns the CSS classes to apply to the body tag.
+     *
+     * @since Moodle 2.5.1 2.6
+     * @param array $additionalclasses Any additional classes to apply.
+     * @return string
+     */
+    public function body_css_classes(array $additionalclasses = array()) {
+        $flatnavigation = \theme_essential\toolbox::get_setting('flatnavigation');
+        // Add a class for each block region on the page.
+        // We use the block manager here because the theme object makes get_string calls.
+        $usedregions = array();
+        foreach ($this->page->blocks->get_regions() as $region) {
+            $additionalclasses[] = 'has-region-'.$region;
+            if (($this->page->blocks->region_has_content($region, $this)) ||
+                (($flatnavigation) && ($region == 'side-pre'))) {
+                $additionalclasses[] = 'used-region-'.$region;
+                $usedregions[] = $region;
+            } else {
+                $additionalclasses[] = 'empty-region-'.$region;
+            }
+            if (!($flatnavigation) && ($region == 'side-pre')) {
+                if ($this->page->blocks->region_completely_docked($region, $this)) {
+                    $additionalclasses[] = 'docked-region-'.$region;
+                }
+            }
+        }
+        if (!$usedregions) {
+            // No regions means there is only content, add 'content-only' class.
+            $additionalclasses[] = 'content-only';
+        } else if (count($usedregions) === 1) {
+            // Add the -only class for the only used region.
+            $region = array_shift($usedregions);
+            $additionalclasses[] = $region.'-only';
+        }
+        foreach ($this->page->layout_options as $option => $value) {
+            if ($value) {
+                $additionalclasses[] = 'layout-option-'.$option;
+            }
+        }
+        $css = $this->page->bodyclasses.' '.join(' ', $additionalclasses);
+        return $css;
+    }
+
+    /**
      * Output all the blocks in a particular region.
      *
      * @param string $region the name of a region on this page.
      * @param int $blocksperrow Number of blocks per row, if > 4 will be set at 4.
      * @param boolean $editing If we are editing.
+     * @param boolean $hidenavset Do not show the navigation or settings blocks.
      * @return string the HTML to be output.
      */
-    protected function essential_blocks_for_region($region, $blocksperrow, $editing) {
+    protected function essential_blocks_for_region($region, $blocksperrow, $editing, $hidenavset) {
         $blockcontents = $this->page->blocks->get_content_for_region($region, $this);
         $output = '';
 
@@ -1767,8 +2042,14 @@ class core_renderer extends \core_renderer {
             $blocks = $this->page->blocks->get_blocks_for_region($region);
             $lastblock = null;
             $zones = array();
+            $excludeblocks = array();
             foreach ($blocks as $block) {
-                $zones[] = $block->title;
+                if (($hidenavset) &&
+                       (($block->instance->blockname == 'navigation') || ($block->instance->blockname == 'settings'))) {
+                    $excludeblocks[] = $block->instance->id;
+                } else {
+                    $zones[] = $block->title;
+                }
             }
 
             /* When editing we want all the blocks to be the same as side-pre / side-post so set by CSS:
@@ -1825,14 +2106,18 @@ class core_renderer extends \core_renderer {
 
                     // Class 'desktop-first-column' done in CSS with ':first-of-type' and ':nth-of-type'.
                     // Class 'spanX' done in CSS with calculated special width class as fixed at 'span3' for all.
-                    $bc->attributes['class'] .= ' span' . $span;
+                    $bc->attributes['class'] .= ' span'.$span;
                 }
 
                 if ($bc instanceof block_contents) {
-                    $output .= $this->block($bc, $region);
-                    $lastblock = $bc->title;
+                    if (!in_array($bc->blockinstanceid, $excludeblocks)) {
+                        $output .= $this->block($bc, $region);
+                        $lastblock = $bc->title;
+                    }
                 } else if ($bc instanceof block_move_target) {
-                    $output .= $this->block_move_target($bc, $zones, $lastblock, $region);
+                    if (!in_array($bc->blockinstanceid, $excludeblocks)) {
+                        $output .= $this->block_move_target($bc, $zones, $lastblock, $region);
+                    }
                 } else {
                     throw new coding_exception('Unexpected type of thing ('.get_class($bc).') found in list of block contents.');
                 }
@@ -1842,6 +2127,65 @@ class core_renderer extends \core_renderer {
             }
         }
 
+        return $output;
+    }
+
+    /**
+     * Output all the blocks in a particular region without the navigation or settings blocks.
+     *
+     * @param string $region the name of a region on this page.
+     * @param string $flatnavigationcontent Flat navigation content passed in so that we may show any fake blocks first.
+     * @return string the HTML to be output.
+     */
+    public function essential_flatnav_blocks_for_region($region, $flatnavigationcontent) {
+        $blockcontents = $this->page->blocks->get_content_for_region($region, $this);
+        $blocks = $this->page->blocks->get_blocks_for_region($region);
+        $lastblock = null;
+        $hasfakeblock = false;
+        $zones = array();
+        $excludeblocks = array();
+        foreach ($blocks as $block) {
+            if (($block->instance->blockname == 'navigation') || ($block->instance->blockname == 'settings')) {
+                $excludeblocks[] = $block->instance->id;
+            } else {
+                $zones[] = $block->title;
+            }
+        }
+        $output = '';
+
+        // Fake blocks get outputted first....!
+        foreach ($blockcontents as $bc) {
+            if ($bc instanceof block_contents) {
+                if ((!empty($bc->attributes['data-block'])) && ($bc->attributes['data-block'] == '_fake')) {
+                    $output .= $this->block($bc, $region);
+                    $lastblock = $bc->title;
+                    $hasfakeblock = true;
+                }
+            } else if ($bc instanceof block_move_target) {
+                continue;
+            } else {
+                throw new coding_exception('Unexpected type of thing ('.get_class($bc).') found in list of block contents.');
+            }
+        }
+
+        $output .= $flatnavigationcontent;
+
+        foreach ($blockcontents as $bc) {
+            if ($bc instanceof block_contents) {
+                if (($hasfakeblock) && ($bc->attributes['data-block'] == '_fake')) {
+                    continue;
+                } else if (!in_array($bc->blockinstanceid, $excludeblocks)) {
+                    $output .= $this->block($bc, $region);
+                    $lastblock = $bc->title;
+                }
+            } else if ($bc instanceof block_move_target) {
+                if (!in_array($bc->blockinstanceid, $excludeblocks)) {
+                    $output .= $this->block_move_target($bc, $zones, $lastblock, $region);
+                }
+            } else {
+                throw new coding_exception('Unexpected type of thing ('.get_class($bc).') found in list of block contents.');
+            }
+        }
         return $output;
     }
 
@@ -1903,7 +2247,7 @@ class core_renderer extends \core_renderer {
             if (array_key_exists($bc->attributes['data-block'], $icons)) {
                 $theicon = $icons[$bc->attributes['data-block']];
             } else {
-                $theicon = 'reorder';
+                $theicon = 'navicon';
             }
             $title = html_writer::tag('h2', $bc->title, $attributes);
             if (!empty($theicon)) {
@@ -2202,7 +2546,7 @@ class core_renderer extends \core_renderer {
         global $CFG;
         $result = '';
 
-        if (($CFG->version < 2016120500.00) || ($CFG->version >= 2016122200.00)) {
+        if (($CFG->version < 2017102700.00) || ($CFG->version >= 2018050000.00)) {
             $result = '<div class="useralerts alert alert-error">';
             $result .= '<a class="close" data-dismiss="alert" href="'.$this->page->url.'">'.$this->getfontawesomemarkup('times-circle').'</a>';
             $result .= $this->getfontawesomemarkup('stack', array(), array(), $this->getfontawesomemarkup('square',
@@ -2223,7 +2567,7 @@ class core_renderer extends \core_renderer {
         $favicon = \theme_essential\toolbox::get_setting('favicon', 'format_file_url');
 
         if (empty($favicon)) {
-            return $this->page->theme->pix_url('favicon', 'theme');
+            return $this->page->theme->image_url('favicon', 'theme');
         } else {
             return $favicon;
         }

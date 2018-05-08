@@ -1,6 +1,7 @@
 /*
  * @package     theme_essential
- * @copyright   2016 Gareth J Barnard, David Bezemer
+ * @copyright   2017 Gareth J Barnard
+ * @copyright   2016 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
  * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -87,10 +88,6 @@ a.dimmed_text:visited,
   color: #595959;
   color: inherit;
   font-style: italic;
-}
-.activity.label .dimmed_text {
-  opacity: 0.5;
-  filter: alpha(opacity=50);
 }
 .unlist,
 .unlist li,
@@ -223,6 +220,10 @@ img.icon {
   width: 16px;
   padding-right: 6px;
 }
+img.icon.iconsize-big {
+  width: 64px;
+  height: 64px;
+}
 img.iconsmall {
   height: 12px;
   margin-right: 3px;
@@ -277,6 +278,9 @@ img.icon-pre {
 img.icon-post {
   padding-left: 3px;
   padding-right: 0;
+}
+.sitelink img {
+  width: 112px;
 }
 .boxaligncenter {
   margin-left: auto;
@@ -389,9 +393,6 @@ a.skip:active {
 }
 .blog_entry .content {
   margin-left: 43px;
-}
-#page-group-index #groupeditform {
-  text-align: center;
 }
 #doc-contents h1 {
   margin: 1em 0 0 0;
@@ -901,89 +902,6 @@ tr.flagged-tag a {
   border: 0 solid black;
 }
 /**
-* Smart Select Element
-*/
-.smartselect {
-  position: absolute;
-}
-.smartselect .smartselect_mask {
-  background-color: #fff;
-}
-.smartselect ul {
-  padding: 0;
-  margin: 0;
-}
-.smartselect ul li {
-  list-style: none;
-}
-.smartselect .smartselect_menu {
-  margin-right: 5px;
-}
-.safari .smartselect .smartselect_menu {
-  margin-left: 2px;
-}
-.smartselect .smartselect_menu,
-.smartselect .smartselect_submenu {
-  border: 1px solid #000;
-  background-color: #fff;
-  display: none;
-}
-.smartselect .smartselect_menu.visible,
-.smartselect .smartselect_submenu.visible {
-  display: block;
-}
-.smartselect .smartselect_menu_content ul li {
-  position: relative;
-  padding: 2px 5px;
-}
-.smartselect .smartselect_menu_content ul li a {
-  color: #333;
-  text-decoration: none;
-}
-.smartselect .smartselect_menu_content ul li a.selectable {
-  color: inherit;
-}
-.smartselect .smartselect_submenuitem {
-  background-image: url([[pix:moodle|t/collapsed]]);
-  background-repeat: no-repeat;
-  background-position: 100%;
-}
-/** Spanning mode */
-.smartselect.spanningmenu .smartselect_submenu {
-  position: absolute;
-  top: -1px;
-  left: 100%;
-}
-.smartselect.spanningmenu .smartselect_submenu a {
-  white-space: nowrap;
-  padding-right: 16px;
-}
-.smartselect.spanningmenu .smartselect_menu_content ul li a.selectable:hover {
-  text-decoration: underline;
-}
-/** Compact mode */
-.smartselect.compactmenu .smartselect_submenu {
-  position: relative;
-  margin: 2px -3px;
-  margin-left: 10px;
-  display: none;
-  border-width: 0;
-  z-index: 1010;
-}
-.smartselect.compactmenu .smartselect_submenu.visible {
-  display: block;
-}
-.smartselect.compactmenu .smartselect_menu {
-  z-index: 1000;
-  overflow: hidden;
-}
-.smartselect.compactmenu .smartselect_submenu .smartselect_submenu {
-  z-index: 1020;
-}
-.smartselect.compactmenu .smartselect_submenuitem:hover > .smartselect_menuitem_label {
-  font-weight: bold;
-}
-/**
 * Registration
 */
 #page-admin-registration-register .registration_textfield {
@@ -1361,10 +1279,54 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
   white-space: nowrap;
   text-align: center;
 }
-.initialbar a,
-.initialbar strong {
-  padding-left: 3px;
-  padding-right: 3px;
+.initialbar {
+  overflow: auto;
+}
+.initialbar .initialbarlabel {
+  display: inline-block;
+  width: 6em;
+  float: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.initialbar .initialbarall {
+  float: left;
+  width: 4em;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.initialbar .initialbargroups {
+  float: left;
+}
+.initialbar .initialbargroup {
+  float: left;
+  display: inline-block;
+  white-space: nowrap;
+  margin: 0;
+  padding: 0;
+}
+.initialbar .initialbargroup li {
+  float: left;
+  list-style: none;
+}
+.initialbar .letter {
+  display: inline-block;
+  height: 1.35em;
+  min-width: 1.35em;
+  text-align: center;
+  color: #0070a8;
+  background: #fff;
+  border-width: 1px;
+  border-color: #ddd;
+  border-style: solid;
+}
+.initialbar .letter:hover,
+.initialbar .letter.active {
+  color: white;
+  background-color: #0070a8;
 }
 /* Moodle Dialogue Settings (moodle-core-dialogue)  */
 .moodle-dialogue-base .moodle-dialogue-lightbox {
@@ -1435,7 +1397,7 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
   background-image: linear-gradient(to bottom, #fff, #ccc);
   background-repeat: repeat-x;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffcccccc', GradientType=0);
-  filter: 0;
+  filter: none;
 }
 .moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd h1 {
   padding: 0;
@@ -2187,7 +2149,8 @@ img#persona_signin {
   padding-right: 4px;
 }
 .jsenabled .moodle-actionmenu[data-enhance] .toggle-display.textmenu .iconsmall,
-.jsenabled .moodle-actionmenu[data-enhance] .toggle-display.textmenu .smallicon {
+.jsenabled .moodle-actionmenu[data-enhance] .toggle-display.textmenu .smallicon,
+.jsenabled .moodle-actionmenu[data-enhance] .toggle-display.textmenu .icon {
   margin: 4px 4px 4px 0;
   padding: 8px 4px 0 2px;
   vertical-align: text-bottom;
@@ -2233,7 +2196,7 @@ img#persona_signin {
 .moodle-actionmenu[data-enhanced].show .menu a {
   display: block;
   color: #333;
-  padding: 2px 1em 2px 28px;
+  padding: 6px 1em 6px 1em;
 }
 .moodle-actionmenu[data-enhanced].show .menu a:hover {
   color: #fff;
@@ -2419,6 +2382,9 @@ dd:after {
 .inplaceeditable.inplaceeditable-toggle .quickediticon {
   display: none;
 }
+.inplaceeditable.inplaceeditable-autocomplete {
+  display: block;
+}
 h3.sectionname .inplaceeditable.inplaceeditingon .editinstructions {
   margin-top: -20px;
 }
@@ -2483,6 +2449,30 @@ h3.sectionname .inplaceeditable.inplaceeditingon .editinstructions {
   opacity: 1;
   visibility: visible;
   transition: opacity 0.15s 0.5s, visibility 0.15s 0.5s;
+}
+.clickable {
+  cursor: pointer;
+}
+.overlay-icon-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.overlay-icon-container .loading-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.overlay-icon-container .loading-icon .icon {
+  height: 40px;
+  width: 40px;
+}
+[data-drag-type="move"] {
+  cursor: move;
 }
 /* admin.less */
 .formtable tbody th {
@@ -3261,11 +3251,20 @@ img.iconsmall {
   color: #3a87ad;
   background-color: #d9edf7;
 }
+#overriderolestable .overriddenpermission {
+  background-color: #fcf8e3;
+}
+#page-admin-registration-index form .mark {
+  background-color: #fcf8e3;
+}
 /* calendar.less */
+.calendar_event_category {
+  background-color: #d8bfd8;
+}
 .calendar_event_course {
   background-color: #ffd3bd;
 }
-.calendar_event_global {
+.calendar_event_site {
   background-color: #d6f8cd;
 }
 .calendar_event_group {
@@ -3276,6 +3275,7 @@ img.iconsmall {
 }
 .path-calendar .calendartable {
   width: 100%;
+  table-layout: fixed;
 }
 .path-calendar .calendartable th,
 .path-calendar .calendartable td {
@@ -3293,6 +3293,8 @@ img.iconsmall {
 }
 .path-calendar .calendar-controls .previous {
   text-align: left;
+  border: 1px solid transparent;
+  box-sizing: border-box;
 }
 .path-calendar .calendar-controls .current {
   text-align: center;
@@ -3300,17 +3302,17 @@ img.iconsmall {
 }
 .path-calendar .calendar-controls .next {
   text-align: right;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+.path-calendar .calendar-controls .drop-target {
+  box-sizing: border-box;
+  border: 1px dashed #049cdb;
 }
 .path-calendar .filters table {
   border-collapse: separate;
   border-spacing: 2px;
   width: 100%;
-}
-.path-calendar .cal_courses_flt {
-  float: left;
-}
-.path-calendar .cal_courses_flt label {
-  margin-right: .45em;
 }
 .path-calendar .maincalendar {
   vertical-align: top;
@@ -3330,13 +3332,57 @@ img.iconsmall {
 }
 .path-calendar .maincalendar .calendarmonth ul {
   margin: 0;
+  padding: 0;
 }
 .path-calendar .maincalendar .calendarmonth ul li {
   list-style-type: none;
-  margin-top: 4px;
+}
+.path-calendar .maincalendar .calendarmonth ul li > a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  display: inline-block;
+}
+.path-calendar .maincalendar .calendarmonth ul li > a:hover {
+  text-decoration: none;
+}
+.path-calendar .maincalendar .calendarmonth ul li > a:hover .eventname {
+  text-decoration: underline;
+}
+.path-calendar .maincalendar .calendarmonth ul li .icon {
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+  padding: 0;
+  vertical-align: initial;
+}
+.path-calendar .maincalendar .calendarmonth ul li .badge.badge-circle {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+.path-calendar .maincalendar .calendarmonth ul li .badge.badge-circle.calendar_event_category {
+  background-color: #d8bfd8;
+}
+.path-calendar .maincalendar .calendarmonth ul li .badge.badge-circle.calendar_event_course {
+  background-color: #ffd3bd;
+}
+.path-calendar .maincalendar .calendarmonth ul li .badge.badge-circle.calendar_event_site {
+  background-color: #d6f8cd;
+}
+.path-calendar .maincalendar .calendarmonth ul li .badge.badge-circle.calendar_event_group {
+  background-color: #fee7ae;
+}
+.path-calendar .maincalendar .calendarmonth ul li .badge.badge-circle.calendar_event_user {
+  background-color: #dce7ec;
 }
 .path-calendar .maincalendar .calendarmonth td {
   height: 5em;
+}
+.path-calendar .maincalendar .calendarmonth .clickable:hover {
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
 .path-calendar .maincalendar .calendar-controls .previous,
 .path-calendar .maincalendar .calendar-controls .next {
@@ -3349,17 +3395,21 @@ img.iconsmall {
   width: 98%;
   margin: 10px auto;
 }
-.path-calendar .maincalendar .calendar_event_course,
-.path-calendar .maincalendar .calendar_event_global,
-.path-calendar .maincalendar .calendar_event_group,
-.path-calendar .maincalendar .calendar_event_user {
-  border-width: 1px 1px 1px 12px;
-  border-style: solid;
+.path-calendar .maincalendar .calendar_event_category:hover a,
+.path-calendar .maincalendar .calendar_event_course:hover a,
+.path-calendar .maincalendar .calendar_event_site:hover a,
+.path-calendar .maincalendar .calendar_event_group:hover a,
+.path-calendar .maincalendar .calendar_event_user:hover a {
+  color: #003d5c;
+  text-decoration: underline;
+}
+.path-calendar .maincalendar .calendar_event_category {
+  border-color: #d8bfd8;
 }
 .path-calendar .maincalendar .calendar_event_course {
   border-color: #ffd3bd;
 }
-.path-calendar .maincalendar .calendar_event_global {
+.path-calendar .maincalendar .calendar_event_site {
   border-color: #d6f8cd;
 }
 .path-calendar .maincalendar .calendar_event_group {
@@ -3367,21 +3417,6 @@ img.iconsmall {
 }
 .path-calendar .maincalendar .calendar_event_user {
   border-color: #dce7ec;
-}
-.path-calendar .maincalendar .calendar-event-panel {
-  background-color: #eee;
-  border: 2px solid #eee;
-}
-.path-calendar .maincalendar .calendar-event-panel .yui3-overlay-content {
-  padding: 19px;
-  background-color: #fdfdfd;
-  border: 1px solid #e3e3e3;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
-  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 .path-calendar .maincalendar .calendar-controls .current {
   font-family: inherit;
@@ -3392,10 +3427,9 @@ img.iconsmall {
 }
 .path-calendar .maincalendar .calendartable td,
 .path-calendar .maincalendar .calendartable li {
-  padding: 5px;
+  padding: 0 4px 4px 4px;
 }
 .path-calendar .maincalendar .calendartable li {
-  padding-left: 10px;
   text-align: left;
 }
 .path-calendar .maincalendar .header {
@@ -3427,14 +3461,14 @@ img.iconsmall {
   margin-right: 0.5rem;
 }
 .path-calendar .maincalendar .eventlist .event .name,
-.path-calendar .maincalendar .eventlist .event .course {
+.path-calendar .maincalendar .eventlist .event .action {
   margin-bottom: 5px;
 }
 .path-calendar .maincalendar .eventlist .event .date {
   float: right;
 }
-.path-calendar .maincalendar .eventlist .event .course,
-.path-calendar .maincalendar .eventlist .event .subscription {
+.path-calendar .maincalendar .eventlist .event .subscription,
+.path-calendar .maincalendar .eventlist .event .action {
   float: left;
   clear: left;
 }
@@ -3443,7 +3477,6 @@ img.iconsmall {
 }
 .path-calendar .maincalendar .eventlist .event .description {
   background-color: #fff;
-  padding: 5px;
   clear: both;
 }
 .path-calendar .maincalendar .eventlist .event .commands a {
@@ -3480,6 +3513,13 @@ img.iconsmall {
 .block .minicalendar td.duration_global.duration_finish {
   background-color: #d6f8cd;
 }
+.block .minicalendar td.duration_category {
+  border-top: 1px solid #d8bfd8;
+  border-bottom: 1px solid #d8bfd8;
+}
+.block .minicalendar td.duration_category.duration_finish {
+  background-color: #d8bfd8;
+}
 .block .minicalendar td.duration_course {
   border-top: 1px solid #ffd3bd;
   border-bottom: 1px solid #ffd3bd;
@@ -3507,28 +3547,6 @@ img.iconsmall {
   line-height: inherit;
   text-align: center;
 }
-.block .calendar-event-panel {
-  background-color: #eee;
-  border: 1px solid #eee;
-}
-.block .calendar-event-panel .yui3-overlay-content {
-  padding: 19px;
-  background-color: #fdfdfd;
-  border: 1px solid #e3e3e3;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
-  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
-}
-.block .calendar-event-panel .yui3-overlay-content h2.eventtitle {
-  line-height: 1.2;
-  font-size: 18px;
-}
-.block .calendar-event-panel .yui3-overlay-content .eventcontent img {
-  padding-right: 5px;
-}
 .block .calendar-controls .previous,
 .block .calendar-controls .current,
 .block .calendar-controls .next {
@@ -3555,36 +3573,34 @@ img.iconsmall {
   margin-bottom: 0.2em;
 }
 .block .calendar_filters li span img {
+  margin: 0 0.25em;
+}
+.block .calendar_filters li span .icon {
   padding: 0 0.2em;
 }
-.block .calendar_filters .eventname {
-  padding-left: 0.2em;
+.block .calendar_filters li .icon {
+  padding: 0;
+  margin-left: 0.25em;
+}
+.block .calendar_filters li > a:hover {
+  text-decoration: none;
+}
+.block .calendar_filters li > a:hover .eventname {
+  text-decoration: underline;
 }
 .block .content h3.eventskey {
   margin-top: 0.5em;
-}
-.ical-link {
-  font-size: 10px;
-  font-weight: bold;
-  background-color: #f60;
-  padding: 0 5px;
-  color: #fff;
-  border-top: 1px solid #f93;
-  border-left: 1px solid #f93;
-  border-bottom: 1px solid #013;
-  border-right: 1px solid #013;
-}
-.ical-link:hover,
-.ical-link:active,
-.ical-link:focus,
-.ical-link:visited {
-  color: #fff;
-  text-decoration: none;
 }
 @media (min-width: 768px) {
   #page-calender-view .container-fluid {
     min-width: 1024px;
   }
+}
+.calendarwrapper {
+  position: relative;
+}
+.summary-modal-container .description-content > p {
+  margin: 0;
 }
 /* course.less */
 /* COURSE CONTENT */
@@ -3653,11 +3669,6 @@ img.iconsmall {
   padding-right: 4px;
   min-height: 2em;
 }
-.section .activity .contentwithoutlink .dimmed img.activityicon,
-.section .activity .activityinstance .dimmed img.activityicon {
-  opacity: 0.5;
-  filter: alpha(opacity=50);
-}
 .section .label .contentwithoutlink,
 .section .label .activityinstance {
   padding-right: 32px;
@@ -3671,7 +3682,8 @@ img.iconsmall {
 .section .filler {
   width: 16px;
   height: 16px;
-  padding: 0.3em;
+  padding: 0;
+  padding-right: 6px;
   display: inline-block;
 }
 .section .activity.editor_displayed a.editing_title,
@@ -3690,6 +3702,13 @@ img.iconsmall {
 .activity img.activityicon {
   margin-right: 6px;
   vertical-align: text-bottom;
+}
+.activity .dimmed img.activityicon {
+  opacity: 0.5;
+  filter: alpha(opacity=50);
+}
+.activity .stealth:not(.dimmed) {
+  opacity: .5;
 }
 .section .activity .activityinstance,
 .section .activity .activityinstance div {
@@ -3716,6 +3735,7 @@ img.iconsmall {
 .editing_hide + .editing_assign {
   margin-left: 20px;
 }
+.section_action_menu,
 .section .activity .commands {
   white-space: nowrap;
   display: inline;
@@ -3806,14 +3826,12 @@ img.iconsmall {
   margin-top: 0;
 }
 .course-content ul li.section.hidden .sectionname > span,
-.course-content ul li.section.hidden .content > div,
-.course-content ul li.section.hidden .activity .activityinstance {
+.course-content ul li.section.hidden .content > div.summary {
   opacity: .5;
 }
-.course-content ul li.section.hidden .sectionname > span,
-.course-content ul li.section.hidden .activity .activityinstance {
-  margin-left: 10px;
-  margin-right: 10px;
+.course-content ul.topics li.section,
+.course-content ul.weeks li.section {
+  padding-bottom: 20px;
 }
 .course-content ul.topics li.section .content,
 .course-content ul.weeks li.section .content {
@@ -3821,14 +3839,14 @@ img.iconsmall {
   margin-left: 20px;
   padding: 0;
 }
+.course-content ul.topics li.section .summary,
+.course-content ul.weeks li.section .summary,
+.course-content ul.topics li.section .content > .availabilityinfo,
+.course-content ul.weeks li.section .content > .availabilityinfo {
+  margin-left: 25px;
+}
 .course-content {
   margin-top: 0;
-}
-.course-content ul.topics li.section {
-  padding-bottom: 20px;
-}
-.course-content ul.topics li.section .summary {
-  margin-left: 25px;
 }
 .course-content li.section ul {
   list-style: disc;
@@ -3893,12 +3911,16 @@ img.iconsmall {
   padding: 0 16px 0 0;
   /* to accommodate the floated completion icon with highlighting */
 }
-.path-course-view li.activity span.autocompletion img {
+.path-course-view li.activity span.autocompletion img,
+.path-course-view li.activity form.togglecompletion .btn {
   vertical-align: text-bottom;
+  padding: 0 6px 0 0;
 }
 .path-course-view li.activity form.togglecompletion img {
   max-width: none;
   /* The width is 0 so ensure we don't end up with a relative max-width */
+  margin: 0;
+  padding: 0;
 }
 .path-course-view li.activity form.togglecompletion .ajaxworking {
   width: 16px;
@@ -6829,7 +6851,7 @@ a.ygtvspacer:hover {
   border-bottom: 1px solid #bbb;
   padding: 0.24em 0;
 }
-/* stylelint-disable declaration-block-no-duplicate-properties, no-browser-hacks */
+/* stylelint-disable declaration-block-no-duplicate-properties */
 #chooseqtype .alloptions {
   overflow-x: hidden;
   overflow-y: auto;
@@ -7446,6 +7468,9 @@ body.path-question-type .mform fieldset.hidden {
 .path-user .node_category .viewmore {
   text-align: right;
 }
+#participantsform .no-overflow {
+  overflow: visible;
+}
 /**
  * This rule has been added to duplicate the style of icons with the
  * .iconsmall class for consistent rendering.
@@ -7585,15 +7610,29 @@ body.path-question-type .mform fieldset.hidden {
   -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
   border-color: #e3e3e3;
+  position: relative;
 }
 .groupinfobox blockquote {
   border-color: #ddd;
   border-color: rgba(0, 0, 0, 0.15);
 }
+.groupinfobox h3 {
+  margin-top: 0px;
+}
 .groupinfobox .left {
   padding: 10px;
   width: 100px;
   vertical-align: top;
+}
+.group-image {
+  display: block;
+  float: left;
+  margin-right: 1em;
+}
+.group-edit {
+  position: absolute;
+  right: 0;
+  margin-right: 0.6em;
 }
 .course-participation #showall {
   text-align: center;
@@ -7659,18 +7698,6 @@ body.path-question-type .mform fieldset.hidden {
 .profileeditor > .singlebutton div,
 .profileeditor > .singlebutton input {
   margin: 0;
-}
-#groupeditform .groups,
-#groupeditform .members {
-  min-width: 175px;
-  width: 49%;
-  float: left;
-  text-align: left;
-}
-#groupeditform .groups select,
-#groupeditform .members select {
-  min-width: 175px;
-  max-width: 90%;
 }
 /** Preferences page */
 .preferences-group ul {
@@ -10056,7 +10083,7 @@ table th[class*="span"],
   *margin-right: .3em;
   line-height: 14px;
   vertical-align: text-top;
-  background-image: url("");
+  background-image: url("none");
   background-position: 14px 14px;
   background-repeat: no-repeat;
   margin-top: 1px;
@@ -10079,7 +10106,7 @@ table th[class*="span"],
 .dropdown-submenu:focus > a > [class^="icon-"],
 .dropdown-submenu:hover > a > [class*=" icon-"],
 .dropdown-submenu:focus > a > [class*=" icon-"] {
-  background-image: url("");
+  background-image: url("none");
 }
 .icon-glass {
   background-position: 0      0;
@@ -10711,8 +10738,7 @@ table th[class*="span"],
   -moz-border-radius: 4px;
   border-radius: 4px;
 }
-.well,
-.card {
+.well {
   min-height: 20px;
   padding: 19px;
   margin-bottom: 20px;
@@ -12681,6 +12707,7 @@ input[type="submit"].btn.btn-mini {
 .popover {
   position: absolute;
   top: 0;
+  /*rtl:ignore*/
   left: 0;
   z-index: 1010;
   display: none;
@@ -13398,7 +13425,7 @@ h4 small {
     content: "";
   }
 }
-/* stylelint-disable declaration-block-no-duplicate-properties, no-browser-hacks */
+/* stylelint-disable declaration-block-no-duplicate-properties */
 /* stylelint-enable */
 /**
  * Implement missing variables, or faulty ones, in Bootstrap rules.
@@ -13413,8 +13440,7 @@ legend {
 .breadcrumb {
   background-color: #f5f5f5;
 }
-.well,
-.card {
+.well {
   border-color: #e3e3e3;
 }
 sup {
@@ -13642,6 +13668,9 @@ body {
   margin-left: 5px;
   display: inline;
 }
+.block .content p.hasicon img.icon {
+  padding-right: 0;
+}
 .block .footer {
   margin-bottom: 4px;
   display: block;
@@ -13780,6 +13809,417 @@ body {
   display: block;
   width: 100%;
 }
+.progress-chart-container {
+  height: 70px;
+  width: 70px;
+}
+.progress-chart-container .progress-doughnut {
+  position: relative;
+  height: 70px;
+  width: 70px;
+  background-clip: padding-box;
+  border: 15px solid #eee;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.progress-chart-container .progress-doughnut .progress-text {
+  position: absolute;
+  top: 50%;
+  /*rtl:ignore*/
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #eee;
+}
+.progress-chart-container .progress-doughnut .progress-text.has-percent {
+  color: #f89406;
+}
+.progress-chart-container .progress-doughnut .progress-indicator {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  height: 70px;
+  width: 70px;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle {
+  stroke-width: 15px;
+  stroke: #f89406;
+  fill: none;
+  stroke-dasharray: 173;
+  stroke-dashoffset: 173;
+  transform: rotate(-90deg);
+  transform-origin: center center;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-1 {
+  stroke-dashoffset: 171.27;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-2 {
+  stroke-dashoffset: 169.54;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-3 {
+  stroke-dashoffset: 167.81;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-4 {
+  stroke-dashoffset: 166.08;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-5 {
+  stroke-dashoffset: 164.35;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-6 {
+  stroke-dashoffset: 162.62;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-7 {
+  stroke-dashoffset: 160.89;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-8 {
+  stroke-dashoffset: 159.16;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-9 {
+  stroke-dashoffset: 157.43;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-10 {
+  stroke-dashoffset: 155.7;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-11 {
+  stroke-dashoffset: 153.97;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-12 {
+  stroke-dashoffset: 152.24;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-13 {
+  stroke-dashoffset: 150.51;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-14 {
+  stroke-dashoffset: 148.78;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-15 {
+  stroke-dashoffset: 147.05;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-16 {
+  stroke-dashoffset: 145.32;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-17 {
+  stroke-dashoffset: 143.59;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-18 {
+  stroke-dashoffset: 141.86;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-19 {
+  stroke-dashoffset: 140.13;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-20 {
+  stroke-dashoffset: 138.4;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-21 {
+  stroke-dashoffset: 136.67;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-22 {
+  stroke-dashoffset: 134.94;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-23 {
+  stroke-dashoffset: 133.21;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-24 {
+  stroke-dashoffset: 131.48;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-25 {
+  stroke-dashoffset: 129.75;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-26 {
+  stroke-dashoffset: 128.02;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-27 {
+  stroke-dashoffset: 126.29;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-28 {
+  stroke-dashoffset: 124.56;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-29 {
+  stroke-dashoffset: 122.83;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-30 {
+  stroke-dashoffset: 121.1;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-31 {
+  stroke-dashoffset: 119.37;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-32 {
+  stroke-dashoffset: 117.64;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-33 {
+  stroke-dashoffset: 115.91;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-34 {
+  stroke-dashoffset: 114.18;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-35 {
+  stroke-dashoffset: 112.45;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-36 {
+  stroke-dashoffset: 110.72;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-37 {
+  stroke-dashoffset: 108.99;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-38 {
+  stroke-dashoffset: 107.26;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-39 {
+  stroke-dashoffset: 105.53;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-40 {
+  stroke-dashoffset: 103.8;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-41 {
+  stroke-dashoffset: 102.07;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-42 {
+  stroke-dashoffset: 100.34;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-43 {
+  stroke-dashoffset: 98.61;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-44 {
+  stroke-dashoffset: 96.88;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-45 {
+  stroke-dashoffset: 95.15;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-46 {
+  stroke-dashoffset: 93.42;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-47 {
+  stroke-dashoffset: 91.69;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-48 {
+  stroke-dashoffset: 89.96;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-49 {
+  stroke-dashoffset: 88.23;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-50 {
+  stroke-dashoffset: 86.5;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-51 {
+  stroke-dashoffset: 84.77;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-52 {
+  stroke-dashoffset: 83.04;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-53 {
+  stroke-dashoffset: 81.31;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-54 {
+  stroke-dashoffset: 79.58;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-55 {
+  stroke-dashoffset: 77.85;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-56 {
+  stroke-dashoffset: 76.12;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-57 {
+  stroke-dashoffset: 74.39;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-58 {
+  stroke-dashoffset: 72.66;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-59 {
+  stroke-dashoffset: 70.93;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-60 {
+  stroke-dashoffset: 69.2;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-61 {
+  stroke-dashoffset: 67.47;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-62 {
+  stroke-dashoffset: 65.74;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-63 {
+  stroke-dashoffset: 64.01;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-64 {
+  stroke-dashoffset: 62.28;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-65 {
+  stroke-dashoffset: 60.55;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-66 {
+  stroke-dashoffset: 58.82;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-67 {
+  stroke-dashoffset: 57.09;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-68 {
+  stroke-dashoffset: 55.36;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-69 {
+  stroke-dashoffset: 53.63;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-70 {
+  stroke-dashoffset: 51.9;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-71 {
+  stroke-dashoffset: 50.17;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-72 {
+  stroke-dashoffset: 48.44;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-73 {
+  stroke-dashoffset: 46.71;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-74 {
+  stroke-dashoffset: 44.98;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-75 {
+  stroke-dashoffset: 43.25;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-76 {
+  stroke-dashoffset: 41.52;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-77 {
+  stroke-dashoffset: 39.79;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-78 {
+  stroke-dashoffset: 38.06;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-79 {
+  stroke-dashoffset: 36.33;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-80 {
+  stroke-dashoffset: 34.6;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-81 {
+  stroke-dashoffset: 32.87;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-82 {
+  stroke-dashoffset: 31.14;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-83 {
+  stroke-dashoffset: 29.41;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-84 {
+  stroke-dashoffset: 27.68;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-85 {
+  stroke-dashoffset: 25.95;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-86 {
+  stroke-dashoffset: 24.22;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-87 {
+  stroke-dashoffset: 22.49;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-88 {
+  stroke-dashoffset: 20.76;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-89 {
+  stroke-dashoffset: 19.03;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-90 {
+  stroke-dashoffset: 17.3;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-91 {
+  stroke-dashoffset: 15.57;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-92 {
+  stroke-dashoffset: 13.84;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-93 {
+  stroke-dashoffset: 12.11;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-94 {
+  stroke-dashoffset: 10.38;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-95 {
+  stroke-dashoffset: 8.65;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-96 {
+  stroke-dashoffset: 6.92;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-97 {
+  stroke-dashoffset: 5.19;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-98 {
+  stroke-dashoffset: 3.46;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-99 {
+  stroke-dashoffset: 1.73;
+}
+.progress-chart-container .progress-doughnut .progress-indicator svg .circle.percent-100 {
+  stroke-dashoffset: 0;
+}
+.progress-chart-container .no-progress {
+  height: 70px;
+  width: 70px;
+  background-color: #eee;
+  border-radius: 50%;
+  position: relative;
+}
+.progress-chart-container .no-progress .icon,
+.progress-chart-container .no-progress .smallicon {
+  position: absolute;
+  top: 50%;
+  /*rtl:ignore*/
+  left: 50%;
+  margin: 0;
+  padding: 0;
+  transform: translate(-45%, -45%);
+  color: #fff;
+  height: 35px;
+  width: 35px;
+}
+.block_myoverview {
+  background-color: transparent;
+}
+.block_myoverview .event-list-item {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.block_myoverview .event-list-item:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.block_myoverview .event-list-item .event-icon {
+  vertical-align: middle;
+}
+.block_myoverview .event-list-item .event-icon::before {
+  content: '';
+  display: inline-block;
+  height: 100%;
+  vertical-align: middle;
+}
+.block_myoverview .event-list-item .event-name-container {
+  vertical-align: middle;
+  max-width: calc(100% - 50px);
+}
+.block_myoverview .event-list-item .event-name-container .event-name {
+  display: block;
+}
+.block_myoverview .empty-placeholder-image-sm {
+  height: 50px;
+}
+.block_myoverview .empty-placeholder-image-lg {
+  height: 125px;
+}
+.block_myoverview .courses-view-course-item {
+  height: 220px;
+  overflow-y: hidden;
+}
+.block_myoverview h4 {
+  font-weight: normal;
+}
+.block_myoverview .well {
+  background-color: #fff;
+  box-shadow: none;
+}
 /**
  * Moodle forms HTML isn't changeable via renderers (yet?) so this
  * .less file imports styles from the bootstrap @variables file and
@@ -13839,6 +14279,10 @@ form {
 .mform .fdescription.required {
   margin-left: 200px;
 }
+.mform .fdescription.required > .icon {
+  width: 8px;
+  height: 12px;
+}
 .mform .fpassword .unmask {
   display: inline-block;
   margin-left: 0.5em;
@@ -13866,6 +14310,12 @@ form {
 .mform label .req,
 .mform label .adv {
   cursor: help;
+}
+.mform label .req > .icon,
+.mform label .adv > .icon {
+  width: 8px;
+  height: 12px;
+  margin-left: 3px;
 }
 .mform .fcheckbox input {
   margin-left: 0;
@@ -14080,6 +14530,49 @@ fieldset.coursesearchbox label {
   font-weight: bold;
 }
 /**
+ * Forms marked as vertical always display this way;
+ */
+.mform.full-width-labels:not(.unresponsive) .fitem .fitemtitle {
+  display: block;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  text-align: left;
+  width: 100%;
+}
+.mform.full-width-labels:not(.unresponsive) .fitem .felement {
+  margin-left: 0;
+  width: 100%;
+  float: left;
+  padding-left: 0;
+  padding-right: 0;
+}
+.mform.full-width-labels:not(.unresponsive) .fitem .fstatic:empty {
+  display: none;
+}
+.mform.full-width-labels:not(.unresponsive) .fitem .fcheckbox > span,
+.mform.full-width-labels:not(.unresponsive) .fitem .fradio > span,
+.mform.full-width-labels:not(.unresponsive) .fitem .fgroup > span {
+  margin-top: 4px;
+}
+.mform.full-width-labels:not(.unresponsive) .femptylabel .fitemtitle {
+  display: inline-block;
+  width: auto;
+  margin-right: 8px;
+}
+.mform.full-width-labels:not(.unresponsive) .femptylabel .felement {
+  display: inline-block;
+  margin-top: 4px;
+  padding-top: 5px;
+}
+.mform.full-width-labels:not(.unresponsive) .fitem_fcheckbox .fitemtitle,
+.mform.full-width-labels:not(.unresponsive) .fitem_fcheckbox .felement {
+  display: inline-block;
+  width: auto;
+}
+.mform.full-width-labels:not(.unresponsive) .fitem_fcheckbox .felement {
+  padding: 6px;
+}
+/**
  * Make forms vertical when the screen is less than 1200px;
  */
 @media (max-width: 1199px) {
@@ -14114,7 +14607,6 @@ fieldset.coursesearchbox label {
     display: inline-block;
     margin-top: 4px;
     padding-top: 5px;
-    width: auto;
   }
   body #region-main .mform:not(.unresponsive) .fitem_fcheckbox .fitemtitle,
   body #region-main .mform:not(.unresponsive) .fitem_fcheckbox .felement {
@@ -14167,7 +14659,6 @@ fieldset.coursesearchbox label {
     display: inline-block;
     margin-top: 4px;
     padding-top: 5px;
-    width: auto;
   }
   .used-region-side-pre.used-region-side-post #region-main .mform:not(.unresponsive) .fitem_fcheckbox .fitemtitle,
   .used-region-side-pre.used-region-side-post #region-main .mform:not(.unresponsive) .fitem_fcheckbox .felement {
@@ -14268,9 +14759,26 @@ input[size] {
   width: auto;
 }
 /* Custom styles for autocomplete form element */
+[data-fieldtype=autocomplete] select,
+[data-fieldtype=tags] select,
+select.form-autocomplete-original-select {
+  visibility: hidden;
+  overflow: hidden;
+  width: 15rem;
+  height: 67px;
+  margin: 0;
+  margin-bottom: 0.2em;
+  padding: 0;
+  border: 0;
+  vertical-align: top;
+}
+.form-autocomplete-container {
+  display: inline-block;
+  min-height: 4.2rem;
+}
 .form-autocomplete-selection {
   margin: 0.2em;
-  min-height: 21px;
+  min-height: 27px;
 }
 .form-autocomplete-multiple [role=listitem] {
   cursor: pointer;
@@ -14324,6 +14832,11 @@ div[data-passwordunmask="wrapper"] {
   height: 30px;
   line-height: 30px;
   margin-bottom: 10px;
+}
+[data-filetypesbrowserbody] [aria-expanded="false"] > [role="group"],
+[data-filetypesbrowserbody] [aria-expanded="false"] [data-filetypesbrowserfeature="hideifcollapsed"],
+[data-filetypesbrowserbody] [aria-expanded="true"] [data-filetypesbrowserfeature="hideifexpanded"] {
+  display: none;
 }
 body.modal-open {
   overflow: hidden;
@@ -14428,7 +14941,6 @@ body.modal-open {
   border-radius: 0 0 10px 10px;
 }
 .modal-backdrop {
-  z-index: 4049;
   background-color: #aaa;
   opacity: 0.4;
 }
@@ -14443,49 +14955,8 @@ select {
   border-top: 1px solid #ddd;
   padding: 8px 0;
 }
-.path-mod-feedback .mform.feedback_form .fitem .fitemtitle {
-  display: block;
-  margin-top: 4px;
-  margin-bottom: 4px;
-  text-align: left;
-  width: 100%;
-}
-.path-mod-feedback .mform.feedback_form .fitem .felement {
-  margin-left: 0;
-  width: 100%;
-  float: left;
-  padding-left: 0;
-  padding-right: 0;
-}
-.path-mod-feedback .mform.feedback_form .fitem .fstatic:empty {
-  display: none;
-}
-.path-mod-feedback .mform.feedback_form .fitem .fcheckbox > span,
-.path-mod-feedback .mform.feedback_form .fitem .fradio > span,
-.path-mod-feedback .mform.feedback_form .fitem .fgroup > span {
-  margin-top: 4px;
-}
-body.path-mod-feedback #region-main .mform.feedback_form .femptylabel .fitemtitle {
-  display: inline-block;
-  width: auto;
-  margin-right: 0;
-}
-.path-mod-feedback .mform.feedback_form .femptylabel .felement {
-  display: inline-block;
-  margin-top: 4px;
-  padding-top: 5px;
-  width: auto;
-}
 body.path-mod-feedback #region-main .mform.feedback_form .feedback-item-pagebreak .felement {
   width: 100%;
-}
-.path-mod-feedback .mform.feedback_form .fitem_fcheckbox .fitemtitle,
-.path-mod-feedback .mform.feedback_form .fitem_fcheckbox .felement {
-  display: inline-block;
-  width: auto;
-}
-.path-mod-feedback .mform.feedback_form .fitem_fcheckbox .felement {
-  padding: 6px;
 }
 .path-mod-feedback .mform.feedback_form#feedback_viewresponse_form .fitem.feedback_hasvalue:not(.feedback-item-captcha) .felement {
   background: #fbfbf1;
@@ -14803,11 +15274,18 @@ div#dock {
 .path-mod-lesson .answeroptiongroup .felement label p:last-child {
   margin-bottom: 0;
 }
+.path-mod-lesson .answeroption .fradio label p,
+.path-mod-lesson .answeroption .fcheckbox label p {
+  display: inline;
+}
 /**
  * Style for view.php
  **/
 #page-mod-lesson-view .password-form .submitbutton {
   display: inline;
+}
+#page-mod-lesson-view .branchbuttoncontainer .singlebutton input[type="submit"] {
+  white-space: normal;
 }
 .path-mod-lesson .reviewessay {
   width: 40%;
@@ -15114,6 +15592,15 @@ div#dock {
   width: inherit;
   height: inherit;
 }
+#page-mod-quiz-edit ul.slots li.section li.activity .instancemaxmarkcontainer form input {
+  margin: 0;
+  padding: 0.2em;
+  height: 1em;
+}
+#mod_quiz_preflight_form .femptylabel .felement {
+  margin: 0;
+  padding: 0;
+}
 .path-mod-quiz #mod_quiz_navblock .qnbutton {
   text-decoration: none;
   font-size: 14px;
@@ -15195,6 +15682,9 @@ div#dock {
 }
 .path-mod-scorm.jsenabled .scorm-center {
   display: block;
+}
+.path-mod-scorm #region-main #intro {
+  width: auto;
 }
 .yui-skin-sam .yui-layout.path-mod-chat-gui_ajax {
   background-color: #fff;
@@ -16690,7 +17180,6 @@ div[data-flexitour="backdrop"] {
   background-color: #000;
   opacity: 0.8;
   filter: alpha(opacity=80);
-  z-index: 4049;
   background-color: #aaa;
   opacity: 0.4;
   z-index: 4030;
@@ -16819,7 +17308,7 @@ span[data-flexitour="container"][x-placement="right-start"] div[data-role="arrow
   border-right-color: #fff;
 }
 /* Styling for mustache templates */
-/* stylelint-disable declaration-block-no-duplicate-properties, no-browser-hacks */
+/* stylelint-disable declaration-block-no-duplicate-properties */
 /* stylelint-enable */
 .columns-autoflow-1to1to1 {
   -webkit-column-count: 3;
@@ -17928,7 +18417,7 @@ span[data-flexitour="container"][x-placement="right-start"] div[data-role="arrow
   }
 }
 /* responsive.less */
-/* stylelint-disable declaration-block-no-duplicate-properties, no-browser-hacks */
+/* stylelint-disable declaration-block-no-duplicate-properties */
 @media (min-width: 980px) {
   a[id]:empty::before,
   a[name]:empty::before {
@@ -18996,6 +19485,22 @@ ul.indented-list {
   margin-left: 20px;
 }
 /* stylelint-disable declaration-no-important, block-no-empty */
+.card {
+  position: relative;
+  display: block;
+  margin-bottom: .75rem;
+  background-color: #fff;
+  border: 1px solid #e3e3e3;
+  border-radius: 0;
+}
+.card-header {
+  padding: .75rem 1.25rem;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e3e3e3;
+}
+.card-block {
+  padding: 1.25rem;
+}
 .p-l-1 {
   padding-left: 14px !important;
 }
@@ -19185,6 +19690,47 @@ ul.indented-list {
 .text-nowrap {
   white-space: nowrap !important;
 }
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.text-white {
+  color: #fff;
+}
+.bg-danger {
+  background-color: #b94a48;
+}
+.bg-danger[href] {
+  background-color: #953b39;
+}
+.bg-warning {
+  background-color: #f89406;
+}
+.bg-warning[href] {
+  background-color: #c67605;
+}
+.bg-success {
+  background-color: #468847;
+}
+.bg-success[href] {
+  background-color: #356635;
+}
+.bg-info {
+  background-color: #3a87ad;
+}
+.bg-info[href] {
+  background-color: #2d6987;
+}
+.bg-primary {
+  background-color: #049cdb;
+}
+.bg-primary[href] {
+  background-color: #0378a9;
+}
+.bg-faded {
+  background-color: #eee;
+}
 .carousel-indicators {
   z-index: 2;
 }
@@ -19194,15 +19740,52 @@ a.muted:focus {
   color: inherit;
   font-style: italic;
 }
+.text-warning {
+  color: #8a6d3b !important;
+}
+a.text-warning:hover,
+a.text-warning:focus {
+  color: #66512c !important;
+}
+.text-error,
+.text-danger {
+  color: #b94a48 !important;
+}
+a.text-error:hover,
+a.text-error:focus {
+  color: #953b39 !important;
+}
+.text-info {
+  color: #3a87ad !important;
+}
+a.text-info:hover,
+a.text-info:focus {
+  color: #2d6987 !important;
+}
+.text-success {
+  color: #468847 !important;
+}
+a.text-success:hover,
+a.text-success:focus {
+  color: #356635 !important;
+}
 /* Moodle fixes begin */
 /* Moodle fixes blocks begin */
+.block .icon {
+  margin-right: 4px;
+}
 .block_navigation .block_tree .fa[aria-hidden="true"],
 .block_settings .block_tree .fa[aria-hidden="true"] {
   display: inline-block;
 }
 .block_navigation .block_tree p.hasicon,
 .block_settings .block_tree p.hasicon {
+  padding-left: 0;
   text-indent: 0;
+}
+.block_navigation .block_tree ul,
+.block_settings .block_tree ul {
+  margin-left: 21px;
 }
 html[dir='rtl'] .tree_item.branch {
   unicode-bidi: bidi-override;
@@ -19231,6 +19814,41 @@ textarea {
   font-family: inherit;
 }
 /* Bootstrap fixes forms end */
+/* Moodle fixes icons begin */
+.icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin: 0;
+  padding: 0;
+  box-sizing: content-box;
+}
+.icon.spacer {
+  margin-right: 0;
+}
+.section .filler {
+  margin-left: 0.5rem;
+}
+a:first-of-type > .icon,
+span:first-of-type > .icon {
+  margin-left: 0.5rem;
+}
+.action-menu .dropdown a:first-of-type > .icon {
+  margin-left: 0;
+}
+.ygtvcell .icon {
+  margin-left: 0 !important;
+  /* stylelint-disable-line declaration-no-important */
+}
+.block_navigation .tree_item .icon,
+.block_settings .tree_item .icon {
+  margin-left: 0;
+}
+.fp-navbar a > .icon {
+  margin: 0.5rem;
+}
+/* Moodle fixes icons end */
 /* Moodle fixes message begin */
 .message .message-contacts li div.pix,
 .message .message-contacts li div.contact {
@@ -19256,6 +19874,16 @@ textarea {
   background-color: inherit;
 }
 /* Moodle fixes mod-assign end */
+/* Moodle fixes mod-quiz begin */
+#page-mod-quiz-attempt .submitbtns,
+#page-mod-quiz-review .submitbtns {
+  text-align: right;
+}
+#page-mod-quiz-attempt .submitbtns .mod_quiz-next-nav,
+#page-mod-quiz-review .submitbtns .mod_quiz-next-nav {
+  float: none;
+}
+/* Moodle fixes mod-quiz end */
 /* Moodle fixes search begin */
 .navbar .search-input-wrapper {
   width: 18px;
@@ -19624,7 +20252,7 @@ table.ygtvtable td a {
 /* @end */
 /* @group Blocks */
 .block {
-  background: white;
+  background-color: #fff;
   padding: 6px;
   border: 1px solid #e3e3e3;
   -webkit-border-radius: 6px;
@@ -19637,28 +20265,14 @@ table.ygtvtable td a {
 .block .moodle-actionmenu[data-enhanced].show .menu a:hover {
   text-decoration: none;
 }
-.block .moodle-actionmenu[data-enhanced].show .menu a:hover:before {
-  color: #fff;
-}
-.block .moodle-core-dragdrop-draghandle:before {
-  font-family: 'FontAwesome';
-  content: "\f047";
-  cursor: move;
-}
-.block .moodle-core-dragdrop-draghandle img {
-  display: none;
-}
-.block li.item_with_icon > p img {
-  position: static !important;
-}
 .block .icon {
   margin-right: 5px;
 }
-.block .moodle-core-dragdrop-draghandle:before {
-  margin-right: 5px;
+.block.block_flat_navigation {
+  background-color: transparent;
 }
-.block li.item_with_icon > p img {
-  margin-right: 5px;
+.block.block_flat_navigation .list-group-item {
+  background-color: #fff;
 }
 body:not(.tabletdevice).empty-region-side-pre #main-and-pre #content,
 body:not(.tabletdevice).empty-region-side-post #main-and-pre {
@@ -19729,7 +20343,7 @@ body:not(.tabletdevice).empty-region-side-post.used-region-side-pre #main-and-pr
   margin-bottom: 20px;
 }
 p.tree_item.leaf a > .fa {
-  width: 14px;
+  width: 16px;
 }
 p.tree_item.leaf a.action-delete > .fa {
   color: red;
@@ -19739,10 +20353,11 @@ p.tree_item.leaf a.action-delete > .fa {
 }
 .tree_item.branch:before {
   font-family: FontAwesome;
-  margin-right: 5px;
+  font-size: 16px;
+  margin-right: 4px;
 }
 .tree_item.branch.emptybranch:before {
-  margin-right: 5px;
+  margin-right: 4px;
 }
 .tree_item.branch[aria-expanded="false"]:before {
   content: "\f07b";
@@ -19762,14 +20377,21 @@ p.tree_item.leaf a.action-delete > .fa {
 .block_navigation.block li.type_unknown.depth_1 > .tree_item.branch:before {
   content: "\f015";
 }
-.block_navigation.block .block_tree .tree_item.branch {
+.block_navigation .block_tree .tree_item.branch,
+.block_settings .block_tree .tree_item.branch {
   padding-left: 0;
 }
-.block_navigation.block .block_tree .tree_item.hasicon .item-content-wrap {
+.block_navigation .block_tree .tree_item.hasicon .item-content-wrap,
+.block_settings .block_tree .tree_item.hasicon .item-content-wrap {
   display: inline !important;
 }
-.jsenabled .block_settings .block_tree .tree_item {
-  padding-left: 0 !important;
+.block.block_flat_navigation {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+  min-height: 0;
+  padding: 0;
 }
 .jsenabled .block_settings .block_tree .tree_item.branch.loadingbranch:before {
   font-family: FontAwesome;
@@ -20940,12 +21562,6 @@ body .course-content ul.topics li.section .content {
   margin-right: 5px;
   margin-left: 3px;
 }
-.editing .section .activity .editing_hide .fa-eye-slash:before {
-  content: "\f06e";
-}
-.editing .section .activity .editing_show .fa-eye:before {
-  content: "\f070";
-}
 .editing .section .activity .activityinstance {
   padding-right: 180px;
 }
@@ -21408,27 +22024,17 @@ body.has_dock #dockeditempanel .dockeditempanel_hd .commands input {
   display: inline;
 }
 .commands .fa {
-  margin-left: 3px;
-  margin-right: 3px;
+  padding-right: 6px;
 }
 .menu a.menu-action > .fa,
 .course-item-actions a > .fa,
 .actions a > .fa {
-  width: 15px;
+  width: 16px;
 }
 .menu a.menu-action.action-delete > .fa,
 .course-item-actions a.action-delete > .fa,
 .actions a.action-delete > .fa {
   color: red;
-}
-.actions a.editing_groupsnone > .fa:before {
-  content: "\f007";
-}
-.actions a.editing_groupsseparate > .fa:before {
-  content: "\f21b";
-}
-.actions a.editing_groupsvisible > .fa:before {
-  content: "\f234";
 }
 a.action-icon > .fa,
 #studentheader > .fa,
@@ -21439,19 +22045,6 @@ a.action-icon > .fa,
 .menu a.menu-action:hover > .fa {
   color: #fff;
 }
-.section-modchooser-link img {
-  display: none;
-}
-.section-modchooser-link > a:before {
-  content: "\f067";
-  font-family: 'FontAwesome';
-}
-.section-modchooser-link > a:hover:before {
-  text-decoration: none;
-}
-.section-modchooser-link > a:before {
-  margin-right: 3px;
-}
 .editing_title img {
   display: none !important;
 }
@@ -21460,37 +22053,12 @@ a.action-icon > .fa,
   font-family: 'FontAwesome';
   margin-right: 5px;
 }
-.moodle-core-dragdrop-draghandle:before {
-  content: "\f047";
-  cursor: move;
-  font-family: 'FontAwesome';
-  margin-right: 5px;
-}
-.course-content .section .moodle-core-dragdrop-draghandle:before {
-  content: "\f07d";
-  cursor: n-resize;
-  font-family: 'FontAwesome';
-  font-size: 1.4em;
-  margin-right: 0;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-.course-content .section .moodle-core-dragdrop-draghandle img {
-  display: none;
-}
-.section .summary > a:before {
-  font-family: 'FontAwesome';
-  content: "\f013";
-  margin-right: 5px;
-}
-.section .summary .iconsmall.edit {
-  display: none;
-}
 .moodle-actionmenu.show[data-enhanced] .menu a {
   padding-left: 0.35em;
   padding-right: 0.35em;
 }
 .moodle-actionmenu.show[data-enhanced] .menu a .fa {
+  margin-left: 0;
   margin-right: 5px;
 }
 /* @end */
@@ -21514,7 +22082,7 @@ a.action-icon > .fa,
   text-decoration: none;
 }
 #page-footer .footerlinks .helplink a {
-  color: orange !important;
+  color: orange;
 }
 #page-footer hr {
   border-bottom: 0 none;
@@ -21538,7 +22106,6 @@ a.action-icon > .fa,
 }
 #page-footer .footerlinks .helplink {
   float: right;
-  padding-right: 20px;
 }
 #page-footer ul,
 #greyboxright ul {
@@ -21662,11 +22229,6 @@ body.path-admin-setting #page-footer {
 /* @end */
 /* @end */
 /* @group Forms */
-fieldset textarea[cols],
-fieldset input[size] {
-  width: 65.95744681%;
-  *width: 65.90425532%;
-}
 body#page-admin-setting-messageinbound_mailsettings fieldset select {
   width: 65.95744681%;
   *width: 65.90425532%;
@@ -22805,6 +23367,12 @@ div.dropdown-menu > ul li a {
 }
 .navbar .navbar-inner .popover-region-toggle .fa {
   color: inherit;
+}
+.jsenabled .navbar .moodle-actionmenu[data-enhance] .toggle-display .icon {
+  font-size: inherit;
+  height: inherit;
+  margin: 0;
+  padding: 0;
 }
 #page-mod-forum-view .notification.unread {
   background-color: inherit;

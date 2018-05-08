@@ -18,6 +18,7 @@
  * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
+ * @copyright   2017 Gareth J Barnard
  * @copyright   2016 Gareth J Barnard
  * @copyright   2015 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
@@ -34,10 +35,10 @@ $THEME->yuicssmodules = array();
 $THEME->parents = array('bootstrapbase');
 $THEME->parents_exclude_sheets = array('bootstrapbase' => array('moodle', 'editor'));
 
+$THEME->sheets[] = 'fontawesome';
 $THEME->sheets[] = 'essential';
 $THEME->sheets[] = 'bootstrap-pix';
 $THEME->sheets[] = 'essential-settings';
-$THEME->sheets[] = 'fontawesome';
 
 if ((get_config('theme_essential', 'enablealternativethemecolors1')) ||
         (get_config('theme_essential', 'enablealternativethemecolors2')) ||
@@ -196,3 +197,5 @@ $THEME->layouts = array(
 
 $THEME->rendererfactory = 'theme_overridden_renderer_factory';
 $THEME->csspostprocess = 'theme_essential_process_css';
+
+$THEME->iconsystem = '\\theme_essential\\output\\icon_system_fontawesome';

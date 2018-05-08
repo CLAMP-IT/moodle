@@ -168,12 +168,6 @@ h2.pagetitle {
 /* @group Blocks */
 
 .block {
-    a {
-        color: ~"[[setting:themeurlcolor]]";
-    }
-    a:hover {
-        color: ~"[[setting:themehovercolor]]";
-    }
     .header .title h2:before,
     &.block_iconic_html .header .title h2 .@{fa-css-prefix}:before {
         color: ~"[[setting:themeiconcolor]]";
@@ -277,11 +271,6 @@ h2.pagetitle {
         }
         .icon {
             color: ~"[[setting:footerblockurlcolour]]";
-        }
-        .moodle-core-dragdrop-draghandle {
-            &:before {
-                color: ~"[[setting:footerblockurlcolour]]";
-            }
         }
     }
     .block .header {
@@ -481,35 +470,6 @@ h6 {
         font-family: inherit;
     }
 }
-/* @end */
-
-/* @group Editicons */
-.actions {
-    a {
-        color: ~"[[setting:themeurlcolor]]";
-        &:hover,
-        &:focus,
-        &:active {
-            color: ~"[[setting:themehovercolor]]";
-        }
-    }
-    .moodle-actionmenu[data-enhanced].show .menu a {
-        color: ~"[[setting:themeurlcolor]]";
-        &:hover, 
-        &:focus,
-        &:active {
-            color: ~"[[setting:themehovercolor]]";
-        }
-    }
-    .moodle-actionmenu[data-enhanced].show .menu a:hover {
-        color: ~"[[setting:themenavcolor]]";
-        background-color: ~"[[setting:themecolor]]";
-        .@{fa-css-prefix}:before {
-            color: ~"[[setting:themenavcolor]]";
-        }
-    }
-}
-
 /* @end */
 
 /* @group Chat */

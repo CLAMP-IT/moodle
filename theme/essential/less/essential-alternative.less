@@ -1,10 +1,12 @@
-/*
+/*!
  * @package     theme_essential
  * @copyright   2015 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
  * @copyright   2013 Julian Ridden
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+/*! Essential lint disable */
+/*! Disabling as already linted in the LESS. */
 // Import the bootstrap we need.
 @import "../../bootstrapbase/less/bootstrap/variables";
 @import "bootstrap-override/variables";
@@ -36,7 +38,7 @@
 
             /* @group Alternative colours @{index} */
 
-            body.essential-colours-alternative@{index} {
+            .essential-colours-alternative@{index} {
                 color: ~"[[setting:alternativethemetextcolor@{index}]]";
                 h1,
                 h2,
@@ -115,7 +117,7 @@
                                     border-left-color: ~"[[setting:alternativethemecolor@{index}]]";
                                 }
                                 span,
-							    a,
+                                a,
                                 a:before {
                                     color: ~"[[setting:alternativethemecolor@{index}]]";
                                 }
@@ -620,8 +622,13 @@
                     }
                 }
 
+                // Atto.
                 div.editor_atto_toolbar button {
                     background: none;
+                }
+                .editor_atto_content_wrap,
+                div.editor_atto_toolbar button .icon {
+                    color: ~"[[setting:alternativethemetextcolor@{index}]]";
                 }
                 .moodle-dialogue-base .closebutton:hover {
                     background-image: url(~"[[pix:theme|sprite]]");
@@ -765,12 +772,6 @@
                 }
 
                 .block {
-                    a {
-                        color: ~"[[setting:alternativethemeurlcolor@{index}]]";
-                    }
-                    a:hover {
-                        color: ~"[[setting:alternativethemehovercolor@{index}]]";
-                    }
                     .header .title h2 {
                         color: ~"[[setting:alternativethemetextcolor@{index}]]";
                         &:before {
@@ -801,6 +802,21 @@
                     }
                     .header .title h2 {
                         color: ~"[[setting:alternativethemesidepreblocktextcolour@{index}]]";
+                    }
+                    &.block_flat_navigation {
+                        background-color: transparent;
+                        .list-group-item {
+                            background-color: ~"[[setting:alternativethemesidepreblockbackgroundcolour@{index}]]";
+                            color: ~"[[setting:alternativethemesidepreblocktextcolour@{index}]]";
+                            a,
+                            a:visited {
+                                color: ~"[[setting:alternativethemesidepreblockurlcolour@{index}]]";
+                            }
+                            a:focus,
+                            a:hover {
+                                color: ~"[[setting:alternativethemesidepreblockhovercolour@{index}]]";
+                            }
+                        }
                     }
                 }
 
@@ -916,11 +932,6 @@
                         }
                         .icon {
                             color: ~"[[setting:alternativethemefooterblockurlcolour@{index}]]";
-                        }
-                        .moodle-core-dragdrop-draghandle {
-                            &:before {
-                                color: ~"[[setting:alternativethemefooterblockurlcolour@{index}]]";
-                            }
                         }
                     }
                     .block .header {
@@ -1150,33 +1161,6 @@
                     }
                 }
 
-                .actions {
-                    a {
-                        color: ~"[[setting:alternativethemeurlcolor@{index}]]";
-                        &:hover,
-                        &:focus,
-                        &:active {
-                            color: ~"[[setting:alternativethemehovercolor@{index}]]";
-                        }
-                    }
-                    .moodle-actionmenu[data-enhanced].show .menu a {
-                        color: ~"[[setting:alternativethemeurlcolor@{index}]]";
-                        &:hover,
-                        &:focus,
-                        &:active {
-                            color: ~"[[setting:alternativethemehovercolor@{index}]]";
-                        }
-                    }
-                    .moodle-actionmenu[data-enhanced].show .menu a:hover {
-                        color: ~"[[setting:themenavcolor]]";
-                        background-color: ~"[[setting:alternativethemecolor@{index}]]";
-                        .@{fa-css-prefix}:before {
-                            color: ~"[[setting:alternativethemenavcolor@{index}]]";
-                        }
-                    }
-                }
-
-                .moodle-core-dragdrop-draghandle:before,
                 .moodle-core-dragdrop-draghandle a {
                     color: ~"[[setting:alternativethemeurlcolor@{index}]]";
                 }
@@ -1414,10 +1398,33 @@
                         }
                     }
                 }
+
+                &.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"] {
+                    color: ~"[[setting:alternativethemequizsubmittextcolour@{index}]]";
+
+                    text-shadow: none;
+                    background-color: ~"[[setting:alternativethemequizsubmitbackgroundcolour@{index}]]";
+                    background-image: -moz-linear-gradient(bottom, ~"[[setting:alternativethemequizsubmitbackgroundcolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundcolourrgba@{index}]]"); // FF 3.6+
+                    background-image: -webkit-gradient(linear, 0 100%, 0 0, from(~"[[setting:alternativethemequizsubmitbackgroundcolourimage@{index}]]"), to(~"[[setting:alternativethemequizsubmitbackgroundcolourrgba@{index}]]")); // Safari 4+, Chrome 2+
+                    background-image: -webkit-linear-gradient(bottom, ~"[[setting:alternativethemequizsubmitbackgroundcolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundcolourrgba@{index}]]"); // Safari 5.1+, Chrome 10+
+                    background-image: -o-linear-gradient(bottom, ~"[[setting:alternativethemequizsubmitbackgroundcolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundcolourrgba@{index}]]"); // Opera 11.10
+                    background-image: linear-gradient(to top, ~"[[setting:alternativethemequizsubmitbackgroundcolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundcolourrgba@{index}]]"); // Standard, IE10
+
+                    &:hover, &:focus, &:active, &.active, &.disabled, &[disabled] {
+                        color: ~"[[setting:alternativethemequizsubmittexthovercolour@{index}]]";
+                        text-shadow: 0 1px 1px rgba(64, 64, 64, .75);
+                        background-color: ~"[[setting:alternativethemequizsubmitbackgroundhovercolour@{index}]]";
+                        background-image: -moz-linear-gradient(bottom, ~"[[setting:alternativethemequizsubmitbackgroundhovercolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundhovercolourrgba@{index}]]"); // FF 3.6+
+                        background-image: -webkit-gradient(linear, 0 100%, 0 0, from(~"[[setting:alternativethemequizsubmitbackgroundhovercolourimage@{index}]]"), to(~"[[setting:alternativethemequizsubmitbackgroundhovercolourrgba@{index}]]")); // Safari 4+, Chrome 2+
+                        background-image: -webkit-linear-gradient(bottom, ~"[[setting:alternativethemequizsubmitbackgroundhovercolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundhovercolourrgba@{index}]]"); // Safari 5.1+, Chrome 10+
+                        background-image: -o-linear-gradient(bottom, ~"[[setting:alternativethemequizsubmitbackgroundhovercolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundhovercolourrgba@{index}]]"); // Opera 11.10
+                        background-image: linear-gradient(to top, ~"[[setting:alternativethemequizsubmitbackgroundhovercolourimage@{index}]]", ~"[[setting:alternativethemequizsubmitbackgroundhovercolourrgba@{index}]]"); // Standard, IE10
+                    }
+                }
             }
 
             @media (max-width: @navbarCollapseWidth) {
-                body.essential-colours-alternative@{index} {
+                .essential-colours-alternative@{index} {
                     .nav-collapse {
                         background-color: ~"[[setting:alternativethemecolor@{index}]]";
                         .dropdown-menu li > a,
@@ -1485,3 +1492,5 @@
 
 // Generate all of the alternatives.
 #essential > .alternative(4);
+
+/*! Essential lint enable */

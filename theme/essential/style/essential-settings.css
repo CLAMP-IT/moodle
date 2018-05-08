@@ -3,6 +3,8 @@
  * @copyright   2014 Gareth J Barnard, David Bezemer
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+/*! Essential lint disable */
+/* Disabling as already linted in the LESS. */
 /* @group Alerts */
 .alert .fa-info {
   background-color: #3a87ad;
@@ -78,9 +80,6 @@
 .block .icon {
   color: [[setting:themeiconcolor]];
 }
-.block .moodle-core-dragdrop-draghandle:before {
-  color: [[setting:themeiconcolor]];
-}
 .block .menu a.menu-action {
   color: [[setting:themeurlcolor]];
 }
@@ -111,6 +110,21 @@
 }
 #block-region-side-pre .block .header .title h2 {
   color: [[setting:themesidepreblocktextcolour]];
+}
+#block-region-side-pre .block.block_flat_navigation {
+  background-color: transparent;
+}
+#block-region-side-pre .block.block_flat_navigation .list-group-item {
+  background-color: [[setting:themesidepreblockbackgroundcolour]];
+  color: [[setting:themesidepreblocktextcolour]];
+}
+#block-region-side-pre .block.block_flat_navigation .list-group-item a,
+#block-region-side-pre .block.block_flat_navigation .list-group-item a:visited {
+  color: [[setting:themesidepreblockurlcolour]];
+}
+#block-region-side-pre .block.block_flat_navigation .list-group-item a:focus,
+#block-region-side-pre .block.block_flat_navigation .list-group-item a:hover {
+  color: [[setting:themesidepreblockhovercolour]];
 }
 p.tree_item.leaf a > .fa {
   color: [[setting:themeiconcolor]];
@@ -611,9 +625,6 @@ body.has_dock.essential-colours-alternative4 #dock .dockedtitle[disabled] {
 .actions a:hover > .fa {
   color: [[setting:themehovercolor]];
 }
-.section-modchooser-link > a:before {
-  color: [[setting:themeiconcolor]];
-}
 /* @end */
 /* @Group Editor */
 #tinymce {
@@ -662,7 +673,8 @@ body.has_dock.essential-colours-alternative4 #dock .dockedtitle[disabled] {
 #tinymce .color {
   color: [[setting:themecolor]];
 }
-body .editor_atto_content_wrap {
+body .editor_atto_content_wrap,
+div.editor_atto_toolbar button .icon {
   color: [[setting:themetextcolor]];
 }
 /* @end */
@@ -1100,6 +1112,33 @@ button.website:focus {
   }
 }
 /* @end */
+/* @group Quiz */
+body.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"] {
+  color: [[setting:themequizsubmittextcolour]];
+  text-shadow: none;
+  background-color: [[setting:themequizsubmitbackgroundcolour]];
+  background-image: -moz-linear-gradient(bottom, [[setting:themequizsubmitbackgroundcolourimage]], [[setting:themequizsubmitbackgroundcolourrgba]]);
+  background-image: -webkit-gradient(linear, 0 100%, 0 0, from([[setting:themequizsubmitbackgroundcolourimage]]), to([[setting:themequizsubmitbackgroundcolourrgba]]));
+  background-image: -webkit-linear-gradient(bottom, [[setting:themequizsubmitbackgroundcolourimage]], [[setting:themequizsubmitbackgroundcolourrgba]]);
+  background-image: -o-linear-gradient(bottom, [[setting:themequizsubmitbackgroundcolourimage]], [[setting:themequizsubmitbackgroundcolourrgba]]);
+  background-image: linear-gradient(to top, [[setting:themequizsubmitbackgroundcolourimage]], [[setting:themequizsubmitbackgroundcolourrgba]]);
+}
+body.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"]:hover,
+body.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"]:focus,
+body.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"]:active,
+body.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"].active,
+body.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"].disabled,
+body.path-mod-quiz .submitbtns form[action$="processattempt.php"] input[type="submit"][disabled] {
+  color: [[setting:themequizsubmittexthovercolour]];
+  text-shadow: 0 1px 1px rgba(64, 64, 64, 0.75);
+  background-color: [[setting:themequizsubmitbackgroundhovercolour]];
+  background-image: -moz-linear-gradient(bottom, [[setting:themequizsubmitbackgroundhovercolourimage]], [[setting:themequizsubmitbackgroundhovercolourrgba]]);
+  background-image: -webkit-gradient(linear, 0 100%, 0 0, from([[setting:themequizsubmitbackgroundhovercolourimage]]), to([[setting:themequizsubmitbackgroundhovercolourrgba]]));
+  background-image: -webkit-linear-gradient(bottom, [[setting:themequizsubmitbackgroundhovercolourimage]], [[setting:themequizsubmitbackgroundhovercolourrgba]]);
+  background-image: -o-linear-gradient(bottom, [[setting:themequizsubmitbackgroundhovercolourimage]], [[setting:themequizsubmitbackgroundhovercolourrgba]]);
+  background-image: linear-gradient(to top, [[setting:themequizsubmitbackgroundhovercolourimage]], [[setting:themequizsubmitbackgroundhovercolourrgba]]);
+}
+/* @end Quiz */
 /* @group Responsive */
 @media (max-width: 979px) {
   .navbar .navbar-inner .nav-collapse .nav > li.dropdown .dropdown-menu li > a {
@@ -1663,6 +1702,53 @@ table#permissions > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):activ
   color: [[setting:themestripeurlcolour]];
   background-color: [[setting:themestripebackgroundcolour]];
 }
+.user-enroller-panel .uep-search-results .users > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+.user-enroller-panel .uep-search-results .cohorts > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+table.grading-report > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+.forumheaderlist > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+.generaltable > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+table.flexible > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+.category_subcategories > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+table#modules > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+table#permissions > tbody tr:hover > td a:not(.btn):not([role="menuitem"]) .fa,
+.user-enroller-panel .uep-search-results .users > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+.user-enroller-panel .uep-search-results .cohorts > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+table.grading-report > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+.forumheaderlist > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+.generaltable > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+table.flexible > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+.category_subcategories > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+table#modules > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+table#permissions > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):visited .fa,
+.user-enroller-panel .uep-search-results .users > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+.user-enroller-panel .uep-search-results .cohorts > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+table.grading-report > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+.forumheaderlist > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+.generaltable > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+table.flexible > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+.category_subcategories > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+table#modules > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+table#permissions > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):hover .fa,
+.user-enroller-panel .uep-search-results .users > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+.user-enroller-panel .uep-search-results .cohorts > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+table.grading-report > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+.forumheaderlist > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+.generaltable > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+table.flexible > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+.category_subcategories > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+table#modules > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+table#permissions > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):focus .fa,
+.user-enroller-panel .uep-search-results .users > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+.user-enroller-panel .uep-search-results .cohorts > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+table.grading-report > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+.forumheaderlist > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+.generaltable > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+table.flexible > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+.category_subcategories > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+table#modules > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa,
+table#permissions > tbody tr:hover > td a:not(.btn):not([role="menuitem"]):active .fa {
+  color: inherit;
+}
 /* @end */
 /* @group Settings */
 /* @group Core */
@@ -1801,12 +1887,6 @@ h2.pagetitle {
 }
 /* @end */
 /* @group Blocks */
-.block a {
-  color: [[setting:themeurlcolor]];
-}
-.block a:hover {
-  color: [[setting:themehovercolor]];
-}
 .block .header .title h2:before,
 .block.block_iconic_html .header .title h2 .fa:before {
   color: [[setting:themeiconcolor]];
@@ -1890,9 +1970,6 @@ h2.pagetitle {
   color: [[setting:footerblockhovercolour]];
 }
 #page-footer .block .icon {
-  color: [[setting:footerblockurlcolour]];
-}
-#page-footer .block .moodle-core-dragdrop-draghandle:before {
   color: [[setting:footerblockurlcolour]];
 }
 #page-footer .block .header {
@@ -2057,34 +2134,10 @@ h6 span {
   font-family: inherit;
 }
 /* @end */
-/* @group Editicons */
-.actions a {
-  color: [[setting:themeurlcolor]];
-}
-.actions a:hover,
-.actions a:focus,
-.actions a:active {
-  color: [[setting:themehovercolor]];
-}
-.actions .moodle-actionmenu[data-enhanced].show .menu a {
-  color: [[setting:themeurlcolor]];
-}
-.actions .moodle-actionmenu[data-enhanced].show .menu a:hover,
-.actions .moodle-actionmenu[data-enhanced].show .menu a:focus,
-.actions .moodle-actionmenu[data-enhanced].show .menu a:active {
-  color: [[setting:themehovercolor]];
-}
-.actions .moodle-actionmenu[data-enhanced].show .menu a:hover {
-  color: [[setting:themenavcolor]];
-  background-color: [[setting:themecolor]];
-}
-.actions .moodle-actionmenu[data-enhanced].show .menu a:hover .fa:before {
-  color: [[setting:themenavcolor]];
-}
-/* @end */
 /* @group Chat */
 #chat-input-area table.generaltable td.cell {
   background-color: [[setting:themecolor]] !important;
 }
 /* @end */
 /* @end */
+/*! Essential lint enable */

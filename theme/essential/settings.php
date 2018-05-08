@@ -57,6 +57,15 @@ if ($ADMIN->fulltree) {
         get_string('generalheadingsub', 'theme_essential'),
         format_text(get_string('generalheadingdesc', 'theme_essential'), FORMAT_MARKDOWN)));
 
+    // Toggle flat navigation.
+    $name = 'theme_essential/flatnavigation';
+    $title = get_string('flatnavigation', 'theme_essential');
+    $description = get_string('flatnavigationdesc', 'theme_essential');
+    $default = true;
+    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingsgeneric->add($setting);
+
     // Page background image.
     $name = 'theme_essential/pagebackground';
     $title = get_string('pagebackground', 'theme_essential');
@@ -164,7 +173,7 @@ if ($ADMIN->fulltree) {
     $essentialadvert = new essential_admin_setting_advertising('theme_essential_advert',
         get_string('advert_heading', 'theme_essential'), get_string('advert_tagline', 'theme_essential'),
         'http://www.moodlebites.com/mod/page/view.php?id=3208',
-        $OUTPUT->pix_url('adverts/tdl1', 'theme_essential'), get_string('advert_alttext', 'theme_essential'));
+        $OUTPUT->image_url('adverts/tdl1', 'theme_essential'), get_string('advert_alttext', 'theme_essential'));
     $essentialsettingsgeneric->add($essentialadvert);
 }
 $ADMIN->add('theme_essential', $essentialsettingsgeneric);
@@ -501,6 +510,46 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingscolour->add($setting);
 
+    // Quiz \'Submit all and finish\' text colour setting.
+    $name = 'theme_essential/themequizsubmittextcolour';
+    $title = get_string('themequizsubmittextcolour', 'theme_essential');
+    $description = get_string('themequizsubmittextcolourdesc', 'theme_essential');
+    $default = '#ffffff';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
+    // Quiz \'Submit all and finish\' text hover colour setting.
+    $name = 'theme_essential/themequizsubmittexthovercolour';
+    $title = get_string('themequizsubmittexthovercolour', 'theme_essential');
+    $description = get_string('themequizsubmittexthovercolourdesc', 'theme_essential');
+    $default = '#ffffff';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
+    // Quiz \'Submit all and finish\' background colour setting.
+    $name = 'theme_essential/themequizsubmitbackgroundcolour';
+    $title = get_string('themequizsubmitbackgroundcolour', 'theme_essential');
+    $description = get_string('themequizsubmitbackgroundcolourdesc', 'theme_essential');
+    $default = '#ff9a34';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
+    // Quiz \'Submit all and finish\' background hover colour setting.
+    $name = 'theme_essential/themequizsubmitbackgroundhovercolour';
+    $title = get_string('themequizsubmitbackgroundhovercolour', 'theme_essential');
+    $description = get_string('themequizsubmitbackgroundhovercolourdesc', 'theme_essential');
+    $default = '#ffaf60';
+    $previewconfig = null;
+    $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+    $setting->set_updatedcallback('theme_reset_all_caches');
+    $essentialsettingscolour->add($setting);
+
     // This is the descriptor for the footer.
     $name = 'theme_essential/footercolorinfo';
     $heading = get_string('footercolors', 'theme_essential');
@@ -807,6 +856,48 @@ if ($ADMIN->fulltree) {
         $title = get_string('alternativethemestripeurlcolour', 'theme_essential', $alternativethemenumber);
         $description = get_string('alternativethemestripeurlcolourdesc', 'theme_essential', $alternativethemenumber);
         $default = $defaultalternativethemestripeurlcolors[$alternativethemenumber - 1];
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Alternative theme Quiz \'Submit all and finish\' text colour setting.
+        $name = 'theme_essential/alternativethemequizsubmittextcolour' . $alternativethemenumber;
+        $title = get_string('alternativethemequizsubmittextcolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemequizsubmittextcolourdesc', 'theme_essential', $alternativethemenumber);
+        $default = '#ffffff';
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Alternative theme Quiz \'Submit all and finish\' text hover colour setting.
+        $name = 'theme_essential/alternativethemequizsubmittexthovercolour' . $alternativethemenumber;
+        $title = get_string('alternativethemequizsubmittexthovercolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemequizsubmittexthovercolourdesc', 'theme_essential',
+            $alternativethemenumber);
+        $default = '#ffffff';
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Alternative theme Quiz \'Submit all and finish\' background colour setting.
+        $name = 'theme_essential/alternativethemequizsubmitbackgroundcolour' . $alternativethemenumber;
+        $title = get_string('alternativethemequizsubmitbackgroundcolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemequizsubmitbackgroundcolourdesc', 'theme_essential', $alternativethemenumber);
+        $default = '#ff9a34';
+        $previewconfig = null;
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $essentialsettingscolour->add($setting);
+
+        // Alternative theme Quiz \'Submit all and finish\' background hover colour setting.
+        $name = 'theme_essential/alternativethemequizsubmitbackgroundhovercolour' . $alternativethemenumber;
+        $title = get_string('alternativethemequizsubmitbackgroundhovercolour', 'theme_essential', $alternativethemenumber);
+        $description = get_string('alternativethemequizsubmitbackgroundhovercolourdesc', 'theme_essential',
+            $alternativethemenumber);
+        $default = '#ffaf60';
         $previewconfig = null;
         $setting = new admin_setting_configcolourpicker($name, $title, $description, $default, $previewconfig);
         $setting->set_updatedcallback('theme_reset_all_caches');
@@ -2595,89 +2686,6 @@ if ($ADMIN->fulltree) {
     $essentialsettingscategoryicon->add($essentialadvert);
 }
 $ADMIN->add('theme_essential', $essentialsettingscategoryicon);
-
-// Analytics settings.
-$essentialsettingsanalytics = new admin_settingpage('theme_essential_analytics', get_string('analytics', 'theme_essential'));
-if ($ADMIN->fulltree) {
-    $essentialsettingsanalytics->add(new admin_setting_heading('theme_essential_analytics',
-        get_string('analyticsheadingsub', 'theme_essential'),
-        format_text(get_string('analyticsdesc', 'theme_essential'), FORMAT_MARKDOWN)));
-
-    $name = 'theme_essential/analyticsenabled';
-    $title = get_string('analyticsenabled', 'theme_essential');
-    $description = get_string('analyticsenableddesc', 'theme_essential');
-    $default = true;
-    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
-    $essentialsettingsanalytics->add($setting);
-
-    $name = 'theme_essential/analytics';
-    $title = get_string('analytics', 'theme_essential');
-    $description = get_string('analyticsdesc', 'theme_essential');
-    $guniversal = get_string('analyticsguniversal', 'theme_essential');
-    $piwik = get_string('analyticspiwik', 'theme_essential');
-    $default = 'piwik';
-    $choices = array(
-        'piwik' => $piwik,
-        'guniversal' => $guniversal
-    );
-    $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
-    $essentialsettingsanalytics->add($setting);
-
-    if (get_config('theme_essential', 'analytics') === 'piwik') {
-        $name = 'theme_essential/analyticssiteid';
-        $title = get_string('analyticssiteid', 'theme_essential');
-        $description = get_string('analyticssiteiddesc', 'theme_essential');
-        $default = '1';
-        $setting = new admin_setting_configtext($name, $title, $description, $default);
-        $essentialsettingsanalytics->add($setting);
-
-        $name = 'theme_essential/analyticsimagetrack';
-        $title = get_string('analyticsimagetrack', 'theme_essential');
-        $description = get_string('analyticsimagetrackdesc', 'theme_essential');
-        $default = true;
-        $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
-        $essentialsettingsanalytics->add($setting);
-
-        $name = 'theme_essential/analyticssiteurl';
-        $title = get_string('analyticssiteurl', 'theme_essential');
-        $description = get_string('analyticssiteurldesc', 'theme_essential');
-        $default = '';
-        $setting = new admin_setting_configtext($name, $title, $description, $default);
-        $essentialsettingsanalytics->add($setting);
-
-        $name = 'theme_essential/analyticsuseuserid';
-        $title = get_string('analyticsuseuserid', 'theme_essential');
-        $description = get_string('analyticsuseuseriddesc', 'theme_essential');
-        $default = false;
-        $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
-        $essentialsettingsanalytics->add($setting);
-    } else if (get_config('theme_essential', 'analytics') === 'guniversal') {
-        $name = 'theme_essential/analyticstrackingid';
-        $title = get_string('analyticstrackingid', 'theme_essential');
-        $description = get_string('analyticstrackingiddesc', 'theme_essential');
-        $default = 'UA-XXXXXXXX-X';
-        $setting = new admin_setting_configtext($name, $title, $description, $default);
-        $essentialsettingsanalytics->add($setting);
-    }
-
-    $name = 'theme_essential/analyticstrackadmin';
-    $title = get_string('analyticstrackadmin', 'theme_essential');
-    $description = get_string('analyticstrackadmindesc', 'theme_essential');
-    $default = false;
-    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
-    $essentialsettingsanalytics->add($setting);
-
-    $name = 'theme_essential/analyticscleanurl';
-    $title = get_string('analyticscleanurl', 'theme_essential');
-    $description = get_string('analyticscleanurldesc', 'theme_essential');
-    $default = true;
-    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
-    $essentialsettingsanalytics->add($setting);
-
-    $essentialsettingsanalytics->add($essentialreadme);
-    $essentialsettingsanalytics->add($essentialadvert);
-}
-$ADMIN->add('theme_essential', $essentialsettingsanalytics);
 
 // Properties.
 $essentialsettingsprops = new admin_settingpage('theme_essential_props', get_string('properties', 'theme_essential'));

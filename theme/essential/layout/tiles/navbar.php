@@ -50,6 +50,8 @@ defined('MOODLE_INTERNAL') || die;
                         <div class="navbarrightitem">
                             <?php echo $OUTPUT->custom_menu_goto_bottom(); ?>
                         </div>
+                        <?php echo $OUTPUT->context_header_settings_menu(); ?>
+                        <?php echo $OUTPUT->region_main_settings_menu(); ?>
                         <div id="custom_menu_editing" class="navbarrightitem">
                             <?php echo $OUTPUT->custom_menu_editing(); ?>
                         </div>

@@ -41,9 +41,6 @@ echo $OUTPUT->doctype();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Google web fonts -->
     <?php require_once(\theme_essential\toolbox::get_tile_file('fonts')); ?>
-    <!-- Start Analytics -->
-    <?php require_once(\theme_essential\toolbox::get_tile_file('analytics')); ?>
-    <!-- End Analytics -->
 </head>
 
 <body <?php echo $OUTPUT->body_attributes($bodyclasses); ?>>
@@ -60,7 +57,7 @@ echo $OUTPUT->doctype();
 
 <div id="page" class="container-fluid">
     <div id="page-content" class="row-fluid">
-        <div id="region-bs-main-and-pre" class="span9">
+        <div id="<?php echo $regionbsid ?>" class="span9">
             <div class="row-fluid">
                 <div id="content" class="span8 pull-right">
                     <section id="region-main">

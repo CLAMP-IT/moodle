@@ -18,6 +18,7 @@
  * Essential is a clean and customizable theme.
  *
  * @package     theme_essential
+ * @copyright   2017 Gareth J Barnard
  * @copyright   2016 Gareth J Barnard
  * @copyright   2015 Gareth J Barnard
  * @copyright   2014 Gareth J Barnard, David Bezemer
@@ -64,7 +65,7 @@ Gareth J. Barnard<br>
 </ul>
 </p>
 <p>
-<h3>Essential for Moodle 3.2 kindly sponsored by:</h3>
+<h3>Essential for Moodle 3.3 kindly sponsored by:</h3>
 <ul>
 <li>ClassroomRevolution, LLC -- Moodle Partner</li>
 <li>Daniel Méthot - e-learning-facile.com/formations/</li>
@@ -143,6 +144,14 @@ $string['advert_alttext'] = 'Theme Design Level 1 advertising banner';
 $string['genericsettings'] = 'General';
 $string['generalheadingsub'] = 'General settings';
 $string['generalheadingdesc'] = 'Configure the general settings for the theme here.';
+
+$string['flatnavigation'] = 'Enable flat navigation.';
+$string['flatnavigationdesc'] = 'If enabled flat navigation will be used instead of the navigation and settings blocks.';
+$string['coursesettingstitle'] = 'Course settings';
+$string['coursecategorysettingstitle'] = 'Course category settings';
+$string['frontpagesettingstitle'] = 'Frontpage settings';
+$string['modulesettingstitle'] = 'Module settings';
+$string['usersettingstitle'] = 'User settings';
 
 $string['pagebackground'] = 'Page background image';
 $string['pagebackgrounddesc'] = 'Upload your own background image.  Select the style of the image below.';
@@ -339,6 +348,14 @@ $string['themestripeurlcolour'] = 'Stripe url colour';
 $string['themestripeurlcolourdesc'] = 'Set the url colour for stripes in tables.';
 $string['themestripebackgroundcolour'] = 'Stripe background colour';
 $string['themestripebackgroundcolourdesc'] = 'Set the background colour for stripes in tables.';
+$string['themequizsubmittextcolour'] = 'Quiz \'Submit all and finish\' text colour';
+$string['themequizsubmittextcolourdesc'] = 'Set the text colour for the quiz \'Submit all and finish\' button.';
+$string['themequizsubmitbackgroundcolour'] = 'Quiz \'Submit all and finish\' background colour';
+$string['themequizsubmitbackgroundcolourdesc'] = 'Set the background colour for the quiz \'Submit all and finish\' button.';
+$string['themequizsubmittexthovercolour'] = 'Quiz \'Submit all and finish\' text hover colour';
+$string['themequizsubmittexthovercolourdesc'] = 'Set the text hover colour for the quiz \'Submit all and finish\' button.';
+$string['themequizsubmitbackgroundhovercolour'] = 'Quiz \'Submit all and finish\' background hover colour';
+$string['themequizsubmitbackgroundhovercolourdesc'] = 'Set the background hover colour for the quiz \'Submit all and finish\' button.';
 
 $string['footercolor'] = 'Footer background colour';
 $string['footercolordesc'] = 'Set what colour the background of the Footer box should be.';
@@ -405,6 +422,14 @@ $string['alternativethemestripeurlcolour'] = 'Alternative stripe url colour {$a}
 $string['alternativethemestripeurlcolourdesc'] = 'Set the alternative {$a} url colour for stripes in tables.';
 $string['alternativethemestripebackgroundcolour'] = 'Alternative stripe background colour {$a}';
 $string['alternativethemestripebackgroundcolourdesc'] = 'Set the alternative {$a} background colour for stripes in tables.';
+$string['alternativethemequizsubmittextcolour'] = 'Quiz \'Submit all and finish\' text colour {$a}';
+$string['alternativethemequizsubmittextcolourdesc'] = 'Set the alternative {$a} text colour for the quiz \'Submit all and finish\' button.';
+$string['alternativethemequizsubmitbackgroundcolour'] = 'Quiz \'Submit all and finish\' background colour {$a}';
+$string['alternativethemequizsubmitbackgroundcolourdesc'] = 'Set the alternative {$a} background colour for the quiz \'Submit all and finish\' button.';
+$string['alternativethemequizsubmittexthovercolour'] = 'Quiz \'Submit all and finish\' text hover colour {$a}';
+$string['alternativethemequizsubmittexthovercolourdesc'] = 'Set the alternative {$a} text hover colour for the quiz \'Submit all and finish\' button.';
+$string['alternativethemequizsubmitbackgroundhovercolour'] = 'Quiz \'Submit all and finish\' background hover colour {$a}';
+$string['alternativethemequizsubmitbackgroundhovercolourdesc'] = 'Set the alternative {$a} background hover colour for the quiz \'Submit all and finish\' button.';
 
 $string['alternativethememycoursesorderenrolbackcolour'] = 'Alternative {$a} enrolled and not accessed course background colour';
 $string['alternativethememycoursesorderenrolbackcolourdesc'] = 'Set alternative {$a} background colour for enrolled but not accessed courses.  For ehen \'mycoursesorder\' is set to \'Last accessed...\'.';
@@ -840,29 +865,6 @@ $string['ipadicondesc'] = 'Icon should be a PNG files sized 72px by 72px.';
 $string['ipadretinaicon'] = 'iPad Icon (Retina)';
 $string['ipadretinaicondesc'] = 'Icon should be a PNG files sized 144px by 144px.';
 
-// Analytics.
-$string['analytics'] = 'Analytics';
-$string['analyticsheadingsub'] = 'Powerful analytics for Moodle';
-$string['analyticsdesc'] = 'Choose the type of analytics you want to insert and save to enable the other options.';
-$string['analyticssiteid'] = 'Site ID';
-$string['analyticssiteiddesc'] = 'Enter your Site ID';
-$string['analyticstrackingid'] = 'Site ID';
-$string['analyticstrackingiddesc'] = 'Enter your Tracking ID';
-$string['analyticssiteurl'] = 'Analytics URL';
-$string['analyticssiteurldesc'] = 'Enter your "Piwik Analytics" URL without http(s) or a trailing slash.  For example "mysite.com/analytics".';
-$string['analyticsenabled'] = 'Enabled';
-$string['analyticsenableddesc'] = 'Enable analytics for Moodle';
-$string['analyticsimagetrack'] = 'Image tracking';
-$string['analyticscleanurl'] = 'Clean URLs';
-$string['analyticscleanurldesc'] = 'Generate clean URL for in advanced tracking';
-$string['analyticsimagetrackdesc'] = 'Enable Image Tracking for browsers with JavaScript disabled.';
-$string['analyticstrackadmin'] = 'Tracking Admins';
-$string['analyticstrackadmindesc'] = 'Enable tracking of Admin users (not recommended)';
-$string['analyticsuseuserid'] = 'User ID';
-$string['analyticsuseuseriddesc'] = 'Enable use of User ID in tracking.';
-$string['analyticspiwik'] = 'Piwik';
-$string['analyticsguniversal'] = 'Google Universal Analytics';
-
 // Properties.
 $string['properties'] = 'Properties';
 $string['propertiessub'] = 'The properties';
@@ -872,7 +874,7 @@ $string['propertiesvalue'] = 'Value';
 $string['propertiesexport'] = 'Export properties as a JSON string';
 $string['propertiesreturn'] = 'Return';
 $string['putpropertiesname'] = 'Put properties - Experimental!';
-$string['putpropertiesdesc'] = 'Paste the JSON string and \'Save changes\'.  Warning!  Does not valiate setting values and performs a \'Purge all caches\'.';
+$string['putpropertiesdesc'] = 'Paste the JSON string and \'Save changes\'.  Warning!  Does not validate setting values and performs a \'Purge all caches\'.';
 
 $string['putpropertyreport'] = 'Report:';
 $string['putpropertyversion'] = 'version:';
@@ -941,3 +943,7 @@ $string['searchallcoursecontentdefaultdesc'] = 'Sets the value of the \'Search a
 $string['asconfigintlower'] = '{$a->value} is less than the lower range limit of {$a->lower}';
 $string['asconfigintupper'] = '{$a->value} is greater than the upper range limit of {$a->upper}';
 $string['asconfigintnan'] = '{$a->value} is not a number';
+
+// Privacy.
+$string['privacy:metadata:preference:courseitemsearchtype'] = 'The users choice of course search (\'course fullname\' - \'0\' or all course content - \'1\') if ever stored when \'coursecontentsearch\' was ticked.  If nothing stated then either the course search is off or the user has never viewed the dsahboard it when it was on.';
+$string['privacy:request:preference:courseitemsearchtype'] = 'The user has chosen "{$a->value}" for the course search user preference "{$a->name}" where \'0\' is the \'course fullname only\' and \'1\' is \'all course content\'.';
