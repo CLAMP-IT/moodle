@@ -29,52 +29,26 @@ $string['filtered_course_list:myaddinstance'] = 'Add a new Filtered course list 
 $string['managerview']              = 'Manager view';
 $string['allcourses']               = 'A manager sees all courses';
 $string['blockname']                = 'Filtered course list';
+$string['catrubrictpl']             = 'Category rubric template';
+$string['catseparator']             = 'Category separator';
 $string['completedcourses']         = 'Completed courses';
-$string['configcoursenametpl']      = <<<EOF
-<p>Use this setting to determine a pattern for displaying a course name. The following replacements are available:</p>
-<ul>
-<li>FULLNAME — from the course settings</li>
-<li>SHORTNAME — from the course settings</li>
-<li>IDNUMBER — from the course settings</li>
-<li>CATEGORY — the name of the category the course belongs to</li>
-</ul>
-EOF;
+$string['configcatrubrictpl']       = 'Use this setting to determine a pattern for displaying rubrics when filtering by category. The following replacement tokens are available: NAME, IDNUMBER, PARENT, ANCESTRY. <br /><br />Full details at <a href="https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki">https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki</a>.';
+$string['configcatseparator']       = 'Separator string to use between category names when using category ANCESTRY in the category rubric template.';
+$string['configcoursenametpl']      = 'Use this setting to determine a pattern for displaying a course name. The following replacement tokens are available: FULLNAME, SHORTNAME, IDNUMBER and CATEGORY. <br /><br />Full details at <a href="https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki">https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki</a>.';
 $string['configmanagerview']        = 'What should a manager see in the course list block? Note that managers who are not enrolled in any courses will still see the generic list.';
-$string['configfilters']            = <<<EOF
-Notes:
-<ul>
-<li>Only lines that begin with a filter type (category, shortname, regex or completion) will be processed. Other lines can contain comments, inactive examples, anything that is useful to you.</li>
-<li>You can use abbreviations for "expanded" and "collapsed". Even "e" and "c" will work.</li>
-<li>Whitespace around values will automatically be trimmed.</li>
-<ul>
-<li>category | exp/col | category id | depth</li>
-<li>shortname | exp/col | Display title | match</li>
-<li>regex | exp/col | Display title | regex match</li>
-<li>completion | exp/col | Display title | (in)complete</li>
-</ul>
-</ul>
-<br />Additional details available at <a href='https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list#user-content-configuration' target='_blank' title='Additional documentation'>https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list#user-content-configuration</a>
-EOF;
+$string['configfilters']            = 'Enter one filter per line using vertical bars to separate filter elements. Filter types are: <i>category</i>, <i>shortname</i>, <i>regex</i>, <i>completion</i> and <i>generic</i>. <br /><br />Full details at <a href="https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki/Filter-syntax">https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki/Filter-syntax</a>.';
 $string['confighideallcourseslink'] = 'Hide "All courses" link at the bottom of the block. <br>Link hiding does not affect a manager\'s view';
 $string['confighidefromguests']     = 'Hide the block from guests and anonymous visitors.';
-$string['confighideothercourses']   = 'Hide "Other courses" in the block.';
+$string['confighideothercourses']   = 'Hide the "Other courses" catch-all rubric in the block.';
 $string['configmaxallcourse']       = 'On a site with only one category, managers and guests will see all courses, <br />but above this number they will see a category link instead. <br />[Choose an integer between 0 and 999.]';
 $string['configprimarysort']        = 'Within a rubric courses will be sorted by this field. Choose "Sort order" to display courses in the same order as seen in the course management interface.';
 $string['configsecondarysort']      = 'Within a rubric courses will secondarily be sorted by this field.';
 $string['configtitle']              = 'Block title';
 $string['coursenametpl']            = 'Course name template';
 $string['courses']                  = 'Courses';
-$string['defaultfilters']           = <<<EOF
-category | collapsed | 0 (top level) | 0 (all descendants)
-
-EXAMPLE: category | exp | 1 (cat id) | 2 (generations)
-EXAMPLE: shortname | exp | Current courses | S17
-EXAMPLE: regex | col | Upcoming... | (Su|F)17$
-EXAMPLE: completion | exp | (In)complete | (in)complete
-
-EOF;
+$string['defaultfilters']           = 'category | collapsed | 0 (top level) | 0 (all descendants)';
 $string['filters']                  = 'Filter configuration';
-$string['filters_help']             = $string['configfilters'];
+$string['filters_help']             = 'Enter one filter per line using vertical bars to separate filter elements. Filter types are: <i>category</i>, <i>shortname</i>, <i>regex</i>, <i>completion</i> and <i>generic</i>. <br /><br />Full details at <a href="https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki/Filter-syntax">https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki/Filter-syntax</a>.';
 $string['hideallcourseslink']       = 'Hide "All courses" link';
 $string['hideothercourses']         = 'Hide other courses';
 $string['hidefromguests']           = 'Hide from guests';
@@ -84,6 +58,7 @@ $string['owncourses']               = 'A manager sees own courses';
 $string['pluginname']               = 'Filtered course list';
 $string['primarysort']              = 'Primary sort';
 $string['primaryvector']            = 'Primary sort vector';
+$string['privacy:null_reason']      = 'The filtered course list block displays information about course enrolments, but does not effect or store any data itself. All enrolments are managed by other Moodle systems.';
 $string['secondarysort']            = 'Secondary sort';
 $string['secondaryvector']          = 'Secondary sort vector';
 $string['top']                      = 'Top';

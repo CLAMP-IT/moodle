@@ -1,4 +1,4 @@
-# [Filtered course list v3.2.1]
+# [Filtered course list v3.3.4]
 
 [![Build Status](https://travis-ci.org/CLAMP-IT/moodle-blocks_filtered_course_list.svg?branch=master)](https://travis-ci.org/CLAMP-IT/moodle-blocks_filtered_course_list)
 
@@ -22,61 +22,20 @@ During the upgrade you will be shown only the "new settings" but it is important
 ## Configuration ##
 To configure the block, go to _Site Administration > Plugins > Blocks > Filtered course list._
 
-Most of the configuration will be done in the _textarea_ at the top of the page. Add one filter per line; use pipes ("|") to separate the different settings for each filter. Whitespace at the beginning or end of a value is removed automatically, so you can pad your layout to make it more readable. Here is a sample followed by an explanation:
+Most of the configuration will be done in the _textarea_ at the top of the page. Add one filter per line; use pipes ("|") to separate the different settings for each filter. Whitespace at the beginning or end of a value is removed automatically, so you can pad your layout to make it more readable. Here is a sample of the possibilities:
 ```
 category   | expanded  | 0 (category id) | 1 (depth)
 shortname  | exp       | Current courses | S17
 regex      | collapsed | Upcoming        | (Su|F)17$
 completion | exp       | Incomplete      | incomplete
 completion | col       | Completed       | complete
+generic    | exp       | Categories      | Courses
 #category  | col       | 1 (Misc)        | 0 (show all children)
 The line above will be ignored, as will this comment.
 ```
 
-### Shared line elements
-The first two elements of any line are common to all filter types.
+Please see the usage guide for fuller details: https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/wiki
 
-#### Filter type
-The first element in any line is the filter type. Currently recognized types are `category`, `shortname`, `regex` and `completion`. A line that begins with any other value will be ignored by the plugin. You can use this to disable a line that you want to reactivate later or to make notes to yourself.
-
-#### expanded / collapsed
-The second element of each line indicates the default expansion state of the rubric(s) the filter produces. If the first character of the value is `e` the plugin will interpret it as "expanded." Anything else will be interpreted as "collapsed". You may wish to enter full words for clarity or abbreviations for brevity. When a filter produces more than one rubric -- category filters can do this, for instance -- the expansion setting will apply to all of the rubrics.
-
-### Category filters
-Category filters group a user's courses under category names.
-
-#### category id
-The third element of a category filter is the Moodle-internal category id. You can find the category id by going to _Site administration > Courses > Course and category management_ and clicking on the category whose id you want. In your browser's address bar you should see `categoryid=<id>` at the end of the URL. Because it is inconvenient to find category id's, you may want to make a note to yourself in the configuration about which category a given id corresponds to. (This will make it easier on you when you want to modify the configuration.) The id field looks for an integer at the beginning of the value and then ignores everything else. Use zero ("0") as the category id if you want to display all (top-level) categories.
-
-#### recursion depth
-Categories can be organized into a hierarchy. The final element of a category filter determines how many levels of descendants will be shown. The plugin looks for an integer at the beginning of the value and ignores anything else. Use zero ("0") to show all descendants. 
-
-### Shortname filters
-Shortname filters allow a Moodle admin to group a user's courses based on patterns in course shortnames.
-
-#### title
-Each shortname filter corresponds to one rubric in the final block display. The third element of a shortname filter determines the title of that rubric. Note that pipe characters ("|") are not allowed here because they could be mistaken for a field seperator. 
-
-#### match
-The final element of a shortname filter is the match value to test shortnames against. For example, if all courses in the 'Spring 2017' semester contain 'Sp17' then you can use those four characters as your match string. Shortname matches are _not_ case sensitive. In this final field pipes ("|") are allowed.
-
-### Regex filters
-Regex filters are similar to shortname filters except that you can use regex patterns in your match string.
-
-#### title
-Each regex filter corresponds to one rubric in the final block display. The third element of a regex filter determines the title of that rubric. Note that pipe characters ("|") are not allowed here because they could be mistaken for a field seperator.
-
-#### regex match
-Regular expressions (regex) can add precision and flexibility to your match strings. For instance, you can use `Sp17$` to match shortnames that _end_ in 'Sp17'. A match like this (which is also case-sensitive) helps to limit the chance for false positives. On the other hand, you could also broaden your match to include alternative strings. `(Su17|Fa17)$` would match shortnames that end either in 'Su17' or 'Fa17'. Note that pipes ("|") _are_ allowed but backtics ("`") are not. For documentation on using PHP regular expressions please visit: http://php.net/manual/en/regexp.introduction.php
-
-### Completion filters
-Completion filters will do nothing in an installation where completion tracking has not been enabled at the site level. Completion filters will additionally apply only to courses that have completion tracking enabled at the course level.
-
-#### title
-Each completion filter corresponds to one rubric in the final block display. The third element of a completion filter determines the title of that rubric. Note that pipe characters ("|") are not allowed here because they could be mistaken for a field seperator.
-
-#### completion state
-The final field in a completion filter indicates whether to show courses that the user has completed (`complete`) or not yet completed (`incomplete`). Empty setings and settings that with the character "c" will be interpreted as "complete".
 
 ### Other settings
 
@@ -87,6 +46,8 @@ The final field in a completion filter indicates whether to show courses that th
 | Hide other courses | By default an "Other courses" rubric appears at the end of the list and displays any of the user's courses that have not already been mentioned under some other heading. Check the box here to suppress that rubric. |
 | Max for single category | On a site with only one category, admins and guests will see all courses, but above the number specified here they will see a category link instead. [Choose an integer between 0 and 999.] Unless you have a single-category installation there is no need to adjust this setting. |
 | Course name template | Use replacement tokens (FULLNAME, SHORTNAME, IDNUMBER or CATEGORY) to control the way links to courses are displayed. |
+| Category rubric template | Use replacement tokens (NAME, IDNUMBER, PARENT or ANCESTRY) to control the way rubrics display when using a category filter. |
+| Category separator | Customize the separator between ancestor categories when using the ANCESTRY token above. |
 | Manager view | By default administrators and managers will see a list of categories rather than a list of their own courses. This setting allows you to change that, and it can be helpful to do so while configuring the block. Be advised, however, that admins and managers who are not enrolled in any courses will still see the generic list. |
 | Sorting | The next four settings control the way coures are sorted within a rubric. |
 
@@ -98,7 +59,33 @@ To change the name of a block instance, turn editing on on a screen that display
 
 Please report any bugs or feature requests to the public repository page: <https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list>.
 
+## Developers
+
+Use Grunt to manage LESS/CSS and Javascript as described in the Moodle dev documentation: https://docs.moodle.org/dev/Grunt
+
 ## Changelog
+
+### [v3.3.4]
+* Policy: complies with GDPR
+* Bug: Better performance when fetching category ancestry
+* Backend: minor refactor
+
+### [v3.3.3]
+* Bug: Provides additional language strings
+
+### [v3.3.2]
+* Bug: Missed an AMOS string
+
+### [v3.3.1]
+* Bug: Simplifies strings for AMOS Compatibility
+* Bug: Complies with Moodles CSS styles
+
+### [v3.3.0]
+* New: adds a generic filters
+* New: accepts display templates for category rubrics
+* Bug fix: now handles HTML entities correctly in display text
+* Back end: generates HTML solely via mustache templates
+* Back end: uses LESS to manage CSS
 
 ### [v3.2.2]
 * Makes course summary URLs available to the list_item template

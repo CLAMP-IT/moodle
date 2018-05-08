@@ -36,6 +36,6 @@ Feature: Hidden courses and categories are dimmed for those who can see them
     And I am on site homepage
     And I follow "Test"
     Then the "class" attribute of "Visible category" "link" should not contain "dimmed"
-    And the "class" attribute of "Visible category" "list_item" should contain "fcl-category-link"
+    And the "class" attribute of "Visible category" "list_item" should contain "block-fcl__list__item--category"
     And the "class" attribute of "Hidden category" "link" should contain "dimmed"
-    And the "class" attribute of "Hidden category" "list_item" should not contain "fcl-course-link"
+    And the "class" attribute of "Hidden category" "list_item" should not contain "block-fcl__list__item--course"

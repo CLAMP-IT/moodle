@@ -24,9 +24,9 @@ define(['jquery'], function($) {
     return {
         init: function(params) {
             var blockid = params.blockid;
-            $('#' + blockid + '.block_filtered_course_list .course-section').each(function() {
-                if (!($(this).hasClass('expanded'))) {
-                    $(this).addClass('collapsed');
+            $('#' + blockid + ' .block-fcl__rubric').each(function() {
+                if (!($(this).hasClass('block-fcl__rubric--expanded'))) {
+                    $(this).addClass('block-fcl__rubric--collapsed');
                     $(this).attr('aria-expanded', 'false');
                     $(this).next().attr('aria-hidden', 'true');
                 }
@@ -34,18 +34,18 @@ define(['jquery'], function($) {
                 $(this).find('a').attr('href', '#');
                 $(this).on('click', function(event) {
                     event.preventDefault();
-                    $('.block_filtered_course_list .course-section').each(function() {
+                    $('.block-fcl__rubric').each(function() {
                         $(this).attr('aria-selected', 'false');
                     });
                     $(this).attr('aria-selected', 'true');
-                    if ($(this).hasClass('collapsed')) {
-                        $(this).removeClass('collapsed');
-                        $(this).addClass('expanded');
+                    if ($(this).hasClass('block-fcl__rubric--collapsed')) {
+                        $(this).removeClass('block-fcl__rubric--collapsed');
+                        $(this).addClass('block-fcl__rubric--expanded');
                         $(this).attr('aria-expanded', 'true');
                         $(this).next().attr('aria-hidden', 'false');
-                    } else if ($(this).hasClass('expanded')) {
-                        $(this).removeClass('expanded');
-                        $(this).addClass('collapsed');
+                    } else if ($(this).hasClass('block-fcl__rubric--expanded')) {
+                        $(this).removeClass('block-fcl__rubric--expanded');
+                        $(this).addClass('block-fcl__rubric--collapsed');
                         $(this).attr('aria-expanded', 'false');
                         $(this).next().attr('aria-hidden', 'true');
                     }

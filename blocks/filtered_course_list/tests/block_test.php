@@ -76,8 +76,10 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
             'hidefromguests'     => 0,
             'hideothercourses'   => 0,
             'maxallcourse'       => 10,
-            'managerview'        => 'all',
             'coursenametpl'      => 'FULLNAME',
+            'catrubrictpl'       => 'NAME',
+            'catseparator'       => ' / ',
+            'managerview'        => 'all',
             'primarysort'        => 'fullname',
             'primaryvector'      => 'ASC',
             'secondarysort'      => 'none',
@@ -157,6 +159,13 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         $this->_courselistexcludes ( array (
             'user1' => array ( 'Course 2' , 'Course 6' )
         ));
+
+        // We should also check the generic filter while we have this configuration.
+        set_config('filters', 'generic|e', 'block_filtered_course_list');
+        // User1 should now see all courses.
+        $this->_courselistincludes ( array (
+            'user1' => array ( 'Course 1' , 'Course 2', 'Course 3' , 'Course 5', 'Course 6' ),
+        ));
     }
 
     /**
@@ -210,9 +219,9 @@ class block_filtered_course_list_block_testcase extends advanced_testcase {
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
         $this->_courselistexcludes ( array (
-            'none'  => array ( 'Course', 'Child', 'Grandchild' ),
-            'guest' => array ( 'Course', 'Child', 'Grandchild' ),
-            'admin' => array ( 'Course', 'Child', 'Grandchild' )
+            'none'  => array ( 'Course 1', 'Child', 'Grandchild' ),
+            'guest' => array ( 'Course 1', 'Child', 'Grandchild' ),
+            'admin' => array ( 'Course 1', 'Child', 'Grandchild' )
         ));
 
         // The block should offer top-level category links to anonymous, guest, and admin.
@@ -270,9 +279,9 @@ EOF;
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
         $this->_courselistexcludes ( array (
-            'none'  => array ( 'Course', 'Child', 'Grandchild' ),
-            'guest' => array ( 'Course', 'Child', 'Grandchild' ),
-            'admin' => array ( 'Course', 'Child', 'Grandchild' )
+            'none'  => array ( 'Course 1', 'Child', 'Grandchild' ),
+            'guest' => array ( 'Course 1', 'Child', 'Grandchild' ),
+            'admin' => array ( 'Course 1', 'Child', 'Grandchild' )
         ));
 
         // The block should offer top-level category links to anonymous, guest, and admin.
@@ -418,9 +427,9 @@ EOF;
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
         $this->_courselistexcludes ( array (
-            'none'  => array ( 'Course', 'Child', 'Grandchild' ),
-            'guest' => array ( 'Course', 'Child', 'Grandchild' ),
-            'admin' => array ( 'Course', 'Child', 'Grandchild' )
+            'none'  => array ( 'Course 1', 'Child', 'Grandchild' ),
+            'guest' => array ( 'Course 1', 'Child', 'Grandchild' ),
+            'admin' => array ( 'Course 1', 'Child', 'Grandchild' )
         ));
 
         // The block should offer top-level category links to anonymous, guest, and admin.
@@ -489,6 +498,36 @@ EOF;
                 'sc_1'  => 'All but default',
                 'øthér' => 'All but default',
             ),
+        ));
+    }
+
+    /**
+     * Test generic filters
+     */
+    public function test_generic_filters() {
+
+        $this->_create_rich_site();
+
+        // Set up the generic filter.
+        set_config('filters', 'generic | exp | Courses | Course categories', 'block_filtered_course_list');
+
+        // Change the managerview setting to 'own'.
+        set_config('managerview', 'own', 'block_filtered_course_list');
+
+        // Hide the catch-all 'Other courses' rubric.
+        set_config('hideothercourses', 1, 'block_filtered_course_list');
+
+        // The block should offer top-level category links to all users except logged-in user enrolled in no courses.
+        $this->_courselistincludes ( array (
+            'admin' => array ( 'Course categories' ),
+            'user1' => array ( 'Course categories' ),
+            'user2' => array ( 'Course categories' ),
+            'none'  => array ( 'Course categories' ),
+            'guest' => array ( 'Course categories' ),
+        ));
+
+        $this->_courselistexcludes ( array (
+            'user3' => array ( 'Course categories' ),
         ));
     }
 
@@ -744,7 +783,7 @@ EOF;
 
         // The block should not display links to categories below the top level.
         $this->_courselistexcludes ( array (
-            'admin' => array ( 'Course', 'Child', 'Grandchild' )
+            'admin' => array ( 'Course 1', 'Child', 'Grandchild' )
         ));
 
         // The block should offer top-level category links to anonymous, guest, and admin.
@@ -757,7 +796,7 @@ EOF;
 
         // An admin enrolled in no courses should still see only the top level.
         $this->_courselistexcludes ( array (
-            'admin' => array ( 'Course', 'Child', 'Grandchild' )
+            'admin' => array ( 'Course 1', 'Child', 'Grandchild' )
         ));
 
         $this->_courselistincludes ( array (
@@ -779,15 +818,26 @@ EOF;
     }
 
     /**
-     * Test the course name template setting
+     * Test some display template settings
      */
-    public function test_setting_coursenametpl() {
+    public function test_setting_tpls() {
         $this->_create_rich_site();
         set_config('coursenametpl', 'FULLNAME (SHORTNAME) : IDNUMBER < <b>CATEGORY</b>', 'block_filtered_course_list');
+        set_config('catrubrictpl', 'NAME - IDNUMBER - <b>PARENT</b> - ANCESTRY', 'block_filtered_course_list');
+        set_config('catseparator', ' :: ', 'block_filtered_course_list');
 
         // Any tags should be stripped.
+        $longrubric = 'Grandchild category 1 - gc1 - Child category 2 - Miscellaneous :: Child category 2 :: Grandchild category 1';
+        $htmlentities = '&uuml;&amp;: HTML Entities (&uuml;&amp;shortname) : &uuml;&amp;idnumber < Sibling category';
         $this->_courselistincludes ( array (
-            'user1' => array( 'Non-ascii matching (øthér) : ØTHÉR &lt; Sibling category' ),
+            'user1' => array( 'Non-ascii matching (øthér) : ØTHÉR < Sibling category',
+                'Miscellaneous -  - Top - Miscellaneous',
+                $longrubric,
+                $htmlentities,
+             ),
+        ));
+        $this->_courselistexcludes ( array (
+            'user1' => array( '&amp;uuml;', '&amp;amp;' )
         ));
     }
 
@@ -809,7 +859,7 @@ EOF;
 
         // Enrolled users, like guests, should not see subcategories or specific courses.
         $this->_courselistexcludes ( array (
-            'user1' => array ( 'Course', 'Child', 'Grandchild' )
+            'user1' => array ( 'Course 1', 'Child', 'Grandchild' )
         ));
 
         // On the other hand, managerview = own trumps disablemycourses.
@@ -953,7 +1003,7 @@ EOF;
             for ($i = 1; $i <= 3; $i++) {
                 $shortname = "${id}_$i";
                 $params = array (
-                    'fullname' => "Course $i in $category->name",
+                    'fullname'  => "Course $i in $category->name",
                     'shortname' => $shortname,
                     'idnumber'  => strtoupper($shortname),
                     'category'  => $category->id
@@ -967,12 +1017,21 @@ EOF;
 
         // Create a course with a non-ascii shortname in the Sibling category.
         $params = array (
-            'fullname' => 'Non-ascii matching',
+            'fullname'  => 'Non-ascii matching',
             'shortname' => 'øthér',
             'idnumber'  => 'ØTHÉR',
             'category'  => $this->categories['sc']->id
         );
         $this->courses['øthér'] = $this->getDataGenerator()->create_course( $params );
+
+        // Create a course with HTML entities in the fullname and shortname.
+        $params = array(
+            'fullname'  => '&uuml;&amp;: HTML Entities',
+            'shortname' => '&uuml;&amp;shortname',
+            'idnumber'  => '&uuml;&amp;idnumber',
+            'category'  => $this->categories['sc']->id
+        );
+        $this->courses['&uuml;&amp;shortname'] = $this->getDataGenerator()->create_course( $params );
 
         // Enroll user1 as a student in all courses.
         foreach ($this->courses as $course) {
@@ -999,7 +1058,8 @@ EOF;
             if ( $result === true ) {
                 if ( isset ( $bi->get_content()->text ) ) {
                     // In some cases the text exists but is empty.
-                    $this->assertEmpty ( $bi->get_content()->text , "$user should not see a block." );
+                    $this->assertEmpty ( $bi->get_content()->text ,
+                                    "$user should not see a block, but ... " . $bi->get_content()->text);
                 } else {
                     // In other cases the text will not have been set at all.
                     $this->assertFalse ( isset ( $bi->get_content()->text ) );
@@ -1110,7 +1170,7 @@ EOF;
                     $anchors = $ul->getElementsByTagName('a');
                     foreach ($anchors as $anchor) {
                         $anchorclass = $anchor->attributes->getNamedItem('class')->nodeValue;
-                        if ( strpos( $anchorclass, 'block_filtered_course_list_list_item' ) !== false ) {
+                        if ( strpos( $anchorclass, 'block-fcl__list__link' ) !== false ) {
                             $anchortitle = $anchor->attributes->getNamedItem('title')->nodeValue;
                             if ( $anchortitle == $course ) {
                                 $hits++;

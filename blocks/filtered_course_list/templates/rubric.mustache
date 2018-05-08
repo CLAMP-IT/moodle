@@ -27,48 +27,44 @@
     * none
 
     Context variables required for this template:
-    * divid - string: id for the rubric heading div
-    * divclasses - string: CSS classes for the rubric heading div
+    * state - string: initial expansion state
     * exp - string: value for aria-expanded attribute of rubric heading div
-    * slct - string: value for aria-selected attribute of rubric heading div
     * label - string: text content of the rubric heading div
-    * ulid - string: id for the list of items
-    * ulclasses - string: classes for the list of items
     * hidden - string: value for the aria-hidden attribute of the list of items
+    * instid - string: instance id of the block
+    * key - string: array key to make rubric unique within block
     * items - array: of links
 
     Example context (json):
     {
-        "divid": "fcl_19_tab1",
-        "divclasses": "course-section tab1 expanded",
+        "state": "expanded",
         "exp": "true",
-        "slct": "false",
         "label": "Current courses",
-        "ulid": "fcl_19_tabpanel1",
-        "ulclasses": "collapsible list tabpanel1",
         "hidden": "false",
+        "instid": "17",
+        "key": "1",
         "items": [
             {
-                "classes": "block_filtered_course_list_list_item fcl-course-link",
+                "classes": "block-fcl__list__item block-fcl__list__item--course",
                 "displaytext": "Link to a course, category, etc.",
-                "linkclasses": "block_filtered_course_list_list_item_link",
+                "linkclasses": "block-fcl__list__link",
                 "title": "Text to display on hover",
                 "url": "/course/index.php"
             },
             {
-                "classes": "block_filtered_course_list_list_item fcl-course-link",
+                "classes": "block-fcl__list__item block-fcl__list__item--course",
                 "displaytext": "Another link to a course, category, etc.",
-                "linkclasses": "block_filtered_course_list_list_item_link",
+                "linkclasses": "block-fcl__list__link",
                 "title": "Text to display on hover",
                 "url": "/course/index.php"
             }
         ]
     }
 }}
-<div id="{{ divid }}" class="{{ divclasses }}" role="tab" aria-controls="{{ ulid }}" aria-expanded="{{ exp }}" aria-selected="{{ slct }}">
+<div id="fcl_{{ instid }}_tab{{ key }}" class="block-fcl__rubric block-fcl__rubric--{{ state }} tab{{ key }}" role="tab" aria-controls="fcl_{{ instid }}_tabpanel{{ key }}" aria-expanded="{{ exp }}" aria-selected="false">
     {{ label }}
 </div>
-<div id="{{ ulid }}" class="{{ ulclasses }}" role="tabpanel" aria-labelledby="{{ divid }}" aria-hidden="{{ hidden }}">
+<div id="fcl_{{ instid }}_tabpanel{{ key }}" class="block-fcl__list collapsible tabpanel{{ key }}" role="tabpanel" aria-labelledby="fcl_{{ instid }}_tab{{ key }}" aria-hidden="{{ hidden }}">
     <ul>
         {{# items }}
             {{> block_filtered_course_list/list_item }}
