@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Handles all the RSS related tasks for the module
  *
  * @package   mod_lightboxgallery
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 require_once('lib.php');
 require_once('imageclass.php');
@@ -244,7 +244,7 @@ function lightboxgallery_rss_header($title = null, $link = null, $description = 
         $result .= rss_full_tag('copyright', 2, false, '&#169; '. $today['year'] .' '. format_string($site->fullname));
 
         // Write image info.
-        $rsspix = $OUTPUT->pix_url('i/rsssitelogo');
+        $rsspix = $OUTPUT->image_url('i/rsssitelogo');
 
         // Write the info.
         $result .= rss_start_tag('image', 2, true);

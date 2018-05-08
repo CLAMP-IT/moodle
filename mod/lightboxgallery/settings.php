@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Global settings page for lightboxgallery
  *
@@ -23,6 +21,8 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright 2010 John Kelsh <john.kelsh@netspot.com.au>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__).'/locallib.php');
 

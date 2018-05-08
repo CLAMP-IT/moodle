@@ -1,4 +1,4 @@
-# Lightbox gallery activity for Moodle 2.7+
+# Lightbox gallery activity for Moodle 3.3+
 
 [![Build Status](https://travis-ci.org/netspotau/moodle-mod_lightboxgallery.svg?branch=master)](https://travis-ci.org/netspotau/moodle-mod_lightboxgallery)
 [![License](https://poser.pugx.org/netspotau/moodle-mod_lightboxgallery/license)](https://packagist.org/packages/netspotau/moodle-mod_lightboxgallery)

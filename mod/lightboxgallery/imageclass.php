@@ -16,14 +16,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Main image class with all image manipulations as methods
- *
- * @package   mod_lightboxgallery
- * @copyright 2010 John Kelsh
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 require_once($CFG->libdir.'/gdlib.php');
 
 define('THUMBNAIL_WIDTH', 162);
@@ -32,17 +24,39 @@ define('LIGHTBOXGALLERY_POS_HID', 2);
 define('LIGHTBOXGALLERY_POS_TOP', 1);
 define('LIGHTBOXGALLERY_POS_BOT', 0);
 
+/**
+ * Main image class with all image manipulations as methods
+ *
+ * @package   mod_lightboxgallery
+ * @copyright 2010 John Kelsh
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class lightboxgallery_image {
 
     private $cm;
     private $cmid;
-    private $storedfile;
-    private $imageurl;
-    private $tags;
-    private $thumburl;
     private $context;
+    private $gallery;
+    private $imageurl;
 
-    public function __construct($storedfile, $gallery, $cm) {
+    // A quick lookup cache of this images metadata. Mainly useful during initial display.
+    private $metadata = null;
+
+
+    /**
+     * The filepool object.
+     *
+     * @var stored_file
+     */
+    private $storedfile;
+    private $tags;
+    private $thumbnail;
+    private $thumburl;
+
+    public $height = null;
+    public $width = null;
+
+    public function __construct($storedfile, $gallery, $cm, $metadata = null, $thumbnail = false, $loadextrainfo = true) {
         global $CFG;
 
         $this->storedfile = &$storedfile;
@@ -53,17 +67,23 @@ class lightboxgallery_image {
 
         $this->imageurl = $CFG->wwwroot.'/pluginfile.php/'.$this->context->id.'/mod_lightboxgallery/gallery_images/'.
                            $this->storedfile->get_itemid().$this->storedfile->get_filepath().$this->storedfile->get_filename();
-        $this->thumburl = $CFG->wwwroot.'/pluginfile.php/'.$this->context->id.'/mod_lightboxgallery/gallery_thumbs/0/'.
+        $this->thumburl = $CFG->wwwroot.'/pluginfile.php/'.$this->context->id.'/mod_lightboxgallery/gallery_thumbs/0'.
                            $this->storedfile->get_filepath().$this->storedfile->get_filename().'.png';
 
-        $imageinfo = $this->storedfile->get_imageinfo();
+        if ($loadextrainfo) {
+            $imageinfo = $this->storedfile->get_imageinfo();
+            $this->height = $imageinfo['height'];
+            $this->width = $imageinfo['width'];
+        }
 
-        $this->height = $imageinfo['height'];
-        $this->width = $imageinfo['width'];
+        $this->thumbnail = $thumbnail;
 
-        if (!$this->thumbnail = $this->get_thumbnail()) {
+        // If we weren't given a thumbnail, double check if it exists before generating one.
+        if (!$thumbnail && (!$this->thumbnail = $this->get_thumbnail())) {
             $this->thumbnail = $this->create_thumbnail();
         }
+
+        $this->metadata = $metadata;
     }
 
     public function add_tag($tag) {
@@ -79,8 +99,6 @@ class lightboxgallery_image {
     }
 
     public function create_thumbnail($offsetx = 0, $offsety = 0) {
-        global $CFG;
-
         $fileinfo = array(
             'contextid' => $this->context->id,
             'component' => 'mod_lightboxgallery',
@@ -201,6 +219,14 @@ class lightboxgallery_image {
         global $DB;
         $caption = '';
 
+        if ($this->metadata !== null) {
+            foreach ($this->metadata as $metarecord) {
+                if ($metarecord->metatype == 'caption') {
+                    return $metarecord->description;
+                }
+            }
+        }
+
         if ($imagemeta = $DB->get_record('lightboxgallery_image_meta',
                 array('gallery' => $this->gallery->id, 'image' => $this->storedfile->get_filename(), 'metatype' => 'caption'))) {
             $caption = $imagemeta->description;
@@ -320,10 +346,19 @@ class lightboxgallery_image {
             return $this->tags;
         }
 
-        $this->tags = $DB->get_records('lightboxgallery_image_meta',
-                                        array('image' => $this->storedfile->get_filename(), 'metatype' => 'tag'));
+        $tags = [];
+        if ($this->metadata !== null) {
+            foreach ($this->metadata as $metarecord) {
+                if ($metarecord->metatype == 'tag') {
+                    $tags[$metarecord->id] = $metarecord;
+                }
+            }
+        } else {
+            $tags = $DB->get_records('lightboxgallery_image_meta',
+                ['image' => $this->storedfile->get_filename(), 'metatype' => 'tag']);
+        }
 
-        return $this->tags;
+        return $this->tags = $tags;
     }
 
     private function get_thumbnail() {

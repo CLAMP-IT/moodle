@@ -128,32 +128,20 @@ echo $OUTPUT->box_start('generalbox lightbox-gallery clearfix'.$resizecss);
 $fs = get_file_storage();
 $storedfiles = $fs->get_area_files($context->id, 'mod_lightboxgallery', 'gallery_images');
 
-$imagecount = 1;
+$gallerypage = new mod_lightboxgallery\gallery_page($cm, $gallery, $editing, $page);
+echo $gallerypage->display_images();
 
-foreach ($storedfiles as $storedfile) {
-    if (!$storedfile->is_valid_image()) {
-        continue;
-    }
-
-    if ($gallery->perpage > 0 &&
-        (($imagecount > (($gallery->perpage * $page) + $gallery->perpage) || ($imagecount < ($gallery->perpage * $page) + 1)))) {
-        $imagecount++;
-        continue;
-    }
-
-    $image = new lightboxgallery_image($storedfile, $gallery, $cm);
-
-    echo $image->get_image_display_html($editing);
-
-    $imagecount++;
+if ($gallerypage->image_count() < 1) {
+    print_string('errornoimages', 'lightboxgallery');
 }
-
-echo ($imagecount < 1 ? print_string('errornoimages', 'lightboxgallery') : '');
 echo $OUTPUT->box_end();
 
 if ($gallery->perpage) {
-    $barurl = $CFG->wwwroot.'/mod/lightboxgallery/view.php?id='.$cm->id.'&amp;' . ($editing ? 'editing=1&amp;' : '');
-    $pagingbar = new paging_bar($imagecount - 1, $page, $gallery->perpage, $barurl);
+    $barurl = new moodle_url('/mod/lightboxgallery/view.php', ['id' => $cm->id]);
+    if ($editing) {
+        $barurl->param('editing', 1);
+    }
+    $pagingbar = new paging_bar($gallerypage->image_count(), $page, $gallery->perpage, $barurl);
     echo $OUTPUT->render($pagingbar);
 }
 
