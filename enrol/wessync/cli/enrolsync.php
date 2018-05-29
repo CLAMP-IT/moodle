@@ -114,7 +114,9 @@ function idnumber_enrol($enrol,$lock,$cs_courses) {
 }
 
 function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
+  global $DB; 
   $master_results = array();
+  $enrol_empty = false;
   $moodlecreate = get_moodlecreate_db();
   if (mysqli_connect_errno()) {
     print mysqli_connect_error();
@@ -171,12 +173,22 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
     }
     /* just a unique identifier for tagging results hash */
     $courseinfo = $moodle_course->idnumber . "-" . $moodle_course->shortname;
-    global $DB;
+
     /* new policy is to update course names from PS on every enrol */
     $ps_course = get_peoplesoft_course_data($psdb,$course);
-    $moodle_course->fullname = $ps_course['full_name'];
-    $moodle_course->shortname = $ps_course['short_name'];
-    $result = $DB->update_record('course',$moodle_course);
+    /* unless they are meta enrol/joined courses */
+    $enrol_instances = enrol_get_instances($moodle_course->id);
+    $is_meta = false;
+    foreach ($enrol_instances as $enrol_instance) {
+       if ($enrol_instance->enrol == "meta") {
+	 $is_meta = true;
+	}
+    }
+    if ($ps_course !== false && $ps_course['full_name'] && $ps_course['short_name'] && $is_meta === false) {
+       $moodle_course->fullname = $ps_course['full_name'];
+       $moodle_course->shortname = $ps_course['short_name'];
+       $result = $DB->update_record('course',$moodle_course);
+    }
 
     $auth_students = $enrol->get_members_from_peoplesoft($moodle_course,$psdb);
    
@@ -196,14 +208,15 @@ function peoplesoft_enrol ($enrol,$lock,$redirect=0) {
       continue;
    }
     #if no ps course, force empty enrolment
-    if (!$ps_course) {
+    if ($ps_course === false) {
        $auth_teachers = array();
        $auth_students = array();
+       $enrol_empty = true;
     }
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"student",false,true);
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_students,"student",false,true,$enrol_empty);
     $master_results[$courseinfo]['student_sync'] = $result;
 
-    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"editingteacher",false,true);
+    $result = $enrol->sync_course_membership_by_role($moodle_course,$auth_teachers,"editingteacher",false,true,$enrol_empty);
     $master_results[$courseinfo]['teacher_sync'] = $result;
   }
   /* no need to notify on redirect course creation */ 
@@ -240,6 +253,7 @@ function ldap_enrol ($enrol,$lock) {
                           'GWR' => array('ad_moodle_gwr'),
                           'FacultyDB' => array('list_all_faculty','list_admin_fac_priv'),
                           'Coursera' => array('list_all_faculty','all-emeriti'),
+			  'SocPsych' => array('PSYC260-01-Fall 2017'),
 	);
 
 

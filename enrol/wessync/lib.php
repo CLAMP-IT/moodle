@@ -166,7 +166,7 @@ class enrol_wessync_plugin extends enrol_plugin {
    }
 
     /* given an array of usernames, enrols and optionally unenrols the users from given role */
-    public function sync_course_membership_by_role($moodle_course,$members,$rolename,$unenrol = false,$create_users = false) {
+    public function sync_course_membership_by_role($moodle_course,$members,$rolename,$unenrol = false,$create_users = false,$enrol_empty = false) {
 	$ldapauth = get_auth_plugin('cas');
         $wesauth = get_auth_plugin('wes');
 	$cache = cache::make_from_params(cache_store::MODE_APPLICATION,'enrol_wessync','roles');
@@ -202,10 +202,10 @@ class enrol_wessync_plugin extends enrol_plugin {
 	  $result['failure'] = 1;
           return $result;
   	} 
-	if ($this->wessync_cache_get("coursesync_$roleid",$moodle_course->id) == $members ) {
-	  $result['actions'] = "Members unchanged from last run, skipping";
-	  return $result;
-	} 
+#	if ($this->wessync_cache_get("coursesync_$roleid",$moodle_course->id) == $members ) {
+#	  $result['actions'] = "Members unchanged from last run, skipping";
+#	  return $result;
+#	} 
 
 	$current_users = $this->get_users_by_role_in_course($roleid,$moodle_course->id,$unenrol);
 	$instance = $this->get_enrol_course_instance($moodle_course);
@@ -246,10 +246,11 @@ class enrol_wessync_plugin extends enrol_plugin {
          }
        }
        /* only start unenrol/suspend if there's at least ONE authoritative user; is array is to be paranoid */
-       if (is_array($authoritative_ids) && (count($authoritative_ids) > 0)) {
+       if (is_array($authoritative_ids) && (count($authoritative_ids) > 0 || $enrol_empty === true)) {
          foreach ($current_users as $current_user) {
+	
            $current_id = $current_user->id;
-           if ($authoritative_ids && !array_key_exists($current_id,$authoritative_ids)) {
+           if (is_array($authoritative_ids) && !array_key_exists($current_id,$authoritative_ids)) {
 	     
              array_push($result['actions'],"Unassigned role $roleid $current_user->username from course $moodle_course->shortname");
 
