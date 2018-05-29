@@ -3,7 +3,6 @@
 # of community developers git clones - see MDL-51458.
 
 sudo: required
-dist: precise
 
 # We currently disable Travis notifications entirely until https://github.com/travis-ci/travis-ci/issues/4976
 # is fixed.
@@ -18,10 +17,15 @@ php:
     - 7.0
 
 addons:
-  packages:
-    - mysql-server-5.6
-    - mysql-client-core-5.6
-    - mysql-client-5.6
+  postgresql: "9.3"
+  apt:
+    packages:
+      - oracle-java8-installer
+      - oracle-java8-set-default
+      - mysql-server-5.6
+      - mysql-client-core-5.6
+      - mysql-client-5.6
+      - chromium-chromedriver
 
 # Redis tests are currently failing on php 7.2 due to https://bugs.php.net/bug.php?id=75628
 # services:
@@ -201,11 +205,6 @@ before_script:
     - >
       if [ "$TASK" = 'BEHAT' ];
       then
-        # start xvfb
-        export DISPLAY=:99.0
-        sh -e /etc/init.d/xvfb start
-        sleep 3
-
         # Create a directory for the behat database
         mkdir -p "$HOME"/roots/behat
 
@@ -214,11 +213,12 @@ before_script:
           -e "/require_once/i \\\$CFG->behat_dataroot = '\/home\/travis\/roots\/behat';" \
           -e "/require_once/i \\\$CFG->behat_prefix = 'b_';" \
           -e "/require_once/i \\\$CFG->behat_wwwroot = 'http://localhost:8000';" \
+          -e "/require_once/i \\\$CFG->behat_profiles=['default'=>['browser'=>'chrome','wd_host'=>'http://localhost:4444/wd/hub']];" \
           config.php ;
 
         # Get and launch selenium
-        wget http://selenium-release.storage.googleapis.com/2.45/selenium-server-standalone-2.45.0.jar;
-        (java -jar selenium-server-standalone-2.45.0.jar &) 2> /dev/null > /dev/null;
+        wget http://selenium-release.storage.googleapis.com/3.4/selenium-server-standalone-3.4.0.jar;
+        xvfb-run -a --server-args="-screen 0 1024x768x24" java -Dwebdriver.chrome.driver=/usr/lib/chromium-browser/chromedriver -jar selenium-server-standalone-3.4.0.jar -log /tmp/selenium.log &
 
         # Initialise Behat for Moodle.
         php admin/tool/behat/cli/init.php
@@ -288,7 +288,7 @@ script:
     - >
       if [ "$TASK" = 'PHPUNIT' ];
       then
-        vendor/bin/phpunit;
+        vendor/bin/phpunit --fail-on-risky --disallow-test-output --verbose;
       fi
 
     - >

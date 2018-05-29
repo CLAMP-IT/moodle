@@ -35,3 +35,4 @@ $string['forum:anonyes'] = 'Yes, always';
 $string['forum:anonymouspost'] = 'Post anonymously';
 $string['forum:configenableanonymouspost'] = 'Set to \'yes\' if you want to enable Anonymous Forums.';
 $string['pluginname'] = 'Liberal Arts Edition';
+$string['privacy:metadata'] = "The local/lae plugin provides automated testing for CLAMP's Liberal Arts Edition (LAE) of Moodle. The plugin does not itself effect or store any data.";

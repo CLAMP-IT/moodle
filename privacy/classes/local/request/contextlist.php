@@ -55,10 +55,51 @@ class contextlist extends contextlist_base {
             $contextids[] = $context->ctxid;
             \context_helper::preload_from_record($context);
         }
+        $contexts->close();
 
         $this->set_contextids(array_merge($this->get_contextids(), $contextids));
 
         return $this;
+    }
+
+    /**
+     * Adds the system context.
+     *
+     * @return $this
+     */
+    public function add_system_context() : contextlist {
+        return $this->add_from_sql(SYSCONTEXTID, []);
+    }
+
+    /**
+     * Adds the user context for a given user.
+     *
+     * @param int $userid
+     * @return $this
+     */
+    public function add_user_context(int $userid) : contextlist {
+        $sql = "SELECT DISTINCT ctx.id
+                  FROM {context} ctx
+                 WHERE ctx.contextlevel = :contextlevel
+                   AND ctx.instanceid = :instanceid";
+        return $this->add_from_sql($sql, ['contextlevel' => CONTEXT_USER, 'instanceid' => $userid]);
+    }
+
+    /**
+     * Adds the user contexts for given users.
+     *
+     * @param array $userids
+     * @return $this
+     */
+    public function add_user_contexts(array $userids) : contextlist {
+        global $DB;
+
+        list($useridsql, $useridparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        $sql = "SELECT DISTINCT ctx.id
+                  FROM {context} ctx
+                 WHERE ctx.contextlevel = :contextlevel
+                   AND ctx.instanceid $useridsql";
+        return $this->add_from_sql($sql, ['contextlevel' => CONTEXT_USER] + $useridparams);
     }
 
     /**

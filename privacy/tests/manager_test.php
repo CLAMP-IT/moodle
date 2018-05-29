@@ -28,8 +28,11 @@ require_once($CFG->dirroot . '/privacy/tests/fixtures/mock_null_provider.php');
 require_once($CFG->dirroot . '/privacy/tests/fixtures/mock_provider.php');
 require_once($CFG->dirroot . '/privacy/tests/fixtures/mock_plugin_subplugin_provider.php');
 require_once($CFG->dirroot . '/privacy/tests/fixtures/mock_mod_with_user_data_provider.php');
+require_once($CFG->dirroot . '/privacy/tests/fixtures/provider_a.php');
+require_once($CFG->dirroot . '/privacy/tests/fixtures/provider_throwing_exception.php');
 
 use \core_privacy\local\request\writer;
+use \core_privacy\local\request\approved_contextlist;
 
 /**
  * Privacy manager unit tests.
@@ -130,6 +133,38 @@ class privacy_manager_testcase extends advanced_testcase {
     }
 
     /**
+     * Provider for component_is_compliant tests.
+     *
+     * @return  array
+     */
+    public function component_is_compliant_provider() {
+        return [
+            'An empty subsystem' => [
+                'core_countries',
+                true,
+            ],
+            'A real subsystem' => [
+                'core_privacy',
+                true,
+            ],
+        ];
+    }
+
+    /**
+     * Test verifying the output of component_is_compliant with specified
+     * components.
+     *
+     * @dataProvider    component_is_compliant_provider
+     * @param   string  $component
+     * @param   boolean $expected
+     */
+    public function test_component_is_compliant_examples($component, $expected) {
+        $manager = new \core_privacy\manager();
+
+        $this->assertEquals($expected, $manager->component_is_compliant($component));
+    }
+
+    /**
      *  Test verifying only approved contextlists can be used with the export_user_data method.
      */
     public function test_export_user_data() {
@@ -143,7 +178,7 @@ class privacy_manager_testcase extends advanced_testcase {
         // Create an approved contextlist.
         $approvedcontextlistcollection = new \core_privacy\local\request\contextlist_collection(10);
         foreach ($contextlistcollection->get_contextlists() as $contextlist) {
-            $approvedcontextlist = new \core_privacy\local\request\approved_contextlist(new stdClass(), $contextlist->get_component(),
+            $approvedcontextlist = new approved_contextlist(new stdClass(), $contextlist->get_component(),
                 $contextlist->get_contextids());
             $approvedcontextlistcollection->add_contextlist($approvedcontextlist);
         }
@@ -178,7 +213,7 @@ class privacy_manager_testcase extends advanced_testcase {
         // Create an approved contextlist.
         $approvedcontextlistcollection = new \core_privacy\local\request\contextlist_collection($user->id);
         foreach ($contextlistcollection->get_contextlists() as $contextlist) {
-            $approvedcontextlist = new \core_privacy\local\request\approved_contextlist($user, $contextlist->get_component(),
+            $approvedcontextlist = new approved_contextlist($user, $contextlist->get_component(),
                 $contextlist->get_contextids());
             $approvedcontextlistcollection->add_contextlist($approvedcontextlist);
         }
@@ -200,5 +235,232 @@ class privacy_manager_testcase extends advanced_testcase {
         $manager = new \core_privacy\manager();
         $metadata = $manager->get_metadata_for_components();
         $this->assertNotEmpty($metadata);
+    }
+
+    /**
+     * Test that the reason for the null provider is returned.
+     */
+    public function test_get_null_provider_reason() {
+        $manager = new \core_privacy\manager();
+        // Null providers return the reason string.
+        $this->assertEquals('testcomponent2 null provider reason', $manager->get_null_provider_reason('mod_testcomponent2'));
+        // Throw an exception if the wrong type of provider is given.
+        $this->expectException(\coding_exception::class);
+        $string = $manager->get_null_provider_reason('mod_testcomponent');
+    }
+
+    /**
+     * Test that manager::plugintype_class_callback() can be executed.
+     */
+    public function test_plugintype_class_callback() {
+        \core_privacy\manager::plugintype_class_callback('doesnotexist', 'unusable', 'foo', ['bar']);
+    }
+
+    /**
+     * Test that manager::component_class_callback() can be executed.
+     */
+    public function test_component_class_callback() {
+        \core_privacy\manager::component_class_callback('foo_bar', 'unusable', 'foo', ['bar']);
+    }
+
+    /**
+     * Test the manager::is_empty_subsystem function.
+     *
+     * @dataProvider is_empty_subsystem_provider
+     * @param   string  $component
+     * @param   bool    $expected
+     */
+    public function test_is_empty_subsystem($component, $expected) {
+        $this->assertEquals($expected, \core_privacy\manager::is_empty_subsystem($component));
+    }
+
+    /**
+     * Test cases for the is_empty_subsystem function.
+     *
+     * @return array
+     */
+    public function is_empty_subsystem_provider() {
+        return [
+            'A subsystem which has no directory' => [
+                'core_langconfig',
+                true,
+            ],
+            'A subsystem with a directory' => [
+                'core_portfolio',
+                false,
+            ],
+            'A plugin' => [
+                'mod_forum',
+                false,
+            ],
+            'A plugintype' => [
+                'mod',
+                false,
+            ],
+            'An unprefixed subsystem with no directory' => [
+                'langconfig',
+                false,
+            ],
+        ];
+    }
+
+    /**
+     * Test that get_contexts_for_userid() with a failing item.
+     */
+    public function test_get_contexts_for_userid_with_failing() {
+        // Get a mock manager, in which the core components list is mocked to include all mock plugins.
+        // testcomponent is a core provider, testcomponent2 isa null provider, testcomponent3 is subplugin provider (non core).
+        $mockman = $this->get_mock_manager_with_core_components(['mod_component_broken', 'mod_component_a']);
+
+        $observer = $this->getMockBuilder(\core_privacy\manager_observer::class)
+            ->setMethods(['handle_component_failure'])
+            ->getMock();
+        $mockman->set_observer($observer);
+
+        $observer->expects($this->once())
+            ->method('handle_component_failure')
+            ->with(
+                $this->isInstanceOf(\coding_exception::class),
+                $this->identicalTo('mod_component_broken'),
+                $this->identicalTo(\core_privacy\local\request\core_user_data_provider::class),
+                $this->identicalTo('get_contexts_for_userid'),
+                $this->anything()
+            );
+
+        // Get the contextlist_collection.
+        $contextlistcollection = $mockman->get_contexts_for_userid(10);
+        $this->assertDebuggingCalled();
+        $this->assertInstanceOf(\core_privacy\local\request\contextlist_collection::class, $contextlistcollection);
+        $this->assertCount(1, $contextlistcollection);
+
+        // The component which completed shoudl have returned a contextlist.
+        $this->assertInstanceOf(\core_privacy\local\request\contextlist::class,
+                                $contextlistcollection->get_contextlist_for_component('mod_component_a'));
+        $this->assertEmpty($contextlistcollection->get_contextlist_for_component('mod_component_broken'));
+    }
+
+    /**
+     * Test that export_user_data() with a failing item.
+     */
+    public function test_export_user_data_with_failing() {
+        $user = \core_user::get_user_by_username('admin');
+        $mockman = $this->get_mock_manager_with_core_components(['mod_component_broken', 'mod_component_a']);
+        $context = \context_system::instance();
+        $contextid = $context->id;
+
+        $observer = $this->getMockBuilder(\core_privacy\manager_observer::class)
+            ->setMethods(['handle_component_failure'])
+            ->getMock();
+        $mockman->set_observer($observer);
+
+        $observer->expects($this->once())
+            ->method('handle_component_failure')
+            ->with(
+                $this->isInstanceOf(\coding_exception::class),
+                $this->identicalTo('mod_component_broken'),
+                $this->identicalTo(\core_privacy\local\request\core_user_data_provider::class),
+                $this->identicalTo('export_user_data'),
+                $this->anything()
+            );
+
+        $collection = new \core_privacy\local\request\contextlist_collection(10);
+        $collection->add_contextlist(new approved_contextlist($user, 'mod_component_broken', [$contextid]));
+        $collection->add_contextlist(new approved_contextlist($user, 'mod_component_a', [$contextid]));
+
+        // Get the contextlist_collection.
+        $mockman->export_user_data($collection);
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * Test that delete_data_for_user() with a failing item.
+     */
+    public function test_delete_data_for_user_with_failing() {
+        $user = \core_user::get_user_by_username('admin');
+        $mockman = $this->get_mock_manager_with_core_components(['mod_component_broken', 'mod_component_a']);
+        $context = \context_system::instance();
+        $contextid = $context->id;
+
+        $observer = $this->getMockBuilder(\core_privacy\manager_observer::class)
+            ->setMethods(['handle_component_failure'])
+            ->getMock();
+        $mockman->set_observer($observer);
+
+        $observer->expects($this->once())
+            ->method('handle_component_failure')
+            ->with(
+                $this->isInstanceOf(\coding_exception::class),
+                $this->identicalTo('mod_component_broken'),
+                $this->identicalTo(\core_privacy\local\request\core_user_data_provider::class),
+                $this->identicalTo('delete_data_for_user'),
+                $this->anything()
+            );
+
+        $collection = new \core_privacy\local\request\contextlist_collection(10);
+        $collection->add_contextlist(new approved_contextlist($user, 'mod_component_broken', [$contextid]));
+        $collection->add_contextlist(new approved_contextlist($user, 'mod_component_a', [$contextid]));
+
+        // Get the contextlist_collection.
+        $mockman->delete_data_for_user($collection);
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * Test that delete_data_for_all_users_in_context() with a failing item.
+     */
+    public function test_delete_data_for_all_users_in_context_with_failing() {
+        $user = \core_user::get_user_by_username('admin');
+        $mockman = $this->get_mock_manager_with_core_components(['mod_component_broken', 'mod_component_a']);
+        $context = \context_system::instance();
+
+        $observer = $this->getMockBuilder(\core_privacy\manager_observer::class)
+            ->setMethods(['handle_component_failure'])
+            ->getMock();
+        $mockman->set_observer($observer);
+
+        $observer->expects($this->once())
+            ->method('handle_component_failure')
+            ->with(
+                $this->isInstanceOf(\coding_exception::class),
+                $this->identicalTo('mod_component_broken'),
+                $this->identicalTo(\core_privacy\local\request\core_user_data_provider::class),
+                $this->identicalTo('delete_data_for_all_users_in_context'),
+                $this->anything()
+            );
+
+        // Get the contextlist_collection.
+        $mockman->delete_data_for_all_users_in_context($context);
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * Test that get_metadata_for_components() with a failing item.
+     */
+    public function test_get_metadata_for_components_with_failing() {
+        $user = \core_user::get_user_by_username('admin');
+        $mockman = $this->get_mock_manager_with_core_components(['mod_component_broken', 'mod_component_a']);
+        $context = \context_system::instance();
+
+        $observer = $this->getMockBuilder(\core_privacy\manager_observer::class)
+            ->setMethods(['handle_component_failure'])
+            ->getMock();
+        $mockman->set_observer($observer);
+
+        $observer->expects($this->once())
+            ->method('handle_component_failure')
+            ->with(
+                $this->isInstanceOf(\coding_exception::class),
+                $this->identicalTo('mod_component_broken'),
+                $this->identicalTo(\core_privacy\local\metadata\provider::class),
+                $this->identicalTo('get_metadata'),
+                $this->anything()
+            );
+
+        // Get the contextlist_collection.
+        $metadata = $mockman->get_metadata_for_components();
+        $this->assertDebuggingCalled();
+
+        $this->assertInternalType('array', $metadata);
+        $this->assertCount(1, $metadata);
     }
 }
