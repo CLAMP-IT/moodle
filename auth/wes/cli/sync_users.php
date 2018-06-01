@@ -62,15 +62,14 @@ if (!is_enabled_auth('cas')) {
 }
 $ldapauth = get_auth_plugin('cas');
 $wesauth = get_auth_plugin('wes');
-
-$members = get_from_curl();
-if ($members === false ) {
+$data = get_from_curl('wesid');
+if ($data === false ) {
   print "Database error";
   die;
 }
-
-var_dump($wesauth->sync_users($ldapauth,$members));
-function get_from_curl () {
+var_dump($wesauth->sync_users($ldapauth,$data));
+function get_from_curl() {
+  
   include "inc/db.conf.php";
   $conn = oci_connect($curl_user,$curl_pass,$curl_dsn);
   
@@ -78,16 +77,24 @@ function get_from_curl () {
     print "No connection, goodbye:" . var_dump(oci_error());
     return false;
   }
-  $statement = oci_parse($conn,"select wes_email from wu_data.vw_people_student_curr union SELECT wes_email from wu_data.VW_PEOPLE_FACSTAFF_CURR");
+  $statement = oci_parse($conn,"select wes_email,emplid from wu_data.vw_people_student_curr union SELECT wes_email,emplid from wu_data.VW_PEOPLE_FACSTAFF_CURR");
   $users = array();
   if(!oci_execute($statement)) {
      return false;
   }
+  $data;
   while ($row = oci_fetch_array($statement,OCI_ASSOC)) {
      $username = preg_replace('/@wesleyan\.edu/','',$row['WES_EMAIL']);
      $username = preg_replace('/^\s+/','',$username);
-     array_push($users,$username);
+     $wesid = $row['EMPLID'];
+     $wesid = preg_replace('/^\s+/','',$wesid);
+     #only fill out array if username AND wesid exists
+     if ($username and $wesid) {
+       $data[$wesid]['username'] = $username;
+       $data[$wesid]['idnumber'] = $wesid;
+     }
+     
   }
-  return $users;
+  return $data;
 }
 

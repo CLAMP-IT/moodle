@@ -3,7 +3,7 @@
 require_once($CFG->libdir.'/authlib.php');
 
 class auth_plugin_wes extends auth_plugin_base {
-  private $attribs_to_sync = array('firstname','lastname');
+  private $attribs_to_sync = array('firstname','lastname','idnumber');
 
   function auth_plugin_wes() {
     $this->authtype = 'wes'; 
@@ -19,29 +19,41 @@ class auth_plugin_wes extends auth_plugin_base {
    
   }
   /* when given an ldapauth object and an array of members, writes them out to Moodle */
-  function sync_users($ldapauth,$members,$clobber = 0) {
+  function sync_users($ldapauth,$data,$clobber = 0,$key = 'idnumber') {
     global $DB;
     $result = array( 'action' => array(), 'error' => array(), 'debug' => array());
-    foreach ($members as $username) {
-      $user = $DB->get_record('user',array('username' => $username));
+
+    foreach ($data as $element) {
+      $user = $DB->get_record('user',array($key => $element[$key]));
       if (!is_object($user) or !$user) {
-        if ($this->create_user_from_ad($ldapauth,$username)) {
-          array_push($result['action'],"User $username created");
+	#fallback to username
+        $user = $DB->get_record('user',array('username' => $element['username']));
+ 	if (!$user or !is_object($user)) {
+          if ($this->create_user_from_ad($ldapauth,$element['username'],$element['idnumber'])) {
+            array_push($result['action'],"User " . $element['username'] ." created");
+           } else {
+            array_push($result['error'],"User " . $element['username'] ." could not be created");
+           }
          } else {
-          array_push($result['error'],"User $username could not be created");
+          print "Could not find user " . $element['username'] . " by wesid " . $element['idnumber'] ." but could find by username\n"; 
+          array_push($result['debug'],"User " . $element['username'] ." exists");
+          $this->sync_user_from_ad($ldapauth,$user->username,$element['idnumber'],$clobber);
          }
        } else {
-        array_push($result['debug'],"User $username exists");
-        $this->sync_user_from_ad($ldapauth,$username,$clobber);
+        array_push($result['debug'],"User " . $element['username'] ." exists");
+        $this->sync_user_from_ad($ldapauth,$user->username,$element['idnumber'],$clobber);
        }
     }
     return $result;
 
   }
-  /* given ldapauth object, username and optional clobber, syncs data from AD over, clobbering if clobber is 1 */
-  function sync_user_from_ad($ldapauth,$username,$clobber=1) {
+  /* given ldapauth object, username and optional clobber, syncs data from AD over, clobbering if clobber is 1; username is only unique guarantee in AD */
+  function sync_user_from_ad($ldapauth,$username,$wesid,$clobber=1) {
     global $DB,$CFG;
     $user = $ldapauth->get_userinfo_asobj(addslashes($username));
+    if (!$user->idnumber && $wesid) {
+      $user->idnumber = $wesid;
+    }
     $update_user = 0;
     $result = 0;
     $moodle_user = $DB->get_record('user',array('username' => $username));
@@ -58,8 +70,6 @@ class auth_plugin_wes extends auth_plugin_base {
       }
     }
     if ($update_user) {
-      /* add slashes not needed in Moodle2? */
-      /* $moodle_user = addslashes_recursive($moodle_user); */
       $result = $DB->update_record('user',$moodle_user);
       return $result;
     }
@@ -69,6 +79,9 @@ class auth_plugin_wes extends auth_plugin_base {
 
     global $DB,$CFG;
     $user = $ldapauth->get_userinfo_asobj(addslashes($username));
+    if (!$user->lastname) {
+      return 0;
+    }
     $user->modified = time();
     $user->confirmed = 1;
     $user->auth = 'cas';
