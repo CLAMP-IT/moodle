@@ -1273,7 +1273,8 @@ class mod_forum_external extends external_api {
             'private'             => false,
             'inlineattachmentsid' => 0,
             'attachmentsid' => null,
-            'topreferredformat'   => false
+            'topreferredformat'   => false,
+            'anonymous'           => false
         );
         foreach ($params['options'] as $option) {
             $name = trim($option['name']);
@@ -1295,6 +1296,9 @@ class mod_forum_external extends external_api {
                     }
                     break;
                 case 'topreferredformat':
+                    $value = clean_param($option['value'], PARAM_BOOL);
+                    break;
+                case 'anonymous':
                     $value = clean_param($option['value'], PARAM_BOOL);
                     break;
                 default:
@@ -1332,6 +1336,7 @@ class mod_forum_external extends external_api {
         $post->itemid = $options['inlineattachmentsid'];
         $post->attachments = $options['attachmentsid'];
         $post->isprivatereply = $options['private'];
+        $post->anonymous = $options['anonymous'];
         $post->deleted = 0;
         $fakemform = $post->attachments;
         if ($postid = forum_add_new_post($post, $fakemform)) {

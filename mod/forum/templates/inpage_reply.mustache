@@ -59,6 +59,16 @@
                     <label class="form-check-label" for="private-reply">{{#str}} privatereply, forum {{/str}}</label>
                 </div>
                 {{/canreplyprivately}}
+                {{#canreplyanonymously}}
+                <div class="form-check form-check-inline">
+                    <input
+                        {{#mustreplyanonymously}}
+                        disabled="disabled"
+                        {{/mustreplyanonymously}}
+                        type="checkbox" class="form-check-input" id="anonymous-reply-checkbox-{{uniqid}}" title="{{#str}} anonymousreply, forum {{/str}}" name="anonymousreply"/>
+                    <label class="form-check-label" for="anonymous-reply-checkbox-{{uniqid}}">{{#str}} anonymousreply, forum {{/str}}</label>
+                </div>
+                {{/canreplyanonymously}}
                 <button title="{{#str}} advanced, core {{/str}}" data-action="forum-advanced-reply" class="btn btn-link float-right" type="submit">
                     {{#str}} advanced, core {{/str}}
                 </button>

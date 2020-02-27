@@ -368,6 +368,8 @@ class post extends exporter {
         $cancontrolreadstatus = $capabilitymanager->can_manually_control_post_read_status($user);
         $canselfenrol = $capabilitymanager->can_self_enrol($user);
         $canreplyprivately = $capabilitymanager->can_reply_privately_to_post($user, $post);
+        $canreplyanonymously = $forum->get_anonymity() === FORUM_ANONYMOUS_ALLOWED || $forum->get_anonymity() === FORUM_ANONYMOUS_ALWAYS;
+        $mustreplyanonymously = $forum->get_anonymity() === FORUM_ANONYMOUS_ALWAYS;
 
         $urlfactory = $this->related['urlfactory'];
         $viewurl = $canview ? $urlfactory->get_view_post_url_from_post($post) : null;
@@ -439,6 +441,8 @@ class post extends exporter {
                 'export' => $canexport,
                 'controlreadstatus' => $cancontrolreadstatus,
                 'canreplyprivately' => $canreplyprivately,
+                'canreplyanonymously' => $canreplyanonymously,
+                'mustreplyanonymously' => $mustreplyanonymously,
                 'selfenrol' => $canselfenrol
             ],
             'urls' => [

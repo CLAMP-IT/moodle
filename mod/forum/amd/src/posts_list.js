@@ -61,6 +61,8 @@ define([
                 sesskey: M.cfg.sesskey,
                 parentsubject: currentSubject.data('replySubject'),
                 canreplyprivately: $(e.currentTarget).data('can-reply-privately'),
+                canreplyanonymously: $(e.currentTarget).data('can-reply-anonymously'),
+                mustreplyanonymously: $(e.currentTarget).data('must-reply-anonymously'),
                 postformat: InPageReply.CONTENT_FORMATS.MOODLE
             };
 
