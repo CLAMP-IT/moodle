@@ -6,18 +6,18 @@ Feature: Add an anonymous forum
 
   Background:
     Given the following "users" exist:
-      | username | firstname  | lastname  | email                 |
-      | teacher1 | Teacher    | 1         | teacher1@example.com  |
-      | student1 | Student    | 1         | student1@example.com  |
-      | student2 | Student    | 2         | student2@example.com  |
+      | username | firstname | lastname | email                |
+      | teacher1 | Teacher   | 1        | teacher1@example.com |
+      | student1 | Student   | 1        | student1@example.com |
+      | student2 | Student   | 2        | student2@example.com |
     And the following "courses" exist:
-      | fullname | shortname  | category  |
-      | Course 1 | C1         | 0         |
+      | fullname | shortname | category |
+      | Course 1 | C1        | 0        |
     And the following "course enrolments" exist:
-      | user      | course  | role            |
-      | teacher1  | C1      | editingteacher  |
-      | student1  | C1      | student         |
-      | student2  | C1      | student         |
+      | user     | course | role           |
+      | teacher1 | C1     | editingteacher |
+      | student1 | C1     | student        |
+      | student2 | C1     | student        |
     And I log in as "admin"
     And I navigate to "Plugins > Activity modules > Forum" in site administration
     And I set the following fields to these values:
@@ -29,18 +29,23 @@ Feature: Add an anonymous forum
     And I am on "Course 1" course homepage
     And I turn editing mode on
 
+  @javascript
   Scenario: Set anonymous forums option to always and create one
     Given I add a "Forum" to section "1" and I fill the form with:
-      | Forum name | Test forum name |
-      | Description | Test forum description |
-      | Anonymize posts? | Yes, always |
+      | Forum name       | Test forum name        |
+      | Description      | Test forum description |
+      | Anonymize posts? | Yes, always            |
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Test forum name"
-    And I add a new discussion to "Test forum name" forum with:
-      | Subject | Post 1 subject |
-      | Message | Body 1 content |
+    Then "input[name=anonymous]" "css_element" should not be visible
+    And I follow "Add a new discussion topic"
+    Then "input[name=anonymous]" "css_element" should be visible
+    And I set the field "subject" to "Post 1 subject"
+    And I set the field "id_message" to "Body 1 content"
+    And the "input[name=anonymous]" "css_element" should be disabled
+    And I press "Post to forum"
     Then I should see "Anonymous User"
     And I follow "Post 1 subject"
     Then I should see "by Anonymous User"
@@ -52,19 +57,24 @@ Feature: Add an anonymous forum
     And I follow "Post 1 subject"
     Then I should see "Anonymous User"
 
+  @javascript
   Scenario: Set anonymous forums option to optional and create one
     Given I add a "Forum" to section "1" and I fill the form with:
-      | Forum name | Test forum 2 name |
-      | Description | Test forum 2 description |
+      | Forum name       | Test forum 2 name        |
+      | Description      | Test forum 2 description |
       | Anonymize posts? | Yes, let the user decide |
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Test forum 2 name"
-    And I add a new discussion to "Test forum 2 name" forum with:
-      | Subject | Post 2 subject |
-      | Message | Body 2 content |
-      | Post anonymously | 1 |
+    Then "input[name=anonymous]" "css_element" should not be visible
+    And I follow "Add a new discussion topic"
+    Then "input[name=anonymous]" "css_element" should be visible
+    And I set the field "subject" to "Post 2 subject"
+    And I set the field "id_message" to "Body 2 content"
+    And the "input[name=anonymous]" "css_element" should be enabled
+    And I click on "input[name=anonymous]" "css_element"
+    And I press "Post to forum"
     Then I should see "Anonymous User"
     And I log out
     And I log in as "student2"
@@ -74,8 +84,8 @@ Feature: Add an anonymous forum
     And I follow "Post 2 subject"
     Then I should see "by Anonymous User"
     And I reply "Post 2 subject" post from "Test forum 2 name" forum with:
-      | Subject | This is the post content |
-      | Message | This is the body |
-      | Post anonymously | 0 |
+      | Subject          | This is the post content |
+      | Message          | This is the body         |
+      | Post anonymously | 0                        |
     Then I should see "by Student 2"
     And I should see "Anonymous User"
