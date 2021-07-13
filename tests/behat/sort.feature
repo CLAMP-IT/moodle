@@ -29,7 +29,7 @@ Feature: Courses within a rubric can be sorted by various fields
       | filtered_course_list | Course       | test      |
 
   @javascript
-  Scenario Outline:
+  Scenario Outline: Sorting as a user
     Given the following config values are set as admin:
       | primarysort     | <sort1>    | block_filtered_course_list |
       | primaryvector   | <vec1>     | block_filtered_course_list |
@@ -48,17 +48,17 @@ Feature: Courses within a rubric can be sorted by various fields
     And <third> "text" should appear before <fourth> "text"
     And <fourth> "text" should appear before <fifth> "text"
 
-  Examples:
-    | sort1     | vec1 | sort2    | vec2 | first    | second   | third    | fourth   | fifth    |
-    | fullname  | ASC  | none     | ASC  | "A Full" | "B Full" | "C Full" | "D Full" | "E Full" |
-    | fullname  | DESC | none     | ASC  | "E Full" | "D Full" | "C Full" | "B Full" | "A Full" |
-    | shortname | ASC  | none     | ASC  | "E Full" | "A Full" | "B Full" | "C Full" | "D Full" |
-    | idnumber  | DESC | none     | ASC  | "C Full" | "B Full" | "A Full" | "E Full" | "D Full" |
-    | startdate | ASC  | idnumber | ASC  | "D Full" | "E Full" | "C Full" | "B Full" | "A Full" |
-    | startdate | ASC  | idnumber | DESC | "E Full" | "D Full" | "C Full" | "B Full" | "A Full" |
-    | none      | ASC  | fullname | ASC  | "A Full" | "B Full" | "C Full" | "D Full" | "E Full" |
+    Examples:
+      | sort1     | vec1 | sort2    | vec2 | first    | second   | third    | fourth   | fifth    |
+      | fullname  | ASC  | none     | ASC  | "A Full" | "B Full" | "C Full" | "D Full" | "E Full" |
+      | fullname  | DESC | none     | ASC  | "E Full" | "D Full" | "C Full" | "B Full" | "A Full" |
+      | shortname | ASC  | none     | ASC  | "E Full" | "A Full" | "B Full" | "C Full" | "D Full" |
+      | idnumber  | DESC | none     | ASC  | "C Full" | "B Full" | "A Full" | "E Full" | "D Full" |
+      | startdate | ASC  | idnumber | ASC  | "D Full" | "E Full" | "C Full" | "B Full" | "A Full" |
+      | startdate | ASC  | idnumber | DESC | "E Full" | "D Full" | "C Full" | "B Full" | "A Full" |
+      | none      | ASC  | fullname | ASC  | "A Full" | "B Full" | "C Full" | "D Full" | "E Full" |
 
-  Scenario Outline:
+  Scenario Outline: Sorting as an administrator
     Given the following config values are set as admin:
       | primarysort     | sortorder  | block_filtered_course_list |
       | primaryvector   | ASC        | block_filtered_course_list |
@@ -81,8 +81,8 @@ Feature: Courses within a rubric can be sorted by various fields
     And <third> "text" should appear before <fourth> "text"
     And <fourth> "text" should appear before <fifth> "text"
 
-  Examples:
-    | sort                                 | first    | second   | third    | fourth   | fifth    |
-    | Sort by Course full name ascending   | "A Full" | "B Full" | "C Full" | "D Full" | "E Full" |
-    | Sort by Course full name descending  | "E Full" | "D Full" | "C Full" | "B Full" | "A Full" |
-    | Sort by Course short name descending | "D Full" | "C Full" | "B Full" | "A Full" | "E Full" |
+    Examples:
+      | sort                                 | first    | second   | third    | fourth   | fifth    |
+      | Sort by Course full name ascending   | "A Full" | "B Full" | "C Full" | "D Full" | "E Full" |
+      | Sort by Course full name descending  | "E Full" | "D Full" | "C Full" | "B Full" | "A Full" |
+      | Sort by Course short name descending | "D Full" | "C Full" | "B Full" | "A Full" | "E Full" |
