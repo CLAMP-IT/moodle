@@ -15,9 +15,9 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template report_customsql/form-user-selector-suggestion
+    @template report_customsql/form_report_information
 
-    Moodle template for the list of valid options in an autocomplate form element.
+    Template to display timecreated, timemodified and usermodified.
 
     Classes required for JS:
     * none
@@ -26,24 +26,19 @@
     * none
 
     Context variables required for this template:
-    * profileimageurlsmall Url to a small profile image.
-    * fullname Users full name
-    * hasidentity boolean to say if there are identity fields to show
-    * identity concatenated list of identity fields.
+    * timecreated Report time created.
+    * timemodified Report last time modified.
+    * usermodified Last modified by.
 
     Example context (json):
     {
-      "id": "1",
-      "fullname": "Admin User",
-      "hasidentity": true,
-      "identity": "admin@example.com, 0144114141",
-      "profileimageurlsmall": "http://example.com/smile.svg"
+      "timecreated": "Wednesday, 5 May 2021",
+      "timemodified": "Wednesday, 5 May 2021",
+      "usermodified": "Admin User"
     }
 }}
-<span>
-    <img height="12" src="{{profileimageurlsmall}}" alt="" role="presentation">
-    <span>{{fullname}}</span>
-    {{#hasidentity}}
-    <span><small>{{identity}}</small></span>
-    {{/hasidentity}}
-</span>
+<div class="report-customsql-infomation">
+    <p>{{# str }} timecreated, report_customsql, {{ timecreated }} {{/ str }}</p>
+    <p>{{# str }} timemodified, report_customsql, {{ timemodified }} {{/ str }}</p>
+    <p>{{# str }} usermodified, report_customsql, {{{ usermodified }}} {{/ str }}</p>
+</div>

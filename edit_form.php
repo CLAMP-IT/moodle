@@ -120,10 +120,18 @@ class report_customsql_edit_form extends moodleform {
                 if (!$user) {
                     return false;
                 }
+
+                if (class_exists('\core_user\fields')) {
+                    $extrafields = \core_user\fields::for_identity(\context_system::instance(),
+                            false)->get_required_fields();
+                } else {
+                    $extrafields = get_extra_user_fields(context_system::instance());
+                }
+
                 return $OUTPUT->render_from_template(
                         'report_customsql/form-user-selector-suggestion',
                         \report_customsql\external\get_users::prepare_result_object(
-                                $user, get_extra_user_fields(context_system::instance()))
+                                $user, $extrafields)
                         );
             }
         ];
@@ -142,8 +150,29 @@ class report_customsql_edit_form extends moodleform {
     }
 
     public function set_data($currentvalues) {
+        global $DB, $OUTPUT;
+
         $currentvalues->emailto = explode(',', $currentvalues->emailto);
         parent::set_data($currentvalues);
+
+        // Add report information.
+        $mform = $this->_form;
+        $reportinfocontext = new stdClass();
+        $reportinfocontext->timecreated = $currentvalues->timecreated > 0 ? userdate($currentvalues->timecreated) : '';
+        $reportinfocontext->timemodified = $currentvalues->timemodified > 0 ? userdate($currentvalues->timemodified) : '';
+        $reportinfocontext->usermodified = '';
+        if ($currentvalues->usermodified > 0) {
+            $usermodified = $DB->get_record('user', ['id' => $currentvalues->usermodified]);
+            $reportinfocontext->usermodified = html_writer::link(
+                $url = new moodle_url('/user/profile.php', ['id' => $usermodified->id]),
+                fullname($usermodified)
+            );
+        }
+        $reportinfo = $OUTPUT->render_from_template(
+            'report_customsql/form_report_information',
+            $reportinfocontext
+        );
+        $mform->addElement('html', $reportinfo);
     }
 
     public function validation($data, $files) {

@@ -171,10 +171,11 @@ if (is_null($csvtimestamp)) {
 
         $table = new html_table();
         $table->id = 'report_customsql_results';
-        list($table->head, $linkcolumns) = report_customsql_get_table_headers(fgetcsv($handle));
+        list($table->head, $linkcolumns) = report_customsql_get_table_headers(
+                report_customsql_read_csv_row($handle));
 
         $rowlimitexceeded = false;
-        while ($row = fgetcsv($handle)) {
+        while ($row = report_customsql_read_csv_row($handle)) {
             $data = report_customsql_display_row($row, $linkcolumns);
             if (isset($data[0]) && $data[0] === REPORT_CUSTOMSQL_LIMIT_EXCEEDED_MARKER) {
                 $rowlimitexceeded = true;
