@@ -29,6 +29,7 @@ global $CFG;
 require_once($CFG->dirroot . '/blocks/moodleblock.class.php');
 require_once($CFG->dirroot . '/lib/pagelib.php');
 require_once(dirname(__FILE__) . '/../block_filtered_course_list.php');
+require_once(dirname(__FILE__) . '/../renderer.php');
 
 /**
  * PHPUnit tests

@@ -1,30 +1,28 @@
 name: Moodle Plugin CI
-on: push
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+  schedule:
+    - cron: '0 8 * * 2'
+
 jobs:
   test:
-    #    env:
-    #      IGNORE_PATHS: js/jquery.js,tests/
-    strategy:
-      fail-fast: false
-      matrix:
-        database: ['pgsql', 'mariadb']
-        moodle-version: ['MOODLE_38_STABLE', 'MOODLE_39_STABLE', 'MOODLE_310_STABLE']
-        operating-system: [ubuntu-latest]
-        php-versions: ['7.4']
-    runs-on: ${{ matrix.operating-system }}
+    runs-on: ubuntu-18.04
+
     services:
       postgres:
         image: postgres:9.6
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
         ports:
           - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       mariadb:
         image: mariadb:10
         env:
@@ -33,69 +31,90 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.3', '7.4']
+        moodle-branch: ['MOODLE_38_STABLE', 'MOODLE_39_STABLE', 'MOODLE_310_STABLE', 'MOODLE_311_STABLE', 'master']
+        database: [pgsql, mariadb]
+
+        include:
+          - {moodle-branch: 'MOODLE_311_STABLE', php: '8.0', operating-system: 'ubuntu-18.04', database: 'mariadb'}
+          - {moodle-branch: 'MOODLE_311_STABLE', php: '8.0', operating-system: 'ubuntu-18.04', database: 'pgsql'}
+          - {moodle-branch: 'master', php: '8.0', operating-system: 'ubuntu-18.04', database: 'mariadb'}
+          - {moodle-branch: 'master', php: '8.0', operating-system: 'ubuntu-18.04', database: 'pgsql'}
+
     steps:
-      - name: Checkout
+      - name: Check out repository code
         uses: actions/checkout@v2
         with:
           path: plugin
 
-      - name: Install node
-        uses: actions/setup-node@v1
-        with:
-          # TODO: Check if we can support .nvmrc
-          node-version: '14.15.0'
-
-      - name: Setup PHP
+      - name: Setup PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-versions }}
-          extensions: mbstring, pgsql, mysqli
-          tools: phpunit
+          php-version: ${{ matrix.php }}
+          extensions: ${{ matrix.extensions }}
+          ini-values: max_input_vars=5000
           coverage: none
-          ini-values: sendmail_path = "/usr/sbin/sendmail -t -i "
 
-      - name: Deploy moodle-plugin-ci
+      - name: Initialise moodle-plugin-ci
         run: |
           composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^3
-          # Add dirs to $PATH
           echo $(cd ci/bin; pwd) >> $GITHUB_PATH
           echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
-          # PHPUnit depends on en_AU.UTF-8 locale
           sudo locale-gen en_AU.UTF-8
-      - name: Install Moodle
-        run: moodle-plugin-ci install -vvv --plugin ./plugin --db-host=127.0.0.1
+          echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
+      - name: Install moodle-plugin-ci
+        run: |
+          moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
         env:
           DB: ${{ matrix.database }}
-          MOODLE_BRANCH: ${{ matrix.moodle-version }}
+          MOODLE_BRANCH: ${{ matrix.moodle-branch }}
 
-      - name: phplint
+      - name: PHP Lint
+        if: ${{ always() }}
         run: moodle-plugin-ci phplint
 
-      - name: phpcpd
+      - name: PHP Copy/Paste Detector
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
         run: moodle-plugin-ci phpcpd
 
-      - name: phpmd
+      - name: PHP Mess Detector
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
         run: moodle-plugin-ci phpmd
 
-      - name: codechecker
+      - name: Moodle Code Checker
+        if: ${{ always() }}
         run: moodle-plugin-ci codechecker
 
-      - name: validate
+      #- name: Moodle PHPDoc Checker
+      #  if: ${{ always() }}
+      #  run: moodle-plugin-ci phpdoc
+
+      - name: Validating
+        if: ${{ always() }}
         run: moodle-plugin-ci validate
 
-      - name: savepoints
+      - name: Check upgrade savepoints
+        if: ${{ always() }}
         run: moodle-plugin-ci savepoints
 
-        # We have to skip mustache because it yields a false failure
-        # - name: mustache
-        # - run: moodle-plugin-ci mustache
+      #- name: Mustache Lint
+      #  if: ${{ always() }}
+      #  run: moodle-plugin-ci mustache
 
-        # Silencing some tests while working on migration.
-        # - name: grunt
-        # - run: moodle-plugin-ci grunt
+      #- name: Grunt
+      #  if: ${{ always() }}
+      #  run: moodle-plugin-ci grunt --max-lint-warnings 0
 
-      - name: phpunit
+      - name: PHPUnit tests
+        if: ${{ always() }}
         run: moodle-plugin-ci phpunit
 
-      - name: behat
-        run: moodle-plugin-ci behat
+      - name: Behat features
+        if: ${{ always() }}
+        run: moodle-plugin-ci behat --profile chrome

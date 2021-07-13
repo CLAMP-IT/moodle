@@ -30,7 +30,7 @@ Feature: Course names and category names can be truncated with their respective 
     Then I should see "Filtered course list"
 
   @javascript
-  Scenario Outline:
+  Scenario Outline: Truncation
     Given the following config values are set as admin:
       | coursenametpl | FULLNAME{<limit>} | block_filtered_course_list |
       | catrubrictpl  | NAME{<limit>}     | block_filtered_course_list |
@@ -40,11 +40,11 @@ Feature: Course names and category names can be truncated with their respective 
     And I should see "<catname>" in the ".block_filtered_course_list" "css_element"
     And I should not see "<notsee>" in the ".block_filtered_course_list" "css_element"
 
-  Examples:
-    | limit | crsname              | catname                 | notsee |
-    | 0     | A Course With A Name | A Category With A Name  | Name…  |
-    | 10    | A Course W…          | A Category…             | n/a    |
-    | 11    | A Course Wi…         | A Category…             | n/a    |
-    | 20    | A Course With A Name | A Category With A Na…   | Name…  |
-    | 22    | A Course With A Name | A Category With A Name  | Name…  |
-    | 30    | A Course With A Name | A Category With A Name  | Name…  |
+    Examples:
+      | limit | crsname              | catname                 | notsee |
+      | 0     | A Course With A Name | A Category With A Name  | Name…  |
+      | 10    | A Course W…          | A Category…             | n/a    |
+      | 11    | A Course Wi…         | A Category…             | n/a    |
+      | 20    | A Course With A Name | A Category With A Na…   | Name…  |
+      | 22    | A Course With A Name | A Category With A Name  | Name…  |
+      | 30    | A Course With A Name | A Category With A Name  | Name…  |

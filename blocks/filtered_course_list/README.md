@@ -1,6 +1,6 @@
-# [Filtered course list v4.4.1]
+# [Filtered course list v4.4.2]
 
-For Moodle 3.8, 3.9 and 3.10
+For Moodle 3.8, 3.9, 3.10, and 3.11
 
 ![Moodle Plugin
 CI](https://github.com/CLAMP-IT/moodle-blocks_filtered_course_list/workflows/Moodle%20Plugin%20CI/badge.svg)
@@ -75,6 +75,10 @@ Please report any bugs or feature requests to the public repository page: <https
 Use Grunt to manage LESS/CSS and Javascript as described in the Moodle dev documentation: https://docs.moodle.org/dev/Grunt
 
 ## Changelog
+
+### [v4.4.2]
+* Add support for Moodle 3.11
+* Ensure PHPUnit test can access renderer
 
 ### [v4.4.1]
 * Migrates CI to Github Actions
