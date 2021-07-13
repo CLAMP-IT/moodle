@@ -49,6 +49,8 @@ define('GLOSSARY_CONTINUOUS', 'continuous');
 define('GLOSSARY_DICTIONARY', 'dictionary');
 define('GLOSSARY_FULLWITHOUTAUTHOR', 'fullwithoutauthor');
 
+require_once(__DIR__ . '/deprecatedlib.php');
+
 /// STANDARD FUNCTIONS ///////////////////////////////////////////////////////////
 /**
  * @global object
@@ -263,9 +265,9 @@ function glossary_user_outline($course, $user, $mod, $glossary) {
 
         if ($grade) {
             if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-                $result->info .= ', ' . get_string('grade') . ': ' . $grade->str_long_grade;
+                $result->info .= ', ' . get_string('gradenoun') . ': ' . $grade->str_long_grade;
             } else {
-                $result->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
+                $result->info = get_string('gradenoun') . ': ' . get_string('hidden', 'grades');
             }
         }
         return $result;
@@ -274,9 +276,9 @@ function glossary_user_outline($course, $user, $mod, $glossary) {
             'time' => grade_get_date_for_user_grade($grade, $user),
         ];
         if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            $result->info = get_string('grade') . ': ' . $grade->str_long_grade;
+            $result->info = get_string('gradenoun') . ': ' . $grade->str_long_grade;
         } else {
-            $result->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
+            $result->info = get_string('gradenoun') . ': ' . get_string('hidden', 'grades');
         }
 
         return $result;
@@ -321,12 +323,12 @@ function glossary_user_complete($course, $user, $mod, $glossary) {
     if (!empty($grades->items[0]->grades)) {
         $grade = reset($grades->items[0]->grades);
         if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            echo $OUTPUT->container(get_string('grade').': '.$grade->str_long_grade);
+            echo $OUTPUT->container(get_string('gradenoun') . ': ' . $grade->str_long_grade);
             if ($grade->str_feedback) {
                 echo $OUTPUT->container(get_string('feedback').': '.$grade->str_feedback);
             }
         } else {
-            echo $OUTPUT->container(get_string('grade') . ': ' . get_string('hidden', 'grades'));
+            echo $OUTPUT->container(get_string('gradenoun') . ': ' . get_string('hidden', 'grades'));
         }
     }
 
@@ -403,7 +405,8 @@ function glossary_get_recent_mod_activity(&$activities, &$index, $timestart, $co
     $params['timestart'] = $timestart;
     $params['glossaryid'] = $cm->instance;
 
-    $ufields = user_picture::fields('u', null, 'userid');
+    $userfieldsapi = \core_user\fields::for_userpic();
+    $ufields = $userfieldsapi->get_sql('u', false, '', 'userid', false)->selects;
     $entries = $DB->get_records_sql("
               SELECT ge.id AS entryid, ge.glossaryid, ge.concept, ge.definition, ge.approved,
                      ge.timemodified, $ufields
@@ -564,8 +567,10 @@ function glossary_print_recent_activity($course, $viewfullnames, $timestart) {
     if (count($approvals) == 0) {
         return false;
     }
+    $userfieldsapi = \core_user\fields::for_userpic();
+    $userfields = $userfieldsapi->get_sql('u', false, '', 'userid', false)->selects;
     $selectsql = 'SELECT ge.id, ge.concept, ge.approved, ge.timemodified, ge.glossaryid,
-                                        '.user_picture::fields('u',null,'userid');
+            ' . $userfields;
     $countsql = 'SELECT COUNT(*)';
 
     $joins = array(' FROM {glossary_entries} ge ');
@@ -901,26 +906,38 @@ function glossary_scale_used_anywhere($scaleid) {
 function glossary_get_available_formats() {
     global $CFG, $DB;
 
-    //Get available formats (plugin) and insert (if necessary) them into glossary_formats
+    // Get available formats (plugin) and insert them (if necessary) into glossary_formats.
     $formats = get_list_of_plugins('mod/glossary/formats', 'TEMPLATE');
     $pluginformats = array();
+    $formatrecords = $DB->get_records("glossary_formats");
+
     foreach ($formats as $format) {
-        //If the format file exists
+        // If the format file exists.
         if (file_exists($CFG->dirroot.'/mod/glossary/formats/'.$format.'/'.$format.'_format.php')) {
             include_once($CFG->dirroot.'/mod/glossary/formats/'.$format.'/'.$format.'_format.php');
             //If the function exists
             if (function_exists('glossary_show_entry_'.$format)) {
-                //Acummulate it as a valid format
+                // Acummulate it as a valid format.
                 $pluginformats[] = $format;
-                //If the format doesn't exist in the table
-                if (!$rec = $DB->get_record('glossary_formats', array('name'=>$format))) {
-                    //Insert the record in glossary_formats
+
+                // Check if the format exists in the table.
+                $rec = null;
+                foreach ($formatrecords as $record) {
+                    if ($record->name == $format) {
+                        $rec = $record;
+                        break;
+                    }
+                }
+
+                if (!$rec) {
+                    // Insert the record in glossary_formats.
                     $gf = new stdClass();
                     $gf->name = $format;
                     $gf->popupformatname = $format;
                     $gf->visible = 1;
                     $id = $DB->insert_record('glossary_formats', $gf);
                     $rec = $DB->get_record('glossary_formats', array('id' => $id));
+                    array_push($formatrecords, $rec);
                 }
 
                 if (empty($rec->showtabs)) {
@@ -930,31 +947,29 @@ function glossary_get_available_formats() {
         }
     }
 
-    //Delete non_existent formats from glossary_formats table
-    $formats = $DB->get_records("glossary_formats");
-    foreach ($formats as $format) {
+    // Delete non_existent formats from glossary_formats table.
+    foreach ($formatrecords as $record) {
         $todelete = false;
-        //If the format in DB isn't a valid previously detected format then delete the record
-        if (!in_array($format->name,$pluginformats)) {
+        // If the format in DB isn't a valid previously detected format then delete the record.
+        if (!in_array($record->name, $pluginformats)) {
             $todelete = true;
         }
 
         if ($todelete) {
-            //Delete the format
-            $DB->delete_records('glossary_formats', array('name'=>$format->name));
-            //Reasign existing glossaries to default (dictionary) format
-            if ($glossaries = $DB->get_records('glossary', array('displayformat'=>$format->name))) {
+            // Delete the format.
+            $DB->delete_records('glossary_formats', array('id' => $record->id));
+            unset($formatrecords[$record->id]);
+
+            // Reassign existing glossaries to default (dictionary) format.
+            if ($glossaries = $DB->get_records('glossary', array('displayformat' => $record->name))) {
                 foreach($glossaries as $glossary) {
-                    $DB->set_field('glossary','displayformat','dictionary', array('id'=>$glossary->id));
+                    $DB->set_field('glossary', 'displayformat', 'dictionary', array('id' => $glossary->id));
                 }
             }
         }
     }
 
-    //Now everything is ready in glossary_formats table
-    $formats = $DB->get_records("glossary_formats");
-
-    return $formats;
+    return $formatrecords;
 }
 
 /**
@@ -1946,7 +1961,7 @@ function glossary_print_categories_menu($cm, $glossary, $hook, $category) {
             echo get_string("entrieswithoutcategory","glossary");
             $selected = GLOSSARY_SHOW_NOT_CATEGORISED;
 
-        } elseif ( $hook == GLOSSARY_SHOW_ALL_CATEGORIES ) {
+        } else if ( empty($hook) ) {
 
             echo get_string("allcategories","glossary");
             $selected = GLOSSARY_SHOW_ALL_CATEGORIES;
@@ -2467,7 +2482,7 @@ function glossary_end_tag($tag,$level=0,$endline=true) {
  * @param string $content
  * @return string
  */
-function glossary_full_tag($tag,$level=0,$endline=true,$content) {
+function glossary_full_tag($tag, $level, $endline, $content) {
         global $CFG;
 
         $st = glossary_start_tag($tag,$level,$endline);
@@ -3092,42 +3107,6 @@ function glossary_supports($feature) {
     }
 }
 
-/**
- * Obtains the automatic completion state for this glossary based on any conditions
- * in glossary settings.
- *
- * @global object
- * @global object
- * @param object $course Course
- * @param object $cm Course-module
- * @param int $userid User ID
- * @param bool $type Type of comparison (or/and; can be used as return value if no conditions)
- * @return bool True if completed, false if not. (If no conditions, then return
- *   value depends on comparison type)
- */
-function glossary_get_completion_state($course,$cm,$userid,$type) {
-    global $CFG, $DB;
-
-    // Get glossary details
-    if (!($glossary=$DB->get_record('glossary',array('id'=>$cm->instance)))) {
-        throw new Exception("Can't find glossary {$cm->instance}");
-    }
-
-    $result=$type; // Default return value
-
-    if ($glossary->completionentries) {
-        $value = $glossary->completionentries <=
-                 $DB->count_records('glossary_entries',array('glossaryid'=>$glossary->id, 'userid'=>$userid, 'approved'=>1));
-        if ($type == COMPLETION_AND) {
-            $result = $result && $value;
-        } else {
-            $result = $result || $value;
-        }
-    }
-
-    return $result;
-}
-
 function glossary_extend_navigation($navigation, $course, $module, $cm) {
     global $CFG, $DB;
 
@@ -3671,7 +3650,8 @@ function glossary_get_authors($glossary, $context, $limit, $from, $options = arr
     global $DB, $USER;
 
     $params = array();
-    $userfields = user_picture::fields('u', null);
+    $userfieldsapi = \core_user\fields::for_userpic();
+    $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
     $approvedsql = '(ge.approved <> 0 OR ge.userid = :myid)';
     $params['myid'] = $USER->id;
@@ -3824,7 +3804,8 @@ function glossary_get_entries_by_search($glossary, $context, $query, $fullsearch
 
     list($searchcond, $params) = glossary_get_search_terms_sql($terms, $fullsearch, $glossary->id);
 
-    $userfields = user_picture::fields('u', null, 'userdataid', 'userdata');
+    $userfieldsapi = \core_user\fields::for_userpic();
+    $userfields = $userfieldsapi->get_sql('u', false, 'userdata', 'userdataid', false)->selects;
 
     // Need one inner view here to avoid distinct + text.
     $sqlwrapheader = 'SELECT ge.*, ge.concept AS glossarypivot, ' . $userfields . '

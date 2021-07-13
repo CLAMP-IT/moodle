@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 define('LESSON_EVENT_TYPE_OPEN', 'open');
 define('LESSON_EVENT_TYPE_CLOSE', 'close');
 
+require_once(__DIR__ . '/deprecatedlib.php');
 /* Do not include any libraries here! */
 
 /**
@@ -408,9 +409,9 @@ function lesson_user_outline($course, $user, $mod, $lesson) {
             }
         } else {
             if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-                $return->info = get_string('grade') . ': ' . $grade->str_long_grade;
+                $return->info = get_string('gradenoun') . ': ' . $grade->str_long_grade;
             } else {
-                $return->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
+                $return->info = get_string('gradenoun') . ': ' . get_string('hidden', 'grades');
             }
 
             $return->time = grade_get_date_for_user_grade($grade, $user);
@@ -462,9 +463,9 @@ function lesson_user_complete($course, $user, $mod, $lesson) {
             }
         } else {
             if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-                $status = get_string("grade") . ': ' . $grade->str_long_grade;
+                $status = get_string('gradenoun') . ': ' . $grade->str_long_grade;
             } else {
-                $status = get_string('grade') . ': ' . get_string('hidden', 'grades');
+                $status = get_string('gradenoun') . ': ' . get_string('hidden', 'grades');
             }
         }
 
@@ -924,23 +925,27 @@ function lesson_reset_userdata($data) {
         $status[] = array('component'=>$componentstr, 'item'=>get_string('deleteallattempts', 'lesson'), 'error'=>false);
     }
 
+    $purgeoverrides = false;
+
     // Remove user overrides.
     if (!empty($data->reset_lesson_user_overrides)) {
         $DB->delete_records_select('lesson_overrides',
                 'lessonid IN (SELECT id FROM {lesson} WHERE course = ?) AND userid IS NOT NULL', array($data->courseid));
         $status[] = array(
-        'component' => $componentstr,
-        'item' => get_string('useroverridesdeleted', 'lesson'),
-        'error' => false);
+            'component' => $componentstr,
+            'item' => get_string('useroverridesdeleted', 'lesson'),
+            'error' => false);
+        $purgeoverrides = true;
     }
     // Remove group overrides.
     if (!empty($data->reset_lesson_group_overrides)) {
         $DB->delete_records_select('lesson_overrides',
         'lessonid IN (SELECT id FROM {lesson} WHERE course = ?) AND groupid IS NOT NULL', array($data->courseid));
         $status[] = array(
-        'component' => $componentstr,
-        'item' => get_string('groupoverridesdeleted', 'lesson'),
-        'error' => false);
+            'component' => $componentstr,
+            'item' => get_string('groupoverridesdeleted', 'lesson'),
+            'error' => false);
+        $purgeoverrides = true;
     }
     /// updating dates - shift may be negative too
     if ($data->timeshift) {
@@ -953,10 +958,16 @@ function lesson_reset_userdata($data) {
                        WHERE lessonid IN (SELECT id FROM {lesson} WHERE course = ?)
                          AND deadline <> 0", array($data->timeshift, $data->courseid));
 
+        $purgeoverrides = true;
+
         // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
         // See MDL-9367.
         shift_course_mod_dates('lesson', array('available', 'deadline'), $data->timeshift, $data->courseid);
         $status[] = array('component'=>$componentstr, 'item'=>get_string('datechanged'), 'error'=>false);
+    }
+
+    if ($purgeoverrides) {
+        cache::make('mod_lesson', 'overrides')->purge();
     }
 
     return $status;
@@ -997,52 +1008,6 @@ function lesson_supports($feature) {
     }
 }
 
-/**
- * Obtains the automatic completion state for this lesson based on any conditions
- * in lesson settings.
- *
- * @param object $course Course
- * @param object $cm course-module
- * @param int $userid User ID
- * @param bool $type Type of comparison (or/and; can be used as return value if no conditions)
- * @return bool True if completed, false if not, $type if conditions not set.
- */
-function lesson_get_completion_state($course, $cm, $userid, $type) {
-    global $CFG, $DB;
-
-    // Get lesson details.
-    $lesson = $DB->get_record('lesson', array('id' => $cm->instance), '*',
-            MUST_EXIST);
-
-    $result = $type; // Default return value.
-    // If completion option is enabled, evaluate it and return true/false.
-    if ($lesson->completionendreached) {
-        $value = $DB->record_exists('lesson_timer', array(
-                'lessonid' => $lesson->id, 'userid' => $userid, 'completed' => 1));
-        if ($type == COMPLETION_AND) {
-            $result = $result && $value;
-        } else {
-            $result = $result || $value;
-        }
-    }
-    if ($lesson->completiontimespent != 0) {
-        $duration = $DB->get_field_sql(
-                        "SELECT SUM(lessontime - starttime)
-                               FROM {lesson_timer}
-                              WHERE lessonid = :lessonid
-                                AND userid = :userid",
-                        array('userid' => $userid, 'lessonid' => $lesson->id));
-        if (!$duration) {
-            $duration = 0;
-        }
-        if ($type == COMPLETION_AND) {
-            $result = $result && ($lesson->completiontimespent < $duration);
-        } else {
-            $result = $result || ($lesson->completiontimespent < $duration);
-        }
-    }
-    return $result;
-}
 /**
  * This function extends the settings navigation block for the site.
  *
@@ -1542,7 +1507,7 @@ function lesson_get_coursemodule_info($coursemodule) {
     global $DB;
 
     $dbparams = ['id' => $coursemodule->instance];
-    $fields = 'id, name, intro, introformat, completionendreached, completiontimespent';
+    $fields = 'id, name, intro, introformat, completionendreached, completiontimespent, available, deadline';
     if (!$lesson = $DB->get_record('lesson', $dbparams, $fields)) {
         return false;
     }
@@ -1561,7 +1526,71 @@ function lesson_get_coursemodule_info($coursemodule) {
         $result->customdata['customcompletionrules']['completiontimespent'] = $lesson->completiontimespent;
     }
 
+    // Populate some other values that can be used in calendar or on dashboard.
+    if ($lesson->available) {
+        $result->customdata['available'] = $lesson->available;
+    }
+    if ($lesson->deadline) {
+        $result->customdata['deadline'] = $lesson->deadline;
+    }
+
     return $result;
+}
+
+/**
+ * Sets dynamic information about a course module
+ *
+ * This function is called from cm_info when displaying the module
+ *
+ * @param cm_info $cm
+ */
+function mod_lesson_cm_info_dynamic(cm_info $cm) {
+    global $USER;
+
+    $cache = cache::make('mod_lesson', 'overrides');
+    $override = $cache->get("{$cm->instance}_u_{$USER->id}");
+
+    if (!$override) {
+        $override = (object) [
+            'available' => null,
+            'deadline' => null,
+        ];
+    }
+
+    // No need to look for group overrides if there are user overrides for both available and deadline.
+    if (is_null($override->available) || is_null($override->deadline)) {
+        $availables = [];
+        $deadlines = [];
+        $groupings = groups_get_user_groups($cm->course, $USER->id);
+        foreach ($groupings[0] as $groupid) {
+            $groupoverride = $cache->get("{$cm->instance}_g_{$groupid}");
+            if (isset($groupoverride->available)) {
+                $availables[] = $groupoverride->available;
+            }
+            if (isset($groupoverride->deadline)) {
+                $deadlines[] = $groupoverride->deadline;
+            }
+        }
+        // If there is a user override for a setting, ignore the group override.
+        if (is_null($override->available) && count($availables)) {
+            $override->available = min($availables);
+        }
+        if (is_null($override->deadline) && count($deadlines)) {
+            if (in_array(0, $deadlines)) {
+                $override->deadline = 0;
+            } else {
+                $override->deadline = max($deadlines);
+            }
+        }
+    }
+
+    // Populate some other values that can be used in calendar or on dashboard.
+    if (!is_null($override->available)) {
+        $cm->override_customdata('available', $override->available);
+    }
+    if (!is_null($override->deadline)) {
+        $cm->override_customdata('deadline', $override->deadline);
+    }
 }
 
 /**

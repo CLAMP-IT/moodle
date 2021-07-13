@@ -122,6 +122,8 @@ if (!$canpreview) {
 $mygradeoverridden = false;
 $gradebookfeedback = '';
 
+$item = null;
+
 $grading_info = grade_get_grades($course->id, 'mod', 'quiz', $quiz->id, $USER->id);
 if (!empty($grading_info->items)) {
     $item = $grading_info->items[0];
@@ -183,6 +185,14 @@ $viewobj->infomessages = $viewobj->accessmanager->describe_rules();
 if ($quiz->attempts != 1) {
     $viewobj->infomessages[] = get_string('gradingmethod', 'quiz',
             quiz_get_grading_option_name($quiz->grademethod));
+}
+
+// Inform user of the grade to pass if non-zero.
+if ($item && grade_floats_different($item->gradepass, 0)) {
+    $a = new stdClass();
+    $a->grade = quiz_format_grade($quiz, $item->gradepass);
+    $a->maxgrade = quiz_format_grade($quiz, $quiz->grade);
+    $viewobj->infomessages[] = get_string('gradetopassoutof', 'quiz', $a);
 }
 
 // Determine wheter a start attempt button should be displayed.

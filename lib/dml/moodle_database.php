@@ -137,7 +137,7 @@ abstract class moodle_database {
     /**
      * @var int internal temporary variable used to guarantee unique parameters in each request. Its used by {@link get_in_or_equal()}.
      */
-    private $inorequaluniqueindex = 1;
+    protected $inorequaluniqueindex = 1;
 
     /**
      * @var boolean variable use to temporarily disable logging.
@@ -2296,6 +2296,16 @@ abstract class moodle_database {
      * @return string The SQL to concatenate the strings.
      */
     public abstract function sql_concat_join($separator="' '", $elements=array());
+
+    /**
+     * Return SQL for performing group concatenation on given field/expression
+     *
+     * @param string $field Table field or SQL expression to be concatenated
+     * @param string $separator The separator desired between each concatetated field
+     * @param string $sort Ordering of the concatenated field
+     * @return string
+     */
+    public abstract function sql_group_concat(string $field, string $separator = ', ', string $sort = ''): string;
 
     /**
      * Returns the proper SQL (for the dbms in use) to concatenate $firstname and $lastname

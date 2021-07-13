@@ -969,6 +969,72 @@ function quiz_update_all_final_grades($quiz) {
 }
 
 /**
+ * Return summary of the number of settings override that exist.
+ *
+ * To get a nice display of this, see the quiz_override_summary_links()
+ * quiz renderer method.
+ *
+ * @param stdClass $quiz the quiz settings. Only $quiz->id is used at the moment.
+ * @param stdClass|cm_info $cm the cm object. Only $cm->course, $cm->groupmode and
+ *      $cm->groupingid fields are used at the moment.
+ * @param int $currentgroup if there is a concept of current group where this method is being called
+ *      (e.g. a report) pass it in here. Default 0 which means no current group.
+ * @return array like 'group' => 3, 'user' => 12] where 3 is the number of group overrides,
+ *      and 12 is the number of user ones.
+ */
+function quiz_override_summary(stdClass $quiz, stdClass $cm, int $currentgroup = 0): array {
+    global $DB;
+
+    if ($currentgroup) {
+        // Currently only interested in one group.
+        $groupcount = $DB->count_records('quiz_overrides', ['quiz' => $quiz->id, 'groupid' => $currentgroup]);
+        $usercount = $DB->count_records_sql("
+                SELECT COUNT(1)
+                  FROM {quiz_overrides} o
+                  JOIN {groups_members} gm ON o.userid = gm.userid
+                 WHERE o.quiz = ?
+                   AND gm.groupid = ?
+                    ", [$quiz->id, $currentgroup]);
+        return ['group' => $groupcount, 'user' => $usercount, 'mode' => 'onegroup'];
+    }
+
+    $quizgroupmode = groups_get_activity_groupmode($cm);
+    $accessallgroups = ($quizgroupmode == NOGROUPS) ||
+            has_capability('moodle/site:accessallgroups', context_module::instance($cm->id));
+
+    if ($accessallgroups) {
+        // User can see all groups.
+        $groupcount = $DB->count_records_select('quiz_overrides',
+                'quiz = ? AND groupid IS NOT NULL', [$quiz->id]);
+        $usercount = $DB->count_records_select('quiz_overrides',
+                'quiz = ? AND userid IS NOT NULL', [$quiz->id]);
+        return ['group' => $groupcount, 'user' => $usercount, 'mode' => 'allgroups'];
+
+    } else {
+        // User can only see groups they are in.
+        $groups = groups_get_activity_allowed_groups($cm);
+        if (!$groups) {
+            return ['group' => 0, 'user' => 0, 'mode' => 'somegroups'];
+        }
+
+        list($groupidtest, $params) = $DB->get_in_or_equal(array_keys($groups));
+        $params[] = $quiz->id;
+
+        $groupcount = $DB->count_records_select('quiz_overrides',
+                "groupid $groupidtest AND quiz = ?", $params);
+        $usercount = $DB->count_records_sql("
+                SELECT COUNT(1)
+                  FROM {quiz_overrides} o
+                  JOIN {groups_members} gm ON o.userid = gm.userid
+                 WHERE gm.groupid $groupidtest
+                   AND o.quiz = ?
+               ", $params);
+
+        return ['group' => $groupcount, 'user' => $usercount, 'mode' => 'somegroups'];
+    }
+}
+
+/**
  * Efficiently update check state time on all open attempts
  *
  * @param array $conditions optional restrictions on which attempts to update
@@ -1462,6 +1528,7 @@ function quiz_get_review_options($quiz, $attempt, $context) {
         $options->rightanswer = question_display_options::VISIBLE;
         $options->overallfeedback = question_display_options::VISIBLE;
         $options->history = question_display_options::VISIBLE;
+        $options->userinfoinhistory = $attempt->userid;
 
     }
 
@@ -1633,7 +1700,8 @@ function quiz_send_notification_messages($course, $quiz, $attempt, $context, $cm
     // Check for notifications required.
     $notifyfields = 'u.id, u.username, u.idnumber, u.email, u.emailstop, u.lang,
             u.timezone, u.mailformat, u.maildisplay, u.auth, u.suspended, u.deleted, ';
-    $notifyfields .= get_all_user_name_fields(true, 'u');
+    $userfieldsapi = \core_user\fields::for_name();
+    $notifyfields .= $userfieldsapi->get_sql('u', false, '', '', false)->selects;
     $groups = groups_get_all_groups($course->id, $submitter->id, $cm->groupingid);
     if (is_array($groups) && count($groups) > 0) {
         $groups = array_keys($groups);
@@ -1855,7 +1923,7 @@ function quiz_process_group_deleted_in_course($courseid) {
 
     // It would be nice if we got the groupid that was deleted.
     // Instead, we just update all quizzes with orphaned group overrides.
-    $sql = "SELECT o.id, o.quiz
+    $sql = "SELECT o.id, o.quiz, o.groupid
               FROM {quiz_overrides} o
               JOIN {quiz} quiz ON quiz.id = o.quiz
          LEFT JOIN {groups} grp ON grp.id = o.groupid
@@ -1863,12 +1931,16 @@ function quiz_process_group_deleted_in_course($courseid) {
                AND o.groupid IS NOT NULL
                AND grp.id IS NULL";
     $params = array('courseid' => $courseid);
-    $records = $DB->get_records_sql_menu($sql, $params);
+    $records = $DB->get_records_sql($sql, $params);
     if (!$records) {
         return; // Nothing to do.
     }
     $DB->delete_records_list('quiz_overrides', 'id', array_keys($records));
-    quiz_update_open_attempts(array('quizid' => array_unique(array_values($records))));
+    $cache = cache::make('mod_quiz', 'overrides');
+    foreach ($records as $record) {
+        $cache->delete("{$record->quiz}_g_{$record->groupid}");
+    }
+    quiz_update_open_attempts(['quizid' => array_unique(array_column($records, 'quiz'))]);
 }
 
 /**

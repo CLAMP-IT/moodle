@@ -42,6 +42,9 @@ class quiz_grading_report extends quiz_default_report {
     const DEFAULT_PAGE_SIZE = 5;
     const DEFAULT_ORDER = 'random';
 
+    /** @var string Positive integer regular expression. */
+    const REGEX_POSITIVE_INT = '/^[1-9]\d*$/';
+
     /** @var array URL parameters for what is being displayed when grading. */
     protected $viewoptions = [];
 
@@ -98,6 +101,10 @@ class quiz_grading_report extends quiz_default_report {
             if ($$param) {
                 $this->viewoptions[$param] = $$param;
             }
+        }
+        if (!data_submitted() && !preg_match(self::REGEX_POSITIVE_INT, $pagesize)) {
+            // We only validate if the user accesses the page via a cleaned-up GET URL here.
+            throw new moodle_exception('invalidpagesize');
         }
         if ($pagesize != self::DEFAULT_PAGE_SIZE) {
             $this->viewoptions['pagesize'] = $pagesize;
@@ -224,7 +231,8 @@ class quiz_grading_report extends quiz_default_report {
         $params[] = $this->quiz->id;
 
         $fields = 'quiza.*, u.idnumber, ';
-        $fields .= get_all_user_name_fields(true, 'u');
+        $userfieldsapi = \core_user\fields::for_name();
+        $fields .= $userfieldsapi->get_sql('u', false, '', '', false)->selects;
         $attemptsbyid = $DB->get_records_sql("
                 SELECT $fields
                 FROM {quiz_attempts} quiza
@@ -414,12 +422,18 @@ class quiz_grading_report extends quiz_default_report {
         $settings->order = $order;
         $mform->set_data($settings);
 
-        // If the form was submitted, save the user preferences, and
-        // redirect to a cleaned-up GET URL.
-        if ($mform->get_data()) {
-            set_user_preference('quiz_grading_pagesize', $pagesize);
-            set_user_preference('quiz_grading_order', $order);
-            redirect($this->grade_question_url($slot, $questionid, $grade, $page));
+        if ($mform->is_submitted()) {
+            if ($mform->is_validated()) {
+                // If the form was submitted and validated, save the user preferences, and
+                // redirect to a cleaned-up GET URL.
+                set_user_preference('quiz_grading_pagesize', $pagesize);
+                set_user_preference('quiz_grading_order', $order);
+                redirect($this->grade_question_url($slot, $questionid, $grade, $page));
+            } else {
+                // Set the pagesize back to the previous value, so the report page can continue the render
+                // and the form can show the validation.
+                $pagesize = get_user_preferences('quiz_grading_pagesize', self::DEFAULT_PAGE_SIZE);
+            }
         }
 
         list($qubaids, $count) = $this->get_usage_ids_where_question_in_state(
@@ -445,8 +459,7 @@ class quiz_grading_report extends quiz_default_report {
             $attempt = $attempts[$qubaid];
             $quba = question_engine::load_questions_usage_by_activity($qubaid);
             $displayoptions = quiz_get_review_options($this->quiz, $attempt, $this->context);
-            $displayoptions->hide_all_feedback();
-            $displayoptions->rightanswer = question_display_options::VISIBLE;
+            $displayoptions->generalfeedback = question_display_options::HIDDEN;
             $displayoptions->history = question_display_options::HIDDEN;
             $displayoptions->manualcomment = question_display_options::EDITABLE;
 

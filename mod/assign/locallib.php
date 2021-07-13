@@ -39,6 +39,7 @@ define('ASSIGN_FILTER_NOT_SUBMITTED', 'notsubmitted');
 define('ASSIGN_FILTER_SINGLE_USER', 'singleuser');
 define('ASSIGN_FILTER_REQUIRE_GRADING', 'requiregrading');
 define('ASSIGN_FILTER_GRANTED_EXTENSION', 'grantedextension');
+define('ASSIGN_FILTER_DRAFT', 'draft');
 
 // Marker filter for grading page.
 define('ASSIGN_MARKER_FILTER_NO_MARKER', -1);
@@ -873,8 +874,10 @@ class assign {
         $conds = array('modulename' => 'assign', 'instance' => $this->get_instance()->id);
         if (isset($override->userid)) {
             $conds['userid'] = $override->userid;
+            $cachekey = "{$cm->instance}_u_{$override->userid}";
         } else {
             $conds['groupid'] = $override->groupid;
+            $cachekey = "{$cm->instance}_g_{$override->groupid}";
         }
         $events = $DB->get_records('event', $conds);
         foreach ($events as $event) {
@@ -883,6 +886,7 @@ class assign {
         }
 
         $DB->delete_records('assign_overrides', array('id' => $overrideid));
+        cache::make('mod_assign', 'overrides')->delete($cachekey);
 
         // Set the common parameters for one of the events we will be triggering.
         $params = array(
@@ -1202,6 +1206,8 @@ class assign {
             }
         }
 
+        $purgeoverrides = false;
+
         // Remove user overrides.
         if (!empty($data->reset_assign_user_overrides)) {
             $DB->delete_records_select('assign_overrides',
@@ -1210,6 +1216,7 @@ class assign {
                 'component' => $componentstr,
                 'item' => get_string('useroverridesdeleted', 'assign'),
                 'error' => false);
+            $purgeoverrides = true;
         }
         // Remove group overrides.
         if (!empty($data->reset_assign_group_overrides)) {
@@ -1219,6 +1226,7 @@ class assign {
                 'component' => $componentstr,
                 'item' => get_string('groupoverridesdeleted', 'assign'),
                 'error' => false);
+            $purgeoverrides = true;
         }
 
         // Updating dates - shift may be negative too.
@@ -1236,6 +1244,8 @@ class assign {
                        WHERE assignid =? AND cutoffdate <> 0",
                 array($data->timeshift, $this->get_instance()->id));
 
+            $purgeoverrides = true;
+
             // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
             // See MDL-9367.
             shift_course_mod_dates('assign',
@@ -1245,6 +1255,10 @@ class assign {
             $status[] = array('component'=>$componentstr,
                               'item'=>get_string('datechanged'),
                               'error'=>false);
+        }
+
+        if ($purgeoverrides) {
+            cache::make('mod_assign', 'overrides')->purge();
         }
 
         return $status;
@@ -2064,9 +2078,9 @@ class assign {
      */
     private function get_grading_sort_sql() {
         $usersort = flexible_table::get_sort_for_table('mod_assign_grading');
-        $extrauserfields = get_extra_user_fields($this->get_context());
-
-        $userfields = explode(',', user_picture::fields('', $extrauserfields));
+        // TODO Does not support custom user profile fields (MDL-70456).
+        $userfieldsapi = \core_user\fields::for_identity($this->context, false)->with_userpic();
+        $userfields = $userfieldsapi->get_required_fields();
         $orderfields = explode(',', $usersort);
         $validlist = [];
 
@@ -2539,27 +2553,6 @@ class assign {
         $useridlist = $table->get_column_data('userid');
 
         return $useridlist;
-    }
-
-    /**
-     * Generate zip file from array of given files.
-     *
-     * @param array $filesforzipping - array of files to pass into archive_to_pathname.
-     *                                 This array is indexed by the final file name and each
-     *                                 element in the array is an instance of a stored_file object.
-     * @return path of temp file - note this returned file does
-     *         not have a .zip extension - it is a temp file.
-     */
-    protected function pack_files($filesforzipping) {
-        global $CFG;
-        // Create path for new zip file.
-        $tempzip = tempnam($CFG->tempdir . '/', 'assignment_');
-        // Zip files.
-        $zipper = new zip_packer();
-        if ($zipper->archive_to_pathname($filesforzipping, $tempzip)) {
-            return $tempzip;
-        }
-        return false;
     }
 
     /**
@@ -3697,13 +3690,33 @@ class assign {
                                                                     'action'=>'grading'));
             $result .= $this->get_renderer()->continue_button($url);
             $result .= $this->view_footer();
-        } else if ($zipfile = $this->pack_files($filesforzipping)) {
-            \mod_assign\event\all_submissions_downloaded::create_from_assign($this)->trigger();
-            // Send file and delete after sending.
-            send_temp_file($zipfile, $filename);
-            // We will not get here - send_temp_file calls exit.
+
+            return $result;
         }
-        return $result;
+
+        // Log zip as downloaded.
+        \mod_assign\event\all_submissions_downloaded::create_from_assign($this)->trigger();
+
+        // Close the session.
+        \core\session\manager::write_close();
+
+        $zipwriter = \core_files\archive_writer::get_stream_writer($filename, \core_files\archive_writer::ZIP_WRITER);
+
+        // Stream the files into the zip.
+        foreach ($filesforzipping as $pathinzip => $file) {
+            if ($file instanceof \stored_file) {
+                // Most of cases are \stored_file.
+                $zipwriter->add_file_from_stored_file($pathinzip, $file);
+            } else if (is_array($file)) {
+                // Save $file as contents, from onlinetext subplugin.
+                $content = reset($file);
+                $zipwriter->add_file_from_string($pathinzip, $content);
+            }
+        }
+
+        // Finish the archive.
+        $zipwriter->finish();
+        exit();
     }
 
     /**
@@ -4112,7 +4125,7 @@ class assign {
             // and show errors.
             $mform->is_validated();
         }
-        $o .= $this->get_renderer()->heading(get_string('grade'), 3);
+        $o .= $this->get_renderer()->heading(get_string('gradenoun'), 3);
         $o .= $this->get_renderer()->render(new assign_form('gradingform', $mform));
 
         if (count($allsubmissions) > 1) {
@@ -4191,7 +4204,8 @@ class assign {
                                                    $viewfullnames,
                                                    $this->is_blind_marking(),
                                                    $this->get_uniqueid_for_user($user->id),
-                                                   get_extra_user_fields($this->get_context()),
+                                                   // TODO Does not support custom user profile fields (MDL-70456).
+                                                   \core_user\fields::get_identity_fields($this->get_context(), false),
                                                    !$this->is_active_user($userid));
             $o .= $this->get_renderer()->render($usersummary);
         }
@@ -4297,7 +4311,7 @@ class assign {
                                                '',
                                                array('class'=>'gradeform'));
         }
-        $o .= $this->get_renderer()->heading(get_string('grade'), 3);
+        $o .= $this->get_renderer()->heading(get_string('gradenoun'), 3);
         $o .= $this->get_renderer()->render(new assign_form('gradingform', $mform));
 
         if (count($allsubmissions) > 1 && $attemptnumber == -1) {
@@ -5040,7 +5054,8 @@ class assign {
         $usershtml = '';
 
         $usercount = 0;
-        $extrauserfields = get_extra_user_fields($this->get_context());
+        // TODO Does not support custom user profile fields (MDL-70456).
+        $extrauserfields = \core_user\fields::get_identity_fields($this->get_context(), false);
         $viewfullnames = has_capability('moodle/site:viewfullnames', $this->get_context());
         foreach ($userlist as $userid) {
             if ($usercount >= 5) {
@@ -5104,7 +5119,8 @@ class assign {
         $usershtml = '';
 
         $usercount = 0;
-        $extrauserfields = get_extra_user_fields($this->get_context());
+        // TODO Does not support custom user profile fields (MDL-70456).
+        $extrauserfields = \core_user\fields::get_identity_fields($this->get_context(), false);
         $viewfullnames = has_capability('moodle/site:viewfullnames', $this->get_context());
         foreach ($userlist as $userid) {
             if ($usercount >= 5) {
@@ -7222,7 +7238,7 @@ class assign {
 
         $info = get_string('gradestudent', 'assign', array('id'=>$user->id, 'fullname'=>fullname($user)));
         if ($grade->grade != '') {
-            $info .= get_string('grade') . ': ' . $this->display_grade($grade->grade, false) . '. ';
+            $info .= get_string('gradenoun') . ': ' . $this->display_grade($grade->grade, false) . '. ';
         } else {
             $info .= get_string('nograde', 'assign');
         }
@@ -7684,11 +7700,11 @@ class assign {
         $gradingdisabled = $this->grading_disabled($userid);
         $gradinginstance = $this->get_grading_instance($userid, $grade, $gradingdisabled);
 
-        $mform->addElement('header', 'gradeheader', get_string('grade'));
+        $mform->addElement('header', 'gradeheader', get_string('gradenoun'));
         if ($gradinginstance) {
             $gradingelement = $mform->addElement('grading',
                                                  'advancedgrading',
-                                                 get_string('grade').':',
+                                                 get_string('gradenoun') . ':',
                                                  array('gradinginstance' => $gradinginstance));
             if ($gradingdisabled) {
                 $gradingelement->freeze();
@@ -7712,7 +7728,7 @@ class assign {
             } else {
                 $grademenu = array(-1 => get_string("nograde")) + make_grades_menu($this->get_instance()->grade);
                 if (count($grademenu) > 1) {
-                    $gradingelement = $mform->addElement('select', 'grade', get_string('grade') . ':', $grademenu);
+                    $gradingelement = $mform->addElement('select', 'grade', get_string('gradenoun') . ':', $grademenu);
 
                     // The grade is already formatted with format_float so it needs to be converted back to an integer.
                     if (!empty($data->grade)) {
@@ -9396,8 +9412,9 @@ class assign {
      */
     public function get_filters() {
         $filterkeys = [
-            ASSIGN_FILTER_SUBMITTED,
             ASSIGN_FILTER_NOT_SUBMITTED,
+            ASSIGN_FILTER_DRAFT,
+            ASSIGN_FILTER_SUBMITTED,
             ASSIGN_FILTER_REQUIRE_GRADING,
             ASSIGN_FILTER_GRANTED_EXTENSION
         ];
@@ -9785,14 +9802,14 @@ function assign_process_group_deleted_in_course($courseid, $groupid = null) {
     if ($groupid) {
         $params['groupid'] = $groupid;
         // We just update the group that was deleted.
-        $sql = "SELECT o.id, o.assignid
+        $sql = "SELECT o.id, o.assignid, o.groupid
                   FROM {assign_overrides} o
                   JOIN {assign} assign ON assign.id = o.assignid
                  WHERE assign.course = :courseid
                    AND o.groupid = :groupid";
     } else {
         // No groupid, we update all orphaned group overrides for all assign in course.
-        $sql = "SELECT o.id, o.assignid
+        $sql = "SELECT o.id, o.assignid, o.groupid
                   FROM {assign_overrides} o
                   JOIN {assign} assign ON assign.id = o.assignid
              LEFT JOIN {groups} grp ON grp.id = o.groupid
@@ -9800,11 +9817,15 @@ function assign_process_group_deleted_in_course($courseid, $groupid = null) {
                    AND o.groupid IS NOT NULL
                    AND grp.id IS NULL";
     }
-    $records = $DB->get_records_sql_menu($sql, $params);
+    $records = $DB->get_records_sql($sql, $params);
     if (!$records) {
         return; // Nothing to do.
     }
     $DB->delete_records_list('assign_overrides', 'id', array_keys($records));
+    $cache = cache::make('mod_assign', 'overrides');
+    foreach ($records as $record) {
+        $cache->delete("{$record->assignid}_g_{$record->groupid}");
+    }
 }
 
 /**
@@ -9819,7 +9840,7 @@ function move_group_override($id, $move, $assignid) {
     global $DB;
 
     // Get the override object.
-    if (!$override = $DB->get_record('assign_overrides', array('id' => $id), 'id, sortorder')) {
+    if (!$override = $DB->get_record('assign_overrides', ['id' => $id], 'id, sortorder, groupid')) {
         return false;
     }
     // Count the number of group overrides.
@@ -9835,8 +9856,8 @@ function move_group_override($id, $move, $assignid) {
     }
 
     // Retrieve the override object that is currently residing in the new position.
-    $params = array('sortorder' => $neworder, 'assignid' => $assignid);
-    if ($swapoverride = $DB->get_record('assign_overrides', $params, 'id, sortorder')) {
+    $params = ['sortorder' => $neworder, 'assignid' => $assignid];
+    if ($swapoverride = $DB->get_record('assign_overrides', $params, 'id, sortorder, groupid')) {
 
         // Swap the sortorders.
         $swapoverride->sortorder = $override->sortorder;
@@ -9845,6 +9866,11 @@ function move_group_override($id, $move, $assignid) {
         // Update the override records.
         $DB->update_record('assign_overrides', $override);
         $DB->update_record('assign_overrides', $swapoverride);
+
+        // Delete cache for the 2 records we updated above.
+        $cache = cache::make('mod_assign', 'overrides');
+        $cache->delete("{$override->assignid}_g_{$override->groupid}");
+        $cache->delete("{$swapoverride->assignid}_g_{$swapoverride->groupid}");
     }
 
     reorder_group_overrides($assignid);
@@ -9861,11 +9887,13 @@ function reorder_group_overrides($assignid) {
 
     $i = 1;
     if ($overrides = $DB->get_records('assign_overrides', array('userid' => null, 'assignid' => $assignid), 'sortorder ASC')) {
+        $cache = cache::make('mod_assign', 'overrides');
         foreach ($overrides as $override) {
             $f = new stdClass();
             $f->id = $override->id;
             $f->sortorder = $i++;
             $DB->update_record('assign_overrides', $f);
+            $cache->delete("{$assignid}_g_{$override->groupid}");
 
             // Update priorities of group overrides.
             $params = [

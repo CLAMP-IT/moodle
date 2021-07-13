@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="lib/db" VERSION="20201021" COMMENT="XMLDB file for core Moodle tables"
+<XMLDB PATH="lib/db" VERSION="20210422" COMMENT="XMLDB file for core Moodle tables"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../lib/xmldb/xmldb.xsd"
 >
@@ -103,6 +103,8 @@
         <FIELD NAME="completionnotify" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Notify users when they complete this course"/>
         <FIELD NAME="cacherev" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Incrementing revision for validating the course content cache"/>
         <FIELD NAME="originalcourseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="the id of the source course when a new course originates from a restore of another course on the same site."/>
+        <FIELD NAME="showactivitydates" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether to display activity dates to user. 0 = do not display, 1 = display activity dates"/>
+        <FIELD NAME="showcompletionconditions" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="Whether to display completion conditions to user. 0 = do not display, 1 = display conditions"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -835,11 +837,6 @@
         <FIELD NAME="lastname" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="email" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="emailstop" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="icq" TYPE="char" LENGTH="15" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="skype" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="yahoo" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="aim" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="msn" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="phone1" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="phone2" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="institution" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
@@ -858,7 +855,6 @@
         <FIELD NAME="lastip" TYPE="char" LENGTH="45" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="secret" TYPE="char" LENGTH="15" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="picture" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 means no image uploaded, positive values are revisions thta prevent caching problems, negative values are reserved for future use"/>
-        <FIELD NAME="url" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="descriptionformat" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="mailformat" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
@@ -909,6 +905,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="userid-name" UNIQUE="true" FIELDS="userid, name"/>
+        <INDEX NAME="name" UNIQUE="false" FIELDS="name"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="user_lastaccess" COMMENT="To keep track of course page access times, used in online participants block, and participants list">
@@ -2245,7 +2242,6 @@
         <FIELD NAME="descriptionformat" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="enrolmentkey" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="picture" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="hidepicture" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -3822,6 +3818,8 @@
         <FIELD NAME="basicauth" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Use HTTP Basic authentication scheme when sending client ID and password"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The defined sort order."/>
         <FIELD NAME="requireconfirmation" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="servicetype" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Issuer service type, such as 'google' or 'facebook'."/>
+        <FIELD NAME="loginpagename" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -3851,7 +3849,7 @@
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The time this record was created."/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The user who modified this record."/>
         <FIELD NAME="issuerid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The oauth issuer."/>
-        <FIELD NAME="externalfield" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="The fieldname returned by the userinfo endpoint."/>
+        <FIELD NAME="externalfield" TYPE="char" LENGTH="500" NOTNULL="true" SEQUENCE="false" COMMENT="The fieldname returned by the userinfo endpoint."/>
         <FIELD NAME="internalfield" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="The name of the Moodle field this user field maps to."/>
       </FIELDS>
       <KEYS>
@@ -4201,6 +4199,7 @@
         <FIELD NAME="metadatasettings" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Library metadata settings"/>
         <FIELD NAME="tutorial" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Tutorial URL"/>
         <FIELD NAME="example" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Example URL"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="false" DEFAULT="1" SEQUENCE="false" COMMENT="Defines if this library is enabled (1) or not (0)"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -4271,6 +4270,7 @@
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="contenttype" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="References context.id."/>
+        <FIELD NAME="visibility" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="configdata" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="usercreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The original author of the content"/>

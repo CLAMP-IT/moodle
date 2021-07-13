@@ -19,7 +19,8 @@ Feature: Any day / month / year combination in date form elements works ok.
     And I set the field "Due date" to "<initial_date>"
     And I set the field "Due date" to "<final_date>"
     When I press "Save and display"
-    Then I should see "<date_result>" in the "Due date" "table_row"
+    Then the activity date in "Assignment 01" should contain "Due:"
+    And the activity date in "Assignment 01" should contain "<date_result>"
 
     Examples:
       | initial_date | final_date        | date_result                            | case_explanation (times Australia/Perth)   |

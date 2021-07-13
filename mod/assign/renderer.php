@@ -226,6 +226,8 @@ class mod_assign_renderer extends plugin_renderer_base {
      * @return string
      */
     public function render_assign_header(assign_header $header) {
+        global $USER;
+
         $o = '';
 
         if ($header->subpage) {
@@ -244,6 +246,14 @@ class mod_assign_renderer extends plugin_renderer_base {
 
         $o .= $this->output->header();
         $o .= $this->output->heading($heading);
+
+        // Show the activity information output component.
+        $modinfo = get_fast_modinfo($header->assign->course);
+        $cm = $modinfo->get_cm($header->coursemoduleid);
+        $cmcompletion = \core_completion\cm_completion_details::get_instance($cm, $USER->id);
+        $activitydates = \core\activity_dates::get_dates_for_module($cm, $USER->id);
+        $o .= $this->output->activity_information($cm, $cmcompletion, $activitydates);
+
         if ($header->preface) {
             $o .= $header->preface;
         }
@@ -325,26 +335,8 @@ class mod_assign_renderer extends plugin_renderer_base {
 
         $time = time();
         if ($summary->duedate) {
-            // Due date.
-            $cell1content = get_string('duedate', 'assign');
-            $duedate = $summary->duedate;
-            if ($summary->courserelativedatesmode) {
-                // Returns a formatted string, in the format '10d 10h 45m'.
-                $diffstr = get_time_interval_string($duedate, $summary->coursestartdate);
-                if ($duedate >= $summary->coursestartdate) {
-                    $cell2content = get_string('relativedatessubmissionduedateafter', 'mod_assign',
-                        ['datediffstr' => $diffstr]);
-                } else {
-                    $cell2content = get_string('relativedatessubmissionduedatebefore', 'mod_assign',
-                        ['datediffstr' => $diffstr]);
-                }
-            } else {
-                $cell2content = userdate($duedate);
-            }
-
-            $this->add_table_row_tuple($t, $cell1content, $cell2content);
-
             // Time remaining.
+            $duedate = $summary->duedate;
             $cell1content = get_string('timeremaining', 'assign');
             if ($summary->courserelativedatesmode) {
                 $cell2content = get_string('relativedatessubmissiontimeleft', 'mod_assign');
@@ -388,7 +380,7 @@ class mod_assign_renderer extends plugin_renderer_base {
         if ($summary->cangrade) {
             $urlparams = array('id' => $summary->coursemoduleid, 'action' => 'grader');
             $url = new moodle_url('/mod/assign/view.php', $urlparams);
-            $o .= html_writer::link($url, get_string('grade'),
+            $o .= html_writer::link($url, get_string('gradeverb'),
                 ['class' => 'btn btn-primary ml-1']);
         }
         $o .= $this->output->container_end();
@@ -416,7 +408,7 @@ class mod_assign_renderer extends plugin_renderer_base {
 
         // Grade.
         if (isset($status->gradefordisplay)) {
-            $cell1content = get_string('grade');
+            $cell1content = get_string('gradenoun');
             $cell2content = $status->gradefordisplay;
             $this->add_table_row_tuple($t, $cell1content, $cell2content);
 
@@ -657,18 +649,6 @@ class mod_assign_renderer extends plugin_renderer_base {
         $o .= $this->output->heading(get_string('submissionstatusheading', 'assign'), 3);
         $time = time();
 
-        if ($status->allowsubmissionsfromdate &&
-                $time <= $status->allowsubmissionsfromdate) {
-            $o .= $this->output->box_start('generalbox boxaligncenter submissionsalloweddates');
-            if ($status->alwaysshowdescription) {
-                $date = userdate($status->allowsubmissionsfromdate);
-                $o .= get_string('allowsubmissionsfromdatesummary', 'assign', $date);
-            } else {
-                $date = userdate($status->allowsubmissionsfromdate);
-                $o .= get_string('allowsubmissionsanddescriptionfromdatesummary', 'assign', $date);
-            }
-            $o .= $this->output->box_end();
-        }
         $o .= $this->output->box_start('boxaligncenter submissionsummarytable');
 
         $t = new html_table();
@@ -800,11 +780,6 @@ class mod_assign_renderer extends plugin_renderer_base {
         $submission = $status->teamsubmission ? $status->teamsubmission : $status->submission;
         $duedate = $status->duedate;
         if ($duedate > 0) {
-            // Due date.
-            $cell1content = get_string('duedate', 'assign');
-            $cell2content = userdate($duedate);
-            $this->add_table_row_tuple($t, $cell1content, $cell2content);
-
             if ($status->view == assign_submission_status::GRADER_VIEW) {
                 if ($status->cutoffdate) {
                     // Cut off date.
@@ -1087,7 +1062,7 @@ class mod_assign_renderer extends plugin_renderer_base {
                 $t->data[] = new html_table_row(array($cell));
 
                 // Grade.
-                $cell1content = get_string('grade');
+                $cell1content = get_string('gradenoun');
                 $cell2content = $grade->gradefordisplay;
                 $this->add_table_row_tuple($t, $cell1content, $cell2content);
 
@@ -1346,7 +1321,7 @@ class mod_assign_renderer extends plugin_renderer_base {
         $strsectionname  = $indexsummary->courseformatname;
         $strduedate = get_string('duedate', 'assign');
         $strsubmission = get_string('submission', 'assign');
-        $strgrade = get_string('grade');
+        $strgrade = get_string('gradenoun');
 
         $table = new html_table();
         if ($indexsummary->usesections) {

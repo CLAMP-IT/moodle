@@ -860,7 +860,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_users_in_context',
                 'delete_data_for_all_users_in_context',
@@ -871,7 +871,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
 
         $manager->method('get_privacy_manager')->willReturn($mockprivacymanager);
@@ -938,7 +938,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_users_in_context',
                 'delete_data_for_all_users_in_context',
@@ -953,13 +953,13 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
                 $forumlist = $userlist->get_userlist_for_component('mod_forum');
                 $userids = $forumlist->get_userids();
                 $this->assertCount(1, $userids);
-                $this->assertContains($student->id, $userids);
-                $this->assertNotContains($teacher->id, $userids);
+                $this->assertContainsEquals($student->id, $userids);
+                $this->assertNotContainsEquals($teacher->id, $userids);
                 return true;
             }));
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
 
         $manager->method('get_privacy_manager')->willReturn($mockprivacymanager);
@@ -1026,7 +1026,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_users_in_context',
                 'delete_data_for_all_users_in_context',
@@ -1041,13 +1041,13 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
                 $forumlist = $userlist->get_userlist_for_component('mod_forum');
                 $userids = $forumlist->get_userids();
                 $this->assertCount(1, $userids);
-                $this->assertContains($student->id, $userids);
-                $this->assertNotContains($teacher->id, $userids);
+                $this->assertContainsEquals($student->id, $userids);
+                $this->assertNotContainsEquals($teacher->id, $userids);
                 return true;
             }));
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
 
         $manager->method('get_privacy_manager')->willReturn($mockprivacymanager);
@@ -1115,7 +1115,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_users_in_context',
                 'delete_data_for_all_users_in_context',
@@ -1130,13 +1130,13 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
                 $forumlist = $userlist->get_userlist_for_component('mod_forum');
                 $userids = $forumlist->get_userids();
                 $this->assertCount(1, $userids);
-                $this->assertContains($student->id, $userids);
-                $this->assertNotContains($teacher->id, $userids);
+                $this->assertContainsEquals($student->id, $userids);
+                $this->assertNotContainsEquals($teacher->id, $userids);
                 return true;
             }));
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
 
         $manager->method('get_privacy_manager')->willReturn($mockprivacymanager);
@@ -1211,7 +1211,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_users_in_context',
                 'delete_data_for_all_users_in_context',
@@ -1226,13 +1226,13 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
                 $forumlist = $userlist->get_userlist_for_component('mod_forum');
                 $userids = $forumlist->get_userids();
                 $this->assertCount(2, $userids);
-                $this->assertContains($student->id, $userids);
-                $this->assertContains($teacher->id, $userids);
+                $this->assertContainsEquals($student->id, $userids);
+                $this->assertContainsEquals($teacher->id, $userids);
                 return true;
             }));
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
 
         $manager->method('get_privacy_manager')->willReturn($mockprivacymanager);
@@ -1263,7 +1263,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1272,7 +1272,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1302,7 +1302,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1311,7 +1311,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1338,7 +1338,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1347,7 +1347,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1385,7 +1385,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1399,7 +1399,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
             );
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1445,7 +1445,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1454,7 +1454,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->once())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1497,7 +1497,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $this->setUser();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1506,7 +1506,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1549,7 +1549,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         set_config('siteadmins', implode(',', $admins));
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1558,7 +1558,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1603,7 +1603,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredblockcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1617,7 +1617,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
             );
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1656,7 +1656,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredusercontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1670,7 +1670,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
             );
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1708,7 +1708,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1717,7 +1717,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
         $manager->method('get_privacy_manager')->willReturn($mockprivacymanager);
@@ -1759,7 +1759,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1768,7 +1768,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1817,7 +1817,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredforumcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1826,7 +1826,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $mockprivacymanager->expects($this->never())->method('delete_data_for_all_users_in_context');
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 
@@ -1875,7 +1875,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
         $expiredforumcontext->save();
 
         $mockprivacymanager = $this->getMockBuilder(\core_privacy\manager::class)
-            ->setMethods([
+            ->onlyMethods([
                 'delete_data_for_user',
                 'delete_data_for_all_users_in_context',
             ])
@@ -1889,7 +1889,7 @@ class tool_dataprivacy_expired_contexts_testcase extends advanced_testcase {
             );
 
         $manager = $this->getMockBuilder(\tool_dataprivacy\expired_contexts_manager::class)
-            ->setMethods(['get_privacy_manager'])
+            ->onlyMethods(['get_privacy_manager'])
             ->getMock();
         $manager->set_progress(new \null_progress_trace());
 

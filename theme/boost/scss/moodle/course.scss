@@ -201,12 +201,35 @@ body:not(.editing)  .sitetopic ul.section {
 
 .section .activity.modtype_label.label {
     font-weight: normal;
-    padding: .2em;
+
+    // Remove min-height for labels so top and bottom paddings can be displayed more consistently.
+    .contentwithoutlink {
+        min-height: 0;
+    }
+
+    // When activity information is shown remove the bottom margin for the last p/i elements.
+    &.hasinfo {
+        p:last-child,
+        i:last-child {
+            margin-bottom: 0;
+        }
+    }
 }
 
 .section li.activity {
     padding: .2em;
     clear: both;
+
+    &.hasinfo {
+        border-bottom: $border-width solid $table-border-color;
+        padding-top: map-get($spacers, 3);
+        padding-bottom: map-get($spacers, 3);
+
+        &:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+    }
 }
 
 .section .activity .activityinstance .groupinglabel {
@@ -1189,5 +1212,11 @@ span.editinstructions {
     #prev-activity-link,
     #next-activity-link {
         white-space: pre-wrap;
+    }
+}
+
+.automatic-completion-conditions {
+    .badge {
+        font-size: 100%;
     }
 }

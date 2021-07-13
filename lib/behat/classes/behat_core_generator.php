@@ -87,6 +87,18 @@ class behat_core_generator extends behat_generator_base {
                 'required' => ['name', 'category', 'type', 'shortname'],
                 'switchids' => [],
             ],
+            'custom profile field categories' => [
+                'singular' => 'custom profile field category',
+                'datagenerator' => 'custom_profile_field_category',
+                'required' => ['name'],
+                'switchids' => [],
+            ],
+            'custom profile fields' => [
+                'singular' => 'custom profile field',
+                'datagenerator' => 'custom_profile_field',
+                'required' => ['datatype', 'shortname', 'name'],
+                'switchids' => [],
+            ],
             'permission overrides' => [
                 'singular' => 'permission override',
                 'datagenerator' => 'permission_override',
@@ -925,6 +937,9 @@ class behat_core_generator extends behat_generator_base {
             $record = new stdClass();
             $record->usercreated = $data['userid'];
             $record->name = $data['contentname'];
+            if (isset($data['visibility'])) {
+                $record->visibility = $data['visibility'];
+            }
             $content = $contenttype->create_content($record);
 
             if (!empty($data['filepath'])) {

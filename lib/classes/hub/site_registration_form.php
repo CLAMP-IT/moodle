@@ -194,12 +194,17 @@ class site_registration_form extends \moodleform {
     /**
      * Add yes/no select with additional checkbox allowing to specify another email
      *
+     * @deprecated since Moodle 3.11 - MDL-71460 The form elements using this have been converted to checkboxes
+     * @todo MDL-71472 - Will be deleted in 4.3
+     * @see \core\hub\site_registration_form::add_checkbox_with_email()
      * @param string $elementname
      * @param string $stridentifier
      * @param array|null $options options for the select element
      * @param bool $highlight highlight as a new field
      */
     protected function add_select_with_email($elementname, $stridentifier, $options = null, $highlight = false) {
+        debugging('add_select_with_email() is deprecated. Please use add_checkbox_with_email() instead.', DEBUG_DEVELOPER);
+
         $mform = $this->_form;
 
         if ($options === null) {

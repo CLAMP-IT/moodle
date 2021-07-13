@@ -2091,7 +2091,7 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
         $this->assertCount(2, $contacts[0]['conversations']);
         // We can't rely on the ordering of conversations within the results, so sort by id first.
         usort($contacts[0]['conversations'], function($a, $b) {
-            return $a['id'] < $b['id'];
+            return $b['id'] <=> $a['id'];
         });
         $this->assertEquals(\core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP, $contacts[0]['conversations'][0]['type']);
         $this->assertEquals(\core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL, $contacts[0]['conversations'][1]['type']);
@@ -2187,7 +2187,7 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
         $this->assertCount(2, $contacts[0]['conversations']);
         // We can't rely on the ordering of conversations within the results, so sort by id first.
         usort($contacts[0]['conversations'], function($a, $b) {
-            return $a['id'] < $b['id'];
+            return $b['id'] <=> $a['id'];
         });
         $this->assertEquals(\core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP, $contacts[0]['conversations'][0]['type']);
         $this->assertEquals(\core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL, $contacts[0]['conversations'][1]['type']);
@@ -2828,14 +2828,14 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
         $members = $result['members'];
         $this->assertCount(3, $members);
         $membersid = [$members[0]['id'], $members[1]['id'], $members[2]['id']];
-        $this->assertContains($user1->id, $membersid);
-        $this->assertContains($user2->id, $membersid);
-        $this->assertContains($user3->id, $membersid);
+        $this->assertContainsEquals($user1->id, $membersid);
+        $this->assertContainsEquals($user2->id, $membersid);
+        $this->assertContainsEquals($user3->id, $membersid);
 
         $membersfullnames = [$members[0]['fullname'], $members[1]['fullname'], $members[2]['fullname']];
-        $this->assertContains(fullname($user1), $membersfullnames);
-        $this->assertContains(fullname($user2), $membersfullnames);
-        $this->assertContains(fullname($user3), $membersfullnames);
+        $this->assertContainsEquals(fullname($user1), $membersfullnames);
+        $this->assertContainsEquals(fullname($user2), $membersfullnames);
+        $this->assertContainsEquals(fullname($user3), $membersfullnames);
 
         // Confirm the messages data is correct.
         $messages = $result['messages'];
@@ -2957,9 +2957,9 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
         $members = $result['members'];
         $this->assertCount(3, $members);
         $membersid = [$members[0]['id'], $members[1]['id'], $members[2]['id']];
-        $this->assertContains($user1->id, $membersid);
-        $this->assertContains($user2->id, $membersid);
-        $this->assertContains($user3->id, $membersid);
+        $this->assertContainsEquals($user1->id, $membersid);
+        $this->assertContainsEquals($user2->id, $membersid);
+        $this->assertContainsEquals($user3->id, $membersid);
 
         // Confirm the message data is correct.
         $messages = $result['messages'];
@@ -3538,7 +3538,7 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
      * @return bool
      */
     protected static function sort_contacts($a, $b) {
-        return $a['userid'] > $b['userid'];
+        return $a['userid'] <=> $b['userid'];
     }
 
     /**
@@ -3549,7 +3549,7 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
      * @return bool
      */
     protected static function sort_contacts_id($a, $b) {
-        return $a['id'] > $b['id'];
+        return $a['id'] <=> $b['id'];
     }
 
     /**
@@ -4422,7 +4422,7 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
         $conversations = $result['conversations'];
 
         usort($conversations, function($first, $second){
-            return $first['id'] > $second['id'];
+            return $first['id'] <=> $second['id'];
         });
 
         $selfconversation = array_shift($conversations);

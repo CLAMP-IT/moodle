@@ -4066,8 +4066,7 @@ class flat_navigation extends navigation_node_collection {
         // Add-a-block in editing mode.
         if (isset($this->page->theme->addblockposition) &&
                 $this->page->theme->addblockposition == BLOCK_ADDBLOCK_POSITION_FLATNAV &&
-                $PAGE->user_is_editing() && $PAGE->user_can_edit_blocks() &&
-                ($addable = $PAGE->blocks->get_addable_blocks())) {
+                $PAGE->user_is_editing() && $PAGE->user_can_edit_blocks()) {
             $url = new moodle_url($PAGE->url, ['bui_addblock' => '', 'sesskey' => sesskey()]);
             $addablock = navigation_node::create(get_string('addblock'), $url);
             $flat = new flat_navigation_node($addablock, 0);
@@ -4075,12 +4074,11 @@ class flat_navigation extends navigation_node_collection {
             $flat->key = 'addblock';
             $flat->icon = new pix_icon('i/addblock', '');
             $this->add($flat);
-            $blocks = [];
-            foreach ($addable as $block) {
-                $blocks[] = $block->name;
-            }
-            $params = array('blocks' => $blocks, 'url' => '?' . $url->get_query_string(false));
-            $PAGE->requires->js_call_amd('core/addblockmodal', 'init', array($params));
+
+            $addblockurl = "?{$url->get_query_string(false)}";
+
+            $PAGE->requires->js_call_amd('core/addblockmodal', 'init',
+                [$PAGE->pagetype, $PAGE->pagelayout, $addblockurl]);
         }
     }
 
@@ -4493,8 +4491,9 @@ class settings_navigation extends navigation_node {
 
         // View course reports.
         if ($adminoptions->reports) {
-            $reportnav = $coursenode->add(get_string('reports'), null, self::TYPE_CONTAINER, null, 'coursereports',
-                    new pix_icon('i/stats', ''));
+            $reportnav = $coursenode->add(get_string('reports'),
+                new moodle_url('/report/view.php', ['courseid' => $coursecontext->instanceid]),
+                self::TYPE_CONTAINER, null, 'coursereports', new pix_icon('i/stats', ''));
             $coursereports = core_component::get_plugin_list('coursereport');
             foreach ($coursereports as $report => $dir) {
                 $libfile = $CFG->dirroot.'/course/report/'.$report.'/lib.php';
@@ -5089,15 +5088,6 @@ class settings_navigation extends navigation_node {
             }
         }
 
-        // Add "Course preferences" link.
-        if (isloggedin() && !isguestuser($user)) {
-            if ($currentuser && has_capability('moodle/user:editownprofile', $systemcontext) ||
-                has_capability('moodle/user:editprofile', $usercontext)) {
-                $url = new moodle_url('/user/course.php', array('id' => $user->id, 'course' => $course->id));
-                $useraccount->add(get_string('coursepreferences'), $url, self::TYPE_SETTING, null, 'coursepreferences');
-            }
-        }
-
         // Add "Calendar preferences" link.
         if (isloggedin() && !isguestuser($user)) {
             if ($currentuser && has_capability('moodle/user:editownprofile', $systemcontext) ||
@@ -5107,12 +5097,22 @@ class settings_navigation extends navigation_node {
             }
         }
 
+        // Add "Content bank preferences" link.
+        if (isloggedin() && !isguestuser($user)) {
+            if ($currentuser && has_capability('moodle/user:editownprofile', $systemcontext) ||
+                has_capability('moodle/user:editprofile', $usercontext)) {
+                $url = new moodle_url('/user/contentbank.php', ['id' => $user->id]);
+                $useraccount->add(get_string('contentbankpreferences', 'core_contentbank'), $url, self::TYPE_SETTING,
+                        null, 'contentbankpreferences');
+            }
+        }
+
         // View the roles settings.
-        if (has_any_capability(array('moodle/role:assign', 'moodle/role:safeoverride', 'moodle/role:override',
-                'moodle/role:manage'), $usercontext)) {
+        if (has_any_capability(['moodle/role:assign', 'moodle/role:safeoverride', 'moodle/role:override',
+                'moodle/role:manage'], $usercontext)) {
             $roles = $usersetting->add(get_string('roles'), null, self::TYPE_SETTING);
 
-            $url = new moodle_url('/admin/roles/usersroles.php', array('userid'=>$user->id, 'courseid'=>$course->id));
+            $url = new moodle_url('/admin/roles/usersroles.php', ['userid' => $user->id, 'courseid' => $course->id]);
             $roles->add(get_string('thisusersroles', 'role'), $url, self::TYPE_SETTING);
 
             $assignableroles = get_assignable_roles($usercontext, ROLENAME_BOTH);

@@ -29,17 +29,20 @@
                 "type": "Archive (H5P)",
                 "author": "Admin user",
                 "link": "http://something/contentbank/contenttype/h5p/view.php?url=http://something/pluginfile.php/1/contentbank/public/accordion.h5p",
-                "icon" : "http://something/theme/image.php/boost/core/1581597850/f/h5p-64"
+                "icon" : "http://something/theme/image.php/boost/core/1581597850/f/h5p-64",
+                "visibilityunlisted": true
             },
             {
                 "name": "resume.pdf",
                 "title": "resume",
                 "timemodified": 1589792039,
                 "size": "699.3KB",
+                "uses": 3,
                 "bytes": 716126,
                 "type": "Archive (PDF)",
                 "author": "Admin user",
-                "icon": "http://something/theme/image.php/boost/core/1584597850/f/pdf-64"
+                "icon": "http://something/theme/image.php/boost/core/1584597850/f/pdf-64",
+                "visibilityunlisted": false
             }
         ],
         "tools": [
@@ -107,6 +110,15 @@ data-region="contentbank">
                                 <span class="asc">{{#pix}} t/sort_asc, core, {{#str}}asc, core{{/str}} {{/pix}}</span>
                             </button>
                         </div>
+                        <div class="cb-uses cb-column d-flex">
+                            <div class="title">{{#str}} uses, contentbank {{/str}}</div>
+                            <button class="btn btn-sm cb-btnsort dir-none ml-auto" data-string="uses" data-action="sortuses"
+                            title="{{#str}} sortbyx, core, {{#str}} uses, contentbank {{/str}} {{/str}}">
+                                <span class="default">{{#pix}} t/sort, core, {{#str}}sort, core {{/str}} {{/pix}}</span>
+                                <span class="desc">{{#pix}} t/sort_desc, core, {{#str}}desc, core{{/str}} {{/pix}}</span>
+                                <span class="asc">{{#pix}} t/sort_asc, core, {{#str}}asc, core{{/str}} {{/pix}}</span>
+                            </button>
+                        </div>
                         <div class="cb-date cb-column d-flex">
                             <div class="title">{{#str}} lastmodified, contentbank {{/str}}</div>
                             <button class="btn btn-sm cb-btnsort dir-none ml-auto" data-string="lastmodified" data-action="sortdate"
@@ -145,10 +157,11 @@ data-region="contentbank">
                         </div>
                     </div>
                 {{#contents}}
-                    <div class="cb-listitem"
+                    <div class="cb-listitem {{#visibilityunlisted}}cb-unlisted{{/visibilityunlisted}}"
                         data-file="{{ title }}"
                         data-name="{{ name }}"
                         data-bytes="{{ bytes }}"
+                        data-uses="{{ uses }}"
                         data-timemodified="{{ timemodified }}"
                         data-type="{{ type }}"
                         data-author="{{ author }}">
@@ -161,6 +174,9 @@ data-region="contentbank">
                                     {{{ name }}}
                                 </span>
                             </a>
+                        </div>
+                        <div class="cb-uses cb-column small">
+                            {{ uses }}
                         </div>
                         <div class="cb-date cb-column small">
                             {{#userdate}} {{ timemodified }}, {{#str}} strftimedatetimeshort, core_langconfig {{/str}} {{/userdate}}

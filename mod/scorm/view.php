@@ -139,6 +139,12 @@ $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($scorm->name));
 
+// Display any activity information (eg completion requirements / dates).
+$cminfo = cm_info::create($cm);
+$completiondetails = \core_completion\cm_completion_details::get_instance($cminfo, $USER->id);
+$activitydates = \core\activity_dates::get_dates_for_module($cminfo, $USER->id);
+echo $OUTPUT->activity_information($cminfo, $completiondetails, $activitydates);
+
 if (!empty($action) && confirm_sesskey() && has_capability('mod/scorm:deleteownresponses', $contextmodule)) {
     if ($action == 'delete') {
         $confirmurl = new moodle_url($PAGE->url, array('action' => 'deleteconfirm'));
@@ -164,12 +170,8 @@ if (empty($launch) && ($scorm->displayattemptstatus == SCORM_DISPLAY_ATTEMPTSTAT
 }
 echo $OUTPUT->box(format_module_intro('scorm', $scorm, $cm->id).$attemptstatus, 'container', 'intro');
 
-// Check if SCORM available.
+// Check if SCORM available. No need to display warnings because activity dates are displayed at the top of the page.
 list($available, $warnings) = scorm_get_availability_status($scorm);
-if (!$available) {
-    $reason = current(array_keys($warnings));
-    echo $OUTPUT->box(get_string($reason, "scorm", $warnings[$reason]), "container");
-}
 
 if ($available && empty($launch)) {
     scorm_print_launch($USER, $scorm, 'view.php?id='.$cm->id, $cm);

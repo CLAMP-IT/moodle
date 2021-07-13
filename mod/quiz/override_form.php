@@ -123,11 +123,14 @@ class quiz_override_form extends moodleform {
             }
         } else {
             // User override.
+            // TODO Does not support custom user profile fields (MDL-70456).
+            $userfieldsapi = \core_user\fields::for_identity($this->context, false)->with_userpic()->with_name();
+            $extrauserfields = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
             if ($this->userid) {
                 // There is already a userid, so freeze the selector.
-                $user = $DB->get_record('user', array('id'=>$this->userid));
+                $user = $DB->get_record('user', ['id' => $this->userid]);
                 $userchoices = array();
-                $userchoices[$this->userid] = fullname($user);
+                $userchoices[$this->userid] = $this->display_user_name($user, $extrauserfields);
                 $mform->addElement('select', 'userid',
                         get_string('overrideuser', 'quiz'), $userchoices);
                 $mform->freeze('userid');
@@ -142,14 +145,13 @@ class quiz_override_form extends moodleform {
                 }
 
                 // Get the list of appropriate users, depending on whether and how groups are used.
+                $userfields = $userfieldsapi->get_sql('u', false, '', 'userid', false)->selects;
                 if ($accessallgroups) {
                     $users = get_users_by_capability($this->context, 'mod/quiz:attempt',
-                            'u.id, u.email, ' . get_all_user_name_fields(true, 'u'),
-                            $sort);
+                            $userfields, $sort);
                 } else if ($groups = groups_get_activity_allowed_groups($cm)) {
                     $users = get_users_by_capability($this->context, 'mod/quiz:attempt',
-                            'u.id, u.email, ' . get_all_user_name_fields(true, 'u'),
-                            $sort, '', '', array_keys($groups));
+                            $userfields, $sort, '', '', array_keys($groups));
                 }
 
                 // Filter users based on any fixed restrictions (groups, profile).
@@ -162,17 +164,9 @@ class quiz_override_form extends moodleform {
                     print_error('usersnone', 'quiz', $link);
                 }
 
-                $userchoices = array();
-                $canviewemail = in_array('email', get_extra_user_fields($this->context));
+                $userchoices = [];
                 foreach ($users as $id => $user) {
-                    if (empty($invalidusers[$id]) || (!empty($override) &&
-                            $id == $override->userid)) {
-                        if ($canviewemail) {
-                            $userchoices[$id] = fullname($user) . ', ' . $user->email;
-                        } else {
-                            $userchoices[$id] = fullname($user);
-                        }
-                    }
+                    $userchoices[$id] = $this->display_user_name($user, $extrauserfields);
                 }
                 unset($users);
 
@@ -228,7 +222,27 @@ class quiz_override_form extends moodleform {
 
         $mform->addGroup($buttonarray, 'buttonbar', '', array(' '), false);
         $mform->closeHeaderBefore('buttonbar');
+    }
 
+    /**
+     * Get a user's name and identity ready to display.
+     *
+     * @param stdClass $user a user object.
+     * @param array $extrauserfields (identity fields in user table only from the user_fields API)
+     * @return string User's name, with extra info, for display.
+     */
+    protected function display_user_name(stdClass $user, array $extrauserfields) {
+        $username = fullname($user);
+        $namefields = [];
+        foreach ($extrauserfields as $field) {
+            if (isset($user->$field) && $user->$field !== '') {
+                $namefields[] = s($user->$field);
+            }
+        }
+        if ($namefields) {
+            $username .= ' (' . implode(', ', $namefields) . ')';
+        }
+        return $username;
     }
 
     public function validation($data, $files) {

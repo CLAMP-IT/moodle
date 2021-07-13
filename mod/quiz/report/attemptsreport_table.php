@@ -135,7 +135,7 @@ abstract class quiz_attempts_report_table extends table_sql {
     public function col_picture($attempt) {
         global $OUTPUT;
         $user = new stdClass();
-        $additionalfields = explode(',', user_picture::fields());
+        $additionalfields = explode(',', implode(',', \core_user\fields::get_picture_fields()));
         $user = username_load_fields_from_object($user, $attempt, null, $additionalfields);
         $user->id = $attempt->userid;
         return $OUTPUT->user_picture($user);
@@ -246,7 +246,7 @@ abstract class quiz_attempts_report_table extends table_sql {
      * @param int $slot the number used to identify this question within this usage.
      */
     public function make_review_link($data, $attempt, $slot) {
-        global $OUTPUT;
+        global $OUTPUT, $CFG;
 
         $flag = '';
         if ($this->is_flagged($attempt->usageid, $slot)) {
@@ -273,6 +273,16 @@ abstract class quiz_attempts_report_table extends table_sql {
                         array('height' => 450, 'width' => 650)),
                 array('title' => get_string('reviewresponse', 'quiz')));
 
+        if (!empty($CFG->enableplagiarism)) {
+            require_once($CFG->libdir . '/plagiarismlib.php');
+            $output .= plagiarism_get_links([
+                'context' => $this->context->id,
+                'component' => 'qtype_'.$this->questions[$slot]->qtype,
+                'cmid' => $this->context->instanceid,
+                'area' => $attempt->usageid,
+                'itemid' => $slot,
+                'userid' => $attempt->userid]);
+        }
         return $output;
     }
 
@@ -413,15 +423,15 @@ abstract class quiz_attempts_report_table extends table_sql {
             $fields .= "\n(CASE WHEN $this->qmsubselect THEN 1 ELSE 0 END) AS gradedattempt,";
         }
 
-        $extrafields = get_extra_user_fields_sql($this->context, 'u', '',
-                array('id', 'idnumber', 'firstname', 'lastname', 'picture',
-                'imagealt', 'institution', 'department', 'email'));
-        $allnames = get_all_user_name_fields(true, 'u');
+        // TODO Does not support custom user profile fields (MDL-70456).
+        $userfields = \core_user\fields::for_identity($this->context, false)->with_name()
+                ->excluding('id', 'idnumber', 'picture', 'imagealt', 'institution', 'department', 'email');
+        $extrafields = $userfields->get_sql('u')->selects;
         $fields .= '
                 quiza.uniqueid AS usageid,
                 quiza.id AS attempt,
                 u.id AS userid,
-                u.idnumber, ' . $allnames . ',
+                u.idnumber,
                 u.picture,
                 u.imagealt,
                 u.institution,

@@ -32,9 +32,6 @@ defined('MOODLE_INTERNAL') || die();
 function xmldb_auth_shibboleth_upgrade($oldversion) {
     global $CFG, $DB, $OUTPUT;
 
-    // Automatically generated Moodle v3.5.0 release upgrade line.
-    // Put any upgrade step following this.
-
     // Automatically generated Moodle v3.6.0 release upgrade line.
     // Put any upgrade step following this.
 
@@ -71,6 +68,9 @@ function xmldb_auth_shibboleth_upgrade($oldversion) {
 
         upgrade_plugin_savepoint(true, 2020110901, 'auth', 'shibboleth');
     }
+
+    // Automatically generated Moodle v3.11.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

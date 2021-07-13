@@ -538,6 +538,170 @@ class core_scheduled_task_testcase extends advanced_testcase {
     }
 
     /**
+     * Data provider for test_tool_health_category_find_missing_parents.
+     */
+    public static function provider_schedule_overrides(): array {
+        return array(
+            array(
+                'scheduled_tasks' => array(
+                    '\core\task\scheduled_test_task' => array(
+                        'schedule' => '10 13 1 2 4',
+                        'disabled' => 0,
+                    ),
+                    '\core\task\scheduled_test2_task' => array(
+                        'schedule' => '* * * * *',
+                        'disabled' => 1,
+                    ),
+                ),
+                'task_full_classnames' => array(
+                    '\core\task\scheduled_test_task',
+                    '\core\task\scheduled_test2_task',
+                ),
+                'expected' => array(
+                    '\core\task\scheduled_test_task' => array(
+                        'min'   => '10',
+                        'hour'  => '13',
+                        'day'   => '1',
+                        'week'  => '2',
+                        'month' => '4',
+                        'disabled' => 0,
+                    ),
+                    '\core\task\scheduled_test2_task' => array(
+                        'min'   => '*',
+                        'hour'  => '*',
+                        'day'   => '*',
+                        'week'  => '*',
+                        'month' => '*',
+                        'disabled' => 1,
+                    ),
+                )
+            ),
+            array(
+                'scheduled_tasks' => array(
+                    '\core\task\*' => array(
+                        'schedule' => '1 2 3 4 5',
+                        'disabled' => 0,
+                    )
+                ),
+                'task_full_classnames' => array(
+                    '\core\task\scheduled_test_task',
+                    '\core\task\scheduled_test2_task',
+                ),
+                'expected' => array(
+                    '\core\task\scheduled_test_task' => array(
+                        'min'   => '1',
+                        'hour'  => '2',
+                        'day'   => '3',
+                        'week'  => '4',
+                        'month' => '5',
+                        'disabled' => 0,
+                    ),
+                    '\core\task\scheduled_test2_task' => array(
+                        'min'   => '1',
+                        'hour'  => '2',
+                        'day'   => '3',
+                        'week'  => '4',
+                        'month' => '5',
+                        'disabled' => 0,
+                    ),
+                )
+            )
+        );
+    }
+
+
+    /**
+     * Test to ensure scheduled tasks are updated by values set in config.
+     *
+     * @param array $overrides
+     * @param array $tasks
+     * @param array $expected
+     * @dataProvider provider_schedule_overrides
+     */
+    public function test_scheduled_task_override_values(array $overrides, array $tasks, array $expected): void {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+
+        // Add overrides to the config.
+        $CFG->scheduled_tasks = $overrides;
+
+        // Set up test scheduled task record.
+        $record = new stdClass();
+        $record->component = 'test_scheduled_task';
+
+        foreach ($tasks as $task) {
+            $record->classname = $task;
+            $DB->insert_record('task_scheduled', $record);
+
+            $scheduledtask = \core\task\manager::get_scheduled_task($task);
+            $expectedresults = $expected[$task];
+
+            // Check that the task is actually overridden.
+            $this->assertTrue($scheduledtask->is_overridden(), 'Is overridden');
+
+            // Check minute is correct.
+            $this->assertEquals($expectedresults['min'], $scheduledtask->get_minute(), 'Minute check');
+
+            // Check day is correct.
+            $this->assertEquals($expectedresults['day'], $scheduledtask->get_day(), 'Day check');
+
+            // Check hour is correct.
+            $this->assertEquals($expectedresults['hour'], $scheduledtask->get_hour(), 'Hour check');
+
+            // Check week is correct.
+            $this->assertEquals($expectedresults['week'], $scheduledtask->get_day_of_week(), 'Day of week check');
+
+            // Check week is correct.
+            $this->assertEquals($expectedresults['month'], $scheduledtask->get_month(), 'Month check');
+
+            // Check to see if the task is disabled.
+            $this->assertEquals($expectedresults['disabled'], $scheduledtask->get_disabled(), 'Disabled check');
+        }
+    }
+
+    /**
+     * Check that an overridden task is sent to be processed.
+     */
+    public function test_scheduled_task_overridden_task_can_run(): void {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+
+        // Delete all existing scheduled tasks.
+        $DB->delete_records('task_scheduled');
+
+        // Add overrides to the config.
+        $CFG->scheduled_tasks = [
+            '\core\task\scheduled_test_task' => [
+                'disabled' => 1
+            ],
+            '\core\task\scheduled_test2_task' => [
+                'disabled' => 0
+            ],
+        ];
+
+        // A task that runs once per hour.
+        $record = new stdClass();
+        $record->component = 'test_scheduled_task';
+        $record->classname = '\core\task\scheduled_test_task';
+        $record->disabled = 0;
+        $DB->insert_record('task_scheduled', $record);
+
+        // And disabled test.
+        $record->classname = '\core\task\scheduled_test2_task';
+        $record->disabled = 1;
+        $DB->insert_record('task_scheduled', $record);
+
+        $now = time();
+
+        $scheduledtask = \core\task\manager::get_next_scheduled_task($now);
+        $this->assertInstanceOf('\core\task\scheduled_test2_task', $scheduledtask);
+        $scheduledtask->execute();
+        \core\task\manager::scheduled_task_complete($scheduledtask);
+    }
+
+    /**
      * Assert that the specified tasks are equal.
      *
      * @param   \core\task\task_base $task

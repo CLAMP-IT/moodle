@@ -770,6 +770,12 @@ class qformat_xml extends qformat_default {
                 array('#', 'responsefieldlines', 0, '#'), 15);
         $qo->responserequired = $this->getpath($question,
                 array('#', 'responserequired', 0, '#'), 1);
+        $qo->minwordlimit = $this->getpath($question,
+                array('#', 'minwordlimit', 0, '#'), null);
+        $qo->minwordenabled = !empty($qo->minwordlimit);
+        $qo->maxwordlimit = $this->getpath($question,
+                array('#', 'maxwordlimit', 0, '#'), null);
+        $qo->maxwordenabled = !empty($qo->maxwordlimit);
         $qo->attachments = $this->getpath($question,
                 array('#', 'attachments', 0, '#'), 0);
         $qo->attachmentsrequired = $this->getpath($question,
@@ -1351,6 +1357,10 @@ class qformat_xml extends qformat_default {
                         "</responserequired>\n";
                 $expout .= "    <responsefieldlines>" . $question->options->responsefieldlines .
                         "</responsefieldlines>\n";
+                $expout .= "    <minwordlimit>" . $question->options->minwordlimit .
+                        "</minwordlimit>\n";
+                $expout .= "    <maxwordlimit>" . $question->options->maxwordlimit .
+                        "</maxwordlimit>\n";
                 $expout .= "    <attachments>" . $question->options->attachments .
                         "</attachments>\n";
                 $expout .= "    <attachmentsrequired>" . $question->options->attachmentsrequired .

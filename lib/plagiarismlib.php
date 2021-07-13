@@ -47,7 +47,10 @@ function plagiarism_get_links($linkarray) {
         $plagiarismplugin = new $plagiarismclass;
         $output .= $plagiarismplugin->get_links($linkarray);
     }
-    return $output;
+    if (!empty($output)) {
+        return html_writer::span($output, 'core_plagiarism_links');
+    }
+    return '';
 }
 
 /**
@@ -135,7 +138,7 @@ function plagiarism_get_form_elements_module($mform, $context, $modulename = "")
     }
 }
 /**
- * updates the status of all files within a module
+ * Allows a plagiarism plugin to print a button/link at the top of activity overview report pages.
  *
  * @param object $course - full Course object
  * @param object $cm - full cm object

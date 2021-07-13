@@ -1,26 +1,136 @@
 This files describes API changes in core libraries and APIs,
 information provided here is intended especially for developers.
 
-=== 3.10.4 ===
-* The signature of the get_context_name() function in the abstract class context and all extending classes (such as context_course)
-  has been extended. The new parameter allows the to get the name without escaped characters.
-* The signature of the question_category_options() has been extended. The new parameter allows the to get the categories name
-  in the returned array without escaped characters.
-
-=== 3.10.3 ===
-* The behat transformation 'string time to timestamp' no longer supports datetime format. If provided, the format must
-  be strftime compatible. Example:
-    - I should see "##tomorrow noon##%A, %d %B %Y, %I:%M %p##"
-
-=== 3.10.1 ===
+=== 3.11 ===
+* PHPUnit has been upgraded to 9.5 (see MDL-71036 for details).
+  That comes with a few changes:
+  - Breaking: All the changes that were deprecated with PHPUnit 8.5
+    are now removed (see the 3.10 section below).
+  - Breaking: assertContains() now performs stricter comparison (like assertSame()
+    does). New assertContainsEquals() has been created to provide the old
+    behavior.
+  - Deprecation: A number of file-related assertions have been deprecated, will
+    be removed with PHPUnit 10. Alternatives for all them have been created:
+      - assertNotIsReadable()         -> assertIsNotReadable()
+      - assertNotIsWritable()         -> assertIsNotWritable()
+      - assertDirectoryNotExists()    -> assertDirectoryDoesNotExist()
+      - assertDirectoryNotIsReadable()-> assertDirectoryIsNotReadable()
+      - assertDirectoryNotIsWritable()-> assertDirectoryIsNotWritable()
+      - assertFileNotExists()         -> assertFileDoesNotExist()
+      - assertFileNotIsReadable()     -> assertFileIsNotReadable()
+      - assertFileNotIsWritable()     -> assertFileIsNotWritable()
+  - Deprecation: Regexp-related assertions have been deprecated, will be
+    removed with PHPUnit 10. Alternatives for all them have been created:
+      - assertRegExp()     -> assertMatchesRegularExpression()
+      - assertNotRegExp()  -> assertDoesNotMatchRegularExpression()
+  - Deprecation: The expectException() for Notice, Warning, Deprecation and
+    Error is deprecated, will be removed with PHPUnit 10. New expectations
+    have been created to better define the expectation:
+      - expectDeprecation() for E_DEPRECATED and E_USER_DEPRECATED.
+      - expectNotice() for E_NOTICE, E_USER_NOTICE, and E_STRICT.
+      - expectWarning() for E_WARNING and E_USER_WARNING.
+      - expectError() for everything else.
+   - Deprecation: The Mock->at() matcher has been deprecated and will be
+     removed with PHPUnit 10. Switch to better, more deterministic and clearer
+     matchers is recommended (->once(), ->exactly(), ->never()...).
+   - Deprecation: The Mock->setMethods() method has been *silently* deprecated
+     and will be removed in the future. Change uses to the new Mock->onlyMethods()
+     alternative. Also, it doesn't accept "null" anymore, new default must
+     be [] (empty array).
+   - Mostly internal: With the raise to PHP 7.3 as lower version supported,
+     various internal bits perform now stricter type checking in params and
+     return values. If your tests have own-created comparators, assertions...
+     they may need to be adjusted.
+   - Mostly internal: The phpunit.xml schema has changed, basically removing
+     the old <filter> section and replacing it with a new, less confusing
+     <coverage> section. Also the elements within them have been changed:
+       - <whitelist> has been replaced by <include>.
+       - <exclude> is not a child of <whitelist> anymore, but of <coverage>.
+     Note that this only will affect if you've custom phpunit.xml files
+     instead of using the automatically generated ones by Moodle.
+   - Deprecation: Related to the previous point, the $whitelistxxx properties
+     used by the coverage.php files have been deprecated (will continue
+     working until Moodle 4.3) to follow the same pattern:
+       - whitelistfolders -> includelistfolders
+       - whitelistfiles   -> includelistfiles
+   - Internal: Custom autoloaders are deprecated and will be removed with
+     PHPUnit 10. Hence we have removed our one already.
+     Note that it was not useful since PHPUnit 8.5, where the ability
+     to run tests by class name was removed.
+   - Warning: Because of some new restrictions about how test files and
+     test classes must be named (that Moodle haven't followed ever) it's not
+     possible to run individual test files any more. Use any of the alternative
+     execution methods (filter, suite, config) to specify which tests
+     you want to run. This will be hopefully fixed in MDL-71049
+     once it has been agreed which the best way to proceed is.
+* The horde library has been updated to version 5.2.23.
 * New optional parameter $extracontent for print_collapsible_region_start(). This allows developers to add interactive HTML elements
   (e.g. a help icon) after the collapsible region's toggle link.
+* Final deprecation i_dock_block() in behat_deprecated.php
+* Final deprecation of get_courses_page. Function has been removed and core_course_category::get_courses() should be
+  used instead.
+* New encryption API in \core\encryption allows secure encryption and decryption of data. By
+  default the key is stored in moodledata but admins can configure a different, more secure
+  location in config.php if required. To get the best possible security for this feature, we
+  recommend enabling the Sodium PHP extension.
+  The OpenSSL alternative for this API, used when Sodium is not available, is considered deprecated
+  at all effects, and will be removed in Moodle 4.2. See MDL-71421 for more information.
+* Behat timeout constants behat_base::TIMEOUT, EXTENDED_TIMEOUT, and REDUCED_TIMEOUT, which were deprecated in 3.7, have been removed.
+* \core_table\local\filter\filterset::JOINTYPE_DEFAULT is being changed from 1 (ANY) to 2 (ALL). Filterset implementations
+  can override the default filterset join type by overriding \core_table\local\filter\filterset::get_join_type() instead.
+* HTMLPurifier has been upgraded to the latest version - 4.13.0
+* Markdown lib has been upgraded to the latest version - 1.9.0
+* The minify lib has been upgraded to 1.3.63 and pathconvertor to 1.1.3
+* A new optional parameter `$sort` has been added to all `$context->get_capabilities()` methods to be able to define order of
+  returned capability array.
+* Spout has been upgraded to the latest version - 3.1.0
+* emoji-data has been upgraded to 6.0.0.
+* The final deprecation of /message/defaultoutputs.php file and admin_page_defaultmessageoutputs.
+  All their settings moved to admin/message.php (see MDL-64495). Please use admin_page_managemessageoutputs class instead.
 * Behat now supports date selection from the date form element. Examples:
     - I set the field "<field_string>" to "##15 March 2021##"
     - I set the field "<field_string>" to "##first day of January last year##"
 * Behat now supports date and time selection from the datetime form element. Examples:
     - I set the field "<field_string>" to "##15 March 2021 08:15##"
     - I set the field "<field_string>" to "##first day of January last year noon##"
+* New DML driver method `$DB->sql_group_concat` for performing group concatenation of a field within a SQL query
+* Added new class, AMD modules and WS that allow displaying forms in modal popups or load and submit in AJAX requests.
+  See https://docs.moodle.org/dev/Modal_and_AJAX_forms for more details.
+* New base class for defining an activity's custom completion requirements: \core_completion\activity_custom_completion.
+  Activity module plugins that define custom completion conditions should implement a mod_[modname]\completion\custom_completion
+  subclass and the following methods:
+  - get_state(): Provides the completion state for a given custom completion rule.
+  - get_defined_custom_rules(): Returns an array of the activity module's custom completion rules.
+    e.g. ['completionsubmit']
+  - get_custom_rule_descriptions(): Returns an associative array with values containing the user-facing textual description
+    of the custom completion rules (which serve as the keys to these values).
+    e.g. ['completionsubmit' => 'Must submit']
+  - get_sort_order(): Returns an array listing the order the activity module's completion rules should be displayed to the user,
+    including both custom completion and relevant core completion rules
+    e.g. ['completionview', 'completionsubmit', 'completionusegrade']
+* Admin setting admin_setting_configmulticheckbox now supports lazy-loading the options list by
+  supplying a callback function instead of an array of options.
+* A new core API class \core_user\fields provides ways to get lists of user fields, and SQL related to
+  those fields. This replaces existing functions get_extra_user_fields(), get_extra_user_fields_sql(),
+  get_user_field_name(), get_all_user_name_fields(), and user_picture::fields(), which have all been
+  deprecated.
+* Allow plugins to augment the curl security helper via callback. The plugin's function has to be defined as
+  plugintype_pluginname_curl_security_helper in pluginname/lib.php file and the function should return a plugin's security
+  helper instance.
+* The behat transformation 'string time to timestamp' no longer supports datetime format. If provided, the format must
+  be strftime compatible. Example:
+    - I should see "##tomorrow noon##%A, %d %B %Y, %I:%M %p##"
+* External functions implementation classes should use 'execute' as the method name, in which case the
+  'methodname' property should not be specified in db/services.php file.
+* The core_grades_create_gradecategory webservice has been deprecated in favour of core_grades_create_gradecategories, which is
+  functionally identical but allows for parallel gradecategory creations by supplying a data array to the webservice.
+* The signature of the get_context_name() function in the abstract class context and all extending classes (such as context_course)
+  has been extended. The new parameter allows the to get the name without escaped characters.
+* The signature of the question_category_options() has been extended. The new parameter allows the to get the categories name
+  in the returned array without escaped characters.
+* The \core\hub\site_registration_form::add_select_with_email() method has been deprecated in favour of
+  \core\hub\site_registration_form::add_checkbox_with_email().
+* A new index has been added on mdl_user_preferences.name. This upgrade step might take some time on big sites.
 
 === 3.10 ===
 * PHPUnit has been upgraded to 8.5. That comes with a few changes:

@@ -35,6 +35,9 @@ define ('DATA_TIMEMODIFIED', -4);
 define ('DATA_TAGS', -5);
 
 define ('DATA_CAP_EXPORT', 'mod/data:viewalluserpresets');
+// Users having assigned the default role "Non-editing teacher" can export database records
+// Using the mod/data capability "viewalluserpresets" existing in Moodle 1.9.x.
+// In Moodle >= 2, new roles may be introduced and used instead.
 
 define('DATA_PRESET_COMPONENT', 'mod_data');
 define('DATA_PRESET_FILEAREA', 'site_presets');
@@ -43,9 +46,7 @@ define('DATA_PRESET_CONTEXT', SYSCONTEXTID);
 define('DATA_EVENT_TYPE_OPEN', 'open');
 define('DATA_EVENT_TYPE_CLOSE', 'close');
 
-// Users having assigned the default role "Non-editing teacher" can export database records
-// Using the mod/data capability "viewalluserpresets" existing in Moodle 1.9.x.
-// In Moodle >= 2, new roles may be introduced and used instead.
+require_once(__DIR__ . '/deprecatedlib.php');
 
 /**
  * @package   mod_data
@@ -1195,9 +1196,9 @@ function data_user_outline($course, $user, $mod, $data) {
         $result->time = $lastrecord->timemodified;
         if ($grade) {
             if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-                $result->info .= ', ' . get_string('grade') . ': ' . $grade->str_long_grade;
+                $result->info .= ', ' . get_string('gradenoun') . ': ' . $grade->str_long_grade;
             } else {
-                $result->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
+                $result->info = get_string('gradenoun') . ': ' . get_string('hidden', 'grades');
             }
         }
         return $result;
@@ -1206,9 +1207,9 @@ function data_user_outline($course, $user, $mod, $data) {
             'time' => grade_get_date_for_user_grade($grade, $user),
         ];
         if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            $result->info = get_string('grade') . ': ' . $grade->str_long_grade;
+            $result->info = get_string('gradenoun') . ': ' . $grade->str_long_grade;
         } else {
-            $result->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
+            $result->info = get_string('gradenoun') . ': ' . get_string('hidden', 'grades');
         }
 
         return $result;
@@ -1233,12 +1234,12 @@ function data_user_complete($course, $user, $mod, $data) {
     if (!empty($grades->items[0]->grades)) {
         $grade = reset($grades->items[0]->grades);
         if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            echo $OUTPUT->container(get_string('grade').': '.$grade->str_long_grade);
+            echo $OUTPUT->container(get_string('gradenoun') . ': ' . $grade->str_long_grade);
             if ($grade->str_feedback) {
                 echo $OUTPUT->container(get_string('feedback').': '.$grade->str_feedback);
             }
         } else {
-            echo $OUTPUT->container(get_string('grade') . ': ' . get_string('hidden', 'grades'));
+            echo $OUTPUT->container(get_string('gradenoun') . ': ' . get_string('hidden', 'grades'));
         }
     }
 
@@ -2304,11 +2305,18 @@ function data_delete_site_preset($name) {
  */
 function data_print_header($course, $cm, $data, $currenttab='') {
 
-    global $CFG, $displaynoticegood, $displaynoticebad, $OUTPUT, $PAGE;
+    global $CFG, $displaynoticegood, $displaynoticebad, $OUTPUT, $PAGE, $USER;
 
     $PAGE->set_title($data->name);
     echo $OUTPUT->header();
     echo $OUTPUT->heading(format_string($data->name), 2);
+
+    // Render the activity information.
+    $cminfo = cm_info::create($cm);
+    $completiondetails = \core_completion\cm_completion_details::get_instance($cminfo, $USER->id);
+    $activitydates = \core\activity_dates::get_dates_for_module($cminfo, $USER->id);
+    echo $OUTPUT->activity_information($cminfo, $completiondetails, $activitydates);
+
     echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
 
     // Groups needed for Add entry tab
@@ -4118,9 +4126,8 @@ function data_get_recordids($alias, $searcharray, $dataid, $recordids) {
 function data_get_advanced_search_sql($sort, $data, $recordids, $selectdata, $sortorder) {
     global $DB;
 
-    $namefields = user_picture::fields('u');
-    // Remove the id from the string. This already exists in the sql statement.
-    $namefields = str_replace('u.id,', '', $namefields);
+    $userfieldsapi = \core_user\fields::for_userpic()->excluding('id');
+    $namefields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
 
     if ($sort == 0) {
         $nestselectsql = 'SELECT r.id, r.approved, r.timecreated, r.timemodified, r.userid, ' . $namefields . '
@@ -4468,40 +4475,6 @@ function data_update_completion_state($data, $course, $cm) {
             $completion->update_state($cm, COMPLETION_INCOMPLETE);
         }
     }
-}
-
-/**
- * Obtains the automatic completion state for this database item based on any conditions
- * on its settings. The call for this is in completion lib where the modulename is appended
- * to the function name. This is why there are unused parameters.
- *
- * @since Moodle 3.3
- * @param stdClass $course Course
- * @param cm_info|stdClass $cm course-module
- * @param int $userid User ID
- * @param bool $type Type of comparison (or/and; can be used as return value if no conditions)
- * @return bool True if completed, false if not, $type if conditions not set.
- */
-function data_get_completion_state($course, $cm, $userid, $type) {
-    global $DB, $PAGE;
-    $result = $type; // Default return value
-    // Get data details.
-    if (isset($PAGE->cm->id) && $PAGE->cm->id == $cm->id) {
-        $data = $PAGE->activityrecord;
-    } else {
-        $data = $DB->get_record('data', array('id' => $cm->instance), '*', MUST_EXIST);
-    }
-    // If completion option is enabled, evaluate it and return true/false.
-    if ($data->completionentries) {
-        $numentries = data_numentries($data, $userid);
-        // Check the number of entries required against the number of entries already made.
-        if ($numentries >= $data->completionentries) {
-            $result = true;
-        } else {
-            $result = false;
-        }
-    }
-    return $result;
 }
 
 /**

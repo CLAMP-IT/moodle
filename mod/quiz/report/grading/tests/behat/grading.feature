@@ -57,6 +57,10 @@ Feature: Basic use of the Manual grading report
     And I set the field "Order attempts" to "By student ID number"
     And I press "Change options"
 
+    # General feedback for Short answer 001 displays.
+    And I should see "That is a bad answer."
+    And I should see "The correct answer is: frog"
+
     # Adjust the mark for Student1.
     And I set the field "Comment" to "I have adjusted your mark to 0.6"
     And I set the field "Mark" to "0.6"
@@ -83,3 +87,28 @@ Feature: Basic use of the Manual grading report
     Then the following fields match these values:
       | Questions per page | 42      |
       | Order attempts     | By date |
+
+  @javascript
+  Scenario: Manual grading settings are validated
+    Given user "student1" has attempted "Quiz 1" with responses:
+      | slot | response |
+      | 1    | Paris    |
+    And I am on the "Quiz 1" "mod_quiz > Manual grading report" page logged in as "teacher1"
+    And I follow "Also show questions that have been graded automatically"
+    And I click on "update grades" "link" in the "Short answer 001" "table_row"
+    When I set the following fields to these values:
+      | Questions per page | 0 |
+    And I press "Change options"
+    Then I should see "You must enter a number that is greater than 0."
+    And I set the following fields to these values:
+      | Questions per page | -1 |
+    And I press "Change options"
+    And I should see "You must enter a number that is greater than 0."
+    And I set the following fields to these values:
+      | Questions per page | abc |
+    And I press "Change options"
+    And I should see "You must enter a number that is greater than 0."
+    And I set the following fields to these values:
+      | Questions per page | 1 |
+    And I press "Change options"
+    And I should not see "You must enter a number that is greater than 0."

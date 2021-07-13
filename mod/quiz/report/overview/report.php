@@ -395,7 +395,8 @@ class quiz_overview_report extends quiz_attempts_report {
         global $DB;
         $this->unlock_session();
 
-        $sql = "SELECT quiza.*, " . get_all_user_name_fields(true, 'u') . "
+        $userfieldsapi = \core_user\fields::for_name();
+        $sql = "SELECT quiza.*, " . $userfieldsapi->get_sql('u', false, '', '', false)->selects . "
                   FROM {quiz_attempts} quiza
                   JOIN {user} u ON u.id = quiza.userid";
         $where = "quiz = :qid AND preview = 0";
@@ -462,8 +463,9 @@ class quiz_overview_report extends quiz_attempts_report {
         }
 
         list($uniqueidcondition, $params) = $DB->get_in_or_equal(array_keys($attemptquestions));
+        $userfieldsapi = \core_user\fields::for_name();
         $attempts = $DB->get_records_sql("
-                SELECT quiza.*, " . get_all_user_name_fields(true, 'u') . "
+                SELECT quiza.*, " . $userfieldsapi->get_sql('u', false, '', '', false)->selects . "
                   FROM {quiz_attempts} quiza
                   JOIN {user} u ON u.id = quiza.userid
                  WHERE quiza.uniqueid $uniqueidcondition
@@ -482,7 +484,7 @@ class quiz_overview_report extends quiz_attempts_report {
      *
      * Given an array of attempts, it regrades them all, or does a dry run.
      * Each object in the attempts array must be a row from the quiz_attempts
-     * table, with the get_all_user_name_fields from the user table joined in.
+     * table, with the \core_user\fields::for_name() fields from the user table joined in.
      * In addition, if $attempt->regradeonlyslots is set, then only those slots
      * are regraded, otherwise all slots are regraded.
      *
@@ -664,7 +666,7 @@ class quiz_overview_report extends quiz_attempts_report {
     protected static function get_chart($labels, $data) {
         $chart = new \core\chart_bar();
         $chart->set_labels($labels);
-        $chart->get_xaxis(0, true)->set_label(get_string('grade'));
+        $chart->get_xaxis(0, true)->set_label(get_string('gradenoun'));
 
         $yaxis = $chart->get_yaxis(0, true);
         $yaxis->set_label(get_string('participants'));

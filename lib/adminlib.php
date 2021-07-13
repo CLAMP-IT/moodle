@@ -645,7 +645,8 @@ function enable_cli_maintenance_mode() {
     } else {
         $data = get_string('sitemaintenance', 'admin');
         $data = bootstrap_renderer::early_error_content($data, null, null, null);
-        $data = bootstrap_renderer::plain_page(get_string('sitemaintenancetitle', 'admin', $SITE->fullname), $data);
+        $data = bootstrap_renderer::plain_page(get_string('sitemaintenancetitle', 'admin',
+            format_string($SITE->fullname, true, ['context' => context_system::instance()])), $data);
     }
 
     file_put_contents("$CFG->dataroot/climaintenance.html", $data);
@@ -2725,6 +2726,58 @@ class admin_setting_configpasswordunmask_with_advanced extends admin_setting_con
 }
 
 /**
+ * Admin setting class for encrypted values using secure encryption.
+ *
+ * @copyright 2019 The Open University
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class admin_setting_encryptedpassword extends admin_setting {
+
+    /**
+     * Constructor. Same as parent except that the default value is always an empty string.
+     *
+     * @param string $name Internal name used in config table
+     * @param string $visiblename Name shown on form
+     * @param string $description Description that appears below field
+     */
+    public function __construct(string $name, string $visiblename, string $description) {
+        parent::__construct($name, $visiblename, $description, '');
+    }
+
+    public function get_setting() {
+        return $this->config_read($this->name);
+    }
+
+    public function write_setting($data) {
+        $data = trim($data);
+        if ($data === '') {
+            // Value can really be set to nothing.
+            $savedata = '';
+        } else {
+            // Encrypt value before saving it.
+            $savedata = \core\encryption::encrypt($data);
+        }
+        return ($this->config_write($this->name, $savedata) ? '' : get_string('errorsetting', 'admin'));
+    }
+
+    public function output_html($data, $query='') {
+        global $OUTPUT;
+
+        $default = $this->get_defaultsetting();
+        $context = (object) [
+            'id' => $this->get_id(),
+            'name' => $this->get_full_name(),
+            'set' => $data !== '',
+            'novalue' => $this->get_setting() === null
+        ];
+        $element = $OUTPUT->render_from_template('core_admin/setting_encryptedpassword', $context);
+
+        return format_admin_setting($this, $this->visiblename, $element, $this->description,
+                true, '', $default, $query);
+    }
+}
+
+/**
  * Empty setting used to allow flags (advanced) on settings that can have no sensible default.
  * Note: Only advanced makes sense right now - locked does not.
  *
@@ -3014,34 +3067,46 @@ class admin_setting_configcheckbox extends admin_setting {
 class admin_setting_configmulticheckbox extends admin_setting {
     /** @var array Array of choices value=>label */
     public $choices;
+    /** @var callable|null Loader function for choices */
+    protected $choiceloader = null;
 
     /**
      * Constructor: uses parent::__construct
+     *
+     * The $choices parameter may be either an array of $value => $label format,
+     * e.g. [1 => get_string('yes')], or a callback function which takes no parameters and
+     * returns an array in that format.
      *
      * @param string $name unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins.
      * @param string $visiblename localised
      * @param string $description long localised info
      * @param array $defaultsetting array of selected
-     * @param array $choices array of $value=>$label for each checkbox
+     * @param array|callable $choices array of $value => $label for each checkbox, or a callback
      */
     public function __construct($name, $visiblename, $description, $defaultsetting, $choices) {
-        $this->choices = $choices;
+        if (is_array($choices)) {
+            $this->choices = $choices;
+        }
+        if (is_callable($choices)) {
+            $this->choiceloader = $choices;
+        }
         parent::__construct($name, $visiblename, $description, $defaultsetting);
     }
 
     /**
-     * This public function may be used in ancestors for lazy loading of choices
+     * This function may be used in ancestors for lazy loading of choices
      *
-     * @todo Check if this function is still required content commented out only returns true
+     * Override this method if loading of choices is expensive, such
+     * as when it requires multiple db requests.
+     *
      * @return bool true if loaded, false if error
      */
     public function load_choices() {
-        /*
-        if (is_array($this->choices)) {
-            return true;
+        if ($this->choiceloader) {
+            if (!is_array($this->choices)) {
+                $this->choices = call_user_func($this->choiceloader);
+            }
         }
-        .... load choices here
-        */
         return true;
     }
 
@@ -3762,6 +3827,8 @@ class admin_setting_configduration extends admin_setting {
 
     /** @var int default duration unit */
     protected $defaultunit;
+    /** @var callable|null Validation function */
+    protected $validatefunction = null;
 
     /**
      * Constructor
@@ -3783,6 +3850,36 @@ class admin_setting_configduration extends admin_setting {
             $this->defaultunit = 86400;
         }
         parent::__construct($name, $visiblename, $description, $defaultsetting);
+    }
+
+    /**
+     * Sets a validate function.
+     *
+     * The callback will be passed one parameter, the new setting value, and should return either
+     * an empty string '' if the value is OK, or an error message if not.
+     *
+     * @param callable|null $validatefunction Validate function or null to clear
+     * @since Moodle 3.10
+     */
+    public function set_validate_function(?callable $validatefunction = null) {
+        $this->validatefunction = $validatefunction;
+    }
+
+    /**
+     * Validate the setting. This uses the callback function if provided; subclasses could override
+     * to carry out validation directly in the class.
+     *
+     * @param int $data New value being set
+     * @return string Empty string if valid, or error message text
+     * @since Moodle 3.10
+     */
+    protected function validate_setting(int $data): string {
+        // If validation function is specified, call it now.
+        if ($this->validatefunction) {
+            return call_user_func($this->validatefunction, $data);
+        } else {
+            return '';
+        }
     }
 
     /**
@@ -3868,6 +3965,12 @@ class admin_setting_configduration extends admin_setting {
         $seconds = (int)($data['v']*$data['u']);
         if ($seconds < 0) {
             return get_string('errorsetting', 'admin');
+        }
+
+        // Validate the new setting.
+        $error = $this->validate_setting($seconds);
+        if ($error) {
+            return $error;
         }
 
         $result = $this->config_write($this->name, $seconds);
@@ -4209,7 +4312,8 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
                     'This is unexpected, and a problem because there is no way to pass these ' .
                     'parameters to get_users_by_capability. See MDL-34657.');
         }
-        $userfields = 'u.id, u.username, ' . get_all_user_name_fields(true, 'u');
+        $userfieldsapi = \core_user\fields::for_name();
+        $userfields = 'u.id, u.username, ' . $userfieldsapi->get_sql('u', false, '', '', false)->selects;
         $users = get_users_by_capability(context_system::instance(), $this->capability, $userfields, $sort);
         $this->choices = array(
             '$@NONE@$' => get_string('nobody'),
@@ -6641,32 +6745,6 @@ class admin_page_managemessageoutputs extends admin_externalpage {
         }
     }
 }
-
-/**
- * Default message outputs configuration
- *
- * @deprecated since Moodle 3.7 MDL-64495. Please use admin_page_managemessageoutputs instead.
- * @todo       MDL-64866 This will be deleted in Moodle 3.11.
- *
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class admin_page_defaultmessageoutputs extends admin_page_managemessageoutputs {
-    /**
-     * Calls parent::__construct with specific arguments
-     *
-     * @deprecated since Moodle 3.7 MDL-64495. Please use admin_page_managemessageoutputs instead.
-     * @todo       MDL-64866 This will be deleted in Moodle 3.11.
-     */
-    public function __construct() {
-        global $CFG;
-
-        debugging('admin_page_defaultmessageoutputs class is deprecated. Please use admin_page_managemessageoutputs instead.',
-            DEBUG_DEVELOPER);
-
-        admin_externalpage::__construct('defaultmessageoutputs', get_string('defaultmessageoutputs', 'message'), new moodle_url('/message/defaultoutputs.php'));
-    }
-}
-
 
 /**
  * Manage question behaviours page
@@ -10317,91 +10395,6 @@ class admin_setting_managewebserviceprotocols extends admin_setting {
         return highlight($query, $return);
     }
 }
-
-
-/**
- * Special class for web service token administration.
- *
- * @author Jerome Mouneyrac
- */
-class admin_setting_managewebservicetokens extends admin_setting {
-
-    /**
-     * Calls parent::__construct with specific arguments
-     */
-    public function __construct() {
-        $this->nosave = true;
-        parent::__construct('webservicestokenui', get_string('managetokens', 'webservice'), '', '');
-    }
-
-    /**
-     * Always returns true, does nothing
-     *
-     * @return true
-     */
-    public function get_setting() {
-        return true;
-    }
-
-    /**
-     * Always returns true, does nothing
-     *
-     * @return true
-     */
-    public function get_defaultsetting() {
-        return true;
-    }
-
-    /**
-     * Always returns '', does not write anything
-     *
-     * @return string Always returns ''
-     */
-    public function write_setting($data) {
-    // do not write any setting
-        return '';
-    }
-
-    /**
-     * Builds the XHTML to display the control
-     *
-     * @param string $data Unused
-     * @param string $query
-     * @return string
-     */
-    public function output_html($data, $query='') {
-        global $CFG, $OUTPUT;
-
-        require_once($CFG->dirroot . '/webservice/classes/token_table.php');
-        $baseurl = new moodle_url('/' . $CFG->admin . '/settings.php?section=webservicetokens');
-
-        $return = $OUTPUT->box_start('generalbox webservicestokenui');
-
-        if (has_capability('moodle/webservice:managealltokens', context_system::instance())) {
-            $return .= \html_writer::div(get_string('onlyseecreatedtokens', 'webservice'));
-        }
-
-        $table = new \webservice\token_table('webservicetokens');
-        $table->define_baseurl($baseurl);
-        $table->attributes['class'] = 'admintable generaltable'; // Any need changing?
-        $table->data  = array();
-        ob_start();
-        $table->out(10, false);
-        $tablehtml = ob_get_contents();
-        ob_end_clean();
-        $return .= $tablehtml;
-
-        $tokenpageurl = "$CFG->wwwroot/$CFG->admin/webservice/tokens.php?sesskey=" . sesskey();
-
-        $return .= $OUTPUT->box_end();
-        // add a token to the table
-        $return .= "<a href=\"".$tokenpageurl."&amp;action=create\">";
-        $return .= get_string('add')."</a>";
-
-        return highlight($query, $return);
-    }
-}
-
 
 /**
  * Colour picker

@@ -93,7 +93,8 @@ if ($formaction == 'bulkchange.php') {
                         'lastname' => get_string('lastname'),
                     );
 
-                    $identityfields = get_extra_user_fields($context);
+                    // TODO Does not support custom user profile fields (MDL-70456).
+                    $identityfields = \core_user\fields::get_identity_fields($context, false);
                     $identityfieldsselect = '';
 
                     foreach ($identityfields as $field) {
@@ -110,7 +111,23 @@ if ($formaction == 'bulkchange.php') {
                              WHERE u.id $insql";
 
                     $rs = $DB->get_recordset_sql($sql, $inparams);
-                    \core\dataformat::download_data('courseid_' . $course->id . '_participants', $dataformat, $columnnames, $rs);
+
+                    // Provide callback to pre-process all records ensuring user identity fields are escaped if HTML supported.
+                    \core\dataformat::download_data(
+                        'courseid_' . $course->id . '_participants',
+                        $dataformat,
+                        $columnnames,
+                        $rs,
+                        function(stdClass $record, bool $supportshtml) use ($identityfields): stdClass {
+                            if ($supportshtml) {
+                                foreach ($identityfields as $identityfield) {
+                                    $record->{$identityfield} = s($record->{$identityfield});
+                                }
+                            }
+
+                            return $record;
+                        }
+                    );
                     $rs->close();
                 }
             }

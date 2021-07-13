@@ -552,6 +552,7 @@ class mod_quiz_external_testcase extends externallib_advanced_testcase {
         // Now I have grades.
         $this->assertTrue($result['hasgrade']);
         $this->assertEquals(100.0, $result['grade']);
+        $this->assertEquals(80, $result['gradetopass']);
 
         // We should not see other users grades.
         $anotherstudent = self::getDataGenerator()->create_user();
@@ -572,6 +573,7 @@ class mod_quiz_external_testcase extends externallib_advanced_testcase {
 
         $this->assertTrue($result['hasgrade']);
         $this->assertEquals(100.0, $result['grade']);
+        $this->assertEquals(80, $result['gradetopass']);
 
         // Invalid user.
         try {
@@ -1774,8 +1776,8 @@ class mod_quiz_external_testcase extends externallib_advanced_testcase {
         $result = mod_quiz_external::get_quiz_access_information($quiz->id);
         $result = external_api::clean_returnvalue(mod_quiz_external::get_quiz_access_information_returns(), $result);
 
-        // Access limited by time and password.
-        $this->assertCount(3, $result['accessrules']);
+        // Access is limited by time and password, but only the password limit has a description.
+        $this->assertCount(1, $result['accessrules']);
         // Two rule names, password and open/close date.
         $this->assertCount(2, $result['activerulenames']);
         $this->assertCount(1, $result['preventaccessreasons']);

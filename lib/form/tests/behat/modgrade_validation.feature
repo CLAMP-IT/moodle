@@ -32,15 +32,20 @@ Feature: Using the activity grade form element
     And I press "Save changes"
     And I log out
     And I log in as "teacher1"
-    And I am on "Course 1" course homepage with editing mode on
-    And I add a "Forum" to section "1" and I fill the form with:
-      | Forum name | Test forum name |
+    And the following "activities" exist:
+      | activity   | name            | intro                  | course | idnumber    |
+      | forum      | Test forum name | Test forum description | C1     | forum1      |
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
+    And I navigate to "Edit settings" in current page administration
+    And I set the following fields to these values:
       | Forum type | Standard forum for general use |
-      | Description | Test forum description |
       | Aggregate type | Average of ratings  |
       | scale[modgrade_type] | Point |
       | scale[modgrade_point] | 100 |
       | Group mode | No groups |
+    And I press "Save and return to course"
+    And I am on "Course 1" course homepage
     And I follow "Test forum name"
     And I navigate to "Edit settings" in current page administration
     When I expand all fieldsets
@@ -154,17 +159,22 @@ Feature: Using the activity grade form element
     And the field "grade[modgrade_type]" matches value "Scale"
     And the field "grade[modgrade_scale]" matches value "ABCDEF"
 
+  @javascript
   Scenario: Attempting to change the maximum grade when ratings exist
     Given I log in as "teacher1"
-    And I am on "Course 1" course homepage with editing mode on
-    And I add a "Forum" to section "1" and I fill the form with:
-      | Forum name | Test forum name |
+    And the following "activities" exist:
+      | activity   | name            | intro                  | course | idnumber    | section |
+      | forum      | Test forum name | Test forum description | C1     | forum1      | 1       |
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
+    And I navigate to "Edit settings" in current page administration
+    And I set the following fields to these values:
       | Forum type | Standard forum for general use |
-      | Description | Test forum description |
       | Aggregate type | Average of ratings  |
       | scale[modgrade_type] | Point |
       | scale[modgrade_point] | 100 |
       | Group mode | No groups |
+    And I press "Save and return to course"
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
@@ -180,14 +190,11 @@ Feature: Using the activity grade form element
     And I follow "Test forum name"
     And I follow "Discussion subject"
     And I set the field "rating" to "100"
-    And I press "Rate"
     And I follow "Test forum name"
     And I navigate to "Edit settings" in current page administration
     When I expand all fieldsets
     Then I should see "You cannot change the type, as grades already exist for this item."
-    And I set the field "Ratings > Maximum grade" to "50"
-    And I press "Save and display"
-    And I should see "You cannot change the maximum grade when grades already exist for an activity with ratings"
+    And the "Maximum grade" "field" should be disabled
 
   @javascript
   Scenario: Attempting to change the maximum grade when no rescaling option has been chosen

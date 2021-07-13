@@ -536,7 +536,9 @@ class mod_quiz_renderer extends plugin_renderer_base {
         $output .= html_writer::start_tag('div', array('class' => 'submitbtns'));
         if ($page > 0 && $navmethod == 'free') {
             $output .= html_writer::empty_tag('input', array('type' => 'submit', 'name' => 'previous',
-                    'value' => get_string('navigateprevious', 'quiz'), 'class' => 'mod_quiz-prev-nav btn btn-secondary'));
+                    'value' => get_string('navigateprevious', 'quiz'), 'class' => 'mod_quiz-prev-nav btn btn-secondary',
+                    'id' => 'mod_quiz-prev-nav'));
+            $this->page->requires->js_call_amd('core_form/submit', 'init', ['mod_quiz-prev-nav']);
         }
         if ($lastpage) {
             $nextlabel = get_string('endtest', 'quiz');
@@ -544,8 +546,9 @@ class mod_quiz_renderer extends plugin_renderer_base {
             $nextlabel = get_string('navigatenext', 'quiz');
         }
         $output .= html_writer::empty_tag('input', array('type' => 'submit', 'name' => 'next',
-                'value' => $nextlabel, 'class' => 'mod_quiz-next-nav btn btn-primary'));
+                'value' => $nextlabel, 'class' => 'mod_quiz-next-nav btn btn-primary', 'id' => 'mod_quiz-next-nav'));
         $output .= html_writer::end_tag('div');
+        $this->page->requires->js_call_amd('core_form/submit', 'init', ['mod_quiz-next-nav']);
 
         return $output;
     }
@@ -874,11 +877,15 @@ class mod_quiz_renderer extends plugin_renderer_base {
      * @return string HTML to output.
      */
     public function no_questions_message($canedit, $editurl) {
-        $output = '';
-        $output .= $this->notification(get_string('noquestions', 'quiz'));
+        $output = html_writer::start_tag('div', array('class' => 'card text-center mb-3'));
+        $output .= html_writer::start_tag('div', array('class' => 'card-body'));
+
+        $output .= $this->notification(get_string('noquestions', 'quiz'), 'warning', false);
         if ($canedit) {
             $output .= $this->single_button($editurl, get_string('editquiz', 'quiz'), 'get');
         }
+        $output .= html_writer::end_tag('div');
+        $output .= html_writer::end_tag('div');
 
         return $output;
     }
@@ -927,17 +934,25 @@ class mod_quiz_renderer extends plugin_renderer_base {
      *
      * @param object $quiz the quiz settings.
      * @param object $cm the course_module object.
-     * @param object $context the quiz context.
+     * @param context $context the quiz context.
      * @param array $messages any access messages that should be described.
      * @return string HTML to output.
      */
     public function view_information($quiz, $cm, $context, $messages) {
-        global $CFG;
+        global $USER;
 
         $output = '';
 
-        // Print quiz name and description.
+        // Print quiz name.
         $output .= $this->heading(format_string($quiz->name));
+
+        // Print any activity information (eg completion requirements / dates).
+        $cminfo = cm_info::create($cm);
+        $completiondetails = \core_completion\cm_completion_details::get_instance($cminfo, $USER->id);
+        $activitydates = \core\activity_dates::get_dates_for_module($cminfo, $USER->id);
+        $output .= $this->output->activity_information($cminfo, $completiondetails, $activitydates);
+
+        // Print quiz description.
         $output .= $this->quiz_intro($quiz, $cm);
 
         // Output any access messages.
@@ -953,6 +968,13 @@ class mod_quiz_renderer extends plugin_renderer_base {
                         array('class' => 'quizattemptcounts'));
             }
         }
+
+        if (has_any_capability(['mod/quiz:manageoverrides', 'mod/quiz:viewoverrides'], $context)) {
+            if ($overrideinfo = $this->quiz_override_summary_links($quiz, $cm)) {
+                $output .= html_writer::tag('div', $overrideinfo, ['class' => 'quizattemptcounts']);
+            }
+        }
+
         return $output;
     }
 
@@ -1010,7 +1032,7 @@ class mod_quiz_renderer extends plugin_renderer_base {
             $table->size[] = '';
         }
         if ($viewobj->gradecolumn) {
-            $table->head[] = get_string('grade') . ' / ' .
+            $table->head[] = get_string('gradenoun') . ' / ' .
                     quiz_format_grade($quiz, $quiz->grade);
             $table->align[] = 'center';
             $table->size[] = '';
@@ -1216,15 +1238,14 @@ class mod_quiz_renderer extends plugin_renderer_base {
      * Returns the same as {@link quiz_num_attempt_summary()} but wrapped in a link
      * to the quiz reports.
      *
-     * @param object $quiz the quiz object. Only $quiz->id is used at the moment.
-     * @param object $cm the cm object. Only $cm->course, $cm->groupmode and $cm->groupingid
+     * @param stdClass $quiz the quiz object. Only $quiz->id is used at the moment.
+     * @param stdClass $cm the cm object. Only $cm->course, $cm->groupmode and $cm->groupingid
      * fields are used at the moment.
-     * @param object $context the quiz context.
+     * @param context $context the quiz context.
      * @param bool $returnzero if false (default), when no attempts have been made '' is returned
-     * instead of 'Attempts: 0'.
+     *      instead of 'Attempts: 0'.
      * @param int $currentgroup if there is a concept of current group where this method is being
-     * called
-     *         (e.g. a report) pass it in here. Default 0 which means no current group.
+     *      called (e.g. a report) pass it in here. Default 0 which means no current group.
      * @return string HTML fragment for the link.
      */
     public function quiz_attempt_summary_link_to_reports($quiz, $cm, $context,
@@ -1239,6 +1260,49 @@ class mod_quiz_renderer extends plugin_renderer_base {
         $url = new moodle_url('/mod/quiz/report.php', array(
                 'id' => $cm->id, 'mode' => quiz_report_default_report($context)));
         return html_writer::link($url, $summary);
+    }
+
+    /**
+     * Render a summary of the number of group and user overrides, with corresponding links.
+     *
+     * @param stdClass $quiz the quiz settings.
+     * @param stdClass|cm_info $cm the cm object.
+     * @param int $currentgroup currently selected group, if there is one.
+     * @return string HTML fragment for the link.
+     */
+    public function quiz_override_summary_links(stdClass $quiz, stdClass $cm, $currentgroup = 0): string {
+
+        $baseurl = new moodle_url('/mod/quiz/overrides.php', ['cmid' => $cm->id]);
+        $counts = quiz_override_summary($quiz, $cm, $currentgroup);
+
+        $links = [];
+        if ($counts['group']) {
+            $links[] = html_writer::link(new moodle_url($baseurl, ['mode' => 'group']),
+                    get_string('overridessummarygroup', 'quiz', $counts['group']));
+        }
+        if ($counts['user']) {
+            $links[] = html_writer::link(new moodle_url($baseurl, ['mode' => 'user']),
+                    get_string('overridessummaryuser', 'quiz', $counts['user']));
+        }
+
+        if (!$links) {
+            return '';
+        }
+
+        $links = implode(', ', $links);
+        switch ($counts['mode']) {
+            case 'onegroup':
+                return get_string('overridessummarythisgroup', 'quiz', $links);
+
+            case 'somegroups':
+                return get_string('overridessummaryyourgroups', 'quiz', $links);
+
+            case 'allgroups':
+                return get_string('overridessummary', 'quiz', $links);
+
+            default:
+                throw new coding_exception('Unexpected mode ' . $counts['mode']);
+        }
     }
 
     /**

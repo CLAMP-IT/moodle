@@ -1445,7 +1445,20 @@ class sqlsrv_native_moodle_database extends moodle_database {
         for ($n = count($elements) - 1; $n > 0; $n--) {
             array_splice($elements, $n, 0, $separator);
         }
-        return call_user_func_array(array($this, 'sql_concat'), $elements);
+        return call_user_func_array(array($this, 'sql_concat'), array_values($elements));
+    }
+
+    /**
+     * Return SQL for performing group concatenation on given field/expression
+     *
+     * @param string $field
+     * @param string $separator
+     * @param string $sort
+     * @return string
+     */
+    public function sql_group_concat(string $field, string $separator = ', ', string $sort = ''): string {
+        $fieldsort = $sort ? "WITHIN GROUP (ORDER BY {$sort})" : '';
+        return "STRING_AGG({$field}, '{$separator}') {$fieldsort}";
     }
 
     public function sql_isempty($tablename, $fieldname, $nullablefield, $textfield) {

@@ -523,8 +523,9 @@ function workshop_user_complete($course, $user, $mod, $workshop) {
 function workshop_print_recent_activity($course, $viewfullnames, $timestart) {
     global $CFG, $USER, $DB, $OUTPUT;
 
-    $authoramefields = get_all_user_name_fields(true, 'author', null, 'author');
-    $reviewerfields = get_all_user_name_fields(true, 'reviewer', null, 'reviewer');
+    $userfieldsapi = \core_user\fields::for_name();
+    $authoramefields = $userfieldsapi->get_sql('author', false, 'author', '', false)->selects;
+    $reviewerfields = $userfieldsapi->get_sql('reviewer', false, 'reviewer', '', false)->selects;
 
     $sql = "SELECT s.id AS submissionid, s.title AS submissiontitle, s.timemodified AS submissionmodified,
                    author.id AS authorid, $authoramefields, a.id AS assessmentid, a.timemodified AS assessmentmodified,
@@ -768,8 +769,9 @@ function workshop_get_recent_mod_activity(&$activities, &$index, $timestart, $co
     $params['submissionmodified'] = $timestart;
     $params['assessmentmodified'] = $timestart;
 
-    $authornamefields = get_all_user_name_fields(true, 'author', null, 'author');
-    $reviewerfields = get_all_user_name_fields(true, 'reviewer', null, 'reviewer');
+    $userfieldsapi = \core_user\fields::for_name();
+    $authornamefields = $userfieldsapi->get_sql('author', false, 'author', '', false)->selects;
+    $reviewerfields = $userfieldsapi->get_sql('reviewer', false, 'reviewer', '', false)->selects;
 
     $sql = "SELECT s.id AS submissionid, s.title AS submissiontitle, s.timemodified AS submissionmodified,
                    author.id AS authorid, $authornamefields, author.picture AS authorpicture, author.imagealt AS authorimagealt,
@@ -806,13 +808,13 @@ function workshop_get_recent_mod_activity(&$activities, &$index, $timestart, $co
         // remember all user names we can use later
         if (empty($users[$activity->authorid])) {
             $u = new stdclass();
-            $additionalfields = explode(',', user_picture::fields());
+            $additionalfields = explode(',', implode(',', \core_user\fields::get_picture_fields()));
             $u = username_load_fields_from_object($u, $activity, 'author', $additionalfields);
             $users[$activity->authorid] = $u;
         }
         if ($activity->reviewerid and empty($users[$activity->reviewerid])) {
             $u = new stdclass();
-            $additionalfields = explode(',', user_picture::fields());
+            $additionalfields = explode(',', implode(',', \core_user\fields::get_picture_fields()));
             $u = username_load_fields_from_object($u, $activity, 'reviewer', $additionalfields);
             $users[$activity->reviewerid] = $u;
         }
@@ -1490,7 +1492,8 @@ function workshop_get_file_info($browser, $areas, $course, $cm, $context, $filea
 
         } else {
 
-            $userfields = get_all_user_name_fields(true, 'u');
+            $userfieldsapi = \core_user\fields::for_name();
+            $userfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
             $sql = "SELECT s.id, $userfields
                       FROM {workshop_submissions} s
                       JOIN {user} u ON (s.authorid = u.id)
@@ -2205,4 +2208,48 @@ function mod_workshop_get_path_from_pluginfile(string $filearea, array $args) : 
         'itemid' => 0,
         'filepath' => $filepath,
     ];
+}
+
+/**
+ * Add a get_coursemodule_info function in case any feedback type wants to add 'extra' information
+ * for the course (see resource).
+ *
+ * Given a course_module object, this function returns any "extra" information that may be needed
+ * when printing this activity in a course listing.  See get_array_of_activities() in course/lib.php.
+ *
+ * @param stdClass $coursemodule The coursemodule object (record).
+ * @return cached_cm_info|false An object on information that the courses will know about (most noticeably, an icon).
+ */
+function workshop_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $dbparams = ['id' => $coursemodule->instance];
+    $fields = 'id, name, intro, introformat, submissionstart, submissionend, assessmentstart, assessmentend';
+    if (!$workshop = $DB->get_record('workshop', $dbparams, $fields)) {
+        return false;
+    }
+
+    $result = new cached_cm_info();
+    $result->name = $workshop->name;
+
+    if ($coursemodule->showdescription) {
+        // Convert intro to html. Do not filter cached version, filters run at display time.
+        $result->content = format_module_intro('workshop', $workshop, $coursemodule->id, false);
+    }
+
+    // Populate some other values that can be used in calendar or on dashboard.
+    if ($workshop->submissionstart) {
+        $result->customdata['submissionstart'] = $workshop->submissionstart;
+    }
+    if ($workshop->submissionend) {
+        $result->customdata['submissionend'] = $workshop->submissionend;
+    }
+    if ($workshop->assessmentstart) {
+        $result->customdata['assessmentstart'] = $workshop->assessmentstart;
+    }
+    if ($workshop->assessmentend) {
+        $result->customdata['assessmentend'] = $workshop->assessmentend;
+    }
+
+    return $result;
 }

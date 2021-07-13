@@ -50,6 +50,8 @@ require_once($CFG->dirroot . '/search/engine/solr/tests/fixtures/testable_engine
  * @category    phpunit
  * @copyright   2015 David Monllao {@link http://www.davidmonllao.com}
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ * @runTestsInSeparateProcesses
  */
 class search_solr_engine_testcase extends advanced_testcase {
 
@@ -424,13 +426,13 @@ class search_solr_engine_testcase extends advanced_testcase {
         $result = reset($results);
 
         $regex = '|'.\search_solr\engine::HIGHLIGHT_START.'message'.\search_solr\engine::HIGHLIGHT_END.'|';
-        $this->assertRegExp($regex, $result->get('content'));
+        $this->assertMatchesRegularExpression($regex, $result->get('content'));
 
         $searchrenderer = $PAGE->get_renderer('core_search');
         $exported = $result->export_for_template($searchrenderer);
 
         $regex = '|<span class="highlight">message</span>|';
-        $this->assertRegExp($regex, $exported['content']);
+        $this->assertMatchesRegularExpression($regex, $exported['content']);
     }
 
     public function test_export_file_for_engine() {

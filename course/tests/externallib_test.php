@@ -1080,9 +1080,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $DB->set_field('course_sections', 'visible', 0,
                 array('course' => $course->id, 'section' => 4));
 
+        $forumcompleteauto = $this->getDataGenerator()->create_module('forum',
+            array('course' => $course->id, 'intro' => 'forum completion tracking auto', 'trackingtype' => 2),
+            array('showdescription' => true, 'completionview' => 1, 'completion' => COMPLETION_TRACKING_AUTOMATIC));
+        $forumcompleteautocm = get_coursemodule_from_id('forum', $forumcompleteauto->cmid);
+
         rebuild_course_cache($course->id, true);
 
-        return array($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm);
+        return array($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm, $forumcompleteautocm);
     }
 
     /**
@@ -1145,7 +1150,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->assertEquals(5, $testexecuted);
         $this->assertEquals(0, $sections[0]['section']);
 
-        $this->assertCount(5, $sections[0]['modules']);
+        $this->assertCount(6, $sections[0]['modules']);
         $this->assertCount(1, $sections[1]['modules']);
         $this->assertCount(1, $sections[2]['modules']);
         $this->assertCount(1, $sections[3]['modules']); // One module for the section with availability restrictions.
@@ -1187,7 +1192,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $sections = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $sections);
 
         $this->assertCount(4, $sections); // Nothing for the not visible section.
-        $this->assertCount(5, $sections[0]['modules']);
+        $this->assertCount(6, $sections[0]['modules']);
         $this->assertCount(1, $sections[1]['modules']);
         $this->assertCount(1, $sections[2]['modules']);
         $this->assertCount(0, $sections[3]['modules']); // No modules for the section with availability restrictions.
@@ -1208,7 +1213,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $sections = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $sections);
 
         $this->assertCount(5, $sections); // Include fake section with stealth activities.
-        $this->assertCount(5, $sections[0]['modules']);
+        $this->assertCount(6, $sections[0]['modules']);
         $this->assertCount(1, $sections[1]['modules']);
         $this->assertCount(1, $sections[2]['modules']);
         $this->assertCount(0, $sections[3]['modules']); // No modules for the section with availability restrictions.
@@ -1273,7 +1278,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $sections = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $sections);
 
         $this->assertCount(1, $sections);
-        $this->assertCount(5, $sections[0]['modules']);
+        $this->assertCount(6, $sections[0]['modules']);
     }
 
     /**
@@ -1333,7 +1338,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $sections = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $sections);
 
         $this->assertCount(4, $sections);
-        $this->assertCount(1, $sections[0]['modules']);
+        $this->assertCount(2, $sections[0]['modules']);
         $this->assertEquals($forumcm->id, $sections[0]['modules'][0]["id"]);
     }
 
@@ -1361,13 +1366,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
     }
 
     /**
-     * Test get course contents completion
+     * Test get course contents completion manual
      */
-    public function test_get_course_contents_completion() {
+    public function test_get_course_contents_completion_manual() {
         global $CFG;
         $this->resetAfterTest(true);
 
-        list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm) = $this->prepare_get_course_contents_test();
+        list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm, $forumcompleteautocm) =
+            $this->prepare_get_course_contents_test();
         availability_completion\condition::wipe_static_cache();
 
         // Test activity not completed yet.
@@ -1376,13 +1382,18 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // We need to execute the return values cleaning process to simulate the web service server.
         $result = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $result);
 
+        $completiondata = $result[0]['modules'][0]["completiondata"];
         $this->assertCount(1, $result[0]['modules']);
         $this->assertEquals("forum", $result[0]['modules'][0]["modname"]);
         $this->assertEquals(COMPLETION_TRACKING_MANUAL, $result[0]['modules'][0]["completion"]);
-        $this->assertEquals(0, $result[0]['modules'][0]["completiondata"]['state']);
-        $this->assertEquals(0, $result[0]['modules'][0]["completiondata"]['timecompleted']);
-        $this->assertEmpty($result[0]['modules'][0]["completiondata"]['overrideby']);
-        $this->assertFalse($result[0]['modules'][0]["completiondata"]['valueused']);
+        $this->assertEquals(0, $completiondata['state']);
+        $this->assertEquals(0, $completiondata['timecompleted']);
+        $this->assertEmpty($completiondata['overrideby']);
+        $this->assertFalse($completiondata['valueused']);
+        $this->assertTrue($completiondata['hascompletion']);
+        $this->assertFalse($completiondata['isautomatic']);
+        $this->assertFalse($completiondata['istrackeduser']);
+        $this->assertTrue($completiondata['uservisible']);
 
         // Set activity completed.
         core_completion_external::update_activity_completion_status_manually($forumcm->id, true);
@@ -1402,13 +1413,18 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // We need to execute the return values cleaning process to simulate the web service server.
         $result = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $result);
 
+        $completiondata = $result[0]['modules'][0]["completiondata"];
         $this->assertCount(1, $result[0]['modules']);
         $this->assertEquals("label", $result[0]['modules'][0]["modname"]);
         $this->assertEquals(COMPLETION_TRACKING_MANUAL, $result[0]['modules'][0]["completion"]);
-        $this->assertEquals(0, $result[0]['modules'][0]["completiondata"]['state']);
-        $this->assertEquals(0, $result[0]['modules'][0]["completiondata"]['timecompleted']);
-        $this->assertEmpty($result[0]['modules'][0]["completiondata"]['overrideby']);
-        $this->assertTrue($result[0]['modules'][0]["completiondata"]['valueused']);
+        $this->assertEquals(0, $completiondata['state']);
+        $this->assertEquals(0, $completiondata['timecompleted']);
+        $this->assertEmpty($completiondata['overrideby']);
+        $this->assertTrue($completiondata['valueused']);
+        $this->assertTrue($completiondata['hascompletion']);
+        $this->assertFalse($completiondata['isautomatic']);
+        $this->assertFalse($completiondata['istrackeduser']);
+        $this->assertTrue($completiondata['uservisible']);
 
         // Disable completion.
         $CFG->enablecompletion = 0;
@@ -1418,6 +1434,47 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $result = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $result);
 
         $this->assertArrayNotHasKey('completiondata', $result[0]['modules'][0]);
+    }
+
+    /**
+     * Test get course contents completion auto
+     */
+    public function test_get_course_contents_completion_auto() {
+        global $CFG;
+        $this->resetAfterTest(true);
+
+        list($course, $forumcm, $datacm, $pagecm, $labelcm, $urlcm, $forumcompleteautocm) =
+            $this->prepare_get_course_contents_test();
+        availability_completion\condition::wipe_static_cache();
+
+        // Test activity not completed yet.
+        $result = core_course_external::get_course_contents($course->id, [
+            [
+                "name" => "modname",
+                "value" => "forum"
+            ],
+            [
+                "name" => "modid",
+                "value" => $forumcompleteautocm->instance
+            ]
+        ]);
+        // We need to execute the return values cleaning process to simulate the web service server.
+        $result = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $result);
+
+        $forummod = $result[0]['modules'][0];
+        $completiondata = $forummod["completiondata"];
+        $this->assertCount(1, $result[0]['modules']);
+        $this->assertEquals("forum", $forummod["modname"]);
+        $this->assertEquals(COMPLETION_TRACKING_AUTOMATIC, $forummod["completion"]);
+        $this->assertEquals(0, $completiondata['state']);
+        $this->assertEquals(0, $completiondata['timecompleted']);
+        $this->assertEmpty($completiondata['overrideby']);
+        $this->assertFalse($completiondata['valueused']);
+        $this->assertTrue($completiondata['hascompletion']);
+        $this->assertTrue($completiondata['isautomatic']);
+        $this->assertFalse($completiondata['istrackeduser']);
+        $this->assertTrue($completiondata['uservisible']);
+        $this->assertCount(1, $completiondata['details']);
     }
 
     /**
@@ -1437,8 +1494,9 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $result = core_course_external::get_course_contents($course->id);
         $result = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $result);
         $this->assertCount(1, $result[0]['modules']);   // One module, first section.
-        $customdata = unserialize(json_decode($result[0]['modules'][0]['customdata']));
-        $this->assertEquals('text/plain', $customdata['filedetails']['mimetype']);
+        $customdata = json_decode($result[0]['modules'][0]['customdata']);
+        $displayoptions = unserialize($customdata->displayoptions);
+        $this->assertEquals('text/plain', $displayoptions['filedetails']['mimetype']);
     }
 
     /**
@@ -1541,7 +1599,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $sections = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $sections);
 
         $this->assertCount(5, $sections); // All the sections, including the "not visible" one.
-        $this->assertCount(5, $sections[0]['modules']);
+        $this->assertCount(6, $sections[0]['modules']);
         $this->assertCount(1, $sections[1]['modules']);
         $this->assertCount(1, $sections[2]['modules']);
         $this->assertCount(0, $sections[3]['modules']); // No modules for the section with availability restrictions.
@@ -1563,7 +1621,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $sections = external_api::clean_returnvalue(core_course_external::get_course_contents_returns(), $sections);
 
         $this->assertCount(6, $sections); // Include fake section with stealth activities.
-        $this->assertCount(5, $sections[0]['modules']);
+        $this->assertCount(6, $sections[0]['modules']);
         $this->assertCount(1, $sections[1]['modules']);
         $this->assertCount(1, $sections[2]['modules']);
         $this->assertCount(0, $sections[3]['modules']); // No modules for the section with availability restrictions.
@@ -2575,16 +2633,16 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(3, $result['courses']);
         // Expect to receive all the fields.
-        $this->assertCount(38, $result['courses'][0]);
-        $this->assertCount(39, $result['courses'][1]);  // One more field because is not the site course.
-        $this->assertCount(39, $result['courses'][2]);  // One more field because is not the site course.
+        $this->assertCount(40, $result['courses'][0]);
+        $this->assertCount(41, $result['courses'][1]);  // One more field because is not the site course.
+        $this->assertCount(41, $result['courses'][2]);  // One more field because is not the site course.
 
         $result = core_course_external::get_courses_by_field('id', $course1->id);
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(1, $result['courses']);
         $this->assertEquals($course1->id, $result['courses'][0]['id']);
         // Expect to receive all the fields.
-        $this->assertCount(39, $result['courses'][0]);
+        $this->assertCount(41, $result['courses'][0]);
         // Check default values for course format topics.
         $this->assertCount(2, $result['courses'][0]['courseformatoptions']);
         foreach ($result['courses'][0]['courseformatoptions'] as $option) {
@@ -2645,15 +2703,15 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $result = core_course_external::get_courses_by_field();
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(2, $result['courses']);
-        $this->assertCount(31, $result['courses'][0]);
-        $this->assertCount(32, $result['courses'][1]);  // One field more (course format options), not present in site course.
+        $this->assertCount(33, $result['courses'][0]);
+        $this->assertCount(34, $result['courses'][1]);  // One field more (course format options), not present in site course.
 
         $result = core_course_external::get_courses_by_field('id', $course1->id);
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(1, $result['courses']);
         $this->assertEquals($course1->id, $result['courses'][0]['id']);
         // Expect to receive all the files that a student can see.
-        $this->assertCount(32, $result['courses'][0]);
+        $this->assertCount(34, $result['courses'][0]);
 
         // Check default filters.
         $filters = $result['courses'][0]['filters'];
@@ -2698,15 +2756,15 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $result = core_course_external::get_courses_by_field();
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(2, $result['courses']);
-        $this->assertCount(31, $result['courses'][0]);  // Site course.
-        $this->assertCount(14, $result['courses'][1]);  // Only public information, not enrolled.
+        $this->assertCount(33, $result['courses'][0]);  // Site course.
+        $this->assertCount(16, $result['courses'][1]);  // Only public information, not enrolled.
 
         $result = core_course_external::get_courses_by_field('id', $course1->id);
         $result = external_api::clean_returnvalue(core_course_external::get_courses_by_field_returns(), $result);
         $this->assertCount(1, $result['courses']);
         $this->assertEquals($course1->id, $result['courses'][0]['id']);
         // Expect to receive all the files that a authenticated can see.
-        $this->assertCount(14, $result['courses'][0]);
+        $this->assertCount(16, $result['courses'][0]);
 
         // Course 2 is not visible.
         $result = core_course_external::get_courses_by_field('id', $course2->id);
@@ -2909,7 +2967,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
     /**
      * Test cases for the get_enrolled_courses_by_timeline_classification test.
      */
-    public function get_get_enrolled_courses_by_timeline_classification_test_cases() {
+    public function get_get_enrolled_courses_by_timeline_classification_test_cases():array {
         $now = time();
         $day = 86400;
 
@@ -3008,6 +3066,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'future',
                 'limit' => 2,
                 'offset' => 0,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => [],
                 'expectednextoffset' => 0
             ],
@@ -3017,6 +3076,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'future',
                 'limit' => 0,
                 'offset' => 0,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => ['afuture', 'bfuture', 'cfuture', 'dfuture', 'efuture'],
                 'expectednextoffset' => 15
             ],
@@ -3025,6 +3085,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'future',
                 'limit' => 2,
                 'offset' => 0,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => ['afuture', 'bfuture'],
                 'expectednextoffset' => 4
             ],
@@ -3033,6 +3094,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'future',
                 'limit' => 2,
                 'offset' => 2,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => ['bfuture', 'cfuture'],
                 'expectednextoffset' => 7
             ],
@@ -3041,6 +3103,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'future',
                 'limit' => 5,
                 'offset' => 0,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => ['afuture', 'bfuture', 'cfuture', 'dfuture', 'efuture'],
                 'expectednextoffset' => 13
             ],
@@ -3049,6 +3112,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'future',
                 'limit' => 10,
                 'offset' => 0,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => ['afuture', 'bfuture', 'cfuture', 'dfuture', 'efuture'],
                 'expectednextoffset' => 15
             ],
@@ -3057,6 +3121,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'future',
                 'limit' => 10,
                 'offset' => 5,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => ['cfuture', 'dfuture', 'efuture'],
                 'expectednextoffset' => 15
             ],
@@ -3065,6 +3130,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'all',
                 'limit' => 0,
                 'offset' => 0,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => [
                     'afuture',
                     'ainprogress',
@@ -3089,6 +3155,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'all',
                 'limit' => 5,
                 'offset' => 0,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => [
                     'afuture',
                     'ainprogress',
@@ -3103,6 +3170,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'all',
                 'limit' => 5,
                 'offset' => 5,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => [
                     'bpast',
                     'cfuture',
@@ -3117,8 +3185,160 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
                 'classification' => 'all',
                 'limit' => 5,
                 'offset' => 50,
+                'sort' => 'shortname ASC',
                 'expectedcourses' => [],
                 'expectednextoffset' => 50
+            ],
+            'all limit and offset with sort ul.timeaccess desc' => [
+                'coursedata' => $coursedata,
+                'classification' => 'inprogress',
+                'limit' => 0,
+                'offset' => 0,
+                'sort' => 'ul.timeaccess desc',
+                'expectedcourses' => [
+                    'ainprogress',
+                    'binprogress',
+                    'cinprogress',
+                    'dinprogress',
+                    'einprogress'
+                ],
+                'expectednextoffset' => 15
+            ],
+            'all limit and offset with sort sql injection for sort or 1==1' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => 'ul.timeaccess desc or 1==1',
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with sql injection of sort a custom one' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "ul.timeaccess LIMIT 1--",
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong sort direction' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "ul.timeaccess abcdasc",
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid sort direction in $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong sort direction' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "ul.timeaccess.foo ascd",
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid sort direction in $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong sort param' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "foobar",
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong field name' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "ul.foobar",
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong field separator' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "ul.timeaccess.foo",
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong field separator #' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "ul#timeaccess",
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong field separator $' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => 'ul$timeaccess',
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with wrong field name' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => 'timeaccess123',
+                'expectedcourses' => [],
+                'expectednextoffset' => 0,
+                'expectedexception' => 'Invalid $sort parameter in enrol_get_my_courses()'
+            ],
+            'all limit and offset with no sort direction for ul' => [
+                'coursedata' => $coursedata,
+                'classification' => 'inprogress',
+                'limit' => 0,
+                'offset' => 0,
+                'sort' => "ul.timeaccess",
+                'expectedcourses' => ['ainprogress', 'binprogress', 'cinprogress', 'dinprogress', 'einprogress'],
+                'expectednextoffset' => 15,
+            ],
+            'all limit and offset with valid field name and no prefix, test for ul' => [
+                'coursedata' => $coursedata,
+                'classification' => 'inprogress',
+                'limit' => 0,
+                'offset' => 0,
+                'sort' => "timeaccess",
+                'expectedcourses' => ['ainprogress', 'binprogress', 'cinprogress', 'dinprogress', 'einprogress'],
+                'expectednextoffset' => 15,
+            ],
+            'all limit and offset with valid field name and no prefix' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "fullname",
+                'expectedcourses' => ['bpast', 'cpast', 'dfuture', 'dpast', 'efuture'],
+                'expectednextoffset' => 10,
+            ],
+            'all limit and offset with valid field name and no prefix and with sort direction' => [
+                'coursedata' => $coursedata,
+                'classification' => 'all',
+                'limit' => 5,
+                'offset' => 5,
+                'sort' => "fullname desc",
+                'expectedcourses' => ['bpast', 'cpast', 'dfuture', 'dpast', 'efuture'],
+                'expectednextoffset' => 10,
             ],
         ];
     }
@@ -3131,16 +3351,20 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
      * @param string $classification Timeline classification
      * @param int $limit Maximum number of results
      * @param int $offset Offset the unfiltered courses result set by this amount
+     * @param string $sort sort the courses
      * @param array $expectedcourses Expected courses in result
      * @param int $expectednextoffset Expected next offset value in result
+     * @param string|null $expectedexception Expected exception string
      */
     public function test_get_enrolled_courses_by_timeline_classification(
         $coursedata,
         $classification,
         $limit,
         $offset,
+        $sort,
         $expectedcourses,
-        $expectednextoffset
+        $expectednextoffset,
+        $expectedexception = null
     ) {
         $this->resetAfterTest();
         $generator = $this->getDataGenerator();
@@ -3157,6 +3381,11 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
 
         $this->setUser($student);
 
+        if (isset($expectedexception)) {
+            $this->expectException('coding_exception');
+            $this->expectExceptionMessage($expectedexception);
+        }
+
         // NOTE: The offset applies to the unfiltered full set of courses before the classification
         // filtering is done.
         // E.g. In our example if an offset of 2 is given then it would mean the first
@@ -3165,7 +3394,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
             $classification,
             $limit,
             $offset,
-            'shortname ASC'
+            $sort
         );
         $result = external_api::clean_returnvalue(
             core_course_external::get_enrolled_courses_by_timeline_classification_returns(),
@@ -3176,7 +3405,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
             return $course['shortname'];
         }, $result['courses']);
 
-        $this->assertEquals($expectedcourses, $actual);
+        $this->assertEqualsCanonicalizing($expectedcourses, $actual);
         $this->assertEquals($expectednextoffset, $result['nextoffset']);
     }
 

@@ -47,9 +47,6 @@ function xmldb_forum_upgrade($oldversion) {
 
     $dbman = $DB->get_manager(); // Loads ddl manager and xmldb classes.
 
-    // Automatically generated Moodle v3.5.0 release upgrade line.
-    // Put any upgrade step following this.
-
     // Automatically generated Moodle v3.6.0 release upgrade line.
     // Put any upgrade step following this.
 
@@ -259,6 +256,9 @@ function xmldb_forum_upgrade($oldversion) {
     }
 
     // Automatically generated Moodle v3.10.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    // Automatically generated Moodle v3.11.0 release upgrade line.
     // Put any upgrade step following this.
 
     return true;

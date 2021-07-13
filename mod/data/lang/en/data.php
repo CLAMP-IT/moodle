@@ -71,6 +71,7 @@ $string['comments'] = 'Comments';
 $string['commentsaved'] = 'Comment saved';
 $string['commentsn'] = '{$a} comment(s)';
 $string['commentsoff'] = 'Comments feature is not enabled';
+$string['completiondetail:entries'] = 'Make entries: {$a}';
 $string['completionentries'] = 'Require entries';
 $string['completionentriescount'] = 'Count of entries';
 $string['completionentriesdesc'] = 'Minimum number of entries required: {$a}';
@@ -392,7 +393,6 @@ $string['timemodified'] = 'Time modified';
 $string['todatabase'] = 'to this database.';
 $string['type'] = 'Field type';
 $string['undefinedprocessactionmethod'] = 'No action method defined in Data_Preset to handle action "{$a}".';
-$string['unsupportedexport'] = '({$a->fieldtype}) cannot be exported.';
 $string['unsupportedfields'] = 'Unsupported fields';
 $string['unsupportedfieldslist'] = 'The following fields cannot be exported:';
 $string['updatefield'] = 'Update an existing field';
@@ -414,3 +414,6 @@ $string['viewfromdate'] = 'Read only from';
 $string['viewtodate'] = 'Read only to';
 $string['viewtodatevalidation'] = 'The read only to date cannot be before the read only from date.';
 $string['wrongdataid'] = 'Wrong data id provided';
+
+// Deprecated since Moodle 3.11.
+$string['unsupportedexport'] = '({$a->fieldtype}) cannot be exported.';

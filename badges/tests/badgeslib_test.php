@@ -32,7 +32,7 @@ require_once($CFG->dirroot . '/badges/lib.php');
 
 use core_badges\helper;
 
-class core_badges_badgeslib_testcase extends advanced_testcase {
+class badgeslib_test extends advanced_testcase {
     protected $badgeid;
     protected $course;
     protected $user;
@@ -592,9 +592,9 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
         require_once($CFG->dirroot.'/user/profile/lib.php');
 
         // Add a custom field of textarea type.
-        $customprofileid = $DB->insert_record('user_info_field', array(
-            'shortname' => 'newfield', 'name' => 'Description of new field', 'categoryid' => 1,
-            'datatype' => 'textarea'));
+        $customprofileid = $this->getDataGenerator()->create_custom_profile_field(array(
+            'shortname' => 'newfield', 'name' => 'Description of new field',
+            'datatype' => 'textarea'))->id;
 
         $this->preventResetByRollback(); // Messaging is not compatible with transactions.
         $badge = new badge($this->coursebadge);
@@ -602,8 +602,8 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
         $criteria_overall = award_criteria::build(array('criteriatype' => BADGE_CRITERIA_TYPE_OVERALL, 'badgeid' => $badge->id));
         $criteria_overall->save(array('agg' => BADGE_CRITERIA_AGGREGATION_ANY));
         $criteria_overall1 = award_criteria::build(array('criteriatype' => BADGE_CRITERIA_TYPE_PROFILE, 'badgeid' => $badge->id));
-        $criteria_overall1->save(array('agg' => BADGE_CRITERIA_AGGREGATION_ALL, 'field_address' => 'address', 'field_aim' => 'aim',
-            'field_' . $customprofileid => $customprofileid));
+        $criteria_overall1->save(array('agg' => BADGE_CRITERIA_AGGREGATION_ALL, 'field_address' => 'address',
+            'field_department' => 'department', 'field_' . $customprofileid => $customprofileid));
 
         // Assert the badge will not be issued to the user as is.
         $badge = new badge($this->coursebadge);
@@ -612,7 +612,7 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
 
         // Set the required fields and make sure the badge got issued.
         $this->user->address = 'Test address';
-        $this->user->aim = '999999999';
+        $this->user->department = 'sillywalks';
         $sink = $this->redirectEmails();
         profile_save_data((object)array('id' => $this->user->id, 'profile_field_newfield' => 'X'));
         user_update_user($this->user, false);
@@ -1298,6 +1298,7 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
             'apiversion' => 2,
             'backpackapiurl' => 'https://api.ca.badgr.io/v2',
             'backpackweburl' => 'https://ca.badgr.io',
+            'sortorder' => 2,
         ];
 
         // Given a complete set of unique data, a new backpack and auth records should exist in the tables.
@@ -1306,10 +1307,13 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
         $backpack1 = badges_save_external_backpack((object) $data);
         $data['backpackweburl'] = 'https://eu.badgr.io';
         $data['backpackapiurl'] = 'https://api.eu.badgr.io/v2';
-        $data['apiversion'] = 2.1;
+        $data['apiversion'] = '2.1';
+        $data['sortorder'] = 3;
         $backpack2 = badges_save_external_backpack((object) $data);
 
-        set_config('badges_site_backpack', $backpack2);
+        // Move backpack2 to the first position to set it as primary site backpack.
+        $this->move_backpack_to_first_position($backpack2);
+
         // The default response should check the default site backpack api version.
         $this->assertEquals(2.1, badges_open_badges_backpack_api());
         // Check the api version for the other backpack created.
@@ -1410,6 +1414,7 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
             'apiversion' => '2',
             'backpackapiurl' => 'https://api.ca.badgr.io/v2',
             'backpackweburl' => 'https://ca.badgr.io',
+            'sortorder' => '2',
         ];
         if ($withauth) {
             $data = array_merge($data, [
@@ -1419,7 +1424,13 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
         }
         $backpack = badges_save_external_backpack((object) $data);
 
-        set_config('badges_site_backpack', $backpack);
+        // Check the backpack created is not the primary one.
+        $sitebackpack = badges_get_site_primary_backpack();
+        $this->assertNotEquals($backpack, $sitebackpack->id);
+
+        // Move backpack to the first position to set it as primary site backpack.
+        $this->move_backpack_to_first_position($backpack);
+
         $sitebackpack = badges_get_site_primary_backpack();
         $this->assertEquals($backpack, $sitebackpack->id);
 
@@ -1443,6 +1454,84 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
         return [
             "Test with auth details" => [true],
             "Test without auth details" => [false],
+        ];
+    }
+
+    /**
+     * Test badges_change_sortorder_backpacks().
+     *
+     * @dataProvider badges_change_sortorder_backpacks_provider
+     * @covers ::badges_change_sortorder_backpacks
+     *
+     * @param int $backpacktomove Backpack index to move (from 0 to 5).
+     * @param int $direction Direction to move the backpack.
+     * @param int|null $expectedsortorder Expected sortorder or null if an exception is expected.
+     */
+    public function test_badges_change_sortorder_backpacks(int $backpacktomove, int $direction, ?int $expectedsortorder): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // Create 5 more backpacks.
+        for ($i = 0; $i < 5; $i++) {
+            $data = new \stdClass();
+            $data->apiversion = OPEN_BADGES_V2P1;
+            $data->backpackapiurl = "https://myurl$i.cat/ob/v2p1";
+            $data->backpackweburl = "https://myurl$i.cat";
+            badges_create_site_backpack($data);
+        }
+
+        // Check there are 6 backpacks (1 pre-existing + 5 news).
+        $total = $DB->count_records('badge_external_backpack');
+        $this->assertEquals(6, $total);
+        $backpacks = array_values(badges_get_site_backpacks());
+
+        if (is_null($expectedsortorder)) {
+            $this->expectException('moodle_exception');
+        }
+
+        // Move the backpack.
+        badges_change_sortorder_backpacks($backpacks[$backpacktomove]->id, $direction);
+
+        if (!is_null($expectedsortorder)) {
+            $backpack = badges_get_site_backpack($backpacks[$backpacktomove]->id);
+            $this->assertEquals($expectedsortorder, $backpack->sortorder);
+        }
+    }
+
+    /**
+     * Provider for test_badges_change_sortorder_backpacks.
+     *
+     * @return array
+     */
+    public function badges_change_sortorder_backpacks_provider(): array {
+        return [
+            "Test up" => [
+                'backpacktomove' => 1,
+                'direction' => BACKPACK_MOVE_UP,
+                'expectedsortorder' => 1,
+            ],
+            "Test down" => [
+                'backpacktomove' => 1,
+                'direction' => BACKPACK_MOVE_DOWN,
+                'expectedsortorder' => 3,
+            ],
+            "Test up the very first element" => [
+                'backpacktomove' => 0,
+                'direction' => BACKPACK_MOVE_UP,
+                'expectedsortorder' => 1,
+            ],
+            "Test down the very last element" => [
+                'backpacktomove' => 5,
+                'direction' => BACKPACK_MOVE_DOWN,
+                'expectedsortorder' => 6,
+            ],
+            "Test with an invalid direction value" => [
+                'backpacktomove' => 1,
+                'direction' => 10,
+                'expectedsortorder' => null,
+            ],
         ];
     }
 
@@ -1535,5 +1624,18 @@ class core_badges_badgeslib_testcase extends advanced_testcase {
                 1234, 4321, 1234, 'internalid'
             ]
         ];
+    }
+
+    /**
+     * Move the backpack to the first position, to set it as primary site backpack.
+     *
+     * @param int $backpackid The backpack identifier.
+     */
+    private function move_backpack_to_first_position(int $backpackid): void {
+        $backpack = badges_get_site_backpack($backpackid);
+        while ($backpack->sortorder > 1) {
+            badges_change_sortorder_backpacks($backpackid, BACKPACK_MOVE_UP);
+            $backpack = badges_get_site_backpack($backpackid);
+        }
     }
 }

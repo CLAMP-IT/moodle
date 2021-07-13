@@ -35,6 +35,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core_completion\cm_completion_details;
+use core_course\output\activity_information;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -897,6 +900,25 @@ class core_renderer extends renderer_base {
         // DO NOT add classes.
         // DO NOT add an id.
         return '<div role="main">'.$this->unique_main_content_token.'</div>';
+    }
+
+    /**
+     * Returns information about an activity.
+     *
+     * @param cm_info $cminfo The course module information.
+     * @param cm_completion_details $completiondetails The completion details for this activity module.
+     * @param array $activitydates The dates for this activity module.
+     * @return string the activity information HTML.
+     * @throws coding_exception
+     */
+    public function activity_information(cm_info $cminfo, cm_completion_details $completiondetails, array $activitydates): string {
+        if (!$completiondetails->has_completion() && empty($activitydates)) {
+            // No need to render the activity information when there's no completion info and activity dates to show.
+            return '';
+        }
+        $activityinfo = new activity_information($cminfo, $completiondetails, $activitydates);
+        $renderer = $this->page->get_renderer('core', 'course');
+        return $renderer->render($activityinfo);
     }
 
     /**
@@ -1817,9 +1839,10 @@ class core_renderer extends renderer_base {
      * Output all the blocks in a particular region.
      *
      * @param string $region the name of a region on this page.
+     * @param boolean $fakeblocksonly Output fake block only.
      * @return string the HTML to be output.
      */
-    public function blocks_for_region($region) {
+    public function blocks_for_region($region, $fakeblocksonly = false) {
         $blockcontents = $this->page->blocks->get_content_for_region($region, $this);
         $lastblock = null;
         $zones = array();
@@ -1832,10 +1855,16 @@ class core_renderer extends renderer_base {
 
         foreach ($blockcontents as $bc) {
             if ($bc instanceof block_contents) {
+                if ($fakeblocksonly && !$bc->is_fake()) {
+                    // Skip rendering real blocks if we only want to show fake blocks.
+                    continue;
+                }
                 $output .= $this->block($bc, $region);
                 $lastblock = $bc->title;
             } else if ($bc instanceof block_move_target) {
-                $output .= $this->block_move_target($bc, $zones, $lastblock, $region);
+                if (!$fakeblocksonly) {
+                    $output .= $this->block_move_target($bc, $zones, $lastblock, $region);
+                }
             } else {
                 throw new coding_exception('Unexpected type of thing (' . get_class($bc) . ') found in list of block contents.');
             }
@@ -2519,14 +2548,11 @@ class core_renderer extends renderer_base {
         $user = $userpicture->user;
         $canviewfullnames = has_capability('moodle/site:viewfullnames', $this->page->context);
 
+        $alt = '';
         if ($userpicture->alttext) {
             if (!empty($user->imagealt)) {
                 $alt = $user->imagealt;
-            } else {
-                $alt = get_string('pictureof', '', fullname($user, $canviewfullnames));
             }
-        } else {
-            $alt = '';
         }
 
         if (empty($userpicture->size)) {
@@ -2563,21 +2589,21 @@ class core_renderer extends renderer_base {
             $output .= fullname($userpicture->user, $canviewfullnames);
         }
 
-        // then wrap it in link if needed
-        if (!$userpicture->link) {
-            return $output;
-        }
-
         if (empty($userpicture->courseid)) {
             $courseid = $this->page->course->id;
         } else {
             $courseid = $userpicture->courseid;
         }
-
         if ($courseid == SITEID) {
             $url = new moodle_url('/user/profile.php', array('id' => $user->id));
         } else {
             $url = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $courseid));
+        }
+
+        // Then wrap it in link if needed. Also we don't wrap it in link if the link redirects to itself.
+        if (!$userpicture->link ||
+                ($this->page->has_set_url() && $this->page->url == $url)) { // Protect against unset page->url.
+            return $output;
         }
 
         $attributes = array('href' => $url, 'class' => 'd-inline-block aabtn');
@@ -2872,10 +2898,11 @@ EOD;
      * Note: \core\notification::add() may be more suitable for your usage.
      *
      * @param string $message The message to print out.
-     * @param string $type    The type of notification. See constants on \core\output\notification.
+     * @param ?string $type   The type of notification. See constants on \core\output\notification.
+     * @param bool $closebutton Whether to show a close icon to remove the notification (default true).
      * @return string the HTML to output.
      */
-    public function notification($message, $type = null) {
+    public function notification($message, $type = null, $closebutton = true) {
         $typemappings = [
             // Valid types.
             'success'           => \core\output\notification::NOTIFY_SUCCESS,
@@ -2919,7 +2946,7 @@ EOD;
             }
         }
 
-        $notification = new \core\output\notification($message, $type);
+        $notification = new \core\output\notification($message, $type, $closebutton);
         if (count($extraclasses)) {
             $notification->set_extra_classes($extraclasses);
         }
@@ -3935,9 +3962,12 @@ EOD;
      *
      * @since Moodle 2.5.1 2.6
      * @param string $region The region to get HTML for.
+     * @param array $classes Wrapping tag classes.
+     * @param string $tag Wrapping tag.
+     * @param boolean $fakeblocksonly Include fake blocks only.
      * @return string HTML.
      */
-    public function blocks($region, $classes = array(), $tag = 'aside') {
+    public function blocks($region, $classes = array(), $tag = 'aside', $fakeblocksonly = false) {
         $displayregion = $this->page->apply_theme_region_manipulations($region);
         $classes = (array)$classes;
         $classes[] = 'block-region';
@@ -3948,7 +3978,7 @@ EOD;
             'data-droptarget' => '1'
         );
         if ($this->page->blocks->region_has_content($displayregion, $this)) {
-            $content = $this->blocks_for_region($displayregion);
+            $content = $this->blocks_for_region($displayregion, $fakeblocksonly);
         } else {
             $content = '';
         }
@@ -4781,6 +4811,22 @@ EOD;
     }
 
     /**
+     * Renders an update to a progress bar.
+     *
+     * Note: This does not cleanly map to a renderable class and should
+     * never be used directly.
+     *
+     * @param  string $id
+     * @param  float $percent
+     * @param  string $msg Message
+     * @param  string $estimate time remaining message
+     * @return string ascii fragment
+     */
+    public function render_progress_bar_update(string $id, float $percent, string $msg, string $estimate) : string {
+        return html_writer::script(js_writer::function_call('updateProgressBar', [$id, $percent, $msg, $estimate]));
+    }
+
+    /**
      * Renders element for a toggle-all checkbox.
      *
      * @param \core\output\checkbox_toggleall $element
@@ -4803,6 +4849,12 @@ EOD;
  * @category output
  */
 class core_renderer_cli extends core_renderer {
+
+    /**
+     * @var array $progressmaximums stores the largest percentage for a progress bar.
+     * @return string ascii fragment
+     */
+    private $progressmaximums = [];
 
     /**
      * Returns the page header.
@@ -4846,6 +4898,96 @@ class core_renderer_cli extends core_renderer {
      */
     public function check_result(core\check\result $result) {
         return $this->render_check_result($result);
+    }
+
+    /**
+     * Renders a progress bar.
+     *
+     * Do not use $OUTPUT->render($bar), instead use progress_bar::create().
+     *
+     * @param  progress_bar $bar The bar.
+     * @return string ascii fragment
+     */
+    public function render_progress_bar(progress_bar $bar) {
+        global $CFG;
+
+        $size = 55; // The width of the progress bar in chars.
+        $ascii = "\n";
+
+        if (stream_isatty(STDOUT)) {
+            require_once($CFG->libdir.'/clilib.php');
+
+            $ascii .= "[" . str_repeat(' ', $size) . "] 0% \n";
+            return cli_ansi_format($ascii);
+        }
+
+        $this->progressmaximums[$bar->get_id()] = 0;
+        $ascii .= '[';
+        return $ascii;
+    }
+
+    /**
+     * Renders an update to a progress bar.
+     *
+     * Note: This does not cleanly map to a renderable class and should
+     * never be used directly.
+     *
+     * @param  string $id
+     * @param  float $percent
+     * @param  string $msg Message
+     * @param  string $estimate time remaining message
+     * @return string ascii fragment
+     */
+    public function render_progress_bar_update(string $id, float $percent, string $msg, string $estimate) : string {
+        $size = 55; // The width of the progress bar in chars.
+        $ascii = '';
+
+        // If we are rendering to a terminal then we can safely use ansii codes
+        // to move the cursor and redraw the complete progress bar each time
+        // it is updated.
+        if (stream_isatty(STDOUT)) {
+            $colour = $percent == 100 ? 'green' : 'blue';
+
+            $done = $percent * $size * 0.01;
+            $whole = floor($done);
+            $bar = "<colour:$colour>";
+            $bar .= str_repeat('█', $whole);
+
+            if ($whole < $size) {
+                // By using unicode chars for partial blocks we can have higher
+                // precision progress bar.
+                $fraction = floor(($done - $whole) * 8);
+                $bar .= core_text::substr(' ▏▎▍▌▋▊▉', $fraction, 1);
+
+                // Fill the rest of the empty bar.
+                $bar .= str_repeat(' ', $size - $whole - 1);
+            }
+
+            $bar .= '<colour:normal>';
+
+            if ($estimate) {
+                $estimate = "- $estimate";
+            }
+
+            $ascii .= '<cursor:up>';
+            $ascii .= '<cursor:up>';
+            $ascii .= sprintf("[$bar] %3.1f%% %-22s\n", $percent, $estimate);
+            $ascii .= sprintf("%-80s\n", $msg);
+            return cli_ansi_format($ascii);
+        }
+
+        // If we are not rendering to a tty, ie when piped to another command
+        // or on windows we need to progressively render the progress bar
+        // which can only ever go forwards.
+        $done = round($percent * $size * 0.01);
+        $delta = max(0, $done - $this->progressmaximums[$id]);
+
+        $ascii .= str_repeat('#', $delta);
+        if ($percent >= 100 && $delta > 0) {
+            $ascii .= sprintf("] %3.1f%%\n$msg\n", $percent);
+        }
+        $this->progressmaximums[$id] += $delta;
+        return $ascii;
     }
 
     /**
@@ -4901,9 +5043,10 @@ class core_renderer_cli extends core_renderer {
      *
      * @param string $message The message to print out.
      * @param string $type    The type of notification. See constants on \core\output\notification.
+     * @param bool $closebutton Whether to show a close icon to remove the notification (default true).
      * @return string A template fragment for a notification
      */
-    public function notification($message, $type = null) {
+    public function notification($message, $type = null, $closebutton = true) {
         $message = clean_text($message);
         if ($type === 'notifysuccess' || $type === 'success') {
             return "++ $message ++\n";
@@ -4987,8 +5130,10 @@ class core_renderer_ajax extends core_renderer {
      *
      * @param string $message The message to print out.
      * @param string $type    The type of notification. See constants on \core\output\notification.
+     * @param bool $closebutton Whether to show a close icon to remove the notification (default true).
      */
-    public function notification($message, $type = null) {}
+    public function notification($message, $type = null, $closebutton = true) {
+    }
 
     /**
      * Used to display a redirection message.
@@ -5095,9 +5240,10 @@ class core_renderer_maintenance extends core_renderer {
      * @param string $region
      * @param array $classes
      * @param string $tag
+     * @param boolean $fakeblocksonly
      * @return string
      */
-    public function blocks($region, $classes = array(), $tag = 'aside') {
+    public function blocks($region, $classes = array(), $tag = 'aside', $fakeblocksonly = false) {
         return '';
     }
 
@@ -5105,9 +5251,10 @@ class core_renderer_maintenance extends core_renderer {
      * Does nothing. The maintenance renderer cannot produce blocks.
      *
      * @param string $region
+     * @param boolean $fakeblocksonly Output fake block only.
      * @return string
      */
-    public function blocks_for_region($region) {
+    public function blocks_for_region($region, $fakeblocksonly = false) {
         return '';
     }
 

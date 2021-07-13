@@ -419,10 +419,9 @@ function default_exception_handler($ex) {
  * @param string $errstr
  * @param string $errfile
  * @param int $errline
- * @param array $errcontext
  * @return bool false means use default error handler
  */
-function default_error_handler($errno, $errstr, $errfile, $errline, $errcontext) {
+function default_error_handler($errno, $errstr, $errfile, $errline) {
     if ($errno == 4096) {
         //fatal catchable error
         throw new coding_exception('PHP catchable fatal error', $errstr);
@@ -2048,7 +2047,7 @@ class bootstrap_renderer {
         // In the name of protocol correctness, monitoring and performance
         // profiling, set the appropriate error headers for machine consumption.
         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-        @header($protocol . ' 503 Service Unavailable');
+        @header($protocol . ' 500 Internal Server Error');
 
         // better disable any caching
         @header('Content-Type: text/html; charset=utf-8');

@@ -80,7 +80,7 @@
         }
         $record = NULL;
     }
-
+    $cm = cm_info::create($cm);
     require_course_login($course, true, $cm);
 
     require_once($CFG->dirroot . '/comment/lib.php');
@@ -268,6 +268,11 @@
 
     echo $OUTPUT->heading(format_string($data->name), 2);
 
+    // Render the activity information.
+    $completiondetails = \core_completion\cm_completion_details::get_instance($cm, $USER->id);
+    $activitydates = \core\activity_dates::get_dates_for_module($cm, $USER->id);
+    echo $OUTPUT->activity_information($cm, $completiondetails, $activitydates);
+
     // Do we need to show a link to the RSS feed for the records?
     //this links has been Settings (database activity administration) block
     /*if (!empty($CFG->enablerssfeeds) && !empty($CFG->data_enablerssfeeds) && $data->rssarticles > 0) {
@@ -294,9 +299,8 @@
                 echo $OUTPUT->notification(get_string('recorddeleted','data'), 'notifysuccess');
             }
         } else {   // Print a confirmation page
-            $allnamefields = user_picture::fields('u');
-            // Remove the id from the string. This already exists in the sql statement.
-            $allnamefields = str_replace('u.id,', '', $allnamefields);
+            $userfieldsapi = \core_user\fields::for_userpic()->excluding('id');
+            $allnamefields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
             $dbparams = array($delete);
             if ($deleterecord = $DB->get_record_sql("SELECT dr.*, $allnamefields
                                                        FROM {data_records} dr
@@ -332,9 +336,8 @@
             $validrecords = array();
             $recordids = array();
             foreach ($multidelete as $value) {
-                $allnamefields = user_picture::fields('u');
-                // Remove the id from the string. This already exists in the sql statement.
-                $allnamefields = str_replace('u.id,', '', $allnamefields);
+                $userfieldsapi = \core_user\fields::for_userpic()->excluding('id');
+                $allnamefields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
                 $dbparams = array('id' => $value);
                 if ($deleterecord = $DB->get_record_sql("SELECT dr.*, $allnamefields
                                                            FROM {data_records} dr
@@ -359,12 +362,8 @@
     }
 
     // If data activity closed dont let students in.
+    // No need to display warnings because activity dates are displayed at the top of the page.
     list($showactivity, $warnings) = data_get_time_availability_status($data, $canmanageentries);
-
-    if (!$showactivity) {
-        $reason = current(array_keys($warnings));
-        echo $OUTPUT->notification(get_string($reason, 'data', $warnings[$reason]));
-    }
 
 if ($showactivity) {
     // Print the tabs

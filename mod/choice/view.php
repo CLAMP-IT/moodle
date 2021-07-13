@@ -19,6 +19,7 @@ $PAGE->set_url($url);
 if (! $cm = get_coursemodule_from_id('choice', $id)) {
     print_error('invalidcoursemodule');
 }
+$cm = cm_info::create($cm);
 
 if (! $course = $DB->get_record("course", array("id" => $cm->course))) {
     print_error('coursemisconf');
@@ -99,6 +100,11 @@ choice_view($choice, $course, $cm, $context);
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($choice->name), 2, null);
 
+// Render the activity information.
+$completiondetails = \core_completion\cm_completion_details::get_instance($cm, $USER->id);
+$activitydates = \core\activity_dates::get_dates_for_module($cm, $USER->id);
+echo $OUTPUT->activity_information($cm, $completiondetails, $activitydates);
+
 if ($notify and confirm_sesskey()) {
     if ($notify === 'choicesaved') {
         echo $OUTPUT->notification(get_string('choicesaved', 'choice'), 'notifysuccess');
@@ -145,21 +151,19 @@ if (isloggedin() && (!empty($current)) &&
     foreach ($current as $c) {
         $choicetexts[] = format_string(choice_get_option_text($choice, $c->optionid));
     }
-    echo $OUTPUT->box(get_string("yourselection", "choice", userdate($choice->timeopen)).": ".implode('; ', $choicetexts), 'generalbox', 'yourselection');
+    echo $OUTPUT->box(get_string("yourselection", "choice") . ": " . implode('; ', $choicetexts), 'generalbox', 'yourselection');
 }
 
 /// Print the form
 $choiceopen = true;
 if ((!empty($choice->timeopen)) && ($choice->timeopen > $timenow)) {
     if ($choice->showpreview) {
-        echo $OUTPUT->box(get_string('previewonly', 'choice', userdate($choice->timeopen)), 'generalbox alert');
+        echo $OUTPUT->box(get_string('previewing', 'choice'), 'generalbox alert');
     } else {
-        echo $OUTPUT->box(get_string("notopenyet", "choice", userdate($choice->timeopen)), "generalbox notopenyet");
         echo $OUTPUT->footer();
         exit;
     }
 } else if ((!empty($choice->timeclose)) && ($timenow > $choice->timeclose)) {
-    echo $OUTPUT->box(get_string("expired", "choice", userdate($choice->timeclose)), "generalbox expired");
     $choiceopen = false;
 }
 

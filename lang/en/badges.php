@@ -34,7 +34,6 @@ $string['addcompetency'] = 'Add competency';
 $string['addcompetency_help'] = 'Select all competencies that should be added to this badge requirement. Hold CTRL key to select multiple items.';
 $string['addbadgecriteria'] = 'Add badge criteria';
 $string['addcriteria'] = 'Add criteria';
-$string['addbackpack'] = 'Add backpack';
 $string['addcriteriatext'] = 'To start adding criteria, please select one of the options from the drop-down menu.';
 $string['addcohort'] = 'Add cohort';
 $string['addcohort_help'] = 'Select all cohorts that should be added to this badge requirement. Hold CTRL key to select multiple items.';
@@ -286,8 +285,6 @@ $string['enablebadges'] = 'Enable badges';
 $string['endorsement'] = 'Endorsement';
 $string['error:backpackdatainvalid'] = 'The data return from the backpack was invalid.';
 $string['error:backpackemailnotfound'] = 'The email \'{$a}\' is not associated with a backpack. You need to <a href="http://backpack.openbadges.org">create a backpack</a> for that account or sign in with another email address.';
-$string['error:backpacknotavailable'] = 'Your site is not accessible from the Internet, so any badges issued from this site cannot be verified by external backpack services.';
-$string['error:backpackproblem'] = 'There was a problem connecting to your backpack service provider. Please try again later.';
 $string['error:badgeawardnotfound'] = 'Cannot verify this awarded badge.  This badge may have been revoked.';
 $string['error:badgenotfound'] = 'Badge not found';
 $string['error:cannotact'] = 'Cannot activate the badge. ';
@@ -514,8 +511,6 @@ $string['selectgroup_end'] = 'Only public collections are shown. <a href="{$a}">
 $string['selectgroup_start'] = 'Select collections from your backpack to display on this site:';
 $string['selecting'] = 'With selected badges...';
 $string['setup'] = 'Set up connection';
-$string['sitebackpack'] = 'Active external backpack';
-$string['sitebackpack_help'] = 'The external backpack that users can connect to from this site. Note that changing this setting after users have connected their backpacks will require each user to go to their backpack settings page and disconnect then reconnect.';
 $string['sitebackpackdeleted'] = 'The site backpack has been deleted.';
 $string['sitebackpacknotdeleted'] = 'This backpack couldn\'t be deleted because it\'s currently the site default.';
 $string['sitebackpackwarning'] = 'Could not connect to backpack. <br/><br/>Check that the "Badge issuer email address" admin setting is the valid email for an account on the backpack website. <br/><br/>Check that the "Badge issuer password" on the <a href="{$a->url}">site backpack settings page</a>, is the correct password for the account on the backpack website. <br/><br/>The backpack returned: "{$a->warning}"';
@@ -579,3 +574,10 @@ $string['sitebackpackverify'] = 'Backpack connection';
 
 // Deprecated since Moodle 3.10.
 $string['backpackneedsupdate'] = 'The backpack connected to this profile does not match the backpack for the site. You need to disconnect and reconnect the backpack.';
+
+// Deprecated since Moodle 3.11.
+$string['addbackpack'] = 'Add backpack';
+$string['error:backpacknotavailable'] = 'Your site is not accessible from the Internet, so any badges issued from this site cannot be verified by external backpack services.';
+$string['error:backpackproblem'] = 'There was a problem connecting to your backpack service provider. Please try again later.';
+$string['sitebackpack'] = 'Active external backpack';
+$string['sitebackpack_help'] = 'The external backpack that users can connect to from this site. Note that changing this setting after users have connected their backpacks will require each user to go to their backpack settings page and disconnect then reconnect.';

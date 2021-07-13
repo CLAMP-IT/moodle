@@ -171,6 +171,5 @@ class core_grade_scale_testcase extends grade_base_testcase {
         $status = $scale->is_used();
 
         $this->assertTrue($status);
-
     }
 }

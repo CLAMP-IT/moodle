@@ -103,6 +103,13 @@ $output = $PAGE->get_renderer('mod_workshop');
 
 echo $output->header();
 echo $output->heading_with_help(format_string($workshop->name), 'userplan', 'workshop');
+
+// Display any activity information (eg completion requirements / dates).
+$cminfo = cm_info::create($cm);
+$completiondetails = \core_completion\cm_completion_details::get_instance($cminfo, $USER->id);
+$activitydates = \core\activity_dates::get_dates_for_module($cminfo, $USER->id);
+echo $output->activity_information($cminfo, $completiondetails, $activitydates);
+
 echo $output->heading(format_string($currentphasetitle), 3, null, 'mod_workshop-userplanheading');
 echo $output->render($userplan);
 
@@ -405,7 +412,7 @@ case workshop::PHASE_ASSESSMENT:
                 $submission->title              = $assessment->submissiontitle;
                 $submission->timecreated        = $assessment->submissioncreated;
                 $submission->timemodified       = $assessment->submissionmodified;
-                $userpicturefields = explode(',', user_picture::fields());
+                $userpicturefields = explode(',', implode(',', \core_user\fields::get_picture_fields()));
                 foreach ($userpicturefields as $userpicturefield) {
                     $prefixedusernamefield = 'author' . $userpicturefield;
                     $submission->$prefixedusernamefield = $assessment->$prefixedusernamefield;
@@ -533,7 +540,7 @@ case workshop::PHASE_EVALUATION:
             $submission->title              = $assessment->submissiontitle;
             $submission->timecreated        = $assessment->submissioncreated;
             $submission->timemodified       = $assessment->submissionmodified;
-            $userpicturefields = explode(',', user_picture::fields());
+            $userpicturefields = explode(',', implode(',', \core_user\fields::get_picture_fields()));
             foreach ($userpicturefields as $userpicturefield) {
                 $prefixedusernamefield = 'author' . $userpicturefield;
                 $submission->$prefixedusernamefield = $assessment->$prefixedusernamefield;
@@ -608,8 +615,8 @@ case workshop::PHASE_CLOSED:
         }
     }
     if (has_capability('mod/workshop:submit', $PAGE->context)) {
-        print_collapsible_region_start('', 'workshop-viewlet-ownsubmission', get_string('yoursubmission', 'workshop'),
-                'workshop-viewlet-ownsubmission-collapsed');
+        print_collapsible_region_start('', 'workshop-viewlet-ownsubmission',
+            get_string('yoursubmissionwithassessments', 'workshop'), 'workshop-viewlet-ownsubmission-collapsed');
         echo $output->box_start('generalbox ownsubmission');
         if ($submission = $workshop->get_submission_by_author($USER->id)) {
             echo $output->render($workshop->prepare_submission_summary($submission, true));
@@ -647,7 +654,7 @@ case workshop::PHASE_CLOSED:
             $submission->title              = $assessment->submissiontitle;
             $submission->timecreated        = $assessment->submissioncreated;
             $submission->timemodified       = $assessment->submissionmodified;
-            $userpicturefields = explode(',', user_picture::fields());
+            $userpicturefields = explode(',', implode(',', \core_user\fields::get_picture_fields()));
             foreach ($userpicturefields as $userpicturefield) {
                 $prefixedusernamefield = 'author' . $userpicturefield;
                 $submission->$prefixedusernamefield = $assessment->$prefixedusernamefield;

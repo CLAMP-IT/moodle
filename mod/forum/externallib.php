@@ -506,6 +506,15 @@ class mod_forum_external extends external_api {
     }
 
     /**
+     * Mark the get_forum_discussions_paginated web service as deprecated.
+     *
+     * @return  bool
+     */
+    public static function get_forum_discussions_paginated_is_deprecated() {
+        return true;
+    }
+
+    /**
      * Describes the parameters for get_forum_discussions_paginated.
      *
      * @deprecated since 3.7
@@ -666,7 +675,7 @@ class mod_forum_external extends external_api {
                     $discussion->usermodifiedfullname = null;
                     $discussion->usermodifiedpictureurl = null;
                 } else {
-                    $picturefields = explode(',', user_picture::fields());
+                    $picturefields = explode(',', implode(',', \core_user\fields::get_picture_fields()));
 
                     // Load user objects from the results of the query.
                     $user = new stdclass();
@@ -2176,7 +2185,7 @@ class mod_forum_external extends external_api {
      * @param   string $sortdirection
      * @return  array
      */
-    public static function get_discussion_posts_by_userid(int $userid = 0, int $cmid, ?string $sortby, ?string $sortdirection) {
+    public static function get_discussion_posts_by_userid(int $userid, int $cmid, ?string $sortby, ?string $sortdirection) {
         global $USER, $DB;
         // Validate the parameter.
         $params = self::validate_parameters(self::get_discussion_posts_by_userid_parameters(), [

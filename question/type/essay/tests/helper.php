@@ -51,6 +51,8 @@ class qtype_essay_test_helper extends question_test_helper {
         $q->responseformat = 'editor';
         $q->responserequired = 1;
         $q->responsefieldlines = 10;
+        $q->minwordlimit = null;
+        $q->maxwordlimit = null;
         $q->attachments = 0;
         $q->attachmentsrequired = 0;
         $q->maxbytes = 0;

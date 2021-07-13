@@ -264,6 +264,8 @@ class core_course_renderer extends plugin_renderer_base {
     /**
      * Renders HTML for the menus to add activities and resources to the current course
      *
+     * Renders the ajax control (the link which when clicked produces the activity chooser modal). No noscript fallback.
+     *
      * @param stdClass $course
      * @param int $section relative section number (field course_sections.section)
      * @param int $sectionreturn The section to link back to
@@ -272,130 +274,126 @@ class core_course_renderer extends plugin_renderer_base {
      * @return string
      */
     function course_section_add_cm_control($course, $section, $sectionreturn = null, $displayoptions = array()) {
-        global $CFG, $USER;
-
-        // The returned control HTML can be one of the following:
-        // - Only the non-ajax control (select menus of activities and resources) with a noscript fallback for non js clients.
-        // - Only the ajax control (the link which when clicked produces the activity chooser modal). No noscript fallback.
-        // - [Behat only]: The non-ajax control and optionally the ajax control (depending on site settings). If included, the link
-        // takes priority and the non-ajax control is wrapped in a <noscript>.
-        // Behat requires the third case because some features run with JS, some do not. We must include the noscript fallback.
-        $behatsite = defined('BEHAT_SITE_RUNNING');
-        $nonajaxcontrol = '';
-        $ajaxcontrol = '';
-        $courseajaxenabled = course_ajax_enabled($course);
-        $userchooserenabled = get_user_preferences('usemodchooser', $CFG->modchooserdefault);
-
-        // Decide what combination of controls to output:
-        // During behat runs, both controls can be used in conjunction to provide non-js fallback.
-        // During normal use only one control or the other will be output. No non-js fallback is needed.
-        $rendernonajaxcontrol = $behatsite || !$courseajaxenabled || !$userchooserenabled || $course->id != $this->page->course->id;
-        $renderajaxcontrol = $courseajaxenabled && $userchooserenabled && $course->id == $this->page->course->id;
-
-        // The non-ajax control, which includes an entirely non-js (<noscript>) fallback too.
-        if ($rendernonajaxcontrol) {
-            $vertical = !empty($displayoptions['inblock']);
-
-            // Check to see if user can add menus.
-            if (!has_capability('moodle/course:manageactivities', context_course::instance($course->id))
+        // Check to see if user can add menus.
+        if (!has_capability('moodle/course:manageactivities', context_course::instance($course->id))
                 || !$this->page->user_is_editing()) {
-                return '';
+            return '';
+        }
+
+        $straddeither = get_string('addresourceoractivity');
+
+        $ajaxcontrol = html_writer::start_tag('div', array('class' => 'mdl-right'));
+        $ajaxcontrol .= html_writer::start_tag('div', array('class' => 'section-modchooser'));
+
+        $icon = $this->output->pix_icon('t/add', '');
+        $span = html_writer::tag('span', $straddeither, array('class' => 'section-modchooser-text'));
+
+        $ajaxcontrol .= html_writer::tag('button', $icon . $span, [
+            'class' => 'section-modchooser-link btn btn-link',
+            'data-action' => 'open-chooser',
+            'data-sectionid' => $section,
+            'data-sectionreturnid' => $sectionreturn,
+        ]);
+
+        $ajaxcontrol .= html_writer::end_tag('div');
+        $ajaxcontrol .= html_writer::end_tag('div');
+
+        // Load the JS for the modal.
+        $this->course_activitychooser($course->id);
+
+        return $ajaxcontrol;
+    }
+
+    /**
+     * Render the deprecated nonajax activity chooser.
+     *
+     * @deprecated since Moodle 3.11
+     *
+     * @todo MDL-71331 deprecate this function
+     * @param stdClass $course the course object
+     * @param int $section relative section number (field course_sections.section)
+     * @param int $sectionreturn The section to link back to
+     * @param array $displayoptions additional display options, for example blocks add
+     *     option 'inblock' => true, suggesting to display controls vertically
+     * @return string
+     */
+    private function course_section_add_cm_control_nonajax($course, $section, $sectionreturn = null,
+            $displayoptions = array()): string {
+        global $USER;
+
+        $vertical = !empty($displayoptions['inblock']);
+
+        // Check to see if user can add menus.
+        if (
+            !has_capability('moodle/course:manageactivities', context_course::instance($course->id))
+            || !$this->page->user_is_editing()
+        ) {
+            return '';
+        }
+
+        debugging('non-js dropdowns are deprecated.', DEBUG_DEVELOPER);
+        // Retrieve all modules with associated metadata.
+        $contentitemservice = \core_course\local\factory\content_item_service_factory::get_content_item_service();
+        $urlparams = ['section' => $section];
+        if (!is_null($sectionreturn)) {
+            $urlparams['sr'] = $sectionreturn;
+        }
+        $modules = $contentitemservice->get_content_items_for_user_in_course($USER, $course, $urlparams);
+
+        // Return if there are no content items to add.
+        if (empty($modules)) {
+            return '';
+        }
+
+        // We'll sort resources and activities into two lists.
+        $activities = array(MOD_CLASS_ACTIVITY => array(), MOD_CLASS_RESOURCE => array());
+
+        foreach ($modules as $module) {
+            $activityclass = MOD_CLASS_ACTIVITY;
+            if ($module->archetype == MOD_ARCHETYPE_RESOURCE) {
+                $activityclass = MOD_CLASS_RESOURCE;
+            } else if ($module->archetype === MOD_ARCHETYPE_SYSTEM) {
+                // System modules cannot be added by user, do not add to dropdown.
+                continue;
             }
+            $link = $module->link;
+            $activities[$activityclass][$link] = $module->title;
+        }
 
-            // Retrieve all modules with associated metadata.
-            $contentitemservice = \core_course\local\factory\content_item_service_factory::get_content_item_service();
-            $urlparams = ['section' => $section];
-            if (!is_null($sectionreturn)) {
-                $urlparams['sr'] = $sectionreturn;
-            }
-            $modules = $contentitemservice->get_content_items_for_user_in_course($USER, $course, $urlparams);
+        $straddactivity = get_string('addactivity');
+        $straddresource = get_string('addresource');
+        $sectionname = get_section_name($course, $section);
+        $strresourcelabel = get_string('addresourcetosection', null, $sectionname);
+        $stractivitylabel = get_string('addactivitytosection', null, $sectionname);
 
-            // Return if there are no content items to add.
-            if (empty($modules)) {
-                return '';
-            }
+        $nonajaxcontrol = html_writer::start_tag('div', array('class' => 'section_add_menus', 'id' => 'add_menus-section-'
+            . $section));
 
-            // We'll sort resources and activities into two lists.
-            $activities = array(MOD_CLASS_ACTIVITY => array(), MOD_CLASS_RESOURCE => array());
+        if (!$vertical) {
+            $nonajaxcontrol .= html_writer::start_tag('div', array('class' => 'horizontal'));
+        }
 
-            foreach ($modules as $module) {
-                $activityclass = MOD_CLASS_ACTIVITY;
-                if ($module->archetype == MOD_ARCHETYPE_RESOURCE) {
-                    $activityclass = MOD_CLASS_RESOURCE;
-                } else if ($module->archetype === MOD_ARCHETYPE_SYSTEM) {
-                    // System modules cannot be added by user, do not add to dropdown.
-                    continue;
-                }
-                $link = $module->link;
-                $activities[$activityclass][$link] = $module->title;
-            }
+        if (!empty($activities[MOD_CLASS_RESOURCE])) {
+            $select = new url_select($activities[MOD_CLASS_RESOURCE], '', array('' => $straddresource), "ressection$section");
+            $select->set_help_icon('resources');
+            $select->set_label($strresourcelabel, array('class' => 'accesshide'));
+            $nonajaxcontrol .= $this->output->render($select);
+        }
 
-            $straddactivity = get_string('addactivity');
-            $straddresource = get_string('addresource');
-            $sectionname = get_section_name($course, $section);
-            $strresourcelabel = get_string('addresourcetosection', null, $sectionname);
-            $stractivitylabel = get_string('addactivitytosection', null, $sectionname);
+        if (!empty($activities[MOD_CLASS_ACTIVITY])) {
+            $select = new url_select($activities[MOD_CLASS_ACTIVITY], '', array('' => $straddactivity), "section$section");
+            $select->set_help_icon('activities');
+            $select->set_label($stractivitylabel, array('class' => 'accesshide'));
+            $nonajaxcontrol .= $this->output->render($select);
+        }
 
-            $nonajaxcontrol = html_writer::start_tag('div', array('class' => 'section_add_menus', 'id' => 'add_menus-section-'
-                . $section));
-
-            if (!$vertical) {
-                $nonajaxcontrol .= html_writer::start_tag('div', array('class' => 'horizontal'));
-            }
-
-            if (!empty($activities[MOD_CLASS_RESOURCE])) {
-                $select = new url_select($activities[MOD_CLASS_RESOURCE], '', array('' => $straddresource), "ressection$section");
-                $select->set_help_icon('resources');
-                $select->set_label($strresourcelabel, array('class' => 'accesshide'));
-                $nonajaxcontrol .= $this->output->render($select);
-            }
-
-            if (!empty($activities[MOD_CLASS_ACTIVITY])) {
-                $select = new url_select($activities[MOD_CLASS_ACTIVITY], '', array('' => $straddactivity), "section$section");
-                $select->set_help_icon('activities');
-                $select->set_label($stractivitylabel, array('class' => 'accesshide'));
-                $nonajaxcontrol .= $this->output->render($select);
-            }
-
-            if (!$vertical) {
-                $nonajaxcontrol .= html_writer::end_tag('div');
-            }
-
+        if (!$vertical) {
             $nonajaxcontrol .= html_writer::end_tag('div');
         }
 
-        // The ajax control - the 'Add an activity or resource' link.
-        if ($renderajaxcontrol) {
-            // The module chooser link.
-            $straddeither = get_string('addresourceoractivity');
-            $ajaxcontrol = html_writer::start_tag('div', array('class' => 'mdl-right'));
-            $ajaxcontrol .= html_writer::start_tag('div', array('class' => 'section-modchooser'));
-            $icon = $this->output->pix_icon('t/add', '');
-            $span = html_writer::tag('span', $straddeither, array('class' => 'section-modchooser-text'));
-            $ajaxcontrol .= html_writer::tag('button', $icon . $span, [
-                    'class' => 'section-modchooser-link btn btn-link',
-                    'data-action' => 'open-chooser',
-                    'data-sectionid' => $section,
-                    'data-sectionreturnid' => $sectionreturn,
-                ]
-            );
-            $ajaxcontrol .= html_writer::end_tag('div');
-            $ajaxcontrol .= html_writer::end_tag('div');
+        $nonajaxcontrol .= html_writer::end_tag('div');
 
-            // Load the JS for the modal.
-            $this->course_activitychooser($course->id);
-        }
-
-        // Behat only: If both controls are being included in the HTML,
-        // show the link by default and only fall back to the selects if js is disabled.
-        if ($behatsite && $renderajaxcontrol) {
-            $nonajaxcontrol = html_writer::tag('div', $nonajaxcontrol, array('class' => 'hiddenifjs addresourcedropdown'));
-            $ajaxcontrol = html_writer::tag('div', $ajaxcontrol, array('class' => 'visibleifjs addresourcemodchooser'));
-        }
-
-        // If behat is running, we should have the non-ajax control + the ajax control.
-        // Otherwise, we'll have one or the other.
-        return $ajaxcontrol . $nonajaxcontrol;
+        return $nonajaxcontrol;
     }
 
     /**
@@ -425,6 +423,10 @@ class core_course_renderer extends plugin_renderer_base {
      * If completion is manual, returns a form (with an icon inside) that allows user to
      * toggle completion
      *
+     * @deprecated since Moodle 3.11
+     * @todo MDL-71183 Final deprecation in Moodle 4.3.
+     * @see \core_renderer::activity_information
+     *
      * @param stdClass $course course object
      * @param completion_info $completioninfo completion info for the course, it is recommended
      *     to fetch once for all modules in course/section for performance
@@ -434,6 +436,10 @@ class core_course_renderer extends plugin_renderer_base {
      */
     public function course_section_cm_completion($course, &$completioninfo, cm_info $mod, $displayoptions = array()) {
         global $CFG, $DB, $USER;
+
+        debugging(__FUNCTION__ . ' is deprecated and is being replaced by the activity_information output component.',
+            DEBUG_DEVELOPER);
+
         $output = '';
 
         $istrackeduser = $completioninfo->is_tracked_user($USER->id);
@@ -828,7 +834,13 @@ class core_course_renderer extends plugin_renderer_base {
     public function course_section_cm_list_item($course, &$completioninfo, cm_info $mod, $sectionreturn, $displayoptions = array()) {
         $output = '';
         if ($modulehtml = $this->course_section_cm($course, $completioninfo, $mod, $sectionreturn, $displayoptions)) {
-            $modclasses = 'activity ' . $mod->modname . ' modtype_' . $mod->modname . ' ' . $mod->extraclasses;
+            $infoclass = '';
+            if ((($course->enablecompletion == COMPLETION_ENABLED) &&
+                ($course->showcompletionconditions == COMPLETION_SHOW_CONDITIONS)) || !empty($course->showactivitydates)) {
+                // This will apply styles to the course homepage when the activity information output component is displayed.
+                $infoclass = 'hasinfo';
+            }
+            $modclasses = 'activity ' . $mod->modname . ' modtype_' . $mod->modname . ' ' . $mod->extraclasses . ' ' . $infoclass;
             $output .= html_writer::tag('li', $modulehtml, array('class' => $modclasses, 'id' => 'module-' . $mod->id));
         }
         return $output;
@@ -844,7 +856,6 @@ class core_course_renderer extends plugin_renderer_base {
      * {@link core_course_renderer::course_section_cm_name()}
      * {@link core_course_renderer::course_section_cm_text()}
      * {@link core_course_renderer::course_section_cm_availability()}
-     * {@link core_course_renderer::course_section_cm_completion()}
      * {@link course_get_cm_edit_actions()}
      * {@link core_course_renderer::course_section_cm_edit_actions()}
      *
@@ -856,6 +867,8 @@ class core_course_renderer extends plugin_renderer_base {
      * @return string
      */
     public function course_section_cm($course, &$completioninfo, cm_info $mod, $sectionreturn, $displayoptions = array()) {
+        global $USER;
+
         $output = '';
         // We return empty string (because course module will not be displayed at all)
         // if:
@@ -925,10 +938,27 @@ class core_course_renderer extends plugin_renderer_base {
             $modicons .= $mod->afterediticons;
         }
 
-        $modicons .= $this->course_section_cm_completion($course, $completioninfo, $mod, $displayoptions);
-
         if (!empty($modicons)) {
             $output .= html_writer::div($modicons, 'actions');
+        }
+
+        // Fetch completion details.
+        $showcompletionconditions = $course->showcompletionconditions == COMPLETION_SHOW_CONDITIONS;
+        $completiondetails = \core_completion\cm_completion_details::get_instance($mod, $USER->id, $showcompletionconditions);
+        $ismanualcompletion = $completiondetails->has_completion() && !$completiondetails->is_automatic();
+
+        // Fetch activity dates.
+        $activitydates = [];
+        if ($course->showactivitydates) {
+            $activitydates = \core\activity_dates::get_dates_for_module($mod, $USER->id);
+        }
+
+        // Show the activity information if:
+        // - The course's showcompletionconditions setting is enabled; or
+        // - The activity tracks completion manually; or
+        // - There are activity dates to be shown.
+        if ($showcompletionconditions || $ismanualcompletion || $activitydates) {
+            $output .= $this->output->activity_information($mod, $completiondetails, $activitydates);
         }
 
         // Show availability info (if module is not available).
@@ -2186,6 +2216,19 @@ class core_course_renderer extends plugin_renderer_base {
                 ))->
                 set_attributes(array('class' => 'frontpage-category-names'));
         return $this->coursecat_tree($chelper, $tree);
+    }
+
+    /**
+     * Renders the activity information.
+     *
+     * Defer to template.
+     *
+     * @param \core_course\output\activity_information $page
+     * @return string html for the page
+     */
+    public function render_activity_information(\core_course\output\activity_information $page) {
+        $data = $page->export_for_template($this->output);
+        return $this->output->render_from_template('core_course/activity_info', $data);
     }
 
     /**
