@@ -1921,7 +1921,7 @@ class expired_contexts_test extends \advanced_testcase {
      *
      * @return  array
      */
-    public function can_process_deletion_provider() : array {
+    public static function can_process_deletion_provider(): array {
         return [
             'Pending' => [
                 expired_context::STATUS_EXPIRED,
@@ -1959,7 +1959,7 @@ class expired_contexts_test extends \advanced_testcase {
      *
      * @return  array
      */
-    public function is_complete_provider() : array {
+    public static function is_complete_provider(): array {
         return [
             'Pending' => [
                 expired_context::STATUS_EXPIRED,
@@ -1994,7 +1994,7 @@ class expired_contexts_test extends \advanced_testcase {
      *
      * @return  array
      */
-    public function is_fully_expired_provider() : array {
+    public static function is_fully_expired_provider(): array {
         return [
             'Fully expired' => [
                 [
