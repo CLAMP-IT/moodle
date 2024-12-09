@@ -36,13 +36,13 @@ Feature: View activity completion in the glossary activity
     And I press "Save and display"
     And I log out
 
-  Scenario: View automatic completion items as a teacher
+  Scenario: View glossary automatic completion conditions as a teacher
     Given I am on the "Music history" "glossary activity" page logged in as teacher1
     Then "Music history" should have the "View" completion condition
     And "Music history" should have the "Make entries: 1" completion condition
     And "Music history" should have the "Receive a grade" completion condition
 
-  Scenario: View automatic completion items as a student
+  Scenario: A student completes a glossary
     Given I am on the "Music history" "glossary activity" page logged in as student1
     And the "View" completion condition of "Music history" is displayed as "done"
     And the "Make entries: 1" completion condition of "Music history" is displayed as "todo"
@@ -67,7 +67,7 @@ Feature: View activity completion in the glossary activity
     And the "Receive a grade" completion condition of "Music history" is displayed as "done"
 
   @javascript
-  Scenario: Use manual completion
+  Scenario: A student can manually mark the glossary activity as done but a teacher cannot
     Given I am on the "Music history" "glossary activity editing" page logged in as teacher1
     And I expand all fieldsets
     And I set the field "Students must manually mark the activity as done" to "1"

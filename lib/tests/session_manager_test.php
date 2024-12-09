@@ -501,12 +501,14 @@ class session_manager_test extends \advanced_testcase {
         $record->timemodified = time() - 60*20;
         $r2 = $DB->insert_record('sessions', $record);
 
+        // Guest session still within the session timeout limit.
         $record->sid          = md5('hokus3');
         $record->userid       = $guestid;
         $record->timecreated  = time() - 60*60*60;
-        $record->timemodified = time() - 60*20;
+        $record->timemodified = time() - 60*5;
         $r3 = $DB->insert_record('sessions', $record);
 
+        // Guest session outside the session timeout limit.
         $record->sid          = md5('hokus4');
         $record->userid       = $guestid;
         $record->timecreated  = time() - 60*60*60;
@@ -792,7 +794,7 @@ class session_manager_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function sessionlocks_info_provider() : array {
+    public static function sessionlocks_info_provider(): array {
         return [
             [
                 'url'      => null,
@@ -849,7 +851,7 @@ class session_manager_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function array_session_diff_provider() {
+    public static function array_session_diff_provider(): array {
         // Create an instance of this object so the comparison object's identities are the same.
         // Used in one of the tests below.
         $compareobjectb = (object) ['array' => 'b'];
