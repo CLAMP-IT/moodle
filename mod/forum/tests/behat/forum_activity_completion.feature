@@ -36,7 +36,7 @@ Feature: View activity completion in the forum activity
       | completionreplies            | 1                                                 |
     And I press "Save and display"
 
-  Scenario: View automatic completion items as a teacher
+  Scenario: Forum module displays automatic completion conditions to teachers
     When I am on the "Music history" "forum activity" page logged in as teacher1
     Then "Music history" should have the "View" completion condition
     And "Music history" should have the "Start discussions: 1" completion condition
@@ -45,7 +45,7 @@ Feature: View activity completion in the forum activity
     And "Music history" should have the "Receive a grade" completion condition
 
   @javascript
-  Scenario: View automatic completion items as a student
+  Scenario: A student can complete a forum activity by meeting the completion conditions
     Given I am on the "Music history" "forum activity" page logged in as student1
     And the "View" completion condition of "Music history" is displayed as "done"
     And the "Start discussions: 1" completion condition of "Music history" is displayed as "todo"
@@ -85,7 +85,7 @@ Feature: View activity completion in the forum activity
     And the "Receive a grade" completion condition of "Music history" is displayed as "done"
 
   @javascript
-  Scenario: Use manual completion
+  Scenario: A student can manually mark the forum activity as done but a teacher cannot
     Given I am on the "Music history" "forum activity editing" page logged in as teacher1
     And I expand all fieldsets
     And I set the field "Completion tracking" to "Students can manually mark the activity as completed"
