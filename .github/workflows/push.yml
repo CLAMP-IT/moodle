@@ -63,9 +63,11 @@ jobs:
         include:
           - os: ubuntu-22.04
             php: 7.4
+            extensions:
             db: mysqli
           - os: ubuntu-22.04
             php: 8.1
+            extensions: mongodb-1.19.4
             db: pgsql
 
     steps:
