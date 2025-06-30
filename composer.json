@@ -1,0 +1,10 @@
+{
+    "name": "moodle/block_clampmail",
+    "type": "moodle-block",
+    "require": {
+        "composer/installers": "~1.0"
+    },
+    "extra": {
+        "installer-name": "clampmail"
+    }
+}

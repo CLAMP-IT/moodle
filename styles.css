@@ -1,0 +1,92 @@
+#page-CLAMPMail div.region-content select.select,
+#page-CLAMPMail div.region-content table.generaltable,
+#page-CLAMPMail div.region-content div.generalbox {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+#page-CLAMPMail select[multiple] {
+    min-width: 250px;
+    max-width: 250px;
+}
+
+#page-CLAMPMail .emailtable {
+    background-color: inherit;
+}
+
+#page-CLAMPMail .emailtable .r1 .c0,
+.emailtable .r1 .c2 {
+    width: 275px;
+}
+
+#page-CLAMPMail .object_labels {
+    margin-right: 20px;
+    font-weight: bold;
+}
+
+#page-CLAMPMail .emailtable .cell {
+    border: none;
+}
+
+#page-CLAMPMail .emailtable .r0 .cell {
+    padding: .5em .5em .3em .5em;
+}
+
+#page-CLAMPMail .emailtable .r1 .c1 {
+    text-align: center;
+    vertical-align: middle;
+}
+
+#page-CLAMPMail .emailtable .r1 .c2 div {
+    padding: 2px 0;
+}
+
+#page-CLAMPMail .emailtable .r1 .c2,
+#page-CLAMPMail .emailtable .r0 .c1 {
+    text-align: right;
+}
+
+#page-CLAMPMail .mform fieldset.hidden > div {
+    text-align: left;
+    margin-left: auto;
+}
+
+#page-CLAMPMail .mform #add_button,
+#page-CLAMPMail #remove_button,
+#page-CLAMPMail #add_all,
+#page-CLAMPMail #remove_all {
+    width: 100px;
+    height: 25px;
+}
+
+#page-CLAMPMail .mform input#id_subject {
+    width: 75%;
+}
+
+.block_clampmail .unlist > li > .column {
+    display: inline-block;
+    vertical-align: unset;
+}
+
+#page-CLAMPMail .internal-navigation {
+    display: flex;
+    list-style: none;
+    padding-left: 0;
+}
+
+#page-CLAMPMail .internal-navigation li {
+    list-style: none;
+}
+
+#page-CLAMPMail .internal-navigation li:first-child:before {
+    padding: 0;
+    content: "";
+}
+
+#page-CLAMPMail .internal-navigation li:not(:first-child):before {
+    display: inline-block;
+    padding-right: .5rem;
+    padding-left: .5rem;
+    color: #868e96;
+    content: "|";
+}
