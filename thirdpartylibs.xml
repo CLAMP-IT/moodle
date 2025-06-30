@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<libraries>
+    <library>
+        <location>js/js.cookie-2.2.0.min.js</location>
+        <name>JavaScript Cookie</name>
+        <version>2.2.0</version>
+        <license>MIT</license>
+        <licenseversion></licenseversion>
+    </library>
+</libraries>
