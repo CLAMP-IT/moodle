@@ -1,0 +1,9 @@
+.vscode/
+.idea/
+config/config.php
+node_modules
+.DS_Store
+ruleset.xml
+local/
+.local/
+copy-to-moodle-root.sh
