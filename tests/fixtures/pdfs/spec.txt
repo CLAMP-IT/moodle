@@ -1,0 +1,6 @@
+A filename will have the following tokens, depending on the source's accessibility scan from filescan-server
+
+TX-Text
+TI-Title
+LN-Language
+OL-Outline
