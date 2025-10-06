@@ -222,7 +222,7 @@ final class users_test extends core_reportbuilder_testcase {
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:fullnamewithpicturelink']);
 
         $content = $this->get_custom_report_content($report->get('id'));
-        $this->assertCount(2, $content);
+        $this->assertCount(3, $content);
 
         // Admin row.
         [
