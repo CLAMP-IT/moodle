@@ -243,7 +243,7 @@ final class users_test extends core_reportbuilder_testcase {
             $fullnamewithlink,
             $fullnamewithpicture,
             $fullnamewithpicturelink
-        ] = array_values($content[1]);
+        ] = array_values($content[2]);
 
         $this->assertEquals('(JS) John Smith', $fullname);
         $this->assertStringContainsString('(JS) John Smith', $fullnamewithlink);
