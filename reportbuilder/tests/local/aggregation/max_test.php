@@ -51,7 +51,12 @@ final class max_test extends core_reportbuilder_testcase {
         $report = $generator->create_report(['name' => 'Users', 'source' => users::class, 'default' => 0]);
 
         // Report columns, aggregated/sorted by user suspended.
-        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:firstname']);
+        $generator->create_column([
+            'reportid' => $report->get('id'),
+            'uniqueidentifier' => 'user:firstname',
+            'sortenabled' => 1,
+            'sortdirection' => SORT_DESC,
+        ]);
         $generator->create_column([
             'reportid' => $report->get('id'),
             'uniqueidentifier' => 'user:suspended',
