@@ -49,7 +49,12 @@ final class count_test extends core_reportbuilder_testcase {
         $report = $generator->create_report(['name' => 'Users', 'source' => users::class, 'default' => 0]);
 
         // Report columns, aggregated/sorted by user lastname.
-        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:firstname']);
+        $generator->create_column([
+            'reportid' => $report->get('id'),
+            'uniqueidentifier' => 'user:firstname',
+            'sortenabled' => 1,
+            'sortdirection' => SORT_DESC,
+        ]);
         $generator->create_column([
             'reportid' => $report->get('id'),
             'uniqueidentifier' => 'user:lastname',
@@ -61,8 +66,8 @@ final class count_test extends core_reportbuilder_testcase {
         $content = $this->get_custom_report_content($report->get('id'));
         $this->assertEquals([
             ['Bob', 3],
-            ['Admin', 1],
             ['Anonymous', 1],
+            ['Admin', 1],
         ], array_map('array_values', $content));
     }
 }
