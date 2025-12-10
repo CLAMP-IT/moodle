@@ -51,7 +51,12 @@ final class sum_test extends core_reportbuilder_testcase {
         $report = $generator->create_report(['name' => 'Users', 'source' => users::class, 'default' => 0]);
 
         // Report columns, aggregated/sorted by user suspended.
-        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:firstname']);
+        $generator->create_column([
+            'reportid' => $report->get('id'),
+            'uniqueidentifier' => 'user:firstname',
+            'sortenabled' => 1,
+            'sortdirection' => SORT_DESC,
+        ]);
         $generator->create_column([
             'reportid' => $report->get('id'),
             'uniqueidentifier' => 'user:suspended',
@@ -63,8 +68,8 @@ final class sum_test extends core_reportbuilder_testcase {
         $content = $this->get_custom_report_content($report->get('id'));
         $this->assertEquals([
             ['Bob', 2],
-            ['Admin', 0],
             ['Anonymous', 0],
+            ['Admin', 0],
         ], array_map('array_values', $content));
     }
 
