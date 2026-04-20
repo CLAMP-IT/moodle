@@ -30,9 +30,8 @@ class course_edit_form extends moodleform {
         $category      = $this->_customdata['category'];
         $editoroptions = $this->_customdata['editoroptions'];
         $returnto = $this->_customdata['returnto'];
-        $returnurl = $this->_customdata['returnurl'];
+        $returnurl = new moodle_url($this->_customdata['returnurl']);
 
-        $systemcontext   = context_system::instance();
         $categorycontext = context_coursecat::instance($category->id);
 
         if (!empty($course->id)) {
@@ -57,7 +56,7 @@ class course_edit_form extends moodleform {
 
         $mform->addElement('hidden', 'returnurl', null);
         $mform->setType('returnurl', PARAM_LOCALURL);
-        $mform->setConstant('returnurl', $returnurl);
+        $mform->setConstant('returnurl', $returnurl->out_as_local_url());
 
         $mform->addElement('text', 'fullname', get_string('fullnamecourse'),
             ['maxlength' => \core_course\constants::FULLNAME_MAXIMUM_LENGTH, 'size' => 50]);
@@ -218,8 +217,6 @@ class course_edit_form extends moodleform {
         }
 
         if (!empty($course->id) and !has_capability('moodle/course:changesummary', $coursecontext)) {
-            // Remove the description header it does not contain anything any more.
-            $mform->removeElement('descriptionhdr');
             $mform->hardFreeze($summaryfields);
         }
 

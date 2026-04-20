@@ -1334,14 +1334,9 @@ class core_course_category implements renderable, cacheable_object, IteratorAggr
         } else {
             $sortfields = array('sortorder' => 1);
         }
-        $limit = null;
-        if (!empty($options['limit']) && (int)$options['limit']) {
-            $limit = (int)$options['limit'];
-        }
-        $offset = 0;
-        if (!empty($options['offset']) && (int)$options['offset']) {
-            $offset = (int)$options['offset'];
-        }
+
+        $offset = !empty($options['offset']) && (int) $options['offset'] ? (int) $options['offset'] : 0;
+        $limit = !empty($options['limit']) && (int) $options['limit'] ? (int) $options['limit'] : null;
 
         // First retrieve list of user-visible and sorted children ids from cache.
         $sortedids = $coursecatcache->get('c'. $this->id. ':'.  serialize($sortfields));
@@ -1581,8 +1576,9 @@ class core_course_category implements renderable, cacheable_object, IteratorAggr
      */
     public static function search_courses($search, $options = array(), $requiredcapabilities = array()) {
         global $DB;
-        $offset = !empty($options['offset']) ? $options['offset'] : 0;
-        $limit = !empty($options['limit']) ? $options['limit'] : null;
+
+        $offset = !empty($options['offset']) && (int) $options['offset'] ? (int) $options['offset'] : 0;
+        $limit = !empty($options['limit']) && (int) $options['limit'] ? (int) $options['limit'] : null;
         $sortfields = !empty($options['sort']) ? $options['sort'] : array('sortorder' => 1);
 
         $coursecatcache = cache::make('core', 'coursecat');
@@ -1811,9 +1807,10 @@ class core_course_category implements renderable, cacheable_object, IteratorAggr
      */
     public function get_courses($options = array()) {
         global $DB;
+
         $recursive = !empty($options['recursive']);
-        $offset = !empty($options['offset']) ? $options['offset'] : 0;
-        $limit = !empty($options['limit']) ? $options['limit'] : null;
+        $offset = !empty($options['offset']) && (int) $options['offset'] ? (int) $options['offset'] : 0;
+        $limit = !empty($options['limit']) && (int) $options['limit'] ? (int) $options['limit'] : null;
         $sortfields = !empty($options['sort']) ? $options['sort'] : array('sortorder' => 1);
 
         if (!$this->id && !$recursive) {
