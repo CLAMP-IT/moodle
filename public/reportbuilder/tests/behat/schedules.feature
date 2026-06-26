@@ -133,8 +133,10 @@ Feature: Manage custom report schedules
     And I click on the "Schedules" dynamic tab
     When I click on "Disable schedule" "field" in the "My schedule" "table_row"
     Then the "class" attribute of "My schedule" "table_row" should contain "text-muted"
+    And "Schedule disabled" "toast_message" should be visible
     And I click on "Enable schedule" "field" in the "My schedule" "table_row"
     And the "class" attribute of "My schedule" "table_row" should be set
+    And "Schedule enabled" "toast_message" should be visible
 
   Scenario: Edit report schedule
     Given the following "core_reportbuilder > Schedules" exist:

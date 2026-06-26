@@ -1,5 +1,7 @@
 <?php
 
+use mod_glossary\output\renderer;
+
 /**
  * Displays a glossary entry in continuous format.
  *
@@ -26,15 +28,15 @@ function glossary_show_entry_continuous(
     $aliases = false,
     $conceptheadinglevel = 3,
 ) {
-    global $OUTPUT;
+    global $OUTPUT, $PAGE;
 
-    echo '<table class="glossarypost continuous table-reboot" cellspacing="0" role="presentation">';
-    echo '<tr valign="top">';
-    echo '<td class="entry">';
-    glossary_print_entry_approval($cm, $entry, $mode);
-    echo '<div class="concept">';
-    glossary_print_entry_concept($entry, headinglevel: $conceptheadinglevel);
-    echo '</div> ';
+    echo '<div class="glossarypost continuous">';
+
+    /** @var renderer $renderer */
+    $renderer = $PAGE->get_renderer('mod_glossary');
+    echo $renderer->concept_entry_header($entry, $mode, $conceptheadinglevel);
+
+    echo '<div class="entry">';
     glossary_print_entry_definition($entry, $glossary, $cm);
     glossary_print_entry_attachment($entry, $cm, 'html');
 
@@ -43,13 +45,13 @@ function glossary_show_entry_continuous(
             'mod_glossary', 'glossary_entries', $entry->id), null, 'glossary-tags');
     }
     $entry->alias = '';
-    echo '</td></tr>';
+    echo '</div>';
 
-    echo '<tr valign="top"><td class="entrylowersection">';
+    echo '<div class="entrylowersection">';
     glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mode, $hook, $printicons, $aliases, false);
-    echo '</td>';
-    echo '</tr>';
-    echo "</table>\n";
+    echo '</div>';
+
+    echo "</div>";
 }
 
 /**

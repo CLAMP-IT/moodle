@@ -239,6 +239,9 @@ $definitions = array(
         // Executing actions in more than 10 courses usually means executing the same action on each course
         // so there is no need for caching individual course instances.
         'staticaccelerationsize' => 10,
+        'invalidationevents' => [
+            'changesincourseactionstate',
+        ],
     ],
     // Used to store data for repositories to avoid repetitive DB queries within one request.
     'repositories' => array(
@@ -587,19 +590,6 @@ $definitions = array(
         'staticacceleration' => true,
         'canuselocalstore' => true,
         'staticaccelerationsize' => 100,
-    ],
-
-    // Cache if a user has the capability to share to MoodleNet.
-    'moodlenet_usercanshare' => [
-        'mode' => cache_store::MODE_SESSION,
-        'simplekeys' => true,
-        'simpledata' => true,
-        'ttl' => 1800,
-        'invalidationevents' => [
-            'changesincoursecat',
-            'changesincategoryenrolment',
-            'changesincourse',
-        ],
     ],
 
     // A theme has been used in context to override the default theme.

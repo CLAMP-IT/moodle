@@ -110,8 +110,35 @@ class format_topics extends core_courseformat\base {
      * @return moodle_url
      */
     public function get_view_url($section, $options = []) {
-        $options['expanded'] = false;
-        return parent::get_view_url($section, $options);
+        $course = $this->get_course();
+        $section = (is_null($section) || $section instanceof section_info) ?
+                    $section
+                    : $this->get_section($section, IGNORE_MISSING);
+
+        // Determine page.
+        if (array_key_exists('sr', $options)) {
+            $pagesection = !is_null($options['sr']) ? $this->get_section($options['sr'], IGNORE_MISSING) : null;
+        } else if ($options['navigation'] ?? false) {
+            $pagesection = ($section && $section->get_component_instance()) ?
+                            $section->get_component_instance()->get_parent_section()
+                            : $section;
+        } else {
+            $pagesection = null;
+        }
+
+        // Base URL.
+        if (is_null($pagesection)) {
+            $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        } else {
+            $url = new moodle_url('/course/section.php', ['id' => $pagesection->id]);
+        }
+
+        // Add details.
+        if ($this->uses_sections() && $section && ($section->id != $pagesection?->id)) {
+            $url->set_anchor('section-' . $section->section);
+        }
+
+        return $url;
     }
 
     /**
@@ -375,7 +402,12 @@ class format_topics extends core_courseformat\base {
         if ($section->section && ($action === 'setmarker' || $action === 'removemarker')) {
             // Format 'topics' allows to set and remove markers in addition to common section actions.
             require_capability('moodle/course:setcurrentsection', context_course::instance($this->courseid));
-            course_set_marker($this->courseid, ($action === 'setmarker') ? $section->section : 0);
+            if ($action === 'setmarker') {
+                $sectioninfo = get_fast_modinfo($this->courseid)->get_section_info($section->section);
+                \core_courseformat\formatactions::section($this->courseid)->set_marker($sectioninfo, true);
+            } else {
+                \core_courseformat\formatactions::section($this->courseid)->remove_all_markers();
+            }
             return null;
         }
 

@@ -119,12 +119,14 @@ final class router_test extends route_testcase {
     #[\PHPUnit\Framework\Attributes\DataProvider('basepath_provider')]
     public function test_basepath(
         string $wwwroot,
+        bool $configured,
         string $expected,
     ): void {
         global $CFG;
 
         $this->resetAfterTest();
         $CFG->wwwroot = $wwwroot;
+        $CFG->routerconfigured = $configured;
 
         $router = di::get(router::class);
 
@@ -137,8 +139,10 @@ final class router_test extends route_testcase {
      * @return \Generator
      */
     public static function basepath_provider(): \Generator {
-        yield 'Domain' => ['http://example.com', '/r.php'];
-        yield 'Subdirectory' => ['http://example.com/moodle', '/moodle/r.php'];
+        yield 'Domain Router not configured' => ['http://example.com', false, '/r.php'];
+        yield 'Domain Router configured' => ['http://example.com', true, ''];
+        yield 'Subdirectory Router not configured' => ['http://example.com/moodle', false, '/moodle/r.php'];
+        yield 'Subdirectory Router configured' => ['http://example.com/moodle', true, '/moodle'];
     }
 
     /**

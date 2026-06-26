@@ -43,12 +43,6 @@ function xmldb_glossary_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
-    // Automatically generated Moodle v4.2.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Automatically generated Moodle v4.3.0 release upgrade line.
-    // Put any upgrade step following this.
-
     // Automatically generated Moodle v4.4.0 release upgrade line.
     // Put any upgrade step following this.
 
@@ -61,7 +55,7 @@ function xmldb_glossary_upgrade($oldversion) {
     // Automatically generated Moodle v5.1.0 release upgrade line.
     // Put any upgrade step following this.
 
-    if ($oldversion < 2025100601) {
+    if ($oldversion < 2026022300) {
         // Changing precision of field name on table glossary to (1333).
         $table = new xmldb_table('glossary');
         $field = new xmldb_field('name', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null, 'course');
@@ -70,8 +64,11 @@ function xmldb_glossary_upgrade($oldversion) {
         $dbman->change_field_precision($table, $field);
 
         // Glossary savepoint reached.
-        upgrade_mod_savepoint(true, 2025100601, 'glossary');
+        upgrade_mod_savepoint(true, 2026022300, 'glossary');
     }
+
+    // Automatically generated Moodle v5.2.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

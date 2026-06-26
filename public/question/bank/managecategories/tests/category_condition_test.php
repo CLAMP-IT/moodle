@@ -17,6 +17,7 @@
 namespace qbank_managecategories;
 
 use core\context\module;
+use core_courseformat\formatactions;
 use core_question\category_manager;
 use core_question\test\mock_restore_test_trait;
 
@@ -190,7 +191,7 @@ final class category_condition_test extends \advanced_testcase {
         $manager = new category_manager();
         $manager->update_category($category->id, "{$newparent->id},{$qbank2context->id}", $category->name, $category->info);
         // Delete the original context.
-        course_delete_module($qbank1->cmid);
+        formatactions::cm($course->id)->delete($qbank1->cmid);
         $filtercondition = [
             'filter' => [
                 'category' => [

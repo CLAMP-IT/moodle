@@ -74,7 +74,8 @@ class forum {
                 'lockdiscussionafter' => $forum->get_lock_discussions_after(),
                 'duedate' => $forum->get_due_date(),
                 'cutoffdate' => $forum->get_cutoff_date(),
-                'anonymous' => $forum->get_anonymity()
+                'showimmediately' => $forum->get_showimmediately(),
+                'anonymous' => $forum->get_anonymity(),
             ];
         }, $forums);
     }

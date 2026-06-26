@@ -35,7 +35,7 @@ Feature: Login user with sms authentication factor
   Scenario: Login user successfully with sms verification
     Given I log out
     And I log in as "admin"
-    And I should see "2-step verification"
+    And I should see "We need to verify your identity"
     And I should see "Enter code"
     When I set the field "Enter code" with valid code
     And I click on "Continue" "button"
@@ -44,7 +44,7 @@ Feature: Login user with sms authentication factor
   Scenario: Wrong code number end of possible attempts
     Given I log out
     And I log in as "admin"
-    And I should see "2-step verification"
+    And I should see "We need to verify your identity"
     And I should see "Enter code"
     When I set the field "Enter code" to "555556"
     And I click on "Continue" "button"

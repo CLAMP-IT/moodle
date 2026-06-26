@@ -1,6 +1,6 @@
 # core_completion (subsystem) Upgrade notes
 
-## 5.1.1
+## 5.2
 
 ### Changed
 

@@ -28,22 +28,24 @@ function glossary_show_entry_entrylist(
 ) {
     $return = false;
 
-    echo '<table class="glossarypost entrylist table-reboot" cellspacing="0" role="presentation">';
+    echo '<div class="glossarypost entrylist container">';
 
-    echo '<tr valign="top">';
-    echo '<td class="entry">';
+    echo '<div class="entry row">';
     if ($entry) {
         glossary_print_entry_approval($cm, $entry, $mode);
         $anchortagcontents = glossary_print_entry_concept($entry, true, $conceptheadinglevel);
 
-        $link = new moodle_url('/mod/glossary/showentry.php', array('courseid' => $course->id,
-                'eid' => $entry->id, 'displayformat' => 'dictionary'));
+        $link = new moodle_url('/mod/glossary/showentry.php', [
+            'courseid' => $course->id,
+            'eid' => $entry->id,
+            'displayformat' => 'dictionary',
+        ]);
         $anchor = html_writer::link($link, $anchortagcontents);
 
-        echo "<div class=\"concept\">$anchor</div> ";
-        echo '</td><td align="right" class="entrylowersection">';
+        echo html_writer::div($anchor, 'concept col');
+        echo '<div class="entrylowersection col text-end">';
         if ($printicons) {
-            glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode, $hook,'print');
+            glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode, $hook, 'print');
         }
         if (!empty($entry->rating)) {
             echo '<br />';
@@ -52,13 +54,12 @@ function glossary_show_entry_entrylist(
             echo '</span>';
         }
         echo '<br />';
+        echo '</div>';
     } else {
         echo html_writer::div(get_string('noentry', 'glossary'), 'text-center');
     }
-    echo '</td></tr>';
-
-    echo "</table>";
-    echo "<hr>\n";
+    echo '</div></div>';
+    echo "<hr>";
     return $return;
 }
 

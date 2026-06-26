@@ -233,6 +233,7 @@ class meeting {
             'cmid' => $instance->get_cm_id(),
             'ismoderator' => $instance->is_moderator(),
             'joinurl' => $instance->get_join_url()->out(),
+            'usermustwaittojoin' => $instance->user_must_wait_to_join(),
             'userlimit' => $instance->get_user_limit(),
             'presentations' => [],
         ];

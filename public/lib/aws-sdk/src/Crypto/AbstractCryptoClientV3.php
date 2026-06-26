@@ -74,7 +74,7 @@ abstract class AbstractCryptoClientV3
      * @param string $cipherName Name of the cipher to generate for encrypting.
      * @param string $iv Base Initialization Vector for the cipher.
      * @param int $keySize Size of the encryption key, in bits, that will be
-     *                    used.
+     *                     used.
      *
      * @return CipherMethod
      *
@@ -103,14 +103,14 @@ abstract class AbstractCryptoClientV3
      * data given cipher details, metadata, and materials to do so.
      *
      * @param Stream $plaintext Plain-text data to be encrypted using the
-     *                         materials, algorithm, and data provided.
+     *                          materials, algorithm, and data provided.
      * @param AlgorithmSuite $algorithmSuite AlgorithmSuite for use in encryption.
      * @param array $options    Options for use in encryption, including cipher
-     *                         options, and encryption context.
+     *                          options, and encryption context.
      * @param MaterialsProviderV3 $provider A provider to supply and encrypt
-     *                                     materials used in encryption.
+     *                                      materials used in encryption.
      * @param MetadataEnvelope $envelope A storage envelope for encryption
-     *                                  metadata to be added to.
+     *                                   metadata to be added to.
      *
      * @return AppendStream
      *
@@ -129,11 +129,11 @@ abstract class AbstractCryptoClientV3
      * cipher text given metadata and materials to do so.
      *
      * @param string $cipherText Plain-text data to be decrypted using the
-     *                          materials, algorithm, and data provided.
+     *                           materials, algorithm, and data provided.
      * @param MaterialsProviderInterface $provider A provider to supply and encrypt
-     *                                            materials used in encryption.
+     *                                             materials used in encryption.
      * @param MetadataEnvelope $envelope A storage envelope for encryption
-     *                                  metadata to be read from.
+     *                                   metadata to be read from.
      * @param string $commitmentPolicy Commitment Policy to use for decrypting objects.
      * @param array $options Options used for decryption.
      *

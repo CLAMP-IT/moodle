@@ -595,14 +595,6 @@ final class manager implements
     }
 
     /**
-     * @deprecated in favour of get_hooks_deprecating_plugin_callback since Moodle 4.4.
-     */
-    #[\core\attribute\deprecated('get_hooks_deprecating_plugin_callback', since: '4.4', mdl: 'MDL-80099', final: true)]
-    public function is_deprecated_plugin_callback(): void {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
-    }
-
-    /**
      * If the plugin callback from lib.php is deprecated by any hooks, return the hooks' classnames.
      *
      * @param string $plugincallback short callback name without the component prefix
@@ -708,7 +700,7 @@ final class manager implements
             return false;
         }
 
-        if ($this->is_upgrade_running()) {
+        if (\core\setup::is_upgrade_running()) {
             // Do not use the cache during upgrade.
             return false;
         }
@@ -774,17 +766,5 @@ final class manager implements
         file_put_contents($tmppath, json_encode($cachedata));
         rename($tmppath, $hookcallbacksharedfile);
         clearstatcache(true, $hookcallbacksharedfile);
-    }
-
-    /**
-     * Check whether upgrade is currently running.
-     *
-     * @return bool
-     */
-    protected function is_upgrade_running(): bool {
-        global $CFG;
-
-        // Note: This mimics the test in lib/setuplib.php during upgrade.
-        return !empty($CFG->upgraderunning);
     }
 }

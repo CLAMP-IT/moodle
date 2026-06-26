@@ -2,7 +2,9 @@
 Feature: The my overview block allows users to group courses by custom fields
 
   Background:
-    Given the following "users" exist:
+    Given the following config values are set as admin:
+      | enablemycourses | 1 |
+    And the following "users" exist:
       | username | firstname | lastname | email                | idnumber |
       | student1 | Student   | X        | student1@example.com | S1       |
     And the following "custom field categories" exist:
@@ -188,7 +190,7 @@ Feature: The my overview block allows users to group courses by custom fields
       | customfiltergrouping       | textfield2 | block_myoverview |
     And I log in as "admin"
     And I navigate to "Courses > Default settings > Course custom fields" in site administration
-    And I press "Edit custom field: Text field 2"
+    And I choose the "Edit" item in the "Actions" action menu of the "Text field 2" "table_row"
     And I set the field "Visible to" to "Nobody"
     And I press "Save changes"
     And I log out

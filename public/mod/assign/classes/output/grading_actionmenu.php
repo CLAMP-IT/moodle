@@ -96,7 +96,7 @@ class grading_actionmenu implements templatable, renderable {
      * @return array Data to render.
      */
     public function export_for_template(\renderer_base $output): array {
-        global $PAGE;
+        global $PAGE, $USER;
 
         $course = $this->assign->get_course();
         $cm = get_coursemodule_from_id('assign', $this->cmid);
@@ -186,6 +186,18 @@ class grading_actionmenu implements templatable, renderable {
                 'action' => 'grader',
             ]);
             $data['graderurl'] = $url->out(false);
+        }
+
+        $markingworkflow = property_exists($this->assign->get_instance(), 'markingworkflow') &&
+            $this->assign->get_instance()->markingworkflow == '1' &&
+            $this->assign->is_user_allocated_marker($USER->id);
+
+        if ($markingworkflow) {
+            $url = new moodle_url('/mod/assign/view.php', [
+                'id' => $this->assign->get_course_module()->id,
+                'action' => 'marker',
+            ]);
+            $data['markerurl'] = $url->out(false);
         }
 
         $gradingmanager = get_grading_manager($this->assign->get_context(), 'mod_assign', 'submissions');

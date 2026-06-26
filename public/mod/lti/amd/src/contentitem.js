@@ -138,16 +138,23 @@ define(
         const showMultipleSummaryAndHideForm = async function(items) {
             const form = document.querySelector('#region-main-box form');
             const toolArea = form.querySelector('[data-attribute="dynamic-import"]');
-            const buttonGroup = form.querySelector('#fgroup_id_buttonar');
             const submitAndLaunch = form.querySelector('#id_submitbutton');
+            // Hides all child elements of the form.
+            // Note: This action also hides the sticky footer, since it is an immediate child element. This is intentional -
+            // sticky footer actions like "Save and display" are not applicable when adding multiple items, so the footer
+            // is initially hidden while non-relevant actions are disabled or made unavailable.
             Array.from(form.children).forEach(hideElement);
+            // Hide the "Save and display" action button from the sticky footer.
             hideElement(submitAndLaunch);
             const {html, js} = await templates.renderForPromise('mod_lti/tool_deeplinking_results',
                 {items: items});
 
             await templates.replaceNodeContents(toolArea, html, js);
             showElement(toolArea);
-            showElement(buttonGroup);
+            // Now that the tool area is populated and only the relevant action buttons are available, show the sticky
+            // footer again.
+            const stickyFooter = form.querySelector('#sticky-footer');
+            showElement(stickyFooter);
         };
 
         /**

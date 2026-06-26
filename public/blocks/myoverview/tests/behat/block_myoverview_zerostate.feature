@@ -5,7 +5,9 @@ Feature: Zero state on my overview block
   I should see the proper information based on my capabilities
 
   Background:
-    Given the following "users" exist:
+    Given the following config values are set as admin:
+      | enablemycourses | 1 |
+    And the following "users" exist:
       | username | firstname | lastname | email                | idnumber |
       | user     | User      | X        | user@example.com     | U1       |
       | manager  | Manager   | X        | manager@example.com  | M1       |

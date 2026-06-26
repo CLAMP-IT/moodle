@@ -188,7 +188,7 @@ final class backup_restore_test extends restore_date_testcase {
     public function test_duplicate_module_no_meetingid(int $type): void {
         list($bbactivitycontext, $bbactivitycm, $bbactivity)
             = $this->create_instance($this->get_course(), ['type' => $type]);
-        $newcm = duplicate_module($this->get_course(), $bbactivitycm);
+        $newcm = \core_courseformat\formatactions::cm($this->get_course())->duplicate($bbactivitycm->id);
         $oldinstance = instance::get_from_cmid($bbactivitycm->id);
         $newinstance = instance::get_from_cmid($newcm->id);
 
@@ -204,9 +204,9 @@ final class backup_restore_test extends restore_date_testcase {
         list($bbactivitycontext, $bbactivitycm, $bbactivity)
             = $this->create_instance($this->get_course(), ['type' => $type]);
         // Delete the course module.
-        course_delete_module($bbactivitycm->id);
+        \core_courseformat\formatactions::cm($this->course->id)->delete($bbactivitycm->id);
         // Now, run the course module deletion adhoc task.
-        \phpunit_util::run_all_adhoc_tasks();
+        \core\test\phpunit\phpunit_util::run_all_adhoc_tasks();
         $currentinstances = instance::get_all_instances_in_course($this->course->id);
         $this->assertEmpty($currentinstances);
         // Try restoring.

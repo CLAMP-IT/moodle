@@ -66,7 +66,7 @@ trait EncryptionTraitV3
         array $options,
         MaterialsProviderV3 $provider,
         MetadataEnvelope $envelope
-    ): AppendStream
+    ): AppendStream 
     {
         $options = array_change_key_case($options);
         $cipherOptions = array_intersect_key(
@@ -197,7 +197,7 @@ trait EncryptionTraitV3
             throw new CryptoException("Error while writing metadata envelope."
                 . " Not all required fields were set.");
         }
-
+        
         return $encryptingStream;
     }
 
@@ -336,7 +336,7 @@ trait EncryptionTraitV3
                 $appendStream->addStream(Psr7\Utils::streamFor($cipherOptions['Tag']));
 
                 return $appendStream;
-            default:
+            default: 
                 throw new CryptoException("Unsupported Cipher used for key commitment messages."
                     . " Found {$cipherOptions["Cipher"]}. Only 'gcm' is supported.");
         }
@@ -465,9 +465,9 @@ trait EncryptionTraitV3
                 //# crypto provider does not do so automatically.
                 $cipherOptions['Tag'] = $cipherTextStream->getTag();
                 $appendStream->addStream(Psr7\Utils::streamFor($cipherOptions['Tag']));
-
+                
                 return [base64_encode($commitmentKey), $appendStream];
-            default:
+            default: 
                 throw new CryptoException("Unsupported Cipher used for content encryption");
         }
     }

@@ -2113,3 +2113,72 @@ function upgrade_create_async_mimetype_upgrade_task(string $mimetype, array $ext
 
     $DB->insert_record('task_adhoc', $record);
 }
+
+/**
+ * Creates MoodleNet profile field and migrates data from user.moodlenetprofile.
+ */
+function moodlenet_migrate_profile_field(): void {
+    global $DB, $CFG;
+
+    // Check if there are users with moodlenetprofile data first.
+    if (!$DB->record_exists_select('user', "moodlenetprofile IS NOT NULL AND moodlenetprofile <> ''")) {
+        // No data to migrate, skip creating the field.
+        return;
+    }
+
+    require_once($CFG->dirroot . '/user/profile/definelib.php');
+    require_once($CFG->dirroot . '/user/profile/field/text/define.class.php');
+
+    // Get or create the MoodleNet category.
+    $categoryname = 'MoodleNet';
+    $category = $DB->get_record('user_info_category', ['name' => $categoryname]);
+
+    if (!$category) {
+        $data = new \stdClass();
+        $data->sortorder = $DB->count_records('user_info_category') + 1;
+        $data->name = $categoryname;
+        $data->id = $DB->insert_record('user_info_category', $data);
+        $category = $DB->get_record('user_info_category', ['id' => $data->id]);
+        \core\event\user_info_category_created::create_from_category($category)->trigger();
+    }
+
+    // Get or create the moodlenetprofile field.
+    $field = $DB->get_record('user_info_field', [
+        'shortname' => 'moodlenetprofile',
+        'categoryid' => $category->id,
+    ]);
+
+    if (!$field) {
+        $profileclass = new \profile_define_text();
+        $data = (object) [
+            'shortname' => 'moodlenetprofile',
+            'name' => 'MoodleNet profile ID',
+            'datatype' => 'text',
+            'description' => 'Your MoodleNet profile ID links your MoodleNet profile with this site.',
+            'descriptionformat' => 1,
+            'categoryid' => $category->id,
+            'signup' => 1,
+            'forceunique' => 1,
+            'visible' => 2,
+            'param1' => 30,
+            'param2' => 2048,
+        ];
+
+        $profileclass->define_save($data);
+        $field = $DB->get_record('user_info_field', ['shortname' => 'moodlenetprofile']);
+    }
+
+    // Migrate data from user.moodlenetprofile to custom field, skipping already-migrated rows.
+    $sql = "INSERT INTO {user_info_data} (userid, fieldid, data, dataformat)
+                  SELECT u.id, :fieldid, u.moodlenetprofile, 0
+                    FROM {user} u
+                   WHERE u.moodlenetprofile IS NOT NULL
+                     AND u.moodlenetprofile <> ''
+                     AND NOT EXISTS (
+                         SELECT 1
+                           FROM {user_info_data} uid
+                          WHERE uid.userid = u.id
+                            AND uid.fieldid = :fieldid2
+                     )";
+    $DB->execute($sql, ['fieldid' => $field->id, 'fieldid2' => $field->id]);
+}

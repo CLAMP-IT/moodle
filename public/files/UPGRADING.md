@@ -1,6 +1,6 @@
 # core_files (subsystem) Upgrade notes
 
-## 5.1.4
+## 5.2
 
 ### Added
 
@@ -10,6 +10,14 @@
 - User can pass `'CURLOPT_USERPWD' => false` to the `$options` array for the `put()` method of `curl` to remove the `CURLOPT_USERPWD` option from the request.
 
   For more information see [MDL-87822](https://tracker.moodle.org/browse/MDL-87822)
+
+### Removed
+
+- The following methods have been removed from `public/lib/filestorage/file_storage.php`:
+  - `\file_storage::content_exists()`
+  - `\file_storage::try_content_recovery()`
+
+  For more information see [MDL-87426](https://tracker.moodle.org/browse/MDL-87426)
 
 ## 5.0
 

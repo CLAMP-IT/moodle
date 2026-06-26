@@ -93,6 +93,7 @@ final class entities_forum_test extends \advanced_testcase {
         $anonymous = FORUM_ANONYMOUS_NEVER;
 
         $sendnotification = false;
+        $showimmediately = false;
         $forum = new forum_entity(
             $context,
             $coursemodule,
@@ -127,6 +128,7 @@ final class entities_forum_test extends \advanced_testcase {
             $lockdiscussionafter,
             $duedate,
             $cutoffdate,
+            $showimmediately,
             $anonymous
         );
 

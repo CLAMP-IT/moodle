@@ -296,7 +296,7 @@ class renderer extends \plugin_renderer_base {
     public function render_assign_grading_summary(\assign_grading_summary $summary) {
         // Create a table for the data.
         $o = '';
-        $o .= $this->output->container_start('gradingsummary');
+        $o .= $this->output->container_start('gradingsummary container-fluid');
         $o .= $this->output->heading(get_string('gradingsummary', 'assign'), 3);
 
         if (isset($summary->cm)) {

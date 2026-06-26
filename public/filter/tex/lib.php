@@ -26,56 +26,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// Default timeout in seconds for mimetex command execution.
-defined('FILTER_TEX_MIMETEX_TIMEOUT') || define('FILTER_TEX_MIMETEX_TIMEOUT', 5);
-
-/**
- * Check if the current operating system is Windows.
- *
- * @return bool True if running on Windows, false otherwise.
- */
-function filter_tex_is_windows(): bool {
-    return (PHP_OS == "WINNT") || (PHP_OS == "WIN32") || (PHP_OS == "Windows");
-}
-
-function filter_tex_get_executable($debug=false) {
-    global $CFG;
-
-    if (filter_tex_is_windows()) {
-        return "$CFG->dirroot/filter/tex/mimetex.exe";
-    }
-
-    if ($pathmimetex = get_config('filter_tex', 'pathmimetex')) {
-        if (is_executable($pathmimetex)) {
-            return $pathmimetex;
-        } else {
-            throw new \moodle_exception('mimetexnotexecutable', 'error');
-        }
-    }
-
-    $custom_commandpath = "$CFG->dirroot/filter/tex/mimetex";
-    if (file_exists($custom_commandpath)) {
-        if (is_executable($custom_commandpath)) {
-            return $custom_commandpath;
-        } else {
-            throw new \moodle_exception('mimetexnotexecutable', 'error');
-        }
-    }
-
-    switch (PHP_OS) {
-        case "Darwin":  return "$CFG->dirroot/filter/tex/mimetex.darwin";
-        case "FreeBSD": return "$CFG->dirroot/filter/tex/mimetex.freebsd";
-        case "Linux":
-            if (php_uname('m') == 'aarch64') {
-                return "$CFG->dirroot/filter/tex/mimetex.linux.aarch64";
-            }
-
-            return "$CFG->dirroot/filter/tex/mimetex.linux";
-    }
-
-    throw new \moodle_exception('mimetexisnotexist', 'error');
-}
-
 /**
  * Check the formula expression against the list of denied keywords.
  *
@@ -141,187 +91,6 @@ function filter_tex_sanitize_formula(string $texexp): string {
     return $texexp;
 }
 
-function filter_tex_get_cmd($pathname, $texexp) {
-    $texexp = filter_tex_sanitize_formula($texexp);
-    $texexp = escapeshellarg($texexp);
-    $executable = filter_tex_get_executable(false);
-
-    if (filter_tex_is_windows()) {
-        $executable = str_replace(' ', '^ ', $executable);
-        return "$executable ++ -e  \"$pathname\" -- $texexp";
-
-    } else {
-        return "\"$executable\" -e \"$pathname\" -- $texexp";
-    }
-}
-
-/**
- * Run mimetex command with a timeout on Windows.
- *
- * @param string $cmd            Command string to execute.
- * @param int    $timeoutmicros  Timeout in microseconds.
- * @return array Array with keys: code, timedout, status, errors.
- */
-function filter_tex_exec_windows(string $cmd, int $timeoutmicros): array {
-    // Create temporary file for stderr.
-    $temperr = tempnam(sys_get_temp_dir(), 'err_');
-
-    $descriptors = [
-        0 => ['file', 'NUL', 'r'], // STDIN.
-        1 => ['file', 'NUL', 'w'], // STDOUT.
-        2 => ['file', $temperr, 'w'], // STDERR.
-    ];
-
-    $process = proc_open($cmd, $descriptors, $pipes);
-    if (!is_resource($process)) {
-        unlink($temperr);
-        return [
-            'code' => 127, // Command not found.
-            'timedout' => false,
-            'status' => [],
-            'errors' => '',
-        ];
-    }
-
-    $timedout = false;
-    while ($timeoutmicros > 0) {
-        $start = microtime(true);
-        $status = proc_get_status($process);
-
-        if (!$status['running']) {
-            break;
-        }
-
-        $timeoutmicros -= (microtime(true) - $start) * 1000000;
-        if ($timeoutmicros <= 0) {
-            $timedout = true;
-            $pid = (int)($status['pid'] ?? 0);
-            exec('taskkill /F /T /PID ' . $pid . ' 2>NUL');
-            break;
-        }
-
-        usleep(50000); // Sleep for 50ms.
-    }
-
-    $status = proc_get_status($process);
-    $code = proc_close($process);
-
-    // Capture stderr from temp file.
-    $errors = file_get_contents($temperr);
-    unlink($temperr);
-
-    return [
-        'code' => $code,
-        'timedout' => $timedout,
-        'status' => $status,
-        'errors' => $errors,
-    ];
-}
-
-/**
- * Run mimetex command with a timeout on Unix-like systems.
- *
- * @param string $cmd            Command string to execute.
- * @param int    $timeoutmicros  Timeout in microseconds.
- * @return array Array with keys: code, timedout, status, errors.
- */
-function filter_tex_exec_unix(string $cmd, int $timeoutmicros): array {
-    // File descriptors passed to the process.
-    $descriptors = [
-        0 => ['pipe', 'r'], // STDIN.
-        1 => ['pipe', 'w'], // STDOUT.
-        2 => ['pipe', 'w'], // STDERR.
-    ];
-
-    $process = proc_open('exec ' . $cmd, $descriptors, $pipes);
-    if (!is_resource($process)) {
-        return [
-            'code' => 127, // Command not found.
-            'timedout' => false,
-            'status' => [],
-            'errors' => '',
-        ];
-    }
-
-    fclose($pipes[0]);
-    stream_set_blocking($pipes[1], false);
-    stream_set_blocking($pipes[2], false);
-
-    $errors = '';
-    $timedout = false;
-    while ($timeoutmicros > 0) {
-        $start = microtime(true);
-
-        $read = [$pipes[1], $pipes[2]];
-        $other = [];
-        stream_select($read, $other, $other, 0, (int)$timeoutmicros);
-
-        $status = proc_get_status($process);
-
-        stream_get_contents($pipes[1]); // Discard stdout to prevent pipe blocking.
-        $errors .= stream_get_contents($pipes[2]);
-
-        if (!$status['running']) {
-            break;
-        }
-
-        $timeoutmicros -= (microtime(true) - $start) * 1000000;
-        if ($timeoutmicros <= 0) {
-            $timedout = true;
-            proc_terminate($process);
-            break;
-        }
-
-        usleep(50000); // Sleep for 50ms.
-    }
-
-    // Read any remaining data from pipes.
-    stream_get_contents($pipes[1]); // Discard remaining stdout.
-    $errors .= stream_get_contents($pipes[2]);
-
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-
-    $status = proc_get_status($process);
-    $code = proc_close($process);
-
-    return [
-        'code' => $code,
-        'timedout' => $timedout,
-        'status' => $status,
-        'errors' => $errors,
-    ];
-}
-
-/**
- * Run mimetex command with a timeout.
- *
- * @param string   $cmd   Command string to execute.
- * @param int|null &$code Exit code (passed by reference, set by function).
- * @return void
- */
-function filter_tex_exec(string $cmd, ?int &$code): void {
-    $timeoutmicros = FILTER_TEX_MIMETEX_TIMEOUT * 1000000;
-
-    if (filter_tex_is_windows()) {
-        $result = filter_tex_exec_windows($cmd, $timeoutmicros);
-    } else {
-        $result = filter_tex_exec_unix($cmd, $timeoutmicros);
-    }
-
-    if ($result['errors']) {
-        debugging('filter_tex_exec errors: ' . $result['errors'], DEBUG_DEVELOPER);
-    }
-
-    if ($result['timedout']) {
-        $code = 124;
-    } else if ($result['code'] === -1 && isset($result['status']['exitcode']) && $result['status']['exitcode'] !== -1) {
-        $code = $result['status']['exitcode'];
-    } else {
-        $code = $result['code'];
-    }
-}
-
 /**
  * Purge all caches when settings changed.
  */
@@ -332,15 +101,11 @@ function filter_tex_updatedcallback($name) {
     if (file_exists("$CFG->dataroot/filter/tex")) {
         remove_dir("$CFG->dataroot/filter/tex");
     }
-    if (file_exists("$CFG->dataroot/filter/algebra")) {
-        remove_dir("$CFG->dataroot/filter/algebra");
-    }
     if (file_exists("$CFG->tempdir/latex")) {
         remove_dir("$CFG->tempdir/latex");
     }
 
     $DB->delete_records('cache_filters', array('filter'=>'tex'));
-    $DB->delete_records('cache_filters', array('filter'=>'algebra'));
 
     $pathlatex = get_config('filter_tex', 'pathlatex');
     if ($pathlatex === false) {
@@ -353,18 +118,23 @@ function filter_tex_updatedcallback($name) {
     $pathconvert = trim(get_config('filter_tex', 'pathconvert'), " '\"");
     $pathdvisvgm = trim(get_config('filter_tex', 'pathdvisvgm'), " '\"");
 
-    $supportedformats = array('gif');
+    $supportedformats = [];
     if ((is_file($pathlatex) && is_executable($pathlatex)) &&
             (is_file($pathdvips) && is_executable($pathdvips))) {
         if (is_file($pathconvert) && is_executable($pathconvert)) {
              $supportedformats[] = 'png';
+             $supportedformats[] = 'gif';
         }
         if (is_file($pathdvisvgm) && is_executable($pathdvisvgm)) {
              $supportedformats[] = 'svg';
         }
     }
+    // If no formats are supported, default to PNG (even if tools aren't available, admin can configure later).
+    if (empty($supportedformats)) {
+        $supportedformats[] = 'png';
+    }
     if (!in_array(get_config('filter_tex', 'convertformat'), $supportedformats)) {
-        set_config('convertformat', array_pop($supportedformats), 'filter_tex');
+        set_config('convertformat', $supportedformats[0], 'filter_tex');
     }
 
 }

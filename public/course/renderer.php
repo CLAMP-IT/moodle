@@ -140,20 +140,6 @@ class core_course_renderer extends plugin_renderer_base {
     }
 
     /**
-     * Renderers a category for use with course_category_tree
-     *
-     * @deprecated since 2.5
-     *
-     * @param array $category
-     * @param int $depth
-     * @return string
-     */
-    final protected function course_category_tree_category(stdClass $category, $depth=1) {
-        debugging('Function core_course_renderer::course_category_tree_category() is deprecated', DEBUG_DEVELOPER);
-        return '';
-    }
-
-    /**
      * Render a modchooser.
      *
      * @param renderable $modchooser The chooser.
@@ -323,17 +309,7 @@ class core_course_renderer extends plugin_renderer_base {
         if ($cm->uservisible) {
             return null;
         }
-        if (!$cm->visible || !$cm->availableinfo) {
-            return get_string('activityiscurrentlyhidden');
-        }
-
-        $altname = get_accesshide(' ' . $cm->modfullname);
-        $name = html_writer::empty_tag('img', ['src' => $cm->get_icon_url(),
-                'class' => 'activityicon', 'alt' => '']) .
-            html_writer::tag('span', ' '.$cm->get_formatted_name() . $altname, array('class' => 'instancename'));
-        $formattedinfo = \core_availability\info::format_info($cm->availableinfo, $cm->get_course());
-        return html_writer::div($name, 'activityinstance-error') .
-        html_writer::div($formattedinfo, 'availabilityinfo-error');
+        return get_string('activityiscurrentlyhidden');
     }
 
     /**
@@ -979,6 +955,7 @@ class core_course_renderer extends plugin_renderer_base {
      * Invoked from /course/index.php
      *
      * @param int|stdClass|core_course_category $category
+     * @return string
      */
     public function course_category($category) {
         global $CFG;
@@ -1180,8 +1157,6 @@ class core_course_renderer extends plugin_renderer_base {
      * @param int $tagid id of the tag
      * @param bool $exclusivemode if set to true it means that no other entities tagged with this tag
      *             are displayed on the page and the per-page limit may be bigger
-     * @param int $fromctx context id where the link was displayed, may be used by callbacks
-     *            to display items in the same context first
      * @param int $ctx context id where to search for records
      * @param bool $rec search in subcontexts as well
      * @param array $displayoptions
@@ -1448,14 +1423,6 @@ class core_course_renderer extends plugin_renderer_base {
     }
 
     /**
-     * @deprecated since Moodle 4.3 MDL-78744
-     */
-    #[\core\attribute\deprecated(null, since: '4.3', mdl: 'MDL-78744', final: true)]
-    public function render_activity_information() {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
-    }
-
-    /**
      * Renders the activity navigation.
      *
      * Defer to template.
@@ -1471,7 +1438,7 @@ class core_course_renderer extends plugin_renderer_base {
     /**
      * Display waiting information about backup size during uploading backup process
      * @param object $backupfile the backup stored_file
-     * @return $html string
+     * @return string html
      */
     public function sendingbackupinfo($backupfile) {
         $sizeinfo = new stdClass();

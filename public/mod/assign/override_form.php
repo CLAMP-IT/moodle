@@ -286,6 +286,16 @@ class assign_override_form extends moodleform {
             $mform->setDefault('timelimit', $assigninstance->timelimit);
         }
 
+        // Reason for override.
+        $editoroptions = [
+            'maxfiles' => 0,
+            'noclean' => false,
+            'context' => $this->context,
+        ];
+        $mform->addElement('editor', 'reason_editor', get_string('overridereason', 'assign'), null, $editoroptions);
+        $mform->setType('reason_editor', PARAM_RAW);
+        $mform->addHelpButton('reason_editor', 'overridereason', 'assign');
+
         // Submit buttons.
         $mform->addElement('submit', 'resetbutton',
                 get_string('reverttodefaults', 'assign'));

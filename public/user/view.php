@@ -190,6 +190,13 @@ echo '<div class="userprofile">';
 $headerinfo = array('heading' => fullname($user), 'user' => $user, 'usercontext' => $usercontext);
 echo $OUTPUT->context_header($headerinfo, 2);
 
+if ($user->suspended) {
+    echo $OUTPUT->notification(
+        html_writer::tag('h4', get_string('suspended', 'auth')) .
+        get_string('suspended_help', 'auth'),
+        \core\output\notification::NOTIFY_WARNING
+    );
+}
 if ($user->deleted) {
     echo $OUTPUT->heading(get_string('userdeleted'));
     if (!has_capability('moodle/user:update', $coursecontext)) {

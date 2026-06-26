@@ -263,6 +263,7 @@ $string['lastattempt'] = 'Last completed attempt';
 $string['lastattemptlock'] = 'Lock after final attempt';
 $string['lastattemptlock_help'] = 'If enabled, a student is prevented from launching the SCORM player after using up all their allocated attempts.';
 $string['lastattemptlockdesc'] = 'If enabled, a student is prevented from launching the SCORM player after using up all their allocated attempts.';
+$string['leavepage'] = 'Leave page';
 $string['location'] = 'Show the location bar';
 $string['max'] = 'Max score';
 $string['maximumattempts'] = 'Number of attempts';
@@ -277,15 +278,16 @@ $string['missingparam'] = 'A required parameter is missing or wrong';
 $string['missing_tag'] = 'Missing tag {$a->tag}';
 $string['mode'] = 'Mode';
 $string['modulename'] = 'SCORM package';
-$string['modulename_help'] = 'A SCORM package is a collection of files which are packaged according to an agreed standard for learning objects. The SCORM activity module enables SCORM or AICC packages to be uploaded as a zip file and added to a course.
+$string['modulename_help'] = '###### Key features
+* Add SCORM content packages as zip files
+* Track student progress, completion, and grades
 
-Content is usually displayed over several pages, with navigation between the pages. There are various options for displaying content in a pop-up window, with a table of contents, with navigation buttons etc. SCORM activities generally include questions, with grades being recorded in the gradebook.
-
-SCORM activities may be used
-
-* For presenting multimedia content and animations
-* As an assessment tool';
+###### Ways to use it
+* Import a commercial e-learning SCORM module and track student performance
+* Provide an interactive tutorial and track whether students complete it
+* Deliver a simulation packaged in SCORM format';
 $string['modulename_link'] = 'mod/scorm/view';
+$string['modulename_summary'] = 'Upload and display existing Sharable Content Object Reference Model (SCORM) content. SCORM is commonly used with third-party courseware.';
 $string['modulenameplural'] = 'SCORM packages';
 $string['nav'] = 'Show Navigation';
 $string['nav_help'] = 'This setting specifies whether to show or hide the navigation buttons and their position.
@@ -298,8 +300,8 @@ There are 3 options:
 $string['navdesc'] = 'This setting specifies whether to show or hide navigation buttons and their position.';
 $string['navpositionleft'] = 'Position of navigation buttons from left in pixels.';
 $string['navpositiontop'] = 'Position of navigation buttons from top in pixels.';
-$string['networkdropped'] = 'The SCORM player has determined that your Internet connection is unreliable or has been interrupted. If you continue in this SCORM activity, your progress may not be saved.<br />
-You should exit the activity now, and return when you have a dependable Internet connection.';
+$string['networkdropped'] = 'It looks like you have an unstable internet connection or your session has timed out. Your progress may not be saved. Please exit and relaunch this activity.';
+$string['networkdroppedmobile'] = 'It looks like you have an unstable internet connection or your session has timed out. Your progress may not be saved. Please exit and relaunch this activity. You may wish to return to this activity in the mobile app for a more stable connection.';
 $string['newattempt'] = 'Start a new attempt';
 $string['next'] = 'Continue';
 $string['noactivity'] = 'Nothing to report';
@@ -436,6 +438,7 @@ $string['typeexternal'] = 'External SCORM manifest';
 $string['typelocal'] = 'Uploaded package';
 $string['typelocalsync'] = 'Downloaded package';
 $string['undercontent'] = 'Under content';
+$string['unstablenetwork'] = 'Unstable network';
 $string['unziperror'] = 'An error occurs during package unzip';
 $string['updatefreq'] = 'Auto-update frequency';
 $string['updatefreq_error'] = 'Auto-update frequency can only be set when the package file is hosted externally';

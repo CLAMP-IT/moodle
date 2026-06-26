@@ -107,6 +107,8 @@ class forum {
     private $duedate;
     /** @var int $cutoffdate Timestamp after which forum posts will no longer be accepted */
     private $cutoffdate;
+    /** @var bool $showimmediately Whether to show replies in a qanda forum immediately */
+    private bool $showimmediately;
     /** @var int $anonymous The level of anonymity allowed in this forum */
     private $anonymous;
 
@@ -146,7 +148,9 @@ class forum {
      * @param int $lockdiscussionafter Timestamp after which discussions should be locked
      * @param int $duedate Timestamp that represents the due date for forum posts
      * @param int $cutoffdate Timestamp after which forum posts will no longer be accepted
+     * @param bool $showimmediately Whether to show replies in a qanda forum immediately
      * @param int $anonymous The level of anonymity allowed in this forum
+
      */
     public function __construct(
         context $context,
@@ -182,6 +186,7 @@ class forum {
         int $lockdiscussionafter,
         int $duedate,
         int $cutoffdate,
+        bool $showimmediately,
         int $anonymous
     ) {
         $this->context = $context;
@@ -217,6 +222,7 @@ class forum {
         $this->lockdiscussionafter = $lockdiscussionafter;
         $this->duedate = $duedate;
         $this->cutoffdate = $cutoffdate;
+        $this->showimmediately = $showimmediately;
         $this->anonymous = $anonymous;
     }
 
@@ -682,5 +688,14 @@ class forum {
         }
 
         return $this->is_discussion_time_locked($discussion);
+    }
+
+    /**
+     * Get the value of showimmediately
+     *
+     * @return bool
+     */
+    public function get_showimmediately(): bool {
+        return $this->showimmediately;
     }
 }

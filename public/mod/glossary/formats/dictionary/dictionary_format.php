@@ -28,9 +28,8 @@ function glossary_show_entry_dictionary(
 ) {
     global $OUTPUT;
 
-    echo '<table class="glossarypost dictionary table-reboot" cellspacing="0" role="presentation">';
-    echo '<tr valign="top">';
-    echo '<td class="entry">';
+    echo '<div class="glossarypost dictionary">';
+    echo '<div class="entry">';
     glossary_print_entry_approval($cm, $entry, $mode);
     echo '<div class="concept">';
     glossary_print_entry_concept($entry, headinglevel: $conceptheadinglevel);
@@ -40,12 +39,11 @@ function glossary_show_entry_dictionary(
     if (core_tag_tag::is_enabled('mod_glossary', 'glossary_entries')) {
         echo $OUTPUT->tag_list(core_tag_tag::get_item_tags('mod_glossary', 'glossary_entries', $entry->id), null, 'glossary-tags');
     }
-    echo '</td></tr>';
-    echo '<tr valign="top"><td class="entrylowersection">';
+    echo '</div>';
+    echo '<div class="entrylowersection">';
     glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mode, $hook, $printicons, $aliases);
-    echo '</td>';
-    echo '</tr>';
-    echo "</table>\n";
+    echo '</div>';
+    echo "</div>";
 }
 
 /**

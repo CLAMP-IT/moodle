@@ -1385,22 +1385,24 @@ function glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mo
         $icons   = glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode, $hook,'html');
     }
     if ($aliases || $icons || !empty($entry->rating)) {
-        echo '<table class="table-reboot" role="presentation">';
         if ( $aliases ) {
             $id = "keyword-{$entry->id}";
-            echo '<tr valign="top"><td class="aliases hstack gap-2">' .
-                '<label for="' . $id . '">' . get_string('aliases', 'glossary') . ': </label>' .
-                $aliases . '</td></tr>';
+            $label = html_writer::label(get_string('aliases', 'glossary') . ': ', $id, attributes: [
+                'class' => 'col-auto col-form-label',
+            ]);
+            $select = html_writer::div($aliases, 'col-auto ps-0');
+            echo html_writer::div($label . $select, 'row mb-3 aliases pt-1');
         }
         if ($icons) {
-            echo '<tr valign="top"><td class="icons">'.$icons.'</td></tr>';
+            echo html_writer::div($icons, 'text-end');
         }
         if (!empty($entry->rating)) {
-            echo '<tr valign="top"><td class="ratings pt-3">';
+            echo html_writer::start_tag('div', [
+                'class' => 'ratings pt-3',
+            ]);
             glossary_print_entry_ratings($course, $entry);
-            echo '</td></tr>';
+            echo html_writer::end_tag('div');
         }
-        echo '</table>';
 
         if ($printseparator) {
             echo "<hr>\n";
@@ -1434,30 +1436,40 @@ function glossary_print_entry_attachment($entry, $cm, $format = null, $unused1 =
 }
 
 /**
- * @global object
+ * Returns the HTML for the approval button for the entries pending approval.
+ *
+ * @param stdClass $entry The glossary entry record.
+ * @param string $mode The display mode.
+ * @param string $align The alignment of the approval button.
+ */
+function glossary_get_entry_approval(stdClass $entry, string $mode, string $align = "right"): string {
+    global $OUTPUT;
+
+    if ($mode == 'approval' && !$entry->approved) {
+        $actionicon = $OUTPUT->action_icon(
+            new moodle_url('approve.php', ['eid' => $entry->id, 'mode' => $mode, 'sesskey' => sesskey()]),
+            new pix_icon('t/approve', get_string('approve', 'glossary'), '', ['class' => 'iconsmall', 'align' => $align])
+        );
+        $alignclass = '';
+        if ($align === 'right') {
+            $alignclass = 'text-end';
+        }
+        return html_writer::div($actionicon, $alignclass);
+    }
+    return '';
+}
+
+/**
+ * Prints the approval button for the entries pending approval.
+ *
  * @param object $cm
  * @param object $entry
  * @param string $mode
  * @param string $align
- * @param bool $insidetable
+ * @param bool $insidetable Deprecated since Moodle 5.2. The approval button should not be rendered inside a layout table.
  */
-function  glossary_print_entry_approval($cm, $entry, $mode, $align="right", $insidetable=true) {
-    global $CFG, $OUTPUT;
-
-    if ($mode == 'approval' and !$entry->approved) {
-        if ($insidetable) {
-            echo '<table class="glossaryapproval table-reboot" align="' . $align . '" role="presentation">';
-            echo '<tr><td align="' . $align . '">';
-        }
-        echo $OUTPUT->action_icon(
-            new moodle_url('approve.php', array('eid' => $entry->id, 'mode' => $mode, 'sesskey' => sesskey())),
-            new pix_icon('t/approve', get_string('approve','glossary'), '',
-                array('class' => 'iconsmall', 'align' => $align))
-        );
-        if ($insidetable) {
-            echo '</td></tr></table>';
-        }
-    }
+function glossary_print_entry_approval($cm, $entry, $mode, $align = "right", $insidetable = true) {
+    echo glossary_get_entry_approval($entry, $mode, $align);
 }
 
 /**
@@ -2255,7 +2267,7 @@ function glossary_print_dynaentry($courseid, $entries, $displayformat = -1) {
             if (file_exists($formatfile)) {
                 include_once($formatfile);
                 if (function_exists($functionname)) {
-                    $functionname($course, $cm, $glossary, $entry,'','','','');
+                    $functionname($course, $cm, $glossary, $entry, '', '', 1, '');
                 }
             }
         }

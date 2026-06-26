@@ -1,5 +1,7 @@
 <?php
 
+use mod_glossary\output\renderer;
+
 /**
  * Displays a glossary entry in FAQ format.
  *
@@ -26,46 +28,35 @@ function glossary_show_entry_faq(
     $aliases = true,
     $conceptheadinglevel = 3,
 ) {
-    global $USER, $OUTPUT;
-    if ( $entry ) {
+    global $OUTPUT, $PAGE;
 
-        echo '<table class="glossarypost faq table-reboot" cellspacing="0" role="presentation">';
+    if ($entry) {
+        echo '<div class="glossarypost faq">';
 
-        echo '<tr valign="top">';
-        echo '<th class="entryheader">';
+        echo html_writer::tag('strong', get_string('question', 'glossary') . ':', ['class' => 'fw-bold']);
+        /** @var renderer $renderer */
+        $renderer = $PAGE->get_renderer('mod_glossary');
+        echo $renderer->concept_entry_header($entry, $mode, $conceptheadinglevel, showlastedited: true);
+
         $entry->course = $course->id;
 
-        echo '<div class="concept">' . get_string('question','glossary') . ': ';
-        glossary_print_entry_concept($entry, headinglevel: $conceptheadinglevel);
-        echo '</div>';
-
-        echo '<span class="time">('.get_string('lastedited').': '.
-             userdate($entry->timemodified).')</span>';
-        echo '</th>';
-        echo '<td class="entryattachment">';
-
-        glossary_print_entry_approval($cm, $entry, $mode);
-        echo '</td>';
-
-        echo '</tr>';
-
-        echo "\n<tr>";
-        echo '<td colspan="2" class="entry">';
-        echo '<b>'.get_string('answer','glossary').':</b> ';
-
+        echo '<div class="entry mt-1">';
+        echo html_writer::tag('strong', get_string('answer', 'glossary') . ':');
         glossary_print_entry_definition($entry, $glossary, $cm);
         glossary_print_entry_attachment($entry, $cm, 'html');
 
         if (core_tag_tag::is_enabled('mod_glossary', 'glossary_entries')) {
             echo $OUTPUT->tag_list(
-                core_tag_tag::get_item_tags('mod_glossary', 'glossary_entries', $entry->id), null, 'glossary-tags');
+                core_tag_tag::get_item_tags('mod_glossary', 'glossary_entries', $entry->id),
+                null,
+                'glossary-tags'
+            );
         }
 
-        echo '</td></tr>';
-        echo '<tr valign="top"><td colspan="3" class="entrylowersection">';
+        echo '</div>';
+        echo '<div class="entrylowersection">';
         glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mode, $hook, $printicons, $aliases);
-        echo '</td></tr></table>';
-
+        echo '</div></div>';
     } else {
         echo html_writer::div(get_string('noentry', 'glossary'), 'text-center');
     }
@@ -102,3 +93,5 @@ function glossary_print_entry_faq(
     // Call to view function (without icons, ratings and aliases) and return its result.
     glossary_show_entry_faq($course, $cm, $glossary, $entry, $mode, $hook, false, false, $conceptheadinglevel);
 }
+
+

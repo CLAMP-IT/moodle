@@ -48,7 +48,7 @@ abstract class MaterialsProviderV3 implements MaterialsProviderInterfaceV3
 
     /**
      * @param string $keySize Length of a cipher key in bits for generating a
-     *                       random content encryption key (CEK).
+     *                        random content encryption key (CEK).
      * @param array $context Context map needed for key encryption
      * @param array $options Additional options to be used in CEK generation
      *
@@ -62,7 +62,7 @@ abstract class MaterialsProviderV3 implements MaterialsProviderInterfaceV3
 
     /**
      * @param string $openSslName Cipher OpenSSL name to use for generating
-     *                           an initialization vector.
+     *                            an initialization vector.
      *
      * @return string
      */

@@ -72,6 +72,7 @@ $string['coursecontentnotifupdate'] = '{$a->coursename} content change';
 $string['coursecontentnotifupdatebody'] = '<p>{$a->moduletypename} <a href="{$a->link}">{$a->modulename}</a> has been changed in the course <a href="{$a->courselink}">{$a->coursename}</a>.</p><p><a href="{$a->notificationpreferenceslink}">Change your notification preferences</a></p>';
 $string['coursecontentnotification_help'] = 'Tick the box to notify course participants about this new or changed activity or resource. Only users who can access the activity or resource will receive the notification.';
 $string['coursecount'] = 'Course count';
+$string['coursemodule'] = 'Course module';
 $string['coursenotyetstarted'] = 'The course has not yet started';
 $string['coursenotyetfinished'] = 'The course has not yet finished';
 $string['courseparticipants'] = 'Course participants';
@@ -94,6 +95,7 @@ $string['downloadcontent_help'] = 'Should this activity or resource be included 
 
 The setting has no effect on mobile app content download for offline usage.';
 $string['enabledownloadcoursecontent'] = 'Enable download course content';
+$string['error:sitehomeisdisabled'] = 'Home has been disabled by an administrator.';
 $string['errorendbeforestart'] = 'The end date ({$a}) is before the course start date.';
 $string['favourite'] = 'Starred course';
 $string['filterbothactive'] = 'First ({$a->first}) Last ({$a->last})';
@@ -152,12 +154,20 @@ $string['recommendcheckbox'] = 'Recommend activity: {$a}';
 $string['recommended_help'] = 'Activities recommended by your organisation.';
 $string['relativedatessubmissionduedateafter'] = '{$a->datediffstr} after course start';
 $string['relativedatessubmissionduedatebefore'] = '{$a->datediffstr} before course start';
+$string['resetcomplete'] = 'Reset complete.';
+$string['resetcoursetask'] = 'This course is being reset. You do not need to stay on this page.';
+$string['resetinprogress'] = 'A reset is already in progress for this course.';
+$string['resetinprogressedit'] = 'There is a pending reset requested for this course. Please do not edit the course until this is complete.';
+$string['resettimeout'] = 'Resetting course {$a} may take a long time. Ask your site administrator to enable asynchronous course resets in Site administration > Advanced features and try again.';
+$string['resettingcourse'] = 'Resetting course ID {$a}';
+$string['resettingcoursefound'] = 'Found course {$a}. Starting reset.';
+$string['resettingcoursenotfound'] = 'Course with ID {$a} not found. It may have been deleted. Skipping reset.';
+$string['restrictedtitle'] = 'Not available: {$a}';
 $string['searchactivitiesbyname'] = 'Search for activities by name';
 $string['searchresults'] = 'Search results: {$a}';
 $string['sectionlink'] = 'Permalink';
 $string['showstartedcoursestask'] = 'Show courses on start date';
 $string['submitsearch'] = 'Submit search';
-$string['subsectiondescriptionwarning'] = '<strong>Subsection descriptions will be discontinued in Moodle 5.2</strong>. To add a description, use a <strong>Text and media area</strong> instead.';
 $string['supports'] = 'This activity supports';
 $string['studentsatriskincourse'] = 'Students at risk in {$a} course';
 $string['studentsatriskinfomessage'] = 'Hi {$a->userfirstname},

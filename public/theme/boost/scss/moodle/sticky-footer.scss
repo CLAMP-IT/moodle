@@ -48,6 +48,12 @@ body {
             }
         }
     }
+    fieldset div {
+        justify-content: flex-end;
+    }
+    [data-groupname="buttonar"] {
+        width: 100%;
+    }
 }
 
 .hasstickyfooter .stickyfooter {

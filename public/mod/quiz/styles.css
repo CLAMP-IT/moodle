@@ -542,6 +542,8 @@ table.quizreviewsummary td.cell {
     text-align: center;
     margin: 0.1em 0.5em;
     display: inline-block;
+    background-color: var(--bs-secondary-bg);
+    min-width: 2em;
 }
 #page-mod-quiz-edit li.section .slotnumber.shuffled {
     display: none;

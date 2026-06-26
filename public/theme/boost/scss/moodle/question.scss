@@ -164,6 +164,7 @@ table.question-bank-table {
         background-color: $table-striped-bg;
     }
 
+
     &.generaltable > tbody > tr.highlight.firstrow td {
         border-top: map-get($border-widths, 3) solid $info;
     }

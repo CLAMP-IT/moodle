@@ -112,7 +112,7 @@ class MetadataEnvelope implements ArrayAccess, IteratorAggregate, JsonSerializab
     {
         return $this->data;
     }
-
+    
     public static function isV2Envelope(MetadataEnvelope $envelope): bool
     {
         if (!isset($envelope[MetadataEnvelope::CONTENT_KEY_V2_HEADER])
@@ -126,7 +126,7 @@ class MetadataEnvelope implements ArrayAccess, IteratorAggregate, JsonSerializab
         }
         return true;
     }
-
+    
     public static function isV1Envelope(MetadataEnvelope $envelope): bool
     {
         if (!isset($envelope[MetadataEnvelope::CONTENT_KEY_V2_HEADER])
@@ -177,7 +177,7 @@ class MetadataEnvelope implements ArrayAccess, IteratorAggregate, JsonSerializab
         ) {
             return false;
         }
-
+        
         return true;
     }
 

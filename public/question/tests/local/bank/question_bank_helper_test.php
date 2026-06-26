@@ -16,8 +16,12 @@
 
 namespace core_question;
 
+use core\context\course;
+use core\context\module;
 use core\exception\coding_exception;
+use core_question\local\bank\formatted_bank;
 use core_question\local\bank\question_bank_helper;
+use stdClass;
 
 /**
  * question bank helper class tests.
@@ -127,7 +131,8 @@ final class question_bank_helper_test extends \advanced_testcase {
         );
 
         $count = 0;
-        foreach ($sharedbanks as $courseinstance) {
+        foreach ($sharedbanks as $sharedbank) {
+            $courseinstance = $sharedbank->get_formatted();
             // Must all be mod_qbanks.
             $this->assertEquals('qbank', $courseinstance->cminfo->modname);
             // Must have 2 categories each bank.
@@ -148,7 +153,8 @@ final class question_bank_helper_test extends \advanced_testcase {
         );
 
         $count = 0;
-        foreach ($privatebanks as $courseinstance) {
+        foreach ($privatebanks as $privatebank) {
+            $courseinstance = $privatebank->get_formatted();
             // Must all be mod_quiz.
             $this->assertEquals('quiz', $courseinstance->cminfo->modname);
             // Must have 1 category in each bank.
@@ -239,7 +245,9 @@ final class question_bank_helper_test extends \advanced_testcase {
         $this->assertCount(22, $allsharedbanks);
 
         // Searching for "2", we get the 4 banks with "2" in the name.
-        $twobanks = question_bank_helper::get_activity_instances_with_shareable_questions(search: '2');
+        $twobanks = formatted_bank::format_banks(
+            question_bank_helper::get_activity_instances_with_shareable_questions(search: '2'),
+        );
         $this->assertCount(4, $twobanks);
         $this->assertEquals(
             [$sharedmods[2]->cmid, $sharedmods[12]->cmid, $sharedmods[20]->cmid, $sharedmods[21]->cmid],
@@ -247,12 +255,16 @@ final class question_bank_helper_test extends \advanced_testcase {
         );
 
         // Searching for "Shared bank" with no limit, we should get all 21, but not "Another bank".
-        $sharedbanks = question_bank_helper::get_activity_instances_with_shareable_questions(search: 'Shared bank');
+        $sharedbanks = formatted_bank::format_banks(
+            question_bank_helper::get_activity_instances_with_shareable_questions(search: 'Shared bank'),
+        );
         $this->assertCount(21, $sharedbanks);
         $this->assertEmpty(array_filter($sharedbanks, fn($bank) => in_array($bank->name, ['Another bank'])));
 
         // Searching for "Shared bank" with a limit of 20, we should get all except number 21 and "Another bank".
-        $limitedbanks = question_bank_helper::get_activity_instances_with_shareable_questions(search: 'Shared bank', limit: 20);
+        $limitedbanks = formatted_bank::format_banks(
+            question_bank_helper::get_activity_instances_with_shareable_questions(search: 'Shared bank', limit: 20),
+        );
         $this->assertCount(20, $limitedbanks);
         $this->assertEmpty(array_filter($limitedbanks, fn($bank) => in_array($bank->name, ['Shared bank 21', 'Another bank'])));
     }
@@ -413,14 +425,18 @@ final class question_bank_helper_test extends \advanced_testcase {
 
         $viewedorder = array_reverse($banks);
         // Check that the courseid filter works.
-        $recentlyviewed = question_bank_helper::get_recently_used_open_banks($user->id, $course1->id);
+        $recentlyviewed = formatted_bank::format_banks(
+            question_bank_helper::get_recently_used_open_banks($user->id, $course1->id),
+        );
         $this->assertCount(3, $recentlyviewed);
         // We should have the viewed banks in course 2.
         $courseviewed = array_slice($banks, 3, 3);
         $this->assertEqualsCanonicalizing(array_column($recentlyviewed, 'modid'), array_column($courseviewed, 'cmid'));
 
         // Check that the capability filter works.
-        $recentlyviewed = question_bank_helper::get_recently_used_open_banks($user->id, havingcap: ['moodle/question:useall']);
+        $recentlyviewed = formatted_bank::format_banks(
+            question_bank_helper::get_recently_used_open_banks($user->id, havingcap: ['moodle/question:useall']),
+        );
         $this->assertCount(2, $recentlyviewed);
         // We should have the 2 most recently viewed banks in course 1.
         $capabilityviewed = array_slice($banks, 1, 2);
@@ -431,7 +447,7 @@ final class question_bank_helper_test extends \advanced_testcase {
         // We only keep a record of 5 maximum.
         $this->assertCount(5, $recentlyviewed);
         foreach ($recentlyviewed as $order => $record) {
-            $this->assertEquals($viewedorder[$order]->cmid, $record->modid);
+            $this->assertEquals($viewedorder[$order]->cmid, $record->cminfo->id);
         }
 
         // Now if we view one of those again it should get bumped to the front of the list.
@@ -444,12 +460,12 @@ final class question_bank_helper_test extends \advanced_testcase {
         // We should still have 5 maximum.
         $this->assertCount(5, $recentlyviewed);
         // The recently viewed on got bumped to the front.
-        $this->assertEquals($banks[2]->cmid, $recentlyviewed[0]->modid);
+        $this->assertEquals($banks[2]->cmid, $recentlyviewed[0]->cminfo->id);
         // The others got sorted accordingly behind it.
-        $this->assertEquals($banks[5]->cmid, $recentlyviewed[1]->modid);
-        $this->assertEquals($banks[4]->cmid, $recentlyviewed[2]->modid);
-        $this->assertEquals($banks[3]->cmid, $recentlyviewed[3]->modid);
-        $this->assertEquals($banks[1]->cmid, $recentlyviewed[4]->modid);
+        $this->assertEquals($banks[5]->cmid, $recentlyviewed[1]->cminfo->id);
+        $this->assertEquals($banks[4]->cmid, $recentlyviewed[2]->cminfo->id);
+        $this->assertEquals($banks[3]->cmid, $recentlyviewed[3]->cminfo->id);
+        $this->assertEquals($banks[1]->cmid, $recentlyviewed[4]->cminfo->id);
 
         // Now create a quiz and trigger the bank view of it.
         $quiz = self::getDataGenerator()->get_plugin_generator('mod_quiz')->create_instance(['course' => $course1]);
@@ -463,19 +479,19 @@ final class question_bank_helper_test extends \advanced_testcase {
 
         // Make sure that we only store bank views for plugins that support FEATURE_PUBLISHES_QUESTIONS.
         foreach ($recentlyviewed as $record) {
-            $this->assertNotEquals($quiz->cmid, $record->modid);
+            $this->assertNotEquals($quiz->cmid, $record->cminfo->id);
         }
 
         // Now delete one of the viewed bank modules and get the records again.
-        course_delete_module($banks[2]->cmid);
+        \core_courseformat\formatactions::cm($course1->id)->delete($banks[2]->cmid);
         $recentlyviewed = question_bank_helper::get_recently_used_open_banks($user->id);
         $this->assertCount(4, $recentlyviewed);
 
         // Check the order was retained.
-        $this->assertEquals($banks[5]->cmid, $recentlyviewed[0]->modid);
-        $this->assertEquals($banks[4]->cmid, $recentlyviewed[1]->modid);
-        $this->assertEquals($banks[3]->cmid, $recentlyviewed[2]->modid);
-        $this->assertEquals($banks[1]->cmid, $recentlyviewed[3]->modid);
+        $this->assertEquals($banks[5]->cmid, $recentlyviewed[0]->cminfo->id);
+        $this->assertEquals($banks[4]->cmid, $recentlyviewed[1]->cminfo->id);
+        $this->assertEquals($banks[3]->cmid, $recentlyviewed[2]->cminfo->id);
+        $this->assertEquals($banks[1]->cmid, $recentlyviewed[3]->cminfo->id);
     }
 
     /**
@@ -640,5 +656,242 @@ final class question_bank_helper_test extends \advanced_testcase {
                     "Those are probably the two most commonly used modes of behaviour. ",
             ],
         ];
+    }
+
+    /**
+     * Create 6 modules with question banks, shared and private, on a course with a teacher.
+     *
+     * @return array
+     */
+    protected function create_banks(): array {
+        $this->resetAfterTest();
+
+        $generator = $this->getDataGenerator();
+        $user = $generator->create_user();
+        $course = $generator->create_course();
+        $generator->enrol_user($user->id, $course->id, 'editingteacher');
+        $sharedbanks = [];
+        $privatebanks = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $sharedbanks[] = $generator->create_module('qbank', ['course' => $course->id]);
+            $privatebanks[] = $generator->create_module('quiz', ['course' => $course->id]);
+        }
+        return [$user, $course, $sharedbanks, $privatebanks];
+    }
+
+    /**
+     * Assert the course module for a bank activity is in the provided list of banks.
+     *
+     * @param stdClass $expectedbank The question bank activity, with a cmid property.
+     * @param formatted_bank[] $actualbanks The list of banks to check against.
+     * @param bool|null $current If set, also check the bank's `current` property matches this value.
+     * @param bool|null $recent If set, also check the bank's `recent` property matches this value.
+     * @param int $count How many times should the bank appear in the list (0 if it shouldn't)?
+     */
+    protected function assert_cm_in_list(
+        stdClass $expectedbank,
+        array $actualbanks,
+        ?bool $current = null,
+        ?bool $recent = null,
+        int $count = 1,
+    ): void {
+        $matchingbanks = array_filter(
+            $actualbanks,
+            function ($bank) use ($expectedbank, $current, $recent) {
+                $match = $bank->cminfo->id == $expectedbank->cmid;
+                if (!is_null($current)) {
+                    $match = $match && $bank->current == $current;
+                }
+                if (!is_null($recent)) {
+                    $match = $match && $bank->recent == $recent;
+                }
+                return $match;
+            },
+        );
+        $this->assertCount($count, $matchingbanks);
+    }
+
+    /**
+     * Assert the course module for a bank activity is not in the provided list of banks.
+     *
+     * Convenience function for more readable tests, this calls {@see assert_cm_in_list} with a count of 0.
+     *
+     * @param stdClass $expectedbank The question bank activity, with a cmid property.
+     * @param formatted_bank[] $actualbanks The list of banks to check against.
+     * @param bool|null $current If set, also check the bank's `current` property matches this value.
+     * @param bool|null $recent If set, also check the bank's `recent` property matches this value.
+     */
+    protected function assert_cm_not_in_list(
+        stdClass $expectedbank,
+        array $actualbanks,
+        ?bool $current = null,
+        ?bool $recent = null,
+    ): void {
+        $this->assert_cm_in_list($expectedbank, $actualbanks, $current, $recent, 0);
+    }
+
+    /**
+     * Return all shared and private banks on the course.
+     */
+    public function test_get_banks_for_course(): void {
+        [$user, $course, $sharedbanks, $privatebanks] = $this->create_banks();
+        $this->setUser($user);
+        $banks = question_bank_helper::get_banks_for_course(
+            course::instance($course->id),
+            includeprivate: true,
+        );
+        $this->assertCount(6, $banks);
+        foreach ($sharedbanks as $sharedbank) {
+            $this->assert_cm_in_list($sharedbank, $banks);
+        }
+        foreach ($privatebanks as $privatebank) {
+            $this->assert_cm_in_list($privatebank, $banks);
+        }
+    }
+
+    /**
+     * Don't return banks from another course.
+     */
+    public function test_get_banks_for_course_other_course(): void {
+        [$user, $course] = $this->create_banks();
+        $generator = $this->getDataGenerator();
+        $course2 = $generator->create_course();
+        $generator->enrol_user($user->id, $course2->id, 'editingteacher');
+        $course2bank = $generator->create_module('qbank', ['course' => $course2->id]);
+        $course2quiz = $generator->create_module('quiz', ['course' => $course2->id]);
+        $this->setUser($user);
+        $banks = question_bank_helper::get_banks_for_course(
+            course::instance($course->id),
+            includeprivate: true,
+        );
+        $this->assertCount(6, $banks);
+        $this->assert_cm_not_in_list($course2bank, $banks);
+        $this->assert_cm_not_in_list($course2quiz, $banks);
+    }
+
+    /**
+     * Return just the shared banks.
+     */
+    public function test_get_banks_for_course_shared(): void {
+        [$user, $course, $sharedbanks, $privatebanks] = $this->create_banks();
+        $this->setUser($user);
+        $banks = question_bank_helper::get_banks_for_course(course::instance($course->id));
+        $this->assertCount(3, $banks);
+        foreach ($sharedbanks as $sharedbank) {
+            $this->assert_cm_in_list($sharedbank, $banks);
+        }
+        foreach ($privatebanks as $privatebank) {
+            $this->assert_cm_not_in_list($privatebank, $banks);
+        }
+    }
+
+    /**
+     * Return just the private banks.
+     */
+    public function test_get_banks_for_course_private(): void {
+        [$user, $course, $sharedbanks, $privatebanks] = $this->create_banks();
+        $this->setUser($user);
+        $banks = question_bank_helper::get_banks_for_course(
+            course::instance($course->id),
+            includeshared: false,
+            includeprivate: true,
+        );
+        $this->assertCount(3, $banks);
+        foreach ($sharedbanks as $sharedbank) {
+            $this->assert_cm_not_in_list($sharedbank, $banks);
+        }
+        foreach ($privatebanks as $privatebank) {
+            $this->assert_cm_in_list($privatebank, $banks);
+        }
+    }
+
+    /**
+     * When passing a current module and getting private banks, we only get the private bank for the current module.
+     */
+    public function test_get_banks_for_course_current(): void {
+        [$user, $course, $sharedbanks, $privatebanks] = $this->create_banks();
+        $this->setUser($user);
+        $currentquiz = reset($privatebanks);
+        $banks = question_bank_helper::get_banks_for_course(
+            course::instance($course->id),
+            module::instance($currentquiz->cmid),
+            includeprivate: true,
+        );
+        $this->assertCount(4, $banks);
+        foreach ($sharedbanks as $sharedbank) {
+            $this->assert_cm_in_list($sharedbank, $banks);
+        }
+        foreach ($privatebanks as $privatebank) {
+            if ($privatebank == $currentquiz) {
+                $this->assert_cm_in_list($privatebank, $banks, current: true);
+            } else {
+                $this->assert_cm_not_in_list($privatebank, $banks);
+            }
+        }
+    }
+
+    /**
+     * Recent banks get an additional entry with the recent flag set.
+     */
+    public function test_get_banks_for_course_recent(): void {
+        [$user, $course, $sharedbanks] = $this->create_banks();
+        $this->setUser($user);
+        $recentbank = reset($sharedbanks);
+        question_bank_helper::add_bank_context_to_recently_viewed(module::instance($recentbank->cmid));
+        $banks = question_bank_helper::get_banks_for_course(
+            course::instance($course->id),
+            includerecent: true,
+        );
+        $this->assertCount(4, $banks);
+        foreach ($sharedbanks as $sharedbank) {
+            if ($sharedbank->cmid == $recentbank->cmid) {
+                $this->assert_cm_in_list($sharedbank, $banks, recent: true);
+                $this->assert_cm_in_list($sharedbank, $banks, recent: false);
+            } else {
+                $this->assert_cm_in_list($sharedbank, $banks);
+            }
+        }
+    }
+
+    /**
+     * Only return banks where the user has permission to use questions.
+     */
+    public function test_get_banks_for_course_permissions(): void {
+        [$user, $course, $sharedbanks, $privatebanks] = $this->create_banks();
+        $hiddenbank = reset($sharedbanks);
+        $hiddenquiz = reset($privatebanks);
+        $nobankroleid = $this->getDataGenerator()->create_role(['shortname' => 'nobank']);
+        $this->getDataGenerator()->create_role_capability(
+            $nobankroleid,
+            ['moodle/question:useall' => 'prohibit', 'moodle/question:usemine' => 'prohibit'],
+            module::instance($hiddenbank->cmid),
+        );
+        $this->getDataGenerator()->create_role_capability(
+            $nobankroleid,
+            ['moodle/question:useall' => 'prohibit', 'moodle/question:usemine' => 'prohibit'],
+            module::instance($hiddenquiz->cmid),
+        );
+        $coursecontext = course::instance($course->id);
+        $this->getDataGenerator()->role_assign($nobankroleid, $user->id, $coursecontext->id);
+        $this->setUser($user);
+        $banks = question_bank_helper::get_banks_for_course(
+            $coursecontext,
+            includeprivate: true,
+        );
+        $this->assertCount(4, $banks);
+        foreach ($sharedbanks as $sharedbank) {
+            if ($sharedbank->cmid == $hiddenbank->cmid) {
+                $this->assert_cm_not_in_list($sharedbank, $banks);
+            } else {
+                $this->assert_cm_in_list($sharedbank, $banks);
+            }
+        }
+        foreach ($privatebanks as $privatebank) {
+            if ($privatebank->cmid == $hiddenquiz->cmid) {
+                $this->assert_cm_not_in_list($privatebank, $banks);
+            } else {
+                $this->assert_cm_in_list($privatebank, $banks);
+            }
+        }
     }
 }

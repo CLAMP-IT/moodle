@@ -29,13 +29,16 @@
  * @return bool always true
  */
 function xmldb_tool_installaddon_upgrade(int $oldversion): bool {
-    if ($oldversion < 2025100601) {
+    if ($oldversion < 2026031300) {
         // Set the activity chooser active footer to include marketplace regardless of the previous setting.
         // We are deliberately setting this to increase awareness of marketplace.
         set_config('activitychooseractivefooter', 'tool_installaddon');
 
-        upgrade_plugin_savepoint(true, 2025100601, 'tool', 'installaddon');
+        upgrade_plugin_savepoint(true, 2026031300, 'tool', 'installaddon');
     }
+
+    // Automatically generated Moodle v5.2.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

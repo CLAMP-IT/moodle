@@ -149,6 +149,7 @@ final class meeting_test extends \advanced_testcase {
         $this->assertNotNull($meetinginfo);
         $this->assertEquals($activity->id, $meetinginfo->bigbluebuttonbnid);
         $this->assertTrue($meetinginfo->statusrunning);
+        $this->assertFalse($meetinginfo->usermustwaittojoin);
         $this->assertStringContainsString("in progress", $meetinginfo->statusmessage);
         $this->assertEquals($groupid, $meetinginfo->groupid);
         $meeting->end_meeting();
@@ -255,6 +256,9 @@ final class meeting_test extends \advanced_testcase {
         // The moderator has not joined.
         $this->setUser($student);
         $meeting->update_cache();
+        $meetinginfo = $meeting->get_meeting_info();
+        $this->assertNotNull($meetinginfo);
+        $this->assertTrue($meetinginfo->usermustwaittojoin);
         $this->expectException(\mod_bigbluebuttonbn\local\exceptions\meeting_join_exception::class);
         meeting::join_meeting($instance);
     }
@@ -289,6 +293,9 @@ final class meeting_test extends \advanced_testcase {
 
         $this->setUser($moderator);
         $meeting->update_cache();
+        $meetinginfo = $meeting->get_meeting_info();
+        $this->assertNotNull($meetinginfo);
+        $this->assertFalse($meetinginfo->usermustwaittojoin);
         $joinurl = $meeting->join(logger::ORIGIN_BASE);
         $this->assertIsString($joinurl);
         $this->join_meeting($joinurl);
@@ -297,6 +304,10 @@ final class meeting_test extends \advanced_testcase {
 
         // The student can now join the meeting as a moderator is present.
         $this->setUser($student);
+        $meeting->update_cache();
+        $meetinginfo = $meeting->get_meeting_info();
+        $this->assertNotNull($meetinginfo);
+        $this->assertTrue($meetinginfo->usermustwaittojoin);
         $joinurl = $meeting->join(logger::ORIGIN_BASE);
         $this->assertIsString($joinurl);
     }

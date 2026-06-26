@@ -43,7 +43,6 @@ $string['addnewgroupoverride'] = 'Add group override';
 $string['addnewpagesafterselected'] = 'Add new pages after selected questions';
 $string['addnewquestionsqbank'] = 'Add questions to the category {$a->catname}: {$a->link}';
 $string['addnewuseroverride'] = 'Add user override';
-$string['addpagebreak'] = 'Add page break';
 $string['addpagebreakafter'] = 'Add page break after question {$a}';
 $string['addpagehere'] = 'Add page here';
 $string['addquestion'] = 'Add question';
@@ -136,7 +135,7 @@ $string['browsersecurity_help'] = 'If "Full screen pop-up with some JavaScript s
 * The quiz will only start if the student has a JavaScript-enabled web-browser
 * The quiz appears in a full screen popup window that covers all the other windows and has no navigation controls
 * Students are prevented, as far as is possible, from using facilities like copy and paste';
-$string['cachedef_overrides'] = 'User and group override information';
+$string['cachedef_quiz_overrides'] = 'User and group override information';
 $string['calculated'] = 'Calculated';
 $string['calculatedquestion'] = 'Calculated question not supported at line {$a}. The question will be ignored';
 $string['cannotcreatepath'] = 'Path cannot be created ({$a})';
@@ -396,6 +395,7 @@ $string['eventsectionshuffleupdated'] = 'Section shuffle updated';
 $string['eventslotcreated'] = 'Slot created';
 $string['eventslotdeleted'] = 'Slot deleted';
 $string['eventslotdisplayedquestionnumberupdated'] = 'Slot displayed question number updated';
+$string['eventslotfilterconditionupdated'] = 'Slot filter condition updated';
 $string['eventslotgradeitemupdated'] = 'Slot grade item updated';
 $string['eventslotmarkupdated'] = 'Slot mark updated';
 $string['eventslotversionupdated'] = 'Slot version updated';
@@ -567,22 +567,22 @@ $string['missingcorrectanswer'] = 'Correct answer must be specified';
 $string['missingitemtypename'] = 'Missing name';
 $string['missingquestion'] = 'This question no longer seems to exist';
 $string['modulename'] = 'Quiz';
-$string['modulename_help'] = 'The quiz activity enables a teacher to create quizzes comprising questions of various types, including multiple choice, matching, short-answer and numerical.
+$string['modulename_help'] = '###### Key features
+* Use different question types, such as multiple choice, true/false, matching, essay, and more
+* Grade most question types automatically, with manual grading for essays
+* Make each attempt unique by randomising questions and shuffling answer choices
+* Set time limits to complete a quiz, and decide when students can see hints, feedback, or correct answers
+* Save and reuse questions across different quiz activities and courses
+* Create secure online exam environments
 
-The teacher can allow the quiz to be attempted multiple times, with the questions shuffled or randomly selected from the question bank. A time limit may be set.
-
-Each attempt is marked automatically, with the exception of essay questions, and the grade is recorded in the gradebook.
-
-The teacher can choose when and if hints, feedback and correct answers are shown to students.
-
-Quizzes may be used
-
-* As course exams
-* As mini tests for reading assignments or at the end of a topic
-* As exam practice using questions from past exams
-* To deliver immediate feedback about performance
-* For self-assessment';
+###### Ways to use it
+* Deliver a timed exam with automatic grading
+* Provide a practice test with questions randomly drawn from a pool
+* Create a self-assessment with detailed feedback for each answer
+* Run short weekly quizzes to check understanding of topics';
 $string['modulename_link'] = 'mod/quiz/view';
+$string['modulename_summary'] = 'Create a variety of assessments, from simple multiple-choice tests to complex exams with detailed feedback.';
+$string['modulename_tip'] = 'Create your questions in the question bank first to reuse them easily in multiple quizzes.';
 $string['modulenameplural'] = 'Quizzes';
 $string['movequestionnumber'] = 'Move question: {$a}';
 $string['moveselectedonpage'] = 'Move selected questions to page: {$a}';
@@ -685,6 +685,8 @@ $string['overridedeletegroupsure'] = 'Are you sure you want to delete the overri
 $string['overridedeleteusersure'] = 'Are you sure you want to delete the override for user {$a}?';
 $string['overridegroup'] = 'Override group';
 $string['overridegroupeventname'] = '{$a->quiz} - {$a->group}';
+$string['overridereason'] = 'Reason for override';
+$string['overridereason_help'] = 'Optionally record the reason for this override.';
 $string['overrideinvalidattempts'] = 'Attempts value must be greater than zero.';
 $string['overrideinvalidexistingid'] = 'Existing override doesn\'t exist.';
 $string['overrideinvalidgroup'] = 'Group given doesn\'t exist.';
@@ -765,6 +767,7 @@ $string['privacy:metadata:quiz_grades:timemodified'] = 'The time that the grade 
 $string['privacy:metadata:quiz_grades:userid'] = 'The user who was graded.';
 $string['privacy:metadata:quiz_overrides'] = 'Details about overrides for this quiz';
 $string['privacy:metadata:quiz_overrides:quiz'] = 'The quiz with override information';
+$string['privacy:metadata:quiz_overrides:reason'] = 'Optional notes documenting the reason for a quiz override.';
 $string['privacy:metadata:quiz_overrides:timeclose'] = 'The new close time for the quiz.';
 $string['privacy:metadata:quiz_overrides:timelimit'] = 'The new time limit for the quiz.';
 $string['privacy:metadata:quiz_overrides:timeopen'] = 'The new open time for the quiz.';
@@ -810,6 +813,7 @@ $string['questiontype'] = 'Question type {$a}';
 $string['questiontypesetupoptions'] = 'Setup options for question types:';
 $string['quiz:addinstance'] = 'Add a new quiz';
 $string['quiz:attempt'] = 'Attempt quizzes';
+$string['quiz:customisequestionnumbers'] = 'Customise displayed question numbers';
 $string['quizavailable'] = 'The quiz is available until: {$a}';
 $string['quizclose'] = 'Close the quiz';
 $string['quizclosed'] = 'This quiz closed on {$a}';
@@ -902,7 +906,6 @@ $string['removeallgroupoverrides'] = 'All group overrides';
 $string['removeallquizattempts'] = 'All quiz attempts';
 $string['removealluseroverrides'] = 'All user overrides';
 $string['removeemptypage'] = 'Remove empty page';
-$string['removepagebreak'] = 'Remove page break';
 $string['removepagebreakafter'] = 'Remove page break after question {$a}';
 $string['removeselected'] = 'Remove selected';
 $string['rename'] = 'Rename';
@@ -950,6 +953,7 @@ $string['requiresubnet'] = 'Require network address';
 $string['requiresubnet_help'] = 'Quiz access may be restricted to particular subnets on the LAN or Internet by specifying a comma-separated list of partial or full IP address numbers. This can be useful for an invigilated (proctored) quiz, to ensure that only people in a certain location can access the quiz.';
 $string['response'] = 'Response';
 $string['responses'] = 'Responses';
+$string['restorenotag'] = 'A tag matching \'{$a->tagname}\' could not be found when restoring the random question to quiz slot ID {$a->slotid}. The tag was removed from the question\'s filter conditions.';
 $string['results'] = 'Results';
 $string['returnattempt'] = 'Return to attempt';
 $string['reuseifpossible'] = 'reuse previously removed';
@@ -1013,7 +1017,6 @@ $string['selectedattempts'] = 'Selected attempts...';
 $string['selectmultipleitems'] = 'Select multiple items';
 $string['selectmultipletoolbar'] = 'Select multiple toolbar';
 $string['selectnone'] = 'Deselect all';
-$string['selectquestionbank'] = 'Select question bank';
 $string['selectquestionslot'] = 'Select question {$a}';
 $string['selectquestiontype'] = '-- Select question type --';
 $string['sendnotificationopendatesoon'] = 'Notify user of an approaching quiz open date';
@@ -1156,7 +1159,6 @@ $string['yourfinalgradeis'] = 'Your final grade for this quiz is {$a}.';
 $string['questionversion'] = 'v{$a}';
 $string['questionversionlatest'] = 'v{$a} (latest)';
 $string['alwayslatest'] = 'Always latest';
-$string['gobacktoquiz'] = 'Go back';
 
 // Deprecated since Moodle 4.5.
 $string['attemptsdeleted'] = 'Quiz attempts deleted';
@@ -1168,3 +1170,10 @@ $string['groupoverridesdeleted'] = 'Group overrides deleted';
 $string['randomcoursecatwithsubcat'] = 'Any category inside course category {$a}';
 $string['randomcoursewithsubcat'] = 'Any category in this course';
 $string['randomsystemwithsubcat'] = 'Any system-level category';
+
+// Deprecated since Moodle 5.2.
+$string['addpagebreak'] = 'Add page break';
+$string['gobacktoquiz'] = 'Go back';
+$string['removepagebreak'] = 'Remove page break';
+$string['selectquestionbank'] = 'Select question bank';
+$string['cachedef_overrides'] = 'User and group override information';

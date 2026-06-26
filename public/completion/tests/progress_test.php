@@ -323,7 +323,8 @@ final class progress_test extends \advanced_testcase {
         $this->setUser($user);
 
         // Hide section 1.
-        set_section_visible($course->id, 1, 0);
+        $sectioninfo = get_fast_modinfo($course->id)->get_section_info(1);
+        \core_courseformat\formatactions::section($course->id)->set_visibility($sectioninfo, false);
         $completion = new \completion_info($course);
 
         // Complete the visible activity: activity1.
@@ -335,7 +336,8 @@ final class progress_test extends \advanced_testcase {
         $this->assertEquals(100, \core_completion\progress::get_course_progress_percentage($course, $user->id));
 
         // Now unhide section 1.
-        set_section_visible($course->id, 1, 1);
+        $sectioninfo = get_fast_modinfo($course->id)->get_section_info(1);
+        \core_courseformat\formatactions::section($course->id)->set_visibility($sectioninfo, true);
 
         // Course completion: 1 of 2 visible activities complete; previously hidden activity now counted.
         $this->assertEquals(50, \core_completion\progress::get_course_progress_percentage($course, $user->id));

@@ -1,5 +1,7 @@
 <?php
 
+use mod_glossary\output\renderer;
+
 /**
  * Displays a glossary entry in full format but without the author information.
  *
@@ -26,47 +28,28 @@ function glossary_show_entry_fullwithoutauthor(
     $aliases = true,
     $conceptheadinglevel = 3,
 ) {
-    global $CFG, $USER, $OUTPUT;
-
+    global $OUTPUT, $PAGE;
 
     if ($entry) {
-        echo '<table class="glossarypost fullwithoutauthor table-reboot" cellspacing="0" role="presentation">';
-        echo '<tr valign="top">';
+        echo '<div class="glossarypost fullwithoutauthor">';
+        /** @var renderer $renderer */
+        $renderer = $PAGE->get_renderer('mod_glossary');
+        echo $renderer->concept_entry_header($entry, $mode, $conceptheadinglevel, showlastedited: true);
 
-        echo '<th class="entryheader">';
-
-        echo '<div class="concept">';
-        glossary_print_entry_concept($entry, headinglevel: $conceptheadinglevel);
-        echo '</div>';
-
-        echo '<span class="time">('.get_string('lastedited').': '.
-             userdate($entry->timemodified).')</span>';
-        echo '</th>';
-        echo '<td class="entryattachment">';
-
-        glossary_print_entry_approval($cm, $entry, $mode);
-        echo '</td>';
-
-        echo '</tr>';
-
-        echo '<tr valign="top">';
-        echo '<td width="100%" colspan="2" class="entry">';
-
+        echo '<div class="entry">';
         glossary_print_entry_definition($entry, $glossary, $cm);
         glossary_print_entry_attachment($entry, $cm, 'html');
-
         if (core_tag_tag::is_enabled('mod_glossary', 'glossary_entries')) {
             echo $OUTPUT->tag_list(
                 core_tag_tag::get_item_tags('mod_glossary', 'glossary_entries', $entry->id), null, 'glossary-tags');
         }
+        echo '</div>';
 
-        echo '</td></tr>';
-        echo '<tr valign="top"><td colspan="2" class="entrylowersection">';
+        echo '<div class="entrylowersection">';
         glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mode, $hook, $printicons, $aliases);
+        echo '</div>';
 
-        echo ' ';
-        echo '</td></tr>';
-        echo "</table>\n";
+        echo "</div>";
     } else {
         echo html_writer::div(get_string('noentry', 'glossary'), 'text-center');
     }

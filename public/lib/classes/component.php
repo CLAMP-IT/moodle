@@ -110,7 +110,6 @@ class component {
     protected static $filestomap = ['lib.php', 'settings.php'];
     /** @var array associative array of PSR-0 namespaces and corresponding paths. */
     protected static $psr0namespaces = [
-        'Mustache' => 'public/lib/mustache/src/Mustache',
     ];
     /** @var array<string|array<string>> associative array of PRS-4 namespaces and corresponding paths. */
     protected static $psr4namespaces = [
@@ -122,6 +121,9 @@ class component {
         \GeoIp2::class => 'public/lib/maxmind/GeoIp2/src',
         \FastRoute::class => 'public/lib/nikic/fast-route/src',
         \Firebase\JWT::class => 'public/lib/php-jwt/src',
+        \Google::class => 'public/lib/google2/src',
+        \Google\Auth::class => 'public/lib/google2-auth/src',
+        \Google\Service::class => 'public/lib/google2-service/src',
         \GuzzleHttp::class => 'public/lib/guzzlehttp/guzzle/src',
         \GuzzleHttp\Promise::class => 'public/lib/guzzlehttp/promises/src',
         \GuzzleHttp\Psr7::class => 'public/lib/guzzlehttp/psr7/src',
@@ -137,16 +139,19 @@ class component {
         \MatthiasMullie\Minify::class => 'public/lib/minify/matthiasmullie-minify/src',
         \MatthiasMullie\PathConverter::class => 'public/lib/minify/matthiasmullie-pathconverter/src',
         \MaxMind\Db::class => 'public/lib/maxmind/MaxMind/src/MaxMind/Db',
+        \Monolog::class => 'public/lib/monolog/src/Monolog',
         \Michelf::class => 'public/lib/markdown/Michelf',
         \MoodleHQ::class => [
             'public/lib/rtlcss/src/MoodleHQ',
         ],
+        \Mustache::class => 'public/lib/mustache/src',
         \OpenSpout::class => 'public/lib/openspout/src',
         \Packback\Lti1p3::class => 'public/lib/lti1p3/src',
         \PHPMailer\PHPMailer::class => 'public/lib/phpmailer/src',
         \PhpOffice\PhpSpreadsheet::class => 'public/lib/phpspreadsheet/phpspreadsheet/src/PhpSpreadsheet',
         \PhpXmlRpc::class => 'public/lib/phpxmlrpc/src',
         \Phpml::class => 'public/lib/mlbackend/php/phpml/src/Phpml',
+        \Psr\Cache::class => "public/lib/psr/cache/src",
         \Psr\Clock::class => 'public/lib/psr/clock/src',
         \Psr\Container::class => 'public/lib/psr/container/src',
         \Psr\EventDispatcher::class => 'public/lib/psr/event-dispatcher/src',
@@ -180,13 +185,18 @@ class component {
      * @var array<string>
      */
     protected static $composerautoloadfiles = [
-        'public/lib/aws-sdk/src/functions.php',
-        'public/lib/guzzlehttp/guzzle/src/functions_include.php',
-        'public/lib/jmespath/src/JmesPath.php',
-        'public/lib/nikic/fast-route/src/functions.php',
-        'public/lib/php-di/php-di/src/functions.php',
-        'public/lib/ralouphie/getallheaders/src/getallheaders.php',
-        'public/lib/symfony/deprecation-contracts/function.php',
+        // The AWS SDK always defines functions, even if they already exist.
+        'public/lib/aws-sdk/src/functions.php' => [
+            'Aws\describe_region_info',
+        ],
+
+        // The following files check if functions have already been defined.
+        'public/lib/guzzlehttp/guzzle/src/functions_include.php' => true,
+        'public/lib/jmespath/src/JmesPath.php' => true,
+        'public/lib/nikic/fast-route/src/functions.php' => true,
+        'public/lib/php-di/php-di/src/functions.php' => true,
+        'public/lib/ralouphie/getallheaders/src/getallheaders.php' => true,
+        'public/lib/symfony/deprecation-contracts/function.php' => true,
     ];
 
     /**
@@ -199,9 +209,25 @@ class component {
             spl_autoload_register([self::class, 'classloader']);
         }
 
+        // Attempt to load the Composer autoloader from the Moodle root.
+        // In composer scaffolded installations this is a shim which delegates to the parent project.
+        global $CFG;
+        if (!empty($CFG->root)) {
+            $composerautoload = "{$CFG->root}/vendor/autoload.php";
+            if (is_file($composerautoload)) {
+                require_once($composerautoload);
+            }
+        }
+
         // Load any composer-driven autoload files.
         // This is intended to mimic the behaviour of the standard Composer Autoloader.
-        foreach (static::$composerautoloadfiles as $file) {
+        foreach (static::$composerautoloadfiles as $file => $test) {
+            if (is_array($test)) {
+                if (array_filter($test, fn ($function): bool => !function_exists($function))) {
+                    continue;
+                }
+            }
+
             $path = dirname(__DIR__, 3) . '/' . $file;
             if (file_exists($path)) {
                 require_once($path);
@@ -547,7 +573,7 @@ class component {
         // Always keep moodle_exception in place.
         $keyclasses = [
             \core\exception\moodle_exception::class,
-            \core\router\middleware\api_validation_middleware::class,
+            \core\telemetry::class,
         ];
         foreach ($keyclasses as $classname) {
             if (!array_key_exists($classname, $cache['classmap'])) {
@@ -591,7 +617,6 @@ class component {
      * Create cache file content.
      *
      * @private this is intended for $CFG->alternative_component_cache only.
-     *
      * @return string
      */
     public static function get_cache_content() {
@@ -750,8 +775,11 @@ $cache = ' . var_export($cache, true) . ';
         foreach (['deprecatedplugintypes', 'deletedplugintypes'] as $key) {
             $illegaltypes = array_intersect(self::$supportsubplugins, array_keys($plugintypesmap[$key]));
             if (!empty($illegaltypes)) {
-                debugging("Deprecation of a plugin type which supports subplugins is not supported. These plugin types will ".
-                    "continue to be treated as active.", DEBUG_DEVELOPER);
+                debugging(
+                    "Deprecation of a plugin type which supports subplugins is not supported. "
+                        . "These plugin types will continue to be treated as active.",
+                    DEBUG_DEVELOPER
+                );
                 foreach ($illegaltypes as $plugintype) {
                     $plugintypesmap['plugintypes'][$plugintype] = $plugintypesmap[$key][$plugintype];
                     unset($plugintypesmap[$key][$plugintype]);
@@ -780,8 +808,11 @@ $cache = ' . var_export($cache, true) . ';
                     'deletedplugintypes' => $allsubtypes['deletedplugintypes'] ?? [],
                 ];
 
-                if (!$subplugintypesdata['plugintypes'] && !$subplugintypesdata['deprecatedplugintypes']
-                        && !$subplugintypesdata['deletedplugintypes']) {
+                if (
+                    !$subplugintypesdata['plugintypes']
+                    && !$subplugintypesdata['deprecatedplugintypes']
+                    && !$subplugintypesdata['deletedplugintypes']
+                ) {
                     continue;
                 }
                 $subplugintypesmap['plugintypes'][$type . '_' . $plugin] = [];
@@ -790,9 +821,11 @@ $cache = ' . var_export($cache, true) . ';
 
                 foreach ($subplugintypesdata as $key => $subplugintypes) {
                     foreach ($subplugintypes as $subtype => $subdir) {
-                        if (isset($plugintypesmap['plugintypes'][$subtype])
-                                || isset($plugintypesmap['deprecatedplugintypes'][$subtype])
-                                || isset($plugintypesmap['deletedplugintypes'][$subtype])) {
+                        if (
+                            isset($plugintypesmap['plugintypes'][$subtype])
+                            || isset($plugintypesmap['deprecatedplugintypes'][$subtype])
+                            || isset($plugintypesmap['deletedplugintypes'][$subtype])
+                        ) {
                             error_log("Invalid subtype '$subtype', duplicate detected.");
                             continue;
                         }
@@ -818,8 +851,11 @@ $cache = ' . var_export($cache, true) . ';
                     'deprecatedplugintypes' => $allsubtypes['deprecatedplugintypes'] ?? [],
                     'deletedplugintypes' => $allsubtypes['deletedplugintypes'] ?? [],
                 ];
-                if (!$subplugintypesdata['plugintypes'] && !$subplugintypesdata['deprecatedplugintypes']
-                        && !$subplugintypesdata['deletedplugintypes']) {
+                if (
+                    !$subplugintypesdata['plugintypes']
+                    && !$subplugintypesdata['deprecatedplugintypes']
+                    && !$subplugintypesdata['deletedplugintypes']
+                ) {
                     continue;
                 }
                 $subplugintypesmap['plugintypes'][$type . '_' . $plugin] = [];
@@ -828,9 +864,11 @@ $cache = ' . var_export($cache, true) . ';
 
                 foreach ($subplugintypesdata as $key => $subplugintypes) {
                     foreach ($subplugintypes as $subtype => $subdir) {
-                        if (isset($plugintypesmap['plugintypes'][$subtype])
-                                || isset($plugintypesmap['deprecatedplugintypes'][$subtype])
-                                || isset($plugintypesmap['deletedplugintypes'][$subtype])) {
+                        if (
+                            isset($plugintypesmap['plugintypes'][$subtype])
+                            || isset($plugintypesmap['deprecatedplugintypes'][$subtype])
+                            || isset($plugintypesmap['deletedplugintypes'][$subtype])
+                        ) {
                             error_log("Invalid subtype '$subtype', duplicate detected.");
                             continue;
                         }
@@ -1501,6 +1539,15 @@ $cache = ' . var_export($cache, true) . ';
             // Modules MUST NOT have any underscores,
             // component normalisation would break very badly otherwise!
             return !is_null($pluginname) && (bool) preg_match('/^[a-z][a-z0-9]*$/', $pluginname);
+        } else if ($plugintype === 'qtype' && $pluginname === 'random') {
+            // Special case, qtype_random no longer exists, and we must never have a plugin with that name due to special handling
+            // in the backup/restore subsystem.
+            debugging(
+                'qtype_random was removed from core, and random questions now use question set references. '
+                    . 'You must not use the name qtype_random for another plugin, as the questions will not work correctly.',
+                DEBUG_DEVELOPER,
+            );
+            return false;
         } else {
             return !is_null($pluginname) && (bool) preg_match('/^[a-z](?:[a-z0-9_](?!__))*[a-z0-9]+$/', $pluginname);
         }

@@ -55,7 +55,7 @@ class InstructionFileMetadataStrategy implements MetadataStrategyInterface
 
         //= ../specification/s3-encryption/data-format/metadata-strategy.md#v1-v2-instruction-files
         //# In the V1/V2 message format, all of the content metadata MUST be stored in the Instruction File.
-
+        
         //= ../specification/s3-encryption/data-format/content-metadata.md#content-metadata-mapkeys
         //= type=implication
         //# In the V3 format, the mapkeys "x-amz-c", "x-amz-d", and "x-amz-i" MUST be stored exclusively in the Object Metadata.
@@ -69,7 +69,7 @@ class InstructionFileMetadataStrategy implements MetadataStrategyInterface
             //= ../specification/s3-encryption/data-format/metadata-strategy.md#v3-instruction-files
             //# - The V3 message format MUST store the mapkey "x-amz-i" and its value in the Object Metadata when writing with an Instruction File.
             $args['Metadata'][MetadataEnvelope::MESSAGE_ID_V3] = $envelope[MetadataEnvelope::MESSAGE_ID_V3];
-
+            
             //= ../specification/s3-encryption/data-format/metadata-strategy.md#v3-instruction-files
             //# - The V3 message format MUST NOT store the mapkey "x-amz-c" and its value in the Instruction File.
             unset($envelope[MetadataEnvelope::CONTENT_CIPHER_V3]);
@@ -93,7 +93,7 @@ class InstructionFileMetadataStrategy implements MetadataStrategyInterface
                 throw new \InvalidArgumentException('Invalid V3 Envelope');
             }
         }
-
+        
         //= ../specification/s3-encryption/data-format/metadata-strategy.md#instruction-file
         //# The serialized JSON string MUST be the only contents of the Instruction File.
         $this->client->putObject([
@@ -146,7 +146,7 @@ class InstructionFileMetadataStrategy implements MetadataStrategyInterface
         // if it is a V3 object some data is stored in the object metadata and some
         // as in the instruction file
         //= ../specification/s3-encryption/data-format/content-metadata.md#content-metadata-mapkeys
-        //# In the V3 format, the mapkeys "x-amz-c", "x-amz-d", and "x-amz-i"
+        //# In the V3 format, the mapkeys "x-amz-c", "x-amz-d", and "x-amz-i" 
         //# MUST be stored exclusively in the Object Metadata
         if (!empty($envelope[MetadataEnvelope::ENCRYPTED_DATA_KEY_V3])) {
             // before loading the rest of the v3 metadata, we must check that:
@@ -154,7 +154,7 @@ class InstructionFileMetadataStrategy implements MetadataStrategyInterface
             //      the instruction file is not correct.
             if (!empty($envelope[MetadataEnvelope::CONTENT_CIPHER_V3])
                 || !empty($envelope[MetadataEnvelope::KEY_COMMITMENT_V3])
-                || !empty($envelope[MetadataEnvelope::MESSAGE_ID_V3])
+                || !empty($envelope[MetadataEnvelope::MESSAGE_ID_V3]) 
             ) {
                 throw new CryptoException("One or more reserved keys found in"
                     . " Instruction file when they should not be present.");

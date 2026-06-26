@@ -263,12 +263,14 @@ class category_manager {
         int $updateid,
         string $newparent,
         string $newname,
-        string $newinfo,
+        ?string $newinfo = null,
         string $newinfoformat = FORMAT_HTML,
         ?string $idnumber = null,
         ?int $sortorder = null,
     ): void {
-        global $DB;
+        global $DB, $CFG;
+        require_once($CFG->libdir . '/questionlib.php');
+
         if (empty($newname)) {
             throw new moodle_exception('categorynamecantbeblank', 'question');
         }
@@ -282,6 +284,10 @@ class category_manager {
         } else {
             $parentid = $oldcat->parent;
             $tocontextid = $oldcat->contextid;
+        }
+
+        if (is_null($newinfo)) {
+            $newinfo = $oldcat->info;
         }
 
         // Check permissions.
@@ -388,7 +394,7 @@ class category_manager {
      * This could occur before the fix for MDL-86300, where a course restore left question categories that were the child of a top
      * category with the original top category as the parent, rather than the new top category.
      *
-     * This only needs to one once on upgrade, so is deprecated for removal in 6.0.
+     * @todo Deprecate in 6.0 MDL-87844 for Removal in 7.0 MDL-87845.
      */
     public static function fix_restored_category_parents(): void {
         global $DB;

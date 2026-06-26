@@ -10,7 +10,7 @@ Feature: Create shared categories and fields
     And I press "Add a new category"
     And I wait until the page is ready
     Then I should see "Other fields" in the "#customfield_catlist" "css_element"
-    And I click on "[data-role='deletecategory']" "css_element"
+    And I choose the "Delete" item in the "Actions" action menu of the "Other fields" "core_customfield > Category header"
     And I click on "Yes" "button" in the "Confirm" "dialogue"
     And I wait until the page is ready
     And I wait until "Other fields" "text" does not exist
@@ -28,7 +28,7 @@ Feature: Create shared categories and fields
       | Field 3 | Shared category     | text   | shf1      | shd1        |
     When I log in as "admin"
     And I navigate to "Custom fields > Shared custom fields" in site administration
-    And I click on "Add a new custom field" "link"
+    And I click on "Add field" "link"
     And I click on "Short text" "link"
     And I set the following fields to these values:
       | Name        | Test field |
@@ -73,8 +73,8 @@ Feature: Create shared categories and fields
     And I log in as "admin"
     And I navigate to "Courses > Default settings > Course custom fields" in site administration
     # Check that the delete category link exists for course categories but not for shared categories.
-    Then "Delete custom field category: My course category" "button" should exist
-    And "Delete custom field category: My shared category" "button" should not exist
+    Then the "Delete" item should exist in the "Actions" action menu of the "My course category" "core_customfield > Category header"
+    And "Actions" "link" should not exist in the "My shared category" "core_customfield > Category header"
     # Check that the inplaceeditable exists for course categories but not for shared categories.
     And "//div[contains(@class,'categoryinstance') and contains(.,'My course category') and .//span[contains(@class,'inplaceeditable')]]" "xpath_element" should exist
     And "//div[contains(@class,'categoryinstance') and contains(.,'My shared category') and .//span[contains(@class,'inplaceeditable')]]" "xpath_element" should not exist

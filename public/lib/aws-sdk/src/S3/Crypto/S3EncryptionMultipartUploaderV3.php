@@ -38,7 +38,7 @@ class S3EncryptionMultipartUploaderV3 extends MultipartUploader
     private ?string $instructionFileSuffix;
     // Metadata Strategy to use when uploading objects
     private $strategy;
-
+    
     /**
      * Returns if the passed cipher name is supported for encryption by the SDK.
      *
@@ -59,16 +59,16 @@ class S3EncryptionMultipartUploaderV3 extends MultipartUploader
      * - @MaterialsProvider: (MaterialsProviderV3) Provides Cek, Iv, and Cek
      *   encrypting/decrypting for encryption metadata.
      * - @CommitmentPolicy: (string) Must be set to 'FORBID_ENCRYPT_ALLOW_DECRYPT',
-     *        'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
-     *     - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages without key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment.
+     *         'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
+     *      - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages without key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment.
      * - @CipherOptions: (array) Cipher options for encrypting data. A Cipher
      *   is required. Accepts the following options:
      *       - Cipher: (string) gcm
@@ -141,7 +141,7 @@ class S3EncryptionMultipartUploaderV3 extends MultipartUploader
 
         $this->provider = $this->getMaterialsProvider($config);
         unset($config['@MaterialsProvider']);
-
+        
         $this->keyCommitmentPolicy = $this->getKeyCommitmentPolicy($config);
         unset($config['@CommitmentPolicy']);
 
@@ -155,7 +155,7 @@ class S3EncryptionMultipartUploaderV3 extends MultipartUploader
             $this->strategy = self::getDefaultStrategy();
         }
         unset($config['@MetadataStrategy']);
-
+        
         $options = array_change_key_case($config);
         $cipherOptions = array_intersect_key(
             $options['@cipheroptions'],
@@ -170,14 +170,14 @@ class S3EncryptionMultipartUploaderV3 extends MultipartUploader
             $cipherOptions,
             $this->keyCommitmentPolicy
         );
-
+        
         //= ../specification/s3-encryption/client.md#optional-api-operations
         //= type=implication
         //# - If implemented, CreateMultipartUpload MUST initiate a multipart upload.
         $config['prepare_data_source'] = $this->getEncryptingDataPreparer();
 
         parent::__construct($client, $source, $config);
-
+        
         if (!extension_loaded('openssl')) {
             throw new CryptoException("Unable to load `openssl` extension.");
         }

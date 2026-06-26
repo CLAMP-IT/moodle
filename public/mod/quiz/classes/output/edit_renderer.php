@@ -25,6 +25,7 @@
 namespace mod_quiz\output;
 
 use core_question\local\bank\question_version_status;
+use mod_quiz\question\bank\qbank_helper;
 use \mod_quiz\structure;
 use \html_writer;
 use qbank_previewquestion\question_preview_options;
@@ -124,6 +125,7 @@ class edit_renderer extends \plugin_renderer_base {
                 $thiscontext->id,
                 $quizobj->get_cm()->id,
                 $quizobj->get_cm()->id,
+                $quizobj->get_courseid(),
             ]);
 
             $this->page->requires->js_call_amd('mod_quiz/modal_add_random_question', 'init', [
@@ -133,6 +135,7 @@ class edit_renderer extends \plugin_renderer_base {
                 $pageurl->out_as_local_url(true),
                 $pageurl->param('cmid'),
                 \core\plugininfo\qbank::is_plugin_enabled(\qbank_managecategories\helper::PLUGINNAME),
+                $quizobj->get_courseid(),
             ]);
 
             // Include the question chooser.
@@ -807,7 +810,7 @@ class edit_renderer extends \plugin_renderer_base {
         ];
 
         $data['versionoptions'] = [];
-        if ($structure->get_slot_by_number($slot)->qtype !== 'random') {
+        if (!$structure->get_slot_by_number($slot)->random) {
             $data['versionselection'] = true;
             $data['versionoption'] = $structure->get_version_choices_for_slot($slot);
         }
@@ -851,7 +854,7 @@ class edit_renderer extends \plugin_renderer_base {
      */
     public function get_question_name_for_slot(structure $structure, int $slot, \moodle_url $pageurl): string {
         // Display the link to the question (or do nothing if question has no url).
-        if ($structure->get_question_type_for_slot($slot) === 'random') {
+        if ($structure->get_slot_by_number($slot)->random) {
             $questionname = $this->random_question($structure, $slot, $pageurl);
         } else {
             $questionname = $this->question_name($structure, $slot, $pageurl);
@@ -873,7 +876,7 @@ class edit_renderer extends \plugin_renderer_base {
         $qtype = $structure->get_question_type_for_slot($slot);
         $slotinfo = $structure->get_slot_by_number($slot);
         $questionicons = '';
-        if ($qtype !== 'random' && question_bank::is_qtype_usable($qtype)) {
+        if (!$slotinfo->random && question_bank::is_qtype_usable($qtype)) {
             $questionicons .= $this->question_preview_icon($structure->get_quiz(),
                     $structure->get_question_in_slot($slot),
                     null, null, $slotinfo->requestedversion ?: question_preview_options::ALWAYS_LATEST);
@@ -1164,9 +1167,8 @@ class edit_renderer extends \plugin_renderer_base {
         }
 
         $configuretitle = get_string('configurerandomquestion', 'quiz');
-        $qtype = question_bank::get_qtype($question->qtype, false);
-        $namestr = $qtype->local_name();
-        $icon = $this->pix_icon('icon', $namestr, $qtype->plugin_name(), ['class' => 'icon activityicon']);
+        $namestr = get_string('randomquestion', 'quiz');
+        $icon = $this->pix_icon('random', $namestr, 'mod_quiz', ['class' => 'icon activityicon']);
 
         $editicon = $this->pix_icon('t/edit', $configuretitle, 'moodle', ['title' => '']);
         $qbankurlparams = [

@@ -33,12 +33,6 @@
  * @throws upgrade_exception
  */
 function xmldb_gradingform_guide_upgrade($oldversion) {
-    // Automatically generated Moodle v4.2.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Automatically generated Moodle v4.3.0 release upgrade line.
-    // Put any upgrade step following this.
-
     // Automatically generated Moodle v4.4.0 release upgrade line.
     // Put any upgrade step following this.
 
@@ -49,6 +43,9 @@ function xmldb_gradingform_guide_upgrade($oldversion) {
     // Put any upgrade step following this.
 
     // Automatically generated Moodle v5.1.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    // Automatically generated Moodle v5.2.0 release upgrade line.
     // Put any upgrade step following this.
 
     return true;

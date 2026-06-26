@@ -32,7 +32,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * @copyright  2026 Laurent David <laurent.david@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(api_validation_middleware::class)]
+#[\PHPunit\Framework\Attributes\CoversClass(api_validation_middleware::class)]
 final class api_validation_middleware_test extends \advanced_testcase {
     /**
      * If request validation fails, API middleware returns an error response.

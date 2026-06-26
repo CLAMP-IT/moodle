@@ -1,6 +1,6 @@
 # customfield_number Upgrade notes
 
-## 5.1.2
+## 5.2
 
 ### Changed
 

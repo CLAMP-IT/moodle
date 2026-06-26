@@ -69,7 +69,7 @@ trait DecryptionTraitV3
         MetadataEnvelope $envelope,
         string $commitmentPolicy,
         array $options = []
-    ): AesStreamInterface
+    ): AesStreamInterface 
     {
         if (isset($envelope[MetadataEnvelope::ENCRYPTED_DATA_KEY_V3])) {
             $this->checkEnvelopeForExclusiveMapKeys(
@@ -102,7 +102,7 @@ trait DecryptionTraitV3
 
             $messageId = base64_decode($envelope[MetadataEnvelope::MESSAGE_ID_V3]);
             $commitmentKey = base64_decode($envelope[MetadataEnvelope::KEY_COMMITMENT_V3]);
-
+            
             if (strlen($messageId) !== ($algorithmSuite->getKeyCommitmentSaltLengthBits()) / 8) {
                 throw new CryptoException("Invalid MessageId length found in object envelope.");
             }
@@ -252,7 +252,7 @@ trait DecryptionTraitV3
     private function getStrippedCiphertextStream(
         StreamInterface $cipherText,
         $tagLength
-    ): LimitStream
+    ): LimitStream 
     {
         $cipherTextSize = $cipherText->getSize();
         if ($cipherTextSize == null || $cipherTextSize <= 0) {
@@ -270,7 +270,7 @@ trait DecryptionTraitV3
         array $options,
         MetadataEnvelope $envelope,
         string $commitmentPolicy
-    ): void
+    ): void 
     {
         //= ../specification/s3-encryption/key-commitment.md#commitment-policy
         //# When the commitment policy is REQUIRE_ENCRYPT_ALLOW_DECRYPT,
@@ -306,7 +306,7 @@ trait DecryptionTraitV3
             //= type=implication
             //# When disabled, the S3EC MUST NOT decrypt objects encrypted using legacy wrapping algorithms;
             //# it MUST throw an exception when attempting to decrypt an object encrypted with a legacy wrapping algorithm.
-
+            
             //= ../specification/s3-encryption/decryption.md#legacy-decryption
             //# The S3EC MUST NOT decrypt objects encrypted using legacy unauthenticated algorithm suites unless specifically configured to do so.
             if (in_array($options['@CipherOptions']['Cipher'], AbstractCryptoClient::$supportedCiphers)) {
@@ -378,9 +378,9 @@ trait DecryptionTraitV3
      * @param string $cipherText Plain-text data to be encrypted using the
      *                           materials, algorithm, and data provided.
      * @param string $cek A content encryption key for use by the stream for
-     *                   encrypting the plaintext data.
+     *                    encrypting the plaintext data.
      * @param array $cipherOptions Options for use in determining the cipher to
-     *                            be used for encrypting data.
+     *                             be used for encrypting data.
      *
      * @return AesStreamInterface
      *
@@ -437,9 +437,9 @@ trait DecryptionTraitV3
      * @param string $cipherText Plain-text data to be encrypted using the
      *                           materials, algorithm, and data provided.
      * @param string $cek A content encryption key for use by the stream for
-     *                   encrypting the plaintext data.
+     *                    encrypting the plaintext data.
      * @param array $cipherOptions Options for use in determining the cipher to
-     *                            be used for encrypting data.
+     *                             be used for encrypting data.
      * @param string $messageId a string value used to calculate both a commitment
      *                          key and derived content encryption key
      * @param string $commitmentKey a string value to compare with the calculated commitment
@@ -522,7 +522,7 @@ trait DecryptionTraitV3
                     $cipherOptions['TagLength'] ?: null,
                     $cipherOptions['KeySize']
                 );
-            default:
+            default: 
                 throw new CryptoException("Unsupported Cipher used for key commitment messages."
                     . " Found {$cipherOptions["Cipher"]}. Only 'gcm' is supported.");
         }

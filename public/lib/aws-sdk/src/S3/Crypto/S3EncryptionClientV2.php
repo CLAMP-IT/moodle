@@ -140,7 +140,7 @@ class S3EncryptionClientV2 extends AbstractCryptoClientV2
      * effectively.
      *
      * @param array $args Arguments for encrypting an object and uploading it
-     *                   to S3 via PutObject.
+     *                    to S3 via PutObject.
      *
      * The required configuration arguments are as follows:
      *
@@ -241,7 +241,7 @@ class S3EncryptionClientV2 extends AbstractCryptoClientV2
      * effectively.
      *
      * @param array $args Arguments for encrypting an object and uploading it
-     *                   to S3 via PutObject.
+     *                    to S3 via PutObject.
      *
      * The required configuration arguments are as follows:
      *
@@ -289,7 +289,7 @@ class S3EncryptionClientV2 extends AbstractCryptoClientV2
      * 'Body' field.
      *
      * @param array $args Arguments for retrieving an object from S3 via
-     *                   GetObject and decrypting it.
+     *                    GetObject and decrypting it.
      *
      * The required configuration argument is as follows:
      *
@@ -297,15 +297,15 @@ class S3EncryptionClientV2 extends AbstractCryptoClientV2
      *   encrypting/decrypting for decryption metadata. May have data loaded
      *   from the MetadataEnvelope upon decryption.
      * - @SecurityProfile: (string) Must be set to 'V2' or 'V2_AND_LEGACY'.
-     *     - 'V2' indicates that only objects encrypted with S3EncryptionClientV2
-     *       content encryption and key wrap schemas are able to be decrypted.
-     *     - 'V2_AND_LEGACY' indicates that objects encrypted with both
-     *       S3EncryptionClientV2 and older legacy encryption clients are able
-     *       to be decrypted.
+     *      - 'V2' indicates that only objects encrypted with S3EncryptionClientV2
+     *        content encryption and key wrap schemas are able to be decrypted.
+     *      - 'V2_AND_LEGACY' indicates that objects encrypted with both
+     *        S3EncryptionClientV2 and older legacy encryption clients are able
+     *        to be decrypted.
      * - @CommitmentPolicy: (string) Must be set to 'FORBID_ENCRYPT_ALLOW_DECRYPT'.
-     *     - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to read messages encrypted with key commitment or without key commitment.
-     *
+     *      - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to read messages encrypted with key commitment or without key commitment.
+     * 
      * The optional configuration arguments are as follows:
      *
      * - SaveAs: (string) The path to a file on disk to save the decrypted
@@ -419,7 +419,7 @@ class S3EncryptionClientV2 extends AbstractCryptoClientV2
      * Retrieves an object from S3 and decrypts the data in the 'Body' field.
      *
      * @param array $args Arguments for retrieving an object from S3 via
-     *                   GetObject and decrypting it.
+     *                    GetObject and decrypting it.
      *
      * The required configuration argument is as follows:
      *
@@ -427,15 +427,15 @@ class S3EncryptionClientV2 extends AbstractCryptoClientV2
      *   encrypting/decrypting for decryption metadata. May have data loaded
      *   from the MetadataEnvelope upon decryption.
      * - @SecurityProfile: (string) Must be set to 'V2' or 'V2_AND_LEGACY'.
-     *     - 'V2' indicates that only objects encrypted with S3EncryptionClientV2
-     *       content encryption and key wrap schemas are able to be decrypted.
-     *     - 'V2_AND_LEGACY' indicates that objects encrypted with both
-     *       S3EncryptionClientV2 and older legacy encryption clients are able
-     *       to be decrypted.
+     *      - 'V2' indicates that only objects encrypted with S3EncryptionClientV2
+     *        content encryption and key wrap schemas are able to be decrypted.
+     *      - 'V2_AND_LEGACY' indicates that objects encrypted with both
+     *        S3EncryptionClientV2 and older legacy encryption clients are able
+     *        to be decrypted.
      * - @CommitmentPolicy: (string) Must be set to 'FORBID_ENCRYPT_ALLOW_DECRYPT'.
-     *     - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is
-     *        configured to read messages encrypted with key commitment
-     *        or without key commitment.
+     *      - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is 
+     *         configured to read messages encrypted with key commitment 
+     *         or without key commitment.
      *
      * The optional configuration arguments are as follows:
      *

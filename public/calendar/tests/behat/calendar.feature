@@ -159,6 +159,7 @@ Feature: Perform basic calendar functionality
   Scenario: Edit a newly created event using TinyMCE editor
     Given I log in as "teacher1"
     And I follow "Dashboard"
+    And I click on "Full calendar" "link"
     And I click on "New event" "button"
     And I set the field "Event title" to "Newly created event"
     When I press "Save"
@@ -467,3 +468,17 @@ Feature: Perform basic calendar functionality
     And I press "Save"
     And I click on "type change test event" "link"
     And I should see "Category event"
+
+  @javascript
+  Scenario: Move a date in the event form should update the event end date
+    Given I log in as "admin"
+    And the following "events" exist:
+      | name                   | eventtype | timestart                     | timeduration |
+      | Change date test event | user      | ##today midnight +1 seconds## | 86400        |
+    When I am on "Course 1" course homepage
+    And I follow "Course calendar"
+    And I click on "Change date test event" "link"
+    And I click on "Edit" "button" in the "Change date test event" "dialogue"
+    And I set the following fields to these values:
+      | Date | ##today midnight +2 days## |
+    Then the field "Until" matches value "##today midnight +3 days##"

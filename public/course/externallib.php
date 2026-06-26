@@ -27,6 +27,7 @@
 defined('MOODLE_INTERNAL') || die;
 
 use core_course\external\course_summary_exporter;
+use core_courseformat\formatactions;
 use core_external\external_api;
 use core_external\external_description;
 use core_external\external_files;
@@ -142,6 +143,11 @@ class core_course_external extends external_api {
 
         //retrieve the course
         $course = $DB->get_record('course', array('id' => $params['courseid']), '*', MUST_EXIST);
+
+        // Accessing the site home via the web service is not allowed when it is disabled.
+        if ($course->id == SITEID && empty($CFG->enablemyhome)) {
+            throw new moodle_exception('error:sitehomeisdisabled', 'course');
+        }
 
         // now security checks
         $context = context_course::instance($course->id, IGNORE_MISSING);
@@ -1208,6 +1214,7 @@ class core_course_external extends external_api {
      * Update courses
      *
      * @param array $courses
+     * @return array
      * @since Moodle 2.5
      */
     public static function update_courses($courses) {
@@ -1381,6 +1388,7 @@ class core_course_external extends external_api {
      * Delete courses
      *
      * @param array $courseids A list of course ids
+     * @return array
      * @since Moodle 2.2
      */
     public static function delete_courses($courseids) {
@@ -2494,7 +2502,7 @@ class core_course_external extends external_api {
             require_capability('moodle/course:manageactivities', $modcontext);
 
             // Delete the module.
-            course_delete_module($cm->id);
+            \core_courseformat\formatactions::cm($cm->course)->delete($cm->id);
         }
     }
 
@@ -2724,7 +2732,7 @@ class core_course_external extends external_api {
      * @param int $perpage          Items per page
      * @param array $requiredcapabilities Optional list of required capabilities (used to filter the list).
      * @param int $limittoenrolled  Limit to only enrolled courses
-     * @param int onlywithcompletion Limit to only courses where completion is enabled
+     * @param int $onlywithcompletion Limit to only courses where completion is enabled
      * @return array of course objects and warnings
      * @since Moodle 3.0
      * @throws moodle_exception
@@ -2809,7 +2817,7 @@ class core_course_external extends external_api {
     /**
      * Returns a course structure definition
      *
-     * @param  boolean $onlypublicdata set to true, to retrieve only fields viewable by anyone when the course is visible
+     * @param  bool $onlypublicdata set to true, to retrieve only fields viewable by anyone when the course is visible
      * @return external_single_structure the course structure
      * @since  Moodle 3.2
      */
@@ -3782,8 +3790,8 @@ class core_course_external extends external_api {
                 if (!course_allowed_module($course, $cm->modname)) {
                     throw new moodle_exception('No permission to create that activity');
                 }
-                if ($newcm = duplicate_module($course, $cm)) {
-
+                $cmaction = \core_courseformat\formatactions::cm($course->id);
+                if ($newcm = $cmaction->duplicate($cm->id)) {
                     $modinfo = $format->get_modinfo();
                     $section = $modinfo->get_section_info($newcm->sectionnum);
                     $cm = $modinfo->get_cm($id);
@@ -3805,7 +3813,7 @@ class core_course_external extends external_api {
                 } else {
                     $newgroupmode = NOGROUPS;
                 }
-                if (set_coursemodule_groupmode($cm->id, $newgroupmode)) {
+                if (formatactions::cm($coursecontext->instanceid)->set_groupmode($cm->id, $newgroupmode)) {
                     \core\event\course_module_updated::create_from_cm($cm, $modcontext)->trigger();
                 }
                 break;
@@ -3820,7 +3828,7 @@ class core_course_external extends external_api {
                 break;
             case 'delete':
                 require_capability('moodle/course:manageactivities', $modcontext);
-                course_delete_module($cm->id, true);
+                \core_courseformat\formatactions::cm($course->id)->delete($cm->id, true);
                 return '';
             default:
                 throw new coding_exception('Unrecognised action');

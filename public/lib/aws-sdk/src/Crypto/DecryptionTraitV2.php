@@ -60,7 +60,7 @@ trait DecryptionTraitV2
         MaterialsProviderInterfaceV2 $provider,
         MetadataEnvelope $envelope,
         array $options = []
-    )
+    ) 
     {
         $commitmentPolicy = $this->getKeyCommitmentPolicy($options);
         unset($options['@CommitmentPolicy']);
@@ -156,7 +156,7 @@ trait DecryptionTraitV2
 
     private function buildMaterialDescription(
         MetadataEnvelope $envelope
-    ): array
+    ): array 
     {
         switch ($envelope[MetadataEnvelope::ENCRYPTED_DATA_KEY_ALGORITHM_V3]) {
             case 12:
@@ -190,7 +190,7 @@ trait DecryptionTraitV2
     private function getTagFromCiphertextStream(
         StreamInterface $cipherText,
         $tagLength
-    )
+    ) 
     {
         $cipherTextSize = $cipherText->getSize();
         if ($cipherTextSize == null || $cipherTextSize <= 0) {
@@ -207,7 +207,7 @@ trait DecryptionTraitV2
     private function getStrippedCiphertextStream(
         StreamInterface $cipherText,
         $tagLength
-    )
+    ) 
     {
         $cipherTextSize = $cipherText->getSize();
         if ($cipherTextSize == null || $cipherTextSize <= 0) {
@@ -293,9 +293,9 @@ trait DecryptionTraitV2
      * @param string $cipherText Plain-text data to be encrypted using the
      *                           materials, algorithm, and data provided.
      * @param string $cek A content encryption key for use by the stream for
-     *                   encrypting the plaintext data.
+     *                    encrypting the plaintext data.
      * @param array $cipherOptions Options for use in determining the cipher to
-     *                            be used for encrypting data.
+     *                             be used for encrypting data.
      *
      * @return AesStreamInterface
      *
@@ -305,7 +305,7 @@ trait DecryptionTraitV2
         $cipherText,
         $cek,
         $cipherOptions
-    )
+    ) 
     {
         $cipherTextStream = Psr7\Utils::streamFor($cipherText);
         switch ($cipherOptions['Cipher']) {
@@ -349,9 +349,9 @@ trait DecryptionTraitV2
      * @param string $cipherText Plain-text data to be encrypted using the
      *                           materials, algorithm, and data provided.
      * @param string $cek A content encryption key for use by the stream for
-     *                   encrypting the plaintext data.
+     *                    encrypting the plaintext data.
      * @param array $cipherOptions Options for use in determining the cipher to
-     *                            be used for encrypting data.
+     *                             be used for encrypting data.
      * @param string $messageId a string value used to calculate both a commitment
      *                          key and derived content encryption key
      * @param string $commitmentKey a string value to compare with the calculated commitment
@@ -416,7 +416,7 @@ trait DecryptionTraitV2
                     $cipherOptions['TagLength'] ?: null,
                     $cipherOptions['KeySize']
                 );
-            default:
+            default: 
                 throw new CryptoException("Unsupported Cipher used for key commitment messages."
                     . " Found {$cipherOptions["Cipher"]}. Only 'gcm' is supported.");
         }

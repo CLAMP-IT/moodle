@@ -1,5 +1,7 @@
 <?php
 
+use mod_glossary\output\renderer;
+
 /**
  * Template function that can be used for displaying glossary entries on a different format.
  *
@@ -26,91 +28,48 @@ function glossary_show_entry_TEMPLATE(
     $aliases = true,
     $conceptheadinglevel = 3,
 ) {
-    global $CFG, $DB, $OUTPUT;
+    global $DB, $PAGE;
 
     if ($entry) {
         $user = $DB->get_record('user', ['id' => $entry->userid]);
 
-        echo '<table class="glossarypost TEMPLATE" role="presentation">';
-        echo '<tr>';
-        echo '<td class="entryheader">';
+        echo '<div class="glossarypost TEMPLATE">';
 
-        //Use this function to show author's image
-        //Comments: Configuration not supported
-        echo $OUTPUT->user_picture($user, [
-            'courseid' => $course->id,
-            'link' => false,
-        ]);
+        // Use this function to show author's image and name along with the concept name.
+        /** @var renderer $renderer */
+        $renderer = $PAGE->get_renderer('mod_glossary');
+        echo $renderer->concept_entry_header($entry, $mode, $conceptheadinglevel, $user, $course->id);
 
-        //Line separator to show this template fine. :-)
-        echo '<br />';
+        // Use this code to show modification date.
+        // Comments: Configuration not supported.
+        echo get_string('lastedited') . ': ' . userdate($entry->timemodified) . '<br />';
 
-        //Use this code to show author's name
-        //Comments: Configuration not supported
-        $fullname = fullname($user);
-        $by = new stdClass();
-        $by->name = '<a href="'.$CFG->wwwroot.'/user/view.php?id='.$user->id.'&amp;course='.$course->id.'">'.$fullname.'</a>';
-        $by->date = userdate($entry->timemodified);
-        echo '<span class="author">' . get_string('bynameondate', 'glossary', $by) . '</span>' . '<br />';
+        echo '<div class="entryattachment">';
+        echo '</div>';
 
-        //Use this code to show modification date
-        //Comments: Configuration not supported
-        echo get_string('lastedited').': '. userdate($entry->timemodified) . '<br /></span>';
+        echo '<div class="entry">';
 
-        //Use this function to show the approval button. It'll be shown if necessary
-        //Comments: You can configure this parameters:
-        //----Define where to show the approval button
-        $approvalalign = 'right'; //Values: left, center and right (default right)
-        //----Define if the approval button must be showed into a 100% width table
-        $approvalinsidetable = true; //Values: true, false (default true)
-        //Call the function
-        glossary_print_entry_approval($cm, $entry, $mode, $approvalalign, $approvalinsidetable);
-
-        //Line separator to show this template fine. :-)
-        echo '<br />';
-
-        echo '</td>';
-
-        echo '<td class="entryattachment">';
-
-        //Line separator to show this template fine. :-)
-        echo "<br />\n";
-
-        echo '</td></tr>';
-
-        echo '<tr valign="top">';
-        echo '<td class="entry">';
-
-        //Use this function to print the concept in a heading <h3>
-        //Comments: Configuration not supported
+        // Use this function to print the concept in a heading <h3>.
+        // Comments: Configuration not supported.
         glossary_print_entry_concept($entry, headinglevel: $conceptheadinglevel);
 
-        //Line separator not normally needed now.
-        //echo "<br />\n";
-
-        //Use this function to show the definition
-        //Comments: Configuration not supported
+        // Use this function to show the definition.
+        // Comments: Configuration not supported.
         glossary_print_entry_definition($entry, $glossary, $cm);
 
         // Use this function to show the attachment. It'll be shown if necessary.
         glossary_print_entry_attachment($entry, $cm, 'html');
 
-        //Line separator to show this template fine. :-)
-        echo "<br />\n";
-
-        //Use this function to show aliases, editing icons and ratings (all know as the 'lower section')
-        //Comments: You can configure this parameters:
-        //----Define when to show the aliases popup
-        //    use it only if you are really sure!
-        //$aliases = true; //Values: true, false (Default: true)
-        //----Uncoment this line to avoid editing icons being showed
-        //    use it only if you are really sure!
-        //$printicons = false;
+        // Use this function to show aliases, editing icons and ratings (all know as the 'lower section').
+        // Comments: You can configure these parameters:
+        // ----Define when to show the aliases popup. Use it only if you are really sure!
+        // $aliases = true; // Values: true, false (Default: true).
+        // ----Uncomment this line to avoid editing icons being shown. Use it only if you are really sure!
+        // $printicons = false; // true/1, false/0.
         glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mode, $hook, $printicons, $aliases);
 
-        echo '</td>';
-        echo '</tr>';
-        echo "</table>\n";
+        echo '</div>';
+        echo "</div>";
     } else {
         echo html_writer::div(get_string('noentry', 'glossary'), 'text-center');
     }
@@ -148,3 +107,5 @@ function glossary_print_entry_TEMPLATE(
     // Call to view function (without icons, ratings and aliases) and return its result.
     glossary_show_entry_TEMPLATE($course, $cm, $glossary, $entry, $mode, $hook, false, false, $conceptheadinglevel);
 }
+
+

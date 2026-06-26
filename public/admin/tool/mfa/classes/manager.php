@@ -51,7 +51,48 @@ class manager {
         'tool_mfa' => [
             'guidance',
         ],
+        'theme_*' => [
+            'loginbackgroundimage',
+        ],
     ];
+
+    /**
+     * Returns allowed fileareas for a component.
+     *
+     * Supports exact component matches and wildcard suffix matches such as `theme_*`.
+     *
+     * @param string $component the component to check.
+     * @return array|null the allowed fileareas, or null if the component is not allowed.
+     */
+    protected static function get_allowed_fileareas_for_component(string $component): ?array {
+        if (array_key_exists($component, static::ALLOWED_COMPONENTS)) {
+            return static::ALLOWED_COMPONENTS[$component];
+        }
+
+        foreach (static::ALLOWED_COMPONENTS as $pattern => $fileareas) {
+            if (!str_ends_with($pattern, '*')) {
+                continue;
+            }
+
+            $prefix = substr($pattern, 0, -1);
+            if ($prefix !== '' && str_starts_with($component, $prefix)) {
+                return $fileareas;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks whether a filearea is allowed.
+     *
+     * @param string $filearea the filearea to check.
+     * @param array $allowedfileareas the allowed fileareas for the component, where '*' allows all fileareas.
+     * @return bool
+     */
+    protected static function is_allowed_filearea(string $filearea, array $allowedfileareas): bool {
+        return in_array('*', $allowedfileareas) || in_array($filearea, $allowedfileareas);
+    }
 
     /**
      * Displays a debug table with current factor information.
@@ -469,13 +510,15 @@ class manager {
             $component = clean_param(array_shift($args), PARAM_COMPONENT);
             $filearea = clean_param(array_shift($args), PARAM_AREA);
 
+            $allowedfileareas = static::get_allowed_fileareas_for_component($component);
+
             // Check allowed components.
-            if (!array_key_exists($component, static::ALLOWED_COMPONENTS)) {
+            if ($allowedfileareas === null) {
                 return self::REDIRECT;
             }
 
             // Check allowed fileareas.
-            if (!in_array($filearea, static::ALLOWED_COMPONENTS[$component])) {
+            if (!static::is_allowed_filearea($filearea, $allowedfileareas)) {
                 return self::REDIRECT;
             }
 

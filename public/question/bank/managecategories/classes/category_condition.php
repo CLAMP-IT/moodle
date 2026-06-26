@@ -20,6 +20,7 @@ use core\context;
 use core\output\datafilter;
 use core_question\local\bank\condition;
 use core_question\local\bank\view;
+use restore_dbops;
 use restore_questions_activity_structure_step;
 use stdClass;
 
@@ -112,46 +113,6 @@ class category_condition extends condition {
     }
 
     /**
-     * @deprecated since Moodle 4.3 MDL-72321 - please do not use this function any more.
-     */
-    #[\core\attribute\deprecated('filtering objects', since: '4.3', mdl: 'MDL-72321', final: true)]
-    public function display_options() {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
-    }
-
-    /**
-     * @deprecated since Moodle 4.3 MDL-72321 - please do not use this function any more.
-     */
-    #[\core\attribute\deprecated('foobar::blah()', since: '4.3', mdl: 'MDL-72321', final: true)]
-    public function display_options_adv() {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
-    }
-
-    /**
-     * @deprecated since Moodle 4.3
-     */
-    #[\core\attribute\deprecated('core_question renderer', since: '4.3', mdl: 'MDL-72321', final: true)]
-    protected function display_category_form($contexts, $pageurl, $current) {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
-    }
-
-    /**
-     * @deprecated since Moodle 4.3
-     */
-    #[\core\attribute\deprecated('qbank_managecategories/choose_category template', since: '4.3', mdl: 'MDL-72321', final: true)]
-    public static function print_choose_category_message(): void {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
-    }
-
-    /**
-     * @deprecated since Moodle 4.3
-     */
-    #[\core\attribute\deprecated(null, since: '4.3', mdl: 'MDL-72321', final: true)]
-    public static function get_current_category($categoryandcontext) {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
-    }
-
-    /**
      * Return category and context ID from compound parameter.
      *
      * @param string $categoryandcontext Comma-separated list of category and context IDs.
@@ -179,14 +140,6 @@ class category_condition extends condition {
                 ['id' => $categoryid, 'contextid' => $contextid],
                 '*',
                 MUST_EXIST);
-    }
-
-    /**
-     * @deprecated since Moodle 4.3 MDL-72321 - please do not use this function any more.
-     */
-    #[\core\attribute\deprecated(null, since: '4.3', mdl: 'MDL-72321', final: true)]
-    protected function print_category_info($category): string {
-        \core\deprecation::emit_deprecation([self::class, __FUNCTION__]);
     }
 
     public static function build_query_from_filter(array $filter): array {
@@ -319,6 +272,7 @@ class category_condition extends condition {
         // Decide if we're going to refer back to the original category, or to the new category.
         // Are we restoring to a different site?
         // Has the original context or category been deleted?
+        // Was a copy of the original context created during this restore?
         // Did the old category belong to the same context as the original set reference?
         // Are we allowed to use its questions?
         $questionscontext = context::instance_by_id($setreference->questionscontextid, IGNORE_MISSING);

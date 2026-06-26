@@ -118,6 +118,7 @@ Feature: Quiz group override
     And "Copy" "link" should not exist in the "Group 1" "table_row"
     And "Delete" "link" should not exist in the "Group 1" "table_row"
 
+  @javascript
   Scenario: "Not visible" groups should not be available for group overrides
     Given the following "groups" exist:
       | name                                 | course | idnumber | visibility | participation |
@@ -129,7 +130,7 @@ Feature: Quiz group override
       | Only visible to members/Non-Participation | C1     | MN       | 1          | 0             |
     When I am on the "quiz1" Activity page logged in as teacher1
     And I navigate to "Overrides" in current page administration
-    And I select "Group overrides" from the "jump" singleselect
+    And I set the field "Overrides" to "Group overrides"
     And I press "Add group override"
     Then I should see "Visible to everyone/Participation" in the "Override group" "select"
     And I should see "Visible to everyone/Non-Participation" in the "Override group" "select"

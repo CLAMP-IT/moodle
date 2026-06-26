@@ -676,6 +676,9 @@ M.form_dndupload.init = function(Y, options) {
                 type = 'info'; // One of only two types excepted.
                 header = M.util.get_string('info', 'moodle');
             }
+            if (errorCode === 'invalidfiletypewithaccepted') {
+                header = M.util.get_string('invalidfiletypetitle', 'repository');
+            }
             if (errorCode === 'uploaderrorfoldersnotsupported') {
                 header = M.util.get_string('upload_error_folders_not_supported_title', 'repository_upload');
             }
@@ -951,7 +954,7 @@ M.form_dndupload.init = function(Y, options) {
         notifyUploadCompleted: function() {
             require(['core_form/events'], function(FormEvent) {
                 const elementId = this.filemanagerhelper ? this.filemanagerhelper.filemanager.get('id') : this.options.containerid;
-                FormEvent.triggerUploadCompleted(elementId);
+                FormEvent.notifyUploadCompleted(elementId);
             }.bind(this));
          },
 
@@ -961,7 +964,7 @@ M.form_dndupload.init = function(Y, options) {
         notifyUploadStarted: function() {
             require(['core_form/events'], function(FormEvent) {
                 const elementId = this.filemanagerhelper ? this.filemanagerhelper.filemanager.get('id') : this.options.containerid;
-                FormEvent.triggerUploadStarted(elementId);
+                FormEvent.notifyUploadStarted(elementId);
             }.bind(this));
         },
 
@@ -1068,7 +1071,7 @@ M.form_dndupload.init = function(Y, options) {
                         var result = JSON.parse(xhr.responseText);
                         if (result) {
                             if (result.error) {
-                                self.print_msg(result.error, 'error'); // TODO add filename?
+                                self.print_msg(result.error, 'error', result.errorcode);
                                 self.uploadfinished();
                                 // Don't do anything else after reporting the error.
                                 return;

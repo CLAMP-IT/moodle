@@ -74,8 +74,12 @@ final class restore_39_test extends advanced_testcase {
         // Get question_set_references records for the restored quiz activity.
         $references = $DB->get_records('question_set_references', ['usingcontextid' => $contextid]);
         foreach ($references as $reference) {
-            // Confirm the questionscontextid is set correctly, which is now the quiz context.
-            $this->assertEquals($contextid, $reference->questionscontextid);
+            $filtercondition = json_decode($reference->filtercondition);
+            // Confirm the questionscontextid is set correctly, which is from filter question category id.
+            $this->assertEquals(
+                $reference->questionscontextid,
+                $qcats[$filtercondition->filter->category->values[0]]->contextid,
+            );
         }
     }
 }

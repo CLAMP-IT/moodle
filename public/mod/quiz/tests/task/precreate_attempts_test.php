@@ -469,7 +469,7 @@ final class precreate_attempts_test extends \advanced_testcase {
     }
 
     /**
-     * Helper to add a quiz attempt for a user.
+     * Helper to add a quiz attempt.
      *
      * @param int $quizid
      * @param int $userid

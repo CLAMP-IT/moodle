@@ -1965,6 +1965,12 @@ function get_question_version($questionid): array {
  * @return int next version number.
  * @throws dml_exception
  */
+#[\core\attribute\deprecated(
+    '\core_question\versions::get_next_version()',
+    '5.2',
+    'The next version is now an incrementing number stored in the database, to prevent duplicate version numbers',
+    'MDL-86798',
+)]
 function get_next_version(int $questionbankentryid): int {
     return \core_question\versions::get_next_version($questionbankentryid);
 }

@@ -54,8 +54,6 @@ $string['auth_dbsetupsql'] = 'SQL setup command';
 $string['auth_dbsetupsqlhelp'] = 'SQL command for special database setup, often used to setup communication encoding - example for MySQL and PostgreSQL: <em>SET NAMES \'utf8\'</em>';
 $string['auth_dbsuspenduser'] = 'Suspended user {$a->name} id {$a->id}';
 $string['auth_dbsuspendusererror'] = 'Error suspending user {$a}';
-$string['auth_dbsybasequoting'] = 'Use sybase quotes';
-$string['auth_dbsybasequotinghelp'] = 'Sybase style single quote escaping - needed for MS SQL and some other databases. Do not use for MySQL!';
 $string['auth_dbsyncuserstask'] = 'Synchronise users task';
 $string['auth_dbtable'] = 'Name of the table in the database';
 $string['auth_dbtable_key'] = 'Table';
@@ -77,3 +75,7 @@ $string['auth_dbcolumnlist'] = 'External table contains the following columns:<b
 $string['auth_dbupdateerror'] = 'Error updating external database.';
 $string['pluginname'] = 'External database';
 $string['privacy:metadata'] = 'The External database authentication plugin does not store any personal data.';
+
+// Deprecated since Moodle 5.2.
+$string['auth_dbsybasequoting'] = 'Use sybase quotes';
+$string['auth_dbsybasequotinghelp'] = 'Sybase style single quote escaping - needed for MS SQL and some other databases. Do not use for MySQL!';

@@ -22,7 +22,7 @@ use GuzzleHttp\Psr7;
  * data on putObject[Async] calls and decrypt data on getObject[Async] calls.
  *
  * AWS strongly recommends the upgrade to the S3EncryptionClientV3 (over the
- * S3EncryptionClientV2 or S3EncryptionClient), as it offers updated
+ * S3EncryptionClientV2 or S3EncryptionClient), as it offers updated 
  * data security best practices to our customers who upgrade.
  * S3EncryptionClientV3 contains breaking changes, so this
  * will require planning by engineering teams to migrate. New workflows should
@@ -96,11 +96,11 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
 
     /**
      * @param S3Client $client The S3Client to be used for true uploading and
-     *                        retrieving objects from S3 when using the
-     *                        encryption client.
+     *                         retrieving objects from S3 when using the
+     *                         encryption client.
      * @param string|null $instructionFileSuffix Suffix for a client wide
-     *                                          default when using instruction
-     *                                          files for metadata storage.
+     *                                           default when using instruction
+     *                                           files for metadata storage.
      */
     public function __construct(
         //= ../specification/s3-encryption/client.md#wrapped-s3-client-s
@@ -126,7 +126,7 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
         //# it MUST throw an exception in this case.
         if ($client instanceof S3EncryptionClientV3) {
             throw new CryptoException("Client configuration error."
-                . " An S3 Encryption Client is not a valid S3 client for an S3 Encryption Client.");
+                . " An S3 Encryption Client is not a valid S3 client for an S3 Encryption Client.");   
         }
         $this->client = $client;
         //= ../specification/s3-encryption/client.md#instruction-file-configuration
@@ -161,23 +161,23 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
      * to the specified location on S3.
      *
      * @param array $args Arguments for encrypting an object and uploading it
-     *                   to S3 via PutObject.
+     *                    to S3 via PutObject.
      *
      * The required configuration arguments are as follows:
      *
      * - @MaterialsProvider: (MaterialsProviderV3) Provides Cek, Iv, and Cek
      *   encrypting/decrypting for encryption metadata.
      * - @CommitmentPolicy: (string) Must be set to 'FORBID_ENCRYPT_ALLOW_DECRYPT',
-     *        'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
-     *     - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages without key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment.
+     *         'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
+     *      - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages without key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment.
      * - @CipherOptions: (array) Cipher options for encrypting data. Only the
      *   Cipher option is required. Accepts the following:
      *       - Cipher: (string) gcm
@@ -269,7 +269,7 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
                         $hash,
                         self::getContentShaDecorator($args)
                     );
-
+                    
                     return [$hashingEncryptedBodyStream, $args];
                 }
             )->then(
@@ -282,13 +282,13 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
                     //# By default, the S3EC MUST store content metadata in the S3 Object Metadata.
                     $updatedArgs = $strategy->save($envelope, $args);
                     $updatedArgs['Body'] = $bodyStream;
-
+                    
                     return $updatedArgs;
                 }
             )->then(
                 function ($args) {
                     unset($args['@CipherOptions']);
-
+                    
                     return $this->client->putObjectAsync($args);
                 }
             );
@@ -306,23 +306,23 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
      * specified location on S3.
      *
      * @param array $args Arguments for encrypting an object and uploading it
-     *                   to S3 via PutObject.
+     *                    to S3 via PutObject.
      *
      * The required configuration arguments are as follows:
      *
      * - @MaterialsProvider: (MaterialsProvider) Provides Cek, Iv, and Cek
      *   encrypting/decrypting for encryption metadata.
      * - @CommitmentPolicy: (string) Must be set to 'FORBID_ENCRYPT_ALLOW_DECRYPT',
-     *        'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
-     *     - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages without key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment.
+     *         'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
+     *      - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages without key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment.
      * - @CipherOptions: (array) Cipher options for encrypting data. A Cipher
      *   is required. Accepts the following options:
      *       - Cipher: (string) gcm
@@ -368,7 +368,7 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
      * 'Body' field.
      *
      * @param array $args Arguments for retrieving an object from S3 via
-     *                   GetObject and decrypting it.
+     *                    GetObject and decrypting it.
      *
      * The required configuration argument is as follows:
      *
@@ -376,22 +376,22 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
      *   encrypting/decrypting for decryption metadata. May have data loaded
      *   from the MetadataEnvelope upon decryption.
      * - @CommitmentPolicy: (string) Must be set to 'FORBID_ENCRYPT_ALLOW_DECRYPT',
-     *        'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
-     *     - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages without key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment.
+     *         'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
+     *      - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages without key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment.
      * - @SecurityProfile: (string) Must be set to 'V3' or 'V3_AND_LEGACY'.
-     *     - 'V3' indicates that only objects encrypted with S3EncryptionClientV3
-     *       content encryption and key wrap schemas are able to be decrypted.
-     *     - 'V3_AND_LEGACY' indicates that objects encrypted with both
-     *       S3EncryptionClientV3 and older legacy encryption clients are able
-     *       to be decrypted.
+     *      - 'V3' indicates that only objects encrypted with S3EncryptionClientV3
+     *        content encryption and key wrap schemas are able to be decrypted.
+     *      - 'V3_AND_LEGACY' indicates that objects encrypted with both
+     *        S3EncryptionClientV3 and older legacy encryption clients are able
+     *        to be decrypted.
      *
      * The optional configuration arguments are as follows:
      *
@@ -498,7 +498,7 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
                         $keyCommitmentPolicy,
                         $args
                     );
-
+                    
                     return $result;
                 }
             )->then(
@@ -510,7 +510,7 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
                             LOCK_EX
                         );
                     }
-
+                    
                     return $result;
                 }
             );
@@ -522,7 +522,7 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
      * Retrieves an object from S3 and decrypts the data in the 'Body' field.
      *
      * @param array $args Arguments for retrieving an object from S3 via
-     *                   GetObject and decrypting it.
+     *                    GetObject and decrypting it.
      *
      * The required configuration argument is as follows:
      *
@@ -530,22 +530,22 @@ class S3EncryptionClientV3 extends AbstractCryptoClientV3
      *   encrypting/decrypting for decryption metadata. May have data loaded
      *   from the MetadataEnvelope upon decryption.
      * - @CommitmentPolicy: (string) Must be set to 'FORBID_ENCRYPT_ALLOW_DECRYPT',
-     *        'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
-     *     - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages without key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment or without key commitment.
-     *     - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
-     *        to write messages with key commitment and read messages encrypted
-     *        with key commitment.
+     *         'REQUIRE_ENCRYPT_ALLOW_DECRYPT', or 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT'.
+     *      - 'FORBID_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages without key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_ALLOW_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment or without key commitment.
+     *      - 'REQUIRE_ENCRYPT_REQUIRE_DECRYPT' indicates that the client is configured
+     *         to write messages with key commitment and read messages encrypted 
+     *         with key commitment.
      * - @SecurityProfile: (string) Must be set to 'V3' or 'V3_AND_LEGACY'.
-     *     - 'V3' indicates that only objects encrypted with S3EncryptionClientV3
-     *       content encryption and key wrap schemas are able to be decrypted.
-     *     - 'V3_AND_LEGACY' indicates that objects encrypted with both
-     *       S3EncryptionClientV3 and older legacy encryption clients are able
-     *       to be decrypted.
+     *      - 'V3' indicates that only objects encrypted with S3EncryptionClientV3
+     *        content encryption and key wrap schemas are able to be decrypted.
+     *      - 'V3_AND_LEGACY' indicates that objects encrypted with both
+     *        S3EncryptionClientV3 and older legacy encryption clients are able
+     *        to be decrypted.
      *
      * The optional configuration arguments are as follows:
      *

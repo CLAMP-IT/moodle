@@ -80,6 +80,7 @@ $string['sendnotificationnotenc'] = 'Send notifications without encryption';
 $string['sendtest'] = 'Send test push notification to my devices';
 $string['sendtestconfirmation'] = 'A test push notification will be sent to the devices you use to connect to this site. Please ensure that your devices are connected to the Internet and that the mobile app is not open (since push notifications are only displayed when received in the background).';
 $string['serverconnectivityerror'] = 'This site is not able to connect to the notifications server {$a}';
+$string['taskcleanup'] = 'Clean up AirNotifier devices.';
 $string['unknowndevice'] = 'Unknown device';
 $string['userdevices'] = 'User devices';
 $string['airnotifier:managedevice'] = 'Manage devices';

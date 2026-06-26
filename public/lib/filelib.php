@@ -2367,7 +2367,7 @@ function send_temp_file($path, $filename, $pathisstring=false) {
             throw new \moodle_exception('filenotfound', 'error', $CFG->wwwroot.'/');
         }
         // executed after normal finish or abort
-        core_shutdown_manager::register_function('send_temp_file_finished', array($path));
+        \core\shutdown_manager::register_function('send_temp_file_finished', [$path]);
     }
 
     // if user is using IE, urlencode the filename so that multibyte file name will show up correctly on popup
@@ -4096,7 +4096,7 @@ class curl {
 
         if (!empty($params)) {
             $url .= (stripos($url, '?') !== false) ? '&' : '?';
-            $url .= http_build_query($params, '', '&');
+            $url .= http_build_query($params);
         }
         return $this->request($url, $options);
     }
@@ -4135,7 +4135,7 @@ class curl {
         $options['CURLOPT_HTTPGET'] = 1;
         if (!empty($params)) {
             $url .= (stripos($url, '?') !== false) ? '&' : '?';
-            $url .= http_build_query($params, '', '&');
+            $url .= http_build_query($params);
         }
         if (!empty($options['filepath']) && empty($options['file'])) {
             // open file
@@ -5228,6 +5228,26 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null, $offlin
             \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, $sendfileoptions);
         }
+    } else if ($component === 'notes') {
+        require_login($course);
+
+        $noteid = (int) array_shift($args);
+
+        $note = $DB->get_record('post', ['module' => 'notes', 'id' => $noteid]);
+        $notecontext = \core\context\course::instance($note->courseid);
+
+        if ($context->id !== $notecontext->id || !has_capability('moodle/notes:view', $context)) {
+            send_file_not_found();
+        }
+
+        $filename = array_pop($args);
+        $file = $fs->get_file($context->id, $component, $filearea, $note->id, '/', $filename);
+        if ($file !== false && !$file->is_directory()) {
+            \core\session\manager::write_close();
+            send_stored_file($file, HOURSECS, 0, $forcedownload, $sendfileoptions);
+        }
+
+        send_file_not_found();
     } else if ($component === 'contentbank') {
         if ($filearea != 'public' || isguestuser()) {
             send_file_not_found();

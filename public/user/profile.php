@@ -225,6 +225,15 @@ profile_view($user, $usercontext);
 
 // TODO WORK OUT WHERE THE NAV BAR IS!
 echo $OUTPUT->header();
+
+if ($user->suspended) {
+    echo $OUTPUT->notification(
+        html_writer::tag('h2', get_string('suspended', 'auth'), ['class' => 'alert-heading h4']) .
+        get_string('suspended_help', 'auth'),
+        \core\output\notification::NOTIFY_WARNING
+    );
+}
+
 echo '<div class="userprofile">';
 
 $hiddenfields = [];

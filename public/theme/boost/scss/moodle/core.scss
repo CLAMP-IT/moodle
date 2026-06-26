@@ -2136,7 +2136,7 @@ $footer-link-color: $bg-inverse-link-color !default;
     }
 }
 
-[data-drag-type="move"] {
+[data-drag-type="move"]:not(:disabled) {
     cursor: move;
     touch-action: none;
 }
@@ -2762,12 +2762,6 @@ body.dragging {
 }
 
 .page-mycourses {
-    .block_myoverview {
-        .block-cards {
-            border-top: 1px solid $border-color;
-            padding-top: map-get($spacers, 2);
-        }
-    }
     // Boost theme styling only (drawers not used in classic).
     .drawers {
         .block_myoverview {
@@ -3001,4 +2995,26 @@ blockquote {
 /* General card customisations. */
 .card.active {
     border-color: $gray-500;
+}
+
+/* Loading icon */
+.loading-icon {
+    &.overlay {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        padding-top: 3rem;
+        background-color: rgba($white, .5);
+        .icon {
+            width: map-get($iconwidthsizes, 5);
+            height: map-get($iconsizes, 5);
+            max-width: map-get($iconwidthsizes, 5);
+            max-height: map-get($iconsizes, 5);
+            font-size: map-get($iconsizes, 5);
+        }
+    }
 }

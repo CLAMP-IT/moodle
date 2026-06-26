@@ -14,7 +14,7 @@ Feature: Manage custom fields for custom reports
     Then I should see "Custom report fields"
     And I press "Add a new category"
     And I should see "Other fields"
-    And I click on "Add a new custom field" "link"
+    And I click on "Add field" "link"
     And I click on "Short text" "link"
     And I set the following fields to these values:
       | Name       | Description |

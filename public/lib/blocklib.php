@@ -2818,11 +2818,12 @@ function blocks_add_default_system_blocks() {
 
     $page->blocks->add_blocks($page->blocks->filter_nonexistent_blocks([
         BLOCK_POS_RIGHT => [
+            'calendar_month',
             'recentlyaccesseditems',
         ],
         'content' => [
+            'myoverview',
             'timeline',
-            'calendar_month',
         ]]),
         'my-index',
         $subpagepattern

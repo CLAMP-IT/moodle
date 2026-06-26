@@ -1,6 +1,6 @@
 # aiprovider_openai Upgrade notes
 
-## 5.1.4
+## 5.2
 
 ### Added
 

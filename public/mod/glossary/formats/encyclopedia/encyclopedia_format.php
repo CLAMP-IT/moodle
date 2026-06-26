@@ -1,5 +1,7 @@
 <?php
 
+use mod_glossary\output\renderer;
+
 /**
  * Displays a glossary entry in encyclopedia format.
  *
@@ -26,61 +28,31 @@ function glossary_show_entry_encyclopedia(
     $aliases = true,
     $conceptheadinglevel = 3,
 ) {
-    global $CFG, $DB, $OUTPUT;
+    global $DB, $OUTPUT, $PAGE;
 
     if ($entry) {
         $user = $DB->get_record('user', ['id' => $entry->userid]);
 
-        echo '<table class="glossarypost encyclopedia table-reboot" cellspacing="0" role="presentation">';
-        echo '<tr valign="top">';
-        echo '<td class="left picture">';
+        echo '<div class="glossarypost encyclopedia">';
 
-        echo $OUTPUT->user_picture($user, [
-            'courseid' => $course->id,
-            'link' => false,
-        ]);
+        /** @var renderer $renderer */
+        $renderer = $PAGE->get_renderer('mod_glossary');
+        echo $renderer->concept_entry_header($entry, $mode, $conceptheadinglevel, $user, $course->id);
 
-        echo '</td>';
-        echo '<th class="entryheader">';
-        echo '<div class="concept">';
-        glossary_print_entry_concept($entry, headinglevel: $conceptheadinglevel);
-        echo '</div>';
-
-        $fullname = fullname($user);
-        $by = new stdClass();
-        $by->name = '<a href="'.$CFG->wwwroot.'/user/view.php?id='.$user->id.'&amp;course='.$course->id.'">'.$fullname.'</a>';
-        $by->date = userdate($entry->timemodified);
-        echo '<span class="author">' . get_string('bynameondate', 'glossary', $by) . '</span>';
-
-        echo '</th>';
-
-        echo '<td class="entryapproval">';
-        glossary_print_entry_approval($cm, $entry, $mode);
-        echo '</td>';
-
-        echo '</tr>';
-
-        echo '<tr valign="top">';
-        echo '<td class="left side" rowspan="2" aria-hidden="true">&nbsp;</td>';
-        echo '<td colspan="2" class="entry">';
-
+        echo '<div class="entry">';
         glossary_print_entry_definition($entry, $glossary, $cm);
         glossary_print_entry_attachment($entry, $cm, null);
         if (core_tag_tag::is_enabled('mod_glossary', 'glossary_entries')) {
             echo $OUTPUT->tag_list(
                 core_tag_tag::get_item_tags('mod_glossary', 'glossary_entries', $entry->id), null, 'glossary-tags');
         }
-
+        echo '</div>';
         if ($printicons or $aliases) {
-            echo '</td></tr>';
-            echo '<tr>';
-            echo '<td colspan="2" class="entrylowersection">';
+            echo '<div class="entrylowersection">';
             glossary_print_entry_lower_section($course, $cm, $glossary, $entry,$mode,$hook,$printicons,$aliases);
-            echo ' ';
+            echo '</div>';
         }
-
-        echo '</td></tr>';
-        echo "</table>\n";
+        echo "</div>";
 
     } else {
         echo html_writer::div(get_string('noentry', 'glossary'), 'text-center');

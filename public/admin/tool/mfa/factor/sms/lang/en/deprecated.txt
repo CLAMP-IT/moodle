@@ -13,3 +13,4 @@ settings:gateway_help,factor_sms
 errorawsconection,factor_sms
 event:smssentdescription,factor_sms
 event:smssent,factor_sms
+logintitle,factor_sms

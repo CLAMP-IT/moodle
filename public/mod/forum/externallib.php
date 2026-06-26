@@ -139,7 +139,7 @@ class mod_forum_external extends external_api {
         // Also, the return type declaration is wrong, but I am not changing it now because I don't want ot break things.
         return new external_multiple_structure(
             new external_single_structure(
-                array(
+                [
                     'id' => new external_value(PARAM_INT, 'Forum id'),
                     'course' => new external_value(PARAM_INT, 'Course id'),
                     'type' => new external_value(PARAM_TEXT, 'The forum type'),
@@ -177,7 +177,13 @@ class mod_forum_external extends external_api {
                     'istracked' => new external_value(PARAM_BOOL, 'If the user is tracking the forum', VALUE_OPTIONAL),
                     'unreadpostscount' => new external_value(PARAM_INT, 'The number of unread posts for tracked forums',
                         VALUE_OPTIONAL),
-                ), 'forum'
+                    'showimmediately' => new external_value(
+                        PARAM_BOOL,
+                        'Whether to show replies immediately in a Q&A forum',
+                        VALUE_OPTIONAL
+                    ),
+                ],
+                'forum'
             )
         );
     }
@@ -513,18 +519,22 @@ class mod_forum_external extends external_api {
                 if (forum_is_author_hidden($discussionobject, $forumrecord)) {
                     $discussionobject->userid = null;
                     $discussionobject->userfullname = null;
+                    $discussionobject->userinitials = null;
                     $discussionobject->userpictureurl = null;
 
                     $discussionobject->usermodified = null;
                     $discussionobject->usermodifiedfullname = null;
+                    $discussionobject->usermodifiedinitials = null;
                     $discussionobject->usermodifiedpictureurl = null;
 
                 } else {
                     $discussionobject->userfullname = $firstpostauthor->get_full_name();
+                    $discussionobject->userinitials = $firstpostauthor->get_initials();
                     $discussionobject->userpictureurl = $urlfactory->get_author_profile_image_url($firstpostauthor, null, 2)
                         ->out(false);
 
                     $discussionobject->usermodifiedfullname = $latestpostauthor->get_full_name();
+                    $discussionobject->usermodifiedinitials = $latestpostauthor->get_initials();
                     $discussionobject->usermodifiedpictureurl = $urlfactory->get_author_profile_image_url(
                         $latestpostauthor, null, 2)->out(false);
                 }
@@ -574,7 +584,9 @@ class mod_forum_external extends external_api {
                             'totalscore' => new external_value(PARAM_INT, 'The post message total score'),
                             'mailnow' => new external_value(PARAM_INT, 'Mail now?'),
                             'userfullname' => new external_value(PARAM_TEXT, 'Post author full name'),
+                            'userinitials' => new external_value(PARAM_NOTAGS, 'Post author initials', VALUE_OPTIONAL),
                             'usermodifiedfullname' => new external_value(PARAM_TEXT, 'Post modifier full name'),
+                            'usermodifiedinitials' => new external_value(PARAM_NOTAGS, 'Post modifier initials', VALUE_OPTIONAL),
                             'userpictureurl' => new external_value(PARAM_URL, 'Post author picture.'),
                             'usermodifiedpictureurl' => new external_value(PARAM_URL, 'Post modifier picture.'),
                             'numreplies' => new external_value(PARAM_INT, 'The number of replies in the discussion'),

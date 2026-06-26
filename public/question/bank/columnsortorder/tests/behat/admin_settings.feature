@@ -70,7 +70,7 @@ Feature: Set default question bank column order and size
     And I log in as "admin"
     And I navigate to "Plugins > Question bank plugins > Question custom fields" in site administration
     And I press "Add a new category"
-    And I click on "Add a new custom field" "link"
+    And I click on "Add field" "link"
     And I follow "Checkbox"
     And I set the following fields to these values:
       | Name       | checkboxcustomcolumn |
@@ -133,7 +133,7 @@ Feature: Set default question bank column order and size
 
     # Delete a question custom field.
     And I navigate to "Plugins > Question bank plugins > Question custom fields" in site administration
-    And I press "Delete custom field: Field 1"
+    And I choose the "Delete" item in the "Actions" action menu of the "Field 1" "table_row"
     And I click on "Yes" "button" in the "Confirm" "dialogue"
     And I navigate to "Plugins > Question bank plugins > Column sort order" in site administration
     Then I should see "Column sort order"
@@ -142,7 +142,7 @@ Feature: Set default question bank column order and size
 
     # Delete the question custom category.
     And I navigate to "Plugins > Question bank plugins > Question custom fields" in site administration
-    And I click on "[data-role='deletecategory']" "css_element"
+    And I choose the "Delete" item in the "Actions" action menu of the "Category for test" "core_customfield > Category header"
     And I click on "Yes" "button" in the "Confirm" "dialogue"
     And I should not see "Category for test" in the "#customfield_catlist" "css_element"
     And I navigate to "Plugins > Question bank plugins > Column sort order" in site administration

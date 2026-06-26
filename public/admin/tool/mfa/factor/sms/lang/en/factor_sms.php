@@ -34,8 +34,8 @@ $string['error:emptyverification'] = 'Empty code. Try again.';
 $string['error:wrongphonenumber'] = 'The phone number you provided is not in a valid format.';
 $string['error:wrongverification'] = 'Wrong code. Try again.';
 $string['info'] = 'Have a verification code sent to the mobile number you choose.';
-$string['logindesc'] = 'SMS message containing a 6-digit code sent to mobile number {$a}';
-$string['loginoption'] = 'Have a code sent to your mobile phone';
+$string['logindesc'] = 'To keep your account safe, we need to check that it\'s really you. We\'ve sent a code to <strong>{$a}</strong>. Please enter the code below to continue.';
+$string['loginoption'] = 'Receive code via SMS';
 $string['loginskip'] = "I didn't receive a code";
 $string['loginsubmit'] = 'Continue';
 $string['managefactor'] = 'Manage SMS';
@@ -43,7 +43,6 @@ $string['managefactorbutton'] = 'Manage';
 $string['manageinfo'] = 'You are using \'{$a}\' to authenticate.';
 $string['notification:smsgatewaymigration'] = 'SMS settings have moved';
 $string['notification:smsgatewaymigrationinfo'] = 'A new SMS subsystem is now available for managing and configuring all SMS-related functions. Your existing SMS configurations have been migrated to the page <a href="{$a}">SMS gateways</a>.';
-$string['logintitle'] = 'Enter the verification code sent to your mobile';
 $string['phonehelp'] = 'Enter your mobile number (including country code) to receive a verification code.';
 $string['pluginname'] = 'SMS';
 $string['privacy:metadata'] = 'The SMS factor plugin does not store any personal data.';
@@ -84,3 +83,6 @@ $string['settings:gateway_help'] = 'The SMS provider you wish to send messages v
 $string['errorawsconection'] = 'Error connecting to AWS server: {$a}';
 $string['event:smssentdescription'] = 'The user with ID {$a->userid} was sent a verification code via SMS. Information: {$a->debuginfo}';
 $string['event:smssent'] = 'SMS message sent.';
+
+// Deprecated since Moodle 5.2.
+$string['logintitle'] = 'Enter the verification code sent to your mobile';
