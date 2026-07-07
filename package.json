@@ -1,0 +1,33 @@
+{
+  "name": "moodle-block_accessibility_filescan",
+  "description": "Moodle block to check to display results from local-accessibility_filescan plugin for Moodle",
+  "scripts": {
+    "build": "./node_modules/.bin/grunt --force -v",
+    "watch": "./node_modules/.bin/nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swarthmore/moode-block_accessibility_filescan"
+  },
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "moodle",
+    "plugin",
+    "block"
+  ],
+  "author": "Swarthmore College",
+  "license": "http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later",
+  "bugs": {
+    "url": "https://github.com/swarthmore/moode-block_accessibility_filescan/issues"
+  },
+  "homepage": "https://github.com/swarthmore/moode-block_accessibility_filescan#readme",
+  "devDependencies": {
+    "grunt": "^1.4.0",
+    "grunt-contrib-jshint": "^2.1.0",
+    "grunt-contrib-requirejs": "^1.0.0",
+    "grunt-contrib-watch": "^1.1.0",
+    "grunt-load-gruntfile": "^0.0.2",
+    "nodemon": "^2.0.22"
+  }
+}
