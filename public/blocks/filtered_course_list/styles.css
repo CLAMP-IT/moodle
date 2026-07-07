@@ -1,0 +1,80 @@
+.block-fcl__content ul {
+    margin: 0;
+    padding: 0;
+}
+.block-fcl__rubric {
+    font-weight: bold;
+    margin-top: 3px;
+    padding-left: 1px;
+    padding-right: 1em;
+}
+.block-fcl__rubric--expanded {
+    background: url([[pix:t/expanded]]) no-repeat 0 2px transparent;
+}
+.block-fcl__rubric--expanded + .block-fcl__list {
+    display: block;
+}
+.block-fcl__list {
+    padding: 10px 0 0;
+}
+.block-fcl__list__item {
+    list-style-type: none;
+    margin-left: 0;
+    padding: 0 0 10px 20px;
+}
+.block-fcl__footer {
+    padding-top: 1rem;
+}
+/*
+* JS Enabled
+*/
+.jsenabled .block-fcl__rubric {
+    cursor: pointer;
+    padding-left: 21px;
+}
+.jsenabled .block-fcl__rubric a,
+.jsenabled .block-fcl__rubric a:hover,
+.jsenabled .block-fcl__rubric a:active,
+.jsenabled .block-fcl__rubric a:visited {
+    text-decoration: none;
+}
+.jsenabled .block-fcl__rubric--collapsed {
+    background: url([[pix:t/collapsed]]) no-repeat 0 2px transparent;
+}
+.jsenabled .block-fcl__rubric--collapsed + .block-fcl__list {
+    display: none;
+}
+.jsenabled .block-fcl__list__item {
+    background-position: 10px 1px;
+    padding: 0 0 10px 31px;
+}
+/*
+* Right-to-left
+*/
+.dir-rtl .block-fcl__rubric {
+    padding-right: 1px;
+    padding-left: 1em;
+}
+.dir-rtl .block-fcl__rubric--expanded {
+    background: url([[pix:t/expanded]]) no-repeat right 2px transparent;
+}
+.dir-rtl .block-fcl__list__item {
+    margin-right: 0;
+    padding: 0 20px 10px 0;
+}
+/*
+* JS Enabled and right-to-left
+*/
+.dir-rtl.jsenabled .block-fcl__rubric {
+    padding-right: 21px;
+}
+.dir-rtl.jsenabled .block-fcl__rubric--collapsed {
+    background: url([[pix:t/collapsed_rtl]]) no-repeat right 2px transparent;
+}
+.dir-rtl.jsenabled .block-fcl__list__item {
+    background-position: calc(100% - 10px) 1px;
+    padding: 0 31px 10px 0;
+}
+#page-admin-setting-blocksettingfiltered_course_list #id_s_block_filtered_course_list_filters {
+    font-family: monospace;
+}

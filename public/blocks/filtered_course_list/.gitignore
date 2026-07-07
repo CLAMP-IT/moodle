@@ -1,0 +1,3 @@
+/node_modules/
+tests/behat/data/fcl_filter.php
+/vendor/
