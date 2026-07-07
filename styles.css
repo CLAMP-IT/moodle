@@ -1,0 +1,24 @@
+.report-roster {
+    list-style: none;
+    margin-top: 20px;
+    text-align: justify;
+}
+
+.report-roster li {
+    display: inline-block;
+    margin-bottom: 5px;
+    vertical-align: top;
+    text-align: center;
+}
+
+.report-roster li span {
+    white-space: nowrap;
+    display: block;
+    text-align: center;
+}
+
+.report-roster:after {
+    content: '';
+    display: inline-block;
+    width: 100%;
+}
