@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.5.0 (July 10, 2026)
+
+- [BUGFIX] Proper namespacing for unit test classes
+- Drop support for Moodle 4.1-4.4
+
 ## 4.0.3 (October 17, 2025)
 
 - Add support for Moodle 4.5-5.1
