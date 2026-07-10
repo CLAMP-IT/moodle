@@ -22,6 +22,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace block_clampmail;
+
+use stdClass;
 use block_clampmail\privacy\provider;
 
 /**
@@ -113,7 +116,7 @@ class privacy_test extends \core_privacy\tests\provider_testcase {
 
         $this->data['block'] = $block;
 
-        $this->data['me_plugin'] = new enrol_manual_plugin();
+        $this->data['me_plugin'] = new \enrol_manual_plugin();
 
         $this->data['studentrole'] = $DB->get_record('role', ['shortname' => 'student'])->id;
         $this->data['teacherrole'] = $DB->get_record('role', ['shortname' => 'editingteacher'])->id;
