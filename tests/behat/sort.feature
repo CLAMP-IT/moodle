@@ -73,8 +73,7 @@ Feature: Courses within a rubric can be sorted by various fields
     And I click on "<sort>" "link" in the ".course-listing-actions" "css_element"
     And I log out
     When I log in as "testuser"
-    And I am on site homepage
-    And I follow "Test"
+    And I am on "Test" course homepage
     And I wait until ".block_filtered_course_list" "css_element" exists
     Then <first> "text" should appear before <second> "text"
     And <second> "text" should appear before <third> "text"

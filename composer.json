@@ -1,0 +1,12 @@
+{
+    "name": "lafayettecollege/moodle-block_filtered_course_list",
+    "description": "A description of my Moodle block plugin",
+    "type": "moodle-block",
+    "require": {
+        "composer/installers": "*"
+    },
+    "license": "GPL-3.0-or-later",
+    "extra": {
+        "installer-name": "filtered_course_list"
+    }
+}

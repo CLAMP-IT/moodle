@@ -134,6 +134,7 @@ class block_test extends advanced_testcase {
      * Test a site that has no courses
      */
     public function test_site_with_no_courses() {
+        set_config('forcelogin', 0);
 
         // On a site with no courses, no users should see a block.
         $this->noblock(
@@ -150,6 +151,8 @@ class block_test extends advanced_testcase {
      * Test a site that has only one category and no enrollments
      */
     public function test_single_category_site_with_no_enrollments() {
+        set_config('forcelogin', 0);
+
         // Create 8 courses in the default category: Category 1.
         $this->create_misc_courses(1, 8);
 
@@ -166,6 +169,7 @@ class block_test extends advanced_testcase {
      * Test a small site with one category and some enrollments
      */
     public function test_small_single_category_site_with_enrollments() {
+        set_config('forcelogin', 0);
 
         // Create 8 courses in the default category: Category 1.
         $this->create_misc_courses(1, 8);
@@ -204,6 +208,7 @@ class block_test extends advanced_testcase {
      * Test a larger site with enrollments in one category
      */
     public function test_larger_single_category_site_with_enrollments() {
+        set_config('forcelogin', 0);
 
         // Create 12 courses in the default category: Category 1.
         $this->create_misc_courses(1, 12);
@@ -247,6 +252,7 @@ class block_test extends advanced_testcase {
 
         // With no special settings, the behavior should be as for a larger single-category site.
         set_config('filters', '', 'block_filtered_course_list');
+        set_config('forcelogin', 0);
 
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
@@ -306,6 +312,7 @@ class block_test extends advanced_testcase {
 category | c | 0
 EOF;
         set_config('filters', $filterconfig, 'block_filtered_course_list');
+        set_config('forcelogin', 0);
 
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
@@ -543,6 +550,7 @@ $filter | expanded | Child courses         | {$transformation('cc')}
 $filter | expanded | Unnumbered categories | {$transformation('c_')}
 EOF;
         set_config('filters', $filterconfig, 'block_filtered_course_list');
+        set_config('forcelogin', 0);
 
         // The block should not display individual courses to anonymous, guest, or admin.
         // The block should not display links to categories below the top level.
@@ -633,6 +641,7 @@ EOF;
 
         // Hide the catch-all 'Other courses' rubric.
         set_config('hideothercourses', 1, 'block_filtered_course_list');
+        set_config('forcelogin', 0);
 
         // The block should offer top-level category links to all users including logged-in user enrolled in no courses.
         $this->courselistincludes([
@@ -687,6 +696,7 @@ EOF;
 shortname | e | Courses | _
 EOF;
         set_config('filters', $filterconfig, 'block_filtered_course_list');
+        set_config('forcelogin', 0);
 
         // Any user who sees the block should also see the "All courses" link.
         $this->allcourseslink([
@@ -721,6 +731,7 @@ EOF;
 shortname | expanded | Courses | _
 EOF;
         set_config('filters', $filterconfig, 'block_filtered_course_list');
+        set_config('forcelogin', 0);
 
         // All users should see the block.
         $this->noblock([
