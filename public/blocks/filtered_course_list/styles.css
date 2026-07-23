@@ -9,7 +9,8 @@
     padding-right: 1em;
 }
 .block-fcl__rubric--expanded {
-    background: url([[pix:t/expanded]]) no-repeat 0 2px transparent;
+    background: url([[pix:t/expanded]]) no-repeat 0 5px transparent;
+    background-size: 15px 15px;
 }
 .block-fcl__rubric--expanded + .block-fcl__list {
     display: block;
@@ -39,7 +40,8 @@
     text-decoration: none;
 }
 .jsenabled .block-fcl__rubric--collapsed {
-    background: url([[pix:t/collapsed]]) no-repeat 0 2px transparent;
+    background: url([[pix:t/collapsed]]) no-repeat 0 5px transparent;
+    background-size: 15px 15px;
 }
 .jsenabled .block-fcl__rubric--collapsed + .block-fcl__list {
     display: none;
@@ -56,7 +58,8 @@
     padding-left: 1em;
 }
 .dir-rtl .block-fcl__rubric--expanded {
-    background: url([[pix:t/expanded]]) no-repeat right 2px transparent;
+    background: url([[pix:t/expanded]]) no-repeat right 5px transparent;
+    background-size: 15px 15px;
 }
 .dir-rtl .block-fcl__list__item {
     margin-right: 0;
@@ -69,7 +72,8 @@
     padding-right: 21px;
 }
 .dir-rtl.jsenabled .block-fcl__rubric--collapsed {
-    background: url([[pix:t/collapsed_rtl]]) no-repeat right 2px transparent;
+    background: url([[pix:t/collapsed_rtl]]) no-repeat right 5px transparent;
+    background-size: 15px 15px;
 }
 .dir-rtl.jsenabled .block-fcl__list__item {
     background-position: calc(100% - 10px) 1px;

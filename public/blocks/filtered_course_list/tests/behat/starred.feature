@@ -21,8 +21,8 @@ Feature: The starred courses filter displays a user's starred courses
       | student1 | course2  | student |
       | student2 | course2  | student |
     And the following "blocks" exist:
-      | blockname            | contextlevel | reference            | pagetypepattern | defaultregion |
-      | filtered_course_list | Course       | Acceptance test site | site-index      | site-pre      |
+      | blockname            | contextlevel | reference | pagetypepattern | defaultregion |
+      | filtered_course_list | System       | 1         | my-index        | side-post     |
     And I set the multiline FCL "filters" setting as admin to:
     """
     starred | expanded | My starred courses
@@ -46,7 +46,8 @@ Feature: The starred courses filter displays a user's starred courses
     When I follow "Other courses"
     Then I should see "Course" in the ".tabpanel2 .fcl-sr-text" "css_element"
     And I should not see "Starred" in the ".tabpanel2 .fcl-sr-text" "css_element"
-    When I log out
+    And I log out
+    And I log in as "admin"
     And I am on site homepage
     Then I should see "Filtered course list"
     And the "class" attribute of ".tabpanel1 .fcl-icon" "css_element" should contain "fa-graduation-cap"
