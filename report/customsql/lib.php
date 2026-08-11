@@ -61,8 +61,12 @@ function report_customsql_pluginfile($course, $cm, $context, $filearea, $args, $
 
     $report = $DB->get_record('report_customsql_queries', ['id' => $id]);
     if (!$report) {
-        throw new moodle_exception('invalidreportid', 'report_customsql',
-                report_customsql_url('index.php'), $id);
+        throw new moodle_exception(
+            'invalidreportid',
+            'report_customsql',
+            report_customsql_url('index.php'),
+            $id,
+        );
     }
 
     require_login();
@@ -91,12 +95,15 @@ function report_customsql_pluginfile($course, $cm, $context, $filearea, $args, $
         }
         $csvtimestamp = report_customsql_generate_csv($report, $runtime, true);
     }
-    list($csvfilename) = report_customsql_csv_filename($report, $csvtimestamp);
+    [$csvfilename] = report_customsql_csv_filename($report, $csvtimestamp);
 
     $handle = fopen($csvfilename, 'r');
     if ($handle === false) {
-        throw new moodle_exception('unknowndownloadfile', 'report_customsql',
-                report_customsql_url('view.php?id=' . $id));
+        throw new moodle_exception(
+            'unknowndownloadfile',
+            'report_customsql',
+            report_customsql_url('view.php?id=' . $id),
+        );
     }
 
     $fields = report_customsql_read_csv_row($handle);
@@ -113,10 +120,10 @@ function report_customsql_pluginfile($course, $cm, $context, $filearea, $args, $
     // can stop downloads from working in some browsers.
     $filename = str_replace(',', '', $filename);
 
-    \core\dataformat::download_data($filename, $dataformat, $fields, $rows->getIterator(), function(array $row) use ($dataformat) {
+    \core\dataformat::download_data($filename, $dataformat, $fields, $rows->getIterator(), function (array $row) use ($dataformat) {
         // HTML export content will need escaping.
         if (strcasecmp($dataformat, 'html') === 0) {
-            $row = array_map(function($cell) {
+            $row = array_map(function ($cell) {
                 return s($cell);
             }, $row);
         }

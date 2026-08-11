@@ -29,7 +29,6 @@ require_once($CFG->dirroot . '/report/customsql/locallib.php');
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class report_test extends \advanced_testcase {
-
     /**
      * Data provider for test_get_week_starts
      *
@@ -64,7 +63,11 @@ final class report_test extends \advanced_testcase {
      * @covers ::report_customsql_get_week_starts
      */
     public function test_get_week_starts(
-            int $startwday, string $datestr, string $currentweek, string $lastweek): void {
+        int $startwday,
+        string $datestr,
+        string $currentweek,
+        string $lastweek
+    ): void {
         $this->resetAfterTest();
 
         set_config('startwday', $startwday, 'report_customsql');
@@ -86,7 +89,11 @@ final class report_test extends \advanced_testcase {
      * @covers ::report_customsql_get_week_starts
      */
     public function test_get_week_starts_use_calendar_default(
-            int $startwday, string $datestr, string $currentweek, string $lastweek): void {
+        int $startwday,
+        string $datestr,
+        string $currentweek,
+        string $lastweek
+    ): void {
         $this->resetAfterTest();
 
         // Setting this option to -1 will use the value from the site calendar.
@@ -103,17 +110,26 @@ final class report_test extends \advanced_testcase {
      * @covers ::report_customsql_get_month_starts
      */
     public function test_get_month_starts_test(): void {
-        $this->assertEquals([
-                strtotime('00:00 1 November 2009'), strtotime('00:00 1 October 2009')],
-                report_customsql_get_month_starts(strtotime('12:36 10 November 2009')));
+        $this->assertEquals(
+            [
+                strtotime('00:00 1 November 2009'), strtotime('00:00 1 October 2009'),
+            ],
+            report_customsql_get_month_starts(strtotime('12:36 10 November 2009'))
+        );
 
-        $this->assertEquals([
-                strtotime('00:00 1 November 2009'), strtotime('00:00 1 October 2009')],
-                report_customsql_get_month_starts(strtotime('00:00 1 November 2009')));
+        $this->assertEquals(
+            [
+                strtotime('00:00 1 November 2009'), strtotime('00:00 1 October 2009'),
+            ],
+            report_customsql_get_month_starts(strtotime('00:00 1 November 2009'))
+        );
 
-        $this->assertEquals([
-                strtotime('00:00 1 November 2009'), strtotime('00:00 1 October 2009')],
-                report_customsql_get_month_starts(strtotime('23:59 29 November 2009')));
+        $this->assertEquals(
+            [
+                strtotime('00:00 1 November 2009'), strtotime('00:00 1 October 2009'),
+            ],
+            report_customsql_get_month_starts(strtotime('23:59 29 November 2009')),
+        );
     }
 
     /**
@@ -138,9 +154,14 @@ final class report_test extends \advanced_testcase {
      * @covers ::report_customsql_substitute_user_token
      */
     public function test_report_customsql_substitute_user_token(): void {
-        $this->assertEquals('SELECT COUNT(*) FROM oh_quiz_attempts WHERE user = 123',
-                report_customsql_substitute_user_token('SELECT COUNT(*) FROM oh_quiz_attempts '.
-                        'WHERE user = %%USERID%%', 123));
+        $this->assertEquals(
+            'SELECT COUNT(*) FROM oh_quiz_attempts WHERE user = 123',
+            report_customsql_substitute_user_token(
+                'SELECT COUNT(*) FROM oh_quiz_attempts ' .
+                'WHERE user = %%USERID%%',
+                123,
+            ),
+        );
     }
 
     /**
@@ -155,7 +176,6 @@ final class report_test extends \advanced_testcase {
             'moodle/site:config' => get_string('userswhocanconfig', 'report_customsql'),
         ];
         $this->assertEquals($capoptions, report_customsql_capability_options());
-
     }
 
     /**
@@ -354,8 +374,10 @@ final class report_test extends \advanced_testcase {
         $row->column_url = 2;
         $row->column_3 = 3;
         $query = "SELECT 1 AS First, 2 AS Column_URL, 3 AS column_3";
-        $this->assertEquals(['column', 'Column URL', 'column 3'],
-                report_customsql_pretify_column_names($row, $query));
+        $this->assertEquals(
+            ['column', 'Column URL', 'column 3'],
+            report_customsql_pretify_column_names($row, $query),
+        );
     }
 
     /**
@@ -373,8 +395,10 @@ final class report_test extends \advanced_testcase {
                          2 AS Column_URL,
                          3 AS column_3
                     FROM table";
-        $this->assertEquals(['column', 'Column URL', 'column 3'],
-                report_customsql_pretify_column_names($row, $query));
+        $this->assertEquals(
+            ['column', 'Column URL', 'column 3'],
+            report_customsql_pretify_column_names($row, $query)
+        );
     }
 
     /**
@@ -387,9 +411,10 @@ final class report_test extends \advanced_testcase {
         $row->course = 'B747-19B';
         $query = "SELECT t.course AS Course
                     FROM table";
-        $this->assertEquals(['Course'],
-                report_customsql_pretify_column_names($row, $query));
-
+        $this->assertEquals(
+            ['Course'],
+            report_customsql_pretify_column_names($row, $query),
+        );
     }
 
     /**
@@ -422,9 +447,10 @@ final class report_test extends \advanced_testcase {
 
               ORDER BY website, frog";
 
-        $this->assertEquals(['Website', 'Website link url', 'Frog', 'Frog link url'],
-                report_customsql_pretify_column_names($row, $query));
-
+        $this->assertEquals(
+            ['Website', 'Website link url', 'Frog', 'Frog link url'],
+            report_customsql_pretify_column_names($row, $query),
+        );
     }
 
     /**

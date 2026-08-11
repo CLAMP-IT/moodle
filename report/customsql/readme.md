@@ -1,3 +1,5 @@
+[![Moodle plugin CI](https://github.com/mkassaei/moodle-report_customsql/actions/workflows/ci.yml/badge.svg)](https://github.com/mkassaei/moodle-report_customsql/actions/workflows/ci.yml)
+
 # Ad-hoc database queries
 
 This report plugin allows Administrators to set up arbitrary database queries

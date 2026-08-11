@@ -8,8 +8,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - php: '8.3'
+          - php: '8.4'
             moodle-branch: 'main'
+            database: 'mariadb'
+          - php: '8.4'
+            moodle-branch: 'MOODLE_501_STABLE'
             database: 'pgsql'
           - php: '8.3'
             moodle-branch: 'MOODLE_500_STABLE'
@@ -23,7 +26,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:16
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
@@ -36,7 +39,7 @@ jobs:
           - 5432:5432
 
       mariadb:
-        image: mariadb:10
+        image: mariadb:10.11
         env:
           MYSQL_USER: 'root'
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -47,7 +50,7 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
 
     steps:
-      - name: Check out out repository code
+      - name: Check out repository code
         uses: actions/checkout@v3
         with:
           path: plugin
@@ -78,10 +81,6 @@ jobs:
       - name: PHP Lint
         if: ${{ always() }}
         run: moodle-plugin-ci phplint
-
-      - name: PHP Copy/Paste Detector
-        if: ${{ always() }}
-        run: moodle-plugin-ci phpcpd
 
       - name: PHP Mess Detector
         if: ${{ always() }}

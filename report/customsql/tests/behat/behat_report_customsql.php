@@ -25,6 +25,7 @@
  */
 
 // NOTE: no MOODLE_INTERNAL test because this file is required by Behat.
+// phpcs:disable Universal.UseStatements.NoUselessAliases
 
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
@@ -38,7 +39,6 @@ use Behat\Mink\Exception\ExpectationException;
  * All these steps include the phrase 'custom SQL report'.
  */
 class behat_report_customsql extends behat_base {
-
     /**
      * Convert page names to URLs for steps like 'When I am on the "[page name]" page'.
      *
@@ -109,7 +109,8 @@ class behat_report_customsql extends behat_base {
             unset($report['category']);
         } else {
             $report['categoryid'] = $this->get_category_id_by_name(
-                    get_string('defaultcategory', 'report_customsql'));
+                get_string('defaultcategory', 'report_customsql')
+            );
         }
 
         // Capability.
@@ -124,8 +125,9 @@ class behat_report_customsql extends behat_base {
         }
 
         // Runnable.
-        if (isset($report['runable']) &&
-                !in_array($report['runable'], report_customsql_runable_options())) {
+        if (
+            isset($report['runable']) && !in_array($report['runable'], report_customsql_runable_options())
+        ) {
             throw new Exception('Invalid runable value ' . $report['capability'] . '.');
         } else {
             $report['runable'] = 'manual';
@@ -174,7 +176,8 @@ class behat_report_customsql extends behat_base {
             'descriptionformat' => FORMAT_HTML,
             'querysql' => (string)$querysql,
             'categoryid' => $this->get_category_id_by_name(
-                    get_string('defaultcategory', 'report_customsql')),
+                get_string('defaultcategory', 'report_customsql')
+            ),
             'capability' => 'moodle/site:config',
             'runable' => 'manual',
         ];
@@ -290,7 +293,9 @@ class behat_report_customsql extends behat_base {
         $filecontent = core_text::trim_utf8_bom($filecontent);
         if ($filecontent != $headers) {
             throw new ExpectationException(
-                    "File headers: $filecontent did not match expected: $headers", $this->getSession());
+                "File headers: $filecontent did not match expected: $headers",
+                $this->getSession(),
+            );
         }
     }
 

@@ -42,8 +42,13 @@ $embed = optional_param('embed', 0, PARAM_BOOL);
 $urlparams['embed'] = $embed;
 
 // Setup the page.
-admin_externalpage_setup('report_customsql', '', $urlparams,
-        '/report/customsql/view.php', ['pagelayout' => 'report']);
+admin_externalpage_setup(
+    'report_customsql',
+    '',
+    $urlparams,
+    '/report/customsql/view.php',
+    ['pagelayout' => 'report'],
+);
 $PAGE->set_title(format_string($report->displayname));
 $PAGE->navbar->add(format_string($category->name), report_customsql_url('category.php', ['id' => $report->categoryid]));
 $PAGE->navbar->add(format_string($report->displayname));
@@ -63,7 +68,6 @@ report_customsql_log_view($id);
 \core\session\manager::write_close();
 
 if ($report->runable == 'manual') {
-
     // Allow query parameters to be entered.
     if (!empty($report->queryparams)) {
         $queryparams = report_customsql_get_query_placeholders_and_field_names($report->querysql);
@@ -95,7 +99,6 @@ if ($report->runable == 'manual') {
         }
 
         if (($newreport = $mform->get_data()) || count($paramvalues) == count($queryparams)) {
-
             // Pick up named parameters into serialised array.
             if ($newreport) {
                 foreach ($queryparams as $queryparam => $formparam) {
@@ -103,11 +106,13 @@ if ($report->runable == 'manual') {
                 }
             }
             $report->queryparams = serialize($paramvalues);
-
         } else {
-
-            admin_externalpage_setup('report_customsql', '', $urlparams,
-                    '/report/customsql/view.php');
+            admin_externalpage_setup(
+                'report_customsql',
+                '',
+                $urlparams,
+                '/report/customsql/view.php',
+            );
             $PAGE->set_title(format_string($report->displayname));
             echo $OUTPUT->header();
             echo $OUTPUT->heading(format_string($report->displayname));
@@ -128,8 +133,12 @@ if ($report->runable == 'manual') {
         // Get the updated execution times.
         $report = $DB->get_record('report_customsql_queries', ['id' => $id]);
     } catch (Exception $e) {
-        throw new moodle_exception('queryfailed', 'report_customsql', report_customsql_url('index.php'),
-                    $e->getMessage());
+        throw new moodle_exception(
+            'queryfailed',
+            'report_customsql',
+            report_customsql_url('index.php'),
+            $e->getMessage(),
+        );
     }
 } else {
     // Runs on schedule.
@@ -153,9 +162,15 @@ if (!empty($paramvalues)) {
         if (report_customsql_get_element_type($name) == 'date_time_selector') {
             $value = userdate($value, '%F %T');
         }
-        echo html_writer::tag('p', get_string('parametervalue', 'report_customsql',
+        echo html_writer::tag(
+            'p',
+            get_string(
+                'parametervalue',
+                'report_customsql',
                 ['name' => html_writer::tag('b', str_replace('_', ' ', $name)),
-                'value' => s($value)]));
+                'value' => s($value)]
+            )
+        );
     }
 }
 
@@ -163,7 +178,7 @@ $count = 0;
 if (is_null($csvtimestamp)) {
     echo html_writer::tag('p', get_string('nodatareturned', 'report_customsql'));
 } else {
-    list($csvfilename, $csvtimestamp) = report_customsql_csv_filename($report, $csvtimestamp);
+    [$csvfilename, $csvtimestamp] = report_customsql_csv_filename($report, $csvtimestamp);
     if (!is_readable($csvfilename)) {
         if (empty($report->lastrun) || $csvtimestamp > $report->lastrun) {
             echo html_writer::tag('p', get_string('notrunyet', 'report_customsql'));
@@ -174,14 +189,17 @@ if (is_null($csvtimestamp)) {
         $handle = fopen($csvfilename, 'r');
 
         if ($report->runable != 'manual' && !$report->singlerow) {
-            echo $OUTPUT->heading(get_string('reportfor', 'report_customsql',
-                    userdate($csvtimestamp)), 3);
+            echo $OUTPUT->heading(
+                get_string('reportfor', 'report_customsql', userdate($csvtimestamp)),
+                3,
+            );
         }
 
         $table = new html_table();
         $table->id = 'report_customsql_results';
-        list($table->head, $linkcolumns) = report_customsql_get_table_headers(
-                report_customsql_read_csv_row($handle));
+        [$table->head, $linkcolumns] = report_customsql_get_table_headers(
+            report_customsql_read_csv_row($handle)
+        );
 
         $rowlimitexceeded = false;
         while ($row = report_customsql_read_csv_row($handle)) {
@@ -204,12 +222,21 @@ if (is_null($csvtimestamp)) {
         echo html_writer::table($table);
 
         if ($rowlimitexceeded) {
-            echo html_writer::tag('p', get_string('recordlimitreached', 'report_customsql',
-                    $report->querylimit ?? get_config('report_customsql', 'querylimitdefault')),
-                    ['class' => 'admin_note']);
+            echo html_writer::tag(
+                'p',
+                get_string(
+                    'recordlimitreached',
+                    'report_customsql',
+                    $report->querylimit ?? get_config('report_customsql', 'querylimitdefault')
+                ),
+                ['class' => 'admin_note'],
+            );
         } else {
-            echo html_writer::tag('p', get_string('recordcount', 'report_customsql', $count),
-                    ['class' => 'admin_note']);
+            echo html_writer::tag(
+                'p',
+                get_string('recordcount', 'report_customsql', $count),
+                ['class' => 'admin_note'],
+            );
         }
 
         echo report_customsql_time_note($report, 'p');
@@ -220,17 +247,27 @@ if (is_null($csvtimestamp)) {
         }
         $urlparams['timestamp'] = $csvtimestamp;
         $downloadurl = report_customsql_downloadurl($id, $urlparams);
-        echo $OUTPUT->download_dataformat_selector(get_string('downloadthisreportas', 'report_customsql'),
-            $downloadurl, 'dataformat', $urlparams);
+        echo $OUTPUT->download_dataformat_selector(
+            get_string('downloadthisreportas', 'report_customsql'),
+            $downloadurl,
+            'dataformat',
+            $urlparams,
+        );
     }
 }
 
 if (!empty($queryparams)) {
-    echo html_writer::tag('p',
-            $OUTPUT->action_link(
-                    report_customsql_url('view.php', ['id' => $id]),
-                    $OUTPUT->pix_icon('t/editstring', '') . ' ' .
-                    get_string('changetheparameters', 'report_customsql')));
+    echo html_writer::tag(
+        'p',
+        $OUTPUT->action_link(
+            report_customsql_url(
+                'view.php',
+                ['id' => $id]
+            ),
+            $OUTPUT->pix_icon('t/editstring', '') . ' ' .
+            get_string('changetheparameters', 'report_customsql')
+        )
+    );
 }
 
 echo $output->render_report_actions($report, $category, $context);
@@ -241,7 +278,6 @@ if ($report->runable != 'manual') {
     $archivetimes = report_customsql_get_archive_times($report);
     if (!$archivetimes) {
         echo html_writer::tag('p', get_string('notrunyet', 'report_customsql'));
-
     } else {
         echo html_writer::start_tag('ul');
         foreach ($archivetimes as $time) {
@@ -250,9 +286,16 @@ if ($report->runable != 'manual') {
             if ($time == $csvtimestamp) {
                 echo html_writer::tag('b', $formattedtime);
             } else {
-                echo html_writer::tag('a', $formattedtime,
-                        ['href' => report_customsql_url('view.php',
-                                ['id' => $id, 'timestamp' => $time])]);
+                echo html_writer::tag(
+                    'a',
+                    $formattedtime,
+                    [
+                        'href' => report_customsql_url(
+                            'view.php',
+                            ['id' => $id, 'timestamp' => $time],
+                        ),
+                    ],
+                );
             }
             echo '</li>';
         }

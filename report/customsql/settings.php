@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 if ($ADMIN->fulltree) {
     // Start of week, used for the day to run weekly reports.
     $days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    $days = array_map(function($day) {
+    $days = array_map(function ($day) {
         return get_string($day, 'calendar');
     }, $days);
 
@@ -35,20 +35,47 @@ if ($ADMIN->fulltree) {
 
     // Setting this option to -1 will use the value from the site calendar.
     $options = [-1 => get_string('startofweek_default', 'report_customsql', $days[$default])] + $days;
-    $settings->add(new admin_setting_configselect('report_customsql/startwday',
+    $settings->add(
+        new admin_setting_configselect(
+            'report_customsql/startwday',
             get_string('startofweek', 'report_customsql'),
-            get_string('startofweek_desc', 'report_customsql'), -1, $options));
+            get_string('startofweek_desc', 'report_customsql'),
+            -1,
+            $options,
+        )
+    );
 
-    $settings->add(new admin_setting_configtext_with_maxlength('report_customsql/querylimitdefault',
+    $settings->add(
+        new admin_setting_configtext_with_maxlength(
+            'report_customsql/querylimitdefault',
             get_string('querylimitdefault', 'report_customsql'),
-            get_string('querylimitdefault_desc', 'report_customsql'), 5000, PARAM_INT, null, 10));
+            get_string('querylimitdefault_desc', 'report_customsql'),
+            5000,
+            PARAM_INT,
+            null,
+            10,
+        )
+    );
 
-    $settings->add(new admin_setting_configtext_with_maxlength('report_customsql/querylimitmaximum',
+    $settings->add(
+        new admin_setting_configtext_with_maxlength(
+            'report_customsql/querylimitmaximum',
             get_string('querylimitmaximum', 'report_customsql'),
-            get_string('querylimitmaximum_desc', 'report_customsql'), 5000, PARAM_INT, null, 10));
+            get_string('querylimitmaximum_desc', 'report_customsql'),
+            5000,
+            PARAM_INT,
+            null,
+            10,
+        )
+    );
 }
 
-$ADMIN->add('reports', new admin_externalpage('report_customsql',
+$ADMIN->add(
+    'reports',
+    new admin_externalpage(
+        'report_customsql',
         get_string('pluginname', 'report_customsql'),
         new moodle_url('/report/customsql/index.php'),
-        'report/customsql:view'));
+        'report/customsql:view',
+    )
+);
