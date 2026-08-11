@@ -65,8 +65,8 @@ class alternate_email_added extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/blocks/clampmail/alternate.php', array(
-                    'courseid' => $this->courseid
-                ));
+        return new \moodle_url('/blocks/clampmail/alternate.php', [
+                    'courseid' => $this->courseid,
+                ]);
     }
 }

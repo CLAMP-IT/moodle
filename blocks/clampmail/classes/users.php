@@ -54,13 +54,20 @@ class users {
      */
     public static function get_users($courseid, $groupmode) {
         $context = \context_course::instance($courseid);
-        $users = array();
+        $users = [];
 
         $fieldsapi = \core_user\fields::for_userpic();
         $fields = $fieldsapi->get_sql('u', false, '', '', false)->selects . ',u.mailformat, u.maildisplay, u.emailstop';
 
         $usersfromdb = get_enrolled_users(
-            $context, '', 0, $fields, "", 0, 0, true
+            $context,
+            '',
+            0,
+            $fields,
+            "",
+            0,
+            0,
+            true
         );
 
         foreach ($usersfromdb as $userid => $user) {
@@ -85,7 +92,7 @@ class users {
      */
     private static function get_user_roles($context, $userid) {
         $roles = get_user_roles($context, $userid);
-        $userroles = array();
+        $userroles = [];
         if (empty($roles) || !is_array($roles)) {
             return $userroles;
         }
@@ -106,11 +113,11 @@ class users {
     private static function get_user_group_ids($courseid, $userid, $groupmode) {
         // When NOGROUPS is set, we use 0 to indicate "not in a group".
         if ($groupmode == NOGROUPS) {
-            return array(0);
+            return [0];
         }
 
         $groups = groups_get_user_groups($courseid, $userid);
-        $usergroups = array();
+        $usergroups = [];
         if (empty($groups) || !is_array($groups)) {
             return $usergroups;
         }

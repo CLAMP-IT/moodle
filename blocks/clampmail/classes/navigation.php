@@ -32,7 +32,6 @@ namespace block_clampmail;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class navigation {
-
     /**
      * Get all the navigation icons.
      *
@@ -41,7 +40,7 @@ class navigation {
      */
     public static function get_icons($context) {
         global $OUTPUT;
-        $icons = array();
+        $icons = [];
 
         if (!has_capability('block/clampmail:cansend', $context)) {
             // No navigation without this capability.
@@ -50,20 +49,20 @@ class navigation {
 
         // Base icons.
         $icons = [
-            $OUTPUT->pix_icon('i/email', '', 'moodle', array('class' => 'icon')),
-            $OUTPUT->pix_icon('i/edit', '', 'moodle', array('class' => 'icon')),
-            $OUTPUT->pix_icon('i/settings', '', 'moodle', array('class' => 'icon')),
-            $OUTPUT->pix_icon('i/settings', '', 'moodle', array('class' => 'icon')),
+            $OUTPUT->pix_icon('i/email', '', 'moodle', ['class' => 'icon']),
+            $OUTPUT->pix_icon('i/edit', '', 'moodle', ['class' => 'icon']),
+            $OUTPUT->pix_icon('i/settings', '', 'moodle', ['class' => 'icon']),
+            $OUTPUT->pix_icon('i/settings', '', 'moodle', ['class' => 'icon']),
         ];
 
         // Alternate email icons.
         if (has_capability('block/clampmail:allowalternate', $context)) {
-            $icons[] = $OUTPUT->pix_icon('i/edit', '', 'moodle', array('class' => 'icon'));
+            $icons[] = $OUTPUT->pix_icon('i/edit', '', 'moodle', ['class' => 'icon']);
         }
 
         // Configuration icons.
         if (has_capability('block/clampmail:canconfig', $context)) {
-            $icons[] = $OUTPUT->pix_icon('i/settings', '', 'moodle', array('class' => 'icon'));
+            $icons[] = $OUTPUT->pix_icon('i/settings', '', 'moodle', ['class' => 'icon']);
         }
 
         return $icons;
@@ -77,7 +76,7 @@ class navigation {
      * @return array of navigation links
      */
     public static function get_links($course, $context) {
-        $links = array();
+        $links = [];
 
         if (!has_capability('block/clampmail:cansend', $context)) {
             // No navigation without this capability.
@@ -87,27 +86,27 @@ class navigation {
         // Base links.
         $links = [
             \html_writer::link(
-                new \moodle_url('/blocks/clampmail/email.php', array('courseid' => $course)),
+                new \moodle_url('/blocks/clampmail/email.php', ['courseid' => $course]),
                 get_string('composenew', 'block_clampmail')
             ),
             \html_writer::link(
-                new \moodle_url('/blocks/clampmail/signature.php', array('courseid' => $course)),
+                new \moodle_url('/blocks/clampmail/signature.php', ['courseid' => $course]),
                 get_string('manage_signatures', 'block_clampmail')
             ),
             \html_writer::link(
-                new \moodle_url('/blocks/clampmail/emaillog.php', array('courseid' => $course, 'type' => 'drafts')),
+                new \moodle_url('/blocks/clampmail/emaillog.php', ['courseid' => $course, 'type' => 'drafts']),
                 get_string('drafts', 'block_clampmail')
             ),
             \html_writer::link(
-                new \moodle_url('/blocks/clampmail/emaillog.php', array('courseid' => $course)),
+                new \moodle_url('/blocks/clampmail/emaillog.php', ['courseid' => $course]),
                 get_string('log', 'block_clampmail')
-            )
+            ),
         ];
 
         // Alternate email configuration link.
         if (has_capability('block/clampmail:allowalternate', $context)) {
             $links[] = \html_writer::link(
-                new \moodle_url('/blocks/clampmail/alternate.php', array('courseid' => $course)),
+                new \moodle_url('/blocks/clampmail/alternate.php', ['courseid' => $course]),
                 get_string('alternate', 'block_clampmail')
             );
         }
@@ -115,7 +114,7 @@ class navigation {
         // Configuration link.
         if (has_capability('block/clampmail:canconfig', $context)) {
             $links[] = \html_writer::link(
-                new \moodle_url('/blocks/clampmail/config.php', array('courseid' => $course)),
+                new \moodle_url('/blocks/clampmail/config.php', ['courseid' => $course]),
                 get_string('config', 'block_clampmail')
             );
         }
@@ -133,7 +132,7 @@ class navigation {
     public static function print_navigation($items, $heading) {
         global $OUTPUT;
 
-        $html = \html_writer::alist($items, array('class' => 'internal-navigation'));
+        $html = \html_writer::alist($items, ['class' => 'internal-navigation']);
         $html .= $OUTPUT->heading($heading, '3');
         return $html;
     }

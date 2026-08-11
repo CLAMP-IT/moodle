@@ -59,12 +59,12 @@ class alternate_form extends \moodleform {
         $m->addElement('hidden', 'action', $this->_customdata['action']);
         $m->setType('action', PARAM_RAW);
 
-        $buttons = array(
+        $buttons = [
             $m->createElement('submit', 'submit', get_string('savechanges')),
-            $m->createElement('cancel')
-        );
+            $m->createElement('cancel'),
+        ];
 
-        $m->addGroup($buttons, 'buttons', '', array(' '), false);
+        $m->addGroup($buttons, 'buttons', '', [' '], false);
 
         $m->closeHeaderBefore('buttons');
     }

@@ -48,7 +48,7 @@ class groups {
 
         switch ($groupmode) {
             case NOGROUPS:
-                $groups = array();
+                $groups = [];
                 break;
             case VISIBLEGROUPS:
                 $groups = $allgroups;
@@ -59,7 +59,7 @@ class groups {
                 } else {
                     $mygroups = groups_get_user_groups($courseid);
                     $gids = implode(',', array_values($mygroups['0']));
-                    $groups = empty($gids) ? array() : $DB->get_records_select('groups', 'id IN ('.$gids.')');
+                    $groups = empty($gids) ? [] : $DB->get_records_select('groups', 'id IN (' . $gids . ')');
                 }
                 break;
         }

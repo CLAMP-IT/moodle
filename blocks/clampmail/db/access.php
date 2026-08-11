@@ -24,59 +24,59 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$capabilities = array(
+$capabilities = [
 
-    'block/clampmail:addinstance' => array(
+    'block/clampmail:addinstance' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
+        'archetypes' => [
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        ),
-        'clonepermissionsfrom' => 'moodle/site:manageblocks'
-    ),
-    'block/clampmail:cansend' => array(
+            'manager' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'moodle/site:manageblocks',
+    ],
+    'block/clampmail:cansend' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
+        'archetypes' => [
             'manager' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'coursecreator' => CAP_ALLOW,
-            'teacher' => CAP_ALLOW
-        )
-    ),
-    'block/clampmail:allowalternate' => array(
+            'teacher' => CAP_ALLOW,
+        ],
+    ],
+    'block/clampmail:allowalternate' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
+        'archetypes' => [
             'manager' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'teacher' => CAP_ALLOW,
-            'coursecreator' => CAP_ALLOW
-        )
-    ),
-    'block/clampmail:canconfig' => array(
+            'coursecreator' => CAP_ALLOW,
+        ],
+    ],
+    'block/clampmail:canconfig' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
+        'archetypes' => [
             'manager' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW
-        )
-    ),
-    'block/clampmail:canimpersonate' => array(
+            'editingteacher' => CAP_ALLOW,
+        ],
+    ],
+    'block/clampmail:canimpersonate' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
+        'archetypes' => [
             'manager' => CAP_ALLOW,
-        )
-    ),
-    'block/clampmail:cansendtoall' => array(
+        ],
+    ],
+    'block/clampmail:cansendtoall' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
+        'archetypes' => [
             'manager' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW
-        ),
-        'clonepermissionsfrom' => 'moodle/site:accessallgroups'
-    )
-);
+            'editingteacher' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'moodle/site:accessallgroups',
+    ],
+];

@@ -52,16 +52,20 @@ class email {
         $fs = get_file_storage();
 
         $fs->delete_area_files(
-            $contextid, 'block_clampmail',
-            'attachment_' . $filearea, $itemid
+            $contextid,
+            'block_clampmail',
+            'attachment_' . $filearea,
+            $itemid
         );
 
         $fs->delete_area_files(
-            $contextid, 'block_clampmail',
-            $filearea, $itemid
+            $contextid,
+            'block_clampmail',
+            $filearea,
+            $itemid
         );
 
-        return $DB->delete_records($table, array('id' => $itemid));
+        return $DB->delete_records($table, ['id' => $itemid]);
     }
 
     /**
@@ -122,7 +126,7 @@ class email {
 
         if (!empty($email->attachment)) {
             $fs = get_file_storage();
-            $storedfiles = array();
+            $storedfiles = [];
             $safepath = preg_replace('/\//', "\\/", $CFG->dataroot);
             $basefilepath = preg_replace("/$safepath\\//", '', $moodlebase);
 
@@ -139,7 +143,7 @@ class email {
                 if ($item->is_directory() && $item->get_filename() == '.') {
                     continue;
                 }
-                $storedfiles[$item->get_filepath().$item->get_filename()] = $item;
+                $storedfiles[$item->get_filepath() . $item->get_filename()] = $item;
             }
 
             // Create a zip archive if more than one file.
@@ -148,7 +152,7 @@ class email {
                 $filename = $obj->get_filename();
 
                 // Ensure that bad periods and ellipses are removed.
-                while (preg_match( "~\\.\\.~" , $filename)) {
+                while (preg_match("~\\.\\.~", $filename)) {
                     $filename = str_replace('..', '.', $filename);
                 }
                 $file = $basefilepath . '/' . $filename;
@@ -163,7 +167,7 @@ class email {
                 $packer->archive_to_pathname($storedfiles, $actualfile);
             }
         }
-        return array($filename, $file, $actualfile);
+        return [$filename, $file, $actualfile];
     }
 
     /**
@@ -183,11 +187,12 @@ class email {
         $fs = get_file_storage();
         $files = $fs->get_area_files($usercontext->id, 'user', 'draft', $draft, 'id');
 
-        $onlyfiles = array_filter($files, function($file) {
+        $onlyfiles = array_filter($files, function ($file) {
             return !$file->is_directory() && $file->get_filename() != '.';
         });
 
-        $onlynames = function ($file) { return $file->get_filename();
+        $onlynames = function ($file) {
+            return $file->get_filename();
         };
 
         $onlynamedfiles = array_map($onlynames, $onlyfiles);
@@ -203,7 +208,7 @@ class email {
      * @return array
      */
     public static function filter_roles($userroles, $masterroles) {
-        return array_uintersect($masterroles, $userroles, function($a, $b) {
+        return array_uintersect($masterroles, $userroles, function ($a, $b) {
             return strcmp($a->shortname, $b->shortname);
         });
     }
@@ -221,26 +226,25 @@ class email {
     public static function delete_dialog($courseid, $type, $typeid) {
         global $DB, $OUTPUT;
 
-        $email = $DB->get_record('block_clampmail_'.$type, array('id' => $typeid));
+        $email = $DB->get_record('block_clampmail_' . $type, ['id' => $typeid]);
 
         if (empty($email)) {
             print_error('not_valid_typeid', 'block_clampmail', '', $typeid);
         }
 
-        $params = array('courseid' => $courseid, 'type' => $type);
-        $yesparams = $params + array('typeid' => $typeid, 'action' => 'confirm');
+        $params = ['courseid' => $courseid, 'type' => $type];
+        $yesparams = $params + ['typeid' => $typeid, 'action' => 'confirm'];
 
         $optionyes = new \moodle_url('/blocks/clampmail/emaillog.php', $yesparams);
         $optionno = new \moodle_url('/blocks/clampmail/emaillog.php', $params);
 
         $table = new \html_table();
-        $table->head = array(get_string('date'), get_string('subject', 'block_clampmail'));
-        $table->data = array(
-            new \html_table_row(array(
+        $table->head = [get_string('date'), get_string('subject', 'block_clampmail')];
+        $table->data = [
+            new \html_table_row([
                 new \html_table_cell(self::format_time($email->time)),
-                new \html_table_cell($email->subject))
-            )
-        );
+                new \html_table_cell($email->subject)]),
+        ];
 
         $msg = get_string('delete_confirm', 'block_clampmail', \html_writer::table($table));
 
@@ -265,32 +269,38 @@ class email {
     public static function list_entries($courseid, $type, $page, $perpage, $userid, $count, $candelete) {
         global $DB, $OUTPUT;
 
-        $dbtable = 'block_clampmail_'.$type;
+        $dbtable = 'block_clampmail_' . $type;
 
         $table = new \html_table();
 
-        $params = array('courseid' => $courseid, 'userid' => $userid);
-        $logs = $DB->get_records($dbtable, $params,
-            'time DESC', '*', $page * $perpage, $perpage * ($page + 1));
+        $params = ['courseid' => $courseid, 'userid' => $userid];
+        $logs = $DB->get_records(
+            $dbtable,
+            $params,
+            'time DESC',
+            '*',
+            $page * $perpage,
+            $perpage * ($page + 1)
+        );
 
-        $table->head = array(get_string('date'), get_string('subject', 'block_clampmail'),
-            get_string('attachment', 'block_clampmail'), get_string('action'));
+        $table->head = [get_string('date'), get_string('subject', 'block_clampmail'),
+            get_string('attachment', 'block_clampmail'), get_string('action')];
 
-        $table->data = array();
+        $table->data = [];
 
         foreach ($logs as $log) {
             $date = self::format_time($log->time);
             $subject = $log->subject;
             $attachments = $log->attachment;
 
-            $params = array(
+            $params = [
                 'courseid' => $log->courseid,
                 'type' => $type,
                 'typeid' => $log->id,
                 'sesskey' => sesskey(),
-            );
+            ];
 
-            $actions = array();
+            $actions = [];
 
             // Open link.
             $actions[] = \html_writer::link(
@@ -300,19 +310,24 @@ class email {
 
             if ($candelete) {
                 // Delete link.
-                $actions[] = \html_writer::link (
-                    new \moodle_url('/blocks/clampmail/emaillog.php',
-                        $params + array('action' => 'delete')
+                $actions[] = \html_writer::link(
+                    new \moodle_url(
+                        '/blocks/clampmail/emaillog.php',
+                        $params + ['action' => 'delete']
                     ),
                     $OUTPUT->pix_icon("t/delete", get_string('delete_email', 'block_clampmail'))
                 );
             }
 
-            $table->data[] = array($date, $subject, $attachments, implode(' ', $actions));
+            $table->data[] = [$date, $subject, $attachments, implode(' ', $actions)];
         }
 
-        $paging = $OUTPUT->paging_bar($count, $page, $perpage,
-            '/blocks/clampmail/emaillog.php?type='.$type.'&amp;courseid='.$courseid);
+        $paging = $OUTPUT->paging_bar(
+            $count,
+            $page,
+            $perpage,
+            '/blocks/clampmail/emaillog.php?type=' . $type . '&amp;courseid=' . $courseid
+        );
 
         $html = $paging;
         $html .= \html_writer::table($table);
