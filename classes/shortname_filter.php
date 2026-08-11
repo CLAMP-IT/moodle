@@ -79,8 +79,8 @@ class shortname_filter extends \block_filtered_course_list\filter {
      * @return array A fixed-up line array
      */
     public function validate_line($line) {
-        $keys = array('expanded', 'label', 'match');
-        $values = array_map(function($item) {
+        $keys = ['expanded', 'label', 'match'];
+        $values = array_map(function ($item) {
             return trim($item);
         }, explode('|', $line[1], 3));
         $this->validate_expanded(0, $values);
@@ -99,14 +99,18 @@ class shortname_filter extends \block_filtered_course_list\filter {
      * @return array The list of rubric objects corresponding to the filter
      */
     public function get_rubrics() {
-        $courselist = array_filter($this->courselist, function($course) {
+        $courselist = array_filter($this->courselist, function ($course) {
             return (\core_text::strpos($course->shortname, $this->line['match']) !== false);
         });
         if (empty($courselist)) {
             return null;
         }
-        $this->rubrics[] = new \block_filtered_course_list_rubric($this->line['label'],
-                                        $courselist, $this->config, $this->line['expanded']);
+        $this->rubrics[] = new \block_filtered_course_list_rubric(
+            $this->line['label'],
+            $courselist,
+            $this->config,
+            $this->line['expanded']
+        );
         return $this->rubrics;
     }
 }
