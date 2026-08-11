@@ -3,7 +3,8 @@ import $ from 'jquery';
 import {exception as displayException} from 'core/notification';
 import Templates from 'core/templates';
 import ChartJS from 'core/chartjs';
-import ModalFactory from 'core/modal_factory';
+// import ModalFactory from 'core/modal_factory';
+import Modal from 'core/modal'
 import {download_table_as_csv, renderFailIcon, renderSuccessIcon} from './util'
 
 const COLOR_PASS = '#198754'
@@ -310,7 +311,7 @@ export const init = (data, courseid) => {
         .append($table)
 
     // Create the modal.
-    const modal = await ModalFactory.create({
+    const modal = await Modal.create({
       title: 'Accessibility of Course PDFs - Details',
       body: $modalBody,
       footer: $('<p/>')
