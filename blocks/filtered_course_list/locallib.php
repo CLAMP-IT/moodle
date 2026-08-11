@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 define('BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_ALL', 'all');
 define('BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_OWN', 'own');
 define('BLOCK_FILTERED_COURSE_LIST_DEFAULT_LABELSCOUNT', 2);
@@ -52,7 +50,7 @@ function get_filter($name, $exfilters) {
     // If not base filter, look for external filter.
     if (!class_exists($classname)) {
         // Find the filter we're looking for.
-        $exfilters = array_filter(explode(',', $exfilters), function($info) use($name) {
+        $exfilters = array_filter(explode(',', $exfilters), function ($info) use ($name) {
             return strpos($info, "$name|") === 0;
         });
         // Abort if filter not found.
@@ -87,7 +85,7 @@ class block_filtered_course_list_rubric {
     /** @var string The rubric's title */
     public $title;
     /** @var array The subset of enrolled courses that match the filter criteria */
-    public $courses = array();
+    public $courses = [];
     /** @var string Indicates whether the rubric is expanded or collapsed by default */
     public $expanded;
     /** @var array Config settings */
@@ -106,100 +104,5 @@ class block_filtered_course_list_rubric {
         $this->courses = $courses;
         $this->config = $config;
         $this->expanded = $expanded;
-    }
-}
-
-/**
- * Utility functions
- *
- * @package    block_filtered_course_list
- * @copyright  2017 CLAMP
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class block_filtered_course_list_lib {
-    public static function get_filter_files() {
-        global $CFG;
-
-        $files = [];
-        $dir = new RecursiveDirectoryIterator($CFG->dirroot);
-        $flt = new RecursiveCallbackFilterIterator($dir, function($current, $key, $iterator) {
-            if ($current->getFilename()[0] === '.') {
-                return false;
-            }
-            return true;
-        });
-        $itr = new RecursiveIteratorIterator($flt);
-        foreach ($itr as $file) {
-            if (preg_match('/.*fcl_filter\.php$/', $file)) {
-                $files[] = $file;
-            }
-        }
-        return $files;
-    }
-
-    public static function get_filter_classes() {
-        $exfilters = array_filter(get_declared_classes(), function($class) {
-            return preg_match('/.*fcl_filter/', $class);
-        });
-        return $exfilters;
-    }
-
-    /**
-     * Display a coursename according to the template
-     *
-     * @param object $course An object with all of the course attributes
-     * @param string $tpl The coursename display template
-     */
-    public static function coursedisplaytext($course, $tpl) {
-        if ($tpl == '') {
-            $tpl = 'FULLNAME';
-        }
-        $cat = core_course_category::get($course->category, IGNORE_MISSING);
-        $catname = (is_object($cat)) ? $cat->name : '';
-        $replacements = array(
-            'FULLNAME'  => $course->fullname,
-            'SHORTNAME' => $course->shortname,
-            'IDNUMBER'  => $course->idnumber,
-            'CATEGORY'  => $catname,
-        );
-        // If we have limits defined, apply them.
-        static::apply_template_limits($replacements, $tpl);
-        $displaytext = str_replace(array_keys($replacements), $replacements, $tpl);
-        return format_string(strip_tags($displaytext));
-    }
-
-    /**
-     * Apply length limits to a template string. TOKEN{#} in the template string
-     * is replaced by TOKEN, and the replacement value for TOKEN is truncated to
-     * # characters.
-     *
-     * @param object $replacements an array of pattern => replacement
-     * @param string $tpl the template string (coursename or category)
-     */
-    public static function apply_template_limits(&$replacements, &$tpl) {
-        $limitpattern = "{(\d+)}";
-        foreach ($replacements as $pattern => $replace) {
-            $limit = array();
-            if (preg_match("/$pattern$limitpattern/", $tpl, $limit)) {
-                $replacements[$pattern] = static::truncate($replace, (int) $limit[1]);
-            }
-        }
-        $tpl = preg_replace("/$limitpattern/", "", $tpl);
-    }
-
-    /**
-     * Ellipsis truncate the given string to $length characters.
-     *
-     * @param string $string the string to be truncated
-     * @param int $length the number of characters to truncate to
-     * @return $string the truncated string
-     */
-    public static function truncate($string, $length) {
-        if ($length > 0 && \core_text::strlen($string) > $length) {
-            $string = \core_text::substr($string, 0, $length);
-            $string = trim($string);
-            $string .= "…";
-        }
-        return $string;
     }
 }

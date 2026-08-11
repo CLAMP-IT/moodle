@@ -79,15 +79,15 @@ class enrolment_filter extends \block_filtered_course_list\filter {
      * @return array A fixed-up line array
      */
     public function validate_line($line) {
-        $keys = array('expanded', 'enrol', 'label');
-        $values = array_map(function($item) {
+        $keys = ['expanded', 'enrol', 'label'];
+        $values = array_map(function ($item) {
             return trim($item);
         }, explode('|', $line[1], 3));
         $this->validate_expanded(0, $values);
         if (!array_key_exists(1, $values)) {
-            $values[1] = array('guest');
+            $values[1] = ['guest'];
         } else {
-            $values[1] = array_map(function($item) {
+            $values[1] = array_map(function ($item) {
                 return trim($item);
             }, explode(',', $values[1]));
             $values[1] = array_intersect(
@@ -110,22 +110,26 @@ class enrolment_filter extends \block_filtered_course_list\filter {
     public function get_rubrics() {
         global $DB;
 
-        $where = implode(' OR ', array_map(function($enrol) {
+        $where = implode(' OR ', array_map(function ($enrol) {
             return "enrol = '$enrol'";
         }, $this->line['enrol']));
         $where = "($where) AND status = 0";
 
         $candidates = $DB->get_fieldset_select('enrol', 'courseid', $where);
 
-        $courselist = array_map(function($courseid) use($DB) {
-            return $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
+        $courselist = array_map(function ($courseid) use ($DB) {
+            return $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
         }, array_unique($candidates));
 
         if (empty($courselist)) {
             return null;
         }
-        $this->rubrics[] = new \block_filtered_course_list_rubric($this->line['label'],
-                                        $courselist, $this->config, $this->line['expanded']);
+        $this->rubrics[] = new \block_filtered_course_list_rubric(
+            $this->line['label'],
+            $courselist,
+            $this->config,
+            $this->line['expanded']
+        );
         return $this->rubrics;
     }
 }

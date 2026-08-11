@@ -28,14 +28,12 @@ Feature: The starred courses filter displays a user's starred courses
     starred | expanded | My starred courses
     """
     Given I am on the "My courses" page logged in as "student2"
-    And I hover "//div[@class='card dashboard-card' and contains(.,'Course 2')]" "xpath_element"
-    And I click on ".coursemenubtn" "css_element" in the "//div[@class='card dashboard-card' and contains(.,'Course 2')]" "xpath_element"
-    And I click on "Star this course" "link" in the "//div[@class='card dashboard-card' and contains(.,'Course 2')]" "xpath_element"
+    And I click on ".coursemenubtn" "css_element" in the "//div[contains(@class, 'course-card') and contains(.,'Course 2')]" "xpath_element"
+    And I click on "Star this course" "link" in the "//div[contains(@class, 'course-card') and contains(.,'Course 2')]" "xpath_element"
     And I log out
     Given I am on the "My courses" page logged in as "student1"
-    And I hover "//div[@class='card dashboard-card' and contains(.,'Course 1')]" "xpath_element"
-    And I click on ".coursemenubtn" "css_element" in the "//div[@class='card dashboard-card' and contains(.,'Course 1')]" "xpath_element"
-    And I click on "Star this course" "link" in the "//div[@class='card dashboard-card' and contains(.,'Course 1')]" "xpath_element"
+    And I click on ".coursemenubtn" "css_element" in the "//div[contains(@class, 'course-card') and contains(.,'Course 1')]" "xpath_element"
+    And I click on "Star this course" "link" in the "//div[contains(@class, 'course-card') and contains(.,'Course 1')]" "xpath_element"
     And I am on site homepage
     Then I should see "Filtered course list"
     And I should see "My starred courses" in the ".block_filtered_course_list" "css_element"

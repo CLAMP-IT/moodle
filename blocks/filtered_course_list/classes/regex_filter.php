@@ -78,15 +78,19 @@ class regex_filter extends \block_filtered_course_list\shortname_filter {
      * @return array The list of rubric objects corresponding to the filter
      */
     public function get_rubrics() {
-        $courselist = array_filter($this->courselist, function($course) {
+        $courselist = array_filter($this->courselist, function ($course) {
             $teststring = str_replace('`', '', $this->line['match']);
             return (preg_match("`$teststring`", $course->shortname) == 1);
         });
         if (empty($courselist)) {
             return null;
         }
-        $this->rubrics[] = new \block_filtered_course_list_rubric($this->line['label'],
-                                        $courselist, $this->config, $this->line['expanded']);
+        $this->rubrics[] = new \block_filtered_course_list_rubric(
+            $this->line['label'],
+            $courselist,
+            $this->config,
+            $this->line['expanded']
+        );
         return $this->rubrics;
     }
 }

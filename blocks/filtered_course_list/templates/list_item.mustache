@@ -46,8 +46,6 @@
     }
 }}
 <li class='{{ classes }}'>
-    <a href='{{ url }}' {{#title}} title='{{{ title }}}' {{/title}} class='{{ linkclasses }}'>
-        {{# icon }}{{> block_filtered_course_list/icon }}{{/ icon }}
-        {{{ displaytext }}}
-    </a>
+    {{# icon }}{{> block_filtered_course_list/icon }}{{/ icon }}
+    <a href='{{ url }}' {{#title}} title='{{{ title }}}' {{/title}} class='{{ linkclasses }}'>{{{ displaytext }}}</a>
 </li>

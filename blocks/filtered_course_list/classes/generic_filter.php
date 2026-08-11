@@ -24,6 +24,8 @@
 
 namespace block_filtered_course_list;
 
+use core_course_category;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/blocks/filtered_course_list/locallib.php');
@@ -79,8 +81,8 @@ class generic_filter extends \block_filtered_course_list\filter {
      * @return array A fixed-up line array
      */
     public function validate_line($line) {
-        $keys = array('expanded', 'courselistheading', 'catlistheading');
-        $values = array_map(function($item) {
+        $keys = ['expanded', 'courselistheading', 'catlistheading'];
+        $values = array_map(function ($item) {
             return trim($item);
         }, explode('|', $line[1]));
         $this->validate_expanded(0, $values);
@@ -109,9 +111,11 @@ class generic_filter extends \block_filtered_course_list\filter {
 
         if ($categories) {
             // Just print top level category links.
-            if (count($categories) > 1 ||
+            if (
+                count($categories) > 1 ||
                     (count($categories) == 1 &&
-                    current($categories)->coursecount > $this->config->maxallcourse)) {
+                    current($categories)->coursecount > $this->config->maxallcourse)
+            ) {
                 $label = $this->line['catlistheading'];
                 $list = $categories;
                 $this->rubrics[] = new \block_filtered_course_list_rubric($label, $list, $this->config, $expanded);
