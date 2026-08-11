@@ -34,7 +34,6 @@ function xmldb_report_customsql_upgrade($oldversion) {
     $dbman = $DB->get_manager();
 
     if ($oldversion < 2012011900) {
-
         // Add field to report_customsql_queries.
         $table = new xmldb_table('report_customsql_queries');
         if ($dbman->table_exists($table)) {
@@ -49,11 +48,9 @@ function xmldb_report_customsql_upgrade($oldversion) {
     }
 
     if ($oldversion < 2012092400) {
-
         // Add fields to report_customsql_queries.
         $table = new xmldb_table('report_customsql_queries');
         if ($dbman->table_exists($table)) {
-
             // Define and add the field 'at'.
             $field = new xmldb_field('at', XMLDB_TYPE_CHAR, '16', null, XMLDB_NOTNULL, null, null, 'singlerow');
             if (!$dbman->field_exists($table, $field)) {
@@ -77,8 +74,16 @@ function xmldb_report_customsql_upgrade($oldversion) {
     if ($oldversion < 2013062300) {
         require_once($CFG->dirroot . '/report/customsql/locallib.php');
         $table = new xmldb_table('report_customsql_queries');
-        $field = new xmldb_field('querylimit', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED,
-                XMLDB_NOTNULL, null, 5000, 'queryparams');
+        $field = new xmldb_field(
+            'querylimit',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            5000,
+            'queryparams'
+        );
 
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
@@ -88,7 +93,6 @@ function xmldb_report_customsql_upgrade($oldversion) {
     }
 
     if ($oldversion < 2013102400) {
-
         // Define table report_customsql_categories to be created.
         $table = new xmldb_table('report_customsql_categories');
 
@@ -135,8 +139,16 @@ function xmldb_report_customsql_upgrade($oldversion) {
     if ($oldversion < 2014020300) {
         require_once($CFG->dirroot . '/report/customsql/locallib.php');
         $table = new xmldb_table('report_customsql_queries');
-        $field = new xmldb_field('querylimit', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED,
-                XMLDB_NOTNULL, null, 5000, 'queryparams');
+        $field = new xmldb_field(
+            'querylimit',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            5000,
+            'queryparams'
+        );
 
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
@@ -146,7 +158,6 @@ function xmldb_report_customsql_upgrade($oldversion) {
     }
 
     if ($oldversion < 2015062900) {
-
         // Define field descriptionformat to be added to report_customsql_queries.
         $table = new xmldb_table('report_customsql_queries');
         $field = new xmldb_field('descriptionformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'description');
@@ -161,7 +172,6 @@ function xmldb_report_customsql_upgrade($oldversion) {
     }
 
     if ($oldversion < 2016011800) {
-
         // Define field customdir to be added to report_customsql_queries.
         $table = new xmldb_table('report_customsql_queries');
         $field = new xmldb_field('customdir', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'categoryid');
@@ -203,8 +213,11 @@ function xmldb_report_customsql_upgrade($oldversion) {
             $progressbar = new progress_bar('report_customsql_emailto_upgrade', 500, true);
             $done = 0;
             foreach ($queries as $query) {
-                $progressbar->update($done, $total,
-                        "Updating ad-hoc DB query email recipients - {$done}/{$total} (id = {$query->id}).");
+                $progressbar->update(
+                    $done,
+                    $total,
+                    "Updating ad-hoc DB query email recipients - {$done}/{$total} (id = {$query->id})."
+                );
 
                 $queryuserids = [];
                 foreach (preg_split("/[\s,;]+/", $query->emailto) as $username) {
@@ -235,8 +248,16 @@ function xmldb_report_customsql_upgrade($oldversion) {
         }
 
         // Define field timecreated to be added to report_customsql_queries.
-        $field = new xmldb_field('timecreated', XMLDB_TYPE_INTEGER, '10', null,
-                XMLDB_NOTNULL, null, '0', 'usermodified');
+        $field = new xmldb_field(
+            'timecreated',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'usermodified'
+        );
 
         // Conditionally launch add field timecreated.
         if (!$dbman->field_exists($table, $field)) {
@@ -244,8 +265,16 @@ function xmldb_report_customsql_upgrade($oldversion) {
         }
 
         // Define field timemodified to be added to report_customsql_queries.
-        $field = new xmldb_field('timemodified', XMLDB_TYPE_INTEGER, '10', null,
-                XMLDB_NOTNULL, null, '0', 'timecreated');
+        $field = new xmldb_field(
+            'timemodified',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'timecreated'
+        );
 
         // Conditionally launch add field timemodified.
         if (!$dbman->field_exists($table, $field)) {

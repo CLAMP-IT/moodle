@@ -1,5 +1,7 @@
 # Change log for the Ad-hoc database queries report
 
+This version is compatible with Moodle 4.5+ and 5.0.
+
 ## Changes in 4.4
 
 * This version is compatible with Moodle 5.0.
