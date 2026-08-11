@@ -51,23 +51,49 @@ class category {
     /**
      * Load queries of category from records.
      *
-     * @param array $queries Records to load.
+     * @param \stdClass[] $queries Records to load.
      */
     public function load_queries_data(array $queries): void {
         $statistic = [];
         $queriesdata = [];
         foreach (report_customsql_runable_options() as $type => $description) {
-            $fitleredqueries = utils::get_number_of_report_by_type($queries, $type);
-            $statistic[$type] = count($fitleredqueries);
-            if ($fitleredqueries) {
+            $filteredqueries = self::get_reports_of_a_particular_runtype($queries, $type);
+            $filteredqueries = self::filter_reports_by_capability($filteredqueries);
+            $statistic[$type] = count($filteredqueries);
+            if ($filteredqueries) {
                 $queriesdata[] = [
                     'type' => $type,
-                    'queries' => $fitleredqueries
+                    'queries' => $filteredqueries,
                 ];
             }
         }
         $this->queriesdata = $queriesdata;
         $this->statistic = $statistic;
+    }
+
+    /**
+     * Get queries for each type.
+     *
+     * @param \stdClass[] $queries Array of queries.
+     * @param string $type Type to filter.
+     * @return \stdClass[] All queries of type.
+     */
+    public static function get_reports_of_a_particular_runtype(array $queries, string $type) {
+        return array_filter($queries, function($query) use ($type) {
+            return $query->runable == $type;
+        }, ARRAY_FILTER_USE_BOTH);
+    }
+
+    /**
+     * Given an array of qureries, remove any that the current user cannot access.
+     *
+     * @param \stdClass[] $queries Array of queries.
+     * @return \stdClass[] queries the current user is allowed to see.
+     */
+    public static function filter_reports_by_capability(array $queries) {
+        return array_filter($queries, function($query) {
+            return has_capability($query->capability ?? 'moodle/site:config', \context_system::instance());
+        }, ARRAY_FILTER_USE_BOTH);
     }
 
     /**

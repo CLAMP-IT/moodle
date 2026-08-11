@@ -68,7 +68,7 @@ class category implements renderable, templatable {
      * @param moodle_url|null $returnurl Return url.
      */
     public function __construct(report_category $category, context $context, bool $expandable = false, int $showcat = 0,
-            int $hidecat = 0, bool $showonlythislink = false, bool $addnewquerybtn = true, moodle_url $returnurl = null) {
+            int $hidecat = 0, bool $showonlythislink = false, bool $addnewquerybtn = true, ?moodle_url $returnurl = null) {
         $this->category = $category;
         $this->context = $context;
         $this->expandable = $expandable;
@@ -79,6 +79,7 @@ class category implements renderable, templatable {
         $this->returnurl = $returnurl ?? $this->category->get_url();
     }
 
+    #[\Override]
     public function export_for_template(renderer_base $output) {
 
         $queriesdata = $this->category->get_queries_data();
@@ -99,7 +100,7 @@ class category implements renderable, templatable {
                 'type' => $querygroup['type'],
                 'title' => get_string($querygroup['type'] . 'header', 'report_customsql'),
                 'helpicon' => $output->help_icon($querygroup['type'] . 'header', 'report_customsql'),
-                'queries' => $queries
+                'queries' => $queries,
             ];
         }
 
@@ -121,7 +122,7 @@ class category implements renderable, templatable {
             'linkref' => $this->get_link_reference(),
             'statistic' => $this->category->get_statistic(),
             'querygroups' => $querygroups,
-            'addquerybutton' => $addquerybutton
+            'addquerybutton' => $addquerybutton,
         ];
     }
 

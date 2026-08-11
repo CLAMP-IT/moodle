@@ -52,9 +52,9 @@ class index_page implements renderable, templatable {
 
     /** Build the index page renderable object.
      *
-     * @param array $categories Categories for renderer.
-     * @param array $queries Queries for renderer.
-     * @param context $context Context to check the capability.
+     * @param \stdClass[] $categories Categories for renderer.
+     * @param \stdClass[] $queries Queries for renderer.
+     * @param context $context Context to check the capability (will be system context).
      * @param moodle_url $returnurl Return url for edit/delete link.
      * @param int $showcat Showing Category Id.
      * @param int $hidecat Hiding Category Id.
@@ -69,6 +69,7 @@ class index_page implements renderable, templatable {
         $this->hidecat = $hidecat;
     }
 
+    #[\Override]
     public function export_for_template(renderer_base $output) {
         $categoriesdata = [];
         $grouppedqueries = utils::group_queries_by_category($this->queries);
@@ -96,7 +97,7 @@ class index_page implements renderable, templatable {
             'expandcollapselinkattheend' => (count($this->categories) >= 5),
             'categories' => $categoriesdata,
             'addquerybutton' => $addquerybutton,
-            'managecategorybutton' => $managecategorybutton
+            'managecategorybutton' => $managecategorybutton,
         ];
         return $data;
     }

@@ -5,9 +5,8 @@ Feature: Ad-hoc database queries report
   I need to be able to run arbitrary queries against the database
 
   Scenario: Create an Ad-hoc database query
-    When I log in as "admin"
-    And the Ad-hoc database queries thinks the time is "2021-05-10 18:00:00"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    Given the Ad-hoc database queries thinks the time is "2021-05-10 18:00:00"
+    When I am on the "report_customsql > report index" page logged in as admin
     And I press "Add a new query"
     And I set the following fields to these values:
       | Query name  | Test query                                    |
@@ -36,9 +35,8 @@ Feature: Ad-hoc database queries report
       | timecreated  | ## 2021-05-10 18:00:00 ##                     |
       | timemodified | ## 2021-05-10 18:00:00 ##                     |
       | usermodified | mamager1                                      |
-    When I log in as "admin"
     And the Ad-hoc database queries thinks the time is "2021-05-10 19:00:00"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    When I am on the "report_customsql > report index" page logged in as admin
     And I follow "Edit query 'Test query'"
     And the following fields match these values:
       | Query name  | Test query                                    |
@@ -62,8 +60,7 @@ Feature: Ad-hoc database queries report
       | name        | Test query                                    |
       | description | Display the Moodle internal version number.   |
       | querysql    | SELECT * FROM {config} WHERE name = 'version' |
-    When I log in as "admin"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    When I am on the "report_customsql > report index" page logged in as admin
     And I follow "Delete query 'Test query'"
     And I press "Yes"
     Then I should not see "Test query"
@@ -76,9 +73,15 @@ Feature: Ad-hoc database queries report
     And I view the "Test query" custom sql report
     Then I should see "This query did not return any data."
 
-  Scenario: Create an Ad-hoc database queries category
+  Scenario: Download an Ad-hoc database query that returns no data but includes headers
+    Given the following custom sql report exists:
+      | name     | Test query                               |
+      | querysql | SELECT * FROM {config} WHERE name = '-1' |
     When I log in as "admin"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    Then downloading custom sql report "Test query" returns a file with headers "id,name,value"
+
+  Scenario: Create an Ad-hoc database queries category
+    When I am on the "report_customsql > report index" page logged in as admin
     And I press "Manage report categories"
     And I press "Add a new category"
     And I set the field "Category name" to "Category 1"
@@ -88,8 +91,7 @@ Feature: Ad-hoc database queries report
   @javascript
   Scenario: Create an Ad-hoc database query in a custom category
     Given the custom sql report category "Special reports" exists:
-    When I log in as "admin"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    When I am on the "report_customsql > report index" page logged in as admin
     And I follow "Special reports"
     And I should see "No queries available"
     And I press "Add a new query"
@@ -98,7 +100,7 @@ Feature: Ad-hoc database queries report
       | Query name | Test query                                    |
       | Query SQL  | SELECT * FROM {config} WHERE name = 'version' |
     And I press "Save changes"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    And I am on the "report_customsql > report index" page
     And I follow "Special reports"
     # Also test expand/collapse while we are here.
     Then I should see "Test query"
@@ -113,8 +115,7 @@ Feature: Ad-hoc database queries report
   Scenario: View a category and add an ad-hoc database query inside a category
     Given the custom sql report category "Category 1" exists:
     And the custom sql report category "Category 2" exists:
-    When I log in as "admin"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    When I am on the "report_customsql > report index" page logged in as admin
     And I follow "Show only Category 2"
     Then I should see "Category 2"
     And I should see "No queries available"
@@ -131,13 +132,49 @@ Feature: Ad-hoc database queries report
 
   Scenario: Delete an empty Ad-hoc database queries category
     Given the custom sql report category "Special reports" exists:
-    When I log in as "admin"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    When I am on the "report_customsql > report index" page logged in as admin
     And I press "Manage report categories"
     And I follow "Delete category 'Special reports'"
     And I press "Yes"
     Then I should not see "Special reports"
     And "Delete category 'Miscellaneous'" "link" should not exist
+
+  Scenario: Non-admins can only see some queries
+    Given the following custom sql report exists:
+      | name        | Report for admin and manager                  |
+      | querysql    | SELECT * FROM {config} WHERE name = 'version' |
+      | capability  | report/customsql:view                         |
+    And the following custom sql report exists:
+      | name        | Report for admin only                         |
+      | querysql    | SELECT * FROM {config} WHERE name = 'version' |
+      | capability  | moodle/site:config                            |
+    And the following "role capability" exists:
+      | role                  | manager |
+      | report/customsql:view | allow   |
+      | moodle/site:config    | inherit |
+    And the following "users" exist:
+      | username |
+      | manager  |
+    And the following "role assigns" exist:
+      | user    | role    | contextlevel | reference |
+      | manager | manager | System       |           |
+
+    # Check manager can only see one of the queries.
+    When I am on the "report_customsql > report index" page logged in as manager
+    Then I should see "Report for admin and manager"
+    And I should not see "Report for admin only"
+    And I follow "Show only Miscellaneous"
+    And I should see "Report for admin and manager"
+    And I should not see "Report for admin only"
+    And I log out
+
+    # Check admin can see both.
+    And I am on the "report_customsql > report index" page logged in as admin
+    And I should see "Report for admin and manager"
+    And I should see "Report for admin only"
+    And I follow "Show only Miscellaneous"
+    And I should see "Report for admin and manager"
+    And I should see "Report for admin only"
 
   Scenario: A query that uses the various auto-formatting options
     Given the custom sql report "Formatting test" exists with SQL:
@@ -171,8 +208,7 @@ Feature: Ad-hoc database queries report
     And I should see "This report has 1 rows."
 
   Scenario: Create and run an Ad-hoc database query that has parameters
-    When I log in as "admin"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    When I am on the "report_customsql > report index" page logged in as admin
     And I press "Add a new query"
     And I set the following fields to these values:
       | Query name | Find user                                       |
@@ -224,13 +260,12 @@ Feature: Ad-hoc database queries report
   Scenario: Test reporting when a query exceeds the limit
     Given the following config values are set as admin:
       | querylimitdefault | 1 | report_customsql |
-    When I log in as "admin"
-    And I navigate to "Reports > Ad-hoc database queries" in site administration
+    When I am on the "report_customsql > report index" page logged in as admin
     And I press "Add a new query"
     And I set the following fields to these values:
       | Query name  | Test query                                                                                   |
       | Description | Query that tries to return 2 rows.                                                           |
-      | Query SQL   | SELECT * FROM {config_plugins} WHERE name = 'version' AND plugin IN ('mod_quiz', 'mod_wiki') |
+      | Query SQL   | SELECT * FROM {config_plugins} WHERE name = 'version' AND plugin IN ('mod_quiz', 'mod_page') |
     And I press "Save changes"
     Then I should see "Test query"
     And I should see "This query reached the limit of 1 rows. Some rows may have been omitted from the end."

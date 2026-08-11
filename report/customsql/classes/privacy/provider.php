@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * Privacy Subsystem implementation for report_customsql.
  *
@@ -68,7 +69,7 @@ class provider implements
                 'customdir' => 'privacy:metadata:reportcustomsqlqueries:customdir',
                 'usermodified' => 'privacy:metadata:reportcustomsqlqueries:usermodified',
                 'timecreated' => 'privacy:metadata:reportcustomsqlqueries:timecreated',
-                'timemodified' => 'privacy:metadata:reportcustomsqlqueries:timemodified'
+                'timemodified' => 'privacy:metadata:reportcustomsqlqueries:timemodified',
             ],
             'privacy:metadata:reportcustomsqlqueries'
         );
@@ -156,7 +157,7 @@ class provider implements
                 }
 
                 $subcontext = [
-                    get_string('privacy:metadata:reportcustomsqlqueries', 'report_customsql')
+                    get_string('privacy:metadata:reportcustomsqlqueries', 'report_customsql'),
                 ];
                 request\writer::with_context($context)->export_data($subcontext, (object)$exportdata);
             }

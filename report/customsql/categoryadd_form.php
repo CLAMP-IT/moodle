@@ -39,13 +39,13 @@ require_once(dirname(__FILE__) . '/locallib.php');
  */
 class report_customsql_addcategory_form extends moodleform {
 
-    // Form definition.
+    #[\Override]
     public function definition() {
         global $CFG, $DB;
         $mform = $this->_form;
         $categoryid = $this->_customdata['categoryid'];
 
-        $editoroptions = array();
+        $editoroptions = [];
 
         if ($categoryid) {
             $strsubmit = get_string('savechanges');
@@ -53,8 +53,8 @@ class report_customsql_addcategory_form extends moodleform {
             $strsubmit = get_string('addcategory', 'report_customsql');
         }
 
-        $mform->addElement('text', 'name', get_string('categoryname'), array('size' => '30'));
-        $mform->addRule('name', get_string('required'), 'required', null);
+        $mform->addElement('text', 'name', get_string('categoryname'), ['size' => '30']);
+        $mform->addRule('name', null, 'required', null);
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->setDefault('name', '');
         $mform->setType('name', PARAM_TEXT);
@@ -65,6 +65,7 @@ class report_customsql_addcategory_form extends moodleform {
         $this->add_action_buttons(true, $strsubmit);
     }
 
+    #[\Override]
     public function validation($data, $files) {
         global $DB;
         $errors = parent::validation($data, $files);
@@ -74,7 +75,7 @@ class report_customsql_addcategory_form extends moodleform {
                 $data['id'] = 0;// Ensure id to check against.
             }
             if ($DB->get_record_select('report_customsql_categories',
-                    'name = ? AND id != ?', array($data['name'], $data['id']))) {
+                    'name = ? AND id != ?', [$data['name'], $data['id']])) {
                 $errors['name'] = get_string('categoryexists', 'report_customsql');
             }
         }

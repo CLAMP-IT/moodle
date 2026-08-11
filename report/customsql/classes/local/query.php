@@ -70,7 +70,7 @@ class query {
      * @param moodle_url|null $returnurl Return url.
      * @return moodle_url Edit url.
      */
-    public function get_edit_url(moodle_url $returnurl = null): moodle_url {
+    public function get_edit_url(?moodle_url $returnurl = null): moodle_url {
         $param = ['id' => $this->record->id];
         if ($returnurl) {
             $param['returnurl'] = $returnurl->out_as_local_url(false);
@@ -85,7 +85,7 @@ class query {
      * @param moodle_url|null $returnurl Return url.
      * @return moodle_url Delete url.
      */
-    public function get_delete_url(moodle_url $returnurl = null): moodle_url {
+    public function get_delete_url(?moodle_url $returnurl = null): moodle_url {
         $param = ['id' => $this->record->id];
         if ($returnurl) {
             $param['returnurl'] = $returnurl->out_as_local_url(false);
@@ -126,9 +126,10 @@ class query {
     /**
      * Check the capability to view the query.
      *
+     * @param \context $context The context to check.
      * @return bool Has capability to view or not?
      */
-    public function can_view(\context $context):bool {
+    public function can_view(\context $context): bool {
         return empty($report->capability) || has_capability($report->capability, $context);
     }
 }
