@@ -56,12 +56,12 @@ class signature_form extends \moodleform {
         $mform->setType('signature', PARAM_RAW);
         $mform->addElement('checkbox', 'default_flag', get_string('default'));
 
-        $buttons = array(
+        $buttons = [
             $mform->createElement('submit', 'save', get_string('savechanges')),
             $mform->createElement('submit', 'delete', get_string('delete')),
-            $mform->createElement('cancel')
-        );
+            $mform->createElement('cancel'),
+        ];
 
-        $mform->addGroup($buttons, 'buttons', '', array(' '), false);
+        $mform->addGroup($buttons, 'buttons', '', [' '], false);
     }
 }

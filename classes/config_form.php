@@ -43,39 +43,56 @@ class config_form extends \moodleform {
         $mform =& $this->_form;
 
         $resetlink = \html_writer::link(
-            new \moodle_url('/blocks/clampmail/config.php', array(
+            new \moodle_url('/blocks/clampmail/config.php', [
                 'courseid' => $this->_customdata['courseid'],
-                'reset' => 1
-            )), get_string('reset', 'block_clampmail')
+                'reset' => 1,
+            ]),
+            get_string('reset', 'block_clampmail')
         );
         $mform->addElement('static', 'reset', '', $resetlink);
 
         $roles = users::get_roles();
-        $filterroles =& $mform->addElement('select', 'roleselection',
-            get_string('select_roles', 'block_clampmail'), $roles);
+        $filterroles =& $mform->addElement(
+            'select',
+            'roleselection',
+            get_string('select_roles', 'block_clampmail'),
+            $roles
+        );
 
         $filterroles->setMultiple(true);
 
-        $cansend =& $mform->addElement('select', 'cansend',
-            get_string('select_cansend', 'block_clampmail'), $roles);
+        $cansend =& $mform->addElement(
+            'select',
+            'cansend',
+            get_string('select_cansend', 'block_clampmail'),
+            $roles
+        );
         $cansend->setMultiple(true);
         $mform->addHelpButton('cansend', 'select_cansend', 'block_clampmail');
 
-        $options = array(
+        $options = [
             0 => get_string('none'),
             'idnumber' => get_string('idnumber'),
-            'shortname' => get_string('shortname')
+            'shortname' => get_string('shortname'),
+        ];
+
+        $mform->addElement(
+            'select',
+            'prepend_class',
+            get_string('prepend_class', 'block_clampmail'),
+            $options
         );
 
-        $mform->addElement('select', 'prepend_class',
-            get_string('prepend_class', 'block_clampmail'), $options);
-
-        $studentselect = array(0 => get_string('no'), 1 => get_string('yes'));
-        $mform->addElement('select', 'receipt',
-            get_string('receipt', 'block_clampmail'), $studentselect);
+        $studentselect = [0 => get_string('no'), 1 => get_string('yes')];
+        $mform->addElement(
+            'select',
+            'receipt',
+            get_string('receipt', 'block_clampmail'),
+            $studentselect
+        );
 
         // Groups mode.
-        $choices = array();
+        $choices = [];
         $choices[NOGROUPS] = get_string('groupsnone', 'group');
         $choices[SEPARATEGROUPS] = get_string('groupsseparate', 'group');
         $choices[VISIBLEGROUPS] = get_string('groupsvisible', 'group');

@@ -29,7 +29,7 @@ $action = optional_param('action', 'view', PARAM_TEXT);
 $id = optional_param('id', null, PARAM_INT);
 $flash = optional_param('flash', 0, PARAM_INT);
 
-$course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
+$course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
 $context = context_course::instance($courseid);
 
@@ -41,14 +41,14 @@ $blockname = get_string('pluginname', 'block_clampmail');
 $heading = get_string('alternate', 'block_clampmail');
 $title = "$blockname: $heading";
 
-$url = new moodle_url('/blocks/clampmail/alternate.php', array('courseid' => $courseid));
+$url = new moodle_url('/blocks/clampmail/alternate.php', ['courseid' => $courseid]);
 
 $PAGE->set_url($url);
 $PAGE->set_context($context);
 $PAGE->set_course($course);
 $PAGE->set_pagelayout('report');
 
-$PAGE->navbar->add($blockname, new moodle_url('/blocks/clampmail/email.php', array('courseid' => $courseid)));
+$PAGE->navbar->add($blockname, new moodle_url('/blocks/clampmail/email.php', ['courseid' => $courseid]));
 $PAGE->navbar->add($heading);
 
 $PAGE->set_title($title);
@@ -65,8 +65,8 @@ $body = block_clampmail\alternate::$action($course, $id);
 echo $OUTPUT->header();
 echo $OUTPUT->heading($blockname);
 echo block_clampmail\navigation::print_navigation(
-        block_clampmail\navigation::get_links($course->id, $context),
-        $heading
+    block_clampmail\navigation::get_links($course->id, $context),
+    $heading
 );
 
 if ($flash) {

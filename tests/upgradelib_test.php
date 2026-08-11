@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Test upgrade library.
+ *
  * @package   block_clampmail
  * @copyright 2017 Collaborative Liberal Arts Moodle Project
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,7 +27,14 @@ defined('MOODLE_INTERNAL') || die;
 global $CFG;
 require_once($CFG->dirroot . '/blocks/clampmail/db/upgradelib.php');
 
-class block_clampmail_upgradelib_testcase extends advanced_testcase {
+/**
+ * PHPUnit tests
+ *
+ * @package    block_clampmail
+ * @copyright  2017 Collaborative Liberal Arts Moodle Project
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class upgradelib_test extends advanced_testcase {
     public function test_upgradelib() {
         global $DB;
         $this->resetAfterTest(true);

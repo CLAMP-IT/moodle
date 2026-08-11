@@ -15,17 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * block_clampmail version information.
+ * Privacy functions.
  *
  * @package   block_clampmail
- * @copyright 2012 Louisiana State University
+ * @copyright 2025 Collaborative Liberal Arts Moodle Project
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+namespace block_clampmail\privacy;
 
-$plugin->version = 2023081403; // The current module version (Date: YYYYMMDDXX).
-$plugin->requires = 2022112800; // Requires this Moodle version.
-$plugin->component = 'block_clampmail'; // Full name of the plugin (used for diagnostics).
-$plugin->maturity = MATURITY_STABLE; // The current stability of this version (used for diagnostics).
-$plugin->release = 'v4.0.3'; // The release name of this version (used for diagnostics).
+/**
+ * The interface is used to describe a provider which is capable of identifying the users who have data within it.
+ *
+ * It describes data how these requests are serviced in a specific format.
+ *
+ * @package     core_privacy
+ * @copyright   2018 Lafayette College ITS
+ */
+interface my_userlist extends \core_privacy\local\request\core_userlist_provider {
+}
