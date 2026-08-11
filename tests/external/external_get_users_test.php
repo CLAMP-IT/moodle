@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 namespace report_customsql\external;
+
+use core_external\external_api;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -31,9 +32,16 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
  * @category  external
  * @copyright 2020 The Open University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers \report_customsql\external\get_users
+ * @runTestsInSeparateProcesses
  */
-class external_get_users_test extends \externallib_advanced_testcase {
+final class external_get_users_test extends \externallib_advanced_testcase {
 
+    /**
+     * Sets up test users with specific roles and permissions.
+     *
+     * @return array An array containing the created users: admin, manager, and course creator.
+     */
     protected function setup_users(): array {
         global $DB, $USER;
 
@@ -66,87 +74,97 @@ class external_get_users_test extends \externallib_advanced_testcase {
         return [$admin, $manager, $coursecreateor];
     }
 
-    public function test_get_users_site_config() {
+    public function test_get_users_site_config(): void {
+        global $OUTPUT;
+        $defaultuserimage = $OUTPUT->image_url('u/f2');
+
         [$admin] = $this->setup_users();
-        $defaultuserimage = 'https://www.example.com/moodle/theme/image.php/_s/boost/core/1/u/f2';
 
         $result = get_users::execute('', 'moodle/site:config');
-        $result = \external_api::clean_returnvalue(get_users::execute_returns(), $result);
+        $result = external_api::clean_returnvalue(get_users::execute_returns(), $result);
 
         $this->assertEquals([
-                [
-                        'id' => $admin->id,
-                        'fullname' => fullname($admin),
-                        'identity' => 'admin@example.com',
-                        'hasidentity' => true,
-                        'profileimageurlsmall' => $defaultuserimage,
-                ],
+            [
+                'id' => $admin->id,
+                'fullname' => fullname($admin),
+                'identity' => 'admin@example.com',
+                'hasidentity' => true,
+                'profileimageurlsmall' => $defaultuserimage,
+            ],
         ], $result);
     }
 
-    public function test_get_users_site_viewreports() {
+    public function test_get_users_site_viewreports(): void {
+        global $OUTPUT;
+        $defaultuserimage = $OUTPUT->image_url('u/f2');
+
         [$admin, $manager] = $this->setup_users();
-        $defaultuserimage = 'https://www.example.com/moodle/theme/image.php/_s/boost/core/1/u/f2';
 
         $result = get_users::execute('', 'moodle/site:viewreports');
-        $result = \external_api::clean_returnvalue(get_users::execute_returns(), $result);
+        $result = external_api::clean_returnvalue(get_users::execute_returns(), $result);
 
         $this->assertEquals([
-                [
-                        'id' => $manager->id,
-                        'fullname' => fullname($manager),
-                        'identity' => 'manager@example.com',
-                        'hasidentity' => true,
-                        'profileimageurlsmall' => $defaultuserimage,
-                ],
-                [
-                        'id' => $admin->id,
-                        'fullname' => fullname($admin),
-                        'identity' => 'admin@example.com',
-                        'hasidentity' => true,
-                        'profileimageurlsmall' => $defaultuserimage,
-                ],
+            [
+                'id' => $manager->id,
+                'fullname' => fullname($manager),
+                'identity' => 'manager@example.com',
+                'hasidentity' => true,
+                'profileimageurlsmall' => $defaultuserimage,
+            ],
+            [
+                'id' => $admin->id,
+                'fullname' => fullname($admin),
+                'identity' => 'admin@example.com',
+                'hasidentity' => true,
+                'profileimageurlsmall' => $defaultuserimage,
+            ],
         ], $result);
     }
 
-    public function test_get_users_customsql_view() {
+    public function test_get_users_customsql_view(): void {
+        global $OUTPUT;
+        $defaultuserimage = $OUTPUT->image_url('u/f2');
+
         [$admin, $manager, $coursecreateor] = $this->setup_users();
-        $defaultuserimage = 'https://www.example.com/moodle/theme/image.php/_s/boost/core/1/u/f2';
 
         $result = get_users::execute('', 'report/customsql:view');
-        $result = \external_api::clean_returnvalue(get_users::execute_returns(), $result);
+        $result = external_api::clean_returnvalue(get_users::execute_returns(), $result);
 
         $this->assertEquals([
-                [
-                        'id' => $coursecreateor->id,
-                        'fullname' => fullname($coursecreateor),
-                        'identity' => 'cc@example.com',
-                        'hasidentity' => true,
-                        'profileimageurlsmall' => $defaultuserimage,
-                ],
-                [
-                        'id' => $manager->id,
-                        'fullname' => fullname($manager),
-                        'identity' => 'manager@example.com',
-                        'hasidentity' => true,
-                        'profileimageurlsmall' => $defaultuserimage,
-                ],
-                [
-                        'id' => $admin->id,
-                        'fullname' => fullname($admin),
-                        'identity' => 'admin@example.com',
-                        'hasidentity' => true,
-                        'profileimageurlsmall' => $defaultuserimage,
-                ],
+            [
+                'id' => $coursecreateor->id,
+                'fullname' => fullname($coursecreateor),
+                'identity' => 'cc@example.com',
+                'hasidentity' => true,
+                'profileimageurlsmall' => $defaultuserimage,
+            ],
+            [
+                'id' => $manager->id,
+                'fullname' => fullname($manager),
+                'identity' => 'manager@example.com',
+                'hasidentity' => true,
+                'profileimageurlsmall' => $defaultuserimage,
+            ],
+            [
+                'id' => $admin->id,
+                'fullname' => fullname($admin),
+                'identity' => 'admin@example.com',
+                'hasidentity' => true,
+                'profileimageurlsmall' => $defaultuserimage,
+            ],
         ], $result);
     }
 
-    public function test_get_users_serch_without_admins() {
+    public function test_get_users_serch_without_admins(): void {
+        global $OUTPUT;
+        $defaultuserimage = $OUTPUT->image_url('u/f2');
+
+        global $OUTPUT;
+
         [, $manager] = $this->setup_users();
-        $defaultuserimage = 'https://www.example.com/moodle/theme/image.php/_s/boost/core/1/u/f2';
 
         $result = get_users::execute('Man', 'report/customsql:view');
-        $result = \external_api::clean_returnvalue(get_users::execute_returns(), $result);
+        $result = external_api::clean_returnvalue(get_users::execute_returns(), $result);
 
         $this->assertEquals([
                 [
@@ -159,21 +177,23 @@ class external_get_users_test extends \externallib_advanced_testcase {
         ], $result);
     }
 
-    public function test_get_users_serch_with_admin() {
+    public function test_get_users_serch_with_admin(): void {
+        global $OUTPUT;
+        $defaultuserimage = $OUTPUT->image_url('u/f2');
+
         [$admin] = $this->setup_users();
-        $defaultuserimage = 'https://www.example.com/moodle/theme/image.php/_s/boost/core/1/u/f2';
 
         $result = get_users::execute('n U', 'report/customsql:view');
-        $result = \external_api::clean_returnvalue(get_users::execute_returns(), $result);
+        $result = external_api::clean_returnvalue(get_users::execute_returns(), $result);
 
         $this->assertEquals([
-                [
-                        'id' => $admin->id,
-                        'fullname' => fullname($admin),
-                        'identity' => 'admin@example.com',
-                        'hasidentity' => true,
-                        'profileimageurlsmall' => $defaultuserimage,
-                ],
+            [
+                'id' => $admin->id,
+                'fullname' => fullname($admin),
+                'identity' => 'admin@example.com',
+                'hasidentity' => true,
+                'profileimageurlsmall' => $defaultuserimage,
+            ],
         ], $result);
     }
 }

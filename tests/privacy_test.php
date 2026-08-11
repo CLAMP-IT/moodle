@@ -25,8 +25,9 @@ use core_privacy\local\request;
  * @package    report_customsql
  * @copyright  2021 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers \report_customsql\privacy\provider
  */
-class privacy_test extends \core_privacy\tests\provider_testcase {
+final class privacy_test extends \core_privacy\tests\provider_testcase {
 
     /** @var \stdClass test user. */
     protected $user1;
@@ -35,7 +36,11 @@ class privacy_test extends \core_privacy\tests\provider_testcase {
     /** @var \stdClass test user. */
     protected $user3;
 
+    /**
+     * Set up for every test
+     */
     public function setUp(): void {
+        parent::setUp();
         $this->resetAfterTest();
         $this->setAdminUser();
 
@@ -79,9 +84,9 @@ class privacy_test extends \core_privacy\tests\provider_testcase {
         $writer = request\writer::with_context($context);
         $this->assertTrue($writer->has_any_data());
         $subcontext = [
-            get_string('privacy:metadata:reportcustomsqlqueries', 'report_customsql')
+            get_string('privacy:metadata:reportcustomsqlqueries', 'report_customsql'),
         ];
-        $data = $writer->get_data($subcontext);
+        $data = (array) $writer->get_data($subcontext);
         $this->assertEquals('Report of user 1', reset($data)['displayname']);
     }
 

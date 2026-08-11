@@ -30,7 +30,7 @@ require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
 use Behat\Gherkin\Node\PyStringNode as PyStringNode;
 use Behat\Gherkin\Node\TableNode;
-
+use Behat\Mink\Exception\ExpectationException;
 
 /**
  * Behat steps for the the custom SQL report.
@@ -38,6 +38,25 @@ use Behat\Gherkin\Node\TableNode;
  * All these steps include the phrase 'custom SQL report'.
  */
 class behat_report_customsql extends behat_base {
+
+    /**
+     * Convert page names to URLs for steps like 'When I am on the "[page name]" page'.
+     *
+     * Recognised page names are:
+     * | report index | the list of all reports. |
+     *
+     * @param string $page name of the page, with the component name removed e.g. 'Admin notification'.
+     * @return moodle_url the corresponding URL.
+     * @throws Exception with a meaningful error message if the specified page cannot be found.
+     */
+    protected function resolve_page_url(string $page): moodle_url {
+        switch (strtolower($page)) {
+            case 'report index':
+                return new moodle_url('/report/customsql/index.php');
+            default:
+                throw new Exception('Unrecognised quiz page type "' . $page . '."');
+        }
+    }
 
     /**
      * Create a new report in the database.
@@ -53,7 +72,8 @@ class behat_report_customsql extends behat_base {
      * @param TableNode $data Supplied data
      */
     public function the_following_custom_sql_report_exists(TableNode $data) {
-        global $DB;
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/report/customsql/locallib.php');
 
         $report = $data->getRowsHash();
 
@@ -78,6 +98,11 @@ class behat_report_customsql extends behat_base {
             throw new Exception('The report SQL must be given as querysql.');
         }
 
+        // Fix test queries containing CHR for MySQL & chums.
+        if ($DB->get_dbfamily() == 'mysql' && stripos($report['querysql'], 'CHR') !== false) {
+            $report['querysql'] = str_ireplace('CHR', 'CHAR', $report['querysql']);
+        }
+
         // Category.
         if (isset($report['category'])) {
             $report['categoryid'] = $this->get_category_id_by_name($report['category']);
@@ -88,14 +113,17 @@ class behat_report_customsql extends behat_base {
         }
 
         // Capability.
-        if (isset($report['capability']) &&
-                !in_array($report['capability'], report_customsql_capability_options())) {
-            throw new Exception('Capability ' . $report['capability'] . ' is not a valid choice.');
+        if (isset($report['capability'])) {
+            // If a capability was passed in, check it is valid.
+            if (!isset(report_customsql_capability_options()[$report['capability']])) {
+                throw new Exception('Capability ' . $report['capability'] . ' is not a valid choice.');
+            }
         } else {
+            // Otherwise use a default.
             $report['capability'] = 'moodle/site:config';
         }
 
-        // Capability.
+        // Runnable.
         if (isset($report['runable']) &&
                 !in_array($report['runable'], report_customsql_runable_options())) {
             throw new Exception('Invalid runable value ' . $report['capability'] . '.');
@@ -154,6 +182,11 @@ class behat_report_customsql extends behat_base {
         $this->save_new_report($report);
     }
 
+    /**
+     * Helper used by other methods to save a report.
+     *
+     * @param array $report the report to save.
+     */
     protected function save_new_report(array $report) {
         global $CFG, $DB;
 
@@ -236,6 +269,29 @@ class behat_report_customsql extends behat_base {
             throw new \Behat\Mink\Exception\ExpectationException('specified time is not valid', $this->getSession());
         }
         set_config('behat_fixed_time', $value, 'report_customsql');
+    }
+
+    /**
+     * Simulates downloading an empty report to ensure it shows table headers.
+     *
+     * For example:
+     * When downloading the empty custom sql report "Frog" it contains the headers "frogname,freddy"
+     *
+     * @Then /^downloading custom sql report "(?P<REPORT_NAME>[^"]*)" returns a file with headers "([^"]*)"$/
+     * @param string $reportname the name of the report to go to.
+     * @param string $headers the headers that shuold be returned.
+     */
+    public function downloading_custom_sql_report_x_returns_a_file_with_headers(string $reportname, string $headers) {
+        $report = $this->get_report_by_name($reportname);
+        $url = new \moodle_url('/pluginfile.php/1/report_customsql/download/' . $report->id, ['dataformat' => 'csv']);
+
+        $session = $this->getSession()->getCookie('MoodleSession');
+        $filecontent = trim(download_file_content($url, ['Cookie' => 'MoodleSession=' . $session]));
+        $filecontent = core_text::trim_utf8_bom($filecontent);
+        if ($filecontent != $headers) {
+            throw new ExpectationException(
+                    "File headers: $filecontent did not match expected: $headers", $this->getSession());
+        }
     }
 
     /**
