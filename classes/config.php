@@ -24,8 +24,6 @@
 
 namespace block_clampmail;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Configuration functions.
  *
@@ -34,7 +32,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class config {
-
     /**
      * Load the block configuration.
      *
@@ -45,7 +42,7 @@ class config {
         global $DB;
 
         $fields = 'name,value';
-        $params = array('coursesid' => $course->id);
+        $params = ['coursesid' => $course->id];
         $config = $DB->get_records_menu('block_clampmail_config', $params, '', $fields);
 
         if (empty($config)) {
@@ -53,7 +50,7 @@ class config {
         }
 
         $context = \context_course::instance($course->id);
-        $config['cansend'] = get_roles_with_caps_in_context($context, array('block/clampmail:cansend'));
+        $config['cansend'] = get_roles_with_caps_in_context($context, ['block/clampmail:cansend']);
 
         // Respect groupmodeforce.
         if ($course->groupmodeforce == 1) {
@@ -69,12 +66,12 @@ class config {
      * @return array
      */
     public static function load_default_configuration() {
-        $config = array(
+        $config = [
             'roleselection' => get_config('block_clampmail', 'roleselection'),
             'prepend_class' => get_config('block_clampmail', 'prepend_class'),
             'receipt' => get_config('block_clampmail', 'receipt'),
-            'groupmode' => get_config('block_clampmail', 'groupmode')
-        );
+            'groupmode' => get_config('block_clampmail', 'groupmode'),
+        ];
 
         return $config;
     }
@@ -86,7 +83,7 @@ class config {
      */
     public static function reset_course_configuration($courseid) {
         global $DB;
-        $params = array('coursesid' => $courseid);
+        $params = ['coursesid' => $courseid];
         $DB->delete_records('block_clampmail_config', $params);
 
         // Reset capability overrides.
@@ -121,7 +118,7 @@ class config {
         }
 
         foreach ($data as $name => $value) {
-            $config = new \stdClass;
+            $config = new \stdClass();
             $config->coursesid = $courseid;
             $config->name = $name;
             $config->value = $value;

@@ -69,7 +69,7 @@ class email_form extends \moodleform {
         if (empty($user->groups)) {
             $groups = get_string('no_group', 'block_clampmail');
         } else {
-            $groups = array();
+            $groups = [];
             foreach ($user->groups as $group) {
                 $groups[] = $this->_customdata['groups'][$group]->name;
             }
@@ -97,11 +97,11 @@ class email_form extends \moodleform {
         $option = \html_writer::tag(
             'option',
             $userdisplay,
-            array(
+            [
                 'value' => $user->id,
                 'data-groups' => '["' . implode('", "', $user->groups) . '"]',
-                'data-roles' => '["' . implode('", "', $user->roles) . '"]'
-            )
+                'data-roles' => '["' . implode('", "', $user->roles) . '"]',
+            ]
         );
         return $option;
     }
@@ -142,14 +142,14 @@ class email_form extends \moodleform {
         $mform->addElement('hidden', 'typeid', 0);
         $mform->setType('typeid', PARAM_INT);
 
-        $roleoptions = array('none' => get_string('no_filter', 'block_clampmail'));
+        $roleoptions = ['none' => get_string('no_filter', 'block_clampmail')];
         foreach ($this->_customdata['roles'] as $role) {
             $roleoptions[$role->shortname] = $role->name;
         }
 
-        $groupoptions = empty($this->_customdata['groups']) ? array() : array(
-            'all' => get_string('all_groups', 'block_clampmail')
-        );
+        $groupoptions = empty($this->_customdata['groups']) ? [] : [
+            'all' => get_string('all_groups', 'block_clampmail'),
+        ];
         foreach ($this->_customdata['groups'] as $group) {
             $groupoptions[$group->id] = $group->name;
         }
@@ -159,31 +159,40 @@ class email_form extends \moodleform {
 
         $config = config::load_configuration($COURSE);
 
-        $reqimg = $OUTPUT->pix_icon('req', get_string('requiredelement', 'form'), 'moodle', array('class' => 'req'));
+        $reqimg = $OUTPUT->pix_icon('req', get_string('requiredelement', 'form'), 'moodle', ['class' => 'req']);
 
         $table = new \html_table();
         $table->attributes['class'] = 'emailtable';
 
         $selectedrequiredlabel = new \html_table_cell();
-        $selectedrequiredspan = \html_writer::tag('span', $reqimg, array('class' => 'req'));
-        $selectedrequiredstrong = \html_writer::tag('strong',
-            get_string('selected', 'block_clampmail') . $selectedrequiredspan, array('class' => 'required'));
-        $selectedrequiredlabel->text = \html_writer::tag('label', $selectedrequiredstrong, array('for' => 'mail_users'));
+        $selectedrequiredspan = \html_writer::tag('span', $reqimg, ['class' => 'req']);
+        $selectedrequiredstrong = \html_writer::tag(
+            'strong',
+            get_string('selected', 'block_clampmail') . $selectedrequiredspan,
+            ['class' => 'required']
+        );
+        $selectedrequiredlabel->text = \html_writer::tag('label', $selectedrequiredstrong, ['for' => 'mail_users']);
 
         $rolefilterlabel = new \html_table_cell();
-        $rolefilterlabel->text = \html_writer::tag('label',
-            get_string('role_filter', 'block_clampmail'), array('class' => 'object_labels', 'for' => 'roles'));
+        $rolefilterlabel->text = \html_writer::tag(
+            'label',
+            get_string('role_filter', 'block_clampmail'),
+            ['class' => 'object_labels', 'for' => 'roles']
+        );
 
         $selectfilter = new \html_table_cell();
-        $selectfilter->text = \html_writer::tag('select',
-            array_reduce($this->_customdata['selected'], array($this, 'reduce_users'), ''),
-            array('id' => 'mail_users', 'multiple' => 'multiple', 'size' => 30));
+        $selectfilter->text = \html_writer::tag(
+            'select',
+            array_reduce($this->_customdata['selected'], [$this, 'reduce_users'], ''),
+            ['id' => 'mail_users', 'multiple' => 'multiple', 'size' => 30]
+        );
 
         $embed = function ($text, $id) {
-            return \html_writer::tag('p',
-                \html_writer::empty_tag('input', array(
-                    'value' => $text, 'type' => 'button', 'id' => $id
-                ))
+            return \html_writer::tag(
+                'p',
+                \html_writer::empty_tag('input', [
+                    'value' => $text, 'type' => 'button', 'id' => $id,
+                ])
             );
         };
 
@@ -200,36 +209,49 @@ class email_form extends \moodleform {
         );
 
         $filters = new \html_table_cell();
-        $filters->text = \html_writer::tag('div',
-            \html_writer::select($roleoptions, '', 'none', null, array('id' => 'roles'))
-        ) . \html_writer::tag('label',
+        $filters->text = \html_writer::tag(
+            'div',
+            \html_writer::select($roleoptions, '', 'none', null, ['id' => 'roles'])
+        ) . \html_writer::tag(
+            'label',
             get_string('potential_groups', 'block_clampmail'),
-            array('class' => 'object_labels', 'for' => 'groups')
-        ) . \html_writer::tag('div',
-            \html_writer::select($groupoptions, '', 'all', null,
-            array('id' => 'groups', 'multiple' => 'multiple', 'size' => 5))
-        ) . \html_writer::tag('label',
+            ['class' => 'object_labels', 'for' => 'groups']
+        ) . \html_writer::tag(
+            'div',
+            \html_writer::select(
+                $groupoptions,
+                '',
+                'all',
+                null,
+                ['id' => 'groups', 'multiple' => 'multiple', 'size' => 5]
+            )
+        ) . \html_writer::tag(
+            'label',
             get_string('potential_users', 'block_clampmail'),
-            array('class' => 'object_labels', 'for' => 'from_users')
-        ) . \html_writer::tag('div',
-            \html_writer::tag('select', $this->display_options($this->_customdata['users']),
-            array('id' => 'from_users', 'multiple' => 'multiple', 'size' => 20))
+            ['class' => 'object_labels', 'for' => 'from_users']
+        ) . \html_writer::tag(
+            'div',
+            \html_writer::tag(
+                'select',
+                $this->display_options($this->_customdata['users']),
+                ['id' => 'from_users', 'multiple' => 'multiple', 'size' => 20]
+            )
         );
 
-        $table->data[] = new \html_table_row(array($selectedrequiredlabel, new \html_table_cell(), $rolefilterlabel));
-        $table->data[] = new \html_table_row(array($selectfilter, $centerbuttons, $filters));
+        $table->data[] = new \html_table_row([$selectedrequiredlabel, new \html_table_cell(), $rolefilterlabel]);
+        $table->data[] = new \html_table_row([$selectfilter, $centerbuttons, $filters]);
 
         if (has_capability('block/clampmail:allowalternate', $context)) {
             $alternates = $this->_customdata['alternates'];
         } else {
-            $alternates = array();
+            $alternates = [];
         }
 
         if (empty($alternates)) {
             $mform->addElement('static', 'from', get_string('from', 'block_clampmail'), $USER->email);
             $mform->setType('from', PARAM_EMAIL);
         } else {
-            $options = array(0 => $USER->email) + $alternates;
+            $options = [0 => $USER->email] + $alternates;
             $mform->addElement('select', 'alternateid', get_string('from', 'block_clampmail'), $options);
             $mform->setType('alternateid', PARAM_INT);
         }
@@ -237,10 +259,15 @@ class email_form extends \moodleform {
         $mform->addElement('static', 'selectors', '', \html_writer::table($table));
         $mform->setType('selectors', PARAM_RAW);
 
-        $mform->addElement('filemanager', 'attachments', get_string('attachment', 'block_clampmail'), null,
-        array(
-            'areamaxbytes' => get_max_upload_file_size($CFG->maxbytes, $COURSE->maxbytes, get_config('block_clampmail', 'maxbytes'))
-        ));
+        $mform->addElement(
+            'filemanager',
+            'attachments',
+            get_string('attachment', 'block_clampmail'),
+            null,
+            [
+            'areamaxbytes' => get_max_upload_file_size($CFG->maxbytes, $COURSE->maxbytes, get_config('block_clampmail', 'maxbytes')),
+            ]
+        );
         $mform->setType('attachments', PARAM_FILE);
 
         $mform->addElement('text', 'subject', get_string('subject', 'block_clampmail'));
@@ -248,26 +275,30 @@ class email_form extends \moodleform {
         $mform->addRule('subject', null, 'required');
         $mform->addRule('subject', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
-        $mform->addElement('editor', 'message_editor', get_string('message', 'block_clampmail'),
-            $this->_customdata['editor_options']);
-
-        $options = $this->_customdata['sigs'] + array(-1 => 'No '. get_string('sig', 'block_clampmail'));
-        $mform->addElement('select', 'sigid', get_string('signature', 'block_clampmail'), $options);
-
-        $radio = array(
-            $mform->createElement('radio', 'receipt', '', get_string('yes'), 1),
-            $mform->createElement('radio', 'receipt', '', get_string('no'), 0)
+        $mform->addElement(
+            'editor',
+            'message_editor',
+            get_string('message', 'block_clampmail'),
+            $this->_customdata['editor_options']
         );
 
-        $mform->addGroup($radio, 'receipt_action', get_string('receipt', 'block_clampmail'), array(' '), false);
+        $options = $this->_customdata['sigs'] + [-1 => 'No ' . get_string('sig', 'block_clampmail')];
+        $mform->addElement('select', 'sigid', get_string('signature', 'block_clampmail'), $options);
+
+        $radio = [
+            $mform->createElement('radio', 'receipt', '', get_string('yes'), 1),
+            $mform->createElement('radio', 'receipt', '', get_string('no'), 0),
+        ];
+
+        $mform->addGroup($radio, 'receipt_action', get_string('receipt', 'block_clampmail'), [' '], false);
         $mform->addHelpButton('receipt_action', 'receipt', 'block_clampmail');
         $mform->setDefault('receipt', !empty($config['receipt']));
 
-        $buttons = array();
+        $buttons = [];
         $buttons[] =& $mform->createElement('submit', 'send', get_string('send_email', 'block_clampmail'));
         $buttons[] =& $mform->createElement('submit', 'draft', get_string('save_draft', 'block_clampmail'));
         $buttons[] =& $mform->createElement('cancel');
 
-        $mform->addGroup($buttons, 'buttons', get_string('actions', 'block_clampmail'), array(' '), false);
+        $mform->addGroup($buttons, 'buttons', get_string('actions', 'block_clampmail'), [' '], false);
     }
 }

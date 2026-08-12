@@ -15,16 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Privacy tests.
+ *
  * @package   block_clampmail
  * @copyright 2018 Collaborative Liberal Arts Moodle Project
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+use block_clampmail\privacy\provider;
 
-use \block_clampmail\privacy\provider;
-
-class block_clampmail_privacy_testcase extends \core_privacy\tests\provider_testcase {
+/**
+ * PHPUnit tests
+ *
+ * @package    block_clampmail
+ * @copyright  2018 Collaborative Liberal Arts Moodle Project
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class privacy_test extends \core_privacy\tests\provider_testcase {
+    /** @var array Various data we need to access throughout the tests. */
+    protected $data;
 
     /**
      * Test setUp.
@@ -33,59 +42,62 @@ class block_clampmail_privacy_testcase extends \core_privacy\tests\provider_test
         global $DB;
 
         $this->resetAfterTest(true);
-        $this->data = array();
+        $this->setAdminUser();
+        $this->data = [];
 
         $this->data['provider'] = new provider();
 
         // Test teacher user.
-        $this->data['teacher'] = $this->getDataGenerator()->create_user(array(
+        $this->data['teacher'] = $this->getDataGenerator()->create_user([
             'username'  => 'hfogg',
             'email'     => 'hfogg@brakebills.edu',
             'firstname' => 'Henry',
             'lastname'  => 'Fogg',
-        ));
+        ]);
 
         // Test student user.
-        $this->data['student1'] = $this->getDataGenerator()->create_user(array(
+        $this->data['student1'] = $this->getDataGenerator()->create_user([
             'username'  => 'jwicker',
             'email'     => 'jwicker@brakebills.edu',
             'firstname' => 'Julia',
             'lastname'  => 'Wicker',
-        ));
+        ]);
 
         // Test student user.
-        $this->data['student2'] = $this->getDataGenerator()->create_user(array(
+        $this->data['student2'] = $this->getDataGenerator()->create_user([
             'username'  => 'qcoldwater',
             'email'     => 'qcoldwater@brakebills.edu',
             'firstname' => 'Quentin',
             'lastname'  => 'Coldwater',
-        ));
+        ]);
 
         // Test course.
-        $this->data['course'] = $this->getDataGenerator()->create_course(array(
-            'shortname' => 'testcourse'
-        ));
+        $this->data['course'] = $this->getDataGenerator()->create_course([
+            'shortname' => 'testcourse',
+        ]);
 
         // Second test course.
-        $this->data['course2'] = $this->getDataGenerator()->create_course(array(
-            'shortname' => 'testcourse2'
-        ));
+        $this->data['course2'] = $this->getDataGenerator()->create_course([
+            'shortname' => 'testcourse2',
+        ]);
 
         // Manual enrolment entry and course context.
-        $this->data['manualenrol'] = $DB->get_record('enrol', array('enrol' => 'manual', 'courseid' => $this->data['course']->id));
+        $this->data['manualenrol'] = $DB->get_record('enrol', ['enrol' => 'manual', 'courseid' => $this->data['course']->id]);
         $this->data['coursecontext'] = \context_course::instance($this->data['course']->id);
 
         // Manual enrolment entry and course context for test course 2.
-        $this->data['manualenrol2'] = $DB->get_record('enrol', array('enrol' => 'manual', 'courseid' => $this->data['course2']->id));
+        $this->data['manualenrol2'] = $DB->get_record('enrol', ['enrol' => 'manual', 'courseid' => $this->data['course2']->id]);
         $this->data['coursecontext2'] = \context_course::instance($this->data['course2']->id);
 
-        // Add the block to the page.
+        // Create course page.
         $page = new \moodle_page();
         $page->set_context($this->data['coursecontext']);
         $page->set_pagelayout('standard');
         $page->set_pagetype('course-view');
         $page->set_course($this->data['course']);
         $page->blocks->load_blocks();
+
+        // Add block to course page.
         $page->blocks->add_block_at_end_of_default_region('clampmail');
 
         $page2 = new \moodle_page();
@@ -103,8 +115,8 @@ class block_clampmail_privacy_testcase extends \core_privacy\tests\provider_test
 
         $this->data['me_plugin'] = new enrol_manual_plugin();
 
-        $this->data['studentrole'] = $DB->get_record('role', array('shortname' => 'student'))->id;
-        $this->data['teacherrole'] = $DB->get_record('role', array('shortname' => 'editingteacher'))->id;
+        $this->data['studentrole'] = $DB->get_record('role', ['shortname' => 'student'])->id;
+        $this->data['teacherrole'] = $DB->get_record('role', ['shortname' => 'editingteacher'])->id;
 
         $this->setUser($this->data['teacher']);
     }
@@ -145,7 +157,7 @@ class block_clampmail_privacy_testcase extends \core_privacy\tests\provider_test
 
     public function delete_data_for_context($context) {
         $classname = $this->get_provider_classname('block_clampmail');
-        $classname::_delete_data_for_all_users_in_context($context);
+        $classname::delete_data_for_all_users_in_context($context);
     }
 
     public function delete_data_for_user($userid) {
@@ -158,7 +170,7 @@ class block_clampmail_privacy_testcase extends \core_privacy\tests\provider_test
         );
 
         $classname = $this->get_provider_classname('block_clampmail');
-        $classname::_delete_data_for_user($approvedcontextlist);
+        $classname::delete_data_for_user($approvedcontextlist);
     }
 
     /**

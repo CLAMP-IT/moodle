@@ -30,7 +30,7 @@ require_login();
 $courseid = required_param('courseid', PARAM_INT);
 $reset = optional_param('reset', 0, PARAM_INT);
 
-if (!$course = $DB->get_record('course', array('id' => $courseid))) {
+if (!$course = $DB->get_record('course', ['id' => $courseid])) {
     print_error('no_course', 'block_clampmail', '', $courseid);
 }
 
@@ -43,10 +43,10 @@ $header = get_string('config', 'block_clampmail');
 
 $PAGE->set_context($context);
 $PAGE->set_course($course);
-$PAGE->set_url('/blocks/clampmail/config.php', array('courseid' => $courseid));
-$PAGE->set_title($blockname . ': '. $header);
-$PAGE->set_heading($blockname. ': '. $header);
-$PAGE->navbar->add($blockname, new moodle_url('/blocks/clampmail/email.php', array('courseid' => $courseid)));
+$PAGE->set_url('/blocks/clampmail/config.php', ['courseid' => $courseid]);
+$PAGE->set_title($blockname . ': ' . $header);
+$PAGE->set_heading($blockname . ': ' . $header);
+$PAGE->navbar->add($blockname, new moodle_url('/blocks/clampmail/email.php', ['courseid' => $courseid]));
 $PAGE->navbar->add($header);
 $PAGE->set_pagetype('CLAMPMail');
 $PAGE->set_pagelayout('standard');
@@ -58,10 +58,10 @@ if ($reset) {
     block_clampmail\config::reset_course_configuration($courseid);
 }
 
-$form = new block_clampmail\config_form(null, array(
+$form = new block_clampmail\config_form(null, [
     'courseid' => $courseid,
-    'groupmodeforce' => $course->groupmodeforce
-));
+    'groupmodeforce' => $course->groupmodeforce,
+]);
 
 if ($data = $form->get_data()) {
     $config = get_object_vars($data);
@@ -81,8 +81,8 @@ $form->set_data($config);
 echo $OUTPUT->header();
 echo $OUTPUT->heading($blockname);
 echo block_clampmail\navigation::print_navigation(
-        block_clampmail\navigation::get_links($course->id, $context),
-        $header
+    block_clampmail\navigation::get_links($course->id, $context),
+    $header
 );
 
 echo $OUTPUT->box_start();
