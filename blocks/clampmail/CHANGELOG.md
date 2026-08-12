@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.0.3 (October 17, 2025)
+
+- Add support for Moodle 4.5-5.1
+- Various code cleanup and test fixes
+
 ## 4.0.2 (July 8, 2024)
 
 - [BUGFIX]: CSS classes shouldn't depend on the value of `pluginname`

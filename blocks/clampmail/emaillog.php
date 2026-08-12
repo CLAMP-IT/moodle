@@ -31,7 +31,7 @@ $action = optional_param('action', null, PARAM_ALPHA);
 $page = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 10, PARAM_INT);
 $userid = optional_param('userid', $USER->id, PARAM_INT);
-$course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
+$course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 
 require_login($course);
 
@@ -40,26 +40,26 @@ $coursecontext = context_course::instance($course->id);
 require_capability('block/clampmail:cansend', $coursecontext);
 
 // Has to be in on of these.
-if (!in_array($type, array('log', 'drafts'))) {
+if (!in_array($type, ['log', 'drafts'])) {
     print_error('not_valid', 'block_clampmail', '', $type);
 }
 
 $canimpersonate = has_capability('block/clampmail:canimpersonate', $coursecontext);
-if (!$canimpersonate and $userid != $USER->id) {
+if (!$canimpersonate && $userid != $USER->id) {
     print_error('not_valid_user', 'block_clampmail');
 }
 
 $config = block_clampmail\config::load_configuration($course);
 
-$validactions = array('delete', 'confirm');
+$validactions = ['delete', 'confirm'];
 
 $candelete = ($type == 'drafts');
 
-if (isset($action) and !in_array($action, $validactions)) {
+if (isset($action) && !in_array($action, $validactions)) {
     print_error('not_valid_action', 'block_clampmail', '', $action);
 }
 
-if (isset($action) and empty($typeid)) {
+if (isset($action) && empty($typeid)) {
     print_error('not_valid_typeid', 'block_clampmail', '', $action);
 }
 
@@ -68,31 +68,32 @@ $header = get_string($type, 'block_clampmail');
 
 $PAGE->set_context($coursecontext);
 $PAGE->set_course($course);
-$PAGE->navbar->add($blockname, new moodle_url('/blocks/clampmail/email.php', array('courseid' => $courseid)));
+$PAGE->navbar->add($blockname, new moodle_url('/blocks/clampmail/email.php', ['courseid' => $courseid]));
 $PAGE->navbar->add($header);
 $PAGE->set_title($blockname . ': ' . $header);
 $PAGE->set_heading($blockname . ': ' . $header);
-$PAGE->set_url('/blocks/clampmail/emaillog.php', array('courseid' => $courseid, 'type' => $type));
+$PAGE->set_url('/blocks/clampmail/emaillog.php', ['courseid' => $courseid, 'type' => $type]);
 $PAGE->set_pagetype('CLAMPMail');
 $PAGE->set_pagelayout('standard');
 
 $dbtable = 'block_clampmail_' . $type;
 
-$params = array('userid' => $userid, 'courseid' => $courseid);
+$params = ['userid' => $userid, 'courseid' => $courseid];
 $count = $DB->count_records($dbtable, $params);
 
 switch ($action) {
     case "confirm":
         require_sesskey();
         if (block_clampmail\email::cleanup($dbtable, $coursecontext->id, $typeid)) {
-            $url = new moodle_url('/blocks/clampmail/emaillog.php', array(
+            $url = new moodle_url('/blocks/clampmail/emaillog.php', [
                 'courseid' => $courseid,
-                'type' => $type
-            ));
+                'type' => $type,
+            ]);
             redirect($url);
         } else {
             print_error('delete_failed', 'block_clampmail', '', $typeid);
         }
+        break;
     case "delete":
         require_sesskey();
         $html = block_clampmail\email::delete_dialog($courseid, $type, $typeid);
@@ -101,16 +102,16 @@ switch ($action) {
         $html = block_clampmail\email::list_entries($courseid, $type, $page, $perpage, $userid, $count, $candelete);
 }
 
-if ($canimpersonate and $USER->id != $userid) {
-    $user = $DB->get_record('user', array('id' => $userid));
-    $header .= ' for '. fullname($user);
+if ($canimpersonate && $USER->id != $userid) {
+    $user = $DB->get_record('user', ['id' => $userid]);
+    $header .= ' for ' . fullname($user);
 }
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading($blockname);
 echo block_clampmail\navigation::print_navigation(
-        block_clampmail\navigation::get_links($course->id, $coursecontext),
-        $header
+    block_clampmail\navigation::get_links($course->id, $coursecontext),
+    $header
 );
 
 if ($canimpersonate) {
@@ -118,25 +119,26 @@ if ($canimpersonate) {
                 FROM {block_clampmail_$type} l,
                      {user} u
                 WHERE u.id = l.userid AND courseid = ? ORDER BY u.lastname";
-    $users = $DB->get_records_sql($sql, array($courseid));
+    $users = $DB->get_records_sql($sql, [$courseid]);
 
-    $useroptions = array_map(function($user) { return fullname($user);
+    $useroptions = array_map(function ($user) {
+        return fullname($user);
     }, $users);
 
-    $url = new moodle_url('emaillog.php', array(
+    $url = new moodle_url('emaillog.php', [
         'courseid' => $courseid,
-        'type' => $type
-    ));
+        'type' => $type,
+    ]);
 
-    $defaultoption = array('' => get_string('select_users', 'block_clampmail'));
+    $defaultoption = ['' => get_string('select_users', 'block_clampmail')];
 
     echo $OUTPUT->single_select($url, 'userid', $useroptions, $userid, $defaultoption);
 }
 
 if (empty($count)) {
-    echo $OUTPUT->notification(get_string('no_'.$type, 'block_clampmail'));
+    echo $OUTPUT->notification(get_string('no_' . $type, 'block_clampmail'));
 
-    echo $OUTPUT->continue_button('/blocks/clampmail/email.php?courseid='.$courseid);
+    echo $OUTPUT->continue_button('/blocks/clampmail/email.php?courseid=' . $courseid);
 
     echo $OUTPUT->footer();
     exit;

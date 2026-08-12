@@ -40,8 +40,11 @@ class signature {
      */
     public static function get_signatures($userid) {
         global $DB;
-        $signatures = $DB->get_records('block_clampmail_signatures',
-            array('userid' => $userid), 'default_flag DESC');
+        $signatures = $DB->get_records(
+            'block_clampmail_signatures',
+            ['userid' => $userid],
+            'default_flag DESC'
+        );
         return $signatures;
     }
 }

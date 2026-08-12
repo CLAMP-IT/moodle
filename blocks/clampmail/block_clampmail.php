@@ -43,7 +43,7 @@ class block_clampmail extends block_list {
      * @return array
      */
     public function applicable_formats() {
-        return array('site' => false, 'my' => false, 'course' => true, 'mod' => true);
+        return ['site' => false, 'my' => false, 'course' => true, 'mod' => true];
     }
 
     /**
@@ -69,7 +69,7 @@ class block_clampmail extends block_list {
 
         $context = context_course::instance($COURSE->id);
 
-        $this->content = new stdClass;
+        $this->content = new stdClass();
         $this->content->items = block_clampmail\navigation::get_links($COURSE->id, $context);
         $this->content->icons = block_clampmail\navigation::get_icons($context);
         $this->content->footer = '';
