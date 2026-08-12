@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
  * Form for editing Filtered course list block instances
  *
@@ -32,7 +30,6 @@ defined('MOODLE_INTERNAL') || die;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class block_filtered_course_list_edit_form extends block_edit_form {
-
     /**
      * Builds the form to edit instance settings
      *
@@ -48,10 +45,12 @@ class block_filtered_course_list_edit_form extends block_edit_form {
         $mform->setType('config_title', PARAM_TEXT);
 
         // Instance filters.
-        $mform->addElement('textarea',
-                        'config_filters',
-                        get_string('filters', 'block_filtered_course_list'),
-                        array('cols' => 80, 'rows' => 8, 'style' => 'resize: both; font-family: monospace;'));
+        $mform->addElement(
+            'textarea',
+            'config_filters',
+            get_string('filters', 'block_filtered_course_list'),
+            ['cols' => 80, 'rows' => 8, 'style' => 'resize: both; font-family: monospace;']
+        );
         $mform->addHelpButton('config_filters', 'filters', 'block_filtered_course_list');
         $mform->setType('config_filters', PARAM_RAW);
     }

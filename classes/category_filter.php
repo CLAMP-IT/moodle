@@ -24,6 +24,8 @@
 
 namespace block_filtered_course_list;
 
+use core_course_category;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/blocks/filtered_course_list/locallib.php');
@@ -79,12 +81,12 @@ class category_filter extends \block_filtered_course_list\filter {
      * @return array A fixed-up line array
      */
     public function validate_line($line) {
-        $keys = array('expanded', 'catid', 'depth');
-        $values = array_map(function($item) {
+        $keys = ['expanded', 'catid', 'depth'];
+        $values = array_map(function ($item) {
             return trim($item);
         }, explode('|', $line[1]));
         $this->validate_expanded(0, $values);
-        foreach (array(1, 2) as $key) {
+        foreach ([1, 2] as $key) {
             if (!array_key_exists($key, $values)) {
                 $values[$key] = '0';
             }
@@ -107,7 +109,7 @@ class category_filter extends \block_filtered_course_list\filter {
         global $CFG;
         $moodleversion = $CFG->version;
 
-        $categories = $this->_get_cat_and_descendants($this->line['catid'], $this->line['depth']);
+        $categories = $this->get_cat_and_descendants($this->line['catid'], $this->line['depth']);
         foreach ($categories as $category) {
             $rubricname = $category->name;
             if (isset($this->config->catrubrictpl) && $this->config->catrubrictpl != '') {
@@ -121,25 +123,29 @@ class category_filter extends \block_filtered_course_list\filter {
                 }
                 $ancestors = \core_course_category::make_categories_list('', 0, $separator);
                 $ancestry = isset($ancestors[$category->id]) ? $ancestors[$category->id] : '';
-                $replacements = array(
+                $replacements = [
                     'NAME'     => $category->name,
                     'IDNUMBER' => $category->idnumber,
                     'PARENT'   => $parent,
                     'ANCESTRY' => $ancestry,
-                );
+                ];
                 $tpl = $this->config->catrubrictpl;
-                \block_filtered_course_list_lib::apply_template_limits($replacements, $tpl);
+                \block_filtered_course_list\lib::apply_template_limits($replacements, $tpl);
                 $rubricname = str_replace(array_keys($replacements), $replacements, $tpl);
                 $rubricname = strip_tags($rubricname);
             }
-            $courselist = array_filter($this->courselist, function($course) use($category) {
+            $courselist = array_filter($this->courselist, function ($course) use ($category) {
                 return ($course->category == $category->id);
             });
             if (empty($courselist)) {
                 continue;
             }
-            $this->rubrics[] = new \block_filtered_course_list_rubric($rubricname, $courselist,
-                                                                $this->config, $this->line['expanded']);
+            $this->rubrics[] = new \block_filtered_course_list_rubric(
+                $rubricname,
+                $courselist,
+                $this->config,
+                $this->line['expanded']
+            );
         }
 
         return $this->rubrics;
@@ -153,20 +159,19 @@ class category_filter extends \block_filtered_course_list\filter {
      * @param array $accumulator An accumulator passed by reference to store the recursive results
      * @return array of \core_course_category objects
      */
-    protected function _get_cat_and_descendants($catid=0, $depth=0, &$accumulator=array()) {
+    protected function get_cat_and_descendants($catid = 0, $depth = 0, &$accumulator = []) {
 
-        $cats = Array();
+        $cats = [];
 
         if ($category = \core_course_category::get($catid, IGNORE_MISSING, true)) {
-
             $allchildren = \core_course_category::get_many($category->get_all_children_ids());
             array_unshift($allchildren, $category);
 
-            $visiblecats = array_filter($allchildren, function($cat) {
+            $visiblecats = array_filter($allchildren, function ($cat) {
                 return $cat->is_uservisible();
             });
 
-            $cats = array_filter($visiblecats, function($cat) use($depth, $category) {
+            $cats = array_filter($visiblecats, function ($cat) use ($depth, $category) {
                 if ($depth == 0) {
                     return true;
                 }
