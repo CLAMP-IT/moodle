@@ -79,8 +79,8 @@ class starred_filter extends \block_filtered_course_list\filter {
      * @return array A fixed-up line array
      */
     public function validate_line($line) {
-        $keys = array('expanded', 'label');
-        $values = array_map(function($item) {
+        $keys = ['expanded', 'label'];
+        $values = array_map(function ($item) {
             return trim($item);
         }, explode('|', $line[1]));
         $this->validate_expanded(0, $values);
@@ -105,7 +105,7 @@ class starred_filter extends \block_filtered_course_list\filter {
         $usercontext = \context_user::instance($USER->id);
         $userservice = \core_favourites\service_factory::get_service_for_user_context($usercontext);
 
-        $courselist = array_filter($this->courselist, function($course) use($userservice) {
+        $courselist = array_filter($this->courselist, function ($course) use ($userservice) {
             return $userservice->favourite_exists(
                 'core_course', // Component.
                 'courses', // Itemtype.
@@ -117,8 +117,12 @@ class starred_filter extends \block_filtered_course_list\filter {
             return null;
         }
 
-        $this->rubrics[] = new \block_filtered_course_list_rubric($this->line['label'], $courselist,
-                                                                    $this->config, $this->line['expanded']);
+        $this->rubrics[] = new \block_filtered_course_list_rubric(
+            $this->line['label'],
+            $courselist,
+            $this->config,
+            $this->line['expanded']
+        );
         return $this->rubrics;
     }
 }

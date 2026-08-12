@@ -34,7 +34,6 @@ require_once(get_config('core', 'dirroot') . '/blocks/filtered_course_list/local
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class test_fcl_filter extends \block_filtered_course_list\filter {
-
     /** Retrieve filter short name.
      *
      * @return string The shortname of this filter (e.g. shortname, category)
@@ -77,8 +76,8 @@ class test_fcl_filter extends \block_filtered_course_list\filter {
      * @return array A fixed-up line array
      */
     public function validate_line($line) {
-        $keys = array('expanded', 'label');
-        $values = array_map(function($item) {
+        $keys = ['expanded', 'label'];
+        $values = array_map(function ($item) {
             return trim($item);
         }, explode('|', $line[1], 2));
         $this->validate_expanded(0, $values);
@@ -96,8 +95,12 @@ class test_fcl_filter extends \block_filtered_course_list\filter {
     public function get_rubrics() {
         $courselist = $this->courselist;
 
-        $this->rubrics[] = new \block_filtered_course_list_rubric($this->line['label'],
-                            $courselist, $this->config, $this->line['expanded']);
+        $this->rubrics[] = new \block_filtered_course_list_rubric(
+            $this->line['label'],
+            $courselist,
+            $this->config,
+            $this->line['expanded']
+        );
         return $this->rubrics;
     }
 }
