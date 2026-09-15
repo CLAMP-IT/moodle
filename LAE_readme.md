@@ -22,6 +22,7 @@ The following core features are included:
 
 * Anonymous Forums
 * Per-course resource display options
+* Patch for MDL-89461
 
 ### Anonymous Forums
 
@@ -30,6 +31,12 @@ A completely new version of the Anonymous Forums option in Moodle. This version 
 ### Per-course resource display options
 
 You may choose a default resource display option at the course level now instead of at the site-level.
+
+## Patch for MDL-89461
+
+This release includes the proposed patch for <https://moodle.atlassian.net/brow
+se/MDL-89461>, an issue in Moodle 5.1 and 5.2 where an assignment with no grade
+and no feedback plugin fails to load.
 
 ## Contributed modules
 
