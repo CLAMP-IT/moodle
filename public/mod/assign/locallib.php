@@ -5886,8 +5886,6 @@ class assign {
             return [$penalisedgrade, $deductedmark];
         }
 
-        // Apply the grade-item factors so the returned grade matches the
-        // final grade stored in the gradebook.
         $gradeitem = $this->get_grade_item();
         if ($usergraderecord === null) {
             $usergraderecord = $gradeitem->get_grade($grade->userid, false);

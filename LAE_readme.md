@@ -1,4 +1,4 @@
-# [Moodle Liberal Arts Edition v5.1.8-LAE29.0.6]
+# [Moodle Liberal Arts Edition v5.1.9-LAE29.0.7]
 
 Welcome to the Moodle Liberal Arts Edition. The goal of the LAE is to provide a coherent package for modules, patches, and code developed (or improved) by the Collaborative Liberal Arts Moodle Project (CLAMP).
 
@@ -16,13 +16,12 @@ https://www.clamp-it.org/collaboration-and-development-tools/
 
 ## Contents
 
-Moodle 5.1.8+LAE29.0.6 consists of the core Moodle 5.1.8 release plus a number of CLAMP-developed features and bug fixes.
+Moodle 5.1.9+LAE29.0.7 consists of the core Moodle 5.1.9 release plus a number of CLAMP-developed features and bug fixes.
 
 The following core features are included:
 
 * Anonymous Forums
 * Per-course resource display options
-* Patch for MDL-89461
 
 ### Anonymous Forums
 
@@ -31,10 +30,6 @@ A completely new version of the Anonymous Forums option in Moodle. This version 
 ### Per-course resource display options
 
 You may choose a default resource display option at the course level now instead of at the site-level.
-
-## Patch for MDL-89461
-
-This release includes the proposed patch for <https://moodle.atlassian.net/browse/MDL-89461>, an issue in Moodle 5.1 and 5.2 where an assignment with no grade and no feedback plugin fails to load.
 
 ## Contributed modules
 
@@ -71,10 +66,10 @@ You can get the LAE in two ways:
 * Download the tar and zip packages from the CLAMP web site: <http://www.clamp-it.org/code/>
 * Download the current release branch from the CLAMP code repository:
 
-    git clone https://github.com/CLAMP-IT/moodle v5.1.8-LAE29.0.6
-    git checkout -b v5.1.8-LAE29.0.6
+    git clone https://github.com/CLAMP-IT/moodle v5.1.9-LAE29.0.7
+    git checkout -b v5.1.9-LAE29.0.7
 
-By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v5.1.8-LAE29.0.6-base tag instead.
+By default this is the "Package" version which includes the contributed modules. If you just want the core version of the LAE checkout the v5.1.9-LAE29.0.7-base tag instead.
 
 CLAMP maintains two branches for each major version:
 

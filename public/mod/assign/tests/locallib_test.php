@@ -5301,8 +5301,6 @@ Anchor link 2:<a title=\"bananas\" href=\"../logo-240x60.gif\">Link text</a>
     /**
      * An assignment with no grade and no gradebook feedback plugin has no grade item, and viewing
      * it must not fail for users enrolled in the course.
-     *
-     * @covers \assign::get_all_grades
      */
     public function test_view_assignment_without_grade_item(): void {
         global $PAGE;

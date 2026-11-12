@@ -1415,6 +1415,9 @@ class mod_forum_external extends external_api {
 
         $discussionvault = $vaultfactory->get_discussion_vault();
         $discussion = $discussionvault->get_from_id($params['discussionid']);
+        if ($discussion->get_forum_id() != $forum->get_id()) {
+            throw new moodle_exception('invaliddiscussionid', 'forum');
+        }
         $legacydatamapperfactory = mod_forum\local\container::get_legacy_data_mapper_factory();
 
         $forumrecord = $legacydatamapperfactory->get_forum_data_mapper()->to_legacy_object($forum);
@@ -1504,6 +1507,9 @@ class mod_forum_external extends external_api {
 
         $discussionvault = $vaultfactory->get_discussion_vault();
         $discussion = $discussionvault->get_from_id($params['discussionid']);
+        if ($discussion->get_forum_id() != $forum->get_id()) {
+            throw new moodle_exception('invaliddiscussionid', 'forum');
+        }
 
         // If the current state doesn't equal the desired state then update the current.
         // state to the desired state.
