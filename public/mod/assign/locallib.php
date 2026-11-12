@@ -6109,8 +6109,6 @@ class assign {
             return [$penalisedgrade, $deductedmark];
         }
 
-        // Apply the grade-item factors so the returned grade matches the
-        // final grade stored in the gradebook.
         $gradeitem = $this->get_grade_item();
         if ($usergraderecord === null) {
             $usergraderecord = $gradeitem->get_grade($grade->userid, false);
@@ -7740,7 +7738,8 @@ class assign {
 
             $workflowstatechanged = $this->get_instance()->markingworkflow &&
                                             ($modified->workflowstate !== false) &&
-                                            ($current->workflowstate != $modified->workflowstate);
+                                            ($current->workflowstate != $modified->workflowstate) &&
+                                            array_key_exists($modified->workflowstate, $this->get_marking_workflow_filters());
 
             // Have any of the marks changed?
             $markschanged = array_filter(
@@ -7808,7 +7807,8 @@ class assign {
             // These will be set to false if they are not present in the quickgrading
             // form (e.g. column hidden).
             $workflowstatemodified = ($modified->workflowstate !== false) &&
-                                        ($flags->workflowstate != $modified->workflowstate);
+                                        ($flags->workflowstate != $modified->workflowstate) &&
+                                        array_key_exists($modified->workflowstate, $this->get_marking_workflow_filters());
 
             if ($workflowstatemodified) {
                 $flags->workflowstate = $modified->workflowstate;
@@ -8588,6 +8588,9 @@ class assign {
             }
             if ($gradinglocked && $mform->elementExists('mark')) {
                 $mform->freeze('mark');
+            }
+            if ($gradinglocked && $marker) {
+                $mform->freeze('workflowstate');
             }
             if ($gradingstatus != ASSIGN_MARKING_WORKFLOW_STATE_RELEASED) {
                 if ($grade->grade && $grade->grade != -1) {
@@ -9427,7 +9430,7 @@ class assign {
         global $USER, $CFG, $DB;
         // If we are using marker allocation, are we allocated to this student? If not, we should not be able to update
         // their marks, even if they are in the same group as a student we are allocated to.
-        if (isset($formdata->mark) && $this->get_instance()->markingworkflow && $this->get_instance()->markingallocation) {
+        if ($this->ismarking && $this->get_instance()->markingworkflow && $this->get_instance()->markingallocation) {
             $markerids = array_column($this->get_allocated_markers($userid), 'marker');
             if (!in_array($USER->id, $markerids)) {
                 return;
@@ -9447,7 +9450,7 @@ class assign {
         // (or sent back for review) once its current state makes it read-only.
         // When saving a mark, the overall workflow state is calculated from the individual
         // markers' states below, so it must not be overwritten with the submitted form value here.
-        if (isset($formdata->workflowstate) && !property_exists($formdata, 'mark')) {
+        if (isset($formdata->workflowstate) && !$this->ismarking) {
             $flags = $this->get_user_flags($userid, true);
             $oldworkflowstate = $flags->workflowstate;
             $validstates = $this->get_marking_workflow_states_for_current_user();
